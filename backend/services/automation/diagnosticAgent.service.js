@@ -24,13 +24,26 @@ if (process.env.BEZCOIN_CONTRACT_ADDRESS) {
     );
 }
 
-// Cola de diagnósticos
-const diagnosticQueue = new Queue('diagnostic-agent', {
-    connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: process.env.REDIS_PORT || 6379
+// Cola de diagnósticos — SOLO si Redis disponible
+let diagnosticQueue = null;
+const BULLMQ_FORCE_DISABLED_DIAG = ['true', '1'].includes((process.env.DISABLE_BULLMQ || '').toLowerCase());
+const REDIS_AVAILABLE = !!process.env.REDIS_URL && !BULLMQ_FORCE_DISABLED_DIAG;
+if (REDIS_AVAILABLE) {
+    try {
+        diagnosticQueue = new Queue('diagnostic-agent', {
+            connection: {
+                host: process.env.REDIS_HOST || 'localhost',
+                port: process.env.REDIS_PORT || 6379,
+                maxRetriesPerRequest: null,
+                retryStrategy: (times) => times > 3 ? null : Math.min(times * 500, 3000),
+            }
+        });
+    } catch (e) {
+        console.warn('⚠️ Diagnostic queue disabled:', e.message);
     }
-});
+} else {
+    console.info('ℹ️ REDIS_URL not set — diagnostic queue disabled');
+}
 
 // ===================================
 // 2. MODELOS DE DATOS
@@ -322,161 +335,175 @@ class AutoRecoveryActions {
 // 5. WORKER DE DIAGNÓSTICO
 // ===================================
 
-const diagnosticWorker = new Worker('diagnostic-agent', async job => {
-    const { action, data } = job.data;
+let diagnosticWorker = null;
+if (REDIS_AVAILABLE) {
+    try {
+        diagnosticWorker = new Worker('diagnostic-agent', async job => {
+            const { action, data } = job.data;
 
-    console.log(`🤖 Diagnostic Agent executing: ${action}`);
+            console.log(`🤖 Diagnostic Agent executing: ${action}`);
 
-    switch (action) {
-        case 'verify_transaction': {
-            const result = await DiagnosticTools.verifyBlockchainTransaction(
-                data.txHash,
-                data.expectedAmount,
-                data.userWallet
-            );
+            switch (action) {
+                case 'verify_transaction': {
+                    const result = await DiagnosticTools.verifyBlockchainTransaction(
+                        data.txHash,
+                        data.expectedAmount,
+                        data.userWallet
+                    );
 
-            if (result.issue) {
-                await DiagnosticLog.create({
-                    category: 'blockchain',
-                    severity: result.exists ? 'warning' : 'error',
-                    issue: result.issue,
-                    diagnosticData: result,
-                    affectedEntity: { entityType: 'transaction', entityId: data.transactionId }
-                });
-            }
+                    if (result.issue) {
+                        await DiagnosticLog.create({
+                            category: 'blockchain',
+                            severity: result.exists ? 'warning' : 'error',
+                            issue: result.issue,
+                            diagnosticData: result,
+                            affectedEntity: { entityType: 'transaction', entityId: data.transactionId }
+                        });
+                    }
 
-            return result;
-        }
-
-        case 'diagnose_credit_mismatch': {
-            const diagnosis = await DiagnosticTools.diagnoseCreditMismatch(data.userId);
-
-            if (diagnosis.hasIssue) {
-                const recovery = await AutoRecoveryActions.forceSyncUserBalance(data.userId);
-                return { diagnosis, recovery };
-            }
-
-            return { diagnosis, recovery: { notNeeded: true } };
-        }
-
-        case 'analyze_system_health': {
-            const health = await DiagnosticTools.generateHealthScore();
-            const errorPatterns = await DiagnosticTools.analyzeErrorPatterns();
-
-            const aiPrompt = `
-                Actúa como SRE de BeZhas. Analiza estos datos del sistema:
-                
-                Health Score: ${health.score}/100
-                Estado: ${health.status}
-                Errores recientes: ${errorPatterns.totalErrors}
-                Errores críticos: ${errorPatterns.criticalCount}
-                
-                Métricas:
-                - Usuarios: ${health.metrics.totalUsers}
-                - Transacciones pendientes: ${health.metrics.pendingTransactions}
-                - Contenido activo (7 días): ${health.metrics.activeContent}
-                
-                Provee:
-                1. Diagnóstico ejecutivo (2 líneas)
-                2. Top 3 recomendaciones
-                3. Predicción de estabilidad para próximas 48h
-            `;
-
-            const aiAnalysis = await UnifiedAI.generateContent(aiPrompt);
-
-            await MaintenanceReport.create({
-                summary: aiAnalysis,
-                healthScore: health.score,
-                checksPerformed: {
-                    blockchain: 1,
-                    database: 1,
-                    payments: 1,
-                    content: 1
-                },
-                issuesDetected: errorPatterns.totalErrors,
-                issuesResolved: 0,
-                recommendations: ['Check logs', 'Monitor blockchain sync', 'Review pending transactions'],
-                detailedFindings: { health, errorPatterns }
-            });
-
-            return { health, errorPatterns, aiAnalysis };
-        }
-
-        case 'nightly_maintenance': {
-            console.log('🌙 Iniciando mantenimiento nocturno automático...');
-
-            const health = await DiagnosticTools.generateHealthScore();
-            const errorPatterns = await DiagnosticTools.analyzeErrorPatterns();
-
-            const users = await User.find({ walletAddress: { $exists: true, $ne: null } }).limit(100);
-            let syncedUsers = 0;
-
-            for (const user of users) {
-                const diagnosis = await DiagnosticTools.diagnoseCreditMismatch(user._id);
-                if (diagnosis.hasIssue) {
-                    await AutoRecoveryActions.forceSyncUserBalance(user._id);
-                    syncedUsers++;
+                    return result;
                 }
+
+                case 'diagnose_credit_mismatch': {
+                    const diagnosis = await DiagnosticTools.diagnoseCreditMismatch(data.userId);
+
+                    if (diagnosis.hasIssue) {
+                        const recovery = await AutoRecoveryActions.forceSyncUserBalance(data.userId);
+                        return { diagnosis, recovery };
+                    }
+
+                    return { diagnosis, recovery: { notNeeded: true } };
+                }
+
+                case 'analyze_system_health': {
+                    const health = await DiagnosticTools.generateHealthScore();
+                    const errorPatterns = await DiagnosticTools.analyzeErrorPatterns();
+
+                    const aiPrompt = `
+                        Actúa como SRE de BeZhas. Analiza estos datos del sistema:
+                        
+                        Health Score: ${health.score}/100
+                        Estado: ${health.status}
+                        Errores recientes: ${errorPatterns.totalErrors}
+                        Errores críticos: ${errorPatterns.criticalCount}
+                        
+                        Métricas:
+                        - Usuarios: ${health.metrics.totalUsers}
+                        - Transacciones pendientes: ${health.metrics.pendingTransactions}
+                        - Contenido activo (7 días): ${health.metrics.activeContent}
+                        
+                        Provee:
+                        1. Diagnóstico ejecutivo (2 líneas)
+                        2. Top 3 recomendaciones
+                        3. Predicción de estabilidad para próximas 48h
+                    `;
+
+                    const aiAnalysis = await UnifiedAI.generateContent(aiPrompt);
+
+                    await MaintenanceReport.create({
+                        summary: aiAnalysis,
+                        healthScore: health.score,
+                        checksPerformed: { blockchain: 1, database: 1, payments: 1, content: 1 },
+                        issuesDetected: errorPatterns.totalErrors,
+                        issuesResolved: 0,
+                        recommendations: ['Check logs', 'Monitor blockchain sync', 'Review pending transactions'],
+                        detailedFindings: { health, errorPatterns }
+                    });
+
+                    return { health, errorPatterns, aiAnalysis };
+                }
+
+                case 'nightly_maintenance': {
+                    console.log('🌙 Iniciando mantenimiento nocturno automático...');
+
+                    const health = await DiagnosticTools.generateHealthScore();
+                    const errorPatterns = await DiagnosticTools.analyzeErrorPatterns();
+
+                    const users = await User.find({ walletAddress: { $exists: true, $ne: null } }).limit(100);
+                    let syncedUsers = 0;
+
+                    for (const user of users) {
+                        const diagnosis = await DiagnosticTools.diagnoseCreditMismatch(user._id);
+                        if (diagnosis.hasIssue) {
+                            await AutoRecoveryActions.forceSyncUserBalance(user._id);
+                            syncedUsers++;
+                        }
+                    }
+
+                    const aiPrompt = `
+                        Reporte de Mantenimiento Nocturno - BeZhas
+                        
+                        Health Score: ${health.score}/100
+                        Usuarios sincronizados: ${syncedUsers}
+                        Errores detectados (24h): ${errorPatterns.totalErrors}
+                        
+                        Genera un informe ejecutivo para el administrador incluyendo:
+                        1. Estado general del sistema
+                        2. Acciones correctivas tomadas automáticamente
+                        3. Recomendaciones para mañana
+                        4. Predicción de carga para la próxima semana
+                    `;
+
+                    const aiReport = await UnifiedAI.generateContent(aiPrompt);
+
+                    const report = await MaintenanceReport.create({
+                        summary: aiReport,
+                        healthScore: health.score,
+                        checksPerformed: {
+                            blockchain: users.length,
+                            database: users.length,
+                            payments: 0,
+                            content: health.metrics.activeContent
+                        },
+                        issuesDetected: errorPatterns.totalErrors,
+                        issuesResolved: syncedUsers,
+                        recommendations: ['Monitor blockchain sync', 'Check critical errors'],
+                        detailedFindings: { health, errorPatterns, syncedUsers }
+                    });
+
+                    const reportPath = path.join(__dirname, '../../../REPORTS/MAINTENANCE');
+                    await fs.mkdir(reportPath, { recursive: true });
+
+                    const filename = `maintenance_${new Date().toISOString().split('T')[0]}.md`;
+                    await fs.writeFile(
+                        path.join(reportPath, filename),
+                        `# Reporte de Mantenimiento - ${new Date().toLocaleDateString()}\n\n${aiReport}`
+                    );
+
+                    console.log(`✅ Mantenimiento completado. Reporte guardado: ${filename}`);
+
+                    return { report, syncedUsers, filename };
+                }
+
+                default:
+                    throw new Error(`Unknown diagnostic action: ${action}`);
             }
-
-            const aiPrompt = `
-                Reporte de Mantenimiento Nocturno - BeZhas
-                
-                Health Score: ${health.score}/100
-                Usuarios sincronizados: ${syncedUsers}
-                Errores detectados (24h): ${errorPatterns.totalErrors}
-                
-                Genera un informe ejecutivo para el administrador incluyendo:
-                1. Estado general del sistema
-                2. Acciones correctivas tomadas automáticamente
-                3. Recomendaciones para mañana
-                4. Predicción de carga para la próxima semana
-            `;
-
-            const aiReport = await UnifiedAI.generateContent(aiPrompt);
-
-            const report = await MaintenanceReport.create({
-                summary: aiReport,
-                healthScore: health.score,
-                checksPerformed: {
-                    blockchain: users.length,
-                    database: users.length,
-                    payments: 0,
-                    content: health.metrics.activeContent
-                },
-                issuesDetected: errorPatterns.totalErrors,
-                issuesResolved: syncedUsers,
-                recommendations: ['Monitor blockchain sync', 'Check critical errors'],
-                detailedFindings: { health, errorPatterns, syncedUsers }
-            });
-
-            const reportPath = path.join(__dirname, '../../../REPORTS/MAINTENANCE');
-            await fs.mkdir(reportPath, { recursive: true });
-
-            const filename = `maintenance_${new Date().toISOString().split('T')[0]}.md`;
-            await fs.writeFile(
-                path.join(reportPath, filename),
-                `# Reporte de Mantenimiento - ${new Date().toLocaleDateString()}\n\n${aiReport}`
-            );
-
-            console.log(`✅ Mantenimiento completado. Reporte guardado: ${filename}`);
-
-            return { report, syncedUsers, filename };
-        }
-
-        default:
-            throw new Error(`Unknown diagnostic action: ${action}`);
+        }, {
+            connection: {
+                host: process.env.REDIS_HOST || 'localhost',
+                port: process.env.REDIS_PORT || 6379,
+                maxRetriesPerRequest: null,
+                retryStrategy: (times) => times > 3 ? null : Math.min(times * 500, 3000),
+            }
+        });
+        console.log('✅ Diagnostic worker initialized');
+    } catch (e) {
+        console.warn('⚠️ Diagnostic worker disabled:', e.message);
     }
-}, {
-    connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: process.env.REDIS_PORT || 6379
-    }
-});
+}
 
 // ===================================
 // 6. API PÚBLICA DEL SERVICIO
 // ===================================
+
+// Helper: safely add to queue or return error
+const safeQueueAdd = async (name, data) => {
+    if (!diagnosticQueue) {
+        console.warn(`⚠️ Diagnostic queue unavailable — skipping ${name}`);
+        return { queued: false, reason: 'Redis unavailable' };
+    }
+    return await diagnosticQueue.add(name, data);
+};
 
 module.exports = {
     DiagnosticLog,
@@ -487,28 +514,28 @@ module.exports = {
     diagnosticWorker,
 
     async diagnoseTransaction(txHash, expectedAmount, userWallet, transactionId) {
-        return await diagnosticQueue.add('verify_transaction', {
+        return await safeQueueAdd('verify_transaction', {
             action: 'verify_transaction',
             data: { txHash, expectedAmount, userWallet, transactionId }
         });
     },
 
     async diagnoseCreditIssue(userId) {
-        return await diagnosticQueue.add('diagnose_credit_mismatch', {
+        return await safeQueueAdd('diagnose_credit_mismatch', {
             action: 'diagnose_credit_mismatch',
             data: { userId }
         });
     },
 
     async analyzeSystemHealth() {
-        return await diagnosticQueue.add('analyze_system_health', {
+        return await safeQueueAdd('analyze_system_health', {
             action: 'analyze_system_health',
             data: {}
         });
     },
 
     async runNightlyMaintenance() {
-        return await diagnosticQueue.add('nightly_maintenance', {
+        return await safeQueueAdd('nightly_maintenance', {
             action: 'nightly_maintenance',
             data: {}
         });

@@ -38,7 +38,8 @@ import {
     Link as LinkIcon,
     KeyRound,
     Webhook,
-    Lock
+    Lock,
+    Workflow
 } from 'lucide-react';
 import {
     BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -55,6 +56,7 @@ import ActivityCard from '../components/admin/ActivityCard';
 import TelemetryAnalyticsPanel from '../components/admin/TelemetryAnalyticsPanel';
 import AdminAegisChatPanel from '../components/admin/AdminAegisChatPanel';
 import AdminAegisActionsPanel from '../components/admin/AdminAegisActionsPanel';
+import BeZhasAIChat from '../components/AI/BeZhasChat';
 
 // Lazy load heavy components
 const TreasuryManagement = React.lazy(() => import('../components/admin/TreasuryManagement'));
@@ -71,6 +73,9 @@ const BridgeApiKeysManager = React.lazy(() => import('../components/admin/Bridge
 const SystemUpdateManager = React.lazy(() => import('../components/admin/SystemUpdateManager'));
 const SDKVIPManager = React.lazy(() => import('../components/admin/SDKVIPManager'));
 const DiagnosticDashboard = React.lazy(() => import('../components/admin/DiagnosticDashboard'));
+const HRDashboard = React.lazy(() => import('../components/admin/HRDashboard'));
+const DevDashboard = React.lazy(() => import('../components/admin/DevDashboard'));
+const AdminUserProfileEditor = React.lazy(() => import('../components/admin/AdminUserProfileEditor'));
 
 // Base API is configured via services/http (VITE_API_URL or Vite proxy)
 const USE_MOCK = (import.meta.env.VITE_USE_MOCK === '1' || String(import.meta.env.VITE_USE_MOCK).toLowerCase() === 'true');
@@ -171,8 +176,8 @@ export default function AdminDashboard() {
                 setUserAddress(address);
 
                 // Load config (addresses + ABIs) from backend
-                const configRes = await fetch('/api/config');
-                const appConfig = await configRes.json();
+                const configRes = await http.get('/api/config');
+                const appConfig = configRes.data;
                 const addresses = appConfig.contractAddresses || {};
                 const tokenABI = { abi: appConfig.abis?.BezhasTokenABI || [] };
 
@@ -437,12 +442,15 @@ export default function AdminDashboard() {
         { id: 'sdk-vip', label: 'SDK & VIP', icon: Crown },
         { id: 'analytics', label: 'Analíticas', icon: BarChart3 },
         { id: 'users', label: 'Usuarios', icon: Users },
+        { id: 'hr', label: 'Recursos Humanos', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'HUMAN_RESOURCES'] },
+        { id: 'devs', label: 'Desarrolladores', icon: Database, roles: ['SUPER_ADMIN', 'DEVELOPER'] },
+        { id: 'profile-config', label: 'Ajustes Perfiles', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'HUMAN_RESOURCES'] },
         { id: 'updates', label: 'Actualizaciones', icon: Cpu },
         { id: 'modules', label: 'Módulos', icon: Database },
         { id: 'activity', label: 'Actividad', icon: Activity },
         { id: 'content', label: 'Contenido', icon: FileText },
         { id: 'system', label: 'Sistema', icon: Settings }
-    ];
+    ].filter(tab => !tab.roles || tab.roles.includes(userRole));
 
     // Colors for charts
     const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444'];
@@ -642,32 +650,53 @@ export default function AdminDashboard() {
                                 <TelemetryAnalyticsPanel />
                             </div>
 
-                            {/* Acceso Rápido al Centro de IA */}
-                            <div className="mt-8">
+                            {/* Intelligence & Automation Hub */}
+                            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Link
                                     to="/admin/ai"
                                     className="block bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-xl p-6 hover:border-purple-500/60 transition-all group"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
-                                            <div className="p-3 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl">
+                                            <div className="p-3 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl shadow-lg shadow-purple-500/30">
                                                 <Brain size={28} className="text-white" />
                                             </div>
                                             <div>
-                                                <h3 className="text-xl font-bold text-white">Centro de Inteligencia Artificial</h3>
-                                                <p className="text-gray-400">Gestiona agentes, diagnóstico, chat y funcionalidades de IA</p>
+                                                <h3 className="text-xl font-bold text-white">Centro de IA</h3>
+                                                <p className="text-gray-400 text-sm">Agentes, Diagnóstico y LLM</p>
                                             </div>
                                         </div>
-                                        <div className="text-gray-400 group-hover:text-purple-400 transition-colors">
-                                            <TrendingUp size={24} />
+                                    </div>
+                                </Link>
+
+                                <Link
+                                    to="/admin/automation"
+                                    className="block bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 rounded-xl p-6 hover:border-blue-500/60 transition-all group"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl shadow-lg shadow-blue-500/30">
+                                                <Workflow size={28} className="text-white" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-white">Automation Hub</h3>
+                                                <p className="text-gray-400 text-sm">Vibe Builder y flujos dinámicos MCP</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </Link>
                             </div>
 
-                            {/* Chat Panel IA (Aegis) */}
-                            <div className="mt-8">
+                            {/* Chat Panel IA (Aegis y Central) */}
+                            <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <AdminAegisChatPanel />
+                                <div>
+                                   <div className="mb-4">
+                                      <h3 className="text-xl font-bold text-white flex items-center gap-2"><Brain className="text-blue-400" /> BeZhas AI Interactive</h3>
+                                      <p className="text-gray-400 text-sm">Agente central interactivo conectado vía MCP y Automation Engine.</p>
+                                   </div>
+                                   <BeZhasAIChat />
+                                </div>
                             </div>
 
                             {/* Acciones de administración y auto-healing */}
@@ -675,6 +704,27 @@ export default function AdminDashboard() {
                                 <AdminAegisActionsPanel />
                             </div>
                         </>
+                    )}
+
+                    {/* RECURSOS HUMANOS TAB */}
+                    {activeTab === 'hr' && (
+                        <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando HR...</div>}>
+                            <HRDashboard />
+                        </Suspense>
+                    )}
+
+                    {/* DEVELOPERS TAB */}
+                    {activeTab === 'devs' && (
+                        <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando Devs...</div>}>
+                            <DevDashboard />
+                        </Suspense>
+                    )}
+
+                    {/* PROFILE CONFIG TAB */}
+                    {activeTab === 'profile-config' && (
+                        <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando Ajustes...</div>}>
+                            <AdminUserProfileEditor />
+                        </Suspense>
                     )}
 
                     {/* DAO TAB */}
@@ -740,10 +790,10 @@ export default function AdminDashboard() {
                                     Motor de automatización inteligente para gestión de contenido, moderación y respuestas automáticas.
                                 </p>
                                 <Link
-                                    to="/automation-demo"
+                                    to="/admin/automation"
                                     className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 font-medium"
                                 >
-                                    Ver Demo <ArrowUpRight size={18} />
+                                    Ir al Hub de Automatización <ArrowUpRight size={18} />
                                 </Link>
                             </div>
 

@@ -30,7 +30,7 @@ export const networks = {
     chainId: 137,
     chainIdHex: '0x89',
     name: 'Polygon Mainnet',
-    rpcUrl: 'https://polygon-rpc.com',
+    rpcUrl: 'https://polygon-bor-rpc.publicnode.com',
     blockExplorer: 'https://polygonscan.com',
     nativeCurrency: {
       name: 'MATIC',

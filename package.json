@@ -24,6 +24,16 @@
     "prod:down": "docker compose -f docker-compose.gcp.yml down",
     "deploy:dao": "hardhat run scripts/deploy-dao.js --network localhost",
     "deploy:quality-oracle": "hardhat run scripts/deploy-quality-oracle.js --network amoy",
+    "deploy:quality-oracle:polygon": "hardhat run scripts/deploy-quality-oracle.js --network polygon",
+    "deploy:mainnet-core": "hardhat run scripts/deploy-mainnet-core.js --network polygon",
+    "deploy:mainnet-core:dry": "TREASURY_WALLET=0x52Df82920CBAE522880dD7657e43d1A754eD044E hardhat run scripts/deploy-mainnet-core.js --network polygon",
+    "test:orchestrator-e2e": "node scripts/test-orchestrator-e2e.js",
+    "test:orchestrator-e2e:fast": "node scripts/test-orchestrator-e2e.js --fast",
+    "sdk:publish-npm": "cd sdk && npm publish --access public",
+    "sdk:publish-pnpm": "cd sdk && pnpm publish --access public --no-git-checks",
+    "sdk:publish-all": "pnpm sdk:publish-npm && pnpm sdk:publish-pnpm",
+    "gcp:deploy": "gcloud builds submit --config=cloudbuild.yaml",
+    "gcp:deploy:backend": "gcloud builds submit --config=cloudbuild.yaml --substitutions=_TAG=v$(date +%Y%m%d)",
     "deploy:farming": "hardhat run scripts/deploy-liquidity-farming.js --network localhost",
     "deploy:farming:amoy": "hardhat run scripts/deploy-liquidity-farming.js --network amoy",
     "deploy:farming:polygon": "hardhat run scripts/deploy-liquidity-farming.js --network polygon",
@@ -48,20 +58,21 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-ethers": "3.0.8",
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-ethers": "4.0.5",
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "concurrently": "^9.2.1",
-    "ethers": "6.13.0",
-    "hardhat": "^2.28.0",
-    "supertest": "^7.1.4"
+    "ethers": "6.16.0",
+    "hardhat": "^3.1.10",
+    "supertest": "^7.2.2"
   },
   "dependencies": {
-    "@chainlink/contracts": "^1.4.0",
-    "@chainlink/contracts-ccip": "^1.3.0",
+    "@adraffy/ens-normalize": "^1.11.1",
+    "@chainlink/contracts": "^1.5.0",
+    "@chainlink/contracts-ccip": "^1.6.4",
     "@openzeppelin/contracts": "^5.4.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
-    "express": "^4.21.2"
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1"
   },
   "pnpm": {
     "overrides": {

@@ -1,0 +1,500 @@
+﻿2026-02-22 08:46:19 default[20260222t093409]  ? Loading notificationsRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? notificationsRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading rewardsRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? rewardsRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading profileRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? profileRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading realEstateRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? realEstateRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading admin middleware...
+2026-02-22 08:46:19 default[20260222t093409]  ? admin middleware loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading metricsRouter...
+2026-02-22 08:46:19 default[20260222t093409]  ? metricsRouter loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading feedRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? feedRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading treasuryRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? treasuryRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading logisticsRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? logisticsRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading bridgeRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? bridgeRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading bridgeAdminRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? bridgeAdminRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading paymentRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  [dotenv@17.2.3] injecting env (71) from .env -- tip: ??  override existing env vars with { override: true }
+2026-02-22 08:46:19 default[20260222t093409]  ? Error initializing Hot Wallet: invalid BytesLike value (argument="value", value="0xprojects/totemic-bonus-479312-c6/secrets/hot-wallet-private-key/versions/latest", code=INVALID_ARGUMENT, version=6.16.0)
+2026-02-22 08:46:19 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 50>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771749979250>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'error'   value: <JsonValue   string_value: 'invalid BytesLike value (argument="value", value="0xprojects/totemic-bonus-479312-c6/secrets/hot-wallet-private-key/versions/latest", code=INVALID_ARGUMENT, version=6.16.0)'>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: '? Error initializing Token Distribution Service'>>]>
+2026-02-22 08:46:19 default[20260222t093409]  ? paymentRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading validationRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? validationRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading bezCoinRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? bezCoinRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading fiatRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? fiatRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading chatRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? chatRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading aiRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? aiRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading escrowRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? escrowRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading usersRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? usersRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading postsRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? 5 posts de blockchain inicializados (pinned y validados)
+2026-02-22 08:46:19 default[20260222t093409]  ? postsRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading uploadRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? uploadRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading telemetryRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? telemetryRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading billingRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? billingRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading campaignsRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? campaignsRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? Loading healthRoutes...
+2026-02-22 08:46:19 default[20260222t093409]  ? healthRoutes loaded
+2026-02-22 08:46:19 default[20260222t093409]  ? verifyAdminJWT: Loaded 2 super-admin wallet(s), 4 admin wallet(s)
+2026-02-22 08:46:19 default[20260222t093409]  ================================================================================
+2026-02-22 08:46:19 default[20260222t093409]  FATAL: Excepci?n no capturada: Cannot find module '../../sdk/farming'
+2026-02-22 08:46:19 default[20260222t093409]  Require stack:
+2026-02-22 08:46:19 default[20260222t093409]  - /workspace/services/farming.service.js
+2026-02-22 08:46:19 default[20260222t093409]  - /workspace/routes/farming.routes.js
+2026-02-22 08:46:19 default[20260222t093409]  - /workspace/server.js
+2026-02-22 08:46:19 default[20260222t093409]  Origen: uncaughtException
+2026-02-22 08:46:19 default[20260222t093409]  Stack trace:
+2026-02-22 08:46:19 default[20260222t093409]  Error: Cannot find module '../../sdk/farming'
+2026-02-22 08:46:19 default[20260222t093409]  Require stack:
+2026-02-22 08:46:19 default[20260222t093409]  - /workspace/services/farming.service.js
+2026-02-22 08:46:19 default[20260222t093409]  - /workspace/routes/farming.routes.js
+2026-02-22 08:46:19 default[20260222t093409]  - /workspace/server.js
+2026-02-22 08:46:19 default[20260222t093409]      at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-22 08:46:19 default[20260222t093409]      at Module._load (node:internal/modules/cjs/loader:1038:27)
+2026-02-22 08:46:19 default[20260222t093409]      at Module.require (node:internal/modules/cjs/loader:1289:19)
+2026-02-22 08:46:19 default[20260222t093409]      at require (node:internal/modules/helpers:182:18)
+2026-02-22 08:46:19 default[20260222t093409]      at Object.<anonymous> (/workspace/services/farming.service.js:8:20)
+2026-02-22 08:46:19 default[20260222t093409]      at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-22 08:46:19 default[20260222t093409]      at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-22 08:46:19 default[20260222t093409]      at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-22 08:46:19 default[20260222t093409]      at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-22 08:46:19 default[20260222t093409]      at Module.require (node:internal/modules/cjs/loader:1289:19)
+2026-02-22 08:46:19 default[20260222t093409]  ================================================================================
+2026-02-22 08:47:16 default[20260222t093409]  "GET /api/token/price HTTP/1.1" 503
+2026-02-22 08:47:16 default[20260222t093409]  ? Starting server initialization...
+2026-02-22 08:47:17 default[20260222t093409]  ? Google Gemini client initialized
+2026-02-22 08:47:17 default[20260222t093409]  ? DeepSeek client initialized
+2026-02-22 08:47:17 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750037056>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>, <AdditionalProperty   key: 'name'   value: <JsonValue   string_value: 'UnifiedAI'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'Unified AI Service ready with providers: google, deepseek'>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>]>
+2026-02-22 08:47:18 default[20260222t093409]  [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ??  override existing env vars with { override: true }
+2026-02-22 08:47:18 default[20260222t093409]  ? config loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? GoogleGenerativeAI loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading WebSocketServer dependencies...
+2026-02-22 08:47:18 default[20260222t093409]  ? ws loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? jwt loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? ethers loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? pino loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? WebSocketServer module fully loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? WebSocketServer loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? pino loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? validators loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? HealthCheckService constructor called
+2026-02-22 08:47:18 default[20260222t093409]  ? healthService loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? RedisService constructor called
+2026-02-22 08:47:18 default[20260222t093409]  ? redisService loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? REDIS_URL is set. Initializing enhanced job queues...
+2026-02-22 08:47:18 default[20260222t093409]  ? All queues initialized successfully
+2026-02-22 08:47:18 default[20260222t093409]  ? telemetryService loaded
+2026-02-22 08:47:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750038277>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'Telemetry auto-flush started'>>]>
+2026-02-22 08:47:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'Cache Service initialized (L1: node-cache)'>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750038284>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>]>
+2026-02-22 08:47:18 default[20260222t093409]  ? web3Core services loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading auditLogger middleware...
+2026-02-22 08:47:18 default[20260222t093409]  ? auditLogger loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? auditLogger loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? httpsEnforcement loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? inputSanitization loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? AdvancedRateLimiter loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? MessageRateLimiter loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Initializing WebSocket Server...
+2026-02-22 08:47:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'WebSocket heartbeat started'>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750038387>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>]>
+2026-02-22 08:47:18 default[20260222t093409]  ? WebSocket Server initialized
+2026-02-22 08:47:18 default[20260222t093409]  ? Allowed Origins: [
+2026-02-22 08:47:18 default[20260222t093409]    'https://bezhas.com',
+2026-02-22 08:47:18 default[20260222t093409]    'https://www.bezhas.com',
+2026-02-22 08:47:18 default[20260222t093409]    'https://bezhas-frontend-371791663100.us-central1.run.app',
+2026-02-22 08:47:18 default[20260222t093409]    'https://totemic-bonus-479312-c6.ew.r.appspot.com'
+2026-02-22 08:47:18 default[20260222t093409]  ]
+2026-02-22 08:47:18 default[20260222t093409]  ? AdvancedRateLimiter constructor called
+2026-02-22 08:47:18 default[20260222t093409]  ? AdvancedRateLimiter created
+2026-02-22 08:47:18 default[20260222t093409]  ? MessageRateLimiter created
+2026-02-22 08:47:18 default[20260222t093409]  ? AdvancedRateLimiter constructor called
+2026-02-22 08:47:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: '? Advanced Rate Limiters initialized'>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750038557>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>]>
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading routes...
+2026-02-22 08:47:18 default[20260222t093409]  ? authRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? contactRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading marketplaceRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? marketplaceRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading uploadsRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? uploadsRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading stakingRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? stakingRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading groupsRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? groupsRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading walletRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? walletRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading notificationsRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? notificationsRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading rewardsRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? rewardsRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading profileRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? profileRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading realEstateRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? realEstateRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading admin middleware...
+2026-02-22 08:47:18 default[20260222t093409]  ? admin middleware loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading metricsRouter...
+2026-02-22 08:47:18 default[20260222t093409]  ? metricsRouter loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading feedRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? feedRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading treasuryRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? treasuryRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading logisticsRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? logisticsRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading bridgeRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? bridgeRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading bridgeAdminRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? bridgeAdminRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading paymentRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  [dotenv@17.2.3] injecting env (71) from .env -- tip: ? audit secrets and track compliance: https://dotenvx.com/ops
+2026-02-22 08:47:18 default[20260222t093409]  ? Error initializing Hot Wallet: invalid BytesLike value (argument="value", value="0xprojects/totemic-bonus-479312-c6/secrets/hot-wallet-private-key/versions/latest", code=INVALID_ARGUMENT, version=6.16.0)
+2026-02-22 08:47:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: '? Error initializing Token Distribution Service'>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'error'   value: <JsonValue   string_value: 'invalid BytesLike value (argument="value", value="0xprojects/totemic-bonus-479312-c6/secrets/hot-wallet-private-key/versions/latest", code=INVALID_ARGUMENT, version=6.16.0)'>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 50>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750038889>>]>
+2026-02-22 08:47:18 default[20260222t093409]  ? paymentRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading validationRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? validationRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading bezCoinRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? bezCoinRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading fiatRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? fiatRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading chatRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? chatRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading aiRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? aiRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading escrowRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? escrowRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading usersRoutes...
+2026-02-22 08:47:18 default[20260222t093409]  ? usersRoutes loaded
+2026-02-22 08:47:18 default[20260222t093409]  ? Loading postsRoutes...
+2026-02-22 08:47:19 default[20260222t093409]  ? 5 posts de blockchain inicializados (pinned y validados)
+2026-02-22 08:47:19 default[20260222t093409]  ? postsRoutes loaded
+2026-02-22 08:47:19 default[20260222t093409]  ? Loading uploadRoutes...
+2026-02-22 08:47:19 default[20260222t093409]  ? uploadRoutes loaded
+2026-02-22 08:47:19 default[20260222t093409]  ? Loading telemetryRoutes...
+2026-02-22 08:47:19 default[20260222t093409]  ? telemetryRoutes loaded
+2026-02-22 08:47:19 default[20260222t093409]  ? Loading billingRoutes...
+2026-02-22 08:47:19 default[20260222t093409]  ? billingRoutes loaded
+2026-02-22 08:47:19 default[20260222t093409]  ? Loading campaignsRoutes...
+2026-02-22 08:47:19 default[20260222t093409]  ? campaignsRoutes loaded
+2026-02-22 08:47:19 default[20260222t093409]  ? Loading healthRoutes...
+2026-02-22 08:47:19 default[20260222t093409]  ? healthRoutes loaded
+2026-02-22 08:47:19 default[20260222t093409]  ? verifyAdminJWT: Loaded 2 super-admin wallet(s), 4 admin wallet(s)
+2026-02-22 08:47:19 default[20260222t093409]  ================================================================================
+2026-02-22 08:47:19 default[20260222t093409]  FATAL: Excepci?n no capturada: Cannot find module '../../sdk/farming'
+2026-02-22 08:47:19 default[20260222t093409]  Require stack:
+2026-02-22 08:47:19 default[20260222t093409]  - /workspace/services/farming.service.js
+2026-02-22 08:47:19 default[20260222t093409]  - /workspace/routes/farming.routes.js
+2026-02-22 08:47:19 default[20260222t093409]  - /workspace/server.js
+2026-02-22 08:47:19 default[20260222t093409]  Origen: uncaughtException
+2026-02-22 08:47:19 default[20260222t093409]  Stack trace:
+2026-02-22 08:47:19 default[20260222t093409]  Error: Cannot find module '../../sdk/farming'
+2026-02-22 08:47:19 default[20260222t093409]  Require stack:
+2026-02-22 08:47:19 default[20260222t093409]  - /workspace/services/farming.service.js
+2026-02-22 08:47:19 default[20260222t093409]  - /workspace/routes/farming.routes.js
+2026-02-22 08:47:19 default[20260222t093409]  - /workspace/server.js
+2026-02-22 08:47:19 default[20260222t093409]      at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-22 08:47:19 default[20260222t093409]      at Module._load (node:internal/modules/cjs/loader:1038:27)
+2026-02-22 08:47:19 default[20260222t093409]      at Module.require (node:internal/modules/cjs/loader:1289:19)
+2026-02-22 08:47:19 default[20260222t093409]      at require (node:internal/modules/helpers:182:18)
+2026-02-22 08:47:19 default[20260222t093409]      at Object.<anonymous> (/workspace/services/farming.service.js:8:20)
+2026-02-22 08:47:19 default[20260222t093409]      at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-22 08:47:19 default[20260222t093409]      at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-22 08:47:19 default[20260222t093409]      at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-22 08:47:19 default[20260222t093409]      at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-22 08:47:19 default[20260222t093409]      at Module.require (node:internal/modules/cjs/loader:1289:19)
+2026-02-22 08:47:19 default[20260222t093409]  ================================================================================
+2026-02-22 08:48:16 default[20260222t093409]  "GET /api/token/price HTTP/1.1" 503
+2026-02-22 08:48:16 default[20260222t093409]  ? Starting server initialization...
+2026-02-22 08:48:17 default[20260222t093409]  ? Google Gemini client initialized
+2026-02-22 08:48:17 default[20260222t093409]  ? DeepSeek client initialized
+2026-02-22 08:48:17 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750097321>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>, <AdditionalProperty   key: 'name'   value: <JsonValue   string_value: 'UnifiedAI'>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'Unified AI Service ready with providers: google, deepseek'>>]>
+2026-02-22 08:48:18 default[20260222t093409]  [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ??  specify custom .env file path with { path: '/custom/path/.env' }
+2026-02-22 08:48:18 default[20260222t093409]  ? config loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? GoogleGenerativeAI loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? Loading WebSocketServer dependencies...
+2026-02-22 08:48:18 default[20260222t093409]  ? ws loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? jwt loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? ethers loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? pino loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? WebSocketServer module fully loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? WebSocketServer loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? pino loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? validators loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? HealthCheckService constructor called
+2026-02-22 08:48:18 default[20260222t093409]  ? healthService loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? RedisService constructor called
+2026-02-22 08:48:18 default[20260222t093409]  ? redisService loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? REDIS_URL is set. Initializing enhanced job queues...
+2026-02-22 08:48:18 default[20260222t093409]  ? All queues initialized successfully
+2026-02-22 08:48:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'Telemetry auto-flush started'>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750098593>>]>
+2026-02-22 08:48:18 default[20260222t093409]  ? telemetryService loaded
+2026-02-22 08:48:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'Cache Service initialized (L1: node-cache)'>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750098602>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>]>
+2026-02-22 08:48:18 default[20260222t093409]  ? web3Core services loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? Loading auditLogger middleware...
+2026-02-22 08:48:18 default[20260222t093409]  ? auditLogger loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? auditLogger loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? httpsEnforcement loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? inputSanitization loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? AdvancedRateLimiter loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? MessageRateLimiter loaded
+2026-02-22 08:48:18 default[20260222t093409]  ? Initializing WebSocket Server...
+2026-02-22 08:48:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750098706>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'WebSocket heartbeat started'>>]>
+2026-02-22 08:48:18 default[20260222t093409]  ? WebSocket Server initialized
+2026-02-22 08:48:18 default[20260222t093409]  ? Allowed Origins: [
+2026-02-22 08:48:18 default[20260222t093409]    'https://bezhas.com',
+2026-02-22 08:48:18 default[20260222t093409]    'https://www.bezhas.com',
+2026-02-22 08:48:18 default[20260222t093409]    'https://bezhas-frontend-371791663100.us-central1.run.app',
+2026-02-22 08:48:18 default[20260222t093409]    'https://totemic-bonus-479312-c6.ew.r.appspot.com'
+2026-02-22 08:48:18 default[20260222t093409]  ]
+2026-02-22 08:48:18 default[20260222t093409]  ? AdvancedRateLimiter constructor called
+2026-02-22 08:48:18 default[20260222t093409]  ? AdvancedRateLimiter created
+2026-02-22 08:48:18 default[20260222t093409]  ? MessageRateLimiter created
+2026-02-22 08:48:18 default[20260222t093409]  ? AdvancedRateLimiter constructor called
+2026-02-22 08:48:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750098896>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: '? Advanced Rate Limiters initialized'>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>]>
+2026-02-22 08:48:18 default[20260222t093409]  ? Loading routes...
+2026-02-22 08:48:19 default[20260222t093409]  ? authRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? contactRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading marketplaceRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? marketplaceRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading uploadsRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? uploadsRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading stakingRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? stakingRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading groupsRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? groupsRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading walletRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? walletRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading notificationsRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? notificationsRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading rewardsRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? rewardsRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading profileRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? profileRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading realEstateRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? realEstateRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading admin middleware...
+2026-02-22 08:48:19 default[20260222t093409]  ? admin middleware loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading metricsRouter...
+2026-02-22 08:48:19 default[20260222t093409]  ? metricsRouter loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading feedRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? feedRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading treasuryRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? treasuryRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading logisticsRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? logisticsRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading bridgeRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? bridgeRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading bridgeAdminRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? bridgeAdminRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading paymentRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  [dotenv@17.2.3] injecting env (71) from .env -- tip: ??  suppress all logs with { quiet: true }
+2026-02-22 08:48:19 default[20260222t093409]  ? Error initializing Hot Wallet: invalid BytesLike value (argument="value", value="0xprojects/totemic-bonus-479312-c6/secrets/hot-wallet-private-key/versions/latest", code=INVALID_ARGUMENT, version=6.16.0)
+2026-02-22 08:48:19 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 15>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750099251>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 50>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: '? Error initializing Token Distribution Service'>>, <AdditionalProperty   key: 'error'   value: <JsonValue   string_value: 'invalid BytesLike value (argument="value", value="0xprojects/totemic-bonus-479312-c6/secrets/hot-wallet-private-key/versions/latest", code=INVALID_ARGUMENT, version=6.16.0)'>>]>
+2026-02-22 08:48:19 default[20260222t093409]  ? paymentRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading validationRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? validationRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading bezCoinRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? bezCoinRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading fiatRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? fiatRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading chatRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? chatRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading aiRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? aiRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading escrowRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? escrowRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading usersRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? usersRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading postsRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? 5 posts de blockchain inicializados (pinned y validados)
+2026-02-22 08:48:19 default[20260222t093409]  ? postsRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading uploadRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? uploadRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading telemetryRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? telemetryRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading billingRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? billingRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading campaignsRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? campaignsRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? Loading healthRoutes...
+2026-02-22 08:48:19 default[20260222t093409]  ? healthRoutes loaded
+2026-02-22 08:48:19 default[20260222t093409]  ? verifyAdminJWT: Loaded 2 super-admin wallet(s), 4 admin wallet(s)
+2026-02-22 08:48:19 default[20260222t093409]  ================================================================================
+2026-02-22 08:48:19 default[20260222t093409]  FATAL: Excepci?n no capturada: Cannot find module '../../sdk/farming'
+2026-02-22 08:48:19 default[20260222t093409]  Require stack:
+2026-02-22 08:48:19 default[20260222t093409]  - /workspace/services/farming.service.js
+2026-02-22 08:48:19 default[20260222t093409]  - /workspace/routes/farming.routes.js
+2026-02-22 08:48:19 default[20260222t093409]  - /workspace/server.js
+2026-02-22 08:48:19 default[20260222t093409]  Origen: uncaughtException
+2026-02-22 08:48:19 default[20260222t093409]  Stack trace:
+2026-02-22 08:48:19 default[20260222t093409]  Error: Cannot find module '../../sdk/farming'
+2026-02-22 08:48:19 default[20260222t093409]  Require stack:
+2026-02-22 08:48:19 default[20260222t093409]  - /workspace/services/farming.service.js
+2026-02-22 08:48:19 default[20260222t093409]  - /workspace/routes/farming.routes.js
+2026-02-22 08:48:19 default[20260222t093409]  - /workspace/server.js
+2026-02-22 08:48:19 default[20260222t093409]      at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-22 08:48:19 default[20260222t093409]      at Module._load (node:internal/modules/cjs/loader:1038:27)
+2026-02-22 08:48:19 default[20260222t093409]      at Module.require (node:internal/modules/cjs/loader:1289:19)
+2026-02-22 08:48:19 default[20260222t093409]      at require (node:internal/modules/helpers:182:18)
+2026-02-22 08:48:19 default[20260222t093409]      at Object.<anonymous> (/workspace/services/farming.service.js:8:20)
+2026-02-22 08:48:19 default[20260222t093409]      at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-22 08:48:19 default[20260222t093409]      at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-22 08:48:19 default[20260222t093409]      at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-22 08:48:19 default[20260222t093409]      at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-22 08:48:19 default[20260222t093409]      at Module.require (node:internal/modules/cjs/loader:1289:19)
+2026-02-22 08:48:19 default[20260222t093409]  ================================================================================
+2026-02-22 08:49:16 default[20260222t093409]  "GET /bp-groups/business-question/media/album/pg/73/ HTTP/1.1" 503
+2026-02-22 08:49:16 default[20260222t093409]  "GET /api/token/price HTTP/1.1" 500
+2026-02-22 08:49:16 default[20260222t093409]  ? Starting server initialization...
+2026-02-22 08:49:17 default[20260222t093409]  ? Google Gemini client initialized
+2026-02-22 08:49:17 default[20260222t093409]  ? DeepSeek client initialized
+2026-02-22 08:49:17 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'name'   value: <JsonValue   string_value: 'UnifiedAI'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'Unified AI Service ready with providers: google, deepseek'>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 16>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750157268>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>]>
+2026-02-22 08:49:18 default[20260222t093409]  [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ? audit secrets and track compliance: https://dotenvx.com/ops
+2026-02-22 08:49:18 default[20260222t093409]  ? config loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? GoogleGenerativeAI loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? Loading WebSocketServer dependencies...
+2026-02-22 08:49:18 default[20260222t093409]  ? ws loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? jwt loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? ethers loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? pino loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? WebSocketServer module fully loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? WebSocketServer loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? pino loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? validators loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? HealthCheckService constructor called
+2026-02-22 08:49:18 default[20260222t093409]  ? healthService loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? RedisService constructor called
+2026-02-22 08:49:18 default[20260222t093409]  ? redisService loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? REDIS_URL is set. Initializing enhanced job queues...
+2026-02-22 08:49:18 default[20260222t093409]  ? All queues initialized successfully
+2026-02-22 08:49:18 default[20260222t093409]  ? telemetryService loaded
+2026-02-22 08:49:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750158633>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 16>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'Telemetry auto-flush started'>>]>
+2026-02-22 08:49:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 16>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750158640>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'Cache Service initialized (L1: node-cache)'>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>]>
+2026-02-22 08:49:18 default[20260222t093409]  ? web3Core services loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? Loading auditLogger middleware...
+2026-02-22 08:49:18 default[20260222t093409]  ? auditLogger loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? auditLogger loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? httpsEnforcement loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? inputSanitization loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? AdvancedRateLimiter loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? MessageRateLimiter loaded
+2026-02-22 08:49:18 default[20260222t093409]  ? Initializing WebSocket Server...
+2026-02-22 08:49:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: 'WebSocket heartbeat started'>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750158758>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 16>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>]>
+2026-02-22 08:49:18 default[20260222t093409]  ? WebSocket Server initialized
+2026-02-22 08:49:18 default[20260222t093409]  ? Allowed Origins: [
+2026-02-22 08:49:18 default[20260222t093409]    'https://bezhas.com',
+2026-02-22 08:49:18 default[20260222t093409]    'https://www.bezhas.com',
+2026-02-22 08:49:18 default[20260222t093409]    'https://bezhas-frontend-371791663100.us-central1.run.app',
+2026-02-22 08:49:18 default[20260222t093409]    'https://totemic-bonus-479312-c6.ew.r.appspot.com'
+2026-02-22 08:49:18 default[20260222t093409]  ]
+2026-02-22 08:49:18 default[20260222t093409]  ? AdvancedRateLimiter constructor called
+2026-02-22 08:49:18 default[20260222t093409]  ? AdvancedRateLimiter created
+2026-02-22 08:49:18 default[20260222t093409]  ? MessageRateLimiter created
+2026-02-22 08:49:18 default[20260222t093409]  ? AdvancedRateLimiter constructor called
+2026-02-22 08:49:18 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: '? Advanced Rate Limiters initialized'>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750158937>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 16>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 30>>]>
+2026-02-22 08:49:18 default[20260222t093409]  ? Loading routes...
+2026-02-22 08:49:19 default[20260222t093409]  ? authRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? contactRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading marketplaceRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? marketplaceRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading uploadsRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? uploadsRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading stakingRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? stakingRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading groupsRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? groupsRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading walletRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? walletRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading notificationsRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? notificationsRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading rewardsRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? rewardsRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading profileRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? profileRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading realEstateRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? realEstateRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading admin middleware...
+2026-02-22 08:49:19 default[20260222t093409]  ? admin middleware loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading metricsRouter...
+2026-02-22 08:49:19 default[20260222t093409]  ? metricsRouter loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading feedRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? feedRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading treasuryRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? treasuryRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading logisticsRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? logisticsRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading bridgeRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? bridgeRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading bridgeAdminRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? bridgeAdminRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading paymentRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  [dotenv@17.2.3] injecting env (71) from .env -- tip: ? sync secrets across teammates & machines: https://dotenvx.com/ops
+2026-02-22 08:49:19 default[20260222t093409]  ? Error initializing Hot Wallet: invalid BytesLike value (argument="value", value="0xprojects/totemic-bonus-479312-c6/secrets/hot-wallet-private-key/versions/latest", code=INVALID_ARGUMENT, version=6.16.0)
+2026-02-22 08:49:19 default[20260222t093409]  <JsonPayloadValue   additionalProperties: [<AdditionalProperty   key: 'error'   value: <JsonValue   string_value: 'invalid BytesLike value (argument="value", value="0xprojects/totemic-bonus-479312-c6/secrets/hot-wallet-private-key/versions/latest", code=INVALID_ARGUMENT, version=6.16.0)'>>, <AdditionalProperty   key: 'hostname'   value: <JsonValue   string_value: 'localhost'>>, <AdditionalProperty   key: 'msg'   value: <JsonValue   string_value: '? Error initializing Token Distribution Service'>>, <AdditionalProperty   key: 'level'   value: <JsonValue   integer_value: 50>>, <AdditionalProperty   key: 'time'   value: <JsonValue   integer_value: 1771750159304>>, <AdditionalProperty   key: 'pid'   value: <JsonValue   integer_value: 16>>]>
+2026-02-22 08:49:19 default[20260222t093409]  ? paymentRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading validationRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? validationRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading bezCoinRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? bezCoinRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading fiatRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? fiatRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading chatRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? chatRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading aiRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? aiRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading escrowRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? escrowRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading usersRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? usersRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading postsRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? 5 posts de blockchain inicializados (pinned y validados)
+2026-02-22 08:49:19 default[20260222t093409]  ? postsRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading uploadRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? uploadRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading telemetryRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? telemetryRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading billingRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? billingRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading campaignsRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? campaignsRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? Loading healthRoutes...
+2026-02-22 08:49:19 default[20260222t093409]  ? healthRoutes loaded
+2026-02-22 08:49:19 default[20260222t093409]  ? verifyAdminJWT: Loaded 2 super-admin wallet(s), 4 admin wallet(s)
+2026-02-22 08:49:19 default[20260222t093409]  ================================================================================
+2026-02-22 08:49:19 default[20260222t093409]  FATAL: Excepci?n no capturada: Cannot find module '../../sdk/farming'
+2026-02-22 08:49:19 default[20260222t093409]  Require stack:
+2026-02-22 08:49:19 default[20260222t093409]  - /workspace/services/farming.service.js
+2026-02-22 08:49:19 default[20260222t093409]  - /workspace/routes/farming.routes.js
+2026-02-22 08:49:19 default[20260222t093409]  - /workspace/server.js
+2026-02-22 08:49:19 default[20260222t093409]  Origen: uncaughtException
+2026-02-22 08:49:19 default[20260222t093409]  Stack trace:
+2026-02-22 08:49:19 default[20260222t093409]  Error: Cannot find module '../../sdk/farming'
+2026-02-22 08:49:19 default[20260222t093409]  Require stack:
+2026-02-22 08:49:19 default[20260222t093409]  - /workspace/services/farming.service.js
+2026-02-22 08:49:19 default[20260222t093409]  - /workspace/routes/farming.routes.js
+2026-02-22 08:49:19 default[20260222t093409]  - /workspace/server.js
+2026-02-22 08:49:19 default[20260222t093409]      at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-22 08:49:19 default[20260222t093409]      at Module._load (node:internal/modules/cjs/loader:1038:27)
+2026-02-22 08:49:19 default[20260222t093409]      at Module.require (node:internal/modules/cjs/loader:1289:19)
+2026-02-22 08:49:19 default[20260222t093409]      at require (node:internal/modules/helpers:182:18)
+2026-02-22 08:49:19 default[20260222t093409]      at Object.<anonymous> (/workspace/services/farming.service.js:8:20)
+2026-02-22 08:49:19 default[20260222t093409]      at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-22 08:49:19 default[20260222t093409]      at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-22 08:49:19 default[20260222t093409]      at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-22 08:49:19 default[20260222t093409]      at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-22 08:49:19 default[20260222t093409]      at Module.require (node:internal/modules/cjs/loader:1289:19)
+2026-02-22 08:49:19 default[20260222t093409]  ================================================================================

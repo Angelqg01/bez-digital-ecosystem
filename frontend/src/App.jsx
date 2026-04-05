@@ -26,6 +26,8 @@ import WalletDiagnosticPanel from './components/wallet/WalletDiagnosticPanel';
 import InstallPWA from './components/layout/InstallPWA';
 import GlobalModals from './components/GlobalModals';
 import TranslateWidget from './components/TranslateWidget';
+import { BezPayProvider } from './context/BezPayContext';
+import BezPayModal from './components/payments/BezPayModal';
 
 // --- Pages (Lazy Loaded) ---
 const LandingPage = lazy(() => import('./pages/LandingPage')); // NEW: Marketing Landing Page
@@ -45,6 +47,7 @@ const BeZhasFeed = lazy(() => import('./pages/BeZhasFeed'));
 // ShopPage removed - now integrated into MarketplaceUnified Tab 1
 // FarmingPage removed - now integrated into StakingPageUnified
 const SettingsPage = lazy(() => import('./pages/SettingsPage')); // Settings with Network config
+const ContactSyncPage = lazy(() => import('./pages/ContactSyncPage')); // NEW: Web SaaS Contact Synchronization
 // const GroupsPage = lazy(() => import('./pages/GroupsPage')); // REMOVED: Groups feature not implemented
 // const MembersPage = lazy(() => import('./pages/MembersPage')); // REMOVED: Members moved to other sections
 // const QuestsPage = lazy(() => import('./pages/QuestsPage')); // REMOVED: Quests system eliminated
@@ -83,6 +86,9 @@ const LocalAIPage = lazy(() => import('./pages/LocalAIPage')); // NEW: Local AI 
 const MLDashboard = lazy(() => import('./pages/MLDashboard')); // NEW: Machine Learning Dashboard
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage')); // NEW: Admin User Management
 const AdminConfigPage = lazy(() => import('./pages/AdminConfigPage')); // NEW: Unified Platform Config
+const AgentDashboard = lazy(() => import('./pages/admin/AgentDashboard')); // NEW: Agent Dashboard
+const AutomationHub = lazy(() => import('./pages/admin/AutomationHub')); // NEW: Unified Intelligence & Automation Hub
+const AdminAegis = lazy(() => import('./components/admin/aegis/AegisDashboard')); // NEW: Aegis Dashboard
 
 // NEW: Light Mode Design System Demo
 const LightHomePage = lazy(() => import('./pages/LightHomePage'));
@@ -117,8 +123,9 @@ const DeveloperConsole = lazy(() => import('./pages/DeveloperConsole')); // NEW:
 // SDKTestPage removed from production build - requires @sdk dependencies not available in container
 // const SDKTestPage = lazy(() => import('./pages/SDKTestPage')); // NEW: SDK Integration TestPage
 const AuthPage = lazy(() => import('./pages/AuthPage')); // NEW: Unified Auth (Email, Google, Facebook, Wallet)
-const BuyTokensPage = lazy(() => import('./pages/BuyTokensPage')); // NEW: Token Purchase Page
-const DeFiHub = lazy(() => import('./pages/DeFiHub')); // NEW: DeFi Hub with LP Integration
+const BuyTokensPage = lazy(() => import('./pages/BuyTokensPage')); // Token Purchase Page
+const DeFiHub = lazy(() => import('./pages/DeFiHub')); // DeFi Hub with LP Integration
+const BezPayPage = lazy(() => import('./pages/BezPayPage')); // NEW: BeZhas Pay System v2.0 full page
 
 // AI Guide Widget (Global)
 import BezhasGuideWidget from './components/AI/BezhasGuideWidget';
@@ -201,25 +208,31 @@ const Root = () => {
             <BezCoinProvider>
               <MarketplaceProvider>
                 <RightSidebarProvider>
-                  {/* <DAOProvider> REMOVED: Sistema DAO complejo eliminado */}
-                  <AppOrchestrator />
-                  <GlobalModals />
-                  <Toaster position="top-right" />
-                  <PendingTransactionIndicator />
-                  <InstallPWA />
-                  {/* WalletDiagnosticPanel moved to ProfilePage */}
+                  {/* BezPayProvider — Sistema de pago BEZ nativo v2.0 */}
+                  <BezPayProvider>
+                    {/* <DAOProvider> REMOVED: Sistema DAO complejo eliminado */}
+                    <AppOrchestrator />
+                    <GlobalModals />
+                    <Toaster position="top-right" />
+                    <PendingTransactionIndicator />
+                    <InstallPWA />
+                    {/* WalletDiagnosticPanel moved to ProfilePage */}
 
-                  {/* AI Guide Widget - Global y persistente en todas las páginas */}
-                  <BezhasGuideWidget currentUser={mockUser} />
+                    {/* BezPayModal — Modal global de pago BEZ (reemplaza todos los modales de pago) */}
+                    <BezPayModal />
 
-                  {/* Google Translate Widget - Global */}
-                  <div className="fixed bottom-4 left-4 z-50 shadow-lg rounded-lg overflow-hidden">
-                    <TranslateWidget />
-                  </div>
+                    {/* AI Guide Widget - Global y persistente en todas las páginas */}
+                    <BezhasGuideWidget currentUser={mockUser} />
 
-                  {/* Important: render child route element here */}
-                  <Outlet />
-                  {/* </DAOProvider> */}
+                    {/* Google Translate Widget - Global */}
+                    <div className="fixed bottom-4 left-4 z-50 shadow-lg rounded-lg overflow-hidden">
+                      <TranslateWidget />
+                    </div>
+
+                    {/* Important: render child route element here */}
+                    <Outlet />
+                    {/* </DAOProvider> */}
+                  </BezPayProvider>
                 </RightSidebarProvider>
               </MarketplaceProvider>
             </BezCoinProvider>
@@ -290,6 +303,7 @@ const AppLayout = () => {
 };
 
 const GitHubCallback = lazy(() => import('./pages/GitHubCallback'));
+const LinkedInCallback = lazy(() => import('./pages/LinkedInCallback'));
 
 /**
  * @dev LandingRoute - Wrapper component for the root route.
@@ -321,6 +335,7 @@ export const router = createBrowserRouter(
             { path: '/login', element: <LoginPage /> },
             { path: '/register', element: <RegisterPage /> },
             { path: '/auth/github/callback', element: <GitHubCallback /> },
+            { path: '/auth/linkedin/callback', element: <LinkedInCallback /> },
             { path: '/auth', element: <AuthPage /> }, // NEW: Unified Auth Page (Email, Google, Facebook, Wallet)
             { path: '/admin-login', element: <AdminLogin /> },
             { path: '/superpanel', element: <SuperPanel /> },
@@ -346,8 +361,10 @@ export const router = createBrowserRouter(
             { path: '/logistics', element: <LogisticsPage /> }, // NEW: Logistics Demo
             { path: '/real-estate', element: <RealEstateGame /> },
             { path: '/rwa', element: <RWAPage /> }, // NEW: RWA Marketplace
-            { path: '/buy-tokens', element: <BuyTokensPage /> }, // NEW: Token Purchase Page
-            { path: '/liquidity', element: <DeFiHub /> }, // NEW: DeFi Hub with LP Pool
+            { path: '/buy-tokens', element: <BuyTokensPage /> }, // Token Purchase (integrado con BezPayModal)
+            { path: '/pay', element: <BezPayPage /> }, // BeZhas Pay System v2.0 — página completa
+            { path: '/bez-pay', element: <BezPayPage /> }, // Alias: BeZhas Pay System
+            { path: '/liquidity', element: <DeFiHub /> }, // DeFi Hub with LP Pool
             { path: '/defi-hub', element: <DeFiHub /> }, // Alias for DeFi Hub
             { path: '/light-home', element: <LightHomePage /> }, // NEW: Light Mode Design System Demo
             { path: '/whitepaper', element: <WhitePaper /> }, // NEW: WhitePaper Technical
@@ -364,10 +381,10 @@ export const router = createBrowserRouter(
             { path: '/ad-center/campaigns', element: <CampaignsList /> },
 
             { path: '/chat', element: <ChatPage /> },
-            // { path: '/ai-chat', element: <AIChat /> }, // NEW: AI Chat
+            { path: '/ai-chat', element: <Suspense fallback={<Spinner size="lg" />}><AIChat /></Suspense> }, // NEW: AI Chat
             { path: '/local-ai', element: <LocalAIPage /> }, // NEW: Local AI Demo
             { path: '/ml-dashboard', element: <MLDashboard /> }, // NEW: Machine Learning Dashboard
-            { path: '/automation-demo', element: <AutomationDemo /> }, // 🤖 Automation Engine Demo
+            // /automation-demo has been moved to /admin/automation-demo or inside AutomationHub
 
             // --- Developer Tools ---
             { path: '/developer-console', element: <DeveloperConsole /> }, // NEW: API Key Management & SDK Tools
@@ -403,6 +420,7 @@ export const router = createBrowserRouter(
               children: [
                 { path: 'profile', element: <ProfilePage /> }, // Unified: Profile + Wallet + Dashboard + Settings
                 { path: 'profile/edit', element: <ProfileEditPage /> }, // NEW: Edit Profile
+                { path: 'contacts/sync', element: <ContactSyncPage /> }, // NEW: Contact Search & Sync
                 { path: 'profile/:address', element: <ProfilePage /> }, // View other user's profile
                 { path: 'settings', element: <SettingsPage /> }, // Settings with Network configuration
                 { path: 'create', element: <CreatePage /> }, // Unified Creation Hub
@@ -428,8 +446,12 @@ export const router = createBrowserRouter(
                     { path: 'content', element: <Suspense fallback={<Spinner size="lg" />}><ContentManagementPage /></Suspense> },
                     { path: 'ads', element: <Suspense fallback={<Spinner size="lg" />}><AdminAdsPage /></Suspense> },
                     { path: 'ai', element: <Suspense fallback={<Spinner size="lg" />}><AdminAI /></Suspense> },
+                    { path: 'automation', element: <Suspense fallback={<Spinner size="lg" />}><AutomationHub /></Suspense> },
+                    { path: 'automation-demo', element: <Suspense fallback={<Spinner size="lg" />}><AutomationDemo /></Suspense> },
                     { path: 'sdk', element: <Suspense fallback={<Spinner size="lg" />}><AdminSDK /></Suspense> },
                     { path: 'config', element: <Suspense fallback={<Spinner size="lg" />}><AdminConfigPage /></Suspense> },
+                    { path: 'agents', element: <Suspense fallback={<Spinner size="lg" />}><AgentDashboard /></Suspense> },
+                    { path: 'aegis', element: <Suspense fallback={<Spinner size="lg" />}><AdminAegis /></Suspense> },
                   ],
                 },
               ],

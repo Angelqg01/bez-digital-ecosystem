@@ -4,7 +4,7 @@
  */
 
 const { ethers } = require('ethers');
-const farmingABI = require('../artifacts/contracts/LiquidityFarming.sol/LiquidityFarming.json').abi;
+const farmingABI = require('./artifacts/contracts/LiquidityFarming.sol/LiquidityFarming.json').abi;
 
 class FarmingSDK {
     constructor(contractAddress, providerOrSigner) {

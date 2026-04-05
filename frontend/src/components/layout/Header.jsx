@@ -20,9 +20,10 @@ import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useBezCoin } from '../../context/BezCoinContext';
-import BuyBezCoinModal from '../modals/BuyBezCoinModal';
 import InsufficientFundsModal from '../modals/InsufficientFundsModal';
 import AuthModal from '../modals/AuthModal';
+// BuyBezCoinModal ELIMINADO – ahora se usa BezPayModal vía useBezPay() hook global
+import { useBezPay } from '../../context/BezPayContext';
 import WalletHeaderButton from '../common/WalletHeaderButton';
 import UnifiedBuyBezButton from '../UnifiedBuyBezButton';
 import { ethers } from 'ethers';
@@ -61,6 +62,7 @@ const Header = () => {
   const { disconnect } = useDisconnect();
   const { open } = useWeb3Modal();
   const navigate = useNavigate();
+  const { openBuyBez } = useBezPay(); // BezPay v2 – reemplaza BuyBezCoinModal
   const {
     balance,
     showBuyModal,
@@ -70,6 +72,15 @@ const Header = () => {
     balanceVisible,
     toggleBalanceVisibility
   } = useBezCoin();
+
+  // Cuando BezCoinContext quiere abrir el modal de compra, usar BezPayModal
+  // (Este effect puente permite migración gradual sin romper BezCoinContext)
+  useEffect(() => {
+    if (showBuyModal) {
+      setShowBuyModal(false);      // cerrar el flag del contexto
+      openBuyBez();                // abrir el nuevo BezPayModal
+    }
+  }, [showBuyModal]);
 
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -87,10 +98,16 @@ const Header = () => {
     if (!isConnected || !address || !BezhasTokenAddress) return;
 
     try {
-      if (!window.ethereum) return; // Evitar error si no hay wallet
-
-      // Usar provider de navegador para lectura
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      let provider;
+      if (window.ethereum) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const network = await provider.getNetwork();
+        if (network.chainId !== 137n && network.chainId !== 80002n && network.chainId !== 31337n) {
+          provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+        }
+      } else {
+          provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+      }
 
       // Verificar si el contrato existe en la red
       const code = await provider.getCode(BezhasTokenAddress);
@@ -615,12 +632,8 @@ const Header = () => {
         </div>
       </header>
 
-      {/* BezCoin Modals */}
-      <BuyBezCoinModal
-        isOpen={showBuyModal}
-        onClose={() => setShowBuyModal(false)}
-      />
-
+      {/* BuyBezCoinModal ELIMINADO – ahora gestionado por BezPayModal global en App.jsx */}
+      {/* InsufficientFundsModal se mantiene para UX de fondos insuficientes */}
       <InsufficientFundsModal
         isOpen={insufficientFundsModal.show}
         onClose={() => setInsufficientFundsModal({ show: false, requiredAmount: 0, actionName: '', onPurchaseComplete: null })}

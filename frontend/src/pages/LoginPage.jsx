@@ -7,7 +7,7 @@ import SocialAuthButtons from '../components/common/SocialAuthButtons';
 import { useWalletConnect } from '../hooks/useWalletConnect';
 
 export default function LoginPage() {
-    const { login, loginWithWallet, loading, user } = useAuth();
+    const { login, loginWithWallet, verifyLogin2FA, loading, user } = useAuth();
     const { address, isConnected, connectWallet } = useWalletConnect();
     const navigate = useNavigate();
 
@@ -15,6 +15,11 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
     const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'wallet'
+
+    // 2FA states
+    const [requires2FA, setRequires2FA] = useState(false);
+    const [twoFactorToken, setTwoFactorToken] = useState('');
+    const [tempUserId, setTempUserId] = useState(null);
 
     // Redirigir si ya está autenticado
     useEffect(() => {
@@ -27,10 +32,29 @@ export default function LoginPage() {
         e.preventDefault();
         setError(null);
         try {
-            await login(email, password);
+            const result = await login(email, password);
+            if (result && result.requires2FA) {
+                setRequires2FA(true);
+                setTempUserId(result.userId);
+            }
         } catch (err) {
             console.error(err);
-            setError(err.message || 'Credenciales inválidas. Por favor verifica tu correo y contraseña.');
+            setError(err.response?.data?.error || err.message || 'Credenciales inválidas. Por favor verifica tu correo y contraseña.');
+        }
+    };
+
+    const handle2FASubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+        if (!twoFactorToken.trim()) {
+            setError('Ingresa el código de 6 dígitos.');
+            return;
+        }
+        try {
+            await verifyLogin2FA(tempUserId, twoFactorToken);
+        } catch (err) {
+            console.error(err);
+            setError(err.response?.data?.error || err.message || 'Código inválido.');
         }
     };
 
@@ -108,8 +132,54 @@ export default function LoginPage() {
                         </div>
                     )}
 
+                    {/* 2FA Form */}
+                    {requires2FA && (
+                        <form onSubmit={handle2FASubmit} className="space-y-4 animate-fade-in">
+                            <div className="text-center mb-6">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                    Autenticación de Dos Pasos
+                                </h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    Ingresa el código de 6 dígitos de tu aplicación autenticadora (ej. Google Authenticator) o un código de respaldo.
+                                </p>
+                            </div>
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="000000"
+                                    value={twoFactorToken}
+                                    onChange={e => setTwoFactorToken(e.target.value)}
+                                    maxLength={8}
+                                    className="w-full text-center text-2xl tracking-widest pl-4 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all dark:text-white"
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
+                            >
+                                {loading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        Verificando...
+                                    </span>
+                                ) : (
+                                    'Verificar Código'
+                                )}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setRequires2FA(false); setTempUserId(null); setTwoFactorToken(''); setError(null); }}
+                                className="w-full py-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium transition-colors"
+                            >
+                                Volver al login
+                            </button>
+                        </form>
+                    )}
+
                     {/* Email Login Form */}
-                    {loginMethod === 'email' && (
+                    {!requires2FA && loginMethod === 'email' && (
                         <form onSubmit={handleEmailLogin} className="space-y-4 animate-fade-in">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -168,7 +238,7 @@ export default function LoginPage() {
                     )}
 
                     {/* Wallet Login */}
-                    {loginMethod === 'wallet' && (
+                    {!requires2FA && loginMethod === 'wallet' && (
                         <div className="space-y-6 animate-fade-in">
                             <div className="text-center py-6">
                                 <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl mb-4 shadow-lg shadow-purple-500/20">
@@ -222,26 +292,30 @@ export default function LoginPage() {
                     )}
 
                     {/* Divider */}
-                    <div className="my-8 flex items-center gap-4">
-                        <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">o continúa con</span>
-                        <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
-                    </div>
+                    {!requires2FA && (
+                        <>
+                            <div className="my-8 flex items-center gap-4">
+                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
+                                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">o continúa con</span>
+                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
+                            </div>
 
-                    <SocialAuthButtons onError={(msg) => setError(msg)} />
+                            <SocialAuthButtons onError={(msg) => setError(msg)} />
 
-                    {/* Register Link */}
-                    <div className="text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            ¿Aún no tienes cuenta?{' '}
-                            <Link
-                                to="/register"
-                                className="font-bold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors hover:underline"
-                            >
-                                Regístrate gratis
-                            </Link>
-                        </p>
-                    </div>
+                            {/* Register Link */}
+                            <div className="text-center mt-6">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    ¿Aún no tienes cuenta?{' '}
+                                    <Link
+                                        to="/register"
+                                        className="font-bold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors hover:underline"
+                                    >
+                                        Regístrate gratis
+                                    </Link>
+                                </p>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

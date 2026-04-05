@@ -3,7 +3,7 @@
  * @dev Servicio backend para el marketplace de NFTs
  */
 
-const MarketplaceSDK = require('../../sdk/marketplace');
+const MarketplaceSDK = require('@bezhas/sdk/marketplace');
 const web3Service = require('./web3.service');
 const { ethers } = require('ethers');
 

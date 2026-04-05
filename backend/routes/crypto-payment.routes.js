@@ -9,7 +9,7 @@
 const express = require('express');
 const router = express.Router();
 const cryptoPaymentService = require('../services/crypto-payment.service');
-const { authenticateJWT } = require('../middleware/auth');
+const { protect: authenticateJWT } = require('../middleware/auth.middleware');
 const logger = require('../utils/logger');
 
 /**

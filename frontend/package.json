@@ -8,6 +8,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
+    "dev": "vite",
     "start": "serve -s dist -l 8080 --no-etag",
     "build": "node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
@@ -51,14 +52,12 @@
     "react-syntax-highlighter": "^16.0.0",
     "recharts": "^3.2.1",
     "remark-gfm": "^4.0.1",
+    "serve": "^14.2.4",
     "source-map-js": "^1.2.1",
     "three": "^0.180.0",
     "viem": "^2.42.1",
     "wagmi": "^3.1.0",
-    "zustand": "^5.0.9",
-    "@bezhas/sdk": "file:./bezhas-sdk-2.0.0.tgz",
-    "@bezhas/mcp-server": "file:./bezhas-mcp-server-1.0.0.tgz",
-    "serve": "^14.2.4"
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
@@ -83,5 +82,8 @@
     "vite-plugin-node-polyfills": "^0.24.0",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "abitype": "1.2.3"
   }
 }

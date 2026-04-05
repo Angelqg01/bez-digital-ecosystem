@@ -11,7 +11,7 @@ const safeFormatEther = (value) => {
   if (typeof value === 'string' && value.includes('.')) return value; // Ya está formateado
   try {
     // Ethers v6 usa ethers.formatEther, v5 usa ethers.utils.formatEther
-    return ethers.formatEther ? ethers.formatEther(value) : ethers.utils.formatEther(value);
+    return ethers.formatEther(value);
   } catch (e) {
     console.warn('Error formatting ether:', e);
     return value.toString();

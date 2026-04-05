@@ -9,6 +9,12 @@ const SUPER_ADMIN_WALLETS = (process.env.SUPER_ADMIN_WALLETS || '')
   .map(addr => addr.trim().toLowerCase())
   .filter(Boolean);
 
+// Load Admin Wallets from environment
+const ADMIN_WALLETS = (process.env.ADMIN_WALLETS || '')
+  .split(',')
+  .map(addr => addr.trim().toLowerCase())
+  .filter(Boolean);
+
 /**
  * Check if a wallet address is a Super Admin
  */
@@ -19,18 +25,48 @@ function isSuperAdmin(walletAddress) {
 
 /**
  * Ensure Super Admin role for whitelisted wallets
- * This function is called during login/auth to auto-upgrade Super Admins
+ * This function is called during login/auth to auto-upgrade Super Admins and Admins to VIP
  */
 async function ensureSuperAdminRole(user) {
   if (!user || !user.walletAddress) return user;
 
-  if (isSuperAdmin(user.walletAddress)) {
+  const wallet = user.walletAddress.toLowerCase();
+  const isSuper = SUPER_ADMIN_WALLETS.includes(wallet);
+  const isAdminUser = ADMIN_WALLETS.includes(wallet);
+
+  if (isSuper || isAdminUser) {
+    let changed = false;
+
     // Force upgrade to ADMIN if not already
-    if (user.role !== UserRole.ADMIN) {
-      user.role = UserRole.ADMIN;
+    if (!user.roles || !user.roles.includes('ADMIN')) {
+      user.roles = ['USER', 'ADMIN', 'DEVELOPER'];
+      changed = true;
+    }
+
+    if (!user.isVerified) {
       user.isVerified = true;
+      changed = true;
+    }
+
+    // Override VIP membership to grant all system capabilities freely
+    if (!user.isVIP) {
+      user.isVIP = true;
+      changed = true;
+    }
+
+    if (user.subscription !== 'PREMIUM') {
+      user.subscription = 'PREMIUM';
+      changed = true;
+    }
+
+    if (user.vipTier !== 'platinum') {
+      user.vipTier = 'platinum';
+      changed = true;
+    }
+
+    if (changed) {
       await user.save();
-      console.log(`🔐 Super Admin detected: ${user.walletAddress} - Role upgraded to ADMIN`);
+      console.log(`🔐 Admin VIP detected: ${user.walletAddress} - Role upgraded to SUPER_ADMIN & PLATINUM VIP successfully!`);
     }
   }
 
@@ -73,6 +109,9 @@ const protect = async (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({ error: 'Not authorized, user not found' });
       }
+
+      // Auto-Upgrade VIP/Admin for whitelisted accounts
+      req.user = await ensureSuperAdminRole(req.user);
 
       next();
     } catch (error) {

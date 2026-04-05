@@ -4,11 +4,11 @@
  */
 
 // Core Contracts
-const BezhasTokenArtifact = require('../artifacts/contracts/BezhasToken.sol/BezhasToken.json');
-const LiquidityFarmingArtifact = require('../artifacts/contracts/LiquidityFarming.sol/LiquidityFarming.json');
-const StakingPoolArtifact = require('../artifacts/contracts/StakingPool.sol/StakingPool.json');
-const GovernanceSystemArtifact = require('../artifacts/contracts/GovernanceSystem.sol/GovernanceSystem.json');
-const BeZhasQualityEscrowArtifact = require('../artifacts/contracts/quality-oracle/BeZhasQualityEscrow.sol/BeZhasQualityEscrow.json');
+const BezhasTokenArtifact = require('./artifacts/contracts/BezhasToken.sol/BezhasToken.json');
+const LiquidityFarmingArtifact = require('./artifacts/contracts/LiquidityFarming.sol/LiquidityFarming.json');
+const StakingPoolArtifact = require('./artifacts/contracts/StakingPool.sol/StakingPool.json');
+const GovernanceSystemArtifact = require('./artifacts/contracts/GovernanceSystem.sol/GovernanceSystem.json');
+const BeZhasQualityEscrowArtifact = require('./artifacts/contracts/quality-oracle/BeZhasQualityEscrow.sol/BeZhasQualityEscrow.json');
 
 // Direcciones de despliegue
 const CONTRACT_ADDRESSES = {

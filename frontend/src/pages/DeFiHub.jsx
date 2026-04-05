@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useAccount } from 'wagmi';
+import { useAccount, useReadContract } from 'wagmi';
+import { formatUnits } from 'viem';
 import {
     TrendingUp, Coins, Lock, Unlock, Clock,
     AlertCircle, Zap, DollarSign, BarChart3,
@@ -30,6 +31,46 @@ const API_URL = '';
 
 export default function DeFiHub() {
     const { address, isConnected } = useAccount();
+
+    // ── LP Balance on-chain (QuickSwap BEZ/USDC pool) ────────────────────────────
+    const LP_TOKEN_ABI = [
+        {
+            name: 'balanceOf',
+            type: 'function',
+            stateMutability: 'view',
+            inputs: [{ name: 'account', type: 'address' }],
+            outputs: [{ name: '', type: 'uint256' }]
+        },
+        {
+            name: 'totalSupply',
+            type: 'function',
+            stateMutability: 'view',
+            inputs: [],
+            outputs: [{ name: '', type: 'uint256' }]
+        }
+    ];
+
+    const { data: userLpBalance } = useReadContract({
+        address: QUICKSWAP_LP_CONFIG.poolAddress,
+        abi: LP_TOKEN_ABI,
+        functionName: 'balanceOf',
+        args: [address],
+        chainId: 137,
+        enabled: !!address && isConnected,
+    });
+
+    const { data: totalLpSupply } = useReadContract({
+        address: QUICKSWAP_LP_CONFIG.poolAddress,
+        abi: LP_TOKEN_ABI,
+        functionName: 'totalSupply',
+        chainId: 137,
+    });
+
+    const userLpFormatted = userLpBalance ? parseFloat(formatUnits(userLpBalance, 18)).toFixed(6) : '0.000000';
+    const poolSharePercent = (userLpBalance && totalLpSupply && totalLpSupply > 0n)
+        ? ((Number(userLpBalance) / Number(totalLpSupply)) * 100).toFixed(4)
+        : '0.0000';
+
     const [pools, setPools] = useState([]);
     const [userFarming, setUserFarming] = useState(null);
     const [farmingStats, setFarmingStats] = useState(null);
@@ -131,7 +172,7 @@ export default function DeFiHub() {
                 `${API_URL}/api/farming/validate-stake`,
                 {
                     poolId: selectedPool.id,
-                    amount: ethers.utils.parseEther(stakeAmount).toString(),
+                    amount: ethers.parseEther(stakeAmount).toString(),
                     userAddress: address
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -276,7 +317,7 @@ export default function DeFiHub() {
                                 <div>
                                     <p className="text-blue-100 text-sm">Total Value Locked</p>
                                     <p className="text-white text-2xl font-bold mt-1">
-                                        ${parseFloat(ethers.utils.formatEther(farmingStats.totalValueLocked || '0')).toFixed(2)}
+                                        ${parseFloat(ethers.formatEther(farmingStats.totalValueLocked || '0')).toFixed(2)}
                                     </p>
                                 </div>
                                 <DollarSign className="text-white/30" size={48} />
@@ -311,7 +352,7 @@ export default function DeFiHub() {
                                     <div>
                                         <p className="text-green-100 text-sm">Mis Recompensas</p>
                                         <p className="text-white text-2xl font-bold mt-1">
-                                            {parseFloat(ethers.utils.formatEther(userFarming.totalRewards || '0')).toFixed(4)} BEZ
+                                            {parseFloat(ethers.formatEther(userFarming.totalRewards || '0')).toFixed(4)} BEZ
                                         </p>
                                     </div>
                                     <TrendingUp className="text-white/30" size={48} />
@@ -356,13 +397,13 @@ export default function DeFiHub() {
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-400">Total Staked</span>
                                             <span className="text-white font-semibold">
-                                                {parseFloat(ethers.utils.formatEther(pool.totalStaked)).toFixed(2)}
+                                                {parseFloat(ethers.formatEther(pool.totalStaked)).toFixed(2)}
                                             </span>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-400">Min Stake</span>
                                             <span className="text-white font-semibold">
-                                                {parseFloat(ethers.utils.formatEther(pool.minStake)).toFixed(2)}
+                                                {parseFloat(ethers.formatEther(pool.minStake)).toFixed(2)}
                                             </span>
                                         </div>
                                     </div>
@@ -407,13 +448,13 @@ export default function DeFiHub() {
                                         <div>
                                             <p className="text-gray-400 text-sm">Staked</p>
                                             <p className="text-white font-semibold">
-                                                {parseFloat(ethers.utils.formatEther(stake.staked)).toFixed(4)}
+                                                {parseFloat(ethers.formatEther(stake.staked)).toFixed(4)}
                                             </p>
                                         </div>
                                         <div>
                                             <p className="text-gray-400 text-sm">Recompensas</p>
                                             <p className="text-green-400 font-semibold">
-                                                {parseFloat(ethers.utils.formatEther(stake.pendingRewards)).toFixed(4)}
+                                                {parseFloat(ethers.formatEther(stake.pendingRewards)).toFixed(4)}
                                             </p>
                                         </div>
                                         <div>
@@ -564,6 +605,28 @@ export default function DeFiHub() {
                                     </div>
                                 </div>
 
+                                {/* Tu posición LP on-chain */}
+                                {isConnected && (
+                                    <div className="mb-4 p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
+                                        <p className="text-cyan-300 font-semibold mb-2 flex items-center gap-2">
+                                            <Droplets size={16} /> Tu Posición LP (on-chain)
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <p className="text-gray-400 text-xs">LP Tokens</p>
+                                                <p className="text-white font-bold">{userLpFormatted} <span className="text-gray-500 text-xs">BEZ/USDC LP</span></p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400 text-xs">Tu % del Pool</p>
+                                                <p className="text-cyan-300 font-bold">{poolSharePercent}%</p>
+                                            </div>
+                                        </div>
+                                        {parseFloat(userLpFormatted) === 0 && (
+                                            <p className="text-xs text-gray-500 mt-2">No tienes liquidez en este pool todavía. ¡Añade para empezar a recibir Real Yield!</p>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="space-y-3">
                                     <a
                                         href={QUICKSWAP_LP_CONFIG.addLiquidityUrl}
@@ -679,7 +742,7 @@ export default function DeFiHub() {
                                 </div>
                             </div>
                         </motion.div>
-                    </div>
+                    </div >
                 )
             }
 

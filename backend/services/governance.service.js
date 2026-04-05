@@ -4,8 +4,8 @@
  * Maneja propuestas, votaciones y delegación de poder
  */
 
-const GovernanceSDK = require('../../sdk/governance');
-const { ProposalState, ProposalStateLabels, VoteType, VoteTypeLabels } = require('../../sdk/governance');
+const GovernanceSDK = require('@bezhas/sdk/governance');
+const { ProposalState, ProposalStateLabels, VoteType, VoteTypeLabels } = require('@bezhas/sdk/governance');
 const web3Service = require('./web3.service');
 const settingsHelper = require('../utils/settingsHelper');
 const { ethers } = require('ethers');

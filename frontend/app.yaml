@@ -26,8 +26,8 @@ env_variables:
 
 # Build configuration - uses Vite build
 build_env_variables:
-  VITE_API_URL: "https://totemic-bonus-479312-c6.ew.r.appspot.com"
-  VITE_WS_URL: "wss://totemic-bonus-479312-c6.ew.r.appspot.com"
+  VITE_API_URL: "https://bezhas-backend-o5xep6gbwq-uc.a.run.app"
+  VITE_WS_URL: "wss://bezhas-backend-o5xep6gbwq-uc.a.run.app"
   VITE_CHAIN_ID: "137"
   VITE_NETWORK: "polygon"
 

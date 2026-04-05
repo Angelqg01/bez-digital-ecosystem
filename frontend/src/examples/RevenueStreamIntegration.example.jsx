@@ -7,6 +7,7 @@
 
 import React from 'react';
 import SwapWithAI from '../components/payments/SwapWithAI';
+import http from '../services/http';
 
 // ============================================================================
 // Example 1: Simple Integration - Liquidity Ramp Page
@@ -80,18 +81,14 @@ export function NFTPurchasePage({ nftId, nftPrice }) {
 
         try {
             // Call backend to mint NFT
-            const response = await fetch('/api/nft/mint', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    nftId,
-                    txHash: data.txHash,
-                    amountPaid: data.netAmount  // Net amount after platform fee
-                })
+            const response = await http.post('/api/nft/mint', {
+                nftId,
+                txHash: data.txHash,
+                amountPaid: data.netAmount  // Net amount after platform fee
             });
 
-            if (response.ok) {
-                const { tokenId } = await response.json();
+            if (response.status === 200 || response.status === 201) {
+                const { tokenId } = response.data;
                 toast.success(`NFT #${tokenId} purchased successfully!`);
 
                 // Redirect to NFT details
@@ -130,17 +127,13 @@ export function PremiumSubscriptionPage({ plan }) {
 
         try {
             // Activate premium subscription
-            const response = await fetch('/api/user/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    plan: plan.id,
-                    txHash: data.txHash,
-                    amountPaid: data.netAmount
-                })
+            const response = await http.post('/api/user/subscribe', {
+                plan: plan.id,
+                txHash: data.txHash,
+                amountPaid: data.netAmount
             });
 
-            if (response.ok) {
+            if (response.status === 200 || response.status === 201) {
                 toast.success(`${plan.name} activated! Enjoy your benefits.`);
 
                 // Reload user profile

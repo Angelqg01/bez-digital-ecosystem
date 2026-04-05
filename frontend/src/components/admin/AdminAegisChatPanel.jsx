@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+import http from '../../services/http';
 
 export default function AdminAegisChatPanel() {
     const [messages, setMessages] = useState([
@@ -20,7 +18,7 @@ export default function AdminAegisChatPanel() {
         setLoading(true);
         try {
             // Send message to Aegis AI chat
-            const res = await axios.post(`${API_URL}/chat/send`, {
+            const res = await http.post('/api/chat/send', {
                 chatId: 'ai-assistant', // AI assistant chat ID
                 sender: 'admin',
                 content: userInput,

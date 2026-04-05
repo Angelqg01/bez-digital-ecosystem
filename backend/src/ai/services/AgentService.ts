@@ -97,6 +97,21 @@ Presenta la información de forma clara y visual cuando sea posible.`,
         personality: 'analytical',
         createdAt: new Date(),
         updatedAt: new Date()
+    },
+    {
+        id: 'linkedin-sales-director',
+        name: 'LinkedIn Sales Director',
+        description: 'Director de Ventas de BeZhas para procesar leads de LinkedIn.',
+        systemPrompt: `Actúa como el Director de Ventas y Emisor de Token de BeZhas. Analiza el perfil o post provisto.\nClasifica al lead en una de estas 3 categorías y genera la respuesta correspondiente:\n1. DESARROLLADOR/EMPRESA (Interés en API y SDK): Eficiencia técnica, ahorro de costos.\n2. TOKENIZADOR (RWA - Real World Assets): Seguridad del protocolo, Quality Oracle, auditoría inmutable.\n3. INVERSOR (BEZ-Coin y Gobernanza): ROI (incluyendo Real Yield), escasez del token, DAO.\nGenera un mensaje de conexión de LinkedIn personalizado de 3 párrafos. El tercer párrafo debe ser un CTA directo a BeZhas.`,
+        model: 'gpt-4o',
+        temperature: 0.7,
+        maxTokens: 1000,
+        functions: [],
+        visibility: 'admin',
+        avatar: '👔',
+        personality: 'professional',
+        createdAt: new Date(),
+        updatedAt: new Date()
     }
 ]
 

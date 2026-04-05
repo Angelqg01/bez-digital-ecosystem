@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Key as KeyIcon, Plus as PlusIcon, Check as CheckIcon, Copy as CopyIcon, Settings as SettingsIcon, RefreshCw as RefreshCwIcon, Trash2 as Trash2Icon, AlertCircle as AlertCircleIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useAccount, useSignMessage } from 'wagmi';
 
 // Sector → Required permissions auto-fill map
 const SECTOR_PERMISSIONS_MAP = {
@@ -143,6 +144,10 @@ export const ApiKeyCard = ({ apiKey, onDelete, onRotate, onViewDetails }) => {
 
 // Modal de Creación de API Key
 export const CreateKeyModal = ({ onClose, onCreate, permissionModules }) => {
+    const { address, isConnected } = useAccount();
+    const { signMessageAsync } = useSignMessage();
+    const [isSigning, setIsSigning] = useState(false);
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -162,7 +167,7 @@ export const CreateKeyModal = ({ onClose, onCreate, permissionModules }) => {
         toast.success(`Permisos auto-configurados para ${newSector}`);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name) {
             toast.error('El nombre es requerido');
@@ -172,7 +177,30 @@ export const CreateKeyModal = ({ onClose, onCreate, permissionModules }) => {
             toast.error('Selecciona al menos un permiso');
             return;
         }
-        onCreate(formData);
+        if (!isConnected || !address) {
+            toast.error('Por favor, conecta tu wallet primero antes de crear una API Key.');
+            return;
+        }
+
+        try {
+            setIsSigning(true);
+            const signatureData = `BeZhas Developer Console - Authorize API Key Creation for App: ${formData.name}\nTimestamp: ${Date.now()}\nEnvironment: ${formData.environment}`;
+            const signature = await signMessageAsync({ message: signatureData });
+
+            // Adjuntar dirección y firma para validación en el Backend (si lo soporta)
+            const finalData = {
+                ...formData,
+                developerWallet: address,
+                signature
+            };
+
+            onCreate(finalData);
+        } catch (error) {
+            console.error(error);
+            toast.error('Firma rechazada. Debes firmar el mensaje para emitir la clave.');
+        } finally {
+            setIsSigning(false);
+        }
     };
 
     const togglePermission = (permission) => {
@@ -188,8 +216,14 @@ export const CreateKeyModal = ({ onClose, onCreate, permissionModules }) => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Crear Nueva API Key
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex justify-between items-center">
+                        <span>Crear Nueva API Key</span>
+                        {address && (
+                            <span className="text-sm font-normal bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                Conectado: {address.substring(0, 6)}...{address.substring(38)}
+                            </span>
+                        )}
                     </h2>
                 </div>
 
@@ -318,9 +352,11 @@ export const CreateKeyModal = ({ onClose, onCreate, permissionModules }) => {
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                            disabled={isSigning}
+                            className={`px-6 py-2 rounded-lg font-semibold transition-colors ${isSigning ? 'bg-purple-400 text-white cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700'
+                                }`}
                         >
-                            Crear API Key
+                            {isSigning ? 'Firmando Autorización...' : 'Firmar y Crear API Key'}
                         </button>
                     </div>
                 </form>

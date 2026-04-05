@@ -1,21 +1,33 @@
 # BeZhas Web3 Enterprise
 
-> **Documentation**: See `documentation/01_PROJECT_OVERVIEW.md`
+> **AI & MCP Context**: [docs/AI_MANIFESTO.md](docs/AI_MANIFESTO.md)
+> **Quick Start for Developers**: [START_HERE.md](START_HERE.md)
 
 ## 🚀 Overview
 BeZhas is a Web3 Social Network integrating **AI Agents**, **DAO Governance**, **DeFi Farming**, **NFT Marketplace**, and **Quality Oracle** validation.
 
-## 📂 Documentation Structure
-All documentation has been unified in the `/documentation` folder:
+## 📂 Project Structure
 
-- **[01_PROJECT_OVERVIEW.md](documentation/01_PROJECT_OVERVIEW.md)**: Start here.
-- **[02_BLOCKCHAIN_GUIDE.md](documentation/02_BLOCKCHAIN_GUIDE.md)**: Contracts, DAO, Networks.
-- **[03_FEATURES_MANUAL.md](documentation/03_FEATURES_MANUAL.md)**: AI, Feed, Market Features.
-- **[04_TECHNICAL_REFERENCE.md](documentation/04_TECHNICAL_REFERENCE.md)**: API, Schema, Testing.
-- **[05_ADMIN_OPERATIONS.md](documentation/05_ADMIN_OPERATIONS.md)**: Admin Panel & DevOps.
-- **[06_TROUBLESHOOTING.md](documentation/06_TROUBLESHOOTING.md)**: Help & Fixes.
+- **`frontend/`**: Web application (React/Vite).
+- **`backend/`**: Express API and core services.
+- **`sdk/`**: Unified BeZhas SDK for developers.
+- **`docs/`**: Organized documentation including:
+    - **[Core Overview](docs/01_PROJECT_OVERVIEW.md)**
+    - **[AI Manifesto](docs/AI_MANIFESTO.md)**
+    - **[System Architecture](docs/system/)**
+    - **[Guides & Setup](docs/guides/)**
+    - **[Historical Reports](docs/reports/)**
+- **`scripts/`**: Development and deployment utilities.
+- **`packages/mcp-server`**: Model Context Protocol integration for AI agents.
 
-## ⚡ Quick Start
+## ⚡ Essential Commands
 ```powershell
-./quick-start.ps1
+# Diagnostics
+scripts\check.ps1
+
+# Full Local Startup
+scripts\quick-start.ps1
 ```
+
+## 🌐 Deployment
+This platform is optimized for **Google Cloud Platform**. See [GCP Deployment Guide](docs/guides/GCP_DEPLOYMENT_GUIDE.md) for details.

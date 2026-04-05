@@ -284,6 +284,61 @@ router.post('/:userId/ban', requireAuth, requireAdmin, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/admin/users/:userId/password
+ * @desc    Change user password (Admin override)
+ * @access  Admin only
+ */
+router.post('/:userId/password', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { password } = req.body;
+
+        if (!password || password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                error: 'La contraseña debe tener al menos 6 caracteres'
+            });
+        }
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'Usuario no encontrado'
+            });
+        }
+
+        // 🔒 PROTECTION: Prevent changing password for Super Admins
+        if (isSuperAdmin(user.walletAddress)) {
+            return res.status(403).json({
+                success: false,
+                error: 'No se puede cambiar la contraseña de un Super Admin'
+            });
+        }
+
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+        user.updatedAt = new Date().toISOString();
+        
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Contraseña actualizada exitosamente'
+        });
+    } catch (error) {
+        console.error('Error changing user password:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error actualizando contraseña',
+            message: error.message
+        });
+    }
+});
+
+/**
  * @route   POST /api/admin/users/:userId/verify
  * @desc    Verify/unverify user
  * @access  Admin only

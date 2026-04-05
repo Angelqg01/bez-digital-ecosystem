@@ -67,7 +67,9 @@ Dockerfile
 *.ps1
 *.bat
 *.sh
-scripts/
+scripts/*
+!scripts/test-ai-acquisition-flow.js
+!scripts/test-webhook.js
 
 # Miscellaneous
 *.zip

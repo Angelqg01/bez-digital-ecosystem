@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Menu, X, PlusCircle, Coins, RefreshCw } from 'lucide-react';
+import { Menu, X, PlusCircle, Coins, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { sidebarNavItems, getCategorizedItems } from '../config/sidebarConfig';
 import { useBezCoin } from '../context/BezCoinContext';
 import { useAccount } from 'wagmi';
@@ -10,7 +10,7 @@ import { BezhasTokenAddress, BezhasTokenABI } from '../contract-config';
 export default function SidebarDrawer({ open, setOpen }) {
     const [collapsed, setCollapsed] = useState(false);
     const categorizedItems = getCategorizedItems(sidebarNavItems);
-    const { setShowBuyModal, balance: contextBalance } = useBezCoin();
+    const { setShowBuyModal, balance: contextBalance, balanceVisible, toggleBalanceVisibility } = useBezCoin();
     const { address, isConnected } = useAccount();
     const [bezBalance, setBezBalance] = useState('0');
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -173,11 +173,32 @@ export default function SidebarDrawer({ open, setOpen }) {
                                         <RefreshCw size={14} className={`text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
                                     </button>
                                 )}
+                                {/* Toggle de visibilidad (solo visible cuando está expandido) */}
+                                {!collapsed && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleBalanceVisibility();
+                                        }}
+                                        className="p-1 hover:bg-cyan-500/20 rounded-full transition-colors ml-2"
+                                        title={balanceVisible ? "Ocultar balance" : "Mostrar balance"}
+                                    >
+                                        {balanceVisible ? (
+                                            <Eye size={16} className="text-cyan-600 dark:text-cyan-400 opacity-80 hover:opacity-100" />
+                                        ) : (
+                                            <EyeOff size={16} className="text-cyan-600 dark:text-cyan-400 opacity-80 hover:opacity-100" />
+                                        )}
+                                    </button>
+                                )}
                             </div>
                             <p className={`font-bold text-cyan-600 dark:text-cyan-400 ${collapsed ? 'text-sm mt-1' : 'text-lg mt-1'}`}>
-                                {bezBalance} <span className="text-xs font-normal opacity-75">BEZ</span>
+                                {balanceVisible ? (
+                                    <>{bezBalance} <span className="text-xs font-normal opacity-75">BEZ</span></>
+                                ) : (
+                                    <span className="tracking-widest">••••••</span>
+                                )}
                             </p>
-                            {!collapsed && parseFloat(bezBalance) < 10 && (
+                            {!collapsed && balanceVisible && parseFloat(bezBalance) < 10 && (
                                 <p className="text-xs text-orange-500 dark:text-orange-400 mt-1 flex items-center gap-1">
                                     ⚠️ Balance bajo - ¡Compra más BEZ!
                                 </p>

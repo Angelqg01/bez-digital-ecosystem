@@ -38,8 +38,63 @@ import {
     DollarSign,
     Lock
 } from 'lucide-react';
-import { useAccount } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseUnits, keccak256, toBytes } from 'viem';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+
+const BEZ_PRICE_EUR = 0.50;
+const ORACLE_FEE_EUR = 0.05;
+const ORACLE_FEE_BEZ = (ORACLE_FEE_EUR / BEZ_PRICE_EUR).toFixed(2); // ~0.10 BEZ
+
+// ── Smart Contract Addresses (Polygon Mainnet) ───────────────────────────────
+const BEZ_TOKEN = '0x89c23890c742d710265dd61be789c71dc8999b12';
+// QualityOracle.sol — dirección pendiente de deploy en Polygon. 
+// Actualizar cuando se despliegue con el script de deploy.
+const QUALITY_ORACLE_ADDRESS = import.meta.env.VITE_QUALITY_ORACLE_ADDRESS || '0x0000000000000000000000000000000000000000';
+
+// ABIs mínimos necesarios
+const ERC20_APPROVE_ABI = [
+    {
+        name: 'approve', type: 'function', stateMutability: 'nonpayable',
+        inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
+        outputs: [{ name: '', type: 'bool' }]
+    }
+];
+
+const QUALITY_ORACLE_ABI = [
+    {
+        name: 'requestValidation', type: 'function', stateMutability: 'nonpayable',
+        inputs: [
+            { name: '_entityType', type: 'uint8' },   // EntityType enum
+            { name: '_entityHash', type: 'bytes32' },
+            { name: '_metadataURI', type: 'string' }
+        ],
+        outputs: [{ name: '', type: 'uint256' }]
+    }
+];
+
+// Map frontend sector IDs to QualityOracle EntityType enum values
+const SECTOR_TO_ENTITY_TYPE = {
+    marketplace: 0,   // PRODUCT
+    logistics: 4,     // LOGISTICS
+    payments: 8,      // TRANSACTION
+    ai_moderation: 6, // POST
+    nft_rwa: 2,       // NFT
+    healthcare: 1,    // SERVICE
+    manufacturing: 1, // SERVICE
+    automotive: 3,    // RWA
+    energy: 3,        // RWA
+    agriculture: 0,   // PRODUCT
+    education: 1,     // SERVICE
+    insurance: 1,     // SERVICE
+    legal: 1,         // SERVICE
+    film: 2,          // NFT
+    maritime: 4,      // LOGISTICS
+    real_estate: 3,   // RWA
+    sustainability: 3, // RWA
+    consumer: 0,      // PRODUCT
+};
 
 // ========== SECTOR DEFINITIONS ==========
 const ORACLE_SECTORS = {
@@ -396,8 +451,12 @@ const ValidationItem = ({ item, onVote, sector }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5 border border-gray-200 dark:border-gray-600"
+            className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5 border border-gray-200 dark:border-gray-600 relative overflow-hidden"
         >
+            {/* Indicador de Costo por Voto */}
+            <div className="absolute top-0 right-0 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-bl-lg text-xs font-semibold flex items-center gap-1 border-l border-b border-indigo-200 dark:border-indigo-800">
+                <BrainCircuit className="w-3 h-3" /> Costo de Oráculo: {ORACLE_FEE_BEZ} BEZ (~€{ORACLE_FEE_EUR})
+            </div>
             {/* Header */}
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -496,9 +555,17 @@ const ValidationItem = ({ item, onVote, sector }) => {
 // ========== MAIN ORACLE PAGE COMPONENT ==========
 const OraclePage = () => {
     const { address, isConnected } = useAccount();
+
+    // ── On-chain: Approve BEZ spend ──────────────────────────────────────────
+    const { writeContractAsync: approveAsync } = useWriteContract();
+    const { writeContractAsync: validateAsync, data: validateTxHash } = useWriteContract();
+    const { isSuccess: isValidateSuccess } = useWaitForTransactionReceipt({ hash: validateTxHash });
+
     const [activeSector, setActiveSector] = useState('marketplace');
     const [validationQueues, setValidationQueues] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [isProcessingTx, setIsProcessingTx] = useState(false);
+    const [pendingVoteItem, setPendingVoteItem] = useState(null);
     const [stats, setStats] = useState({
         totalValidations: 1245,
         accuracy: 96.2,
@@ -516,22 +583,86 @@ const OraclePage = () => {
         setValidationQueues(initialQueues);
     }, []);
 
-    const handleVote = useCallback((itemId, vote) => {
-        // Simular llamada al smart contract
-        console.log(`[Oracle] Voted ${vote} on ${itemId}`);
+    /**
+     * handleVote — On-chain oracle validation
+     * 
+     * Flow:
+     *   1. Approve QualityOracle to spend ORACLE_FEE_BEZ BEZ tokens
+     *   2. Call QualityOracle.requestValidation() which transfers the fee
+     *
+     * The "vote" (approve/reject/flag) maps to a human-readable metadataURI
+     * stored off-chain. The on-chain action simply registers the fee payment.
+     */
+    const handleVote = useCallback(async (itemId, vote) => {
+        if (!isConnected || !address) {
+            toast.error('Wallet no conectada');
+            return;
+        }
 
-        setValidationQueues(prev => ({
-            ...prev,
-            [activeSector]: prev[activeSector].filter(item => item.id !== itemId)
-        }));
+        const oracleAddress = QUALITY_ORACLE_ADDRESS;
+        const isContractDeployed = oracleAddress !== '0x0000000000000000000000000000000000000000';
+        const feeAmount = parseUnits(ORACLE_FEE_BEZ, 18);
+        const entityType = SECTOR_TO_ENTITY_TYPE[activeSector] ?? 0;
+        const entityHash = keccak256(toBytes(`${activeSector}:${itemId}:${Date.now()}`));
+        const metadataURI = `bezhas://oracle/${activeSector}/${itemId}/${vote}`;
 
-        // Actualizar stats
-        setStats(prev => ({
-            ...prev,
-            totalValidations: prev.totalValidations + 1,
-            pendingRewards: prev.pendingRewards + (vote === 'approve' ? 5 : vote === 'reject' ? 3 : 2)
-        }));
-    }, [activeSector]);
+        try {
+            setIsProcessingTx(true);
+            setPendingVoteItem({ itemId, vote });
+
+            if (isContractDeployed) {
+                // ── PASO 1: Approve ───────────────────────────────
+                toast.loading('Aprobando gasto de BEZ...', { id: 'oracle-approve' });
+                await approveAsync({
+                    address: BEZ_TOKEN,
+                    abi: ERC20_APPROVE_ABI,
+                    functionName: 'approve',
+                    args: [oracleAddress, feeAmount],
+                    chainId: 137,
+                });
+                toast.dismiss('oracle-approve');
+
+                // ── PASO 2: requestValidation ────────────────────────
+                toast.loading('Registrando voto on-chain...', { id: 'oracle-validate' });
+                await validateAsync({
+                    address: oracleAddress,
+                    abi: QUALITY_ORACLE_ABI,
+                    functionName: 'requestValidation',
+                    args: [entityType, entityHash, metadataURI],
+                    chainId: 137,
+                });
+                toast.dismiss('oracle-validate');
+            } else {
+                // Contrato no desplegado aún — simulación con log
+                toast.loading('Registrando voto (modo simulación)...', { id: 'oracle-sim' });
+                await new Promise(r => setTimeout(r, 800));
+                toast.dismiss('oracle-sim');
+                console.warn('[Oracle] QUALITY_ORACLE_ADDRESS no configurado. Usando simulación.');
+            }
+
+            toast.success(`Voto "${vote}" registrado. Oracle fee: ${ORACLE_FEE_BEZ} BEZ`);
+            setValidationQueues(prev => ({
+                ...prev,
+                [activeSector]: prev[activeSector].filter(item => item.id !== itemId)
+            }));
+
+            const reward = vote === 'approve' ? 5 : vote === 'reject' ? 3 : 2;
+            setStats(prev => ({
+                ...prev,
+                totalValidations: prev.totalValidations + 1,
+                pendingRewards: prev.pendingRewards + reward - parseFloat(ORACLE_FEE_BEZ)
+            }));
+        } catch (error) {
+            console.error('Error en oracle vote:', error);
+            toast.dismiss('oracle-approve');
+            toast.dismiss('oracle-validate');
+            toast.dismiss('oracle-sim');
+            toast.error('Transacción rechazada o error de red.');
+        } finally {
+            setIsProcessingTx(false);
+            setPendingVoteItem(null);
+        }
+    }, [isConnected, address, activeSector, approveAsync, validateAsync]);
 
     const handleRefresh = useCallback(() => {
         setIsLoading(true);
@@ -783,14 +914,29 @@ const OraclePage = () => {
                             </li>
                             <li className="flex gap-2">
                                 <Wallet className="w-4 h-4 shrink-0 mt-0.5" />
-                                <span>Rewards: Aprobar 5 BEZ, Rechazar 3 BEZ, Escalar 2 BEZ</span>
+                                <span>Costo de Operación: <strong>{ORACLE_FEE_BEZ} BEZ (~€{ORACLE_FEE_EUR})</strong> por validar.</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <Award className="w-4 h-4 shrink-0 mt-0.5" />
+                                <span>Rewards Promedio: 2 - 5 BEZ (Rentable al final)</span>
                             </li>
                             <li className="flex gap-2">
                                 <Lock className="w-4 h-4 shrink-0 mt-0.5" />
-                                <span>Votos maliciosos reducen tu stake</span>
+                                <span>Votos maliciosos reducen tu stake general</span>
                             </li>
                         </ul>
                     </div>
+
+                    {/* Loader superpuesto cuando se interactúa */}
+                    {isProcessingTx && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white">
+                            <div className="w-16 h-16 border-4 border-t-transparent border-indigo-400 rounded-full animate-spin mb-4"></div>
+                            <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-purple-300">
+                                Emitiendo Voto en el Blockchain...
+                            </h2>
+                            <p className="mt-2 text-indigo-200">Por favor confirma el pago de {ORACLE_FEE_BEZ} BEZ en tu wallet.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -1,5 +1,5 @@
 // wagmi 3.x configuration
-import { http, createConfig, createStorage } from 'wagmi';
+import { http, createConfig, createStorage, fallback } from 'wagmi';
 import { mainnet, sepolia, polygon } from 'wagmi/chains';
 import { walletConnect, injected, coinbaseWallet } from 'wagmi/connectors';
 
@@ -75,11 +75,11 @@ export const config = createConfig({
       retryCount: 2,
       retryDelay: 1000,
     }),
-    [polygon.id]: http('https://polygon-bor-rpc.publicnode.com', {
-      timeout: 15_000,
-      retryCount: 2,
-      retryDelay: 1000,
-    }),
+    [polygon.id]: fallback([
+      http('https://polygon-bor-rpc.publicnode.com', { timeout: 15_000 }),
+      http('https://rpc.ankr.com/polygon', { timeout: 15_000 }),
+      http('https://polygon-rpc.com', { timeout: 15_000 })
+    ]),
     [polygonAmoy.id]: http('https://rpc-amoy.polygon.technology', {
       timeout: 10_000,
       retryCount: 1,

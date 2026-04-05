@@ -5,7 +5,7 @@
  */
 
 const { ethers } = require('ethers');
-const FarmingSDK = require('../../sdk/farming');
+const FarmingSDK = require('@bezhas/sdk/farming');
 const web3Service = require('./web3.service');
 const settingsHelper = require('../utils/settingsHelper');
 

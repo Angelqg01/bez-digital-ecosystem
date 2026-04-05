@@ -53,6 +53,8 @@ const UserSchema = new mongoose.Schema({
 
     // Contact Info
     phone: { type: String, trim: true },
+    phoneHash: { type: String, index: true }, // Local hash of phone for privacy-first friend matching
+    emailHash: { type: String, index: true }, // Local hash of email for privacy-first friend matching
     address: {
         street: String,
         city: String,
@@ -61,20 +63,29 @@ const UserSchema = new mongoose.Schema({
         country: String
     },
 
+    // Wallet linking metadata
+    walletLinkedAt: { type: Date, default: null }, // Set when email user links a wallet via link-wallet endpoint
+
     // System & Verification
     roles: {
         type: [String],
         default: ['USER'],
-        enum: ['USER', 'ADMIN', 'DEVELOPER', 'VERIFIED_BUSINESS']
+        enum: ['USER', 'ADMIN', 'DEVELOPER', 'VERIFIED_BUSINESS', 'HUMAN_RESOURCES']
     },
     isEmailVerified: { type: Boolean, default: false },
     isWalletVerified: { type: Boolean, default: false },
+
+    // 2FA Security
+    is2FAEnabled: { type: Boolean, default: false },
+    twoFactorSecret: { type: String, select: false },
+    backupCodes: [{ type: String, select: false }],
 
     // External Auth Providers
     googleId: { type: String, unique: true, sparse: true },
     facebookId: { type: String, unique: true, sparse: true },
     githubId: { type: String, unique: true, sparse: true },
     twitterId: { type: String, unique: true, sparse: true },
+    linkedinId: { type: String, unique: true, sparse: true },
 
     // Affiliate System
     affiliate: {
@@ -85,6 +96,7 @@ const UserSchema = new mongoose.Schema({
     },
 
     // Legacy/Compatibility Fields (to match previous mock structure if needed)
+    isVIP: { type: Boolean, default: false },
     subscription: { type: String, default: 'FREE' },
     vipTier: { type: String, enum: ['bronze', 'silver', 'gold', 'platinum', null], default: null },
     contactSync: {

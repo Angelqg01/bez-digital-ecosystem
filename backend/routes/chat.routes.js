@@ -8,6 +8,13 @@ const {
     resetUserCounter
 } = require('../chat/chatGatekeeper');
 
+// ─── RAG + MCP Context Services ────────────────────────────────────────────────
+const ragService = require('../services/rag.service');
+const mcpContext = require('../services/mcp-context.service');
+
+// Initialize RAG on module load (non-blocking)
+ragService.initialize().catch(err => console.warn('⚠️ RAG init deferred:', err.message));
+
 // Auth middleware is optional for chat routes
 let protect = null;
 let groqService = null;
@@ -206,14 +213,80 @@ const simpleAIResponses = {
     ]
 };
 
-// Get AI response
+// Get AI response — Enhanced with RAG + MCP blockchain context
 const getAIResponse = async (message, userContext = {}) => {
     const messageLower = message.toLowerCase();
 
-    // Check for keywords
-    if (messageLower.match(/hola|hi|hello|hey/)) {
+    // Check for simple keyword matches (fast path for greetings)
+    if (messageLower.match(/^(hola|hi|hello|hey)$/)) {
         return simpleAIResponses.greeting[Math.floor(Math.random() * simpleAIResponses.greeting.length)];
     }
+
+    // ─── RAG + MCP CONTEXT RETRIEVAL ───────────────────────────────────────
+    let ragContext = '';
+    let blockchainContext = '';
+
+    try {
+        // Fetch RAG context from ChromaDB (parallel with MCP)
+        const [ragResult, mcpResult] = await Promise.allSettled([
+            ragService.retrieveContext(message, { nResults: 3 }),
+            mcpContext.getFullBlockchainContext(),
+        ]);
+
+        if (ragResult.status === 'fulfilled' && ragResult.value.context) {
+            ragContext = ragResult.value.context;
+        }
+        if (mcpResult.status === 'fulfilled' && mcpResult.value) {
+            blockchainContext = mcpResult.value;
+        }
+    } catch (ctxErr) {
+        console.warn('⚠️ Context retrieval error:', ctxErr.message);
+    }
+    // ───────────────────────────────────────────────────────────────────────
+
+    // Build enhanced system prompt with RAG + MCP data
+    const systemPrompt = `Eres el asistente virtual de BeZhas, una plataforma Web3 de redes sociales y marketplace en Polygon.
+Eres amigable, útil y experto en blockchain, NFTs, staking, pagos crypto y la plataforma BeZhas.
+Responde en español de manera concisa y clara.
+El token BEZ está en: 0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8 (Polygon Mainnet).
+${blockchainContext}${ragContext}
+Si el usuario pregunta sobre datos que aparecen en el contexto, úsalos para responder con información actualizada.
+Si no tienes datos específicos, indica que pueden consultar la plataforma para información en tiempo real.`;
+
+    // Try OpenAI if available
+    if (openai) {
+        try {
+            const completion = await openai.chat.completions.create({
+                model: 'gpt-3.5-turbo',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: message }
+                ],
+                max_tokens: 500,
+                temperature: 0.7,
+            });
+            return completion.choices[0].message.content;
+        } catch (error) {
+            console.error('OpenAI error:', error.message);
+        }
+    }
+
+    // Try Gemini if available
+    try {
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (apiKey && apiKey.startsWith('AIza') && apiKey.length > 30) {
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+            const result = await model.generateContent(`${systemPrompt}\n\nUsuario: ${message}`);
+            const response = await result.response;
+            return response.text();
+        }
+    } catch (geminiErr) {
+        console.warn('Gemini fallback error:', geminiErr.message);
+    }
+
+    // Keyword-based fallback
     if (messageLower.match(/ayuda|help|ayudar/)) {
         return simpleAIResponses.help[Math.floor(Math.random() * simpleAIResponses.help.length)];
     }
@@ -226,38 +299,10 @@ const getAIResponse = async (message, userContext = {}) => {
     if (messageLower.match(/nft|token|coleccion/)) {
         return simpleAIResponses.nft[Math.floor(Math.random() * simpleAIResponses.nft.length)];
     }
-    if (messageLower.match(/soporte|support|ayuda|problema/)) {
+    if (messageLower.match(/soporte|support|problema/)) {
         return simpleAIResponses.support[Math.floor(Math.random() * simpleAIResponses.support.length)];
     }
 
-    // Try OpenAI if available
-    if (openai) {
-        try {
-            const completion = await openai.chat.completions.create({
-                model: "gpt-3.5-turbo",
-                messages: [
-                    {
-                        role: "system",
-                        content: `Eres el asistente virtual de BeZhas, una plataforma Web3 de redes sociales y marketplace. 
-                        Eres amigable, útil y conocedor de blockchain, NFTs, staking y la plataforma BeZhas.
-                        Responde en español de manera concisa y clara.`
-                    },
-                    {
-                        role: "user",
-                        content: message
-                    }
-                ],
-                max_tokens: 300,
-                temperature: 0.7
-            });
-
-            return completion.choices[0].message.content;
-        } catch (error) {
-            console.error('OpenAI error:', error);
-        }
-    }
-
-    // Default response
     return simpleAIResponses.default[Math.floor(Math.random() * simpleAIResponses.default.length)];
 };
 

@@ -1,13 +1,13 @@
 /**
  * UnifiedBuyBezButton.jsx
  * 
- * Botón reutilizable para "Comprar BEZ" en toda la plataforma
- * Abre el UnifiedPaymentModal al hacer clic
+ * Botón reutilizable para "Comprar BEZ" en toda la plataforma.
+ * Ahora usa useBezPay() hooks en lugar del UnifiedPaymentModal independiente.
+ * El BezPayModal está registrado globalmente en App.jsx vía BezPayProvider.
  */
 
-import { useState } from 'react';
 import { Shield, ShoppingBag } from 'lucide-react';
-import UnifiedPaymentModal from './UnifiedPaymentModal';
+import { useBezPay } from '../context/BezPayContext';
 
 export default function UnifiedBuyBezButton({
     variant = 'primary', // 'primary' | 'secondary' | 'icon' | 'text'
@@ -17,11 +17,14 @@ export default function UnifiedBuyBezButton({
     amount, // Opcional: monto predefinido en USDC
     onSuccess
 }) {
-    const [modalOpen, setModalOpen] = useState(false);
+    const { openBuyBez } = useBezPay();
 
-    const handleSuccess = (result) => {
-        setModalOpen(false);
-        onSuccess?.(result);
+    const handleClick = () => {
+        openBuyBez(amount || null, {
+            onSuccess: (result) => {
+                onSuccess?.(result);
+            }
+        });
     };
 
     // Estilos por variante
@@ -40,36 +43,25 @@ export default function UnifiedBuyBezButton({
     };
 
     return (
-        <>
-            <button
-                onClick={() => setModalOpen(true)}
-                className={`
-                    ${variantStyles[variant]}
-                    ${sizeStyles[size]}
-                    rounded-xl font-semibold transition-all 
-                    flex items-center justify-center gap-2
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    ${className}
-                `}
-            >
-                {variant === 'icon' ? (
-                    <Shield size={size === 'sm' ? 16 : size === 'lg' ? 24 : 20} />
-                ) : (
-                    <>
-                        <ShoppingBag size={size === 'sm' ? 16 : size === 'lg' ? 24 : 20} />
-                        {children || 'Comprar BEZ'}
-                    </>
-                )}
-            </button>
-
-            <UnifiedPaymentModal
-                isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
-                type="purchase"
-                amount={amount}
-                itemName="BEZ Tokens"
-                onSuccess={handleSuccess}
-            />
-        </>
+        <button
+            onClick={handleClick}
+            className={`
+                ${variantStyles[variant]}
+                ${sizeStyles[size]}
+                rounded-xl font-semibold transition-all 
+                flex items-center justify-center gap-2
+                disabled:opacity-50 disabled:cursor-not-allowed
+                ${className}
+            `}
+        >
+            {variant === 'icon' ? (
+                <Shield size={size === 'sm' ? 16 : size === 'lg' ? 24 : 20} />
+            ) : (
+                <>
+                    <ShoppingBag size={size === 'sm' ? 16 : size === 'lg' ? 24 : 20} />
+                    {children || 'Comprar BEZ'}
+                </>
+            )}
+        </button>
     );
 }

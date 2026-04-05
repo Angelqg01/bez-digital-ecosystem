@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+import http from '../../services/http';
 
 const ACTIONS = [
     { key: 'restart_worker', label: 'Reiniciar Worker' },

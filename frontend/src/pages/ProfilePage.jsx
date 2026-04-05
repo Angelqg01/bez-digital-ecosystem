@@ -10,7 +10,7 @@ import {
     Wallet, ExternalLink, TrendingUp, Send, ArrowDownToLine,
     LayoutDashboard, CreditCard, History, Settings as SettingsIcon,
     BarChart3, Users, MessageSquare, TrendingUp as TrendingUpIcon, RefreshCw,
-    Shield, Bell, Save, AlertCircle, Grid, ShoppingBag, Gift, MessageCircle
+    Shield, Bell, Save, AlertCircle, Grid, ShoppingBag, Gift, MessageCircle, Eye, EyeOff
 } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { toast } from 'react-hot-toast';
@@ -41,7 +41,7 @@ const ProfilePage = () => {
     const { disconnect } = useDisconnect();
     const { data: ethBalance, isLoading: ethBalanceLoading } = useBalance({ address });
     const { profile: web3Profile, fetchUserData, userProfile: userProfileContract, bezhasToken } = useWeb3();
-    const { setShowBuyModal } = useBezCoin();
+    const { setShowBuyModal, balanceVisible, toggleBalanceVisibility } = useBezCoin();
     const { tokenBalance, userProfile: storeUserProfile } = useUserStore();
 
     // Tab state
@@ -432,13 +432,29 @@ const ProfilePage = () => {
                                 <div className="bg-gray-900/50 rounded-lg p-4 group relative overflow-hidden border border-cyan-500/30">
                                     <div className="relative z-10 flex justify-between items-start">
                                         <div>
-                                            <p className="text-sm text-cyan-400 flex items-center gap-1">
-                                                💰 Mi Balance BEZ
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm text-cyan-400 flex items-center gap-1">
+                                                    💰 Mi Balance BEZ
+                                                </p>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleBalanceVisibility();
+                                                    }}
+                                                    className="text-cyan-400 hover:text-white transition-colors"
+                                                    title={balanceVisible ? "Ocultar balance" : "Mostrar balance"}
+                                                >
+                                                    {balanceVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                                                </button>
+                                            </div>
+                                            <p className="text-2xl font-bold text-white mt-1">
+                                                {balanceVisible ? (
+                                                    parseFloat(tokenBalance || bzhBalance || 0).toFixed(2)
+                                                ) : (
+                                                    <span className="tracking-widest">••••••</span>
+                                                )}
                                             </p>
-                                            <p className="text-2xl font-bold text-white">
-                                                {parseFloat(tokenBalance || bzhBalance || 0).toFixed(2)}
-                                            </p>
-                                            {parseFloat(tokenBalance || bzhBalance || 0) < 10 && (
+                                            {balanceVisible && parseFloat(tokenBalance || bzhBalance || 0) < 10 && (
                                                 <p className="text-xs text-orange-400 mt-1">⚠️ Balance bajo</p>
                                             )}
                                         </div>

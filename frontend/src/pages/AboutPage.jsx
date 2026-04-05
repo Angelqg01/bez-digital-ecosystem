@@ -494,6 +494,32 @@ const AboutPage = () => {
           </div>
         </AccordionSection>
 
+        {/* ==================== SINCRONIZACION DE CONTACTOS Y RECOMPENSAS ==================== */}
+        <AccordionSection id="contact-sync" title="Sincronización de Contactos y Recompensas" icon={Users}>
+          <div className="space-y-4">
+            <div className="bg-dark-surface/20 dark:bg-light-surface/10 rounded-xl p-4">
+              <h3 className="font-bold text-white/90 mb-2 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-green-400" />
+                Privacidad en la Sincronización (Hash Local)
+              </h3>
+              <p className="text-sm leading-relaxed text-gray-300">
+                La sincronización de contactos utiliza un enfoque <strong>"Privacy-First"</strong>. Esto significa que los números de teléfono o correos electrónicos de tus amigos y clientes (Web o Móvil) <strong>nunca se transmiten a nuestros servidores en texto claro</strong>. Toda la información de contactos se encripta de forma segura a través de algoritmos matemáticos irreversibles (SHA-256) localmente en tu dispositivo antes de enviarla. Nosotros sólo procesamos y almacenamos los identificadores criptográficos.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-4 mt-4">
+              <h3 className="font-bold text-cyan-400/90 mb-2 flex items-center gap-2">
+                <Award className="w-5 h-5" />
+                Recompensa de 50 BEZ-Coins
+              </h3>
+              <p className="text-sm leading-relaxed text-gray-300">
+                Al habilitar la sincronización de contactos (vía Browser Picker, Subida CSV o App Móvil BeZhas), nuestro sistema relacionará criptográficamente cuáles de tus contactos ya están usando la plataforma. 
+                <strong>Por cada usuario emparejado que agregues a tu lista de amigos desde la pantalla de Sincronización, ¡recibirás una recompensa instantánea de 50 BEZ-Coins en tu cartera BeZhas!</strong>
+              </p>
+            </div>
+          </div>
+        </AccordionSection>
+
         {/* ==================== INFORMACIÓN QUE RECOPILAMOS ==================== */}
         <AccordionSection id="data-collection" title="Información que Recopilamos" icon={FileText}>
           <div className="space-y-6">

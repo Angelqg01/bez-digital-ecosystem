@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import http from '../services/http';
 
 // This is a mock function to simulate reading contacts from a device.
 // In a real mobile app, you would use a native API (e.g., via Capacitor or React Native).
@@ -29,18 +30,15 @@ const ContactSync = ({ walletAddress }) => {
     // 2. Send to backend
     try {
       setMessage(`Sending ${contacts.length} contacts to be processed...`);
-      const response = await fetch('/api/contacts/sync', {
-        method: 'POST',
+      const response = await http.post('/api/contacts/sync', { contacts }, {
         headers: {
-          'Content-Type': 'application/json',
           'x-wallet-address': walletAddress // Simulated auth
-        },
-        body: JSON.stringify({ contacts })
+        }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error(result.error || 'Failed to start sync process.');
       }
 
@@ -57,7 +55,7 @@ const ContactSync = ({ walletAddress }) => {
     <div className="contact-sync-container section-card">
       <h2>Grow Your Network</h2>
       <p>Sync your contacts to find friends already on BeZhas and earn Bez-Coin for your first sync!</p>
-      
+
       <div className="opt-in-notice">
         <p><strong>Privacy Notice:</strong> By clicking 'Sync Contacts', you agree to let BeZhas securely process your contacts to suggest connections. We hash personal information and encrypt original data. You can delete this data at any time.</p>
       </div>

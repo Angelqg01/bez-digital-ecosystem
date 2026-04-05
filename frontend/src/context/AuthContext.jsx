@@ -26,6 +26,26 @@ export function AuthProvider({ children }) {
         setLoading(true);
         try {
             const data = await authService.login(email, password);
+            if (data.requires2FA) {
+                return data; // Devolvemos el estado 2FA para que el LoginPage muestre el input
+            }
+            setUser(data.user);
+            setToken(data.token);
+            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
+            navigate('/');
+        } catch (err) {
+            setUser(null);
+            setToken(null);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const verifyLogin2FA = async (userId, tokenStr) => {
+        setLoading(true);
+        try {
+            const data = await authService.verifyLogin2FA(userId, tokenStr);
             setUser(data.user);
             setToken(data.token);
             localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
@@ -182,6 +202,23 @@ export function AuthProvider({ children }) {
         }
     };
 
+    const loginWithLinkedIn = async (code) => {
+        setLoading(true);
+        try {
+            const data = await authService.loginWithLinkedIn(code);
+            setUser(data.user);
+            setToken(data.token);
+            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
+            return data;
+        } catch (err) {
+            setUser(null);
+            setToken(null);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const logout = () => {
         setUser(null);
         setToken(null);
@@ -198,10 +235,12 @@ export function AuthProvider({ children }) {
             loginWithWallet,
             loginWithGoogle,
             loginWithGitHub,
+            loginWithLinkedIn,
             register,
             registerWithWallet,
             sendVerificationCode,
             verifyCode,
+            verifyLogin2FA,
             logout
         }}>
             {children}

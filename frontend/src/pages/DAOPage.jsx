@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWalletConnect } from '../hooks/useWalletConnect';
 import { useBezCoin } from '../context/BezCoinContext';
-import { useConnect } from 'wagmi';
+import { useConnect, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
+import { parseUnits } from 'viem';
 import ConnectWalletButton from '../components/common/ConnectWalletButton';
-import BuyBezCoinModal from '../components/modals/BuyBezCoinModal';
+// BuyBezCoinModal -> useBezPay().openBuyBez()
 import GlobalStatsBar from '../components/GlobalStatsBar';
 import toast from 'react-hot-toast';
 import {
@@ -268,8 +269,82 @@ const STRATEGIC_INITIATIVES = [
 
 const DAOPage = () => {
     const { isConnected, shortAddress } = useWalletConnect();
+    const { address } = useAccount();
     const { connect, connectors } = useConnect();
     const { balance, showBuyModal, setShowBuyModal } = useBezCoin();
+
+    // ── Wagmi on-chain vote transfer ────────────────────────────────────────────
+    const BEZ_TOKEN = '0x89c23890c742d710265dd61be789c71dc8999b12';
+    const TREASURY_DAO = '0x89c23890c742d710265dd61be789c71dc8999b12';
+    const ERC20_TRANSFER_ABI = [
+        {
+            name: 'transfer',
+            type: 'function',
+            stateMutability: 'nonpayable',
+            inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }],
+            outputs: [{ name: '', type: 'bool' }]
+        }
+    ];
+
+    const { writeContract: sendVoteTx, data: voteTxHash, isPending: isVotePending } = useWriteContract();
+    const { isLoading: isVoteConfirming, isSuccess: isVoteSuccess } = useWaitForTransactionReceipt({
+        hash: voteTxHash,
+        chainId: 137,
+    });
+
+    // Tracking vote context for feedback after tx confirms
+    const [pendingVote, setPendingVote] = useState(null);
+
+    // Apply state update after tx confirms
+    useEffect(() => {
+        if (isVoteSuccess && pendingVote) {
+            const { type, id, support, amount } = pendingVote;
+
+            if (type === 'proposal') {
+                setProposals(prev => prev.map(p => {
+                    if (p._id === id) {
+                        return {
+                            ...p,
+                            votesFor: support ? p.votesFor + amount : p.votesFor,
+                            votesAgainst: !support ? p.votesAgainst + amount : p.votesAgainst,
+                            totalVotes: p.totalVotes + amount
+                        };
+                    }
+                    return p;
+                }));
+            } else if (type === 'initiative') {
+                setStrategicInitiatives(prev => prev.map(init => {
+                    if (init.id === id) {
+                        return {
+                            ...init,
+                            votesFor: support ? init.votesFor + amount : init.votesFor,
+                            votesAgainst: !support ? init.votesAgainst + amount : init.votesAgainst,
+                            totalVoters: init.totalVoters + 1
+                        };
+                    }
+                    return init;
+                }));
+            }
+
+            setUserBezBalance(prev => prev - amount);
+            setUserState(prev => ({ ...prev, votesParticipated: prev.votesParticipated + 1 }));
+            setContributionAmounts(prev => ({ ...prev, [id]: MIN_BEZ_REQUIRED }));
+
+            toast.success(`✅ Voto on-chain confirmado! ${amount} BEZ enviados a la Tesoreria DAO.`, {
+                icon: support ? '👍' : '👎',
+                duration: 5000
+            });
+            setPendingVote(null);
+        }
+    }, [isVoteSuccess, pendingVote]);
+
+    // Realtime feedback for pending tx
+    useEffect(() => {
+        if (isVotePending) toast.loading('Esperando confirmación en MetaMask...', { id: 'vote-tx' });
+        if (isVoteConfirming) toast.loading('Confirmando en Polygon...', { id: 'vote-tx' });
+        if (isVoteSuccess) toast.dismiss('vote-tx');
+    }, [isVotePending, isVoteConfirming, isVoteSuccess]);
+
 
     // Estado local optimizado (sin contexto pesado)
     const [proposals, setProposals] = useState(MOCK_PROPOSALS);
@@ -446,71 +521,41 @@ const DAOPage = () => {
         });
     };
 
-    // 💰 Handlers optimizados con sistema Pay-to-Vote
-    const handleVote = async (proposalId, support) => {
-        if (!isConnected) {
+    // 💰 Handlers optimizados con sistema Pay-to-Vote ON-CHAIN
+    const handleVote = useCallback(async (proposalId, support) => {
+        if (!isConnected || !address) {
             toast.error('Conecta tu wallet para votar');
             return;
         }
 
-        // Obtener cantidad de contribución (mínimo o personalizada)
         const amountToPay = contributionAmounts[proposalId] || MIN_BEZ_REQUIRED;
 
-        // Validar mínimo de 150€
         if (amountToPay < MIN_BEZ_REQUIRED) {
             toast.error(`La contribución mínima es de €${MIN_VOTE_EUR} (${MIN_BEZ_REQUIRED} BEZ)`);
             return;
         }
 
-        // Validar saldo suficiente
         if (userBezBalance < amountToPay) {
-            const faltante = amountToPay - userBezBalance;
-            toast.error(`Saldo insuficiente. Te faltan ${faltante.toFixed(0)} BEZ`);
+            toast.error(`Saldo insuficiente. Te faltan ${(amountToPay - userBezBalance).toFixed(0)} BEZ`);
             return;
         }
 
-        // Confirmar transacción
-        const confirmVote = window.confirm(
-            `🗳️ CONFIRMAR VOTO\n\n` +
-            `Propuesta: ${proposals.find(p => p._id === proposalId)?.title || 'Propuesta'}\n` +
-            `Voto: ${support ? '✅ A FAVOR' : '❌ EN CONTRA'}\n\n` +
-            `Contribución: ${amountToPay} BEZ (~€${(amountToPay * BEZ_PRICE_EUR).toFixed(2)})\n\n` +
-            `Estos tokens se transferirán a la Tesorería de la DAO.\n¿Confirmar transacción?`
-        );
-
-        if (confirmVote) {
-            // Deducir saldo
-            setUserBezBalance(prev => prev - amountToPay);
-
-            // Actualizar votos de la propuesta
-            setProposals(prev => prev.map(p => {
-                if (p._id === proposalId) {
-                    return {
-                        ...p,
-                        votesFor: support ? p.votesFor + amountToPay : p.votesFor,
-                        votesAgainst: !support ? p.votesAgainst + amountToPay : p.votesAgainst,
-                        totalVotes: p.totalVotes + amountToPay
-                    };
-                }
-                return p;
-            }));
-
-            // Actualizar stats del usuario
-            setUserState(prev => ({
-                ...prev,
-                votesParticipated: prev.votesParticipated + 1,
-                votingPower: String(parseInt(prev.votingPower) - amountToPay)
-            }));
-
-            // Limpiar input
-            setContributionAmounts(prev => ({ ...prev, [proposalId]: MIN_BEZ_REQUIRED }));
-
-            toast.success(
-                `Voto ${support ? 'A favor' : 'En contra'} registrado. Contribución: ${amountToPay} BEZ transferidos a la Tesorería DAO`,
-                { icon: support ? '👍' : '👎', duration: 4000 }
-            );
+        try {
+            setPendingVote({ type: 'proposal', id: proposalId, support, amount: amountToPay });
+            sendVoteTx({
+                address: BEZ_TOKEN,
+                abi: ERC20_TRANSFER_ABI,
+                functionName: 'transfer',
+                args: [TREASURY_DAO, parseUnits(amountToPay.toString(), 18)],
+                chainId: 137,
+            });
+        } catch (err) {
+            console.error('Vote error:', err);
+            toast.error('Error al emitir el voto. Comprueba tu wallet.');
+            setPendingVote(null);
         }
-    };
+    }, [isConnected, address, contributionAmounts, userBezBalance, sendVoteTx]);
+
 
     const handleClaimRewards = async () => {
         if (!isConnected) {
@@ -532,79 +577,46 @@ const DAOPage = () => {
 
         if (currentBalance < threshold) {
             toast.error(`Balance insuficiente. Necesitas ${(threshold - currentBalance).toLocaleString()} BEZ más`);
-            setShowBuyModal(true);
+            openBuyBez();
             return;
         }
 
         toast.info('Función en desarrollo', { duration: 2000 });
     };
 
-    // 💰 Handler para votar en iniciativas estratégicas (Pay-to-Vote)
-    const handleInitiativeVote = (initiativeId, support) => {
-        if (!isConnected) {
+    // 💰 Handler para votar en iniciativas estratégicas (Pay-to-Vote ON-CHAIN)
+    const handleInitiativeVote = useCallback((initiativeId, support) => {
+        if (!isConnected || !address) {
             toast.error('Conecta tu wallet para votar');
             return;
         }
 
-        // Obtener cantidad de contribución (mínimo o personalizada)
         const amountToPay = contributionAmounts[initiativeId] || MIN_BEZ_REQUIRED;
-        const initiative = strategicInitiatives.find(i => i.id === initiativeId);
-
-        // Validar mínimo de 150€
         if (amountToPay < MIN_BEZ_REQUIRED) {
             toast.error(`La contribución mínima es de €${MIN_VOTE_EUR} (${MIN_BEZ_REQUIRED} BEZ)`);
             return;
         }
-
-        // Validar saldo suficiente
         if (userBezBalance < amountToPay) {
-            const faltante = amountToPay - userBezBalance;
-            toast.error(`Saldo insuficiente. Te faltan ${faltante.toFixed(0)} BEZ`);
+            toast.error(`Saldo insuficiente. Te faltan ${(amountToPay - userBezBalance).toFixed(0)} BEZ`);
             return;
         }
 
-        // Confirmar transacción
-        const confirmVote = window.confirm(
-            `🗳️ CONFIRMAR VOTO - INICIATIVA ESTRATÉGICA\n\n` +
-            `Sector: ${initiative?.sector || 'Iniciativa'}\n` +
-            `Voto: ${support ? '✅ PRIORIZAR DESARROLLO' : '⏸️ NO PRIORIZAR'}\n\n` +
-            `Contribución: ${amountToPay} BEZ (~€${(amountToPay * BEZ_PRICE_EUR).toFixed(2)})\n\n` +
-            `💡 A mayor contribución, mayor peso tiene tu voto en la priorización.\n` +
-            `Estos tokens se transferirán a la Tesorería de la DAO.\n\n¿Confirmar transacción?`
-        );
-
-        if (confirmVote) {
-            // Deducir saldo
-            setUserBezBalance(prev => prev - amountToPay);
-
-            // Actualizar votos de la iniciativa
-            setStrategicInitiatives(prev => prev.map(init => {
-                if (init.id === initiativeId) {
-                    return {
-                        ...init,
-                        votesFor: support ? init.votesFor + amountToPay : init.votesFor,
-                        votesAgainst: !support ? init.votesAgainst + amountToPay : init.votesAgainst,
-                        totalVoters: init.totalVoters + 1
-                    };
-                }
-                return init;
-            }));
-
-            // Actualizar stats del usuario
-            setUserState(prev => ({
-                ...prev,
-                votesParticipated: prev.votesParticipated + 1
-            }));
-
-            // Limpiar input
-            setContributionAmounts(prev => ({ ...prev, [initiativeId]: MIN_BEZ_REQUIRED }));
-
-            toast.success(
-                `Voto ${support ? 'a favor del desarrollo' : 'para no priorizar'} registrado. ${amountToPay} BEZ transferidos a la Tesorería`,
-                { icon: support ? '🚀' : '⏸️', duration: 4000 }
-            );
+        try {
+            setPendingVote({ type: 'initiative', id: initiativeId, support, amount: amountToPay });
+            sendVoteTx({
+                address: BEZ_TOKEN,
+                abi: ERC20_TRANSFER_ABI,
+                functionName: 'transfer',
+                args: [TREASURY_DAO, parseUnits(amountToPay.toString(), 18)],
+                chainId: 137,
+            });
+        } catch (err) {
+            console.error('Initiative vote error:', err);
+            toast.error('Error al emitir el voto. Comprueba tu wallet.');
+            setPendingVote(null);
         }
-    };
+    }, [isConnected, address, contributionAmounts, userBezBalance, sendVoteTx]);
+
 
     // Toggle expanded initiative details
     const toggleInitiativeDetails = (initiativeId) => {
@@ -1678,7 +1690,7 @@ const DAOPage = () => {
             </div>
 
             {/* MODAL OPTIMIZADO */}
-            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => setShowBuyModal(false)} />
+            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
         </div>
     );
 };

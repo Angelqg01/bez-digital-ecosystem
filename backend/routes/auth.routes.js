@@ -8,7 +8,9 @@ const User = require('../models/user.model');
 // Use mock model for AffiliateEvent to avoid Mongoose dependency issues
 const { AffiliateEvent } = require('../models/mockModels');
 const { grantReferralReward } = require('../services/rewards.service');
-const { ensureSuperAdminRole } = require('../middleware/auth.middleware');
+const { ensureSuperAdminRole, protect } = require('../middleware/auth.middleware');
+const emailService = require('../services/email.service');
+const totpService = require('../services/totp.service');
 
 // In-memory storage for verification codes (en producción usa Redis)
 const verificationCodes = new Map();
@@ -26,14 +28,6 @@ const generateToken = (id) => {
 // Helper to generate random 6-digit code
 const generateVerificationCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-// Helper to send email (placeholder - implementar con SendGrid, AWS SES, etc.)
-const sendVerificationEmail = async (email, code) => {
-  // TODO: Implementar envío real de email
-  console.log(`📧 Sending verification code ${code} to ${email}`);
-  // En desarrollo, solo logueamos el código
-  return true;
 };
 
 /**
@@ -155,6 +149,9 @@ router.post('/login-or-register', loginOrRegisterRules(), async (req, res) => {
 
     }
 
+    // Auto-Upgrade VIP/Admin for whitelisted accounts
+    user = await ensureSuperAdminRole(user);
+
     // Generate JWT
     const token = generateToken(user._id);
 
@@ -164,8 +161,11 @@ router.post('/login-or-register', loginOrRegisterRules(), async (req, res) => {
         id: user._id,
         walletAddress: user.walletAddress,
         roles: user.roles,
-        hasSyncedContacts: user.contactSync.hasSynced,
-        referralCode: user.affiliate.referralCode
+        hasSyncedContacts: user.contactSync?.hasSynced,
+        referralCode: user.affiliate?.referralCode,
+        isVIP: user.isVIP,
+        subscription: user.subscription,
+        vipTier: user.vipTier
       },
       token
     });
@@ -208,6 +208,9 @@ router.post('/login-wallet', [
       return res.status(404).json({ error: 'User not found. Please register first.' });
     }
 
+    // Auto-Upgrade VIP/Admin for whitelisted accounts
+    user = await ensureSuperAdminRole(user);
+
     // Generate JWT
     const token = generateToken(user._id);
 
@@ -219,7 +222,10 @@ router.post('/login-wallet', [
         email: user.email,
         walletAddress: user.walletAddress,
         roles: user.roles,
-        referralCode: user.affiliate?.referralCode
+        referralCode: user.affiliate?.referralCode,
+        isVIP: user.isVIP,
+        subscription: user.subscription,
+        vipTier: user.vipTier
       },
       token
     });
@@ -318,6 +324,12 @@ router.post('/register-email', [
       }
     }
 
+    try {
+      await emailService.sendVerificationCode(user.email, generateVerificationCode());
+    } catch (e) {
+      console.warn('Failed to send welcome email, but registration was successful.');
+    }
+
     // 6. Generate Token
     const token = generateToken(user._id);
 
@@ -358,7 +370,7 @@ router.post('/login-email', [
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password +twoFactorSecret +backupCodes');
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
@@ -369,6 +381,22 @@ router.post('/login-email', [
     if (!isMatch) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
+
+    // Verificar 2FA
+    if (user.is2FAEnabled && totpService.is2FAEnabled()) {
+      return res.json({
+        message: '2FA verification required',
+        requires2FA: true,
+        userId: user._id
+      });
+    }
+
+    try {
+      await emailService.sendLoginAlert(user.email, { ip: req.ip, browser: req.headers['user-agent'] });
+    } catch (e) { }
+
+    // Auto-Upgrade VIP/Admin for whitelisted accounts
+    user = await ensureSuperAdminRole(user);
 
     // Generar token
     const token = generateToken(user._id);
@@ -381,7 +409,10 @@ router.post('/login-email', [
         username: user.username,
         walletAddress: user.walletAddress,
         roles: user.roles,
-        referralCode: user.affiliate?.referralCode
+        referralCode: user.affiliate?.referralCode,
+        isVIP: user.isVIP,
+        subscription: user.subscription,
+        vipTier: user.vipTier
       },
       token
     });
@@ -389,6 +420,140 @@ router.post('/login-email', [
   } catch (error) {
     console.error('Error en login por email:', error);
     res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+/**
+ * @route   POST /api/auth/verify-login-2fa
+ * @desc    Verify TOTP token after initial login
+ * @access  Public
+ */
+router.post('/verify-login-2fa', [
+  body('userId').isString().notEmpty(),
+  body('token').isString().notEmpty().withMessage('El código es requerido')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  const { userId, token } = req.body;
+  try {
+    const user = await User.findById(userId).select('+twoFactorSecret +backupCodes');
+    if (!user || !user.is2FAEnabled) {
+      return res.status(400).json({ error: '2FA no está habilitado para este usuario' });
+    }
+
+    let isValid = false;
+    let usedBackupCode = false;
+
+    // Check if it's an 8-character backup code or 6-digit TOTP
+    if (token.length === 8) {
+      const backupResult = totpService.verifyBackupCode(token, user.backupCodes);
+      if (backupResult.valid) {
+        isValid = true;
+        usedBackupCode = true;
+        user.backupCodes = backupResult.remainingCodes;
+        await user.save();
+      }
+    } else {
+      const secret = totpService.decryptSecret(user.twoFactorSecret);
+      isValid = totpService.verify2FAToken(token, secret);
+    }
+
+    if (!isValid) return res.status(401).json({ error: 'Código 2FA inválido' });
+
+    try {
+      await emailService.sendLoginAlert(user.email, { ip: req.ip, browser: req.headers['user-agent'] + (usedBackupCode ? ' (usando código de respaldo)' : '') });
+    } catch (e) { }
+
+    // Auto-Upgrade VIP/Admin for whitelisted accounts
+    user = await ensureSuperAdminRole(user);
+
+    const jwtToken = generateToken(user._id);
+
+    res.json({
+      message: 'Login exitoso',
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        walletAddress: user.walletAddress,
+        roles: user.roles,
+        referralCode: user.affiliate?.referralCode,
+        isVIP: user.isVIP,
+        subscription: user.subscription,
+        vipTier: user.vipTier
+      },
+      token: jwtToken
+    });
+
+  } catch (error) {
+    console.error('Error en login 2FA:', error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+/**
+ * @route   POST /api/auth/setup-2fa
+ * @desc    Generate 2FA secret and QR code for authenticated user
+ * @access  Private
+ */
+router.post('/setup-2fa', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const setupData = await totpService.generate2FASecret(user.email);
+
+    // Almacenamos el secreto encriptado temporalmente hasta que se verifique
+    user.twoFactorSecret = totpService.encryptSecret(setupData.secret);
+
+    // Guardamos explícitamente pero aún sin poner is2FAEnabled = true
+    await user.save();
+
+    res.json({
+      message: 'Secret generado',
+      qrCodeUrl: setupData.qrCodeUrl,
+      backupCodes: setupData.backupCodes // Muestra los códigos que debe guardar
+    });
+  } catch (error) {
+    console.error('Error en setup 2FA:', error);
+    res.status(500).json({ error: 'Error del servidor al configurar 2FA' });
+  }
+});
+
+/**
+ * @route   POST /api/auth/verify-2fa-setup
+ * @desc    Verify and activate 2FA for the user
+ * @access  Private
+ */
+router.post('/verify-2fa-setup', [
+  protect,
+  body('token').isString().notEmpty(),
+  body('backupCodes').isArray().notEmpty()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  const { token, backupCodes } = req.body;
+  try {
+    const user = await User.findById(req.user.id).select('+twoFactorSecret');
+    if (!user || user.is2FAEnabled) {
+      return res.status(400).json({ error: 'El 2FA ya está activado o el usuario es inválido' });
+    }
+
+    const secret = totpService.decryptSecret(user.twoFactorSecret);
+    const isValid = totpService.verify2FAToken(token, secret);
+
+    if (!isValid) return res.status(401).json({ error: 'Código inválido' });
+
+    user.is2FAEnabled = true;
+    user.backupCodes = backupCodes;
+    await user.save();
+
+    res.json({ message: '2FA habilitado exitosamente' });
+  } catch (error) {
+    console.error('Error verificando 2FA setup:', error);
+    res.status(500).json({ error: 'Error del servidor al verificar 2FA' });
   }
 });
 
@@ -1347,6 +1512,339 @@ router.get('/2fa/status', verifyTokenMiddleware, async (req, res) => {
       error: 'Failed to get 2FA status',
       message: error.message
     });
+  }
+});
+
+// ============================================================================
+// PASSWORD RECOVERY & WALLET LINKING ENDPOINTS
+// ============================================================================
+
+// In-memory store for password reset tokens (use Redis with TTL in production)
+const passwordResetTokens = new Map();
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Request password reset — generates secure token and "sends" email
+ * @access  Public
+ */
+router.post('/forgot-password', [
+  body('email').isEmail().withMessage('Email válido requerido')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { email } = req.body;
+
+  try {
+    // Always respond with success to avoid user enumeration
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (user) {
+      // Generate a cryptographically secure reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+      // Store with 1-hour expiration
+      passwordResetTokens.set(resetTokenHash, {
+        userId: user._id.toString(),
+        email: user.email,
+        expiresAt: Date.now() + 60 * 60 * 1000
+      });
+
+      // In production: send real email using SendGrid/SES/SMTP
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+      console.log(`📧 PASSWORD RESET — Send to ${email}:`);
+      console.log(`🔗 Reset URL: ${resetUrl}`);
+      console.log(`⏰ Expires in 1 hour`);
+
+      // TODO: Replace console.log with real email service, e.g.:
+      // await emailService.sendPasswordReset(user.email, resetUrl);
+    }
+
+    res.json({
+      success: true,
+      message: 'Si ese email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.'
+    });
+
+  } catch (error) {
+    console.error('Error en forgot-password:', error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+/**
+ * @route   POST /api/auth/reset-password
+ * @desc    Reset password using token from forgot-password email
+ * @access  Public
+ */
+router.post('/reset-password', [
+  body('token').isString().notEmpty().withMessage('Token requerido'),
+  body('newPassword').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { token, newPassword } = req.body;
+
+  try {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const storedData = passwordResetTokens.get(tokenHash);
+
+    if (!storedData) {
+      return res.status(400).json({ error: 'Token inválido o ya utilizado' });
+    }
+
+    if (Date.now() > storedData.expiresAt) {
+      passwordResetTokens.delete(tokenHash);
+      return res.status(400).json({ error: 'El token ha expirado. Solicita uno nuevo.' });
+    }
+
+    const user = await User.findById(storedData.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Hash new password and save
+    const bcrypt = require('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    // Invalidate the used token
+    passwordResetTokens.delete(tokenHash);
+
+    console.log(`✅ Password reset successful for user: ${user.email}`);
+
+    res.json({
+      success: true,
+      message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.'
+    });
+
+  } catch (error) {
+    console.error('Error en reset-password:', error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+/**
+ * @route   POST /api/auth/link-wallet
+ * @desc    Link a wallet address to an existing email-registered account
+ * @access  Private (requires JWT in Authorization header)
+ */
+router.post('/link-wallet', [
+  body('walletAddress').isEthereumAddress().withMessage('Dirección de wallet inválida'),
+  body('signature').isString().notEmpty().withMessage('Firma requerida'),
+  body('message').isString().notEmpty().withMessage('Mensaje requerido')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  // Get JWT from Authorization header
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token de autenticación requerido' });
+  }
+
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret-key');
+
+    const { walletAddress, signature, message } = req.body;
+
+    // Verify wallet signature to prove ownership
+    const recoveredAddress = ethers.verifyMessage(message, signature);
+    if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      return res.status(401).json({ error: 'Firma de wallet inválida' });
+    }
+
+    // Check wallet not already used by another user
+    const existingWalletUser = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+    if (existingWalletUser && existingWalletUser._id.toString() !== decoded.id) {
+      return res.status(400).json({ error: 'Esta wallet ya está vinculada a otra cuenta' });
+    }
+
+    // Link wallet to current user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    user.walletAddress = walletAddress.toLowerCase();
+    user.walletLinkedAt = new Date();
+    await user.save();
+
+    console.log(`🔗 Wallet linked: ${walletAddress} → User ${user.email}`);
+
+    // Update stored auth in response so frontend can refresh
+    const newToken = generateToken(user._id);
+
+    res.json({
+      success: true,
+      message: 'Wallet vinculada exitosamente a tu cuenta',
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        walletAddress: user.walletAddress,
+        roles: user.roles
+      },
+      token: newToken
+    });
+
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token de sesión inválido o expirado' });
+    }
+    console.error('Error en link-wallet:', error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+/**
+ * @route   GET /api/auth/wallet-reminder
+ * @desc    Check if the logged-in email user still needs to link a wallet
+ * @access  Private (requires JWT)
+ */
+router.get('/wallet-reminder', async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token de autenticación requerido' });
+  }
+
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret-key');
+
+    const user = await User.findById(decoded.id).select('email walletAddress walletLinkedAt createdAt');
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const needsWallet = !user.walletAddress;
+    const daysSinceRegistration = Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+
+    res.json({
+      success: true,
+      needsWallet,
+      walletAddress: user.walletAddress || null,
+      daysSinceRegistration,
+      // Show reminder if no wallet and registered more than 1 day ago
+      showReminder: needsWallet && daysSinceRegistration >= 1
+    });
+
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token de sesión inválido o expirado' });
+    }
+    console.error('Error en wallet-reminder:', error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+/**
+ * @route   POST /api/auth/linkedin
+ * @desc    Login/Register with LinkedIn OAuth
+ * @access  Public
+ */
+router.post('/linkedin', [
+  body('accessToken').isString().notEmpty().withMessage('LinkedIn Access Token requerido')
+], async (req, res) => {
+  const { accessToken, referralCode } = req.body;
+
+  try {
+    let userData;
+
+    // Verificar si hay configuración real de LinkedIn
+    const linkedinClientId = process.env.LINKEDIN_CLIENT_ID;
+    const isConfigured = linkedinClientId && !linkedinClientId.includes('YOUR_LINKEDIN_CLIENT_ID');
+
+    if (isConfigured) {
+      // En producción: verificar token con LinkedIn API
+      const axios = require('axios');
+      // 1. Obtener User Profile
+      const profileResponse = await axios.get('https://api.linkedin.com/v2/userinfo', {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      userData = {
+        id: profileResponse.data.sub,
+        name: profileResponse.data.name,
+        email: profileResponse.data.email,
+        picture: profileResponse.data.picture
+      };
+    } else {
+      // Fallback: Mock para desarrollo si no hay keys
+      console.warn('⚠️ LinkedIn Auth: Ejecutando en modo SIMULACIÓN (Faltan keys en .env)');
+      userData = {
+        id: `li_${Date.now()}`,
+        name: 'LinkedIn User (Simulado)',
+        email: `li_user_${Date.now()}@linkedin.com`,
+        picture: 'https://via.placeholder.com/150'
+      };
+    }
+
+    // Buscar o crear usuario
+    let user = await User.findOne({ linkedinId: userData.id });
+    let isNewUser = false;
+
+    if (!user) {
+      user = await User.findOne({ email: userData.email });
+      if (user) {
+        user.linkedinId = userData.id;
+        user.authMethod = 'linkedin';
+        await user.save();
+      } else {
+        isNewUser = true;
+        user = new User({
+          email: userData.email,
+          username: userData.name,
+          linkedinId: userData.id,
+          authMethod: 'linkedin',
+          profileImage: userData.picture,
+          roles: ['USER'],
+          'affiliate.referralCode': crypto.randomBytes(4).toString('hex').toUpperCase()
+        });
+        await user.save();
+
+        // Procesar referido
+        if (referralCode) {
+          const referrer = await User.findOne({ 'affiliate.referralCode': referralCode });
+          if (referrer) {
+            await grantReferralReward(referrer._id, user._id);
+          }
+        }
+      }
+    }
+
+    // Auto-Upgrade VIP/Admin for whitelisted accounts
+    user = await ensureSuperAdminRole(user);
+
+    const token = generateToken(user._id);
+
+    res.status(isNewUser ? 201 : 200).json({
+      message: isNewUser ? 'Usuario creado con LinkedIn' : 'Login con LinkedIn exitoso',
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        profileImage: user.profileImage,
+        roles: user.roles,
+        referralCode: user.affiliate?.referralCode,
+        isVIP: user.isVIP,
+        subscription: user.subscription,
+        vipTier: user.vipTier
+      },
+      token
+    });
+
+  } catch (error) {
+    console.error('Error en LinkedIn Auth:', error);
+    res.status(500).json({ error: 'Error en autenticación con LinkedIn' });
   }
 });
 

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, DollarSign, Euro, PoundSterling, Coins, X, ShoppingCart } from 'lucide-react';
 import { LOGOS } from '../config/cryptoLogos';
-import BuyBezCoinModal from './modals/BuyBezCoinModal';
+// BuyBezCoinModal -> useBezPay().openBuyBez()
 import { useBezCoin } from '../context/BezCoinContext';
 import { useWeb3 } from '../context/Web3Context';
 import { useTheme } from '../context/ThemeContext';
@@ -71,7 +71,7 @@ const DonateButton = ({
                 const amountNum = parseFloat(amount);
                 if (bezBalance < amountNum) {
                     toast.error('Saldo insuficiente de BEZ-Coin');
-                    setShowBuyModal(true);
+                    openBuyBez();
                     setIsProcessing(false);
                     return;
                 }
@@ -119,7 +119,7 @@ const DonateButton = ({
     };
 
     const handleBuyTokens = () => {
-        setShowBuyModal(true);
+        openBuyBez();
     };
 
     const sizeClasses = {
@@ -281,7 +281,7 @@ const DonateButton = ({
                                 <button
                                     type="button"
                                     className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-xs font-semibold"
-                                    onClick={() => setShowBuyModal(true)}
+                                    onClick={() => openBuyBez()}
                                 >
                                     Comprar BEZ-Coin
                                 </button>
@@ -354,7 +354,7 @@ const DonateButton = ({
           animation: fadeIn 0.2s ease-out;
         }
       `}</style>
-            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => setShowBuyModal(false)} />
+            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
         </div>
     );
 };

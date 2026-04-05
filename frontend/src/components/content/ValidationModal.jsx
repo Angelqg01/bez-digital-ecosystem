@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import http from '../../services/http';
 import { useAccount, useContractWrite, useWaitForTransaction } from 'wagmi';
 import { parseEther, parseUnits } from 'ethers';
 import { Shield, Check, X, AlertCircle, CreditCard, Wallet, Lock } from 'lucide-react';
@@ -143,20 +144,16 @@ export default function ValidationModal({
 
         try {
             // 1. Crear sesión de pago en Stripe
-            const response = await fetch('/api/payment/create-validation-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contentHash,
-                    contentData: content,
-                    contentType,
-                    authorAddress: address,
-                    amount: 999, // €9.99 en centavos
-                    currency: 'eur'
-                })
+            const response = await http.post('/api/payment/create-validation-session', {
+                contentHash,
+                contentData: content,
+                contentType,
+                authorAddress: address,
+                amount: 999, // €9.99 en centavos
+                currency: 'eur'
             });
 
-            const { sessionId, error: apiError } = await response.json();
+            const { sessionId, error: apiError } = response.data;
 
             if (apiError) {
                 throw new Error(apiError);

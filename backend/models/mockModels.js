@@ -12,7 +12,8 @@ const UserRole = {
     EDITOR: 'EDITOR',
     MODERATOR: 'MODERATOR',
     DEVELOPER: 'DEVELOPER',
-    ADMIN: 'ADMIN'
+    ADMIN: 'ADMIN',
+    HUMAN_RESOURCES: 'HUMAN_RESOURCES'
 };
 
 // Subscription Tiers Enum

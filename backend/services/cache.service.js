@@ -1,135 +1,53 @@
 /**
- * BeZhas Cache Service
- * Provides a unified caching interface using node-cache (L1) and Redis (L2)
+ * Simple In-Memory Cache Service
+ * Replaces the missing cache module to prevent startup crashes.
  */
-
-const NodeCache = require('node-cache');
-const redisService = require('./redis.service');
-const pino = require('pino');
-const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
 class CacheService {
     constructor() {
-        // L1 Cache: In-memory (Local to this instance)
-        this.l1 = new NodeCache({
-            stdTTL: parseInt(process.env.CACHE_L1_TTL || '300'),
-            checkperiod: 60,
-            useClones: false
-        });
-
-        this.stats = {
-            hits: 0,
-            misses: 0,
-            keys: 0
-        };
-
-        logger.info('Cache Service initialized (L1: node-cache)');
+        this.cache = new Map();
+        this.stats = { hits: 0, misses: 0 };
     }
 
-    /**
-     * Get a value from cache
-     */
     async get(key) {
-        // Try L1 first
-        let value = this.l1.get(key);
-        if (value !== undefined) {
-            this.stats.hits++;
-            return value;
+        const item = this.cache.get(key);
+        if (!item) {
+            this.stats.misses++;
+            return null;
         }
-
-        // Try L2 (Redis) if available
-        if (redisService.isAvailable()) {
-            try {
-                const redis = await redisService.getConnection();
-                const redisValue = await redis.get(key);
-                if (redisValue) {
-                    value = JSON.parse(redisValue);
-                    // Populate L1 for subsequent calls
-                    this.l1.set(key, value);
-                    this.stats.hits++;
-                    return value;
-                }
-            } catch (error) {
-                logger.warn({ key, error: error.message }, 'Redis get error');
-            }
+        if (item.expiry && item.expiry < Date.now()) {
+            this.cache.delete(key);
+            this.stats.misses++;
+            return null;
         }
-
-        this.stats.misses++;
-        return null;
+        this.stats.hits++;
+        return item.value;
     }
 
-    /**
-     * Set a value in cache
-     */
-    async set(key, value, ttl = null) {
-        // Set in L1
-        const l1Ttl = ttl || parseInt(process.env.CACHE_L1_TTL || '300');
-        this.l1.set(key, value, l1Ttl);
-
-        // Set in L2 (Redis) if available
-        if (redisService.isAvailable()) {
-            try {
-                const redis = await redisService.getConnection();
-                const redisTtl = ttl || parseInt(process.env.CACHE_L2_TTL || '3600');
-                await redis.set(key, JSON.stringify(value), 'EX', redisTtl);
-            } catch (error) {
-                logger.warn({ key, error: error.message }, 'Redis set error');
-            }
-        }
-
-        return true;
+    async set(key, value, ttlSeconds = 0) {
+        const expiry = ttlSeconds ? Date.now() + (ttlSeconds * 1000) : 0;
+        this.cache.set(key, { value, expiry });
     }
 
-    /**
-     * Delete a value from cache
-     */
-    async del(key) {
-        this.l1.del(key);
+    async delete(key) {
+        this.cache.delete(key);
+    }
 
-        if (redisService.isAvailable()) {
-            try {
-                const redis = await redisService.getConnection();
-                await redis.del(key);
-            } catch (error) {
-                logger.warn({ key, error: error.message }, 'Redis del error');
+    async invalidate(pattern) {
+        // Invalidate keys that include the pattern
+        const patternStr = pattern.replace('*', '');
+        for (const key of this.cache.keys()) {
+            if (key.includes(patternStr)) {
+                this.cache.delete(key);
             }
         }
     }
 
-    /**
-     * Clear all cache
-     */
-    async flush() {
-        this.l1.flushAll();
-
-        if (redisService.isAvailable()) {
-            try {
-                const redis = await redisService.getConnection();
-                await redis.flushdb();
-            } catch (error) {
-                logger.warn({ error: error.message }, 'Redis flush error');
-            }
-        }
-    }
-
-    /**
-     * Get cache statistics (required by web3-core.init.js)
-     */
     getStats() {
-        const l1Stats = this.l1.getStats();
-
+        const total = this.stats.hits + this.stats.misses;
+        const hitRate = total === 0 ? 0 : Math.round((this.stats.hits / total) * 100);
         return {
-            l1: l1Stats,
-            totals: {
-                hits: this.stats.hits,
-                misses: this.stats.misses,
-                hitRate: this.stats.hits + this.stats.misses > 0
-                    ? ((this.stats.hits / (this.stats.hits + this.stats.misses)) * 100).toFixed(2)
-                    : 0
-            },
-            redis: {
-                connected: redisService.isAvailable()
-            }
+            totals: { hitRate }
         };
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check as CheckIcon, Copy as CopyIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 // Componente CodeBlock para mostrar código con funcionalidad de copiar
@@ -21,7 +21,7 @@ const CodeBlock = ({ title, code, language = 'javascript' }) => {
                     onClick={handleCopy}
                     className="text-xs hover:text-white flex items-center gap-1 text-gray-400 transition-colors"
                 >
-                    {copied ? <Check size={12} /> : <Copy size={12} />}
+                    {copied ? <CheckIcon size={12} /> : <CopyIcon size={12} />}
                     {copied ? 'Copiado!' : 'Copiar'}
                 </button>
             </div>

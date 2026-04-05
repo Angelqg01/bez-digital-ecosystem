@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import http from '../services/http';
 
 export default function BackendStatusBanner() {
     const [hasBackendError, setHasBackendError] = useState(false);
@@ -9,8 +10,8 @@ export default function BackendStatusBanner() {
         // Check backend health
         const checkHealth = async () => {
             try {
-                const response = await fetch('/api/health', { signal: AbortSignal.timeout(2000) });
-                setHasBackendError(!response.ok);
+                const response = await http.get('/api/health', { signal: AbortSignal.timeout(2000) });
+                setHasBackendError(response.status !== 200 && response.status !== 201);
             } catch (error) {
                 setHasBackendError(true);
             }

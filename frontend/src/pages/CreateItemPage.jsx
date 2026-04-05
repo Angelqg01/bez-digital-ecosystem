@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useBezCoin } from '../context/BezCoinContext';
 import { LOGOS } from '../config/cryptoLogos';
-import BuyBezCoinModal from '../components/modals/BuyBezCoinModal';
+// BuyBezCoinModal -> useBezPay().openBuyBez()
 import { useNavigate } from 'react-router-dom';
 import { useWeb3 } from '../context/Web3Context';
 import { mintNFT } from '../services/nftService';
@@ -31,7 +31,7 @@ const CreateItemPage = () => {
 
     // Verificar saldo BEZ antes de mintear/listar
     const hasFunds = await verifyAndProceed(price, 'crear NFT', async () => {
-      setShowBuyModal(false);
+      /* BezPayModal auto-cierra */;
       // Reintentar tras comprar BEZ
       handleSubmit(e);
     });
@@ -100,7 +100,7 @@ const CreateItemPage = () => {
             <button
               type="button"
               className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-xs font-semibold"
-              onClick={() => setShowBuyModal(true)}
+              onClick={() => openBuyBez()}
             >
               Comprar BEZ-Coin
             </button>
@@ -114,7 +114,7 @@ const CreateItemPage = () => {
           {isLoading ? <Spinner size="sm" /> : 'Mint and List Item'}
         </button>
       </form>
-      <BuyBezCoinModal isOpen={showBuyModal} onClose={() => setShowBuyModal(false)} />
+      <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
     </div>
   );
 };

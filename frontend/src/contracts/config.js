@@ -28,7 +28,7 @@ export const SUPPORTED_CHAINS = {
     polygon: {
         id: 137,
         name: 'Polygon',
-        rpcUrl: 'https://polygon-rpc.com',
+        rpcUrl: 'https://polygon-bor-rpc.publicnode.com',
         blockExplorer: 'https://polygonscan.com'
     },
     polygonAmoy: {

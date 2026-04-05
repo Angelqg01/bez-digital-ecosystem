@@ -35,7 +35,7 @@ class MCPClient {
      */
     async connect() {
         try {
-            const response = await this.axios.get('/health');
+            const response = await this.axios.get('/api/mcp/health');
 
             if (response.status === 200) {
                 this.connected = true;
@@ -60,7 +60,7 @@ class MCPClient {
      */
     async listAvailableTools() {
         try {
-            const response = await this.axios.get('/tools/list');
+            const response = await this.axios.get('/api/mcp/tools');
 
             return {
                 success: true,
@@ -83,16 +83,48 @@ class MCPClient {
      */
     async callTool(toolName, args = {}) {
         try {
-            const response = await this.axios.post('/tools/call', {
-                tool: toolName,
-                arguments: args
-            });
+            // First, find the tool's endpoint
+            const toolsResponse = await this.listAvailableTools();
+            if (!toolsResponse.success) throw new Error('Failed to retrieve tools list');
+
+            const tool = toolsResponse.tools.find(t => t.name === toolName);
+            if (!tool || !tool.endpoint) {
+                // Determine fallback endpoints manually if auto-resolution fails
+                const endpointMap = {
+                    'analyze_gas_strategy': '/api/mcp/analyze-gas',
+                    'calculate_smart_swap': '/api/mcp/calculate-swap',
+                    'verify_regulatory_compliance': '/api/mcp/verify-compliance',
+                    'github_repo_manager': '/api/mcp/github',
+                    'firecrawl_scraper': '/api/mcp/firecrawl',
+                    'playwright_automation': '/api/mcp/playwright',
+                    'blockscout_explorer': '/api/mcp/blockscout',
+                    'skill_creator_ai': '/api/mcp/skill-creator',
+                    'auditmos_security': '/api/mcp/auditmos',
+                    'tally_dao_governance': '/api/mcp/tally-dao',
+                    'obliq_ai_sre': '/api/mcp/obliq-sre',
+                    'kinaxis_supply_chain': '/api/mcp/kinaxis',
+                    'alpaca_markets': '/api/mcp/alpaca-markets'
+                };
+
+                const fallbackEndpoint = endpointMap[toolName];
+                if (!fallbackEndpoint) throw new Error(`Tool ${toolName} not found or has no endpoint`);
+
+                const response = await this.axios.post(fallbackEndpoint, args);
+                return {
+                    success: true,
+                    toolName,
+                    result: response.data,
+                    executionTime: Date.now() // Mock standard MCP output expectation
+                };
+            }
+
+            const response = await this.axios.post(tool.endpoint, args);
 
             return {
                 success: true,
                 toolName,
-                result: response.data.result,
-                executionTime: response.data.executionTime
+                result: response.data,
+                executionTime: Date.now()
             };
         } catch (error) {
             return {

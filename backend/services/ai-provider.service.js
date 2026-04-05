@@ -98,6 +98,39 @@ class AIProviderService {
         }
     }
 
+    /**
+     * Generación de Embeddings (Unificado)
+     * @param {Object} options 
+     */
+    async embed(options) {
+        const { provider, text, model, multimodalParts } = options;
+        
+        // Prioridad: Google con Gemini Embedding 2 si hay partes multimodales
+        if (multimodalParts && multimodalParts.length > 0) {
+           if (provider === 'google' || this.clients.google) {
+               return await this.embedGoogle({ 
+                   model: model || 'text-embedding-004', // gemini-embedding-2-preview uses Parts
+                   text, 
+                   multimodalParts 
+               });
+           } else {
+               throw new Error('Multimodal embeddings requieren proveedor Google (gemini-embedding-2-preview)');
+           }
+        }
+
+        switch (provider) {
+            case 'openai':
+                return await this.embedOpenAI({ model, text });
+            case 'google':
+                return await this.embedGoogle({ model, text });
+            // Others fallback or throw
+            default:
+                if (this.clients.openai) return await this.embedOpenAI({ model, text });
+                if (this.clients.google) return await this.embedGoogle({ model, text });
+                throw new Error(`Embedding no soportado para: ${provider}`);
+        }
+    }
+
     // ==================== OPENAI ====================
     async chatOpenAI({ model, messages, temperature, maxTokens, stream }) {
         if (!this.clients.openai) {
@@ -214,6 +247,43 @@ class AIProviderService {
         };
     }
 
+    async embedGoogle({ model, text, multimodalParts }) {
+        if (!this.clients.google) {
+            throw new Error('Google API key no configurada');
+        }
+        
+        const embeddingModel = model || (multimodalParts ? 'gemini-embedding-2-preview' : 'text-embedding-004');
+        const geminiModel = this.clients.google.getGenerativeModel({ model: embeddingModel });
+
+        try {
+            if (multimodalParts && multimodalParts.length > 0) {
+                // gemini-embedding-2-preview permite arrays mixtos de texto y media (base64)
+                const parts = [];
+                if (text) parts.push({ text });
+                parts.push(...multimodalParts);
+
+                const result = await geminiModel.embedContent({
+                    content: { parts }
+                });
+                return {
+                    vector: result.embedding.values,
+                    provider: 'google',
+                    model: embeddingModel
+                };
+            } else {
+                const result = await geminiModel.embedContent(text);
+                return {
+                    vector: result.embedding.values,
+                    provider: 'google',
+                    model: embeddingModel
+                };
+            }
+        } catch (error) {
+            console.error('Error Google Embedding:', error);
+            throw error;
+        }
+    }
+
     // ==================== XAI (GROK) ====================
     async chatXAI({ model, messages, temperature, maxTokens, stream }) {
         if (!this.clients.xai) {
@@ -282,6 +352,20 @@ class AIProviderService {
         return Object.entries(this.clients)
             .filter(([_, client]) => client !== null)
             .map(([provider]) => provider);
+    }
+
+    // ==================== EMBEDDINGS GENERICOS ====================
+    async embedOpenAI({ model, text }) {
+        if (!this.clients.openai) throw new Error('OpenAI API key no configurada');
+        const response = await this.clients.openai.embeddings.create({
+            model: model || 'text-embedding-3-small',
+            input: text,
+        });
+        return {
+            vector: response.data[0].embedding,
+            provider: 'openai',
+            model: response.model
+        };
     }
 
     /**

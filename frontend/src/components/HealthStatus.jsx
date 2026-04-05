@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import http from '../services/http';
 
 export default function HealthStatus() {
     const [status, setStatus] = useState('unknown');
@@ -11,9 +12,9 @@ export default function HealthStatus() {
         if (fetchAttempted) return;
         setFetchAttempted(true);
 
-        fetch('/api/health')
-            .then(res => res.json())
-            .then(data => {
+        http.get('/api/health')
+            .then(res => {
+                const data = res.data;
                 setStatus(data.status);
                 setUptime(data.uptime);
             })

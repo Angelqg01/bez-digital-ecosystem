@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import http from '../services/http';
 
 // Simulated API client. In a real app, this would be in a separate api.js file.
 const apiClient = {
   getAffiliateData: async (walletAddress) => {
     // This simulates the auth middleware where we pass the user identifier.
-    const response = await fetch('/api/affiliate/me', {
+    const response = await http.get('/api/affiliate/me', {
       headers: {
-        'Content-Type': 'application/json',
         'x-wallet-address': walletAddress
       }
     });
-    if (!response.ok) {
+    if (response.status !== 200) {
       throw new Error('Failed to fetch affiliate data');
     }
-    return response.json();
+    return response.data;
   }
 };
 
@@ -62,7 +62,7 @@ const AffiliateDashboard = ({ walletAddress }) => {
   return (
     <div className="affiliate-dashboard-container section-card">
       <h2>Affiliate Dashboard</h2>
-      
+
       <div className="referral-link-section">
         <h3>Your Referral Link</h3>
         <p>Share this link with your friends to earn Bez-Coin when they join!</p>

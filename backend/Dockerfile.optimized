@@ -29,7 +29,7 @@ COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY pnpm-lock.yaml* ./
 
 RUN npm install -g pnpm@9 && \
-    pnpm install --frozen-lockfile --prod=false
+    pnpm install --no-frozen-lockfile --prod=false
 
 # ===== STAGE 2: Builder =====
 FROM node:20-alpine AS builder
@@ -45,13 +45,15 @@ COPY --from=deps /app/packages/mcp-server/node_modules ./packages/mcp-server/nod
 # Copy source code
 COPY . .
 
-# Build backend and dependencies if needed
-# (Assuming backend doesn't have a build step, but SDK might)
-# cd sdk && pnpm build (if SDK needs building)
+# Build dependencies, generate tarballs for public downloads
+RUN npm install -g pnpm@9 && \
+    mkdir -p backend/public/downloads && \
+    cd sdk && pnpm run build && npm pack && mv *.tgz ../backend/public/downloads/ && \
+    cd ../packages/mcp-server && pnpm run build && npm pack && mv *.tgz ../../backend/public/downloads/ && \
+    cd ../..
 
 # Prune dev dependencies and prepare for production
-RUN npm install -g pnpm@9 && \
-    pnpm prune --prod && \
+RUN pnpm prune --prod && \
     rm -rf .git .github tests test coverage .env.* *.md *.log
 
 # ===== STAGE 3: Production =====
@@ -95,8 +97,8 @@ USER nodejs
 EXPOSE 8080
 
 # Health check with curl (more reliable)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:3001/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/api/health || exit 1
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]

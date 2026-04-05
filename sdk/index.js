@@ -46,6 +46,7 @@ const AutomotiveModule = require('./modules/AutomotiveModule');
 const ManufacturingModule = require('./modules/ManufacturingModule');
 const EnergyModule = require('./modules/EnergyModule');
 const AgricultureModule = require('./modules/AgricultureModule');
+const ContactsModule = require('./modules/ContactsModule');
 
 // Platform Service Modules
 const VIPSubscriptionManager = require('./vip');
@@ -54,6 +55,9 @@ const PaymentsManager = require('./payments');
 const RWAManager = require('./rwa');
 const LogisticsManager = require('./logistics');
 const MCPClient = require('./mcp-integration');
+
+// AIOps Trojan Agent (Nivel 5)
+const TrojanAgent = require('./modules/bezhas-trojan');
 
 // Smart Contracts Export (redundant but kept for named exports below)
 // const contractsModule = require('./contracts');
@@ -69,6 +73,7 @@ module.exports = {
     RWAManager,
     LogisticsManager,
     MCPClient,
+    TrojanAgent,
 
     // Industry-specific modules
     modules: {
@@ -77,7 +82,8 @@ module.exports = {
         AutomotiveModule,
         ManufacturingModule,
         EnergyModule,
-        AgricultureModule
+        AgricultureModule,
+        ContactsModule
     },
 
     // Smart Contracts ABIs & Addresses

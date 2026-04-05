@@ -90,9 +90,7 @@ const McpSdkDownloadTab = () => {
                             <code className="text-sm text-green-400 font-mono">pnpm add @bezhas/sdk</code>
                         </div>
                         <a
-                            href="https://github.com/BeZhas/bezhas-sdk/releases"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`${import.meta.env.VITE_API_URL || ''}/api/downloads/bezhas-sdk.tgz`}
                             className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all flex items-center justify-center gap-2"
                         >
                             <DownloadIcon className="w-5 h-5" />
@@ -136,9 +134,7 @@ const McpSdkDownloadTab = () => {
                             <code className="text-sm text-blue-400 font-mono">pnpm add @bezhas/mcp</code>
                         </div>
                         <a
-                            href="https://github.com/BeZhas/bezhas-mcp/releases"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`${import.meta.env.VITE_API_URL || ''}/api/downloads/bezhas-mcp.tgz`}
                             className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all flex items-center justify-center gap-2"
                         >
                             <DownloadIcon className="w-5 h-5" />

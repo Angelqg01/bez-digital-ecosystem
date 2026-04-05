@@ -16,8 +16,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaExclamationTriangle, FaCoins, FaArrowRight } from 'react-icons/fa';
-import BuyBezCoinModal from './BuyBezCoinModal';
-
+// BuyBezCoinModal -> useBezPay().openBuyBez()
 const InsufficientFundsModal = ({
     isOpen,
     onClose,
@@ -31,11 +30,11 @@ const InsufficientFundsModal = ({
     const shortfall = parseFloat(requiredAmount) - parseFloat(currentBalance);
 
     const handleBuyClick = () => {
-        setShowBuyModal(true);
+        openBuyBez();
     };
 
     const handleBuyModalClose = () => {
-        setShowBuyModal(false);
+        /* BezPayModal auto-cierra */;
         // Si se completó la compra, ejecutar callback y cerrar
         if (onPurchaseComplete) {
             onPurchaseComplete();
@@ -161,10 +160,7 @@ const InsufficientFundsModal = ({
             </AnimatePresence>
 
             {/* Buy Modal */}
-            <BuyBezCoinModal
-                isOpen={showBuyModal}
-                onClose={handleBuyModalClose}
-            />
+            {/* BEZ Pay Modal global activo */}
         </>
     );
 };

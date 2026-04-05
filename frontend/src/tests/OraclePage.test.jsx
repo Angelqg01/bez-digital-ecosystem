@@ -16,8 +16,14 @@ import OraclePage from '../pages/OraclePage';
 
 // Mock wagmi
 const mockUseAccount = vi.fn();
+const mockUseWriteContract = vi.fn();
+const mockUseReadContract = vi.fn();
+
 vi.mock('wagmi', () => ({
-    useAccount: () => mockUseAccount()
+    useAccount: () => mockUseAccount(),
+    useWriteContract: () => mockUseWriteContract(),
+    useReadContract: () => mockUseReadContract(),
+    useWaitForTransactionReceipt: () => ({ isLoading: false, isSuccess: false })
 }));
 
 // Mock framer-motion
@@ -38,6 +44,8 @@ const TestWrapper = ({ children }) => (
 describe('OraclePage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWriteContract.mockReturnValue({ writeContractAsync: vi.fn(), isPending: false, isSuccess: false });
+        mockUseReadContract.mockReturnValue({ data: null, isError: false, isLoading: false });
     });
 
     afterEach(() => {

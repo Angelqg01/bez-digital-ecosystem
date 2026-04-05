@@ -12,7 +12,9 @@ import axios from 'axios';
 import { ethers } from 'ethers';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
-const BEZ_COIN_PRICE_USD = 0.10; // 1 BEZ = $0.10 USD
+// BEZ price — kept in sync with bezpay.service.js fallback ($1.24)
+// Override via BEZ_PRICE_USD env var if needed
+const BEZ_COIN_PRICE_USD = parseFloat(process.env.BEZ_PRICE_USD || '1.24');
 
 /**
  * Tool: get_payment_quote

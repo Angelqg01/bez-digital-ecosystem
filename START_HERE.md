@@ -4,7 +4,7 @@
 
 ### Paso 1: Verificar el Sistema (30 segundos)
 ```powershell
-.\check.ps1
+scripts\check.ps1
 ```
 
 **¿Todo en verde?** → Continúa al Paso 2  
@@ -14,7 +14,7 @@
 
 ### Paso 2: Iniciar los Servicios (1 minuto)
 ```powershell
-.\quick-start.ps1
+scripts\quick-start.ps1
 ```
 
 Esto abrirá 2 ventanas automáticamente:
@@ -35,14 +35,15 @@ http://localhost:3000
 ## 📚 ¿Qué Sigue?
 
 ### Para Desarrolladores
-1. 📖 Lee [README_ENTERPRISE.md](README_ENTERPRISE.md) - Overview completo
-2. 🔧 Lee [LISTO_PARA_USAR.md](LISTO_PARA_USAR.md) - Configuración detallada
-3. 🧪 Ejecuta tests: `cd sdk; node test-enterprise-sdk.js`
+1. 📖 Lee [docs/AI_MANIFESTO.md](docs/AI_MANIFESTO.md) - Guía para la IA y MCP
+2. 📖 Lee [docs/system/README_ENTERPRISE.md](docs/system/README_ENTERPRISE.md) - Overview completo
+3. 🔧 Lee [docs/LISTO_PARA_USAR.md](docs/LISTO_PARA_USAR.md) - Configuración detallada
+4. 🧪 Ejecuta tests: `cd sdk; node test-enterprise-sdk.js`
 
 ### Para Deployment
-1. 📋 Sigue [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
-2. 🔑 Solicita API keys (ver [PROXIMOS_PASOS.md](PROXIMOS_PASOS.md))
-3. 🚀 Deploy con Railway + Vercel
+1. 📋 Sigue [docs/reports/DEPLOYMENT_CHECKLIST.md](docs/reports/DEPLOYMENT_CHECKLIST.md)
+2. 🔑 Solicita API keys (ver [docs/PROXIMOS_PASOS.md](docs/PROXIMOS_PASOS.md))
+3. 🚀 Deploy con Google Cloud Platform (ver [docs/guides/GCP_DEPLOYMENT_GUIDE.md](docs/guides/GCP_DEPLOYMENT_GUIDE.md))
 
 ---
 
@@ -50,10 +51,10 @@ http://localhost:3000
 
 ```powershell
 # Verificar estado del sistema
-.\check.ps1
+scripts\check.ps1
 
 # Iniciar todo (Backend + Frontend)
-.\quick-start.ps1
+scripts\quick-start.ps1
 
 # Solo Backend
 cd backend
@@ -98,7 +99,7 @@ npm start
 - Backend no está corriendo (errores de conexión)
 - No tienes API keys configuradas
 
-**Solución:** Inicia el backend primero con `.\quick-start.ps1`
+**Solución:** Inicia el backend primero con `scripts\quick-start.ps1`
 
 ---
 
@@ -122,7 +123,7 @@ Antes de empezar a desarrollar, verifica que tienes:
 - [ ] Archivo .env configurado
 - [ ] Puertos 3000 y 3001 disponibles
 
-**¿Todo listo?** → Ejecuta `.\quick-start.ps1` y ¡empieza a desarrollar! 🚀
+**¿Todo listo?** → Ejecuta `scripts\quick-start.ps1` y ¡empieza a desarrollar! 🚀
 
 ---
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useBezCoin } from '../context/BezCoinContext';
 import { LOGOS } from '../config/cryptoLogos';
-import BuyBezCoinModal from '../components/modals/BuyBezCoinModal';
+// BuyBezCoinModal -> useBezPay().openBuyBez()
 import { Wallet, Copy, ExternalLink, TrendingUp, Send, ArrowDownToLine } from 'lucide-react';
 import { useAccount, useBalance } from 'wagmi';
 import { useWalletConnect } from '../hooks/useWalletConnect';
@@ -150,7 +150,7 @@ const WalletPage = () => {
                         <button
                             type="button"
                             className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-xs font-semibold"
-                            onClick={() => setShowBuyModal(true)}
+                            onClick={() => openBuyBez()}
                         >
                             Comprar BEZ-Coin
                         </button>
@@ -164,7 +164,7 @@ const WalletPage = () => {
                     className="flex items-center justify-center gap-2 p-4 bg-primary hover:bg-primary/80 rounded-lg transition-colors"
                     onClick={async () => {
                         // Simular envío de 1 BEZ para demo, en real pedir cantidad y dirección
-                        const hasFunds = await verifyAndProceed('1', 'enviar BEZ-Coin', () => setShowBuyModal(false));
+                        const hasFunds = await verifyAndProceed('1', 'enviar BEZ-Coin', () => {}  /*BezPayModal auto-cierra*/);
                         if (!hasFunds) return;
                         toast.success('Función de envío BEZ-Coin (demo)');
                     }}
@@ -178,7 +178,7 @@ const WalletPage = () => {
                 </button>
                 <button
                     className="flex items-center justify-center gap-2 p-4 bg-dark-surface border border-dark-border hover:border-primary rounded-lg transition-colors"
-                    onClick={() => setShowBuyModal(true)}
+                    onClick={() => openBuyBez()}
                 >
                     <ExternalLink className="w-5 h-5" />
                     Comprar
@@ -243,7 +243,7 @@ const WalletPage = () => {
                     </div>
                 )}
             </div>
-            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => setShowBuyModal(false)} />
+            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
         </div>
     );
 };

@@ -5,7 +5,7 @@ import { NFTGrid } from '../components/shop/NFTGrid';
 import { Link } from 'react-router-dom';
 import { PlusCircle, Search } from 'lucide-react';
 import { FaCoins } from 'react-icons/fa';
-import BuyBezCoinModal from '../components/modals/BuyBezCoinModal';
+// BuyBezCoinModal -> useBezPay().openBuyBez()
 import InsufficientFundsModal from '../components/modals/InsufficientFundsModal';
 
 const LISTINGS_PER_PAGE = 12;
@@ -74,7 +74,7 @@ const ShopPage = () => {
               </div>
             </div>
             <button
-              onClick={() => setShowBuyModal(true)}
+              onClick={() => openBuyBez()}
               className="px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
             >
               Comprar BEZ
@@ -136,7 +136,7 @@ const ShopPage = () => {
       {/* BezCoin Modals */}
       <BuyBezCoinModal
         isOpen={showBuyModal}
-        onClose={() => setShowBuyModal(false)}
+        onClose={() => {}}
       />
 
       <InsufficientFundsModal

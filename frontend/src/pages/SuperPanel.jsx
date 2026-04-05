@@ -3,25 +3,33 @@ import React, { useEffect, useState } from 'react';
 export default function SuperPanel() {
     const [admin, setAdmin] = useState(null);
     const [error, setError] = useState(null);
+    const { isConnected, address } = useAccount();
 
-    useEffect(() => {
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-            setError('No tienes acceso. Inicia sesión como admin.');
+    const fetchAdminAccess = async () => {
+        if (!isConnected || !address) {
+            setError('Conecta tu wallet para verificar el acceso.');
             return;
         }
-        fetch('/api/admin-register/superpanel', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        })
-            .then(res => res.ok ? res.json() : Promise.reject())
-            .then(data => {
-                setAdmin(data.admin);
-            })
-            .catch(() => setError('Acceso denegado o token inválido.'));
-    }, []);
+        try {
+            const resp = await http.post('/api/admin-register/superpanel', {
+                walletAddress: address
+            });
+            if (resp.status !== 200) {
+                setError('Acceso denegado o no autorizado.');
+                console.error("No se pudo verificar el acceso para", address, resp.data);
+            } else {
+                setAdmin(resp.data.admin); // Assuming the response data contains an 'admin' object
+                console.log("Acceso registrado/verificado para:", address);
+            }
+        } catch (err) {
+            setError('Error al verificar el acceso.');
+            console.error("Error fetching admin access:", err);
+        }
+    };
+
+    useEffect(() => {
+        fetchAdminAccess();
+    }, [isConnected, address]); // Re-run when connection status or address changes
 
     if (error) {
         return <div className="flex flex-col items-center justify-center min-h-screen text-red-600">{error}</div>;

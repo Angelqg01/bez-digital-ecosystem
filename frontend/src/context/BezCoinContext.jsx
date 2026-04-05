@@ -83,14 +83,16 @@ export const BezCoinProvider = ({ children }) => {
         }
 
         try {
-            // Verificar que tenemos window.ethereum
-            if (!window.ethereum) {
-                // console.warn('No Ethereum provider found (MetaMask not installed?)');
-                setBalance('0');
-                return '0';
+            let provider;
+            if (window.ethereum) {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                const network = await provider.getNetwork();
+                if (network.chainId !== 137n && network.chainId !== 80002n && network.chainId !== 31337n) {
+                    provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+                }
+            } else {
+                provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
             }
-
-            const provider = new ethers.BrowserProvider(window.ethereum);
 
             // Verificar que el contrato existe
             if (!BezhasTokenAddress || BezhasTokenAddress === '0x0000000000000000000000000000000000000000') {
@@ -171,13 +173,16 @@ export const BezCoinProvider = ({ children }) => {
         }
 
         try {
-            if (!window.ethereum) {
-                // throw new Error('No Ethereum provider found');
-                setTokenPrice('0.0001');
-                return '0.0001';
+            let provider;
+            if (window.ethereum) {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                const network = await provider.getNetwork();
+                if (network.chainId !== 137n && network.chainId !== 80002n && network.chainId !== 31337n) {
+                    provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+                }
+            } else {
+                provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
             }
-
-            const provider = new ethers.BrowserProvider(window.ethereum);
 
             // Verificar que el contrato existe
             if (!TokenSaleAddress || TokenSaleAddress === '0x0000000000000000000000000000000000000000') {
@@ -470,8 +475,9 @@ export const BezCoinProvider = ({ children }) => {
                 walletAddress: targetAddress,
                 amount: fiatAmount,
                 currency: paymentMethod.currency || 'USD',
-                paymentMethod: { ...paymentMethod, type: 'mock' }, // Forzamos mock por ahora
-                tokenAmount: tokenAmount // Pasamos la cantidad calculada con descuento
+                paymentMethod: paymentMethod, // Usamos el método real
+                tokenAmount: tokenAmount, // Pasamos la cantidad calculada con descuento
+                contractAddress: BezhasTokenAddress // El único token nativo válido para compras
             });
 
             // Actualizar balance si la wallet destino es la actual

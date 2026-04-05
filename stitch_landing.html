@@ -1,0 +1,379 @@
+<html class="dark"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d33f2",
+                        "accent-purple": "#a855f7",
+                        "accent-cyan": "#22d3ee",
+                        "accent-magenta": "#f472b6",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#080911",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer components {
+            .glass-panel {
+                background: rgba(255, 255, 255, 0.03);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .glass-btn {
+                background: rgba(255, 255, 255, 0.05);
+                backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .neon-glow-purple {
+                box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+            }
+            .hero-gradient {
+                background: radial-gradient(circle at top right, rgba(13, 51, 242, 0.15), transparent),
+                            radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.1), transparent);
+            }@keyframes pulse-flow {
+                0% { left: -10%; opacity: 0; }
+                50% { opacity: 1; }
+                100% { left: 110%; opacity: 0; }
+            }
+            .pulse-dot {
+                position: absolute;
+                top: 50%;
+                width: 40px;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, #22d3ee, white, #22d3ee, transparent);
+                box-shadow: 0 0 15px #22d3ee;
+                animation: pulse-flow 3s infinite linear;
+            }
+            .holographic-border {
+                position: relative;
+            }
+            .holographic-border::before {
+                content: '';
+                position: absolute;
+                inset: -2px;
+                background: linear-gradient(45deg, #0d33f2, #a855f7, #22d3ee, #f472b6);
+                z-index: -1;
+                filter: blur(10px);
+                opacity: 0.5;
+            }
+            .visualizer-bar {
+                background: linear-gradient(to top, #0d33f2, #22d3ee);
+                width: 3px;
+                height: 100%;
+                margin: 0 2px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased selection:bg-primary selection:text-white">
+<div class="relative min-h-screen w-full flex flex-col overflow-x-hidden">
+<header class="fixed top-0 w-full z-50 px-6 lg:px-20 py-4 flex items-center justify-between glass-panel border-b-0">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-primary rounded flex items-center justify-center neon-glow-purple">
+<span class="material-symbols-outlined text-white text-xl">deployed_code</span>
+</div>
+<h2 class="text-slate-100 text-2xl font-bold tracking-tighter italic">BEZHAS</h2>
+</div>
+<nav class="hidden xl:flex items-center gap-10">
+<a class="text-slate-400 hover:text-accent-cyan transition-colors text-sm font-medium uppercase tracking-widest" href="#">Logistics</a>
+<a class="text-slate-400 hover:text-accent-cyan transition-colors text-sm font-medium uppercase tracking-widest" href="#">AI Oracle</a>
+<a class="text-slate-400 hover:text-accent-cyan transition-colors text-sm font-medium uppercase tracking-widest" href="#">Real Estate</a>
+<a class="text-slate-400 hover:text-accent-cyan transition-colors text-sm font-medium uppercase tracking-widest" href="#">Governance</a>
+</nav>
+<div class="flex items-center gap-3">
+<div class="hidden sm:flex items-center gap-2">
+<button class="glass-btn px-5 h-10 rounded text-slate-200 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all border-white/10">Log In</button>
+<button class="glass-btn px-5 h-10 rounded text-slate-200 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all border-white/10">Register</button>
+</div>
+<button class="hidden lg:flex items-center justify-center rounded-lg h-11 px-6 bg-primary text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all border border-primary/50 shadow-lg shadow-primary/20">
+                Connect Wallet
+            </button>
+<div class="size-10 rounded-full border border-slate-700 p-0.5">
+<div class="w-full h-full rounded-full bg-slate-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400 text-xl">person</span>
+</div>
+</div>
+</div>
+</header>
+<main class="relative flex-1 flex flex-col pt-24">
+<section class="relative min-h-[90vh] flex items-center justify-center px-6 lg:px-20 overflow-hidden">
+<div class="absolute inset-0 z-0">
+<div class="absolute inset-0 bg-background-dark/60 z-10"></div>
+<div class="absolute inset-0 hero-gradient z-10"></div>
+<img class="w-full h-full object-cover blur-sm opacity-50 scale-105" data-alt="Futuristic night port with neon crane lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCe7rwgyLLBz4KfQKDEEit7pU8jhZDPOHSNsqjPs4f8oU_MJGkLKGeQKSmKZpur-HyRosnxS5fqygVDJV0Or1goEP-cJHwwua78P0ZpY113IzwXTAS44H6aZAJ3n4-MkgRgi8t20t1vGnaGsYVeExmrwnukoXk3dSmjSjgdAb10mwxJxMrUdFaSEQCj6F_ZLu_vOgQ55kbi-W70G0_zwBfiPRBjktqMr94LlRn7gt8POzWL_xAZJEfEajWswHbSZLi7NuO6Z-xkodw"/>
+</div>
+<div class="relative z-20 text-center max-w-5xl mx-auto space-y-8">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel border-primary/30 mb-4">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-cyan opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-accent-cyan"></span>
+</span>
+<span class="text-[10px] font-bold uppercase tracking-[0.3em] text-accent-cyan">Network Mainnet Live</span>
+</div>
+<h1 class="text-5xl md:text-8xl font-black leading-[0.9] tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-200 to-slate-500 uppercase italic">
+                    BeZhas: The Web3 <br/>
+<span class="text-primary italic">Global Engine</span>
+</h1>
+<p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed">
+                    Revolutionizing global supply chains with decentralized intelligence, real-time AI Oracles, and industrial tokenization.
+                </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
+<button class="w-full sm:w-auto min-w-[200px] h-14 bg-primary text-white font-bold uppercase tracking-widest rounded-lg shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
+                        Explore Ecosystem
+                    </button>
+<button class="w-full sm:w-auto min-w-[200px] h-14 glass-panel text-white font-bold uppercase tracking-widest rounded-lg border-white/20 hover:bg-white/10 transition-all">
+                        Whitepaper v2.0
+                    </button>
+</div>
+</div>
+</section>
+<section class="py-24 px-6 lg:px-20 relative overflow-hidden">
+<div class="absolute inset-0 bg-background-dark"></div>
+<div class="relative z-10 max-w-7xl mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+<div class="space-y-4">
+<span class="text-primary font-bold uppercase tracking-widest text-xs">Core Protocol</span>
+<h2 class="text-4xl md:text-5xl font-bold text-white tracking-tight italic uppercase">The Chain-Flow Ecosystem</h2>
+</div>
+<p class="text-slate-500 max-w-md text-sm leading-relaxed">
+                        A multidimensional protocol connecting physical hardware with digital verification systems. Built for the high-frequency demands of global trade.
+                    </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 relative py-10">
+<div class="hidden lg:block absolute inset-0 pointer-events-none z-0">
+<div class="absolute top-1/2 left-[20%] w-[15%] h-[2px] bg-slate-800">
+<div class="pulse-dot" style="animation-delay: 0s"></div>
+</div>
+<div class="absolute top-1/2 left-[45%] w-[15%] h-[2px] bg-slate-800">
+<div class="pulse-dot" style="animation-delay: 1s"></div>
+</div>
+<div class="absolute top-1/2 left-[70%] w-[15%] h-[2px] bg-slate-800">
+<div class="pulse-dot" style="animation-delay: 2s"></div>
+</div>
+</div>
+<div class="group glass-panel p-8 rounded-xl border-slate-800 hover:border-primary/50 transition-all relative overflow-hidden z-10">
+<div class="absolute -right-4 -top-4 size-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
+<span class="material-symbols-outlined text-accent-cyan text-4xl mb-6 block">local_shipping</span>
+<h3 class="text-xl font-bold text-white mb-3 uppercase italic">Logistics</h3>
+<p class="text-slate-400 text-sm leading-relaxed">Smart contract automated freight tracking with zero-latency updates.</p>
+<div class="mt-8 flex items-center gap-2 text-accent-cyan text-xs font-bold uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-all">
+                            Learn More <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</div>
+</div>
+<div class="group glass-panel p-8 rounded-xl border-slate-800 hover:border-accent-purple/50 transition-all relative overflow-hidden z-10">
+<div class="absolute -right-4 -top-4 size-24 bg-accent-purple/10 rounded-full blur-2xl group-hover:bg-accent-purple/20 transition-all"></div>
+<span class="material-symbols-outlined text-accent-purple text-4xl mb-6 block">psychology</span>
+<h3 class="text-xl font-bold text-white mb-3 uppercase italic">AI Oracle</h3>
+<p class="text-slate-400 text-sm leading-relaxed">Real-time data validation engines powered by neural processing units.</p>
+<div class="mt-8 flex items-center gap-2 text-accent-purple text-xs font-bold uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-all">
+                            View Nodes <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</div>
+</div>
+<div class="group glass-panel p-8 rounded-xl border-slate-800 hover:border-accent-magenta/50 transition-all relative overflow-hidden z-10">
+<div class="absolute -right-4 -top-4 size-24 bg-accent-magenta/10 rounded-full blur-2xl group-hover:bg-accent-magenta/20 transition-all"></div>
+<span class="material-symbols-outlined text-accent-magenta text-4xl mb-6 block">domain</span>
+<h3 class="text-xl font-bold text-white mb-3 uppercase italic">Real Estate</h3>
+<p class="text-slate-400 text-sm leading-relaxed">Fractionalized industrial hubs and smart warehousing assets.</p>
+<div class="mt-8 flex items-center gap-2 text-accent-magenta text-xs font-bold uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-all">
+                            Invest <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</div>
+</div>
+<div class="group glass-panel p-8 rounded-xl border-slate-800 hover:border-slate-500/50 transition-all relative overflow-hidden z-10">
+<div class="absolute -right-4 -top-4 size-24 bg-slate-500/10 rounded-full blur-2xl group-hover:bg-slate-500/20 transition-all"></div>
+<span class="material-symbols-outlined text-slate-100 text-4xl mb-6 block">groups</span>
+<h3 class="text-xl font-bold text-white mb-3 uppercase italic">DAO</h3>
+<p class="text-slate-400 text-sm leading-relaxed">Decentralized governance for global trade route optimization.</p>
+<div class="mt-8 flex items-center gap-2 text-slate-100 text-xs font-bold uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-all">
+                            Vote <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-24 px-6 lg:px-20 bg-background-dark">
+<div class="max-w-7xl mx-auto">
+<div class="text-center mb-16 space-y-4">
+<span class="text-accent-magenta font-bold uppercase tracking-widest text-xs">Deep Dive</span>
+<h2 class="text-4xl md:text-6xl font-black text-white leading-tight uppercase italic">The Visionary Concept</h2>
+</div>
+<div class="relative max-w-5xl mx-auto">
+<div class="holographic-border rounded-2xl p-[2px] overflow-hidden">
+<div class="relative bg-background-dark rounded-2xl overflow-hidden aspect-video">
+<div class="absolute left-0 top-0 bottom-0 w-8 flex flex-col justify-center items-center gap-1 opacity-40 py-10">
+<div class="visualizer-bar" style="height: 15%"></div>
+<div class="visualizer-bar" style="height: 35%"></div>
+<div class="visualizer-bar" style="height: 65%"></div>
+<div class="visualizer-bar" style="height: 45%"></div>
+<div class="visualizer-bar" style="height: 85%"></div>
+<div class="visualizer-bar" style="height: 55%"></div>
+<div class="visualizer-bar" style="height: 25%"></div>
+</div>
+<div class="absolute right-0 top-0 bottom-0 w-8 flex flex-col justify-center items-center gap-1 opacity-40 py-10">
+<div class="visualizer-bar" style="height: 25%"></div>
+<div class="visualizer-bar" style="height: 55%"></div>
+<div class="visualizer-bar" style="height: 85%"></div>
+<div class="visualizer-bar" style="height: 45%"></div>
+<div class="visualizer-bar" style="height: 65%"></div>
+<div class="visualizer-bar" style="height: 35%"></div>
+<div class="visualizer-bar" style="height: 15%"></div>
+</div>
+<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" class="w-full h-full grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-500" frameborder="0" src="https://www.youtube.com/embed/dQw4w9WgXcQ?controls=0&amp;modestbranding=1&amp;rel=0" title="BeZhas Protocol Insight">
+</iframe>
+<div class="absolute top-6 right-10 flex items-center gap-4 pointer-events-none">
+<div class="flex flex-col items-end">
+<span class="text-[10px] font-mono text-accent-cyan uppercase">Decrypting...</span>
+<span class="text-[10px] font-mono text-slate-500">Node: 0x82...f92</span>
+</div>
+<span class="material-symbols-outlined text-accent-cyan animate-pulse">radar</span>
+</div>
+</div>
+</div>
+<div class="mt-4 flex justify-between items-center px-4">
+<div class="flex gap-2">
+<span class="size-1 bg-accent-cyan rounded-full"></span>
+<span class="size-1 bg-accent-cyan rounded-full opacity-50"></span>
+<span class="size-1 bg-accent-cyan rounded-full opacity-25"></span>
+</div>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Protocol Visualization v4.22</span>
+</div>
+</div>
+</div>
+</section>
+<section class="py-24 px-6 lg:px-20 bg-background-dark/50">
+<div class="max-w-7xl mx-auto">
+<div class="grid lg:grid-cols-2 gap-16 items-center">
+<div class="space-y-8">
+<h2 class="text-4xl md:text-6xl font-black text-white leading-tight uppercase italic">
+                            Cutting-Edge <br/> <span class="text-primary">Infrastructure</span>
+</h2>
+<p class="text-slate-400 text-lg leading-relaxed">
+                            BeZhas operates at the intersection of blockchain and physical reality. We provide the pipes for the future of decentralized commerce.
+                        </p>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="size-12 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary">security</span>
+</div>
+<div>
+<h4 class="text-white font-bold uppercase tracking-tight">Ultra-Secure</h4>
+<p class="text-slate-500 text-sm">Military-grade encryption for all shipments and data flow.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="size-12 shrink-0 rounded-lg bg-accent-cyan/10 flex items-center justify-center border border-accent-cyan/20">
+<span class="material-symbols-outlined text-accent-cyan">analytics</span>
+</div>
+<div>
+<h4 class="text-white font-bold uppercase tracking-tight">AI Integrated</h4>
+<p class="text-slate-500 text-sm">Predictive route optimization with sub-second recalculation.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="size-12 shrink-0 rounded-lg bg-accent-purple/10 flex items-center justify-center border border-accent-purple/20">
+<span class="material-symbols-outlined text-accent-purple">public</span>
+</div>
+<div>
+<h4 class="text-white font-bold uppercase tracking-tight">Global Scale</h4>
+<p class="text-slate-500 text-sm">Seamless cross-border logistics protocol ready for mass adoption.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="relative group">
+<div class="absolute inset-0 bg-primary/20 rounded-2xl blur-3xl group-hover:bg-primary/30 transition-all"></div>
+<div class="relative glass-panel rounded-2xl p-2 border-white/10 overflow-hidden">
+<img class="w-full h-[500px] object-cover rounded-xl grayscale hover:grayscale-0 transition-all duration-700" data-alt="Modern high-tech distribution center interior" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYOrHMRAm1HtZXjr5lvj8dldC3uy6o5_3xKnnCz-dWXfrETQSMy9v1W08D70TvYwo7xd7NopIxrBUSp4aZx1eRR9He_eGAAz1rW374Zdn7QVkawkzSc3qI1ntjPfSqPrTSw3pF0RsaRO1aYGsBOjmQ4p7BKrFbHtLL6LK0jzXlbz732ZxLkxZUhUQa5CmjuNBo78tuCw9pJgSo4fTlFmDS80SwmNl7mU8v2W0wioCrFyvUe9CVt8E2nxEgz1DxvJndMK10cPa01bU"/>
+<div class="absolute bottom-6 left-6 right-6 glass-panel p-4 rounded-lg border-primary/30">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-accent-cyan uppercase tracking-widest">Asset Tracking: Active</span>
+<span class="text-[10px] font-mono text-slate-400">#BH-9921-X</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-24 px-6 lg:px-20">
+<div class="max-w-7xl mx-auto rounded-3xl relative overflow-hidden glass-panel border-primary/20 p-12 md:p-24 text-center">
+<div class="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent"></div>
+<div class="relative z-10 space-y-8">
+<h2 class="text-4xl md:text-7xl font-black text-white italic uppercase tracking-tighter">Ready to join the <br/> supply chain revolution?</h2>
+<p class="text-slate-400 text-lg max-w-xl mx-auto">Get early access to our private alpha and start optimizing your logistics network today.</p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+<button class="w-full sm:w-auto px-12 h-16 bg-white text-background-dark font-black uppercase tracking-widest rounded-lg hover:scale-105 transition-all">Get Started</button>
+<button class="w-full sm:w-auto px-12 h-16 bg-primary text-white font-black uppercase tracking-widest rounded-lg hover:scale-105 transition-all">Join Discord</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="py-16 px-6 lg:px-20 border-t border-slate-900 bg-background-dark">
+<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+<div class="space-y-6">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-primary rounded-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xl">deployed_code</span>
+</div>
+<h2 class="text-slate-100 text-xl font-bold tracking-tighter italic">BEZHAS</h2>
+</div>
+<p class="text-slate-500 text-sm leading-relaxed max-w-xs">
+                    The decentralized backbone of global commerce, merging industrial logistics with Web3 technology.
+                </p>
+<div class="flex items-center gap-4">
+<a class="size-10 rounded-full glass-panel flex items-center justify-center text-slate-400 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">share</span>
+</a>
+<a class="size-10 rounded-full glass-panel flex items-center justify-center text-slate-400 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">public</span>
+</a>
+<a class="size-10 rounded-full glass-panel flex items-center justify-center text-slate-400 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">mail</span>
+</a>
+</div>
+</div>
+<div class="space-y-6">
+<h4 class="text-white text-xs font-bold uppercase tracking-[0.2em]">Contact</h4>
+<ul class="space-y-4 text-slate-500 text-sm">
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-accent-cyan text-sm">mail</span> contact@bezhas.io</li>
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-accent-cyan text-sm">location_on</span> Silicon Valley, CA</li>
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-accent-cyan text-sm">call</span> +1 (555) BEZHAS-0</li>
+</ul>
+</div>
+<div class="space-y-6">
+<h4 class="text-white text-xs font-bold uppercase tracking-[0.2em]">Ecosystem</h4>
+<ul class="space-y-4 text-slate-500 text-sm uppercase font-medium tracking-wider">
+<li><a class="hover:text-primary transition-colors" href="#">Whitepaper</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Docs</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Bug Bounty</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Network Status</a></li>
+</ul>
+</div>
+<div class="space-y-6">
+<h4 class="text-white text-xs font-bold uppercase tracking-[0.2em]">Newsletter</h4>
+<div class="relative">
+<input class="w-full h-12 glass-panel rounded-lg px-4 text-sm text-white focus:outline-none focus:border-primary transition-all bg-transparent" placeholder="Email Address" type="email"/>
+<button class="absolute right-2 top-2 size-8 bg-primary rounded flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<p class="text-[10px] text-slate-600 uppercase tracking-widest">© 2024 BeZhas Protocol. All rights reserved.</p>
+</div>
+</div>
+</footer>
+</div>
+
+</body></html>

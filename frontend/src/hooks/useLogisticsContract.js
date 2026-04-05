@@ -17,7 +17,10 @@ export const useLogisticsContract = () => {
             const response = await api.get('/logistics/shipments');
             setShipments(response.data);
         } catch (error) {
-            console.error("Error fetching shipments:", error);
+            // Silence 404 errors — endpoint may not exist yet
+            if (error.response?.status !== 404) {
+                console.error("Error fetching shipments:", error);
+            }
         } finally {
             setLoading(false);
         }
@@ -25,8 +28,8 @@ export const useLogisticsContract = () => {
 
     useEffect(() => {
         fetchShipments();
-        // Polling para actualizaciones en tiempo real (simulado)
-        const interval = setInterval(fetchShipments, 5000);
+        // Poll every 30s (reduced from 5s to avoid console spam)
+        const interval = setInterval(fetchShipments, 30000);
         return () => clearInterval(interval);
     }, []);
 

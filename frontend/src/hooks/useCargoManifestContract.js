@@ -61,11 +61,11 @@ export const useCargoManifestContract = (contractAddress) => {
 
                 // Get registration fee
                 const fee = await cargoContract.registrationFee();
-                setRegistrationFee(ethers.utils.formatUnits(fee, 18));
+                setRegistrationFee(ethers.formatUnits(fee, 18));
 
                 // Get BEZ balance
                 const balance = await bezContract.balanceOf(walletAddress);
-                setBezBalance(ethers.utils.formatUnits(balance, 18));
+                setBezBalance(ethers.formatUnits(balance, 18));
 
             } catch (error) {
                 console.error('Error initializing contracts:', error);
@@ -86,7 +86,7 @@ export const useCargoManifestContract = (contractAddress) => {
         setLoading(true);
         try {
             // 1. Approve BEZ-Coin spending
-            const feeInWei = ethers.utils.parseUnits(registrationFee, 18);
+            const feeInWei = ethers.parseUnits(registrationFee, 18);
             const approveTx = await bezCoinContract.approve(contract.address, feeInWei);
             await approveTx.wait();
 
@@ -98,7 +98,7 @@ export const useCargoManifestContract = (contractAddress) => {
                 manifestData.containerId,
                 manifestData.transportMode,
                 manifestData.commodityDescription,
-                ethers.utils.parseUnits(manifestData.weightMT.toString(), 3), // Scale by 1000
+                ethers.parseUnits(manifestData.weightMT.toString(), 3), // Scale by 1000
                 manifestData.vesselVoyage,
                 manifestData.hsCode,
                 manifestData.consignee,
@@ -272,7 +272,7 @@ export const useCargoManifestContract = (contractAddress) => {
                 containerId: manifest.containerId,
                 transportMode: manifest.transportMode,
                 commodityDescription: manifest.commodityDescription,
-                weightMT: ethers.utils.formatUnits(manifest.weightMT, 3),
+                weightMT: ethers.formatUnits(manifest.weightMT, 3),
                 vesselVoyage: manifest.vesselVoyage,
                 hsCode: manifest.hsCode,
                 shipper: manifest.shipper,
@@ -299,7 +299,7 @@ export const useCargoManifestContract = (contractAddress) => {
 
         try {
             const fee = await contract.calculateFees();
-            return ethers.utils.formatUnits(fee, 18);
+            return ethers.formatUnits(fee, 18);
         } catch (error) {
             console.error('Error calculating fees:', error);
             throw error;

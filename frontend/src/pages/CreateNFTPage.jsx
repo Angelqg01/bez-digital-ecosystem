@@ -3,6 +3,18 @@ import { FaImage, FaCoins, FaChartPie, FaBolt, FaBox, FaCalendarAlt, FaCommentAl
 import { toast } from 'react-hot-toast';
 import { useWeb3 } from '../context/Web3Context';
 import { useNavigate } from 'react-router-dom';
+import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
+
+// BezhasNFT.sol en Polygon Mainnet (se actualiza tras deploy)
+const BEZHAS_NFT_ADDRESS = import.meta.env.VITE_NFT_ADDRESS || null;
+const BEZHAS_NFT_ABI = [
+    {
+        name: 'safeMint', type: 'function', stateMutability: 'nonpayable',
+        inputs: [{ name: 'to', type: 'address' }, { name: 'uri', type: 'string' }],
+        outputs: []
+    }
+];
+
 
 const CreateNFTPage = () => {
     const { address, isConnected } = useWeb3();
@@ -287,35 +299,45 @@ const StandardNFTForm = ({ onImageChange, onSave }) => {
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
+    const formDataRef = React.useRef(formData);
+    React.useEffect(() => { formDataRef.current = formData; }, [formData]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!address) return toast.error('Conecta tu wallet primero');
+        if (!minter) return toast.error('Conecta tu wallet primero');
+        if (!formData.image && !formData.mediaFile) return toast.error('Sube un archivo o indica una URL de imagen');
 
-        toast.loading('Creando NFT estándar...', { id: 'mint' });
+        const tokenURI = formData.image || `ipfs://pending-${Date.now()}`;
 
-        // Save to history
-        if (onSave) {
-            onSave({
-                ...formData,
-                type: 'standard'
+        if (BEZHAS_NFT_ADDRESS) {
+            // ── Mint on-chain real ──────────────────────────────────────────
+            toast.loading('Confirmando mint en Polygon...', { id: 'mint' });
+            mintNFT({
+                address: BEZHAS_NFT_ADDRESS,
+                abi: BEZHAS_NFT_ABI,
+                functionName: 'safeMint',
+                args: [minter, tokenURI],
+                chainId: 137,
             });
+        } else {
+            // ── Fallback: guardar en backend hasta que haya contrato ────────
+            toast.loading('Registrando NFT...', { id: 'mint' });
+            try {
+                const API = import.meta.env.VITE_API_URL || '';
+                await fetch(`${API}/api/nft/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                    body: JSON.stringify({ ...formData, creator: minter, type: 'standard', tokenURI }),
+                });
+                toast.success('✅ NFT registrado (contrato pendiente de deploy)', { id: 'mint' });
+                onSave?.({ ...formData, type: 'standard' });
+                setFormData(prev => ({ ...prev, name: '', description: '', image: '', price: '' }));
+            } catch (err) {
+                toast.error('Error al registrar NFT', { id: 'mint' });
+            }
         }
-
-        // TODO: Implementar lógica de minteo real
-        setTimeout(() => {
-            toast.success('¡NFT creado exitosamente! 🎉', { id: 'mint' });
-            // Reset form
-            setFormData({
-                name: '',
-                description: '',
-                image: '',
-                price: '',
-                royalty: '5',
-                category: 'art',
-                supply: '1'
-            });
-        }, 2000);
     };
+
 
     const handleImageChange = (e) => {
         const url = e.target.value;

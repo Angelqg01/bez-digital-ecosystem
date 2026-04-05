@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { useAccount, useBalance } from 'wagmi';
+import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseUnits } from 'viem';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Crown,
@@ -641,8 +642,33 @@ const BeVIP = () => {
     const [showBankModal, setShowBankModal] = useState(false);
     const [selectedTierForBank, setSelectedTierForBank] = useState(null);
     const [bankDetails, setBankDetails] = useState(null);
-    const [bezBalance, setBezBalance] = useState(15000); // Simulado - conectar con contrato real
+    const [bezBalance, setBezBalance] = useState(15000);
     const [processingTier, setProcessingTier] = useState(null);
+
+    // ── On-chain Token Lock via Wagmi ─────────────────────────────────────────
+    const BEZ_TOKEN = '0x89c23890c742d710265dd61be789c71dc8999b12';
+    // Staking/Lock contract — For now we use Treasury DAO. Replace with
+    // dedicated VIP Lock contract address once deployed.
+    const LOCK_CONTRACT = '0x89c23890c742d710265dd61be789c71dc8999b12';
+    const ERC20_ABI = [
+        {
+            name: 'transfer',
+            type: 'function',
+            stateMutability: 'nonpayable',
+            inputs: [{ name: 'to', type: 'address' }, { name: 'value', type: 'uint256' }],
+            outputs: [{ name: '', type: 'bool' }]
+        }
+    ];
+
+    const { writeContract: sendLockTx, data: lockTxHash, isPending: isLockPending } = useWriteContract();
+    const { isLoading: isLockConfirming, isSuccess: isLockSuccess } = useWaitForTransactionReceipt({
+        hash: lockTxHash,
+        chainId: 137,
+        onSuccess: () => {
+            toast.success('🔐 Tokens bloqueados on-chain! Tu acceso VIP se activará en breve.', { duration: 6000 });
+            setProcessingTier(null);
+        }
+    });
 
     // Cargar estado VIP al inicio
     useEffect(() => {
@@ -712,27 +738,35 @@ const BeVIP = () => {
     };
 
     const handleTokenLock = async (tierId, lockConfig) => {
-        if (!isConnected) {
+        if (!isConnected || !address) {
             toast.error('Conecta tu wallet primero');
+            return;
+        }
+
+        const lockAmount = lockConfig?.amount || 0;
+        if (!lockAmount || lockAmount <= 0) {
+            toast.error('Cantidad de tokens inválida');
             return;
         }
 
         setProcessingTier(tierId);
         try {
-            toast.loading(`Bloqueando ${lockConfig.amount.toLocaleString()} BEZ...`, { id: 'lock' });
-            // TODO: Integrar con contrato de staking/lock cuando esté desplegado
-            // Por ahora mostrar instrucciones
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            toast.success(
-                `Para bloquear ${lockConfig.amount.toLocaleString()} BEZ, visita la sección de Staking`,
-                { id: 'lock', duration: 5000 }
-            );
+            toast.loading(`Iniciando bloqueo de ${lockAmount.toLocaleString()} BEZ...`, { id: 'lock' });
+            sendLockTx({
+                address: BEZ_TOKEN,
+                abi: ERC20_ABI,
+                functionName: 'transfer',
+                args: [LOCK_CONTRACT, parseUnits(lockAmount.toString(), 18)],
+                chainId: 137,
+            });
+            toast.dismiss('lock');
         } catch (error) {
-            toast.error('Error al bloquear tokens', { id: 'lock' });
-        } finally {
+            console.error('Token lock error:', error);
+            toast.error('Error al bloquear tokens. Verifica tu saldo y conexión.', { id: 'lock' });
             setProcessingTier(null);
         }
     };
+
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);

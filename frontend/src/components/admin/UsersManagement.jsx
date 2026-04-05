@@ -20,9 +20,13 @@ import {
     X,
     Mail,
     Wallet,
-    CreditCard
+    CreditCard,
+    Coins
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useReadContract } from 'wagmi';
+import { formatUnits } from 'ethers';
+// import { BEZHAS_TOKEN_ADDRESS, BEZHAS_TOKEN_ABI } from '../../../config/contracts';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -97,6 +101,29 @@ const SUBSCRIPTION_CONFIG = {
         label: 'VIP',
         color: 'purple'
     }
+};
+
+const TokenBalanceCell = ({ address }) => {
+    const { data: balanceData } = useReadContract({
+        address: '0x53Eb00e6205eE1ecA78F2da22510BCfDED8CD56E',
+        abi: [{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}],
+        functionName: 'balanceOf',
+        args: address ? [address] : undefined,
+        query: {
+            enabled: !!address,
+            // don't refetch too often on a big list
+            staleTime: 60000 
+        }
+    });
+
+    const displayBalance = balanceData !== undefined ? Number(formatUnits(balanceData, 18)).toFixed(2) : '0.00';
+
+    return (
+        <div className="flex items-center gap-1.5 text-yellow-600 dark:text-yellow-400 font-semibold font-mono">
+            <Coins className="w-4 h-4" />
+            {displayBalance}
+        </div>
+    );
 };
 
 const UsersManagement = () => {
@@ -430,6 +457,9 @@ const UsersManagement = () => {
                                     Rol
                                 </th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                    Balance (BEZ)
+                                </th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                                     Subscripción
                                 </th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
@@ -480,6 +510,13 @@ const UsersManagement = () => {
                                                     {roleConfig.label}
                                                 </span>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {user.walletAddress ? (
+                                                <TokenBalanceCell address={user.walletAddress} />
+                                            ) : (
+                                                <span className="text-gray-400 text-xs">N/A</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${user.subscription === 'VIP'

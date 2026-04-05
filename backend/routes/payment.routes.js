@@ -9,157 +9,161 @@ const tokenomics = require('../config/tokenomics.config');
 // ============================================================
 // BULLMQ RETRY QUEUE FOR TOKEN DISTRIBUTION
 // ============================================================
-const { Queue, Worker } = require('bullmq');
+// NOTE: BullMQ is OPTIONAL. If Redis is unavailable (e.g. Upstash limit exceeded),
+// the server still starts and payments fallback to direct processing without retries.
+let tokenDistributionQueue = null;
+let paymentDLQ = null;
+let tokenDistributionWorker = null;
 
-// Redis connection config (usa la misma conexión que el resto del backend)
-const redisConnection = {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT) || 6379,
-    password: process.env.REDIS_PASSWORD || undefined
-};
+const REDIS_URL = process.env.REDIS_URL;
+const BULLMQ_FORCE_DISABLED = ['true', '1'].includes((process.env.DISABLE_BULLMQ || '').toLowerCase());
+const BULLMQ_ENABLED = !!REDIS_URL && !BULLMQ_FORCE_DISABLED;
 
-// Cola de distribución de tokens con reintentos
-const tokenDistributionQueue = new Queue('token-distribution', {
-    connection: redisConnection,
-    defaultJobOptions: {
-        attempts: tokenomics.paymentRetry.maxAttempts,
-        backoff: {
-            type: tokenomics.paymentRetry.backoffType,
-            delay: tokenomics.paymentRetry.initialDelayMs
-        },
-        removeOnComplete: 100,
-        removeOnFail: 50
-    }
-});
-
-// Dead Letter Queue para pagos fallidos (sin reintentos)
-const paymentDLQ = new Queue(tokenomics.paymentRetry.deadLetterQueue, {
-    connection: redisConnection
-});
-
-/**
- * Worker para procesar distribución de tokens con BURN + TREASURY
- * 
- * Distribución por cada compra FIAT:
- * - 0.2% → Burn Address (deflación)
- * - 1.0% → Treasury (sostenibilidad)
- * - 98.8% → Usuario
- */
-const tokenDistributionWorker = new Worker('token-distribution', async (job) => {
-    const { walletAddress, bezAmount, paymentId, sessionId } = job.data;
-
-    // Calcular distribución para logging
-    const distribution = calculateDistribution(bezAmount);
-
-    logger.info({
-        jobId: job.id,
-        attempt: job.attemptsMade + 1,
-        walletAddress,
-        bezAmount,
-        distribution: {
-            user: distribution.user.toFixed(4),
-            burn: distribution.burn.toFixed(4),
-            treasury: distribution.treasury.toFixed(4)
-        },
-        paymentId
-    }, '🔄 Processing token distribution job with burn + treasury');
-
+if (BULLMQ_ENABLED) {
     try {
-        // Ejecutar distribución atómica: User + Burn + Treasury
-        const txResult = await distributeTokens(walletAddress, bezAmount);
+        const { Queue, Worker } = require('bullmq');
 
-        // Actualizar payment record con información de distribución
-        const payment = await Payment.findOne({
-            $or: [
-                { _id: paymentId },
-                { sessionId: sessionId }
-            ]
-        });
+        // Redis connection config (usa la misma conexión que el resto del backend)
+        const redisConnection = {
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT) || 6379,
+            password: process.env.REDIS_PASSWORD || undefined,
+            maxRetriesPerRequest: null,
+            retryStrategy: (times) => times > 3 ? null : Math.min(times * 500, 3000),
+        };
 
-        if (payment) {
-            // Guardar datos de distribución en el payment
-            payment.distribution = {
-                userAmount: txResult.distribution.user,
-                burnAmount: txResult.distribution.burn,
-                treasuryAmount: txResult.distribution.treasury,
-                userTxHash: txResult.transactions.user?.txHash,
-                burnTxHash: txResult.transactions.burn?.txHash,
-                treasuryTxHash: txResult.transactions.treasury?.txHash
-            };
-            payment.status = 'completed';
-            payment.completedAt = new Date();
-            await payment.save();
-        }
-
-        logger.info({
-            jobId: job.id,
-            walletAddress,
-            userReceived: txResult.distribution.user,
-            burned: txResult.distribution.burn,
-            treasury: txResult.distribution.treasury,
-            userTxHash: txResult.transactions.user?.txHash,
-            burnTxHash: txResult.transactions.burn?.txHash,
-            treasuryTxHash: txResult.transactions.treasury?.txHash
-        }, '🎉 Token distribution completed with burn + treasury');
-
-        return txResult;
-
-    } catch (error) {
-        logger.error({
-            jobId: job.id,
-            attempt: job.attemptsMade + 1,
-            maxAttempts: tokenomics.paymentRetry.maxAttempts,
-            error: error.message,
-            walletAddress,
-            bezAmount
-        }, '❌ Token distribution failed');
-
-        throw error; // BullMQ reintentará automáticamente
-    }
-}, { connection: redisConnection });
-
-// Event handlers para el worker
-tokenDistributionWorker.on('completed', (job, result) => {
-    logger.info({
-        jobId: job.id,
-        txHash: result?.txHash
-    }, 'Token distribution job completed');
-});
-
-tokenDistributionWorker.on('failed', async (job, error) => {
-    if (job.attemptsMade >= tokenomics.paymentRetry.maxAttempts) {
-        // Mover a Dead Letter Queue después de agotar reintentos
-        logger.error({
-            jobId: job.id,
-            attempts: job.attemptsMade,
-            error: error.message
-        }, 'Token distribution permanently failed - moving to DLQ');
-
-        // Agregar a DLQ para revisión manual
-        await paymentDLQ.add('failed-distribution', {
-            ...job.data,
-            error: error.message,
-            failedAt: new Date().toISOString(),
-            attempts: job.attemptsMade
-        });
-
-        // Actualizar payment record como fallido
-        try {
-            const payment = await Payment.findOne({
-                $or: [
-                    { _id: job.data.paymentId },
-                    { sessionId: job.data.sessionId }
-                ]
-            });
-
-            if (payment) {
-                await payment.markFailed(`Distribution failed after ${job.attemptsMade} attempts: ${error.message}`);
+        // Cola de distribución de tokens con reintentos
+        tokenDistributionQueue = new Queue('token-distribution', {
+            connection: redisConnection,
+            defaultJobOptions: {
+                attempts: tokenomics.paymentRetry.maxAttempts,
+                backoff: {
+                    type: tokenomics.paymentRetry.backoffType,
+                    delay: tokenomics.paymentRetry.initialDelayMs
+                },
+                removeOnComplete: 100,
+                removeOnFail: 50
             }
-        } catch (dbError) {
-            logger.error({ dbError: dbError.message }, 'Failed to update payment record');
-        }
+        });
+
+        // Dead Letter Queue para pagos fallidos (sin reintentos)
+        paymentDLQ = new Queue(tokenomics.paymentRetry.deadLetterQueue, {
+            connection: redisConnection
+        });
+
+        /**
+         * Worker para procesar distribución de tokens con BURN + TREASURY
+         */
+        tokenDistributionWorker = new Worker('token-distribution', async (job) => {
+            const { walletAddress, bezAmount, paymentId, sessionId } = job.data;
+
+            const distribution = calculateDistribution(bezAmount);
+
+            logger.info({
+                jobId: job.id,
+                attempt: job.attemptsMade + 1,
+                walletAddress,
+                bezAmount,
+                distribution: {
+                    user: distribution.user.toFixed(4),
+                    burn: distribution.burn.toFixed(4),
+                    treasury: distribution.treasury.toFixed(4)
+                },
+                paymentId
+            }, '🔄 Processing token distribution job with burn + treasury');
+
+            try {
+                const txResult = await distributeTokens(walletAddress, bezAmount);
+
+                const payment = await Payment.findOne({
+                    $or: [
+                        { _id: paymentId },
+                        { sessionId: sessionId }
+                    ]
+                });
+
+                if (payment) {
+                    payment.distribution = {
+                        userAmount: txResult.distribution.user,
+                        burnAmount: txResult.distribution.burn,
+                        treasuryAmount: txResult.distribution.treasury,
+                        userTxHash: txResult.transactions.user?.txHash,
+                        burnTxHash: txResult.transactions.burn?.txHash,
+                        treasuryTxHash: txResult.transactions.treasury?.txHash
+                    };
+                    payment.status = 'completed';
+                    payment.completedAt = new Date();
+                    await payment.save();
+                }
+
+                logger.info({
+                    jobId: job.id,
+                    walletAddress,
+                    userReceived: txResult.distribution.user,
+                    burned: txResult.distribution.burn,
+                    treasury: txResult.distribution.treasury,
+                }, '🎉 Token distribution completed with burn + treasury');
+
+                return txResult;
+
+            } catch (error) {
+                logger.error({
+                    jobId: job.id,
+                    attempt: job.attemptsMade + 1,
+                    maxAttempts: tokenomics.paymentRetry.maxAttempts,
+                    error: error.message,
+                    walletAddress,
+                    bezAmount
+                }, '❌ Token distribution failed');
+
+                throw error; // BullMQ reintentará automáticamente
+            }
+        }, { connection: redisConnection });
+
+        // Event handlers para el worker
+        tokenDistributionWorker.on('completed', (job, result) => {
+            logger.info({ jobId: job.id, txHash: result?.txHash }, 'Token distribution job completed');
+        });
+
+        tokenDistributionWorker.on('failed', async (job, error) => {
+            if (job.attemptsMade >= tokenomics.paymentRetry.maxAttempts) {
+                logger.error({
+                    jobId: job.id,
+                    attempts: job.attemptsMade,
+                    error: error.message
+                }, 'Token distribution permanently failed - moving to DLQ');
+
+                await paymentDLQ.add('failed-distribution', {
+                    ...job.data,
+                    error: error.message,
+                    failedAt: new Date().toISOString(),
+                    attempts: job.attemptsMade
+                });
+
+                try {
+                    const payment = await Payment.findOne({
+                        $or: [
+                            { _id: job.data.paymentId },
+                            { sessionId: job.data.sessionId }
+                        ]
+                    });
+
+                    if (payment) {
+                        await payment.markFailed(`Distribution failed after ${job.attemptsMade} attempts: ${error.message}`);
+                    }
+                } catch (dbError) {
+                    logger.error({ dbError: dbError.message }, 'Failed to update payment record');
+                }
+            }
+        });
+
+        logger.info('✅ BullMQ token distribution queue initialized');
+    } catch (bullmqError) {
+        logger.warn({ error: bullmqError.message }, '⚠️ BullMQ disabled — running without retry queues');
     }
-});
+} else {
+    logger.info('ℹ️ REDIS_URL not set — BullMQ disabled, token distribution runs without retry queue');
+}
 
 /**
  * NOTA: Sistema de pagos híbrido actualizado

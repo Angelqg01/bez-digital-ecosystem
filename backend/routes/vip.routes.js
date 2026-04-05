@@ -16,7 +16,8 @@ const {
     upgradeVIPSubscription,
     checkUserVIPStatus,
     handleSubscriptionWebhook,
-    VIP_TIERS
+    VIP_TIERS,
+    resolveTier
 } = require('../services/vip.service');
 
 /**
@@ -26,12 +27,13 @@ const {
  */
 router.post('/create-subscription-session', async (req, res) => {
     try {
-        const { tier, email, walletAddress } = req.body;
+        const { tier, email, walletAddress, billingPeriod } = req.body;
 
-        if (!tier || !VIP_TIERS[tier]) {
+        const resolvedTier = resolveTier(tier);
+        if (!resolvedTier) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid VIP tier. Choose from: bronze, silver, gold, platinum'
+                message: `Invalid VIP tier: "${tier}". Valid tiers: ${Object.keys(VIP_TIERS).join(', ')}`
             });
         }
 

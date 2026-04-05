@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useBezCoin } from '../context/BezCoinContext';
 import { LOGOS } from '../config/cryptoLogos';
-import BuyBezCoinModal from '../components/modals/BuyBezCoinModal';
+// BuyBezCoinModal -> useBezPay().openBuyBez()
 import { useWeb3 } from '../context/Web3Context';
 import { useAccount } from 'wagmi';
 import { NFTGrid } from '../components/shop/NFTGrid';
@@ -226,7 +226,7 @@ const CreateNFTTab = ({ address, contracts }) => {
 
         // Verificar saldo BEZ antes de mintear/listar
         const hasFunds = await verifyAndProceed(productData.price, 'crear producto', async () => {
-            setShowBuyModal(false);
+            /* BezPayModal auto-cierra */;
             handleProductCreated(productData);
         });
         if (!hasFunds) {
@@ -310,7 +310,7 @@ const CreateNFTTab = ({ address, contracts }) => {
                     </div>
                     <button
                         className="mt-2 text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 font-semibold"
-                        onClick={() => setShowBuyModal(true)}
+                        onClick={() => openBuyBez()}
                     >
                         Comprar BEZ-Coin
                     </button>
@@ -341,7 +341,7 @@ const CreateNFTTab = ({ address, contracts }) => {
                 />
             )}
 
-            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => setShowBuyModal(false)} />
+            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
         </div>
     );
 };

@@ -1,0 +1,79 @@
+# ==================================================================
+# BeZhas Web3 — Docker Build Ignore
+# Reduces build context size for faster builds & smaller images
+# ==================================================================
+
+# Version control
+.git
+.gitignore
+
+# Node.js
+**/node_modules
+**/npm-debug.log*
+**/pnpm-debug.log*
+**/.pnpm-store
+
+# Test & Coverage
+**/coverage
+**/tests
+**/*.test.js
+**/*.spec.js
+jest.config.*
+.nycrc*
+
+# Editor & IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+**/*.log
+**/logs
+
+# Build artifacts (local only)
+**/*.tgz
+**/dist
+**/build
+
+# Documentation (not needed in containers)
+**/*.md
+!README.md
+LICENSE
+
+# Scripts (not needed in containers)
+scripts/
+hardhat.config.*
+ignition/
+
+# Contracts source (only compiled ABIs needed)
+contracts/
+!contracts/artifacts
+!contracts/contract-addresses.json
+
+# Misc development files
+.env.local
+.env.development
+.env.test
+.eslintrc*
+.prettierrc*
+.browserslistrc
+docker-compose*.yml
+cloudbuild.yaml
+.antigravityignore
+
+# Agent/AI files
+.gemini/
+.agents/
+_agents/
+
+# Aegis (separate service)
+aegis/
+
+# Archives
+*.zip
+*.tar.gz
+*.rar

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useBezCoin } from '../../context/BezCoinContext';
 import { Users, Coins, Megaphone, Cpu, TrendingUp } from 'lucide-react';
-import UnifiedPaymentModal from '../UnifiedPaymentModal';
+// UnifiedPaymentModal -> useBezPay().openBuyBez()
 import BezCoinChartModal from '../BezCoinChartModal';
 
 const BezhasIntro = () => {

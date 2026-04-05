@@ -5,7 +5,7 @@
 # ===================================================
 
 runtime: nodejs20
-service: default
+service: api
 
 # Instance configuration
 instance_class: F2

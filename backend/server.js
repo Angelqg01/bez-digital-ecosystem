@@ -6,8 +6,16 @@ const IGNORABLE_ERRORS = [
     'filter not found',
     'could not coalesce error',
     'Redis connection',
-    'Failed to reconnect'
+    'Failed to reconnect',
+    'ERR max requests limit exceeded', // Upstash free tier limit
+    'max requests limit',              // Upstash variant
+    'ReplyError',                      // ioredis/Redis command errors
+    '@bezhas/sdk',                     // SDK optional modules (farming, governance, oracle)
+    'ERR_MODULE_NOT_FOUND',            // ESM module resolution failures
+    'Cannot find module',              // CJS module resolution failures
+    'Cannot find package',             // NPM package resolution failures
 ];
+
 
 process.on('uncaughtException', (err, origin) => {
     const errorMessage = err.message || '';
@@ -64,6 +72,16 @@ const helmet = require('helmet');
 // 1. Reward System (Weekly, Quality-Based, Threshold-Check)
 // TEMPORARILY DISABLED - Requires MongoDB connection
 // require('./services/automation/rewardSystem.service');
+
+// 2. MCP Intelligence Scheduler (Gas, Price, Holders, DAO — auto every N min)
+try {
+    const mcpScheduler = require('./services/mcp-scheduler.service');
+    mcpScheduler.start();
+    console.log('✅ MCP Scheduler started');
+} catch (e) {
+    console.warn('⚠️  MCP Scheduler not available:', e.message);
+}
+
 // 2. Third Party Usage Analysis Service
 const ThirdPartyAnalyzer = require('./services/automation/thirdPartyAnalyzer.service');
 // 3. Diagnostic Agent (Auto-Recovery, Health Monitoring)
@@ -203,41 +221,77 @@ console.log('✅ WebSocket Server initialized');
 // 1. HTTPS Enforcement (producción)
 app.use(httpsEnforcement);
 
-// 2. Security Headers
-app.use(securityHeaders);
-
-// 3. Request Logger (audit trail)
-app.use(requestLogger);
-
-// 4. Input Sanitization (prevent injections)
-app.use(sanitizeInput);
-app.use(preventSqlInjection);
-app.use(preventNoSqlInjection);
-
-// 5. Origin Validation
-app.use(validateOrigin);
-
-// CORS with specific origins
+// 2. Origin Validation & CORS
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 
 // Always allow production and standard dev origins
 if (!allowedOrigins.includes('https://bezhas.com')) allowedOrigins.push('https://bezhas.com');
+if (!allowedOrigins.includes('https://www.bezhas.com')) allowedOrigins.push('https://www.bezhas.com');
 
 if (process.env.NODE_ENV !== 'production') {
     allowedOrigins.push(
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'http://localhost:5174',
-        'http://127.0.0.1:5174',
-        'http://localhost:5175',
-        'http://127.0.0.1:5175',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
+        'http://localhost:5173', 'http://127.0.0.1:5173',
+        'http://localhost:5174', 'http://127.0.0.1:5174',
+        'http://localhost:3000', 'http://127.0.0.1:3000',
         'http://127.0.0.1:58425'
     );
 }
 
 console.log('✅ Allowed Origins:', allowedOrigins);
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Normalize origin: remove trailing slash if any
+        const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+        const isAllowed = allowedOrigins.some(ao =>
+            normalizedOrigin === ao ||
+            (ao.includes('*') && normalizedOrigin.endsWith(ao.replace('*', '')))
+        ) || normalizedOrigin === 'https://bezhas.com' || normalizedOrigin === 'https://www.bezhas.com';
+
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            // Reject silently with false instead of throwing Error to prevent 500s on OPTIONS requests
+            console.warn(`⚠️ CORS Warning: Origin ${normalizedOrigin} blocked.`);
+            callback(null, false);
+        }
+    },
+    credentials: true,
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'x-wallet-address',
+        'x-api-key',
+        'x-request-id',
+        'X-Requested-With',
+        'Accept',
+        'Origin'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    exposedHeaders: ['x-request-id'],
+    optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+
+// Mount CORS before anything else that might block the request
+app.use(cors(corsOptions));
+// Fallback explicit OPTIONS setup
+app.options('*', cors(corsOptions));
+
+// 3. Security Headers
+app.use(securityHeaders);
+
+// 4. Request Logger (audit trail)
+app.use(requestLogger);
+
+// 5. Input Sanitization (prevent injections)
+app.use(sanitizeInput);
+app.use(preventSqlInjection);
+app.use(preventNoSqlInjection);
+
 
 const cspDirectives = {
     directives: {
@@ -327,7 +381,7 @@ app.use(limiter);
 // Specific rate limit for config endpoint (very permissive in development)
 const configLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: process.env.NODE_ENV === 'production' ? 50 : 1000, // Increased to 1000 for dev
+    max: process.env.NODE_ENV === 'production' ? 1000 : 2000, // Augmented safely to avoid false blocks on page reloads
     handler: (req, res) => {
         res.status(429).json({
             error: 'Too many requests',
@@ -337,40 +391,6 @@ const configLimiter = rateLimit({
     }
 });
 
-const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        if (allowedOrigins.some(ao => origin === ao || (ao.includes('*') && origin.endsWith(ao.replace('*', ''))))) {
-            callback(null, true);
-        } else {
-            // Log warning but allow in non-production for debugging if needed
-            if (process.env.NODE_ENV !== 'production') {
-                console.warn(`⚠️ CORS Warning: Origin ${origin} not explicitly in allowedOrigins but allowed in dev.`);
-                return callback(null, true);
-            }
-            logger.error({ origin: origin, allowed: allowedOrigins }, 'CORS error: Origin not allowed');
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    allowedHeaders: [
-        'Content-Type',
-        'Authorization',
-        'x-wallet-address',
-        'x-api-key',
-        'x-request-id',
-        'X-Requested-With',
-        'Accept',
-        'Origin'
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    exposedHeaders: ['x-request-id'],
-    optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
-
 // ============================================================================
 // STRIPE WEBHOOK — Must be mounted BEFORE express.json() to preserve raw body
 // Stripe signature verification requires the raw, unparsed request body.
@@ -378,6 +398,10 @@ app.use(cors(corsOptions));
 // ============================================================================
 const stripeWebhookRouter = require('./routes/stripe-webhook.routes');
 app.use('/api/stripe', stripeWebhookRouter);
+
+// TELEGRAM WEBHOOK — Custom body parser logic avoids global limits
+const telegramRoutes = require('./routes/telegram.routes');
+app.use('/api/telegram', telegramRoutes);
 
 app.use(express.json({ limit: '10mb' }));
 
@@ -397,6 +421,18 @@ app.use('/api-docs', hideInternalRoutes, swaggerUi.serve, swaggerUi.setup(swagge
         displayRequestDuration: true,
         filter: true,
         tryItOutEnabled: true
+    }
+}));
+
+// ============================================================================
+// PUBLIC DOWNLOADS (SDK & MCP Tarballs)
+// ============================================================================
+app.use('/api/downloads', express.static(path.join(__dirname, 'public/downloads'), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.tgz')) {
+            res.setHeader('Content-Type', 'application/gzip');
+            res.setHeader('Content-Disposition', `attachment; filename="${path.split('/').pop() || path.split('\\').pop()}"`);
+        }
     }
 }));
 
@@ -441,7 +477,7 @@ const safeUseRoute = (path, ...middlewares) => {
     }
 };
 
-const questsLimiter = AdvancedRateLimiter({
+const questsLimiter = new AdvancedRateLimiter({
     windowMs: 60 * 1000, // 1 minute
     max: 60, // Limit each IP to 60 requests per windowMs
     keyGenerator: (req) => {
@@ -456,85 +492,28 @@ const questsLimiter = AdvancedRateLimiter({
 });
 
 // ========================================
-// API ROUTES
+// API ROUTES (OPTIMIZED LOADING)
 // ========================================
-console.log('📦 Loading routes...');
-
-let authRoutes;
-try {
-    authRoutes = require('./routes/auth.routes');
-    console.log('📦 authRoutes loaded');
-} catch (error) {
-    console.error('❌ ERROR loading authRoutes:', error.message);
-    process.exit(1);
-}
+console.log('📦 Initializing route placeholders...');
 
 const isTestEnv = process.env.NODE_ENV === 'test';
-let contactRoutes;
-try {
-    contactRoutes = require('./routes/contacts.routes');
-    console.log('📦 contactRoutes loaded');
-} catch (error) {
-    console.error('❌ ERROR loading contactRoutes:', error.message);
-    process.exit(1);
-}
-console.log('📦 Loading marketplaceRoutes...');
-const marketplaceRoutes = require('./routes/marketplace.routes');
-console.log('📦 marketplaceRoutes loaded');
-// console.log('📦 Loading questsRoutes...');
-// const questsRoutes = require('./routes/quests.routes');
-// console.log('📦 questsRoutes loaded');
-// console.log('📦 Loading badgesRoutes...');
-// const badgesRoutes = require('./routes/badges.routes');
-// console.log('📦 badgesRoutes loaded');
-console.log('📦 Loading uploadsRoutes...');
-const uploadsRoutes = require('./routes/uploads.routes');
-console.log('📦 uploadsRoutes loaded');
-console.log('📦 Loading stakingRoutes...');
-const stakingRoutes = require('./routes/staking.routes');
-console.log('📦 stakingRoutes loaded');
-console.log('📦 Loading groupsRoutes...');
-const groupsRoutes = require('./routes/groups.routes');
-console.log('📦 groupsRoutes loaded');
-console.log('📦 Loading walletRoutes...');
-const walletRoutes = require('./routes/wallet.routes');
-console.log('📦 walletRoutes loaded');
-console.log('📦 Loading notificationsRoutes...');
-const notificationsRoutes = require('./routes/notifications.routes');
-console.log('📦 notificationsRoutes loaded');
-console.log('📦 Loading rewardsRoutes...');
-let rewardsRoutes;
-try {
-    rewardsRoutes = require('./routes/rewards.routes');
-    console.log('📦 rewardsRoutes loaded');
-} catch (error) {
-    console.error('❌ ERROR loading rewardsRoutes:', error.message);
-    console.error(error.stack);
-    process.exit(1);
-}
-console.log('📦 Loading profileRoutes...');
-const profileRoutes = require('./routes/profile.routes');
-console.log('📦 profileRoutes loaded');
-console.log('📦 Loading realEstateRoutes...');
-const realEstateRoutes = require('./routes/realestate.routes');
-console.log('📦 realEstateRoutes loaded');
-console.log('📦 Loading admin middleware...');
-const { verifyAdminToken } = require('./middleware/admin.middleware');
-console.log('📦 admin middleware loaded');
-console.log('📦 Loading metricsRouter...');
-const metricsRouter = require('./metrics');
-console.log('📦 metricsRouter loaded');
-console.log('📦 Loading feedRoutes...');
-const feedRoutes = require('./routes/feed.routes');
-console.log('📦 feedRoutes loaded');
-console.log('📦 Loading treasuryRoutes...');
-const treasuryRoutes = require('./routes/treasury.routes');
-console.log('📦 treasuryRoutes loaded');
 
-// Logistics Routes (Re-enabled for frontend compatibility)
-console.log('📦 Loading logisticsRoutes...');
+// Define routers that will be lazily loaded
+const authRoutes = require('./routes/auth.routes');
+const contactRoutes = require('./routes/contacts.routes');
+const marketplaceRoutes = require('./routes/marketplace.routes');
+const uploadsRoutes = require('./routes/uploads.routes');
+const stakingRoutes = require('./routes/staking.routes');
+const groupsRoutes = require('./routes/groups.routes');
+const walletRoutes = require('./routes/wallet.routes');
+const notificationsRoutes = require('./routes/notifications.routes');
+const rewardsRoutes = require('./routes/rewards.routes');
+const profileRoutes = require('./routes/profile.routes');
+const realEstateRoutes = require('./routes/realestate.routes');
+const metricsRouter = require('./metrics');
+const feedRoutes = require('./routes/feed.routes');
+const treasuryRoutes = require('./routes/treasury.routes');
 const logisticsRoutes = require('./routes/logistics.routes');
-console.log('📦 logisticsRoutes loaded');
 
 // BeZhas Universal Bridge Routes
 console.log('📦 Loading bridgeRoutes...');
@@ -567,10 +546,15 @@ console.log('📦 Loading chatRoutes...');
 const chatRoutes = require('./routes/chat.routes');
 console.log('📦 chatRoutes loaded');
 
-// AI Routes
+// AI Routes (mounted later at L1089 to avoid triple-mounting)
 console.log('📦 Loading aiRoutes...');
 const aiRoutes = require('./routes/ai.routes');
 console.log('📦 aiRoutes loaded');
+
+// Crypto Payment Routes
+console.log('📦 Loading cryptoPaymentRoutes...');
+const cryptoPaymentRoutes = require('./routes/crypto-payment.routes');
+console.log('📦 cryptoPaymentRoutes loaded');
 
 // Escrow Routes
 console.log('📦 Loading escrowRoutes...');
@@ -625,6 +609,7 @@ console.log('📦 healthRoutes loaded');
 
 // Public health check (no auth required)
 app.use('/health', healthRoutes);
+app.use('/api/health', healthRoutes); // Add internal API health route
 
 // Diagnostic Route (Semi-protected)
 const diagnosticRoutes = require('./routes/diagnostic.routes');
@@ -838,6 +823,11 @@ const adminRegisterRoutes = require('./routes/adminRegister.routes');
 const adminUsersRoutes = require('./routes/admin.users.routes');
 const adminDependenciesRoutes = require('./routes/admin.dependencies.routes');
 const { router: adminRateLimitRoutes, initializeRateLimiters } = require('./routes/adminRateLimit');
+const rwaRoutes = require('./routes/rwa.routes');
+// logisticsRoutes is already declared at line 568
+const webhookRoutes = require('./routes/webhook.routes');
+const automationRoutes = require('./routes/automation.routes');
+const aiChatRoutes = require('./routes/ai-chat.routes');
 
 // Initialize rate limiters for admin routes
 initializeRateLimiters(advancedRateLimiter, messageRateLimiter);
@@ -852,20 +842,45 @@ app.use('/api/admin/settings/global', globalSettingsRoutes);
 app.use('/api/admin/users', adminUsersRoutes);
 app.use('/api/admin/dependencies', adminDependenciesRoutes);
 app.use('/api/admin/rate-limit', adminRateLimitRoutes);
+app.use('/api/rwa', rwaRoutes);
+app.use('/api/logistics', logisticsRoutes);
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/automation', automationRoutes);
+app.use('/api/ai', aiChatRoutes);
 app.use('/api/admin', require('./routes/admin.auth.routes')); // Admin auth verification
 app.use('/api/admin/sdk', require('./routes/sdkAdmin.routes')); // SDK & AI Admin Management
-app.use('/api/plugins', require('./routes/pluginRoutes')); // Plugin Management System
+// app.use('/api/plugins', require('./routes/pluginRoutes')); // Removed due to Prisma dependency missing in Prod
 app.use('/api/mcp', require('./routes/mcp.routes')); // MCP Tools Integration
+app.use('/api/automation', require('./routes/automation.routes')); // Automation Engine & Workflows
 app.use('/api/contacts', contactRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
-app.use('/api/diagnostic', require('./routes/diagnostic.routes')); // Diagnostic Agent
+// NOTE: /api/diagnostic already mounted at L664 — removed duplicate
 // app.use('/api/quests', questsLimiter, questsRoutes);
 // app.use('/api/badges', questsLimiter, badgesRoutes);
 app.use('/api/uploads', uploadsRoutes);
 app.use('/api/staking', stakingRoutes);
-app.use('/api/farming', require('./routes/farming.routes')); // Farming/Yield routes
-app.use('/api/governance', require('./routes/governance.routes')); // DAO Governance routes
-app.use('/api/oracle', require('./routes/oracle.routes')); // Data Oracle routes
+try {
+    const farmingRoutes = require('./routes/farming.routes');
+    app.use('/api/farming', farmingRoutes);
+    console.log('✅ Farming routes mounted');
+} catch (farmErr) {
+    console.warn('⚠️  Farming routes skipped (ethers dependency issue):', farmErr.message?.substring(0, 80));
+    app.use('/api/farming', (req, res) => res.status(503).json({ error: 'Farming service temporarily unavailable' }));
+}
+try {
+    app.use('/api/governance', require('./routes/governance.routes'));
+    console.log('✅ Governance routes mounted');
+} catch (govErr) {
+    console.warn('⚠️  Governance routes skipped (SDK dep issue):', govErr.message?.substring(0, 80));
+    app.use('/api/governance', (req, res) => res.status(503).json({ error: 'Governance service temporarily unavailable' }));
+}
+try {
+    app.use('/api/oracle', require('./routes/oracle.routes'));
+    console.log('✅ Oracle routes mounted');
+} catch (oracleErr) {
+    console.warn('⚠️  Oracle routes skipped (SDK dep issue):', oracleErr.message?.substring(0, 80));
+    app.use('/api/oracle', (req, res) => res.status(503).json({ error: 'Oracle service temporarily unavailable' }));
+}
 app.use('/api/groups', groupsRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/notifications', notificationsRoutes);
@@ -888,6 +903,12 @@ app.use('/api/v1/bridge/admin', bridgeAdminRoutes); // Bridge API Keys Managemen
 // AI Gateway → MCP Intelligence Server
 // ============================================
 app.use('/api/ai-gateway', require('./routes/aiGateway.routes'));
+
+// ============================================
+// AI Autonomous Agents (AIOps Nivel 5)
+// ============================================
+const agentsRoutes = require('./routes/agents.routes');
+app.use('/api/agents', agentsRoutes);
 
 // ============================================
 // Enhanced Universal Bridge System (Adapters)
@@ -933,20 +954,36 @@ app.use('/api/v1/crosschain', crossChainBridgeRoutes);
 const developerConsoleRoutes = require('./routes/developerConsole.routes');
 app.use('/api/developer', developerConsoleRoutes);
 
-// AI Risk Engine Routes (Revenue Stream Native)
+// SDK & MCP Downloads (serves .tgz or redirects to npm registry)
+safeUseRoute('/api/downloads', require('./routes/downloads.routes'));
+
+
+// AI Risk Engine Routes (Revenue Stream Native) — mounted at dedicated subpath
 const aiRiskEngineRoutes = require('./routes/aiRiskEngine.routes');
-app.use('/api/ai', aiRiskEngineRoutes);
+app.use('/api/ai/risk-engine', aiRiskEngineRoutes);
 
 // Real Estate Demo Routes
 app.use('/api/realestate', realEstateRoutes);
 
-// Billing & Campaigns Routes (Dashboard)
-app.use('/billing', billingRoutes);
-app.use('/campaigns', campaignsRoutes);
+// Crypto Payment Routes (USDT, USDC, MATIC → BEZ)
+app.use('/api/crypto', cryptoPaymentRoutes);
 
 // Content Validation Routes
 app.use('/api/payment', paymentRoutes);
 app.use('/api/payments', paymentRoutes); // Alias for frontend compatibility
+
+// ──────────────────────────────────────────────────────────────────────────────
+// BEZPAY v2.0 — Sistema de pagos unificado (BezPayModal)
+// Endpoints: /create, /webhook, /quote, /verify-tx, /bez-price, /plans
+// ──────────────────────────────────────────────────────────────────────────────
+let bezpayRoutes;
+try {
+    bezpayRoutes = require('./routes/bezpay.routes');
+    app.use('/api/payment', bezpayRoutes);
+    console.log('✅ BezPay v2.0 routes mounted at /api/payment');
+} catch (e) {
+    console.warn('⚠️ BezPay routes not loaded:', e.message);
+}
 
 // Fiat Gateway Routes (Bank Transfer -> BEZ Token)
 app.use('/api/fiat', fiatRoutes);
@@ -971,7 +1008,7 @@ const moonpayRoutes = require('./routes/moonpay.routes');
 app.use('/api/moonpay', moonpayRoutes);
 
 // Automation Routes (AI-driven economy)
-const automationRoutes = require('./routes/automation.routes');
+// automationRoutes were declared above
 app.use('/api/automation', automationRoutes);
 
 // NEW: VIP System Routes
@@ -996,13 +1033,18 @@ console.log('📦 clothingRentalRoutes loaded');
 // const vintedRoutes = require('./routes/vinted.routes');
 // app.use('/api/marketplace/vinted', vintedRoutes);
 
-// Quality Escrow Routes (Quality Oracle System)
-// TEMPORARILY COMMENTED TO DEBUG SERVER HANG (requires wsServer)
-// const QualityNotificationService = require('./services/qualityNotificationService');
-// const { router: qualityEscrowRoutes, setNotificationService } = require('./routes/qualityEscrow');
-// const qualityNotificationService = new QualityNotificationService(wsServer);
-// setNotificationService(qualityNotificationService);
-// app.use('/api/quality-escrow', qualityEscrowRoutes);
+// Quality Escrow Routes (Quality Oracle System) — re-enabled with safe init
+try {
+    const QualityNotificationService = require('./services/quality-notification.service');
+    const { router: qualityEscrowRoutes, setNotificationService } = require('./routes/qualityEscrow');
+    const qualityNotificationService = new QualityNotificationService(wsServer);
+    setNotificationService(qualityNotificationService);
+    app.use('/api/quality-escrow', qualityEscrowRoutes);
+    console.log('✅ Quality Escrow routes mounted');
+} catch (qeErr) {
+    console.warn('⚠️  Quality Escrow routes skipped:', qeErr.message?.substring(0, 100));
+    app.use('/api/quality-escrow', (req, res) => res.status(503).json({ error: 'Quality Escrow service temporarily unavailable' }));
+}
 
 // Stripe Payment Routes (ENABLED - Live Keys Configured)
 const stripeRoutes = require('./routes/stripe.routes');
@@ -1084,18 +1126,22 @@ app.use('/api', metricsRouter);
 
 // Basic liveness endpoints (useful to verify port 3001 is serving)
 app.get('/', (req, res) => {
-    res.json({ status: 'ok', service: 'bezhas-backend', port: PORT, time: new Date().toISOString() });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', service: 'bezhas-backend', port: PORT, time: new Date().toISOString() }));
 });
 app.get('/healthz', (req, res) => {
-    res.json({ ok: true });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
 });
 
 // Standard health alias
 app.get('/api/health', (req, res) => {
     try {
-        res.json({ ok: true, timestamp: new Date().toISOString() });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, timestamp: new Date().toISOString() }));
     } catch (error) {
-        res.status(500).json({ ok: false, error: error.message });
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: error.message }));
     }
 });
 
@@ -1391,7 +1437,21 @@ app.use('/api/*', (req, res) => {
 app.use((err, req, res, next) => {
     logger.error({ err, reqId: req.id }, 'Unhandled error');
     console.error('[FATAL ERROR]', err);
-    res.status(500).json({ error: 'Internal Server Error', message: err?.message || 'Unknown error' });
+
+    // Guard: if headers already sent (response was already started), delegate to default handler
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    try {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal Server Error', message: err?.message || 'Unknown error' }));
+    } catch (writeErr) {
+        // Last resort: raw response
+        console.error('[DOUBLE FAULT] Error handler also crashed:', writeErr);
+        res.writeHead(500);
+        res.end('{"error":"Internal Server Error"}');
+    }
 });
 
 // Start server only if not in test mode

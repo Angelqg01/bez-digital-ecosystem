@@ -239,7 +239,7 @@ const BezhasGuideWidget = ({ currentUser }) => {
             )}
 
             {/* Modo Normal - Widget flotante */}
-            <div className="fixed bottom-5 right-5 z-[9999] font-sans flex flex-col items-end">
+            <div className="fixed md:bottom-5 md:right-5 bottom-20 right-4 z-[9999] font-sans flex flex-col items-end">
                 {isOpen && !isFullscreen && (
                     <div className="mb-4 w-80 md:w-96 h-[500px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 flex flex-col overflow-hidden transition-all duration-300 animate-fade-in-up">
                         {ChatHeader}

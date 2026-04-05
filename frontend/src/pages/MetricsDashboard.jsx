@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import http from '../services/http';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Activity, Server, Clock, AlertTriangle, RefreshCw, Database } from 'lucide-react';
 
@@ -29,9 +30,9 @@ export default function MetricsDashboard() {
         setIsLoading(true);
         try {
             // Try to fetch from API
-            const res = await fetch('/api/metrics');
-            if (!res.ok) throw new Error('Failed to fetch metrics');
-            const text = await res.text();
+            const res = await http.get('/api/metrics');
+            if (res.status !== 200) throw new Error('Failed to fetch metrics');
+            const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
 
             setMetrics(text);
             const { mem, uptime } = parseMetrics(text);

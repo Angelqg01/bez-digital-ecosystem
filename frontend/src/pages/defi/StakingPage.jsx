@@ -8,7 +8,7 @@ import { TrendingUp, DollarSign, Zap, Gift, Droplets, Lock, Waves, Flame } from 
 import { Spinner } from '../../components/ui/Spinner';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import BuyBezCoinModal from '../../components/modals/BuyBezCoinModal';
+// BuyBezCoinModal -> useBezPay().openBuyBez()
 import GlobalStatsBar from '../../components/GlobalStatsBar';
 
 // Componente para una tarjeta de estadísticas
@@ -119,7 +119,7 @@ const SimpleStakingTab = ({ address, isConnected, balance, setShowBuyModal }) =>
         });
 
         // Abrir modal de compra de BEZ
-        setShowBuyModal(true);
+        openBuyBez();
         return;
       }
     }
@@ -535,7 +535,7 @@ const StakingPageUnifiedV2 = ({ farmingContract, lpTokenContract }) => {
       )}
 
       {/* Modal de Compra de BEZ */}
-      {showBuyModal && <BuyBezCoinModal isOpen={showBuyModal} onClose={() => setShowBuyModal(false)} />}
+      {showBuyModal && <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />}
     </div>
   );
 };

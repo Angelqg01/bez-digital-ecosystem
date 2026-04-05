@@ -332,6 +332,7 @@ body.dark-mode {
   transition-duration: 0.3s;
   transition-timing-function: ease;
 }
+
 /* Google Translate Widget Styles */
 #google_translate_element .goog-te-gadget-simple {
   background-color: transparent !important;
@@ -355,6 +356,5 @@ body {
 
 /* Dark mode adjustments */
 .dark #google_translate_element .goog-te-gadget-simple span {
-    color: white !important;
+  color: white !important;
 }
-

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Trophy, Zap, Shield, Rocket } from 'lucide-react';
+import { TrendingUp as TrendingUpIcon, Trophy as TrophyIcon, Zap as ZapIcon, Shield as ShieldIcon, Rocket as RocketIcon } from 'lucide-react';
 
 // Developer Incentives Component (Extracted from DeveloperConsole)
 const DeveloperIncentives = ({ usageStats }) => {
@@ -14,7 +14,7 @@ const DeveloperIncentives = ({ usageStats }) => {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-yellow-500/20 rounded-2xl p-6 shadow-xl">
                 <div className="flex justify-between items-center mb-2">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Zap className="text-yellow-500" size={20} />
+                        <ZapIcon className="text-yellow-500" size={20} />
                         API Builder
                     </h3>
                     <span className="px-3 py-1 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 rounded-full text-xs font-bold">
@@ -44,7 +44,7 @@ const DeveloperIncentives = ({ usageStats }) => {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-blue-500/20 rounded-2xl p-6 shadow-xl">
                 <div className="flex justify-between items-center mb-2">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Shield className="text-blue-500" size={20} />
+                        <ShieldIcon className="text-blue-500" size={20} />
                         Smart Contractor
                     </h3>
                     <span className="px-3 py-1 bg-blue-500/20 text-blue-500 border border-blue-500/30 rounded-full text-xs font-bold">
@@ -74,7 +74,7 @@ const DeveloperIncentives = ({ usageStats }) => {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-purple-500/20 rounded-2xl p-6 shadow-xl">
                 <div className="flex justify-between items-center mb-2">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Trophy className="text-purple-500" size={20} />
+                        <TrophyIcon className="text-purple-500" size={20} />
                         Identity Pioneer
                     </h3>
                     <span className="px-3 py-1 bg-purple-500/20 text-purple-500 border border-purple-500/30 rounded-full text-xs font-bold">
@@ -113,7 +113,7 @@ const LoyaltyMetricsTab = ({ usageStats }) => {
             {/* Métricas Detalladas */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <TrendingUp className="text-green-400" />
+                    <TrendingUpIcon className="text-green-400" />
                     Tus Métricas de Uso
                 </h3>
 

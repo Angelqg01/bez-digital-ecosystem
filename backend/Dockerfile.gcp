@@ -14,7 +14,7 @@ RUN npm install -g pnpm@9
 COPY backend/package.json backend/pnpm-lock.yaml ./
 
 # Instalar dependencias de producción
-RUN pnpm install --no-frozen-lockfile --prod
+RUN pnpm install --no-frozen-lockfile --prod --ignore-scripts
 
 # Copiar código fuente del backend
 COPY backend/ .

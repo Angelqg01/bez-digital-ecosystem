@@ -126,6 +126,15 @@ export const sidebarNavItems = [
     badge: '🔥'
   },
   {
+    path: '/pay',
+    icon: <Wallet size={22} />,
+    label: 'BeZhas Pay',
+    description: 'Sistema financiero y pagos',
+    roles: ['public', 'user', 'admin'],
+    category: 'web3',
+    badge: 'v2.0'
+  },
+  {
     path: '/liquidity',
     icon: <Droplets size={22} />,
     label: 'Proveer Liquidez',

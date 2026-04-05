@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
+import http from '../services/http';
 import { ethers } from 'ethers';
 
-const CommunicationHub = ({ 
-  provider, 
-  signer, 
-  account, 
+const CommunicationHub = ({
+  provider,
+  signer,
+  account,
   communicationContract,
-  onError 
+  onError
 }) => {
   const [activeTab, setActiveTab] = useState('groups');
   const [groups, setGroups] = useState([]);
@@ -17,7 +18,7 @@ const CommunicationHub = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCall, setActiveCall] = useState(null);
   const [fileUpload, setFileUpload] = useState(null);
-  
+
   // WebRTC refs
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -80,11 +81,11 @@ const CommunicationHub = ({
     try {
       setIsLoading(true);
       const messageIds = await communicationContract.getGroupMessages(
-        selectedGroup.id, 
-        0, 
+        selectedGroup.id,
+        0,
         100
       );
-      
+
       const messagesData = [];
       for (let messageId of messageIds) {
         const messageDetails = await communicationContract.getMessageDetails(messageId);
@@ -98,7 +99,7 @@ const CommunicationHub = ({
           attachmentHash: messageDetails.attachmentHash,
           isDeleted: messageDetails.isDeleted
         };
-        
+
         if (!message.isDeleted) {
           messagesData.push(message);
         }
@@ -127,16 +128,16 @@ const CommunicationHub = ({
         groupForm.isPrivate,
         groupForm.maxMembers
       );
-      
+
       await tx.wait();
-      
+
       setGroupForm({
         name: '',
         description: '',
         isPrivate: false,
         maxMembers: 50
       });
-      
+
       await loadUserGroups();
     } catch (error) {
       console.error('Error creating group:', error);
@@ -168,9 +169,9 @@ const CommunicationHub = ({
         messageType,
         attachmentHash
       );
-      
+
       await tx.wait();
-      
+
       setNewMessage('');
       setFileUpload(null);
       await loadGroupMessages();
@@ -187,15 +188,12 @@ const CommunicationHub = ({
     // In production, integrate with IPFS service
     const formData = new FormData();
     formData.append('file', file);
-    
+
     try {
-      const response = await fetch('/api/upload-ipfs', {
-        method: 'POST',
-        body: formData
-      });
-      
-      const result = await response.json();
-      
+      const response = await http.post('/api/upload-ipfs', formData);
+
+      const result = response.data;
+
       // Register file in contract
       await communicationContract.uploadFile(
         result.hash,
@@ -203,7 +201,7 @@ const CommunicationHub = ({
         file.size,
         file.type
       );
-      
+
       return result.hash;
     } catch (error) {
       console.error('IPFS upload error:', error);
@@ -227,7 +225,7 @@ const CommunicationHub = ({
         video: true,
         audio: true
       });
-      
+
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
@@ -264,10 +262,10 @@ const CommunicationHub = ({
         1, // VIDEO
         JSON.stringify(offer)
       );
-      
+
       const receipt = await tx.wait();
       const sessionId = receipt.events?.find(e => e.event === 'CallStarted')?.args?.sessionId;
-      
+
       setActiveCall({
         sessionId: sessionId?.toString(),
         type: 'video',
@@ -288,7 +286,7 @@ const CommunicationHub = ({
         video: false,
         audio: true
       });
-      
+
       localStreamRef.current = stream;
 
       const peerConnection = new RTCPeerConnection({
@@ -311,10 +309,10 @@ const CommunicationHub = ({
         0, // VOICE
         JSON.stringify(offer)
       );
-      
+
       const receipt = await tx.wait();
       const sessionId = receipt.events?.find(e => e.event === 'CallStarted')?.args?.sessionId;
-      
+
       setActiveCall({
         sessionId: sessionId?.toString(),
         type: 'voice',
@@ -338,7 +336,7 @@ const CommunicationHub = ({
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
       }
-      
+
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
       }
@@ -360,7 +358,7 @@ const CommunicationHub = ({
         0,
         0
       );
-      
+
       const searchResults = [];
       for (let messageId of results) {
         const messageDetails = await communicationContract.getMessageDetails(messageId);
@@ -371,7 +369,7 @@ const CommunicationHub = ({
           timestamp: new Date(messageDetails.timestamp.toNumber() * 1000)
         });
       }
-      
+
       setMessages(searchResults);
     } catch (error) {
       console.error('Error searching messages:', error);
@@ -400,13 +398,13 @@ const CommunicationHub = ({
       <div className="communication-header">
         <h2>💬 Communication Hub</h2>
         <div className="tab-navigation">
-          <button 
+          <button
             className={activeTab === 'groups' ? 'active' : ''}
             onClick={() => setActiveTab('groups')}
           >
             Groups
           </button>
-          <button 
+          <button
             className={activeTab === 'create' ? 'active' : ''}
             onClick={() => setActiveTab('create')}
           >
@@ -421,7 +419,7 @@ const CommunicationHub = ({
             <h3>Your Groups</h3>
             <div className="groups-list">
               {groups.map(group => (
-                <div 
+                <div
                   key={group.id}
                   className={`group-item ${selectedGroup?.id === group.id ? 'selected' : ''}`}
                   onClick={() => setSelectedGroup(group)}
@@ -487,8 +485,8 @@ const CommunicationHub = ({
 
               <div className="messages-area">
                 {messages.map(message => (
-                  <div 
-                    key={message.id} 
+                  <div
+                    key={message.id}
                     className={`message ${message.sender === account ? 'own-message' : ''}`}
                     onClick={() => markMessageAsRead(message.id)}
                   >
@@ -542,44 +540,44 @@ const CommunicationHub = ({
             <input
               type="text"
               value={groupForm.name}
-              onChange={(e) => setGroupForm({...groupForm, name: e.target.value})}
+              onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
               placeholder="Enter group name"
             />
           </div>
-          
+
           <div className="form-group">
             <label>Description</label>
             <textarea
               value={groupForm.description}
-              onChange={(e) => setGroupForm({...groupForm, description: e.target.value})}
+              onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
               placeholder="Enter group description"
             />
           </div>
-          
+
           <div className="form-group">
             <label>Max Members</label>
             <input
               type="number"
               value={groupForm.maxMembers}
-              onChange={(e) => setGroupForm({...groupForm, maxMembers: parseInt(e.target.value)})}
+              onChange={(e) => setGroupForm({ ...groupForm, maxMembers: parseInt(e.target.value) })}
               min="2"
               max="100"
             />
           </div>
-          
+
           <div className="form-group">
             <label>
               <input
                 type="checkbox"
                 checked={groupForm.isPrivate}
-                onChange={(e) => setGroupForm({...groupForm, isPrivate: e.target.checked})}
+                onChange={(e) => setGroupForm({ ...groupForm, isPrivate: e.target.checked })}
               />
               Private Group
             </label>
           </div>
-          
-          <button 
-            onClick={createGroup} 
+
+          <button
+            onClick={createGroup}
             disabled={isLoading || !groupForm.name.trim()}
             className="create-group-btn"
           >

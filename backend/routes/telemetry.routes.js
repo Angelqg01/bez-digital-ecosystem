@@ -17,17 +17,19 @@ router.post('/', async (req, res) => {
 
         // Validate request
         if (!sessionId) {
-            return res.status(400).json({
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({
                 success: false,
                 error: 'sessionId is required'
-            });
+            }));
         }
 
         if (!Array.isArray(events) || events.length === 0) {
-            return res.status(400).json({
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({
                 success: false,
                 error: 'events must be a non-empty array'
-            });
+            }));
         }
 
         // Process each event - with safety checks
@@ -52,21 +54,23 @@ router.post('/', async (req, res) => {
             }
         }
 
-        res.json({
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({
             success: true,
             processed,
             failed,
             total: events.length
-        });
+        }));
 
     } catch (error) {
         console.error('❌ Telemetry endpoint error:', error);
-        res.status(200).json({
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
             success: false,
             error: 'Telemetry service unavailable',
             processed: 0,
             failed: 0
-        });
+        }));
     }
 });
 

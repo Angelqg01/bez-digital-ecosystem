@@ -2,62 +2,26 @@
  * Unified AI Service - BeZhas
  * 
  * Centraliza TODOS los servicios de AI en un solo punto de entrada.
- * Reemplaza: aiPluginService, personalAI, openai.service, autoTagger, etc.
- * 
- * Soporta multiples proveedores:
- * - OpenAI (GPT-4, GPT-3.5)
- * - Google Gemini
- * - DeepSeek
- * - Local Mode (sin costos)
+ * Ahora utiliza ai-provider.service internamente para abstraer
+ * la lógica de los distintos modelos (OpenAI, Gemini, Claude, DeepSeek).
  * 
  * @author BeZhas Team
  */
 
 const pino = require('pino');
 const logger = pino({ name: 'UnifiedAI' });
+const aiProviderService = require('./ai-provider.service');
 
 class UnifiedAIService {
     constructor() {
         this.mode = process.env.AI_MODE || 'HYBRID'; // LOCAL, CLOUD, HYBRID
-        this.primaryProvider = process.env.AI_PRIMARY_PROVIDER || 'gemini'; // openai, gemini, deepseek
-        this.initialized = false;
 
-        // Inicializar proveedores
-        this._initProviders();
-    }
+        // Verifica los proveedores disponibles en el aiProviderService
+        const availableProviders = aiProviderService.getAvailableProviders();
+        this.primaryProvider = availableProviders.length > 0 ? availableProviders[0] : 'local';
+        this.initialized = availableProviders.length > 0;
 
-    _initProviders() {
-        try {
-            // OpenAI
-            if (process.env.OPENAI_API_KEY && this.primaryProvider === 'openai') {
-                const { Configuration, OpenAIApi } = require("openai");
-                this.openai = new OpenAIApi(
-                    new Configuration({ apiKey: process.env.OPENAI_API_KEY })
-                );
-                logger.info('OpenAI provider initialized');
-            }
-
-            // Google Gemini (usa GEMINI_API_KEY o GOOGLE_API_KEY)
-            const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-            if (geminiKey) {
-                const { GoogleGenerativeAI } = require('@google/generative-ai');
-                this.gemini = new GoogleGenerativeAI(geminiKey);
-                logger.info('Gemini provider initialized with key');
-            }
-
-            // DeepSeek (si esta configurado)
-            if (process.env.DEEPSEEK_API_KEY) {
-                // Similar setup para DeepSeek
-                logger.info('DeepSeek provider initialized');
-            }
-
-            this.initialized = true;
-            logger.info(`Unified AI Service ready in ${this.mode} mode`);
-
-        } catch (error) {
-            logger.warn('AI providers initialization failed, using LOCAL mode', error.message);
-            this.mode = 'LOCAL';
-        }
+        logger.info(`Unified AI Service ready with providers: ${availableProviders.join(', ')}`);
     }
 
     /**
@@ -97,6 +61,18 @@ class UnifiedAIService {
 
             case 'SUMMARIZATION':
                 return this._summarize(payload.text);
+
+            case 'MULTIMODAL_SEARCH':
+                return this._multimodalSearch(payload.text, payload.mediaParts, payload.context);
+
+            case 'LOGISTICS_IMAGE':
+                return this._processLogisticsImage(payload.imagePart, payload.expectedStatusText);
+
+            case 'FRAUD_DOCUMENT':
+                return this._analyzeFraudDocument(payload.documentPart, payload.userHistoryText);
+
+            case 'VIP_AUDIO':
+                return this._processVipAudio(payload.audioPart, payload.userContext);
 
             default:
                 throw new Error(`Unknown AI task type: ${taskType}`);
@@ -187,16 +163,182 @@ class UnifiedAIService {
      * Busqueda semantica
      */
     async _semanticSearch(query, context = []) {
-        if (this.mode === 'LOCAL') {
-            // Busqueda simple por keywords
+        if (this.mode === 'LOCAL' || !aiProviderService.isProviderAvailable('openai')) {
+            // Busqueda simple por keywords (evitar bucle infinito)
             return context.filter(item =>
                 item.toLowerCase().includes(query.toLowerCase())
             );
         }
 
-        // Implementar embeddings con OpenAI o Gemini
-        // Por ahora fallback a local
-        return this._semanticSearch(query, context);
+        try {
+            // Si está configurado Pinecone, buscaríamos ahí.
+            // Para mantener la estabilidad hasta tener PINECONE_API_KEY, mockeamos semántica.
+            const modelPrompt = `Filtra la información relevante de este contexto para la consulta: "${query}". Contexto original: ${JSON.stringify(context)}.`;
+            const filteredResult = await aiProviderService.chat({
+                provider: this.primaryProvider,
+                model: 'gemini-2.0-flash', // modelo ligero por defecto
+                messages: [{ role: 'user', content: modelPrompt }],
+                maxTokens: 500
+            });
+            return [filteredResult.content || ''];
+        } catch (error) {
+            logger.error('Semantic search error', error);
+            // Fallback
+            return context.filter(item => item.toLowerCase().includes(query.toLowerCase()));
+        }
+    }
+
+    /**
+     * Búsqueda Multimodal usando Gemini Embedding 2
+     */
+    async _multimodalSearch(text, mediaParts = [], context = []) {
+        try {
+            // Ejemplo de cómo se llamaría al embedding
+            const embedding = await aiProviderService.embed({
+                provider: 'google',
+                model: 'gemini-embedding-2-preview',
+                text: text,
+                multimodalParts: mediaParts
+            });
+            
+            logger.info(`Generado embedding multimodal (${embedding.vector.length} dimensiones) para búsqueda cruzada`);
+            
+            // Aquí iría la búsqueda en Vector DB (Pinecone, pgvector, etc)
+            // Por ahora mockeamos comprobación con el chat
+            const parts = text ? [{text}] : [];
+            parts.push(...mediaParts);
+
+            const filteredResult = await aiProviderService.chat({
+                provider: 'google',
+                model: 'gemini-2.0-flash',
+                messages: [{ role: 'user', content: [
+                    {text: `Compara semánticamente mis medios adjuntos con este contexto de la base de datos: ${JSON.stringify(context)}. ¿Cuáles coinciden mejor?`},
+                    ...parts
+                ]}],
+                maxTokens: 500
+            });
+
+            return {
+                embeddingVector: embedding.vector,
+                results: [filteredResult.content || ''],
+                method: 'gemini-embedding-2-preview'
+            };
+        } catch (error) {
+            logger.error('Multimodal search error', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Evaluación de Imágenes Logísticas y seguimiento
+     */
+    async _processLogisticsImage(imagePart, expectedStatusText) {
+        try {
+            // Usando embeddings para comparar la imagen vs estado esperado
+            const imgEmbedding = await aiProviderService.embed({
+                provider: 'google',
+                text: '',
+                multimodalParts: [imagePart] // e.g., { inlineData: { data: 'base64...', mimeType: 'image/jpeg' } }
+            });
+
+            const textEmbedding = await aiProviderService.embed({
+                provider: 'google',
+                text: expectedStatusText
+            });
+
+            // En un caso real se calcularía similitud de cosenos entre textEmbedding y imgEmbedding.
+            // Retornamos un log y análisis usando el modelo de chat multimodal para mayor interpretabilidad.
+            logger.info('Embeddings generados para Logística. Calculando coherencia visual-texto...');
+
+            const analysis = await aiProviderService.chat({
+                provider: 'google',
+                model: 'gemini-2.0-flash',
+                messages: [{ role: 'user', content: [
+                    {text: `Analiza esta foto del paquete y valídala con el estado esperado: "${expectedStatusText}". ¿Coinciden? Responde con JSON: { "matches": boolean, "reason": "texto" }`},
+                    imagePart
+                ]}]
+            });
+
+            return JSON.parse(analysis.content.replace(/```json/g, '').replace(/```/g, ''));
+        } catch (error) {
+            logger.error('Logistics image processing error', error);
+            return { error: 'Failed to process logistics multimodal data' };
+        }
+    }
+
+    /**
+     * Auditoría Anti-Fraude procesando documentos (PDF/Imágenes)
+     */
+    async _analyzeFraudDocument(documentPart, userHistoryText) {
+        try {
+            // Vectorizamos el documento y comparamos con historia del usuario
+            const docEmbedding = await aiProviderService.embed({
+                provider: 'google',
+                text: '',
+                multimodalParts: [documentPart] // Soporta PDF o imágenes en base64
+            });
+
+            const histEmbedding = await aiProviderService.embed({
+                provider: 'google',
+                text: userHistoryText
+            });
+
+            // Usamos modelo de chat multimodal para la explicación de la decisión
+            const auditResult = await aiProviderService.chat({
+                provider: 'google',
+                model: 'gemini-2.0-flash',
+                messages: [{ role: 'user', content: [
+                    {text: `Eres el sistema Anti-Fraude de BeZhas. Compara el documento adjunto (KYC o recibo) con el historial del usuario: "${userHistoryText}". ¿Hay comportamientos sospechosos o inconsistencias?`},
+                    documentPart
+                ]}]
+            });
+
+            return {
+                riskScore: 0.2, // Esto vendría de la distancia del embedding
+                auditNotes: auditResult.content,
+                docVectorSize: docEmbedding.vector.length,
+                histVectorSize: histEmbedding.vector.length
+            };
+        } catch (error) {
+            logger.error('Fraud document audit error', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Procesamiento de Audio VIP Nativo
+     */
+    async _processVipAudio(audioPart, userContext) {
+        try {
+            // Genera embedding del audio directamente (sin transcribir)
+            const audioEmbedding = await aiProviderService.embed({
+                provider: 'google',
+                text: '',
+                multimodalParts: [audioPart] // e.g., { inlineData: { data: 'b64...', mimeType: 'audio/mp3' } }
+            });
+
+            logger.info(`VIP Audio Embedding Vector (${audioEmbedding.vector.length}) generado.`);
+
+            // Resuelve la petición procesando nativamente el audio
+            const response = await aiProviderService.chat({
+                provider: 'google',
+                model: 'gemini-1.5-flash',
+                messages: [{ role: 'user', content: [
+                    {text: `El usuario VIP con contexto "${JSON.stringify(userContext)}" mandó este audio de voz. Responde a su petición amablemente y procesa cualquier acción necesaria.`},
+                    audioPart
+                ]}]
+            });
+
+            return {
+                replyText: response.content,
+                executedAction: 'AUDIO_PROCESSED_NATIVELY',
+                audioEmbeddingSize: audioEmbedding.vector.length
+            };
+
+        } catch (error) {
+            logger.error('VIP Audio processing error', error);
+            throw error;
+        }
     }
 
     /**
@@ -215,44 +357,41 @@ Tu objetivo es ayudar a los usuarios con:
 Responde de manera amigable, clara y profesional en español. Si no sabes algo, admítelo.`;
 
         // Modo local: respuestas predefinidas
-        if (this.mode === 'LOCAL' || (!this.gemini && !this.openai)) {
+        if (this.mode === 'LOCAL' || !this.initialized) {
             return this._localChatResponse(message);
         }
 
         try {
-            // Intentar con Gemini primero
-            if (this.gemini) {
-                const model = this.gemini.getGenerativeModel({ model: 'gemini-pro' });
-                const prompt = `${systemPrompt}\n\nContexto: ${JSON.stringify(context)}\n\nUsuario: ${message}\n\nAsistente:`;
+            // Integrar RAG antes de responder
+            const relevantContext = await this._semanticSearch(message, context.page ? [`Contexto de página: ${context.page}`] : []);
+            const finalSystemPrompt = `${systemPrompt}\n\nConocimiento en base de código:\n${relevantContext.join('\\n')}`;
 
-                const result = await model.generateContent(prompt);
-                const responseText = result.response.text();
+            // Usar aiProviderService (ya maneja todos los proveedores automáticamente de acuerdo al `.env`)
+            let providerToUse = this.primaryProvider;
+            let modelToUse = providerToUse === 'google' ? 'gemini-1.5-pro' : (providerToUse === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
 
-                return {
-                    text: responseText,
-                    provider: 'gemini',
-                    timestamp: new Date()
-                };
+            // Determinar necesidad según el agente (si tuvieran rol de genAI heavy, dar deepseek o grok)
+            if (context.systemRole === 'developer' && aiProviderService.isProviderAvailable('deepseek')) {
+                providerToUse = 'deepseek';
+                modelToUse = 'deepseek-chat';
             }
 
-            // Fallback a OpenAI
-            if (this.openai) {
-                const completion = await this.openai.createChatCompletion({
-                    model: "gpt-3.5-turbo",
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: `Contexto: ${JSON.stringify(context)}\n\n${message}` }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 500
-                });
+            const response = await aiProviderService.chat({
+                provider: providerToUse,
+                model: modelToUse,
+                messages: [
+                    { role: "system", content: finalSystemPrompt },
+                    { role: "user", content: message }
+                ],
+                temperature: 0.7,
+                maxTokens: 1500
+            });
 
-                return {
-                    text: completion.data.choices[0].message.content,
-                    provider: 'openai',
-                    timestamp: new Date()
-                };
-            }
+            return {
+                text: response.content,
+                provider: response.provider,
+                timestamp: new Date()
+            };
 
         } catch (error) {
             logger.error('Chat response error', error);
@@ -379,10 +518,7 @@ Responde de manera amigable, clara y profesional en español. Si no sabes algo, 
             mode: this.mode,
             primaryProvider: this.primaryProvider,
             initialized: this.initialized,
-            providers: {
-                openai: !!this.openai,
-                gemini: !!this.gemini
-            }
+            available: aiProviderService.getAvailableProviders()
         };
     }
 }

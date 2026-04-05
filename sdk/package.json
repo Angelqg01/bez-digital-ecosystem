@@ -7,7 +7,10 @@
   "browser": "dist/bezhas-sdk.min.js",
   "exports": {
     ".": "./index.js",
-    "./contracts": "./contracts.js"
+    "./contracts": "./contracts.js",
+    "./farming": "./farming.js",
+    "./governance": "./governance.js",
+    "./marketplace": "./marketplace.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

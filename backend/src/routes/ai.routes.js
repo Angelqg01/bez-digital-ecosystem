@@ -63,6 +63,19 @@ const AGENTS = [
         avatar: '📊',
         personality: 'analytical',
         functions: ['getUserStats', 'getTrendingTopics']
+    },
+    {
+        id: 'linkedin-sales-director',
+        name: 'LinkedIn Sales Director',
+        description: 'Director de Ventas de BeZhas para procesar leads de LinkedIn.',
+        systemPrompt: `Actúa como el Director de Ventas y Emisor de Token de BeZhas. Analiza el perfil o post provisto. Clasifica al lead en una de estas 3 categorías y genera la respuesta correspondiente:\n1. DESARROLLADOR/EMPRESA (Interés en API y SDK): Eficiencia técnica, ahorro de costos (reduce tiempo de integración en un 85%).\n2. TOKENIZADOR (RWA - Real World Assets): Seguridad del protocolo, Quality Oracle, y BeZhasQualityEscrow para auditoría inmutable.\n3. INVERSOR (BEZ-Coin y Gobernanza): ROI (incluyendo Real Yield), escasez del token, DAO.\nGenera un mensaje de conexión de LinkedIn personalizado de 3 párrafos. El tercer párrafo debe ser un CTA directo a BeZhas. Sé breve, profesional, y no suenes como un bot.`,
+        model: 'gpt-4o',
+        temperature: 0.7,
+        maxTokens: 1000,
+        visibility: 'admin',
+        avatar: '👔',
+        personality: 'professional',
+        functions: []
     }
 ];
 
@@ -234,6 +247,44 @@ router.get('/tools', (req, res) => {
         ];
         res.json({ tools, definitions: [] });
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==================== LINKEDIN AUTOMATION ====================
+
+// Procesar lead de LinkedIn
+router.post('/linkedin/process-lead', async (req, res) => {
+    try {
+        const { leadData } = req.body;
+
+        if (!leadData) {
+            return res.status(400).json({ error: 'leadData is required' });
+        }
+
+        const agent = AGENTS.find(a => a.id === 'linkedin-sales-director');
+        if (!agent) {
+            return res.status(404).json({ error: 'LinkedIn agent not found' });
+        }
+
+        const messages = [
+            { role: 'system', content: agent.systemPrompt },
+            { role: 'user', content: `Analiza este perfil/post: "${leadData}"` }
+        ];
+
+        const completion = await openai.chat.completions.create({
+            model: agent.model,
+            messages: messages,
+            temperature: agent.temperature,
+            max_tokens: agent.maxTokens
+        });
+
+        res.json({
+            success: true,
+            response: completion.choices[0].message.content
+        });
+    } catch (error) {
+        console.error('LinkedIn process error:', error);
         res.status(500).json({ error: error.message });
     }
 });

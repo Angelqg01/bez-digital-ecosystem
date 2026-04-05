@@ -9,6 +9,8 @@ import {
     Lock, ExternalLink, Info, Crown, Flame, Award
 } from 'lucide-react';
 import GlobalStatsBar from '../components/GlobalStatsBar';
+import { useBezPay } from '../context/BezPayContext';
+// CryptoPaymentModal ELIMINADO – usar BezPayModal vía useBezPay()
 
 /**
  * BuyTokensPage - Página completa para compra de paquetes de tokens BEZ-Coin
@@ -16,10 +18,12 @@ import GlobalStatsBar from '../components/GlobalStatsBar';
  */
 export default function BuyTokensPage() {
     const { address, isConnected } = useAccount();
+    const { openBuyBez } = useBezPay(); // Sistema BezPay v2
     const [selectedPackage, setSelectedPackage] = useState(null);
-    const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'crypto' | 'bank'
+    const [paymentMethod, setPaymentMethod] = useState('crypto'); // BezPay es siempre crypto/multi
     const [loading, setLoading] = useState(false);
     const [userSubscription, setUserSubscription] = useState(null);
+    // showCryptoModal ELIMINADO – usar openBuyBez() de BezPayContext
 
     // Precio base por token
     const PRICE_PER_TOKEN = 0.10; // $0.10 USD
@@ -195,55 +199,29 @@ export default function BuyTokensPage() {
             return;
         }
 
-        if (!isConnected) {
-            toast.error('Conecta tu wallet primero');
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            const token = localStorage.getItem('token');
-
-            // Crear sesión de pago según el método
-            if (paymentMethod === 'card') {
-                // Stripe checkout
-                const response = await axios.post('/api/payments/token-purchase', {
-                    packageId: selectedPackage.id,
-                    walletAddress: address,
-                    paymentMethod: 'stripe'
-                }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                if (response.data.checkoutUrl) {
-                    window.location.href = response.data.checkoutUrl;
-                }
-            } else if (paymentMethod === 'crypto') {
-                // Crypto payment flow
-                const response = await axios.post('/api/payments/crypto-purchase', {
-                    packageId: selectedPackage.id,
-                    walletAddress: address
-                }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                toast.success('Transacción iniciada. Confirma en tu wallet.');
-                // Aquí iría la lógica de wagmi para la transacción
-            } else if (paymentMethod === 'bank') {
-                // Bank transfer instructions
-                toast.success('Se han enviado las instrucciones de pago a tu email');
-            }
-        } catch (error) {
-            console.error('Purchase error:', error);
-            toast.error('Error al procesar la compra');
-        } finally {
-            setLoading(false);
-        }
+        // Todos los pagos pasan por BezPayModal v2
+        openBuyBez(selectedPackage.price, {
+            itemName: `Paquete ${selectedPackage.name}`,
+            metadata: {
+                packageId: selectedPackage.id,
+                tokens: selectedPackage.tokens,
+                bonus: selectedPackage.bonus,
+                source: 'buy_tokens_page',
+            },
+            onSuccess: ({ txHash, bezAmount }) => {
+                toast.success(`✅ ${(selectedPackage.tokens + selectedPackage.bonus).toLocaleString()} BEZ activados!`, { duration: 6000 });
+                setSelectedPackage(null);
+            },
+        });
     };
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+
+
+            {/* BezPayModal se abre vía openBuyBez() — registrado globalmente en App.jsx */}
+
             {/* Global Stats Bar */}
             <GlobalStatsBar />
 

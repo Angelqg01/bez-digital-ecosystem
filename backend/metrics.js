@@ -7,7 +7,13 @@ const router = express.Router();
 client.collectDefaultMetrics();
 
 router.get('/health', (req, res) => {
-    res.json({ status: 'ok', uptime: process.uptime() });
+    try {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
+    } catch (err) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok' }));
+    }
 });
 
 router.get('/metrics', async (req, res) => {

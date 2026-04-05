@@ -3,14 +3,14 @@ import { Ship, Cpu, FileCheck, Box, ShieldCheck, AlertTriangle, ArrowRight, Zap,
 
 export default function BeZhasLogisticsSimulator() {
   const [mode, setMode] = useState('manual'); // 'manual' | 'autonomous'
-  const[step, setStep] = useState(0);
+  const [step, setStep] = useState(0);
   const [logs, setLogs] = useState([]);
   const logsEndRef = useRef(null);
 
   // Auto-scroll para la consola de logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  },[logs]);
+  }, [logs]);
 
   // Motor de simulación
   useEffect(() => {
@@ -28,8 +28,8 @@ export default function BeZhasLogisticsSimulator() {
     } else if (mode === 'autonomous') {
       setLogs(["[SYS] Iniciando BeZhas Enterprise SDK v2.0.0..."]);
       setStep(1);
-      
-      const sequence =[
+
+      const sequence = [
         { s: 1, delay: 1000, log: "[SDK] Conexión establecida con ToolBEZ BaaS. Fee Delegation ACTIVO." },
         { s: 2, delay: 2500, log: "[IoT] bezhas.oracle.recordIoTData({ id: 'MAEU1234567', temp: -18.5, status: 'OK' })" },
         { s: 2, delay: 3500, log: "[MCP] Aegis AI analizando manifiesto aduanero digital..." },
@@ -51,7 +51,7 @@ export default function BeZhasLogisticsSimulator() {
     return () => clearTimeout(timer);
   }, [mode]);
 
-  const steps =[
+  const steps = [
     { id: 1, title: "Ingesta IoT", icon: <Database className="w-6 h-6" /> },
     { id: 2, title: "Análisis IA (MCP)", icon: <Cpu className="w-6 h-6" /> },
     { id: 3, title: "Validación Web3", icon: <ShieldCheck className="w-6 h-6" /> },
@@ -69,16 +69,16 @@ export default function BeZhasLogisticsSimulator() {
           </h2>
           <p className="text-slate-400 mt-2">SDK Enterprise / Protocolo MCP / Validación Web3</p>
         </div>
-        
+
         <div className="flex mt-6 md:mt-0 bg-slate-800 p-1 rounded-xl">
-          <button 
+          <button
             onClick={() => setMode('manual')}
             className={`px-6 py-3 rounded-lg flex items-center gap-2 transition-all font-medium ${mode === 'manual' ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'text-slate-400 hover:text-slate-200'}`}
           >
             <AlertTriangle className="w-5 h-5" />
             Gestión Manual (Humana)
           </button>
-          <button 
+          <button
             onClick={() => setMode('autonomous')}
             className={`px-6 py-3 rounded-lg flex items-center gap-2 transition-all font-medium ${mode === 'autonomous' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -115,12 +115,12 @@ export default function BeZhasLogisticsSimulator() {
             <div className="flex justify-between relative">
               {/* Connecting Line */}
               <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-700 -translate-y-1/2 z-0">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 transition-all duration-1000 ease-out"
                   style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
                 ></div>
               </div>
-              
+
               {/* Steps */}
               {steps.map((s) => (
                 <div key={s.id} className="relative z-10 flex flex-col items-center gap-3">
@@ -162,14 +162,13 @@ export default function BeZhasLogisticsSimulator() {
           </div>
           <div className="p-4 overflow-y-auto flex-1 space-y-2 text-slate-300">
             {logs.map((log, index) => (
-              <div 
-                key={index} 
-                className={`animate-in fade-in slide-in-from-left-2 ${
-                  log.includes('❌') || log.includes('⚠️') ? 'text-red-400' : 
-                  log.includes('✅') || log.includes('🚀') ? 'text-emerald-400' : 
-                  log.includes('[Tokenomics]') ? 'text-yellow-400' : 
-                  log.includes('[MCP]') ? 'text-purple-400' : 'text-blue-300'
-                }`}
+              <div
+                key={index}
+                className={`animate-in fade-in slide-in-from-left-2 ${log.includes('❌') || log.includes('⚠️') ? 'text-red-400' :
+                    log.includes('✅') || log.includes('🚀') ? 'text-emerald-400' :
+                      log.includes('[Tokenomics]') ? 'text-yellow-400' :
+                        log.includes('[MCP]') ? 'text-purple-400' : 'text-blue-300'
+                  }`}
               >
                 {log}
               </div>

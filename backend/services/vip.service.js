@@ -23,81 +23,90 @@ try {
     logger.warn('WebSocket server not available, VIP notifications disabled');
 }
 
-// VIP Subscription Tiers
+// VIP Subscription Tiers — MUST match frontend UNIFIED_VIP_TIERS ids
 const VIP_TIERS = {
-    bronze: {
-        id: 'bronze',
-        name: 'Bronze VIP',
-        price: 14.99, // Actualizado de 9.99
-        bezPrice: 300, // Actualizado de 200 BEZ/month
+    starter: {
+        id: 'starter',
+        name: 'Starter',
+        price: 0,
+        bezPrice: 0,
         features: [
-            '5% descuento en compras',
-            '10% descuento en envíos',
-            'Badge NFT Bronze',
-            'Soporte prioritario',
-            'Acceso a eventos Bronze'
-        ],
-        color: 'orange',
-        stripePriceId: null // Will be created on first use
-    },
-    silver: {
-        id: 'silver',
-        name: 'Silver VIP',
-        price: 29.99, // Actualizado de 19.99
-        bezPrice: 600, // Actualizado de 400
-        features: [
-            '10% descuento en compras',
-            '20% descuento en envíos',
-            'Badge NFT Silver',
-            'Soporte 24/7',
-            '10% bonus en BEZ-Coin',
-            'Acceso eventos Silver'
+            'Acceso básico',
+            '5 consultas AI/día',
+            'Staking básico 12.5% APY',
         ],
         color: 'gray',
         stripePriceId: null
     },
-    gold: {
-        id: 'gold',
-        name: 'Gold VIP',
-        price: 69.99, // Actualizado de 49.99
-        bezPrice: 1400, // Actualizado de 1000
+    creator: {
+        id: 'creator',
+        name: 'Creator Pro',
+        price: 19.99,
+        bezPrice: 400,
         features: [
-            '15% descuento en compras',
-            'Envío gratis',
-            'Badge NFT Gold animado',
-            'Gestor de cuenta dedicado',
-            '25% bonus en BEZ-Coin',
-            'Acceso eventos Gold',
-            '1 NFT exclusivo mensual'
+            '50 consultas AI/día',
+            '18.75% APY efectivo (1.5x)',
+            '25% subsidio gas',
+            'Badge NFT Creator',
+            'Soporte prioritario',
         ],
-        color: 'yellow',
+        color: 'blue',
         stripePriceId: null
     },
-    platinum: {
-        id: 'platinum',
-        name: 'Platinum VIP',
-        price: 149.99, // Actualizado de 99.99
-        bezPrice: 3000, // Actualizado de 2000
+    business: {
+        id: 'business',
+        name: 'Business',
+        price: 99.99,
+        bezPrice: 2000,
         features: [
-            '20% descuento en compras',
-            'Envío express gratis',
-            'Badge NFT Platinum exclusivo',
-            'Concierge Web3 24/7',
-            '50% bonus en BEZ-Coin',
-            'Acceso a todos los eventos',
-            '3 NFTs exclusivos mensuales',
-            'Votación doble en DAO'
+            '200 consultas AI/día',
+            '25% APY efectivo (2.0x)',
+            '50% subsidio gas',
+            'Badge NFT Business animado',
+            'Soporte 24/7',
+            'API Access',
         ],
         color: 'purple',
         stripePriceId: null
+    },
+    enterprise: {
+        id: 'enterprise',
+        name: 'Enterprise',
+        price: 299.99,
+        bezPrice: 6000,
+        features: [
+            'Consultas AI ilimitadas',
+            '31.25% APY efectivo (2.5x)',
+            '100% subsidio gas',
+            'Badge NFT Enterprise exclusivo',
+            'Concierge Web3 24/7',
+            'API ilimitada',
+            'Votación doble DAO',
+        ],
+        color: 'amber',
+        stripePriceId: null
     }
 };
+
+// Backward compatibility: map old tier names to new ones
+const TIER_ALIASES = {
+    bronze: 'creator',
+    silver: 'business',
+    gold: 'enterprise',
+    platinum: 'enterprise',
+};
+
+function resolveTier(tierId) {
+    const id = (tierId || '').toLowerCase();
+    return VIP_TIERS[id] ? id : (TIER_ALIASES[id] || null);
+}
 
 /**
  * Obtener o crear producto de Stripe para un tier VIP
  */
 async function getOrCreateStripeProduct(tierId) {
-    const tier = VIP_TIERS[tierId];
+    const resolvedId = resolveTier(tierId);
+    const tier = VIP_TIERS[resolvedId];
     if (!tier) {
         throw new Error(`Invalid VIP tier: ${tierId}`);
     }
@@ -169,13 +178,19 @@ async function getOrCreateStripeProduct(tierId) {
  */
 async function createVIPSubscriptionSession(tierId, userInfo) {
     try {
-        const tier = VIP_TIERS[tierId];
+        const resolvedId = resolveTier(tierId);
+        const tier = VIP_TIERS[resolvedId];
         if (!tier) {
-            throw new Error(`Invalid VIP tier: ${tierId}`);
+            throw new Error(`Invalid VIP tier: ${tierId}. Valid: ${Object.keys(VIP_TIERS).join(', ')}`);
+        }
+
+        // Skip payment for free tier
+        if (tier.price === 0) {
+            return { success: true, message: 'Free tier — no payment required', tier: tier.name, price: 0 };
         }
 
         // Get or create Stripe product/price
-        const priceId = await getOrCreateStripeProduct(tierId);
+        const priceId = await getOrCreateStripeProduct(resolvedId);
 
         // Preparar configuración de sesión
         const sessionConfig = {
@@ -596,6 +611,8 @@ function notifyUser(userId, eventType, data) {
 
 module.exports = {
     VIP_TIERS,
+    TIER_ALIASES,
+    resolveTier,
     createVIPSubscriptionSession,
     getUserSubscriptions,
     cancelVIPSubscription,

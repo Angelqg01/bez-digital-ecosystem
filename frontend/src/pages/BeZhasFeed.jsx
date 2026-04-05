@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import http from '../services/http';
 import { ethers } from 'ethers';
 import { apiGet, apiPost } from '../lib/api';
 import { toast } from 'react-hot-toast';
 import { useBezCoin } from '../context/BezCoinContext';
 import { FaCoins, FaHeart } from 'react-icons/fa';
-import BuyBezCoinModal from '../components/modals/BuyBezCoinModal';
+// BuyBezCoinModal -> useBezPay().openBuyBez()
 import InsufficientFundsModal from '../components/modals/InsufficientFundsModal';
 import DonateButton from '../components/DonateButton';
 
@@ -14,8 +15,8 @@ const erc20Abi = [
 ];
 
 async function getBZHAddress() {
-    const res = await fetch('/contract-addresses.json');
-    const data = await res.json();
+    const res = await http.get('/contract-addresses.json');
+    const data = res.data;
     return data.BZHToken;
 }
 
@@ -149,13 +150,9 @@ export default function BeZhasFeed() {
         const payload = { author: authorName, content: newPost };
         try {
             if (!usingMock) {
-                const res = await fetch('/api/feed', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-                if (!res.ok) throw new Error('Error al publicar');
-                const created = await res.json();
+                const res = await http.post('/api/feed', payload);
+                if (res.status !== 200 && res.status !== 201) throw new Error('Error al publicar');
+                const created = res.data;
                 const p = created.post || created; // soporta {post} o objeto directo
                 setPosts(prev => [{
                     id: p._id || p.id || prev.length + 1,
@@ -199,8 +196,8 @@ export default function BeZhasFeed() {
             if (!usingMock) {
                 await apiPost(`/api/feed/${post.id}/like`, { author: account || 'guest' });
                 // refrescar lista
-                const res = await fetch('/api/feed');
-                const data = await res.json();
+                const res = await http.get('/api/feed');
+                const data = res.data;
                 const arr = Array.isArray(data) ? data : data.posts;
                 setPosts(arr.map((p, idx) => ({
                     id: p._id || p.id || idx + 1,
@@ -236,8 +233,8 @@ export default function BeZhasFeed() {
         try {
             if (!usingMock) {
                 await apiPost(`/api/feed/${post.id}/comment`, { author: account || 'guest', content: value });
-                const res = await fetch('/api/feed');
-                const data = await res.json();
+                const res = await http.get('/api/feed');
+                const data = res.data;
                 const arr = Array.isArray(data) ? data : data.posts;
                 setPosts(arr.map((p, idx) => ({
                     id: p._id || p.id || idx + 1,
@@ -281,7 +278,7 @@ export default function BeZhasFeed() {
                         <span className="font-bold">{parseFloat(balance).toFixed(2)} BEZ</span>
                     </div>
                     <button
-                        onClick={() => setShowBuyModal(true)}
+                        onClick={() => openBuyBez()}
                         className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl"
                     >
                         Comprar BEZ
@@ -357,7 +354,7 @@ export default function BeZhasFeed() {
             {/* BezCoin Modals */}
             <BuyBezCoinModal
                 isOpen={showBuyModal}
-                onClose={() => setShowBuyModal(false)}
+                onClose={() => {}}
             />
 
             <InsufficientFundsModal

@@ -105,8 +105,8 @@ export default function AgentCreatorAdvanced({ onSave, onCancel, editingAgent, a
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-6xl w-full h-[98vh] sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
                     <div className="flex items-center justify-between mb-2">
@@ -138,8 +138,8 @@ export default function AgentCreatorAdvanced({ onSave, onCancel, editingAgent, a
                                     key={section.id}
                                     onClick={() => setActiveSection(section.id)}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeSection === section.id
-                                            ? 'bg-purple-600 text-white shadow-lg'
-                                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'
+                                        ? 'bg-purple-600 text-white shadow-lg'
+                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'
                                         }`}
                                 >
                                     <Icon className="w-4 h-4" />
@@ -154,7 +154,7 @@ export default function AgentCreatorAdvanced({ onSave, onCancel, editingAgent, a
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
                     {activeSection === 'info' && (
                         <InfoSection agentData={agentData} setAgentData={setAgentData} />
                     )}

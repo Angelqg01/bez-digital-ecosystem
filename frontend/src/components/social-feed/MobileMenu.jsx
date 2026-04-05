@@ -22,13 +22,13 @@ import {
     Video,
     Music,
     FileText,
-    MapPin,
     Globe,
     Lock,
     Users,
     Shield,
     Loader2,
-    Smile
+    Smile,
+    Activity
 } from 'lucide-react';
 import { usePostCreation } from '../../hooks/usePostCreation';
 
@@ -138,6 +138,16 @@ const MobileMenu = ({ notificationsCount = 0 }) => {
             items: [
                 { path: '/ad-center', icon: Megaphone, label: 'Centro de Anuncios' },
                 { path: '/create', icon: PlusSquare, label: 'Crear Contenido' }
+            ]
+        },
+        {
+            title: 'Plataforma BeZhas',
+            items: [
+                { path: '/logistics', icon: MapPin, label: 'Logística (Demo)' },
+                { path: '/real-estate', icon: Globe, label: 'Bienes Raíces' },
+                { path: '/oracle', icon: Activity, label: 'Oráculo de Datos' },
+                { path: '/buy-tokens', icon: Coins, label: 'Comprar Tokens' },
+                { path: '/developer-console', icon: FileText, label: 'Consola de Desarrollo' }
             ]
         }
     ];

@@ -44,7 +44,7 @@ class WalletConnector {
   // Get available wallets
   getAvailableWallets() {
     const wallets = [];
-    
+
     if (this.isWalletAvailable('metamask')) {
       wallets.push({
         type: 'metamask',
@@ -100,7 +100,7 @@ class WalletConnector {
 
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
+
       this.provider = new ethers.providers.Web3Provider(window.ethereum);
       this.signer = this.provider.getSigner();
       this.account = await this.signer.getAddress();
@@ -129,7 +129,7 @@ class WalletConnector {
 
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
+
       this.provider = new ethers.providers.Web3Provider(window.ethereum);
       this.signer = this.provider.getSigner();
       this.account = await this.signer.getAddress();
@@ -155,7 +155,7 @@ class WalletConnector {
     try {
       // Dynamic import for WalletConnect
       const { EthereumProvider } = await import('@walletconnect/ethereum-provider');
-      
+
       const walletConnectProvider = await EthereumProvider.init({
         projectId: process.env.REACT_APP_WALLETCONNECT_PROJECT_ID || 'your-project-id',
         chains: [1, 5, 137, 80001], // Ethereum, Goerli, Polygon, Mumbai
@@ -194,7 +194,7 @@ class WalletConnector {
 
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
+
       this.provider = new ethers.providers.Web3Provider(window.ethereum);
       this.signer = this.provider.getSigner();
       this.account = await this.signer.getAddress();
@@ -223,7 +223,7 @@ class WalletConnector {
 
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
+
       this.provider = new ethers.providers.Web3Provider(window.ethereum);
       this.signer = this.provider.getSigner();
       this.account = await this.signer.getAddress();
@@ -369,7 +369,7 @@ class WalletConnector {
         chainId: '0x89',
         chainName: 'Polygon Mainnet',
         nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-        rpcUrls: ['https://polygon-rpc.com/'],
+        rpcUrls: ['https://polygon-bor-rpc.publicnode.com/'],
         blockExplorerUrls: ['https://polygonscan.com/']
       },
       80001: {

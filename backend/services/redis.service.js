@@ -178,43 +178,45 @@ class RedisService {
     }
 
     /**
-     * Get connection for BullMQ (returns connection object)
+     * Get connection for BullMQ (returns connection object).
+     * Returns null if DISABLE_BULLMQ=true or Redis is unavailable.
      */
     getBullMQConnection() {
-        if (!this.isAvailable()) {
+        // Respect global BullMQ kill-switch
+        const forceDisabled = ['true', '1'].includes((process.env.DISABLE_BULLMQ || '').toLowerCase());
+        if (forceDisabled || !this.isAvailable()) {
             return null;
         }
 
         const IORedis = require('ioredis');
 
-        // BullMQ requires a new connection instance, not a shared one
-        const connectionOptions = {
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD || undefined,
-            maxRetriesPerRequest: null, // Required for BullMQ
+        const sharedOptions = {
+            maxRetriesPerRequest: null,  // Required for BullMQ
             enableReadyCheck: false,
-            family: 0, // Allow both IPv4 and IPv6
+            enableOfflineQueue: false,   // Prevent command piling during reconnects
+            connectTimeout: 10000,
+            family: 0,
+            retryStrategy: (times) => {
+                if (times > 3) return null; // Give up after 3 retries
+                return Math.min(times * 1000, 3000);
+            },
         };
 
         if (process.env.REDIS_URL) {
             const redisUrl = process.env.REDIS_URL;
-            const urlOptions = {
-                maxRetriesPerRequest: null,
-                enableReadyCheck: false,
-                family: 0,
-            };
-
-            // Enable TLS for rediss:// protocol (Upstash, etc.)
             if (redisUrl.startsWith('rediss://')) {
-                urlOptions.tls = { rejectUnauthorized: false };
-                logger.info('BullMQ Redis TLS mode enabled for rediss:// connection');
+                sharedOptions.tls = { rejectUnauthorized: false };
+                logger.info('BullMQ Redis TLS enabled for rediss:// connection');
             }
-
-            return new IORedis(redisUrl, urlOptions);
+            return new IORedis(redisUrl, sharedOptions);
         }
 
-        return new IORedis(connectionOptions);
+        return new IORedis({
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379'),
+            password: process.env.REDIS_PASSWORD || undefined,
+            ...sharedOptions,
+        });
     }
 
     /**

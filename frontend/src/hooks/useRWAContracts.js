@@ -101,11 +101,11 @@ export const useRWAContracts = () => {
 
                 // Get tokenization fee
                 const fee = await factory.tokenizationFee();
-                setTokenizationFee(ethers.utils.formatEther(fee));
+                setTokenizationFee(ethers.formatEther(fee));
 
                 // Get BEZ balance
                 const balance = await bezCoin.balanceOf(walletAddress);
-                setBezBalance(ethers.utils.formatEther(balance));
+                setBezBalance(ethers.formatEther(balance));
 
             } catch (error) {
                 console.error('Error initializing RWA contracts:', error);
@@ -145,7 +145,7 @@ export const useRWAContracts = () => {
                 console.log('Approving BEZ-Coin...');
                 const approveTx = await bezCoinContract.approve(
                     RWA_FACTORY_ADDRESS,
-                    ethers.constants.MaxUint256
+                    ethers.MaxUint256
                 );
                 await approveTx.wait();
             }
@@ -159,7 +159,7 @@ export const useRWAContracts = () => {
                 imagesCID || '',
                 totalSupply,
                 valuationUSD,
-                ethers.utils.parseEther(pricePerFraction.toString()),
+                ethers.parseEther(pricePerFraction.toString()),
                 estimatedYield,
                 location
             );
@@ -201,7 +201,7 @@ export const useRWAContracts = () => {
                 imagesCID: asset.imagesCID,
                 totalSupply: asset.totalSupply.toNumber(),
                 valuationUSD: asset.valuationUSD.toNumber(),
-                pricePerFraction: ethers.utils.formatEther(asset.pricePerFraction),
+                pricePerFraction: ethers.formatEther(asset.pricePerFraction),
                 estimatedYield: asset.estimatedYield.toNumber() / 100, // basis points to percentage
                 creator: asset.creator,
                 location: asset.location,
@@ -237,7 +237,7 @@ export const useRWAContracts = () => {
 
         try {
             const pending = await vaultContract.getPendingRewards(assetId, walletAddress);
-            return ethers.utils.formatEther(pending);
+            return ethers.formatEther(pending);
         } catch (error) {
             console.error('Error getting pending dividends:', error);
             return '0';

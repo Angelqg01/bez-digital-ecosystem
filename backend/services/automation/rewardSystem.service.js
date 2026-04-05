@@ -31,15 +31,28 @@ class RewardAutomationService {
             console.warn('⚠️ HOT_WALLET_PRIVATE_KEY missing. Reward payouts will be simulated.');
         }
 
-        // Initialize Queue
-        this.rewardsQueue = new Queue('weekly-rewards', {
-            connection: {
-                host: process.env.REDIS_HOST || 'localhost',
-                port: process.env.REDIS_PORT || 6379
+        // Initialize Queue — ONLY if Redis available
+        this.rewardsQueue = null;
+        const bullmqForceDisabled = ['true', '1'].includes((process.env.DISABLE_BULLMQ || '').toLowerCase());
+        if (process.env.REDIS_URL && !bullmqForceDisabled) {
+            try {
+                this.rewardsQueue = new Queue('weekly-rewards', {
+                    connection: {
+                        host: process.env.REDIS_HOST || 'localhost',
+                        port: process.env.REDIS_PORT || 6379,
+                        maxRetriesPerRequest: null,
+                        retryStrategy: (times) => times > 3 ? null : Math.min(times * 500, 3000),
+                    }
+                });
+                this.setupWorker();
+                console.log('✅ Reward queue initialized');
+            } catch (e) {
+                console.warn('⚠️ Reward queue disabled:', e.message);
             }
-        });
+        } else {
+            console.info('ℹ️ REDIS_URL not set — reward queue disabled');
+        }
 
-        this.setupWorker();
         this.scheduleCron();
     }
 
@@ -47,6 +60,11 @@ class RewardAutomationService {
      * Start the weekly cron job
      */
     scheduleCron() {
+        // Skip in test environment to avoid open handles causing Jest timeouts
+        if (process.env.NODE_ENV === 'test') {
+            console.info('ℹ️ RewardSystem cron skipped in test environment');
+            return;
+        }
         // Runs every Monday at 00:00
         nodeCron.schedule('0 0 * * 1', async () => {
             console.log('⏰ Starting Weekly Reward Distribution Cycle...');
@@ -59,13 +77,14 @@ class RewardAutomationService {
      * Main distribution logic integration
      */
     async distributeRewards() {
+        if (!this.rewardsQueue) {
+            console.warn('⚠️ Reward queue unavailable — skipping distribution');
+            return;
+        }
         try {
-            // Get all active users
-            // Note: In real mongoose this would be User.find({ status: 'active' }) or similar
             const users = await User.find({});
 
             for (const user of users) {
-                // Add job to queue for each user to process in background
                 await this.rewardsQueue.add('process-user-reward', {
                     userId: user._id,
                     walletAddress: user.walletAddress
@@ -87,6 +106,8 @@ class RewardAutomationService {
             connection: {
                 host: process.env.REDIS_HOST || 'localhost',
                 port: process.env.REDIS_PORT || 6379,
+                maxRetriesPerRequest: null,
+                retryStrategy: (times) => times > 3 ? null : Math.min(times * 500, 3000),
             }
         });
     }
