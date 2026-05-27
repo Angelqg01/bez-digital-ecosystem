@@ -449,10 +449,45 @@ function exportKey(keyId, exportPassword) {
                 exportedAt: Date.now()
             }
         };
-
     } catch (error) {
+        console.error('Error exporting key:', error);
         return { success: false, error: error.message };
     }
+}
+
+/**
+ * Encrypt a custodial private key using the Master Key of the KMS
+ */
+function encryptCustodialKey(privateKeyHex) {
+    const { key: masterKey } = getKey('master');
+    const iv = crypto.randomBytes(16);
+    const key = Buffer.from(masterKey, 'hex');
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    
+    let encrypted = cipher.update(privateKeyHex, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag();
+    
+    return JSON.stringify({
+        encrypted,
+        iv: iv.toString('hex'),
+        authTag: authTag.toString('hex')
+    });
+}
+
+/**
+ * Decrypt a custodial private key using the Master Key of the KMS
+ */
+function decryptCustodialKey(encryptedJson) {
+    const { key: masterKey } = getKey('master');
+    const { encrypted, iv, authTag } = JSON.parse(encryptedJson);
+    const key = Buffer.from(masterKey, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'hex'));
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+    
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
 }
 
 module.exports = {
@@ -469,5 +504,8 @@ module.exports = {
     getKeyStats,
     revokeKey,
     exportKey,
+    encryptCustodialKey,
+    decryptCustodialKey,
     KMS_CONFIG
 };
+
