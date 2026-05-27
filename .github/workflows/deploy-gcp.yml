@@ -109,7 +109,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           files: ./coverage/lcov.info
           flags: contracts
@@ -158,7 +158,7 @@ jobs:
           JWT_SECRET: test_jwt_secret_key_for_ci
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           files: ./backend/coverage/lcov.info
           flags: backend
