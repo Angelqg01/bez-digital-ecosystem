@@ -1,0 +1,98 @@
+# ============================================================
+# BeZhas Backend — Dockerfile Producción GCP Cloud Run
+# ============================================================
+# Versión optimizada para Cloud Run:
+#   - Node 20 LTS (Alpine)
+#   - Multi-stage build (reduce image size ~60%)
+#   - Puerto 8080 (Cloud Run estándar)
+#   - Usuario no-root (seguridad)
+#   - Health check nativo
+#   - path-to-regexp@0.1.7 fijado (evita bug pathRegexp)
+# ============================================================
+
+# ── Stage 1: Dependencias ─────────────────────────────────────
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+RUN npm install -g pnpm@11
+
+# Copiar manifiestos de paquetes primero (cache de capas)
+COPY package.json pnpm-lock.yaml ./
+
+# Instalar solo dependencias de producción
+RUN pnpm install --prod --no-frozen-lockfile --ignore-scripts \
+    && pnpm add path-to-regexp@0.1.7 --exact --ignore-scripts
+
+# ── Stage 2: Builder ──────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copiar node_modules desde stage deps
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copiar código fuente (excluyendo lo definido en .dockerignore)
+COPY . .
+
+# Eliminar archivos de desarrollo y tests
+RUN rm -rf \
+    tests/ \
+    test/ \
+    coverage/ \
+    *.test.js \
+    *.spec.js \
+    .env \
+    .env.* \
+    *.md \
+    npm-debug.log \
+    yarn-error.log \
+    .vscode/ \
+    backend_*.txt \
+    debug*.log \
+    server_*.log \
+    startup_error.log \
+    gcp_logs*.txt
+
+# ── Stage 3: Producción ───────────────────────────────────────
+FROM node:20-alpine AS production
+
+# Instalar wget para health checks
+RUN apk add --no-cache wget dumb-init
+
+WORKDIR /app
+
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1001 -S nodejs \
+    && adduser -S bezhas -u 1001 -G nodejs
+
+# Copiar app desde builder con permisos correctos
+COPY --from=builder --chown=bezhas:nodejs /app ./
+
+# Crear directorio de logs
+RUN mkdir -p /app/logs && chown bezhas:nodejs /app/logs
+
+# ── Variables de entorno ───────────────────────────────────────
+# Cloud Run inyecta PORT automáticamente (default 8080)
+ENV NODE_ENV=production
+ENV PORT=8080
+ENV LOG_LEVEL=info
+# Desactivar BullMQ si no hay Redis (evita crash en startup)
+ENV DISABLE_BULLMQ=true
+# Desactivar listener automático de blockchain (se activa vía API)
+ENV DISABLE_BLOCKCHAIN_LISTENER=true
+
+# ── Seguridad ─────────────────────────────────────────────────
+USER bezhas
+
+# Exponer puerto Cloud Run estándar
+EXPOSE 8080
+
+# ── Health Check ──────────────────────────────────────────────
+# Cloud Run requiere respuesta en < 10s para startup probe
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-8080}/api/health || exit 1
+
+# ── Arranque con dumb-init (evita zombie processes) ───────────
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "server.js"]

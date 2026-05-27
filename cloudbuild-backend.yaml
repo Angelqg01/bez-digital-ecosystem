@@ -10,8 +10,8 @@ steps:
       - "-t"
       - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-backend:${_TAG}"
       - "-f"
-      - "backend/Dockerfile.optimized"
-      - "."
+      - "backend/Dockerfile.production"
+      - "backend"
     id: "build-backend"
 
   - name: "gcr.io/cloud-builders/docker"
