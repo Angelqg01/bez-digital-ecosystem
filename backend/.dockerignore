@@ -1,12 +1,99 @@
-node_modules
+# ============================================================
+# BeZhas Backend — .dockerignore
+# Excluye archivos innecesarios para reducir contexto Docker
+# ============================================================
+
+# Node modules (se reinstalan en el build)
+node_modules/
 npm-debug.log
+yarn-error.log
+yarn.lock
+pnpm-lock.yaml*
+
+# Variables de entorno locales (NUNCA incluir en la imagen)
 .env
 .env.*
-.git
-.gitignore
-Dockerfile
-README.md
-tests
-test
+*.env
+
+# Archivos de desarrollo y test
+tests/
+test/
+coverage/
+*.test.js
+*.spec.js
+jest.config.js
+test-*.js
+test_*.js
+
+# Logs y archivos temporales
 *.log
-.vscode
+logs/
+*_out.txt
+*_err.txt
+*_debug*
+debug.log
+backend_*.txt
+server_*.log
+startup_error.log
+gcp_logs*.txt
+debug_out.txt
+debug_err.txt
+
+# Documentación de desarrollo
+*.md
+AI_PROVIDERS_GUIDE.md
+AI_SERVICE_README.md
+FIAT_GATEWAY_SETUP.md
+LOCAL_AI_SYSTEM.md
+FIAT_GATEWAY_SETUP_REQUIRED.md
+
+# Herramientas de desarrollo
+.vscode/
+.git/
+.gitignore
+.gcloudignore
+nodemon.json
+
+# Archivos de backup y temporales
+*.backup
+*.updated
+*.tgz
+pnpm-lock.yaml*
+
+# Coverage reports
+coverage/
+
+# Demo y debug scripts
+demo-*.js
+start-debug.js
+test-*.js
+verify-*.js
+create-sample-*.js
+publish-posts*.js
+publish-posts*.ps1
+
+# Otros Dockerfiles (evitar confusión)
+Dockerfile
+Dockerfile.*
+!Dockerfile.production
+
+# cloudbuild (no necesario en la imagen)
+cloudbuild.yaml
+service.yaml
+app.yaml
+app-secrets.yaml
+
+# Secrets y keys locales
+.keys/
+bezhas-sdk-*.tgz
+bezhas-mcp-server-*.tgz
+
+# ML models grandes (se cargan vía API)
+ml-models/
+
+# Seeds y migrations de desarrollo
+seeds/
+migrations/
+
+# Incluir pnpm-lock.yaml para el build
+!pnpm-lock.yaml
