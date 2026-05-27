@@ -135,6 +135,10 @@ class RedisService {
                 this.client = null;
             });
 
+            if (!this.client) {
+                return null;
+            }
+
             // Wait for connection validation
             try {
                 await this.client.ping();
