@@ -3,8 +3,8 @@
  * Maneja la lógica de loyalty y gamificación para el sistema VIP
  */
 
-const ApiKey = require('../models/ApiKey.model');
-const User = require('../models/user.model');
+const ApiKey = require('../models/pg/ApiKey');
+const User = require('../models/pg/User');
 const VIPSubscription = require('../models/VIPSubscription.model');
 
 // Definición de Tiers basado en uso mensual de API

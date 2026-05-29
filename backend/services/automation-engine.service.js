@@ -13,7 +13,7 @@
 const { ethers } = require('ethers');
 const cron = require('node-cron');
 const Post = require('../models/post.model');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const { getOracle } = require('./oracle.service');
 const { notifyHigh, notifyMedium } = require('../middleware/discordNotifier');
 const telegram = require('../middleware/telegramNotifier');
@@ -156,7 +156,7 @@ class AutomationEngine {
                     }
 
                     if (bonus > 0) {
-                        await User.findByIdAndUpdate(userData._id, {
+                        await User.update(userData._id, {
                             $inc: {
                                 bezBalance: bonus,
                                 totalEarned: bonus
@@ -263,7 +263,7 @@ class AutomationEngine {
                 ]);
 
                 for (const user of users) {
-                    await User.findByIdAndUpdate(user._id, {
+                    await User.update(user._id, {
                         $inc: { bezBalance: milestone.reward },
                         $set: {
                             [`achievements.${milestone.badge}`]: {
@@ -364,7 +364,7 @@ class AutomationEngine {
 
             for (const user of inactiveUsers) {
                 // Dar un pequeño incentivo para volver
-                await User.findByIdAndUpdate(user._id, {
+                await User.update(user._id, {
                     $inc: { bezBalance: 10 },
                     $push: {
                         notifications: {

@@ -119,6 +119,6 @@ Write-Host ""
 Write-Host "⚡ La DApp ahora es más rápida y enfocada!" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Próximos pasos:" -ForegroundColor Yellow
-Write-Host "1. Ejecutar: npm run build" -ForegroundColor White
+Write-Host "1. Ejecutar: pnpm run build" -ForegroundColor White
 Write-Host "2. Probar la aplicación" -ForegroundColor White
 Write-Host "3. Verificar que todo funciona correctamente" -ForegroundColor White

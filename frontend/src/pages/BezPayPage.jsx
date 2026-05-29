@@ -18,6 +18,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import { useBezPay, SUBSCRIPTION_PLANS, FARMING_POOLS } from '../context/BezPayContext';
+import { STRIPE_PAYMENT_LINKS } from '../config/bezhasPaymentConfig';
 import { ExternalLink, Wallet, TrendingUp, Shield, Zap, Activity, Crown, ChevronRight, Info, BarChart2 } from 'lucide-react';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
@@ -78,11 +79,56 @@ const GLOBAL_STATS = {
   bezCirculating: '28.4M BEZ',
 };
 
+const BEZ_COIN_PACKAGES = [
+  { id:'direct', name:'BEZ-Coin Polygon', tokens:'Compra directa', bonus:'Entrega segun orden Stripe', price:'FIAT', color:'#FFB800', icon:'🪙', href:STRIPE_PAYMENT_LINKS.tokenPurchase, featured:true },
+  { id:'starter', name:'Starter', tokens:100, bonus:0, price:10, color:'#3D5E80', icon:'🌱' },
+  { id:'pro', name:'Pro', tokens:500, bonus:50, price:50, color:'#2563EB', icon:'⚡' },
+  { id:'business', name:'Business', tokens:1000, bonus:150, price:100, color:'#7C3AED', icon:'🚀', popular:true },
+  { id:'enterprise', name:'Enterprise', tokens:5000, bonus:1000, price:500, color:'#FFB800', icon:'🏛️' },
+  { id:'whale', name:'Whale', tokens:25000, bonus:7500, price:2500, color:'#06B6D4', icon:'💎' },
+];
+
+const ENTERPRISE_SUBSCRIPTION_PLANS = [
+  {
+    id:'starter',
+    name:'BeZhas Starter',
+    price:'29€',
+    period:'/mes',
+    icon:'🌱',
+    color:'#2563EB',
+    href:STRIPE_PAYMENT_LINKS.subscriptions.starter,
+    badge:'Inicio empresa',
+    features:['Acceso profesional inicial', 'Pagos BEZ Pay y fiat', 'Panel operativo BeZhas Hub', 'Soporte estandar'],
+  },
+  {
+    id:'pro',
+    name:'BeZhas Pro',
+    price:'79€',
+    period:'/mes',
+    icon:'🚀',
+    color:'#00C896',
+    href:STRIPE_PAYMENT_LINKS.subscriptions.pro,
+    badge:'Recomendado',
+    features:['Funciones Pro', 'Automatizaciones y analitica', 'Mayor capacidad de uso', 'Prioridad en soporte'],
+  },
+  {
+    id:'enterprise',
+    name:'BeZhas Enterprise',
+    price:'299€',
+    period:'/mes',
+    icon:'🏛️',
+    color:'#FFB800',
+    href:STRIPE_PAYMENT_LINKS.subscriptions.enterprise,
+    badge:'Empresa',
+    features:['Cuenta empresarial', 'White label y API institucional', 'Soporte dedicado', 'Escalado para equipos'],
+  },
+];
+
 // ─── TABS DE NAVEGACIÓN ───────────────────────────────────────────────────────
 const TABS = [
   { id: 'overview',     label: 'Overview',     icon: '📊' },
   { id: 'buy',          label: 'Comprar BEZ',  icon: '🪙' },
-  { id: 'subscription', label: 'Planes VIP',   icon: '📋' },
+  { id: 'subscription', label: 'Suscripciones', icon: '📋' },
   { id: 'farming',      label: 'Farming',      icon: '🌾' },
   { id: 'escrow',       label: 'Escrow',       icon: '🔒' },
   { id: 'history',      label: 'Analytics',    icon: '📈' },
@@ -237,7 +283,7 @@ export default function BezPayPage() {
       {/* Footer */}
       <div style={{ borderTop:`1px solid ${C.border}`, padding:'10px 28px', display:'flex', justifyContent:'space-between',
         color:C.muted, fontSize:9, fontFamily:C.mono, background:C.surf, flexWrap:'wrap', gap:6 }}>
-        <span>BeZhas.com · BEZ Payment System v2.0 · Polygon Amoy → Mainnet · BNB Chain</span>
+        <span>bez.digital · BEZ Payment System v2.0 · Polygon Amoy → Mainnet · BNB Chain</span>
         <span>LiquidityFarming.sol · QualityEscrow.sol · Node.js+Express+MongoDB+WebSocket</span>
       </div>
     </div>
@@ -256,11 +302,11 @@ function OverviewTab({ prices, M, openBuyBez, openSubscription, openFarming, C }
   const quickActions = [
     {
       icon:'🪙', title:'Comprar BEZ', desc:'Multi-token: USDT, USDC, MATIC, crypto y fiat',
-      color:C.gold, action:() => openBuyBez(null, { metadata:{source:'bez_pay_page'} }),
+      color:C.gold, action:() => window.open(STRIPE_PAYMENT_LINKS.tokenPurchase, '_blank', 'noopener,noreferrer'),
     },
     {
-      icon:'📋', title:'Suscripción VIP', desc:'Planes Pro y Enterprise con auto-renovación on-chain',
-      color:C.primary, action:() => openSubscription('pro'),
+      icon:'📋', title:'Suscripción empresarial', desc:'Starter, Pro y Enterprise con checkout real de Stripe',
+      color:C.primary, action:() => window.open(STRIPE_PAYMENT_LINKS.subscriptions.pro, '_blank', 'noopener,noreferrer'),
     },
     {
       icon:'🌾', title:'Liquidity Farming', desc:'APY hasta 38.2% con multiplicadores por lock',
@@ -366,59 +412,56 @@ function OverviewTab({ prices, M, openBuyBez, openSubscription, openFarming, C }
 
 // ─── TAB: COMPRAR BEZ ─────────────────────────────────────────────────────────
 function BuyTab({ prices, M, openBuyBez, isConnected, C }) {
-  const packages = [
-    { id:'starter',    name:'Starter',    tokens:100,    bonus:0,     price:10,    color:C.muted,   icon:'🌱' },
-    { id:'pro',        name:'Pro',        tokens:500,    bonus:50,    price:50,    color:C.blue,    icon:'⚡' },
-    { id:'business',   name:'Business',   tokens:1000,   bonus:150,   price:100,   color:C.violet,  icon:'🚀', popular:true },
-    { id:'enterprise', name:'Enterprise', tokens:5000,   bonus:1000,  price:500,   color:C.gold,    icon:'🏛️' },
-    { id:'whale',      name:'Whale',      tokens:25000,  bonus:7500,  price:2500,  color:'#06B6D4', icon:'🐋' },
-  ];
-
   return (
     <div>
       <div style={{ color:C.muted, fontSize:9, textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>
-        Paquetes de BEZ-Coin
+        Compra directa de BEZ-Coin con Stripe y paquetes BEZ Pay
       </div>
       <div style={{ display:'grid', gridTemplateColumns: M?'1fr 1fr':'repeat(3,1fr)', gap:12 }}>
-        {packages.map(pkg => (
+        {BEZ_COIN_PACKAGES.map(pkg => (
           <motion.div key={pkg.id} whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
-            onClick={() => openBuyBez(pkg.price, { itemName:`Paquete ${pkg.name}`, metadata:{packageId:pkg.id} })}
+            onClick={() => pkg.href
+              ? window.open(pkg.href, '_blank', 'noopener,noreferrer')
+              : openBuyBez(pkg.price, { itemName:`Paquete ${pkg.name}`, metadata:{packageId:pkg.id} })
+            }
             style={{
               background:C.card, border:`1.5px solid ${pkg.color}44`,
               borderRadius:16, cursor:'pointer', overflow:'hidden', position:'relative',
               transition:'all 0.18s',
             }}>
-            {pkg.popular && (
+            {(pkg.popular || pkg.featured) && (
               <div style={{
                 position:'absolute', top:-1, left:'50%', transform:'translateX(-50%)',
                 background:pkg.color, color:'#000', fontSize:7, fontWeight:800, fontFamily:'monospace',
                 padding:'2px 10px', borderRadius:'0 0 8px 8px', whiteSpace:'nowrap',
-              }}>⭐ MÁS POPULAR</div>
+              }}>{pkg.featured ? 'STRIPE REAL' : 'MÁS POPULAR'}</div>
             )}
             <div style={{ background:`linear-gradient(135deg,${pkg.color}33,${pkg.color}11)`, padding:'16px 14px 12px', borderBottom:`1px solid ${pkg.color}22` }}>
               <div style={{ fontSize: M?20:24, marginBottom:4 }}>{pkg.icon}</div>
               <div style={{ color:pkg.color, fontWeight:800, fontSize: M?13:15 }}>{pkg.name}</div>
               <div style={{ color:C.text, fontFamily:'monospace', fontSize: M?18:22, fontWeight:900, marginTop:4 }}>
-                ${pkg.price} <span style={{ color:C.muted, fontSize:10 }}>USD</span>
+                {typeof pkg.price === 'number' ? `$${pkg.price}` : pkg.price} <span style={{ color:C.muted, fontSize:10 }}>{typeof pkg.price === 'number' ? 'USD' : 'Stripe'}</span>
               </div>
             </div>
             <div style={{ padding:'12px 14px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
                 <span style={{ color:C.gold, fontSize:13 }}>🪙</span>
-                <span style={{ color:C.text, fontFamily:'monospace', fontWeight:800 }}>{pkg.tokens.toLocaleString()}</span>
-                {pkg.bonus > 0 && <span style={{ color:'#10B981', fontFamily:'monospace', fontSize:10 }}>+{pkg.bonus.toLocaleString()}</span>}
+                <span style={{ color:C.text, fontFamily:'monospace', fontWeight:800 }}>{typeof pkg.tokens === 'number' ? pkg.tokens.toLocaleString() : pkg.tokens}</span>
+                {typeof pkg.bonus === 'number' && pkg.bonus > 0 && <span style={{ color:'#10B981', fontFamily:'monospace', fontSize:10 }}>+{pkg.bonus.toLocaleString()}</span>}
                 <span style={{ color:C.muted, fontSize:9 }}>BEZ</span>
               </div>
               <div style={{ color:C.muted, fontSize:9, marginBottom:10 }}>
-                Total: <span style={{ color:C.text2, fontWeight:700 }}>{(pkg.tokens+pkg.bonus).toLocaleString()} BEZ</span>
-                {pkg.bonus > 0 && <span style={{ color:'#10B981' }}> (+{Math.round(pkg.bonus/pkg.tokens*100)}% bonus)</span>}
+                {typeof pkg.tokens === 'number'
+                  ? <>Total: <span style={{ color:C.text2, fontWeight:700 }}>{(pkg.tokens+pkg.bonus).toLocaleString()} BEZ</span>{pkg.bonus > 0 && <span style={{ color:'#10B981' }}> (+{Math.round(pkg.bonus/pkg.tokens*100)}% bonus)</span>}</>
+                  : <span style={{ color:C.text2, fontWeight:700 }}>{pkg.bonus}</span>
+                }
               </div>
               <button style={{
                 width:'100%', background:`${pkg.color}22`, color:pkg.color,
                 border:`1px solid ${pkg.color}44`, borderRadius:10, padding:'8px',
                 fontSize:11, fontWeight:800, cursor:'pointer', fontFamily:'monospace',
               }}>
-                Comprar con BEZ Pay →
+                {pkg.href ? 'Comprar BEZ-Coin con Stripe →' : 'Comprar con BEZ Pay →'}
               </button>
             </div>
           </motion.div>
@@ -449,10 +492,10 @@ function SubscriptionTab({ M, openSubscription, isConnected, C }) {
   return (
     <div>
       <div style={{ color:C.muted, fontSize:9, textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>
-        Planes de Suscripción BEZ · Auto-renovación on-chain · Sin Stripe
+        Suscripción empresarial BeZhas · Checkout real de Stripe
       </div>
-      <div style={{ display:'grid', gridTemplateColumns: M?'1fr 1fr':'repeat(4,1fr)', gap:12 }}>
-        {SUBSCRIPTION_PLANS.map(plan => (
+      <div style={{ display:'grid', gridTemplateColumns: M?'1fr':'repeat(3,1fr)', gap:12, marginBottom:18 }}>
+        {ENTERPRISE_SUBSCRIPTION_PLANS.map(plan => (
           <motion.div key={plan.id} whileHover={{ scale:1.02 }}
             style={{
               background:C.card, border:`2px solid ${plan.color}44`, borderRadius:18,
@@ -461,7 +504,7 @@ function SubscriptionTab({ M, openSubscription, isConnected, C }) {
             {plan.badge && (
               <div style={{
                 position:'absolute', top:-1, left:'50%', transform:'translateX(-50%)',
-                background:plan.color, color: plan.id==='enterprise'?'#0a0a0a':'#0a0a0a',
+                background:plan.color, color:'#0a0a0a',
                 fontSize:7, fontWeight:800, fontFamily:'monospace',
                 padding:'2px 10px', borderRadius:'0 0 8px 8px', whiteSpace:'nowrap',
               }}>{plan.badge}</div>
@@ -473,46 +516,61 @@ function SubscriptionTab({ M, openSubscription, isConnected, C }) {
             }}>
               <div style={{ fontSize:28, marginBottom:6 }}>{plan.icon}</div>
               <div style={{ color:plan.color, fontWeight:800, fontSize:15 }}>{plan.name}</div>
-              {plan.priceUSD === 0
-                ? <div style={{ color:C.muted, fontSize:12, marginTop:6 }}>Gratis</div>
-                : <div style={{ marginTop:6 }}>
-                    <div style={{ color:C.text, fontFamily:'monospace', fontSize: M?14:18, fontWeight:900 }}>
-                      {plan.priceBEZ.toLocaleString()} <span style={{ color:C.gold, fontSize:10 }}>BEZ</span>
-                    </div>
-                    <div style={{ color:C.muted, fontSize:9 }}>${plan.priceUSD}/mes</div>
-                  </div>
-              }
+              <div style={{ marginTop:6 }}>
+                <div style={{ color:C.text, fontFamily:'monospace', fontSize: M?20:26, fontWeight:900 }}>
+                  {plan.price} <span style={{ color:C.muted, fontSize:10 }}>{plan.period}</span>
+                </div>
+                <div style={{ color:C.muted, fontSize:9 }}>Pago seguro con Stripe</div>
+              </div>
             </div>
             <div style={{ padding:'12px 14px' }}>
-              {plan.features.slice(0, M?3:5).map(f => (
+              {plan.features.map(f => (
                 <div key={f} style={{ color:C.text2, fontSize:10, display:'flex', gap:6, padding:'2px 0' }}>
                   <span style={{ color:plan.color }}>✓</span>{f}
                 </div>
               ))}
-              {plan.priceUSD > 0 ? (
-                <button onClick={() => openSubscription(plan.id)} style={{
+              <a href={plan.href} target="_blank" rel="noopener noreferrer" style={{
                   width:'100%', marginTop:12, background:`${plan.color}22`,
                   color:plan.color, border:`1px solid ${plan.color}44`,
                   borderRadius:10, padding:'9px', fontSize:11, fontWeight:800,
-                  cursor:'pointer', fontFamily:'monospace',
+                  cursor:'pointer', fontFamily:'monospace', display:'block', textAlign:'center', textDecoration:'none', boxSizing:'border-box',
                 }}>
-                  Suscribirse ({plan.priceBEZ.toLocaleString()} BEZ/mes)
-                </button>
-              ) : (
-                <div style={{ marginTop:12, padding:'9px', textAlign:'center', color:C.muted, fontSize:10 }}>Plan Actual Gratuito</div>
-              )}
+                  Suscribirse con Stripe <ExternalLink size={12} style={{ display:'inline', marginLeft:4 }} />
+                </a>
             </div>
           </motion.div>
+        ))}
+      </div>
+
+      <div style={{ color:C.muted, fontSize:9, textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>
+        Planes VIP BeZhas-HUB
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns: M?'1fr':'repeat(2,1fr)', gap:12 }}>
+        {[
+          { name:'Be-VIP', href:STRIPE_PAYMENT_LINKS.vip, color:C.violet, icon:'👑', desc:'Acceso Be-VIP y funciones premium para suscriptores.' },
+          { name:'Be-VIP Plus', href:STRIPE_PAYMENT_LINKS.vipPlus, color:C.primary, icon:'💎', desc:'Niveles superiores de suscriptor y ventajas ampliadas.' },
+        ].map(plan => (
+          <a key={plan.name} href={plan.href} target="_blank" rel="noopener noreferrer" style={{
+            background:C.card, border:`1.5px solid ${plan.color}44`, borderRadius:16, padding:16,
+            display:'flex', alignItems:'center', gap:14, textDecoration:'none',
+          }}>
+            <div style={{ width:48, height:48, borderRadius:14, background:`${plan.color}22`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24 }}>{plan.icon}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ color:plan.color, fontWeight:800 }}>{plan.name}</div>
+              <div style={{ color:C.muted, fontSize:10, marginTop:3 }}>{plan.desc}</div>
+            </div>
+            <ExternalLink size={16} style={{ color:plan.color }} />
+          </a>
         ))}
       </div>
 
       <div style={{ marginTop:14, background:C.card2, borderRadius:12, padding:12, display:'flex', gap:10, alignItems:'flex-start' }}>
         <Shield size={16} style={{ color:C.primary, flexShrink:0, marginTop:1 }} />
         <div style={{ color:C.muted, fontSize:10, lineHeight:1.6 }}>
-          🔄 <strong style={{color:C.text2}}>Auto-renovación on-chain:</strong> El smart contract en BNB Chain
-          procesa el cobro mensual automáticamente. Puedes cancelar en cualquier momento llamando a <code style={{color:C.primary}}>cancelSubscription()</code>.
+          <strong style={{color:C.text2}}>Suscripciones reales:</strong> Los botones usan los Payment Links reales del archivo
+          <code style={{color:C.primary}}> Link's Stripe.txt</code> para Starter, Pro, Enterprise, Be-VIP y Be-VIP Plus.
           <br/>
-          🔒 Sin Stripe · Cancelable on-chain · 20% descuento pagando con BEZ-Coin
+          BEZ Pay mantiene la capa cripto/on-chain, y Stripe procesa los cobros FIAT cuando el usuario elige suscribirse con tarjeta.
         </div>
       </div>
     </div>
@@ -751,7 +809,7 @@ function AnalyticsTab({ M, C }) {
         <Activity size={20} style={{ color:C.primary, marginBottom:8, display:'block', margin:'0 auto 8px' }} />
         <div style={{ color:C.text, fontWeight:700, fontSize:13, marginBottom:4 }}>Analytics en tiempo real</div>
         <div style={{ color:C.muted, fontSize:10 }}>
-          Conecta a ws.bezhas.com:3002 para recibir eventos de pago en tiempo real via WebSocket.
+          Conecta a ws.bez.digital:3002 para recibir eventos de pago en tiempo real via WebSocket.
           <br/>Disponible en el SDK: <code style={{color:C.primary}}>bezPay.onEvent((event) {'=> '}...)</code>
         </div>
       </div>

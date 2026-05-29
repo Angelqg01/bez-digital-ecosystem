@@ -15,6 +15,33 @@ jest.mock('../utils/logger', () => ({
     debug: jest.fn(),
 }));
 
+// Globally mock Mongoose to prevent the MongoDB driver from loading
+// and triggering the TypeScript resolution error in Jest
+jest.mock('mongoose', () => {
+    const mockSchemaDef = {
+        pre: jest.fn(),
+        post: jest.fn(),
+        index: jest.fn(),
+        methods: {},
+        statics: {},
+    };
+    return {
+        Schema: jest.fn(() => mockSchemaDef),
+        model: jest.fn(() => ({
+            findOneAndUpdate: jest.fn().mockResolvedValue({ _id: 'mock_id' }),
+            findOne: jest.fn(),
+            findById: jest.fn(),
+            find: jest.fn(),
+            create: jest.fn(),
+        })),
+        connect: jest.fn(),
+        connection: {
+            on: jest.fn(),
+            once: jest.fn(),
+        },
+    };
+});
+
 // Mock MongoDB models
 jest.mock('../models/BridgeSyncedItem.model', () => ({
     findOneAndUpdate: jest.fn().mockResolvedValue({ _id: 'mock_id' }),

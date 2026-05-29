@@ -67,7 +67,7 @@ kyc = bezhas.identity.verify(
 
 puts "KYC Status: #{kyc.status}"`,
         curl: `# BeZhas API - cURL
-curl -X POST https://api.bezhas.com/v1/logistics/shipments \\
+curl -X POST https://api.bez.digital/v1/logistics/shipments \\
   -H "Authorization: Bearer ${selectedApiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{

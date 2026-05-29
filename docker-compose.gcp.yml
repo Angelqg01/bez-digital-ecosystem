@@ -8,18 +8,18 @@ version: '3.8'
 
 services:
   # ===== MongoDB Primary =====
-  mongo:
-    image: mongo:6.0
-    restart: always
-    ports:
-      - "27017:27017"
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-bezhas_admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: bezhas
+      POSTGRES_USER: bezhas
+      POSTGRES_PASSWORD: bezhas_password
+      POSTGRES_DB: bezhas
+    ports:
+      - "5433:5432"
     volumes:
-      - mongo-data:/data/db
-      - mongo-config:/data/configdb
+      - postgres-data:/var/lib/postgresql/data
+      - postgres-config:/data/configdb
       - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/init.js:ro
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
@@ -75,7 +75,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/bezhas?authSource=admin
+      - DATABASE_URL=postgresql://bezhas:bezhas_password@postgres:5432/bezhas?authSource=admin
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       - JWT_SECRET=${JWT_SECRET}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
@@ -83,7 +83,7 @@ services:
       - RPC_URL=${RPC_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
-      - FRONTEND_URL=${FRONTEND_URL:-https://bezhas.com}
+      - FRONTEND_URL=${FRONTEND_URL:-https://bez.digital}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
       mongo:
@@ -120,8 +120,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.optimized
       args:
-        - VITE_API_URL=${VITE_API_URL:-https://api.bezhas.com}
-        - VITE_WS_URL=${VITE_WS_URL:-wss://api.bezhas.com}
+        - VITE_API_URL=${VITE_API_URL:-https://api.bez.digital}
+        - VITE_WS_URL=${VITE_WS_URL:-wss://api.bez.digital}
         - VITE_CHAIN_ID=${VITE_CHAIN_ID:-137}
         - VITE_NETWORK=${VITE_NETWORK:-polygon}
     restart: always
@@ -235,7 +235,7 @@ networks:
         - subnet: 172.28.0.0/16
 
 volumes:
-  mongo-data:
+  postgres-data:
     driver: local
   mongo-config:
     driver: local

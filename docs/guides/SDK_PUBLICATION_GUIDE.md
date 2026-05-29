@@ -153,7 +153,7 @@ This release integrates all BeZhas platform services into a unified SDK with cro
 
 - npm: `npm install @bezhas/sdk`
 - pnpm: `pnpm add @bezhas/sdk`
-- Browser CDN: `https://cdn.bezhas.com/sdk/v2/bezhas-sdk.min.js`
+- Browser CDN: `https://cdn.bez.digital/sdk/v2/bezhas-sdk.min.js`
 
 ## 📚 Documentation
 
@@ -167,7 +167,7 @@ This release integrates all BeZhas platform services into a unified SDK with cro
 const { BeZhasAPIClient } = require('@bezhas/sdk');
 
 const bezhas = new BeZhasAPIClient({
-  apiUrl: 'https://api.bezhas.com',
+  apiUrl: 'https://api.bez.digital',
   network: 'polygon'
 });
 
@@ -192,7 +192,7 @@ const quote = await bezhas.payments.getQuote(100, 'USD', 'BEZ');
 
 - npm: https://www.npmjs.com/package/@bezhas/sdk
 - Repository: https://github.com/Angelqg01/BeZhas_web3
-- Documentation: https://docs.bezhas.com/sdk
+- Documentation: https://docs.bez.digital/sdk
 
 ## 🙏 Contributors
 

@@ -1,0 +1,781 @@
+╔═══════════════════════════════════════════════════════════════════════════════════════╗
+║          BeZhas — APIs & Webhooks de Conexión con Plataformas de Terceros             ║
+║          Distribución automática via Agente IA OpenCLaw + AEGIS                       ║
+║          Generado: 2026-03-22                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════════════════╝
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                    ARQUITECTURA DE CONEXIÓN
+═══════════════════════════════════════════════════════════════════════════════════════
+
+  ┌──────────────────────────────────────────────────────────────────────────────┐
+  │                     FLUJO: COMPRA/SUSCRIPCIÓN → ENTREGA DE APIs             │
+  │                                                                              │
+  │   CLIENTE                                                                    │
+  │     │                                                                        │
+  │     ▼                                                                        │
+  │   ┌──────────────────┐    Stripe/BEZ-Pay    ┌──────────────────┐            │
+  │   │ Compra Producto   │ ──────────────────── │ Subscription     │            │
+  │   │ o Suscripción     │                      │ Gateway          │            │
+  │   └──────────────────┘                       └────────┬─────────┘            │
+  │                                                       │                      │
+  │                                                       ▼                      │
+  │                                              ┌──────────────────┐            │
+  │                                              │  AEGIS (IA)      │            │
+  │                                              │  Monitoreo +     │            │
+  │                                              │  Validación      │            │
+  │                                              └────────┬─────────┘            │
+  │                                                       │                      │
+  │                                                       ▼                      │
+  │                                              ┌──────────────────┐            │
+  │                                              │  OpenCLaw Agent  │            │
+  │                                              │  (IA Personaliz.)│            │
+  │                                              │  Genera + Envía  │            │
+  │                                              │  Credenciales    │            │
+  │                                              └────────┬─────────┘            │
+  │                                                       │                      │
+  │                              ┌────────────────────────┼──────────────┐       │
+  │                              │                        │              │       │
+  │                              ▼                        ▼              ▼       │
+  │                         ┌─────────┐            ┌──────────┐   ┌──────────┐  │
+  │                         │ Vinted  │            │ Shopify  │   │ Amazon   │  │
+  │                         │ Adapter │            │ Adapter  │   │ Adapter  │  │
+  │                         └─────────┘            └──────────┘   └──────────┘  │
+  │                                                                              │
+  │                      Universal Bridge (Event-Driven)                         │
+  └──────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                    CREDENCIALES CORE DEL SISTEMA
+═══════════════════════════════════════════════════════════════════════════════════════
+
+▸ Agente OpenCLaw (IA Personalizado BeZhas)
+  API Key:        bzh_3p_openclaw_agent_61efc9ba46b7898e4284a1a606c9a671280ba9285100a650
+  Webhook Secret: whsec_3p_9aa8a3c46f480ba3d5df83df4ec3fbf69cc30acc4b8f22e2409620a3018d325b
+  Client ID:      bzh_cid_8d2e5bfe9ef4ed4b74e2c0e55c26e6e3
+  Base URL:       https://bezhas-backend-<PROJECT_ID>.run.app/api/openclaw
+  AEGIS Endpoint: http://localhost:8000/api/aegis (producción: https://aegis.bez.digital/api/aegis)
+
+▸ AEGIS Bridge (Puente IA ↔ Plataforma)
+  API Key:        bzh_3p_aegis_bridge_c13dac70d2b5017f27ce15261dce4ea664df1d1bf2f80995
+  Webhook Secret: whsec_3p_f2e8a0a67d839ae525d771b811c03749c41a54cef389f80de4a552cdf114f5f1
+  Client ID:      bzh_cid_dab094cf3b97c45f20f28b6f6b6f5e05
+
+▸ Subscription Gateway (Pasarela de Suscripciones)
+  API Key:        bzh_3p_subscription_gateway_064959686b4f3043fab47eaa52a9ef655a467035fe06b8a6
+  Webhook Secret: whsec_3p_b3c41b03f8d59c75e3d8178ba02c6e27e4a3c9a999b3c6813457bde41fc81711
+  Client ID:      bzh_cid_9b472eadc11b49199b65104f482c9426
+
+▸ OAuth Connector Universal
+  API Key:        bzh_3p_oauth_connector_9396065dfef23734bf95ce9fab8058b3298a994a9b201944
+  Webhook Secret: whsec_3p_db425fb24d2ba84f3730a8f8942f36147b9ab1eaffe9465fbd993d6e85f2941b
+  Client ID:      bzh_cid_a34a661ff3edbb492bd126ada2667fb6
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+══  FLUJO DEL AGENTE OPENCLAW + AEGIS
+═══════════════════════════════════════════════════════════════════════════════════════
+
+Cuando un cliente COMPRA un producto o se SUSCRIBE a un plan:
+
+  PASO 1 → Stripe/BEZ-Pay procesa el pago
+           Webhook: subscription.created / payment.completed
+
+  PASO 2 → AEGIS valida la transacción y el cliente
+           PUT  /api/aegis/control/set_mode → autonomous
+           GET  /api/aegis/status → verifica integridad
+
+  PASO 3 → OpenCLaw Agent genera las credenciales personalizadas
+           POST /api/openclaw/provision
+           Body: {
+             clientId: "<wallet_address>",
+             plan: "enterprise|pro|starter",
+             platforms: ["vinted", "shopify", "amazon"],
+             duration: "30d|90d|365d|unlimited"
+           }
+
+  PASO 4 → OpenCLaw entrega al cliente via:
+           • Dashboard del cliente (in-app)
+           • Email cifrado
+           • Mensaje chat BeZhas (end-to-end encrypted)
+           • API callback al webhook del cliente
+
+  PASO 5 → AEGIS monitorea el uso de las credenciales
+           GET /api/aegis/suggestions/pending
+           POST /api/aegis/control/approve_action/:id
+
+Endpoints del Agente OpenCLaw:
+  POST   /api/openclaw/provision         → Provisionar credenciales a nuevo cliente
+  POST   /api/openclaw/revoke            → Revocar acceso de un cliente
+  POST   /api/openclaw/rotate            → Rotar credenciales
+  GET    /api/openclaw/client/:address   → Credenciales activas del cliente
+  POST   /api/openclaw/chat              → Chat con el agente IA
+  GET    /api/openclaw/platforms          → Plataformas disponibles para el plan
+  POST   /api/openclaw/connect           → Conectar plataforma de tercero
+  DELETE /api/openclaw/disconnect/:id    → Desconectar plataforma
+
+Webhook del OpenCLaw → Cliente:
+  URL: https://<CLIENT_SUBAPP_URL>/webhooks/openclaw
+  Eventos:
+    - openclaw.credentials.provisioned
+    - openclaw.credentials.rotated
+    - openclaw.credentials.revoked
+    - openclaw.platform.connected
+    - openclaw.platform.disconnected
+    - openclaw.usage.limit_warning
+    - openclaw.plan.expiring
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 1: VINTED (Marketplace Moda Second-Hand)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_vinted_b59e5480a609426f9acf091ee7c0ecded4443c78f205f9be
+Webhook Secret: whsec_3p_e39cd23c5180ae4801ad16db193d609d654a6e1a7a293875f22a7d7064cd03a9
+Client ID:      bzh_cid_64084683e54508324e6eaae4fb78ac79
+
+Bridge Adapter: backend/bridge/adapters/VintedAdapter.js
+Base API:       https://api.vinted.com/v1 (hipotético — requiere acceso oficial)
+
+Funciones del Adapter:
+  - connect()                    → Conectar con OAuth Vinted
+  - syncInventory(options)       → Sincronizar inventario Vinted → BeZhas
+  - pushInventory(items)         → Publicar desde BeZhas → Vinted
+  - handleWebhook(eventType, payload) → Procesar webhooks de Vinted
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/vinted/sync         → Sincronizar inventario
+  POST   /api/bridge/vinted/push         → Publicar productos en Vinted
+  GET    /api/bridge/vinted/status        → Estado de conexión
+  GET    /api/bridge/vinted/items         → Items sincronizados
+
+Webhook de Vinted → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/vinted
+  Header validación: x-vinted-signature (HMAC-SHA256)
+  Eventos entrantes:
+    - item.sold         → Crea orden en BeZhas
+    - item.reserved     → Marca item como reservado
+    - order.shipped     → Actualiza tracking de envío
+    - message.received  → Integración con chat BeZhas
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/vinted
+  Eventos:
+    - bridge.vinted.item.synced
+    - bridge.vinted.order.created
+    - bridge.vinted.shipment.updated
+    - bridge.vinted.inventory.refreshed
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 2: AIRBNB (Alquileres / Real Estate P2P)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_airbnb_f9cc56001b2f11ee00ee272539d97568bf86c0fb9caf5e78
+Webhook Secret: whsec_3p_9211818125481c93eab7862e95e52f83f1539493fab868de0d8ae4b4a5a51a42
+Client ID:      bzh_cid_c182baedc251c341e7c7537b4d78f1c3
+
+Bridge Adapter: backend/bridge/adapters/AirbnbAdapter.js
+
+Funciones del Adapter:
+  - connect()                    → Conectar con Airbnb Host API
+  - syncListings(options)        → Sincronizar propiedades
+  - updateAvailability(id, cal)  → Actualizar calendario
+  - handleWebhook(event, data)  → Procesar reservas/cancelaciones
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/airbnb/sync         → Sincronizar propiedades
+  PUT    /api/bridge/airbnb/availability  → Actualizar disponibilidad
+  GET    /api/bridge/airbnb/reservations  → Listar reservas
+  GET    /api/bridge/airbnb/status        → Estado de conexión
+
+Webhook de Airbnb → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/airbnb
+  Eventos entrantes:
+    - reservation.created
+    - reservation.cancelled
+    - review.received
+    - payout.processed
+    - listing.updated
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/airbnb
+  Eventos:
+    - bridge.airbnb.reservation.new
+    - bridge.airbnb.reservation.cancelled
+    - bridge.airbnb.payout.received
+    - bridge.airbnb.review.posted
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 3: MAERSK (Logística / Shipping Internacional)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_maersk_d5e07d1389e97dd03512f585a339d6dc3eb26f8d8a5e1b27
+Webhook Secret: whsec_3p_6cd46972d078f11ac48057115db79f028d6d3148d5df9c2cdf59b05539ba1e85
+Client ID:      bzh_cid_4a297bb7ef4729a8aa61c27bb6ca36c0
+
+Bridge Adapter: backend/bridge/adapters/MaerskAdapter.js
+
+Funciones del Adapter:
+  - connect()                    → Auth con Maersk API (consumerKey/secret)
+  - trackShipment(bookingRef)    → Rastrear envío
+  - getQuote(origin, dest, cargo)→ Obtener cotización
+  - createBooking(details)       → Crear reserva de envío
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/maersk/track        → Rastrear envío
+  POST   /api/bridge/maersk/quote        → Solicitar cotización
+  POST   /api/bridge/maersk/book         → Reservar envío
+  GET    /api/bridge/maersk/status       → Estado de conexión
+
+Webhook de Maersk → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/maersk
+  Eventos entrantes:
+    - shipment.departed
+    - shipment.arrived
+    - shipment.customs_cleared
+    - shipment.delivered
+    - shipment.delay
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/maersk
+  Eventos:
+    - bridge.maersk.shipment.update
+    - bridge.maersk.delivery.confirmed
+    - bridge.maersk.customs.alert
+    - bridge.maersk.quote.ready
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 4: AMAZON (E-Commerce Global)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_amazon_8d658ba75d03fd0ba35204d8b3b1f401e5674bafb19182bc
+Webhook Secret: whsec_3p_5541a607b35dca45537bf9114d0b932bd0c569cb4161bb76db84840c014ac7db
+Client ID:      bzh_cid_e85e461e9231522a3c044dfb26f8f756
+
+Conexión:       Amazon SP-API (Selling Partner API)
+Auth:           OAuth 2.0 + AWS Sig V4
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/amazon/sync         → Sincronizar catálogo
+  POST   /api/bridge/amazon/publish      → Publicar producto en Amazon
+  GET    /api/bridge/amazon/orders        → Obtener órdenes
+  PUT    /api/bridge/amazon/inventory     → Actualizar stock
+  GET    /api/bridge/amazon/reports       → Reportes de ventas
+  GET    /api/bridge/amazon/status        → Estado de conexión
+
+Webhook Amazon → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/amazon
+  Eventos (via Amazon SQS → BeZhas):
+    - order.created
+    - order.shipped
+    - order.delivered
+    - return.initiated
+    - buybox.lost
+    - listing.suppressed
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/amazon
+  Eventos:
+    - bridge.amazon.order.new
+    - bridge.amazon.sale.completed
+    - bridge.amazon.stock.low
+    - bridge.amazon.listing.status
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 5: EBAY (Marketplace Global)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_ebay_2b4ee4ee9e52a08f9c654d04961dfcc0a47b5df08cf55299
+Webhook Secret: whsec_3p_f0bb5251d728aeeb044f213de771a8bdc7e231993994cbfdac8750ec0fe830a5
+Client ID:      bzh_cid_53399948906d1698e921e8b328c8e862
+
+Conexión:       eBay RESTful APIs + Webhook Subscriptions
+Auth:           OAuth 2.0
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/ebay/list           → Publicar artículo
+  GET    /api/bridge/ebay/listings       → Listar artículos activos
+  GET    /api/bridge/ebay/orders          → Obtener ventas
+  PUT    /api/bridge/ebay/price           → Actualizar precio
+  GET    /api/bridge/ebay/status          → Estado de conexión
+
+Webhook eBay → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/ebay
+  Eventos:
+    - marketplace.account.create
+    - item.sold
+    - item.price.change
+    - order.complete
+    - return.created
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/ebay
+  Eventos:
+    - bridge.ebay.item.sold
+    - bridge.ebay.bid.received
+    - bridge.ebay.return.initiated
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 6: WALLAPOP (Marketplace Local España)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_wallapop_081205c568ac93056479bc256c87e8f48fca3de764d64261
+Webhook Secret: whsec_3p_252fe4e04dd4aaeb4a3ffd1c73d78607baf22cb9bc64430ad40a2f85a67af6bf
+Client ID:      bzh_cid_ad8657ed73e6efdea69faf72c46b45e7
+
+Conexión:       API Wallapop (partnership requerido)
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/wallapop/sync       → Sincronizar productos
+  POST   /api/bridge/wallapop/publish    → Publicar en Wallapop
+  GET    /api/bridge/wallapop/chats      → Conversaciones activas
+  GET    /api/bridge/wallapop/status     → Estado de conexión
+
+Webhook Wallapop → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/wallapop
+  Eventos:
+    - item.sold
+    - item.reserved
+    - chat.message
+    - offer.received
+    - shipping.label.created
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/wallapop
+  Eventos:
+    - bridge.wallapop.item.sold
+    - bridge.wallapop.offer.new
+    - bridge.wallapop.chat.message
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 7: SHOPIFY (E-Commerce SaaS)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_shopify_3ac0bee863ff68fdcc984473f5956f351ac8b6743555ff31
+Webhook Secret: whsec_3p_bb2a86203fe62a7d6c8a438bb0004f8214d5735c78ef438efe38d212f3ffe3f9
+Client ID:      bzh_cid_ddddb2e41a4f526be02be3c24f4dea7c
+
+Conexión:       Shopify Admin API + Storefront API
+Auth:           OAuth 2.0 / API Access Token
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/shopify/sync        → Sincronizar productos
+  POST   /api/bridge/shopify/order       → Crear orden
+  GET    /api/bridge/shopify/products    → Listar productos de la tienda
+  PUT    /api/bridge/shopify/inventory   → Actualizar inventario
+  POST   /api/bridge/shopify/fulfillment → Marcar como enviado
+  GET    /api/bridge/shopify/status      → Estado de conexión
+
+Webhook Shopify → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/shopify
+  Eventos:
+    - orders/create
+    - orders/fulfilled
+    - orders/cancelled
+    - products/create
+    - products/update
+    - customers/create
+    - refunds/create
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/shopify
+  Eventos:
+    - bridge.shopify.order.new
+    - bridge.shopify.order.fulfilled
+    - bridge.shopify.product.synced
+    - bridge.shopify.inventory.updated
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 8: WOOCOMMERCE (E-Commerce WordPress)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_woocommerce_6691077d963012027ada485c35d456a218ae6be9860f6c3b
+Webhook Secret: whsec_3p_0a013f745d3179d34f5112f798df197523062773ecef8af76ba5e2e0ff62c23c
+Client ID:      bzh_cid_7bbee4bf479a6bf5864bff2c89974167
+
+Conexión:       WooCommerce REST API v3
+Auth:           Consumer Key + Consumer Secret
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/woocommerce/sync        → Sincronizar productos
+  POST   /api/bridge/woocommerce/order       → Crear orden
+  GET    /api/bridge/woocommerce/products    → Listar productos
+  PUT    /api/bridge/woocommerce/stock       → Actualizar stock
+  GET    /api/bridge/woocommerce/status      → Estado de conexión
+
+Webhook WooCommerce → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/woocommerce
+  Eventos:
+    - order.created
+    - order.completed
+    - product.created
+    - product.updated
+    - customer.created
+    - coupon.created
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/woocommerce
+  Eventos:
+    - bridge.woocommerce.order.new
+    - bridge.woocommerce.order.completed
+    - bridge.woocommerce.product.synced
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 9: STRIPE CONNECT (Pagos Multi-vendedor)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_stripe_connect_fa9128140305d013ff2dc517cad60b18baedb97ff434ca00
+Webhook Secret: whsec_3p_14b62014805ce750ec259129053b949ccd3e9939c0994d90d29b9f8227162df8
+Client ID:      bzh_cid_8bfaabece0885ca953829ed05c563c1e
+
+Conexión:       Stripe Connect API (Standard/Express)
+Auth:           API Secret Key + Connect Account ID
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/stripe-connect/onboard    → Onboarding vendedor
+  POST   /api/bridge/stripe-connect/payout     → Pago a vendedor
+  GET    /api/bridge/stripe-connect/balance     → Balance del vendedor
+  POST   /api/bridge/stripe-connect/transfer   → Transferencia entre cuentas
+  GET    /api/bridge/stripe-connect/status      → Estado de conexión
+
+Webhook Stripe → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/stripe-connect
+  Eventos:
+    - account.updated
+    - payout.paid
+    - payout.failed
+    - payment_intent.succeeded
+    - transfer.created
+    - charge.dispute.created
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/stripe-connect
+  Eventos:
+    - bridge.stripe.payout.completed
+    - bridge.stripe.dispute.new
+    - bridge.stripe.onboarding.completed
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 10: MERCADO LIBRE (Marketplace Latam)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_mercadolibre_0485126c06ae05bff677199fb59d72a12043f3963b6dd127
+Webhook Secret: whsec_3p_182aad92750fefa2033fdec26c84602db528b6d10e6f78d54e2214ab728ed73b
+Client ID:      bzh_cid_82ee1f4b58b6d0898bd3a4528e894383
+
+Conexión:       MercadoLibre API
+Auth:           OAuth 2.0 (App ID + Secret)
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/mercadolibre/sync       → Sincronizar catálogo
+  POST   /api/bridge/mercadolibre/publish    → Publicar producto
+  GET    /api/bridge/mercadolibre/orders      → Obtener ventas
+  PUT    /api/bridge/mercadolibre/stock       → Actualizar stock
+  GET    /api/bridge/mercadolibre/status      → Estado de conexión
+
+Webhook MercadoLibre → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/mercadolibre
+  Tópicos:
+    - orders_v2          → Nueva orden
+    - items              → Cambio en publicación
+    - questions          → Pregunta recibida
+    - messages           → Mensaje del comprador
+    - shipments          → Actualización de envío
+    - payments           → Estado de pago
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/mercadolibre
+  Eventos:
+    - bridge.meli.order.new
+    - bridge.meli.question.received
+    - bridge.meli.shipment.updated
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 11: ALIEXPRESS (Dropshipping / B2C China)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_aliexpress_5ddc1e5d827ddf328e3a7c01a78e1a42ae4360c50c3b2a3d
+Webhook Secret: whsec_3p_1268db8e17c5cc6a606df7598abb9603269b8c33306a54b16b6d1556b7abfe0d
+Client ID:      bzh_cid_2d8818b78a10930e77c25b08bd1e8578
+
+Conexión:       AliExpress Open Platform API
+Auth:           App Key + App Secret + Access Token
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/aliexpress/import       → Importar producto para dropship
+  GET    /api/bridge/aliexpress/products      → Buscar productos
+  POST   /api/bridge/aliexpress/order         → Crear pedido dropship
+  GET    /api/bridge/aliexpress/tracking      → Rastrear pedido
+  GET    /api/bridge/aliexpress/status        → Estado de conexión
+
+Webhook AliExpress → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/aliexpress
+  Eventos:
+    - order.placed
+    - order.shipped
+    - order.received
+    - order.fund_processing
+    - dispute.opened
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/aliexpress
+  Eventos:
+    - bridge.aliexpress.order.shipped
+    - bridge.aliexpress.tracking.updated
+    - bridge.aliexpress.price.changed
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  PLATAFORMA 12: ETSY (Marketplace Artesanal / Handmade)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_3p_etsy_4d858a234d080a881f39aff80a11d7d949597e9cae49d330
+Webhook Secret: whsec_3p_760b03c2a4c89453fcf1dff3e691b3163feb10bf1832eafa2d14d074557b89bc
+Client ID:      bzh_cid_bef34bded8db539ad88fea6841ffeb2f
+
+Conexión:       Etsy Open API v3
+Auth:           OAuth 2.0 (API Key + Shared Secret)
+
+Endpoints BeZhas Bridge:
+  POST   /api/bridge/etsy/sync              → Sincronizar tienda
+  POST   /api/bridge/etsy/list              → Crear listing
+  GET    /api/bridge/etsy/orders            → Obtener pedidos
+  PUT    /api/bridge/etsy/listing/:id       → Actualizar listing
+  GET    /api/bridge/etsy/status            → Estado de conexión
+
+Webhook Etsy → BeZhas:
+  URL: https://bezhas-backend-<PROJECT_ID>.run.app/api/bridge/webhooks/etsy
+  Eventos (via ping):
+    - receipt.created
+    - listing.activated
+    - listing.deactivated
+    - shop.updated
+    - review.created
+
+Webhook BeZhas → Sub-App del Cliente:
+  URL: https://<CLIENT_SUBAPP>/webhooks/etsy
+  Eventos:
+    - bridge.etsy.order.new
+    - bridge.etsy.review.received
+    - bridge.etsy.listing.expired
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                    PLANES DE SUSCRIPCIÓN Y ACCESO
+═══════════════════════════════════════════════════════════════════════════════════════
+
+┌──────────────┬───────────────────────────────────────────────────────────────┐
+│   PLAN       │   PLATAFORMAS INCLUIDAS                                      │
+├──────────────┼───────────────────────────────────────────────────────────────┤
+│              │                                                               │
+│  STARTER     │ 1 plataforma a elegir                                        │
+│  (9.99€/mes) │ Rate limit: 1,000 req/día                                   │
+│              │ Webhooks: 5 eventos/hora                                     │
+│              │ Soporte: Chat OpenCLaw básico                                │
+│              │                                                               │
+├──────────────┼───────────────────────────────────────────────────────────────┤
+│              │                                                               │
+│  PRO         │ Hasta 4 plataformas                                          │
+│  (29.99€/mes)│ Rate limit: 10,000 req/día                                  │
+│              │ Webhooks: ilimitados                                         │
+│              │ Soporte: OpenCLaw avanzado + AEGIS monitoring                │
+│              │ Sync automático cada 15 min                                  │
+│              │                                                               │
+├──────────────┼───────────────────────────────────────────────────────────────┤
+│              │                                                               │
+│  ENTERPRISE  │ TODAS las plataformas (12)                                   │
+│  (99.99€/mes)│ Rate limit: 100,000 req/día                                 │
+│              │ Webhooks: ilimitados + priority queue                        │
+│              │ Soporte: OpenCLaw dedicado + AEGIS full autonomous           │
+│              │ Sync en tiempo real                                          │
+│              │ Custom adapters bajo solicitud                               │
+│              │ SLA 99.9%                                                    │
+│              │                                                               │
+├──────────────┼───────────────────────────────────────────────────────────────┤
+│              │                                                               │
+│  VIP/WHALE   │ Todo Enterprise +                                            │
+│  (Custom)    │ Nodo AEGIS dedicado                                          │
+│              │ Agente OpenCLaw privado                                      │
+│              │ Integraciones custom ilimitadas                              │
+│              │ White-label disponible                                        │
+│              │ API priority routing                                         │
+│              │                                                               │
+└──────────────┴───────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                    EJEMPLO: ONBOARDING AUTOMÁTICO VIA OPENCLAW
+═══════════════════════════════════════════════════════════════════════════════════════
+
+// 1. Cliente compra Plan PRO con BEZ-Pay
+POST /api/subscription/create
+{
+  "plan": "pro",
+  "payment": "bez",
+  "walletAddress": "0xCliente123...",
+  "platforms": ["vinted", "shopify", "amazon"]
+}
+
+// 2. Stripe/BEZ-Pay confirma → Webhook dispara OpenCLaw
+//    El agente OpenCLaw recibe el evento:
+{
+  "event": "subscription.created",
+  "client": "0xCliente123...",
+  "plan": "pro",
+  "platforms": ["vinted", "shopify", "amazon"]
+}
+
+// 3. OpenCLaw provisiona credenciales automáticamente
+POST /api/openclaw/provision
+Headers:
+  x-api-key: bzh_3p_openclaw_agent_61efc9ba46b7898e4284a1a606c9a671280ba9285100a650
+  x-aegis-token: <AEGIS_SESSION_TOKEN>
+Body:
+{
+  "clientWallet": "0xCliente123...",
+  "plan": "pro",
+  "platforms": ["vinted", "shopify", "amazon"],
+  "rateLimits": { "daily": 10000, "webhooksPerHour": -1 },
+  "syncInterval": "15m"
+}
+
+// 4. OpenCLaw le envía al cliente (via chat IA):
+//    "¡Hola! Tu Plan PRO está activo. Aquí tienes tus credenciales:
+//     
+//     🔑 Vinted API Key: bzh_cli_vinted_<generated>
+//     🔑 Shopify API Key: bzh_cli_shopify_<generated>
+//     🔑 Amazon API Key: bzh_cli_amazon_<generated>
+//     
+//     📖 Documentación: https://docs.bez.digital/bridge
+//     🔗 Dashboard: https://bez.digital/developer-console
+//     
+//     ¿Necesitas ayuda para configurar alguna integración?"
+
+// 5. AEGIS monitorea en segundo plano
+GET /api/aegis/status
+→ Verifica que las credenciales son válidas
+→ Monitorea uso y detecta anomalías
+→ Alerta si detecta abuso o comportamiento sospechoso
+
+// 6. El cliente configura su Sub-App con el webhook
+const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+// Recibir eventos de OpenCLaw
+app.post('/webhooks/openclaw', express.raw({type: 'application/json'}), (req, res) => {
+  const signature = req.headers['x-bezhas-signature'];
+  const secret = '<WEBHOOK_SECRET_ENTREGADO_POR_OPENCLAW>';
+  const expected = crypto.createHmac('sha256', secret).update(req.body).digest('hex');
+
+  if (signature !== expected) return res.status(401).send('Firma inválida');
+
+  const event = JSON.parse(req.body);
+  
+  switch (event.type) {
+    case 'bridge.vinted.item.synced':
+      console.log('Nuevo item sincronizado de Vinted:', event.data);
+      // Actualizar inventario local
+      break;
+    case 'bridge.shopify.order.new':
+      console.log('Nuevo pedido de Shopify:', event.data);
+      // Procesar pedido
+      break;
+    case 'bridge.amazon.stock.low':
+      console.log('Stock bajo en Amazon:', event.data);
+      // Alertar al equipo
+      break;
+  }
+  
+  res.status(200).json({ received: true });
+});
+
+app.listen(4000, () => console.log('Sub-App escuchando webhooks en puerto 4000'));
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                    ENDPOINTS AEGIS PARA CONTROL DE CONEXIONES
+═══════════════════════════════════════════════════════════════════════════════════════
+
+Base URL AEGIS: http://localhost:8000/api/aegis (dev)
+                https://aegis.bez.digital/api/aegis (prod)
+
+Control:
+  PUT    /api/aegis/control/set_mode               → autonomous | suggest
+  POST   /api/aegis/control/pause                  → Pausa de emergencia
+  POST   /api/aegis/control/resume                 → Reanudar operaciones
+  POST   /api/aegis/control/trigger_action         → Acción manual
+  POST   /api/aegis/control/approve_action/:id     → Aprobar sugerencia IA
+  POST   /api/aegis/control/reject_action/:id      → Rechazar sugerencia IA
+
+Configuración:
+  PUT    /api/aegis/config/anomaly_threshold       → Umbral de anomalías (0.0-1.0)
+  POST   /api/aegis/model/mark_false_positive      → Marcar falso positivo
+  POST   /api/aegis/model/retrain                  → Re-entrenar modelo
+  GET    /api/aegis/model/retrain/status/:job_id   → Estado re-entrenamiento
+
+Telemetría:
+  PUT    /api/aegis/config/telemetry               → On/Off telemetría
+  PUT    /api/aegis/config/telemetry_samplerate    → Tasa de muestreo
+
+Monitoreo:
+  GET    /api/aegis/status                         → Estado general
+  GET    /api/aegis/suggestions/pending            → Sugerencias pendientes
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                    RESUMEN DE TODAS LAS CREDENCIALES
+═══════════════════════════════════════════════════════════════════════════════════════
+
+Plataforma          │ Prefijo API Key            │ Client ID
+────────────────────┼────────────────────────────┼──────────────────────────────────
+OpenCLaw Agent      │ bzh_3p_openclaw_agent_...  │ bzh_cid_8d2e5bfe9ef4ed4b...
+AEGIS Bridge        │ bzh_3p_aegis_bridge_...    │ bzh_cid_dab094cf3b97c45f...
+Subscription GW     │ bzh_3p_subscription_gw_... │ bzh_cid_9b472eadc11b4919...
+OAuth Connector     │ bzh_3p_oauth_connector_... │ bzh_cid_a34a661ff3edbb49...
+Vinted              │ bzh_3p_vinted_...          │ bzh_cid_64084683e5450832...
+Airbnb              │ bzh_3p_airbnb_...          │ bzh_cid_c182baedc251c341...
+Maersk              │ bzh_3p_maersk_...          │ bzh_cid_4a297bb7ef4729a8...
+Amazon              │ bzh_3p_amazon_...          │ bzh_cid_e85e461e9231522a...
+eBay                │ bzh_3p_ebay_...            │ bzh_cid_53399948906d1698...
+Wallapop            │ bzh_3p_wallapop_...        │ bzh_cid_ad8657ed73e6efde...
+Shopify             │ bzh_3p_shopify_...         │ bzh_cid_ddddb2e41a4f526b...
+WooCommerce         │ bzh_3p_woocommerce_...     │ bzh_cid_7bbee4bf479a6bf5...
+Stripe Connect      │ bzh_3p_stripe_connect_...  │ bzh_cid_8bfaabece0885ca9...
+MercadoLibre        │ bzh_3p_mercadolibre_...    │ bzh_cid_82ee1f4b58b6d089...
+AliExpress          │ bzh_3p_aliexpress_...      │ bzh_cid_2d8818b78a10930e...
+Etsy                │ bzh_3p_etsy_...            │ bzh_cid_bef34bded8db539a...
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                    NOTAS DE SEGURIDAD
+═══════════════════════════════════════════════════════════════════════════════════════
+
+⚠️  IMPORTANTE:
+  1. Las credenciales de plataformas terceras NUNCA se exponen al cliente final
+     → OpenCLaw genera credenciales BeZhas que hacen proxy a las APIs reales
+  2. AEGIS monitorea TODAS las conexiones en tiempo real
+  3. Cada cliente recibe su propia API Key derivada (bzh_cli_<platform>_<hash>)
+  4. Las claves se rotan automáticamente cada 90 días
+  5. El agente OpenCLaw opera en sandbox hasta que AEGIS apruebe al cliente
+  6. Webhook secrets son únicos por cliente + plataforma
+  7. OAuth tokens de terceros se almacenan cifrados (AES-256-GCM) en la vault
+  8. Rate limiting se aplica per-client, per-platform
+  9. AEGIS puede revocar acceso instantáneamente si detecta anomalías
+  10. Logs de auditoría completos disponibles en /api/aegis/audit/:clientId
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                    FIN DEL DOCUMENTO
+═══════════════════════════════════════════════════════════════════════════════════════

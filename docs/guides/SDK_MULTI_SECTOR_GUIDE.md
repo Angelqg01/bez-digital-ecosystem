@@ -28,7 +28,7 @@ import { BeZhas } from '@bezhas/sdk';
 
 const client = new BeZhas({
   apiKey: 'bz_prod_xxxxxxxxxxxxx',
-  endpoint: 'https://api.bezhas.com/v1'
+  endpoint: 'https://api.bez.digital/v1'
 });
 ```
 
@@ -36,7 +36,7 @@ const client = new BeZhas({
 Para sitios web estáticos o sin proceso de build, use nuestra CDN global:
 
 ```html
-<script src="https://cdn.bezhas.com/sdk/v1/bezhas-sdk.min.js"></script>
+<script src="https://cdn.bez.digital/sdk/v1/bezhas-sdk.min.js"></script>
 
 <script>
   // 'BeZhas' está disponible globalmente en window.BeZhas
@@ -48,7 +48,7 @@ Para sitios web estáticos o sin proceso de build, use nuestra CDN global:
 
 ### Opción C: Plugins Nativos (No-Code)
 Si usa una plataforma CMS, descargue el plugin oficial:
-- [Wordpress / WooCommerce Plugin](https://plugins.bezhas.com/wordpress)
+- [Wordpress / WooCommerce Plugin](https://plugins.bez.digital/wordpress)
 - [Shopify App](https://apps.shopify.com/bezhas)
 - [Magento Extension](https://marketplace.magento.com/bezhas)
 
@@ -57,7 +57,7 @@ Si usa una plataforma CMS, descargue el plugin oficial:
 ## ⚡ Configuración Rápida
 
 ### 1. Obtener API Key
-Accede a [Developer Console](https://bezhas.com/developer) y crea una API Key:
+Accede a [Developer Console](https://bez.digital/developer) y crea una API Key:
 - Selecciona tu sector de negocio
 - Configura permisos granulares
 - Copia la API Key (solo se muestra una vez)
@@ -66,7 +66,7 @@ Accede a [Developer Console](https://bezhas.com/developer) y crea una API Key:
 ```javascript
 const BeZhas = new BeZhasUniversal({
   apiKey: 'bz_prod_xxxxxxxxxxxxx',
-  endpoint: 'https://api.bezhas.com/v1',
+  endpoint: 'https://api.bez.digital/v1',
   debug: true // Solo en desarrollo
 });
 ```
@@ -431,7 +431,7 @@ const verified = await BeZhas.carbon.verifyOffset({
 ### Consultar uso de API
 ```javascript
 // Desde Developer Console o via API
-const usage = await fetch('https://api.bezhas.com/v1/developer/keys/bz_xxx/usage', {
+const usage = await fetch('https://api.bez.digital/v1/developer/keys/bz_xxx/usage', {
   headers: { 'X-API-Key': 'bz_prod_xxx' }
 });
 
@@ -475,7 +475,7 @@ try {
 ```javascript
 const BeZhas = new BeZhasUniversal({
   apiKey: 'bz_dev_xxxxxxxxxxxxx',
-  endpoint: 'https://api-dev.bezhas.com/v1'
+  endpoint: 'https://api-dev.bez.digital/v1'
 });
 ```
 
@@ -483,7 +483,7 @@ const BeZhas = new BeZhasUniversal({
 ```javascript
 const BeZhas = new BeZhasUniversal({
   apiKey: 'bz_stg_xxxxxxxxxxxxx',
-  endpoint: 'https://api-staging.bezhas.com/v1'
+  endpoint: 'https://api-staging.bez.digital/v1'
 });
 ```
 
@@ -491,7 +491,7 @@ const BeZhas = new BeZhasUniversal({
 ```javascript
 const BeZhas = new BeZhasUniversal({
   apiKey: 'bz_prod_xxxxxxxxxxxxx',
-  endpoint: 'https://api.bezhas.com/v1'
+  endpoint: 'https://api.bez.digital/v1'
 });
 ```
 
@@ -506,18 +506,18 @@ El SDK sigue Semantic Versioning:
 
 Especifica versión en endpoint:
 ```javascript
-endpoint: 'https://api.bezhas.com/v1/bridge' // v1 estable
-endpoint: 'https://api.bezhas.com/v2/bridge' // v2 beta
+endpoint: 'https://api.bez.digital/v1/bridge' // v1 estable
+endpoint: 'https://api.bez.digital/v2/bridge' // v2 beta
 ```
 
 ---
 
 ## 🆘 Soporte
 
-- **Documentación**: https://docs.bezhas.com
+- **Documentación**: https://docs.bez.digital
 - **Discord**: https://discord.gg/bezhas
-- **Email**: dev-support@bezhas.com
-- **Status**: https://status.bezhas.com
+- **Email**: dev-support@bez.digital
+- **Status**: https://status.bez.digital
 
 ---
 

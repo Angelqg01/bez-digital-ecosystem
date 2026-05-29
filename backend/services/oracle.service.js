@@ -11,7 +11,7 @@ const { ethers } = require('ethers');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const logger = require('../utils/logger');
 const Post = require('../models/post.model');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 
 class AIOracle {
     constructor() {
@@ -204,7 +204,7 @@ No incluyas explicaciones, solo el número.
             const analysis = await this.analyzeContent(content, 'post');
 
             // 2. Actualizar en base de datos
-            await Post.findByIdAndUpdate(postId, {
+            await Post.update(postId, {
                 qualityScore: analysis.score,
                 aiAnalyzedAt: new Date(),
                 aiAnalysisData: {
@@ -220,7 +220,7 @@ No incluyas explicaciones, solo el número.
                 blockchainValidation = await this.validateContentOnChain(postId, analysis.score);
 
                 if (blockchainValidation.success) {
-                    await Post.findByIdAndUpdate(postId, {
+                    await Post.update(postId, {
                         blockchainValidated: true,
                         validationTxHash: blockchainValidation.txHash
                     });
@@ -270,12 +270,12 @@ No incluyas explicaciones, solo el número.
             else if (qualityScore >= 70) rewardAmount = 10;
 
             // Actualizar balance del usuario en DB
-            await User.findByIdAndUpdate(userId, {
+            await User.update(userId, {
                 $inc: { bezBalance: rewardAmount, totalEarned: rewardAmount }
             });
 
             // Registrar en historial
-            await Post.findByIdAndUpdate(postId, {
+            await Post.update(postId, {
                 $set: {
                     rewardAmount,
                     rewardDistributed: true,

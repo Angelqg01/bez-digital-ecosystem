@@ -162,9 +162,9 @@ const SUBSCRIPTION_TIERS = {
 
         // === PRECIOS ===
         price: {
-            monthly: 14.99,
-            yearly: 149.99,  // 17% ahorro
-            currency: 'USD',
+            monthly: 99,
+            yearly: 990,  // ahorro
+            currency: 'EUR',
             stripePriceId: {
                 monthly: process.env.STRIPE_PRICE_CREATOR_MONTHLY || 'price_creator_monthly',
                 yearly: process.env.STRIPE_PRICE_CREATOR_YEARLY || 'price_creator_yearly'
@@ -258,9 +258,9 @@ const SUBSCRIPTION_TIERS = {
 
         // === PRECIOS ===
         price: {
-            monthly: 99.99,
-            yearly: 999.99,  // 17% ahorro
-            currency: 'USD',
+            monthly: 499,
+            yearly: 4990,  // ahorro
+            currency: 'EUR',
             stripePriceId: {
                 monthly: process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_business_monthly',
                 yearly: process.env.STRIPE_PRICE_BUSINESS_YEARLY || 'price_business_yearly'
@@ -341,13 +341,111 @@ const SUBSCRIPTION_TIERS = {
             gradient: 'from-amber-400 to-orange-500',
             icon: 'building'
         }
+    },
+
+    // =========================================================================
+    // ENTERPRISE VIP
+    // =========================================================================
+    ENTERPRISE: {
+        id: 'enterprise',
+        name: 'Enterprise VIP',
+        displayName: 'Enterprise VIP',
+        description: 'BeZhas se convierte en el motor blockchain de tu organización',
+
+        // === PRECIOS ===
+        price: {
+            monthly: 2499,
+            yearly: 24990,
+            currency: 'EUR',
+            stripePriceId: {
+                monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || 'price_enterprise_monthly',
+                yearly: process.env.STRIPE_PRICE_ENTERPRISE_YEARLY || 'price_enterprise_yearly'
+            }
+        },
+
+        // === ALTERNATIVA: Token Lock para tier gratis ===
+        tokenLock: {
+            amount: 100000,
+            durationDays: 180,
+            contractMethod: 'lockForTier'
+        },
+
+        // === DEFI: STAKING ===
+        staking: {
+            multiplier: 3.5,
+            effectiveAPY: BASE_STAKING_APY * 2.5,
+            maxStakeAmount: Infinity,
+            earlyUnstakePenalty: 0,
+            lockPeriodDays: 0,
+            compoundingEnabled: true
+        },
+
+        // === GAS SUBSIDY ===
+        gas: {
+            subsidyPercent: 1.0,
+            maxSubsidyPerTx: Infinity,
+            monthlySubsidyBudget: Infinity,
+            priorityFee: true
+        },
+
+        // === AI CREDITS ===
+        ai: {
+            dailyQueries: Infinity,
+            monthlyQueries: Infinity,
+            models: ['all'],
+            maxTokensPerQuery: 32000,
+            imageGeneration: Infinity,
+            voiceMinutes: Infinity,
+            customPrompts: true,
+            priority: 'highest'
+        },
+
+        // === LÍMITES GENERALES ===
+        limits: {
+            postsPerMonth: Infinity,
+            postsWithMediaPerMonth: Infinity,
+            commentsPerMonth: Infinity,
+            storageGB: 1000,
+            oracleValidationsPerMonth: Infinity,
+            daoProposalsPerMonth: Infinity,
+            daoVotesPerMonth: Infinity
+        },
+
+        // === FEATURES ===
+        features: {
+            canCreateProposals: true,
+            qualityOracleAccess: true,
+            priorityValidation: true,
+            advancedAIModels: true,
+            customPrompts: true,
+            aiPersonality: true,
+            apiAccess: true,
+            webhooks: true,
+            analytics: true,
+            exportData: true,
+            prioritySupport: true,
+            dedicatedManager: true,
+            verifiedBadge: true,
+            customProfile: true,
+            scheduledPosts: true,
+            whiteLabel: true,
+            dedicatedNode: true
+        },
+
+        // === UI ===
+        ui: {
+            badge: 'enterprise',
+            color: '#FBBF24',
+            gradient: 'from-yellow-400 to-yellow-600',
+            icon: 'crown'
+        }
     }
 };
 
 /**
  * Jerarquía de tiers (para comparaciones de acceso)
  */
-const TIER_HIERARCHY = ['STARTER', 'CREATOR', 'BUSINESS'];
+const TIER_HIERARCHY = ['STARTER', 'CREATOR', 'BUSINESS', 'ENTERPRISE'];
 
 /**
  * Tier por defecto para nuevos usuarios

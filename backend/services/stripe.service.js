@@ -127,7 +127,7 @@ async function createSubscriptionCheckoutSession(plan, userInfo) {
                         product_data: {
                             name: `BeZhas Premium - ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
                             description: `Premium features with ${plan} access`,
-                            images: ['https://bezhas.com/assets/premium-badge.png'],
+                            images: ['https://bez.digital/assets/premium-badge.png'],
                             metadata: {
                                 type: 'subscription',
                                 plan: plan
@@ -200,7 +200,7 @@ async function createTokenPurchaseSession(tokenAmount, userInfo) {
                         product_data: {
                             name: `${tokenAmount} BZS Tokens`,
                             description: `Purchase ${tokenAmount} BeZhas (BZS) tokens`,
-                            images: ['https://bezhas.com/assets/bzs-token.png'],
+                            images: ['https://bez.digital/assets/bzs-token.png'],
                             metadata: {
                                 type: 'token_purchase',
                                 tokenAmount: tokenAmount.toString()
@@ -653,7 +653,7 @@ async function handleSubscriptionCreated(subscription) {
 
     // Update user VIP status in database
     try {
-        const User = require('../models/user.model');
+        const User = require('../models/pg/User');
 
         // Find user by Stripe customer ID or subscription metadata
         let user = await User.findOne({ stripeCustomerId: subscription.customer });
@@ -732,7 +732,7 @@ async function handleSubscriptionCancelled(subscription) {
 
     // Remove VIP benefits from user
     try {
-        const User = require('../models/user.model');
+        const User = require('../models/pg/User');
 
         // Find user by Stripe customer ID or subscription ID
         let user = await User.findOne({ stripeCustomerId: subscription.customer });
@@ -801,7 +801,7 @@ async function handleSubscriptionUpdated(subscription) {
 
     // Update user VIP status based on subscription status
     try {
-        const User = require('../models/user.model');
+        const User = require('../models/pg/User');
 
         // Find user by Stripe subscription ID
         let user = await User.findOne({ stripeSubscriptionId: subscription.id });
@@ -921,7 +921,7 @@ async function processNFTMint(metadata, session) {
         const nftContract = new ethers.Contract(nftContractAddress, NFT_ABI, wallet);
 
         // Prepare metadata URI (could be IPFS or centralized storage)
-        const tokenURI = metadata.tokenURI || `https://api.bezhas.com/nft/metadata/${metadata.nftId}`;
+        const tokenURI = metadata.tokenURI || `https://api.bez.digital/nft/metadata/${metadata.nftId}`;
 
         // Mint NFT to user's wallet
         const tx = await nftContract.safeMint(metadata.walletAddress, tokenURI);
@@ -972,17 +972,17 @@ async function processNFTMint(metadata, session) {
  */
 async function activatePremiumSubscription(metadata, session) {
     try {
-        const User = require('../models/user.model');
+        const User = require('../models/pg/User');
 
         // Find or identify user
         let user = await User.findById(metadata.userId);
 
         if (!user && metadata.walletAddress) {
-            user = await User.findOne({ walletAddress: metadata.walletAddress.toLowerCase() });
+            user = await User.findByWallet({ walletAddress: metadata.walletAddress.toLowerCase() });
         }
 
         if (!user && session.customer_email) {
-            user = await User.findOne({ email: session.customer_email });
+            user = await User.findByEmail({ email: session.customer_email });
         }
 
         if (!user) {

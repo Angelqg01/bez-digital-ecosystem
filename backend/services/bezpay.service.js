@@ -28,7 +28,17 @@
 
 const { ethers } = require('ethers');
 const logger = require('../utils/logger');
-const Payment = require('../models/Payment.model');
+const PaymentPG = require('../models/pg/Payment');
+const bridge = require('../bridge'); // For ecosystem sync
+
+// ─── OPENCLAW BRIDGE (auto-provision al completar pagos) ─────────────────────
+let openclawBridge = null;
+try {
+  openclawBridge = require('./payment-openclaw-bridge');
+  logger.info('✅ [BezPay] OpenCLaw bridge connected');
+} catch (err) {
+  logger.warn('[BezPay] OpenCLaw bridge not available — payments will work without auto-provisioning');
+}
 
 // ─── CONTRATOS ────────────────────────────────────────────────────────────────
 const ADDRS = {
@@ -208,11 +218,11 @@ async function dispenseBEZ(toAddress, bezAmount) {
 // ─── ACTIVAR VIP EN BD ───────────────────────────────────────────────────────
 async function activateVIPPlan(walletAddress, planId, txHash) {
   try {
-    const User = require('../models/user.model');
+    const User = require('../models/pg/User');
     const plan = VIP_PLANS[planId];
     if (!plan) return false;
 
-    const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() })
+    const user = await User.findByWallet(walletAddress.toLowerCase())
       || await User.findOne({ walletAddress });
 
     if (!user) {
@@ -292,11 +302,11 @@ async function createPayment(req, res) {
     // Crear registro en BD
     let paymentRecord = null;
     try {
-      paymentRecord = new Payment({
+      paymentRecord = await PaymentPG.create({
         walletAddress,
-        type: type.toUpperCase(),
+        type: type === 'buy_bez' ? 'token_purchase' : type.toLowerCase(),
         status: 'pending',
-        paymentId,
+        paymentIntentId: paymentId,
         payToken,
         fiatAmount: amounts.amountUSD,
         fiatCurrency: 'USD',
@@ -304,7 +314,6 @@ async function createPayment(req, res) {
         exchangeRate: amounts.bezPriceUSD,
         metadata: { planId, poolId, lockDays, source, ...metadata },
       });
-      await paymentRecord.save();
     } catch (dbErr) {
       logger.warn({ err: dbErr.message }, '[BezPay] DB save skipped (model or connection issue)');
     }
@@ -463,6 +472,15 @@ async function handleWebhook(req, res) {
         default:
           logger.warn({ type }, '[BezPay] Unknown payment type in webhook');
       }
+
+      // ── OPENCLAW BRIDGE: notify on completion ────────────────────────
+      if (openclawBridge && walletAddress) {
+        openclawBridge.onPaymentCompleted({
+          walletAddress, type, txHash, bezAmount: amountUSD,
+          planId, metadata: { source, paymentId },
+        }).catch(e => logger.warn({ err: e.message }, '[BezPay] OpenCLaw bridge notification failed'));
+      }
+
     } catch (err) {
       logger.error({ err: err.message, paymentId }, '[BezPay] Webhook processing error');
       await _updatePaymentStatus(paymentId, 'failed', txHash, err.message);
@@ -480,9 +498,19 @@ async function _updatePaymentStatus(paymentId, status, txHash, errorMsg, extra =
   if (!paymentId) return;
   try {
     const update = { status, txHash, updatedAt: new Date(), ...extra };
-    if (status === 'completed') update.completedAt = new Date();
+    if (status === 'completed') {
+      update.completedAt = new Date();
+      // Notify Ecosystem Bridge
+      try {
+        const ecosystem = bridge.bridgeCore.getAdapter('ecosystem');
+        if (ecosystem) {
+          const payment = await PaymentPG.findByPaymentIntent(paymentId);
+          if (payment) ecosystem.notifyPayment({ ...payment, ...update });
+        }
+      } catch (_) { }
+    }
     if (errorMsg) update.errorMessage = errorMsg;
-    await Payment.findOneAndUpdate({ paymentId }, { $set: update }).catch(() => {});
+    await PaymentPG.updateByPaymentIntent(paymentId, update).catch(() => {});
   } catch (_) { /* BD no disponible — ignorar */ }
 }
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { customAlphabet } = require('nanoid');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const AffiliateEvent = require('../models/affiliateEvent.model');
 const { protect } = require('../middleware/auth.middleware');
 const { query, validationResult } = require('express-validator');
@@ -31,7 +31,7 @@ router.get('/me', protect, async (req, res) => {
 
     res.json({
       referralCode: user.affiliate.referralCode,
-      referralLink: `https://bezhas.com/join/${user.affiliate.referralCode}`,
+      referralLink: `https://bez.digital/join/${user.affiliate.referralCode}`,
       stats: {
         clicks,
         signups

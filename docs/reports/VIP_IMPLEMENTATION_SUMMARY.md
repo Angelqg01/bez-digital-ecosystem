@@ -145,7 +145,7 @@ VITE_STRIPE_PUBLIC_KEY=pk_live_...
 
 ### Webhook de Stripe
 **URL Development:** `http://localhost:3001/api/vip/webhook/stripe`  
-**URL Production:** `https://bezhas.com/api/vip/webhook/stripe`
+**URL Production:** `https://bez.digital/api/vip/webhook/stripe`
 
 **Eventos a suscribir:**
 - customer.subscription.created
@@ -203,12 +203,12 @@ http://localhost:5173/vip
   ```
 
 - [ ] **Configurar Webhook en Stripe Dashboard**
-  - URL: `https://bezhas.com/api/vip/webhook/stripe`
+  - URL: `https://bez.digital/api/vip/webhook/stripe`
   - Copiar Signing Secret a `STRIPE_WEBHOOK_SECRET`
 
 - [ ] **Actualizar FRONTEND_URL**
   ```bash
-  FRONTEND_URL=https://bezhas.com
+  FRONTEND_URL=https://bez.digital
   ```
 
 - [ ] **Verificar SSL/HTTPS activo**

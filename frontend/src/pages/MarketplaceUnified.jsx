@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useBezCoin } from '../context/BezCoinContext';
+import { useBezPay } from '../context/BezPayContext';
 import { LOGOS } from '../config/cryptoLogos';
-// BuyBezCoinModal -> useBezPay().openBuyBez()
 import { useWeb3 } from '../context/Web3Context';
 import { useAccount } from 'wagmi';
 import { NFTGrid } from '../components/shop/NFTGrid';
@@ -217,7 +217,8 @@ const MyCollectionTab = ({ address, contracts }) => {
 const CreateNFTTab = ({ address, contracts }) => {
     const [showWizard, setShowWizard] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const { balance, showBuyModal, setShowBuyModal, verifyAndProceed } = useBezCoin();
+    const { balance, verifyAndProceed } = useBezCoin();
+    const { openBuyBez } = useBezPay();
 
     const handleProductCreated = async (productData) => {
         if (!address || !contracts.marketplace || !contracts.bezhasNFT) {
@@ -341,7 +342,6 @@ const CreateNFTTab = ({ address, contracts }) => {
                 />
             )}
 
-            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
         </div>
     );
 };

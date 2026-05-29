@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const verifyAdminJWT = require('../middleware/verifyAdminJWT');
 const JWT_SECRET = process.env.JWT_SECRET || 'bezhas_super_secret_key';
 

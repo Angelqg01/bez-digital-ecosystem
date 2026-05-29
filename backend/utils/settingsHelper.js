@@ -8,7 +8,7 @@
  *   const defiConfig = await settingsHelper.getSection('defi');
  */
 
-const GlobalSettings = require('../models/GlobalSettings.model');
+const GlobalSettings = require('../models/pg/GlobalSettings');
 
 // Cache for settings to reduce DB calls
 let settingsCache = null;
@@ -49,6 +49,8 @@ const DEFAULT_SETTINGS = {
         circulatingSupply: '0',
         mintingEnabled: false,
         burningEnabled: true,
+        burnRate: 20,
+        treasuryRate: 100,
         transferFeePercent: 0,
     },
     farming: {
@@ -109,6 +111,17 @@ const DEFAULT_SETTINGS = {
         adsenseCPC: 0.15,
         directSponsorView: 0.20,
         directSponsorClick: 0.50,
+    },
+    openclaw: {
+        enabled: true,
+        baseUrl: 'http://localhost:3001/api/openclaw',
+        apiKey: 'bzh_3p_openclaw_agent_default_key',
+        plans: {
+            starter: { platforms: 1, rateLimit: 1000, webhooksPerHour: 5, syncInterval: '60m', credentialTTL: 30 },
+            pro: { platforms: 4, rateLimit: 10000, webhooksPerHour: -1, syncInterval: '15m', credentialTTL: 90 },
+            enterprise: { platforms: 12, rateLimit: 100000, webhooksPerHour: -1, syncInterval: '1m', credentialTTL: 365 },
+            vip: { platforms: 12, rateLimit: -1, webhooksPerHour: -1, syncInterval: 'live', credentialTTL: -1 }
+        }
     },
 };
 
@@ -289,6 +302,14 @@ async function getAdRewardsConfig() {
 }
 
 /**
+ * Get OpenClaw AI configuration
+ * @returns {Promise<object>} OpenClaw settings
+ */
+async function getOpenClawConfig() {
+    return await getSection('openclaw');
+}
+
+/**
  * Invalidate cache (call after settings update)
  */
 function invalidateCache() {
@@ -327,6 +348,7 @@ module.exports = {
     getRwaConfig,
     getPlatformConfig,
     getAdRewardsConfig,
+    getOpenClawConfig,
 
     // Cache management
     invalidateCache,

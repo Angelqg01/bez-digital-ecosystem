@@ -362,9 +362,9 @@ GET  /api/admin-panel/system/logs
 ## 🆘 Soporte
 
 ### Contactos Principales
-- 📧 **Email**: admin@bezhas.com
+- 📧 **Email**: admin@bez.digital
 - 💬 **Discord**: [BeZhas Community](https://discord.gg/bezhas)
-- 📚 **Docs**: [docs.bezhas.com](https://docs.bezhas.com)
+- 📚 **Docs**: [docs.bez.digital](https://docs.bez.digital)
 - 🐛 **Issues**: [GitHub](https://github.com/bezhas/bezhas-web3/issues)
 
 ### Horarios de Soporte

@@ -11,7 +11,7 @@
  */
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const logger = require('../utils/logger');
 
 // Import WebSocket server for notifications

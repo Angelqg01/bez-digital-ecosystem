@@ -5,7 +5,7 @@
 
 const http = require('http');
 const BASE_URL = 'http://localhost:3001';
-const API_KEY = 'ENT_WALMART_2026';
+const API_KEY = process.env.TOOLBEZ_TEST_API_KEY || 'change-me-toolbez-demo-key';
 
 console.log('\n🚀 Iniciando pruebas de ToolBEZ™ Enterprise...\n');
 

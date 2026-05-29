@@ -1,4 +1,4 @@
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const Contact = require('../models/contact.model');
 
 /**
@@ -73,7 +73,7 @@ async function processContactSync(job) {
     }
 
     // Mark that the user has performed a sync recently (optional analytics step)
-    await User.findByIdAndUpdate(ownerId, {
+    await User.update(ownerId, {
       $set: { 'contactSync.hasSynced': true, 'contactSync.lastSync': new Date() }
     });
 

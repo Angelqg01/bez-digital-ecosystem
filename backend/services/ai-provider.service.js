@@ -227,24 +227,29 @@ class AIProviderService {
             maxOutputTokens: maxTokens,
         };
 
-        if (stream) {
-            const result = await geminiModel.generateContentStream(prompt, generationConfig);
-            return result.stream;
+        try {
+            if (stream) {
+                const result = await geminiModel.generateContentStream(prompt, generationConfig);
+                return result.stream;
+            }
+
+            const result = await geminiModel.generateContent(prompt, generationConfig);
+            const response = await result.response;
+
+            return {
+                content: response.text(),
+                usage: {
+                    prompt_tokens: 0, 
+                    completion_tokens: 0,
+                    total_tokens: 0
+                },
+                model: model || 'gemini-pro',
+                provider: 'google'
+            };
+        } catch (error) {
+            console.error('❌ Google Gemini Chat Error:', error.message);
+            throw error;
         }
-
-        const result = await geminiModel.generateContent(prompt, generationConfig);
-        const response = await result.response;
-
-        return {
-            content: response.text(),
-            usage: {
-                prompt_tokens: 0, // Gemini no proporciona esta información
-                completion_tokens: 0,
-                total_tokens: 0
-            },
-            model: model || 'gemini-pro',
-            provider: 'google'
-        };
     }
 
     async embedGoogle({ model, text, multimodalParts }) {

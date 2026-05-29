@@ -1,7 +1,10 @@
+/**
+ * @deprecated — LEGACY SERVICE. Staking operations now live in bez-wallet SubApp.
+ * Replacement: bez-wallet/src/services/walletBlockchainService.js
+ * The Hub should link to bez-wallet/staking instead of handling staking directly.
+ */
 import { ethers } from 'ethers';
 import { toast } from 'react-hot-toast';
-
-/**
  * @dev A service module for interacting with the StakingPool smart contract.
  * It encapsulates all the blockchain interaction logic, keeping components clean.
  */

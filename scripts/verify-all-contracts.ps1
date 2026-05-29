@@ -71,9 +71,9 @@ foreach ($contract in $contracts) {
     
     try {
         if ($argsList -eq "") {
-            $output = npx hardhat verify --network polygon $contract.Address 2>&1
+            $output = pnpm exec hardhat verify --network polygon $contract.Address 2>&1
         } else {
-            $output = npx hardhat verify --network polygon $contract.Address $argsList.Split(' ') 2>&1
+            $output = pnpm exec hardhat verify --network polygon $contract.Address $argsList.Split(' ') 2>&1
         }
         
         $outputStr = $output | Out-String

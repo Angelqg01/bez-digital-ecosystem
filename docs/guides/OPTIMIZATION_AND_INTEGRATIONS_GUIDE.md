@@ -83,7 +83,7 @@ const shipment = await sdk.tnt.createShipment({
     country: 'ES',
     postalCode: '28001',
     phone: '+34600000000',
-    email: 'store@bezhas.com'
+    email: 'store@bez.digital'
   },
   receiver: {
     name: 'John Doe',
@@ -205,7 +205,7 @@ const purchase = await sdk.bezcoin.buyWithMoonPay({
   amount: 100, // USD
   currency: 'USD',
   paymentMethod: 'credit_card',
-  returnUrl: 'https://bezhas.com/success'
+  returnUrl: 'https://bez.digital/success'
 });
 // Redirigir a: purchase.moonpayUrl
 

@@ -104,6 +104,14 @@ export default function AdminLayout() {
                         <Blocks size={20} />
                         {!collapsed && 'SDK & AI'}
                     </NavLink>
+                    <NavLink
+                        to="/admin/magazine"
+                        className={({ isActive }) => `flex items-center gap-2 rounded-lg transition-all ${collapsed ? 'justify-center p-3' : 'px-4 py-2'} ${isActive ? 'bg-cyan-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
+                        title={collapsed ? 'Magazine' : undefined}
+                    >
+                        <FileText size={20} />
+                        {!collapsed && 'Magazine'}
+                    </NavLink>
                     {/* Logos de criptomonedas y BEZ-Coin */}
                     <div className={`border-t border-gray-700 pt-4 flex flex-col gap-2 ${collapsed ? 'mt-4' : 'mt-8'}`}>
                         <button className={`flex items-center gap-2 rounded-lg transition-all ${collapsed ? 'justify-center p-3' : 'px-4 py-2'} text-gray-400 hover:text-blue-400`}

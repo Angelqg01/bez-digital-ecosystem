@@ -36,10 +36,12 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage')); // Simple Profile (temporary fix)
 const ProfileEditPage = lazy(() => import('./pages/ProfileEditPage')); // NEW: Profile Edit Page
 const MarketplaceUnified = lazy(() => import('./pages/MarketplaceUnified')); // Unified Marketplace + Shop + Create
-const StakingPageUnified = lazy(() => import('./pages/defi/StakingPage')); // Unified Staking + Farming
+const StakingPageUnified = lazy(() => import('./pages/StakingPage')); // Updated path
+const FarmingPage = lazy(() => import('./pages/FarmingPage')); // Added FarmingPage
 const OraclePage = lazy(() => import('./pages/OraclePage')); // NEW: Data Oracle
 const CreatePage = lazy(() => import('./pages/Create')); // Unified Creation Hub
 const BeZhasFeed = lazy(() => import('./pages/BeZhasFeed'));
+const BridgePage = lazy(() => import('./pages/BridgePage')); // NEW: Bridge Page
 // ProfileView removed - using ProfilePage instead
 // const BadgesPage = lazy(() => import('./pages/BadgesPage')); // REMOVED: Badges system eliminated in cleanup
 // CreateItemPage removed - now integrated into MarketplaceUnified Tab 3
@@ -89,6 +91,8 @@ const AdminConfigPage = lazy(() => import('./pages/AdminConfigPage')); // NEW: U
 const AgentDashboard = lazy(() => import('./pages/admin/AgentDashboard')); // NEW: Agent Dashboard
 const AutomationHub = lazy(() => import('./pages/admin/AutomationHub')); // NEW: Unified Intelligence & Automation Hub
 const AdminAegis = lazy(() => import('./components/admin/aegis/AegisDashboard')); // NEW: Aegis Dashboard
+const MagazinePage = lazy(() => import('./pages/MagazinePage')); // BeZhas Magazine
+const AdminMagazinePage = lazy(() => import('./pages/admin/AdminMagazinePage')); // Admin Magazine
 
 // NEW: Light Mode Design System Demo
 const LightHomePage = lazy(() => import('./pages/LightHomePage'));
@@ -118,6 +122,10 @@ const BancaFintechFundPage = lazy(() => import('./pages/dao/BancaFintechFundPage
 const EducacionCredencialesFundPage = lazy(() => import('./pages/dao/EducacionCredencialesFundPage')); // NEW: Education & Credentials Fund Details
 const RWAPage = lazy(() => import('./pages/RWAPage')); // NEW: Real World Assets Marketplace
 
+// New Governance & Compliance
+const GovernancePage = lazy(() => import('./pages/GovernancePage'));
+const CompliancePage = lazy(() => import('./pages/CompliancePage'));
+
 // Developer Tools
 const DeveloperConsole = lazy(() => import('./pages/DeveloperConsole')); // NEW: API Key Management
 // SDKTestPage removed from production build - requires @sdk dependencies not available in container
@@ -129,6 +137,9 @@ const BezPayPage = lazy(() => import('./pages/BezPayPage')); // NEW: BeZhas Pay 
 
 // AI Guide Widget (Global)
 import BezhasGuideWidget from './components/AI/BezhasGuideWidget';
+
+// Journey Overlay (Global)
+import JourneyOverlay from './components/common/JourneyOverlay';
 
 /**
  * @dev This component orchestrates data fetching based on the Web3 connection state.
@@ -220,6 +231,9 @@ const Root = () => {
 
                     {/* BezPayModal — Modal global de pago BEZ (reemplaza todos los modales de pago) */}
                     <BezPayModal />
+
+                    {/* Journey Overlay - Guía explicativa para clientes/usuarios (Global y persistente) */}
+                    <JourneyOverlay />
 
                     {/* AI Guide Widget - Global y persistente en todas las páginas */}
                     <BezhasGuideWidget currentUser={mockUser} />
@@ -332,26 +346,29 @@ export const router = createBrowserRouter(
             { path: '/', element: <LandingRoute /> }, // Marketing Landing Page (redirects to /home if connected)
             { path: '/home', element: <HomePage /> }, // Main app home (feed)
             { path: '/feed', element: <HomePage /> }, // Direct access to feed (protected)
-            { path: '/login', element: <LoginPage /> },
-            { path: '/register', element: <RegisterPage /> },
+            { path: '/login', element: <LoginPage /> }, // [KEEP]
+            { path: '/register', element: <RegisterPage /> }, // [KEEP]
             { path: '/auth/github/callback', element: <GitHubCallback /> },
             { path: '/auth/linkedin/callback', element: <LinkedInCallback /> },
-            { path: '/auth', element: <AuthPage /> }, // NEW: Unified Auth Page (Email, Google, Facebook, Wallet)
-            { path: '/admin-login', element: <AdminLogin /> },
+            { path: '/auth', element: <AuthPage /> }, // [KEEP] NEW: Unified Auth Page (Email, Google, Facebook, Wallet)
+            { path: '/admin-login', element: <AdminLogin /> }, // [KEEP]
             { path: '/superpanel', element: <SuperPanel /> },
             { path: '/feed-old', element: <BeZhasFeed /> }, // OLD: Legacy feed (kept for reference)
             { path: '/social', element: <Navigate to="/home" replace /> }, // REMOVED: Redirige al feed principal
             // { path: '/badges', element: <BadgesPage /> }, // REMOVED: Badges system eliminated
             // { path: '/groups', element: <GroupsPage /> }, // REMOVED: Groups feature not implemented
-            { path: '/marketplace', element: <MarketplaceUnified /> }, // Unified: Marketplace + Shop + Create with tabs
-            { path: '/shop', element: <MarketplaceUnified /> }, // Redirect to unified marketplace
-            { path: '/defi', element: <Navigate to="/staking" replace /> }, // Redirect to unified staking
-            { path: '/governance', element: <Navigate to="/dao-page" replace /> }, // Redirect to unified DAO
+            // Rutas de Marketplace y DeFi migradas a subapps correspondientes
+            // { path: '/marketplace', element: <MarketplaceUnified /> }, // [MIGRATED to BZ Capital / Ecosystem]
+            // { path: '/shop', element: <MarketplaceUnified /> }, // [MIGRATED]
+            // { path: '/defi', element: <Navigate to="/staking" replace /> }, // [MIGRATED to BZ Capital]
+            // { path: '/governance', element: <GovernancePage /> }, // [MIGRATED to BeZhas Wallet]
+            { path: '/compliance', element: <CompliancePage /> }, // [KEEP] Compliance Dashboard
             { path: '/oracle', element: <OraclePage /> }, // NEW: Data Oracle
             // { path: '/members', element: <MembersPage /> }, // REMOVED: Members moved to other sections
             // { path: '/ranks', element: <RanksPage /> }, // REMOVED: Rankings system eliminated
             { path: '/metrics', element: <MetricsDashboard /> }, // Re-enabled
             { path: '/about', element: <AboutPage /> },
+            { path: '/magazine', element: <MagazinePage /> },
             { path: '/notifications', element: <NotificationsPage /> },
             { path: '/rewards', element: <Navigate to="/profile" replace /> }, // REMOVED: Redirige al perfil (incluye balance y stats)
             { path: '/be-vip', element: <BeVIP /> },
@@ -364,8 +381,8 @@ export const router = createBrowserRouter(
             { path: '/buy-tokens', element: <BuyTokensPage /> }, // Token Purchase (integrado con BezPayModal)
             { path: '/pay', element: <BezPayPage /> }, // BeZhas Pay System v2.0 — página completa
             { path: '/bez-pay', element: <BezPayPage /> }, // Alias: BeZhas Pay System
-            { path: '/liquidity', element: <DeFiHub /> }, // DeFi Hub with LP Pool
-            { path: '/defi-hub', element: <DeFiHub /> }, // Alias for DeFi Hub
+            // { path: '/liquidity', element: <DeFiHub /> }, // [MIGRATED to BZ Capital]
+            // { path: '/defi-hub', element: <DeFiHub /> }, // [MIGRATED to BZ Capital]
             { path: '/light-home', element: <LightHomePage /> }, // NEW: Light Mode Design System Demo
             { path: '/whitepaper', element: <WhitePaper /> }, // NEW: WhitePaper Technical
             { path: '/docs', element: <DocsHub /> }, // NEW: Documentation Hub
@@ -387,8 +404,8 @@ export const router = createBrowserRouter(
             // /automation-demo has been moved to /admin/automation-demo or inside AutomationHub
 
             // --- Developer Tools ---
-            { path: '/developer-console', element: <DeveloperConsole /> }, // NEW: API Key Management & SDK Tools
-            { path: '/developers', element: <DeveloperConsole /> }, // Alias for Developer Console
+            { path: '/developer-console', element: <DeveloperConsole /> }, // [KEEP] NEW: API Key Management & SDK Tools
+            { path: '/developers', element: <DeveloperConsole /> }, // [KEEP] Alias for Developer Console
             // { path: '/sdk-test', element: <SDKTestPage /> }, // SDK Test disabled in production
 
             // --- DAO Module Routes - OPTIMIZED ---
@@ -405,7 +422,7 @@ export const router = createBrowserRouter(
             //     { path: 'plugins', element: <PluginManager /> },
             //   ],
             // },
-            { path: '/dao-page', element: <DAOPage /> }, // DAO Simplificado: Solo gobernanza básica
+            // { path: '/dao-page', element: <DAOPage /> }, // [MIGRATED to BeZhas Wallet]
             { path: '/dao/industria-4-0', element: <Industria40FundPage /> }, // Industry 4.0 Fund Details
             { path: '/dao/salud-biotecnologia', element: <SaludBiotecFundPage /> }, // Health & Biotech Fund Details
             { path: '/dao/energia-smart-cities', element: <EnergiaSmartCitiesFundPage /> }, // Energy & Smart Cities Fund Details
@@ -424,8 +441,9 @@ export const router = createBrowserRouter(
                 { path: 'profile/:address', element: <ProfilePage /> }, // View other user's profile
                 { path: 'settings', element: <SettingsPage /> }, // Settings with Network configuration
                 { path: 'create', element: <CreatePage /> }, // Unified Creation Hub
-                { path: 'staking', element: <StakingPageUnified /> }, // Unified: Staking + Farming with tabs
-                { path: 'farming', element: <StakingPageUnified /> }, // Redirect to unified page (opens farming tab via URL param if needed)
+                // { path: 'staking', element: <StakingPageUnified /> }, // [MIGRATED to BZ Capital]
+                // { path: 'farming', element: <FarmingPage /> }, // [MIGRATED to BZ Capital]
+                // { path: 'bridge', element: <BridgePage /> }, // [MIGRATED to BeZhas Wallet]
                 // { path: 'quests', element: <QuestsPage /> }, // REMOVED: Quests system eliminated
                 // shop route removed - now points to MarketplaceUnified
               ],
@@ -448,6 +466,7 @@ export const router = createBrowserRouter(
                     { path: 'ai', element: <Suspense fallback={<Spinner size="lg" />}><AdminAI /></Suspense> },
                     { path: 'automation', element: <Suspense fallback={<Spinner size="lg" />}><AutomationHub /></Suspense> },
                     { path: 'automation-demo', element: <Suspense fallback={<Spinner size="lg" />}><AutomationDemo /></Suspense> },
+                    { path: 'magazine', element: <Suspense fallback={<Spinner size="lg" />}><AdminMagazinePage /></Suspense> },
                     { path: 'sdk', element: <Suspense fallback={<Spinner size="lg" />}><AdminSDK /></Suspense> },
                     { path: 'config', element: <Suspense fallback={<Spinner size="lg" />}><AdminConfigPage /></Suspense> },
                     { path: 'agents', element: <Suspense fallback={<Spinner size="lg" />}><AgentDashboard /></Suspense> },

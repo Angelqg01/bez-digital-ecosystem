@@ -20,7 +20,7 @@ const router = express.Router();
 const { protect } = require('../middleware/auth.middleware');
 const axios = require('axios');
 const crypto = require('crypto');
-const BEZCoinTransaction = require('../models/BEZCoinTransaction.model');
+const BEZCoinTransaction = require('../models/pg/BEZCoinTransaction');
 const VIPSubscription = require('../models/VIPSubscription.model');
 const tokenomics = require('../config/tokenomics.config');
 
@@ -200,7 +200,7 @@ router.post('/buy/stripe', protect, async (req, res) => {
                         product_data: {
                             name: 'BEZ-Coin',
                             description: `Compra de ${totalBez.toFixed(2)} BEZ (incluye ${bonusAmount.toFixed(2)} bonus)`,
-                            images: ['https://bezhas.com/images/bezcoin-logo.png']
+                            images: ['https://bez.digital/images/bezcoin-logo.png']
                         },
                         unit_amount: Math.round(amount * 100),
                     },

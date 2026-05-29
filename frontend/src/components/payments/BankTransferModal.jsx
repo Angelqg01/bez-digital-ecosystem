@@ -224,7 +224,7 @@ const BankTransferModal = ({ isOpen, onClose }) => {
                     </button>
                     <button
                         className="flex-1 py-3 px-4 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold transition flex items-center justify-center space-x-2"
-                        onClick={() => window.open('https://support.bezhas.com/fiat-payment', '_blank')}
+                        onClick={() => window.open('https://support.bez.digital/fiat-payment', '_blank')}
                     >
                         <span>Need Help?</span>
                         <ExternalLink size={16} />

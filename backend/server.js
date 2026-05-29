@@ -76,23 +76,43 @@ const helmet = require('helmet');
 // 2. MCP Intelligence Scheduler (Gas, Price, Holders, DAO — auto every N min)
 try {
     const mcpScheduler = require('./services/mcp-scheduler.service');
-    mcpScheduler.start();
-    console.log('✅ MCP Scheduler started');
+    if (process.env.NODE_ENV !== 'test') {
+        mcpScheduler.start();
+        console.log('✅ MCP Scheduler started');
+    } else {
+        console.log('ℹ️ MCP Scheduler disabled in test environment');
+    }
 } catch (e) {
     console.warn('⚠️  MCP Scheduler not available:', e.message);
 }
 
 // 2. Third Party Usage Analysis Service
-const ThirdPartyAnalyzer = require('./services/automation/thirdPartyAnalyzer.service');
+const ThirdPartyAnalyzer = process.env.NODE_ENV === 'test'
+    ? null
+    : require('./services/automation/thirdPartyAnalyzer.service');
 // 3. Diagnostic Agent (Auto-Recovery, Health Monitoring)
-const DiagnosticService = require('./services/automation/diagnosticAgent.service');
+const DiagnosticService = process.env.NODE_ENV === 'test'
+    ? null
+    : require('./services/automation/diagnosticAgent.service');
+// 4. Webhook-Blockchain Bridge (External Sales -> On-chain Rewards)
+if (process.env.NODE_ENV !== 'test') {
+    const WebhookBridge = require('./services/bridge/WebhookBlockchainBridge');
+    WebhookBridge.init();
+}
+
 const cron = require('node-cron');
 // ---------------------------------
 const validator = require('validator');
 const http = require('http');
 const { ethers } = require('ethers');
 const jwt = require('jsonwebtoken');
-const User = require('./models/user.model');
+let User;
+try {
+    User = require('./models/user.model');
+} catch (error) {
+    console.warn('⚠️ Mongo user model unavailable, using PG/local user model:', error.message);
+    User = require('./models/pg/User');
+}
 
 // Suppress ethers.js annoying console logs
 const originalConsoleError = console.error;
@@ -113,6 +133,38 @@ console.error = (...args) => {
 // Load and validate environment variables early
 const config = require('./config');
 console.log('✅ config loaded');
+
+const FORBIDDEN_PRODUCTION_SECRET_VALUES = new Set([
+    'default_secret',
+    'supersecret_fallback_change_in_prod',
+    'dev-admin-token-12345-very-secure-token',
+    'dev-jwt-secret-key-for-bezhas-platform-2024-very-long-and-secure',
+    'dev-contact-encryption-key-32-characters-long-string'
+]);
+
+function assertProductionSecret(name, { minLength = 32 } = {}) {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`${name} is required in production`);
+    }
+    if (value.length < minLength || FORBIDDEN_PRODUCTION_SECRET_VALUES.has(value)) {
+        throw new Error(`${name} must be rotated from the development/default value before production`);
+    }
+}
+
+function validateProductionSecrets() {
+    if (process.env.NODE_ENV !== 'production') return;
+
+    assertProductionSecret('JWT_SECRET', { minLength: 32 });
+    assertProductionSecret('ADMIN_TOKEN', { minLength: 32 });
+    assertProductionSecret('CONTACT_ENCRYPTION_KEY', { minLength: 32 });
+    if (process.env.AUTH_BYPASS_ENABLED === 'true') {
+        throw new Error('AUTH_BYPASS_ENABLED must be false in production');
+    }
+}
+
+validateProductionSecrets();
+
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 console.log('✅ GoogleGenerativeAI loaded');
 const { WebSocketServer, setWebSocketServerInstance, startAdEventSimulation } = require('./websocket-server');
@@ -134,9 +186,21 @@ console.log('✅ telemetryService loaded');
 // ============================================================================
 // WEB3 CORE SERVICES (Indexer, AA, Cache, WebSocket Hub, DID, Storage)
 // ============================================================================
-const web3Core = require('./services/web3-core.init');
-const web3CoreRoutes = require('./routes/web3-core.routes');
-console.log('✅ web3Core services loaded');
+let web3Core = null;
+let web3CoreRoutes = null;
+try {
+    web3Core = require('./services/web3-core.init');
+    web3CoreRoutes = require('./routes/web3-core.routes');
+    console.log('✅ web3Core services loaded');
+} catch (error) {
+    console.warn('⚠️ web3Core services unavailable in Hub Control Plane:', error.message);
+    web3CoreRoutes = express.Router().use((req, res) => {
+        res.status(503).json({
+            error: 'web3-core unavailable',
+            message: 'Web3 runtime services must be served by the dedicated gateway/subapps.'
+        });
+    });
+}
 
 console.log('📦 Loading auditLogger middleware...');
 const { audit, requestLogger, errorLogger } = require('./middleware/auditLogger');
@@ -150,11 +214,16 @@ const AdvancedRateLimiter = require('./middleware/advancedRateLimiter');
 console.log('✅ AdvancedRateLimiter loaded');
 const MessageRateLimiter = require('./middleware/messageRateLimiter');
 console.log('✅ MessageRateLimiter loaded');
-const mongoose = require('mongoose');
+let mongoose = null;
+try {
+    mongoose = require('mongoose');
+} catch (error) {
+    console.warn('⚠️ Mongoose unavailable; MongoDB-backed features disabled:', error.message);
+}
 
 // ── MongoDB Connection ──
 const MONGODB_URI = process.env.MONGODB_URI;
-if (MONGODB_URI) {
+if (mongoose && MONGODB_URI && process.env.NODE_ENV !== 'test') {
     mongoose.connect(MONGODB_URI, {
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 10000,
@@ -210,8 +279,10 @@ app.use(expressPino({ logger }));
 
 // Initialize WebSocket server
 console.log('🔌 Initializing WebSocket Server...');
-const wsServer = new WebSocketServer(server);
-setWebSocketServerInstance(wsServer);
+const wsServer = process.env.NODE_ENV === 'test' ? null : new WebSocketServer(server);
+if (wsServer) {
+    setWebSocketServerInstance(wsServer);
+}
 console.log('✅ WebSocket Server initialized');
 
 // ============================================================================
@@ -225,8 +296,8 @@ app.use(httpsEnforcement);
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 
 // Always allow production and standard dev origins
-if (!allowedOrigins.includes('https://bezhas.com')) allowedOrigins.push('https://bezhas.com');
-if (!allowedOrigins.includes('https://www.bezhas.com')) allowedOrigins.push('https://www.bezhas.com');
+if (!allowedOrigins.includes('https://bez.digital')) allowedOrigins.push('https://bez.digital');
+if (!allowedOrigins.includes('https://www.bez.digital')) allowedOrigins.push('https://www.bez.digital');
 
 if (process.env.NODE_ENV !== 'production') {
     allowedOrigins.push(
@@ -250,7 +321,7 @@ const corsOptions = {
         const isAllowed = allowedOrigins.some(ao =>
             normalizedOrigin === ao ||
             (ao.includes('*') && normalizedOrigin.endsWith(ao.replace('*', '')))
-        ) || normalizedOrigin === 'https://bezhas.com' || normalizedOrigin === 'https://www.bezhas.com';
+        ) || normalizedOrigin === 'https://bez.digital' || normalizedOrigin === 'https://www.bez.digital';
 
         if (isAllowed) {
             callback(null, true);
@@ -501,7 +572,6 @@ const isTestEnv = process.env.NODE_ENV === 'test';
 // Define routers that will be lazily loaded
 const authRoutes = require('./routes/auth.routes');
 const contactRoutes = require('./routes/contacts.routes');
-const marketplaceRoutes = require('./routes/marketplace.routes');
 const uploadsRoutes = require('./routes/uploads.routes');
 const stakingRoutes = require('./routes/staking.routes');
 const groupsRoutes = require('./routes/groups.routes');
@@ -509,37 +579,30 @@ const walletRoutes = require('./routes/wallet.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
 const rewardsRoutes = require('./routes/rewards.routes');
 const profileRoutes = require('./routes/profile.routes');
-const realEstateRoutes = require('./routes/realestate.routes');
 const metricsRouter = require('./metrics');
 const feedRoutes = require('./routes/feed.routes');
 const treasuryRoutes = require('./routes/treasury.routes');
 const logisticsRoutes = require('./routes/logistics.routes');
+const controlPlaneRoutes = require('./routes/control-plane.routes');
+const {
+    createDeprecatedSubappRoute,
+    getSubappRegistry
+} = require('./control-plane/policy');
 
-// BeZhas Universal Bridge Routes
-console.log('📦 Loading bridgeRoutes...');
-const bridgeRoutes = require('./routes/bridge.routes');
-console.log('📦 bridgeRoutes loaded');
-console.log('📦 Loading bridgeAdminRoutes...');
-const bridgeAdminRoutes = require('./routes/bridgeAdmin.routes');
-console.log('📦 bridgeAdminRoutes loaded');
+// Bridge runtime routes are intentionally not loaded in Hub Control Plane.
 
-// Content Validation System Routes
-console.log('📦 Loading paymentRoutes...');
-const paymentRoutes = require('./routes/payment.routes');
-console.log('📦 paymentRoutes loaded');
+// Payment runtime routes are intentionally not loaded in Hub Control Plane.
+
+console.log('📦 Loading notificationRoutes...');
+const notificationRoutes = require('./routes/notification.routes');
+console.log('📦 notificationRoutes loaded');
 console.log('📦 Loading validationRoutes...');
 const validationRoutes = require('./routes/validation.routes');
 console.log('📦 validationRoutes loaded');
 
-// BezCoin Routes
-console.log('📦 Loading bezCoinRoutes...');
-const bezCoinRoutes = require('./routes/bezcoin.routes');
-console.log('📦 bezCoinRoutes loaded');
+// BezCoin runtime routes are intentionally not loaded in Hub Control Plane.
 
-// Fiat Gateway Routes
-console.log('📦 Loading fiatRoutes...');
-const fiatRoutes = require('./routes/fiat.routes');
-console.log('📦 fiatRoutes loaded');
+// Fiat gateway runtime routes are intentionally not loaded in Hub Control Plane.
 
 // Chat Routes
 console.log('📦 Loading chatRoutes...');
@@ -551,10 +614,7 @@ console.log('📦 Loading aiRoutes...');
 const aiRoutes = require('./routes/ai.routes');
 console.log('📦 aiRoutes loaded');
 
-// Crypto Payment Routes
-console.log('📦 Loading cryptoPaymentRoutes...');
-const cryptoPaymentRoutes = require('./routes/crypto-payment.routes');
-console.log('📦 cryptoPaymentRoutes loaded');
+// Crypto payment runtime routes are intentionally not loaded in Hub Control Plane.
 
 // Escrow Routes
 console.log('📦 Loading escrowRoutes...');
@@ -606,6 +666,11 @@ console.log('📦 campaignsRoutes loaded');
 console.log('📦 Loading healthRoutes...');
 const healthRoutes = require('./routes/health.routes');
 console.log('📦 healthRoutes loaded');
+
+// OpenClaw AI Agent Routes
+console.log('📦 Loading openclawRoutes...');
+const openClawRoutes = require('./routes/openclaw.routes');
+console.log('📦 openclawRoutes loaded');
 
 // Public health check (no auth required)
 app.use('/health', healthRoutes);
@@ -775,7 +840,11 @@ app.post('/api/auth/login-wallet', verifyWalletSignature, async (req, res) => {
         }
 
         // Generate JWT
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'default_secret', { expiresIn: '30d' });
+        if (!process.env.JWT_SECRET) {
+            return res.status(503).json({ error: 'JWT_SECRET is not configured' });
+        }
+
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
         res.json({
             message: 'Login successful',
@@ -810,10 +879,14 @@ app.use('/api/auth', authRoutes);
 const twoFactorRoutes = require('./routes/2fa.routes');
 app.use('/api/2fa', twoFactorRoutes);
 
-// Avoid loading affiliate routes in test env to bypass ESM nanoid issue
+// Avoid blocking Core/Admin startup if optional affiliate dependencies are unavailable.
 if (!isTestEnv) {
-    const affiliateRoutes = require('./routes/affiliate.routes');
-    app.use('/api/affiliate', affiliateRoutes);
+    try {
+        const affiliateRoutes = require('./routes/affiliate.routes');
+        app.use('/api/affiliate', affiliateRoutes);
+    } catch (error) {
+        console.warn('⚠️ Affiliate routes disabled:', error.message);
+    }
 }
 const adminRoutes = require('./routes/admin.routes');
 const adminV1Routes = require('./routes/admin.v1.routes');
@@ -823,66 +896,84 @@ const adminRegisterRoutes = require('./routes/adminRegister.routes');
 const adminUsersRoutes = require('./routes/admin.users.routes');
 const adminDependenciesRoutes = require('./routes/admin.dependencies.routes');
 const { router: adminRateLimitRoutes, initializeRateLimiters } = require('./routes/adminRateLimit');
-const rwaRoutes = require('./routes/rwa.routes');
+const adminAuthRoutes = require('./routes/admin.auth.routes');
+const { verifyAdminToken: verifyCoreAdminToken } = require('./middleware/admin.middleware');
+let rwaRoutes;
+try {
+    rwaRoutes = require('./routes/rwa.routes');
+} catch (error) {
+    console.warn('⚠️ RWA routes unavailable in Hub Control Plane:', error.message);
+    rwaRoutes = express.Router().use((_req, res) => {
+        res.status(503).json({
+            error: 'rwa routes unavailable',
+            message: 'RWA runtime routes must be served by the dedicated subapp/gateway.'
+        });
+    });
+}
 // logisticsRoutes is already declared at line 568
-const webhookRoutes = require('./routes/webhook.routes');
-const automationRoutes = require('./routes/automation.routes');
-const aiChatRoutes = require('./routes/ai-chat.routes');
+function optionalRuntimeRoutes(modulePath, label) {
+    try {
+        return require(modulePath);
+    } catch (error) {
+        console.warn(`⚠️ ${label} unavailable in Hub Control Plane:`, error.message);
+        return express.Router().use((_req, res) => {
+            res.status(503).json({
+                error: `${label} unavailable`,
+                message: `${label} runtime routes must be served by the dedicated service/subapp.`
+            });
+        });
+    }
+}
+
+const webhookRoutes = optionalRuntimeRoutes('./routes/webhook.routes', 'webhook routes');
+const automationRoutes = optionalRuntimeRoutes('./routes/automation.routes', 'automation routes');
+const aiChatRoutes = optionalRuntimeRoutes('./routes/ai-chat.routes', 'ai chat routes');
 
 // Initialize rate limiters for admin routes
 initializeRateLimiters(advancedRateLimiter, messageRateLimiter);
 
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin/v1', adminV1Routes);
-app.use('/api/admin-panel', adminPanelRoutes);
-app.use('/api/admin-register', adminRegisterRoutes);
-app.use('/api/admin/settings', adminSettingsRoutes);
+app.use('/api/admin', adminAuthRoutes); // login/bootstrap/admin identity routes
+app.use('/api/admin', verifyCoreAdminToken, adminRoutes);
+app.use('/api/admin/v1', verifyCoreAdminToken, adminV1Routes);
+app.use('/api/admin-panel', verifyCoreAdminToken, adminPanelRoutes);
+app.use('/api/admin-register', verifyCoreAdminToken, adminRegisterRoutes);
+app.use('/api/admin/settings', verifyCoreAdminToken, adminSettingsRoutes);
 const globalSettingsRoutes = require('./routes/globalSettings.routes');
-app.use('/api/admin/settings/global', globalSettingsRoutes);
-app.use('/api/admin/users', adminUsersRoutes);
-app.use('/api/admin/dependencies', adminDependenciesRoutes);
-app.use('/api/admin/rate-limit', adminRateLimitRoutes);
-app.use('/api/rwa', rwaRoutes);
-app.use('/api/logistics', logisticsRoutes);
+app.use('/api/admin/settings/global', verifyCoreAdminToken, globalSettingsRoutes);
+app.use('/api/admin/users', verifyCoreAdminToken, adminUsersRoutes);
+app.use('/api/admin/dependencies', verifyCoreAdminToken, adminDependenciesRoutes);
+app.use('/api/admin/rate-limit', verifyCoreAdminToken, adminRateLimitRoutes);
+
+// Middleware para rutas deprecadas y migradas a subapps
+const deprecatedSubappRoute = (appName, url) => createDeprecatedSubappRoute(appName, { appName, url });
+
+const SUBAPP_URLS = getSubappRegistry().reduce((acc, subapp) => {
+    acc[subapp.key] = subapp.baseUrl;
+    return acc;
+}, {});
+
+app.use('/api/control-plane', controlPlaneRoutes);
+app.use('/api/rwa', deprecatedSubappRoute('rwa_operations', SUBAPP_URLS.capital));
+app.use('/api/logistics', deprecatedSubappRoute('logistics_operations', SUBAPP_URLS.cargo));
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/automation', automationRoutes);
 app.use('/api/ai', aiChatRoutes);
-app.use('/api/admin', require('./routes/admin.auth.routes')); // Admin auth verification
 app.use('/api/admin/sdk', require('./routes/sdkAdmin.routes')); // SDK & AI Admin Management
 // app.use('/api/plugins', require('./routes/pluginRoutes')); // Removed due to Prisma dependency missing in Prod
 app.use('/api/mcp', require('./routes/mcp.routes')); // MCP Tools Integration
 app.use('/api/automation', require('./routes/automation.routes')); // Automation Engine & Workflows
 app.use('/api/contacts', contactRoutes);
-app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/marketplace', deprecatedSubappRoute('marketplace_operations', SUBAPP_URLS.capital));
 // NOTE: /api/diagnostic already mounted at L664 — removed duplicate
 // app.use('/api/quests', questsLimiter, questsRoutes);
 // app.use('/api/badges', questsLimiter, badgesRoutes);
 app.use('/api/uploads', uploadsRoutes);
-app.use('/api/staking', stakingRoutes);
-try {
-    const farmingRoutes = require('./routes/farming.routes');
-    app.use('/api/farming', farmingRoutes);
-    console.log('✅ Farming routes mounted');
-} catch (farmErr) {
-    console.warn('⚠️  Farming routes skipped (ethers dependency issue):', farmErr.message?.substring(0, 80));
-    app.use('/api/farming', (req, res) => res.status(503).json({ error: 'Farming service temporarily unavailable' }));
-}
-try {
-    app.use('/api/governance', require('./routes/governance.routes'));
-    console.log('✅ Governance routes mounted');
-} catch (govErr) {
-    console.warn('⚠️  Governance routes skipped (SDK dep issue):', govErr.message?.substring(0, 80));
-    app.use('/api/governance', (req, res) => res.status(503).json({ error: 'Governance service temporarily unavailable' }));
-}
-try {
-    app.use('/api/oracle', require('./routes/oracle.routes'));
-    console.log('✅ Oracle routes mounted');
-} catch (oracleErr) {
-    console.warn('⚠️  Oracle routes skipped (SDK dep issue):', oracleErr.message?.substring(0, 80));
-    app.use('/api/oracle', (req, res) => res.status(503).json({ error: 'Oracle service temporarily unavailable' }));
-}
+app.use('/api/staking', deprecatedSubappRoute('staking_operations', SUBAPP_URLS.capital));
+app.use('/api/farming', deprecatedSubappRoute('farming_operations', SUBAPP_URLS.capital));
+app.use('/api/governance', deprecatedSubappRoute('governance_operations', SUBAPP_URLS.wallet));
+app.use('/api/oracle', deprecatedSubappRoute('vision_operations', SUBAPP_URLS.vision));
 app.use('/api/groups', groupsRoutes);
-app.use('/api/wallet', walletRoutes);
+app.use('/api/wallet', deprecatedSubappRoute('wallet_operations', SUBAPP_URLS.wallet));
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/rewards', rewardsRoutes); // Changed: now uses generic limiter
 app.use('/api/profile', profileRoutes);
@@ -890,14 +981,13 @@ app.use('/api/feed', feedRoutes);
 if (telemetryRoutes) {
     app.use('/api/v1/telemetry', telemetryRoutes); // AI/ML telemetry endpoint
 }
-app.use('/api/treasury', verifyAdminToken, treasuryRoutes);
+app.use('/api/treasury', verifyCoreAdminToken, treasuryRoutes);
 app.use('/api/social', require('./routes/share.routes')); // Social share routes
 // app.use('/api/social', require('./routes/social.routes')); // Social features - Temporarily disabled (missing middleware)
-app.use('/api/dao', require('./routes/daoRoutes')); // DAO governance routes
-app.use('/api/defi', require('./routes/deFi.routes')); // DeFi integration routes
-app.use('/api/logistics', logisticsRoutes); // Logistics Routes (Re-enabled)
-app.use('/api/v1/bridge', bridgeRoutes); // BeZhas Universal Bridge API
-app.use('/api/v1/bridge/admin', bridgeAdminRoutes); // Bridge API Keys Management
+app.use('/api/dao', deprecatedSubappRoute('governance_operations', `${SUBAPP_URLS.wallet}/dao`)); // DAO governance routes
+app.use('/api/defi', deprecatedSubappRoute('defi_vertical_operations', SUBAPP_URLS.capital)); // DeFi integration routes
+app.use('/api/v1/bridge', deprecatedSubappRoute('bridge_operations', `${SUBAPP_URLS.wallet}/bridge`)); // Bridge API migrated
+app.use('/api/v1/bridge/admin', deprecatedSubappRoute('bridge_operations', `${SUBAPP_URLS.wallet}/bridge`)); // Bridge admin migrated
 
 // ============================================
 // AI Gateway → MCP Intelligence Server
@@ -909,46 +999,11 @@ app.use('/api/ai-gateway', require('./routes/aiGateway.routes'));
 // ============================================
 const agentsRoutes = require('./routes/agents.routes');
 app.use('/api/agents', agentsRoutes);
+app.use('/api/openclaw', openClawRoutes);
 
-// ============================================
-// Enhanced Universal Bridge System (Adapters)
-// ============================================
-const universalBridge = require('./bridge');
-const bridgeApiRoutes = require('./bridge/routes/bridge.api.routes');
-const bridgeWebhooksRouter = require('./bridge/webhooks/webhooks.routes');
-
-// Bridge API (for frontend/admin management)
-app.use('/api/v2/bridge', bridgeApiRoutes);
-
-// Bridge Webhooks (receive events from external platforms)
-app.use('/api/webhooks', bridgeWebhooksRouter);
-
-// Initialize Universal Bridge (async, non-blocking)
-(async () => {
-    try {
-        await universalBridge.initialize({ enableSyncJobs: true });
-        console.log('✅ Universal Bridge adapters initialized');
-    } catch (error) {
-        console.warn('⚠️ Universal Bridge initialization warning:', error.message);
-    }
-})();
-
-// ============================================
-// Cross-Chain Bridge (Polygon ↔ Arbitrum ↔ zkSync)
-// ============================================
-const crossChainBridgeRoutes = require('./routes/crossChainBridge.routes');
-const { crossChainBridgeService } = require('./services/crossChainBridge.service');
-app.use('/api/v1/crosschain', crossChainBridgeRoutes);
-
-// Initialize Cross-Chain Bridge Service (async, non-blocking)
-(async () => {
-    try {
-        await crossChainBridgeService.initialize();
-        console.log('✅ Cross-Chain Bridge Service initialized');
-    } catch (error) {
-        console.warn('⚠️ Cross-Chain Bridge initialization warning:', error.message);
-    }
-})();
+// Bridge and cross-chain runtime moved to BeZhas Wallet.
+app.use('/api/v2/bridge', deprecatedSubappRoute('bridge_operations', `${SUBAPP_URLS.wallet}/bridge`));
+app.use('/api/v1/crosschain', deprecatedSubappRoute('bridge_operations', `${SUBAPP_URLS.wallet}/bridge`));
 
 // Developer Console Routes (API Key Management)
 const developerConsoleRoutes = require('./routes/developerConsole.routes');
@@ -962,31 +1017,29 @@ safeUseRoute('/api/downloads', require('./routes/downloads.routes'));
 const aiRiskEngineRoutes = require('./routes/aiRiskEngine.routes');
 app.use('/api/ai/risk-engine', aiRiskEngineRoutes);
 
-// Real Estate Demo Routes
-app.use('/api/realestate', realEstateRoutes);
+// Real Estate / RWA runtime moved to BZ Capital.
+app.use('/api/realestate', deprecatedSubappRoute('rwa_operations', `${SUBAPP_URLS.capital}/rwa`));
 
-// Crypto Payment Routes (USDT, USDC, MATIC → BEZ)
-app.use('/api/crypto', cryptoPaymentRoutes);
+// Crypto payment operations moved to BeZhas Pay Manager.
+app.use('/api/crypto', deprecatedSubappRoute('crypto_checkout_operations', SUBAPP_URLS.pay));
 
-// Content Validation Routes
-app.use('/api/payment', paymentRoutes);
-app.use('/api/payments', paymentRoutes); // Alias for frontend compatibility
+// Payment operations moved to BeZhas Pay Manager. Billing stays in Hub.
+app.use('/api/payment', deprecatedSubappRoute('payments_operations', SUBAPP_URLS.pay));
+app.use('/api/payments', deprecatedSubappRoute('payments_operations', SUBAPP_URLS.pay)); // Alias for frontend compatibility
+app.use('/api/notifications', notificationRoutes);
 
 // ──────────────────────────────────────────────────────────────────────────────
 // BEZPAY v2.0 — Sistema de pagos unificado (BezPayModal)
 // Endpoints: /create, /webhook, /quote, /verify-tx, /bez-price, /plans
 // ──────────────────────────────────────────────────────────────────────────────
-let bezpayRoutes;
 try {
-    bezpayRoutes = require('./routes/bezpay.routes');
-    app.use('/api/payment', bezpayRoutes);
-    console.log('✅ BezPay v2.0 routes mounted at /api/payment');
+    console.log('ℹ️ BezPay v2.0 routes not mounted in Hub Control Plane');
 } catch (e) {
     console.warn('⚠️ BezPay routes not loaded:', e.message);
 }
 
-// Fiat Gateway Routes (Bank Transfer -> BEZ Token)
-app.use('/api/fiat', fiatRoutes);
+// Fiat Gateway runtime moved to BeZhas Pay Manager.
+app.use('/api/fiat', deprecatedSubappRoute('fiat_gateway_operations', SUBAPP_URLS.pay));
 app.use('/api/validation', validationRoutes);
 
 // Blockchain Integration Routes (Polygon Mainnet Contracts)
@@ -1003,9 +1056,8 @@ console.log('✅ Web3 Core routes mounted at /api/web3');
 app.use('/api/posts', postsRoutes);
 app.use('/api/upload', uploadRoutes); // IPFS Upload enabled
 
-// MoonPay Routes
-const moonpayRoutes = require('./routes/moonpay.routes');
-app.use('/api/moonpay', moonpayRoutes);
+// MoonPay runtime moved to BeZhas Pay Manager.
+app.use('/api/moonpay', deprecatedSubappRoute('moonpay_operations', SUBAPP_URLS.pay));
 
 // Automation Routes (AI-driven economy)
 // automationRoutes were declared above
@@ -1020,8 +1072,7 @@ const subscriptionRoutes = require('./routes/subscription.routes');
 app.use('/api/subscription', subscriptionRoutes);
 
 // NEW: BEZ-Coin with MoonPay Integration
-const bezcoinMoonpayRoutes = require('./routes/bezcoin-moonpay.routes');
-app.use('/api/bezcoin', bezcoinMoonpayRoutes);
+app.use('/api/bezcoin', deprecatedSubappRoute('bezcoin_operations', SUBAPP_URLS.wallet));
 
 // NEW: Clothing Rental System with AEGIS Integration
 console.log('📦 Loading clothingRentalRoutes...');
@@ -1033,18 +1084,8 @@ console.log('📦 clothingRentalRoutes loaded');
 // const vintedRoutes = require('./routes/vinted.routes');
 // app.use('/api/marketplace/vinted', vintedRoutes);
 
-// Quality Escrow Routes (Quality Oracle System) — re-enabled with safe init
-try {
-    const QualityNotificationService = require('./services/quality-notification.service');
-    const { router: qualityEscrowRoutes, setNotificationService } = require('./routes/qualityEscrow');
-    const qualityNotificationService = new QualityNotificationService(wsServer);
-    setNotificationService(qualityNotificationService);
-    app.use('/api/quality-escrow', qualityEscrowRoutes);
-    console.log('✅ Quality Escrow routes mounted');
-} catch (qeErr) {
-    console.warn('⚠️  Quality Escrow routes skipped:', qeErr.message?.substring(0, 100));
-    app.use('/api/quality-escrow', (req, res) => res.status(503).json({ error: 'Quality Escrow service temporarily unavailable' }));
-}
+// Quality Escrow Routes (Quality Oracle System) — migrated to Vision Scan
+app.use('/api/quality-escrow', deprecatedSubappRoute('quality_oracle_operations', SUBAPP_URLS.vision));
 
 // Stripe Payment Routes (ENABLED - Live Keys Configured)
 const stripeRoutes = require('./routes/stripe.routes');
@@ -1054,13 +1095,13 @@ app.use('/api/stripe', stripeRoutes);
 const securityRoutes = require('./routes/security.routes');
 app.use('/api/security', securityRoutes);
 
-// BezCoin Routes
-app.use('/api/bezcoin', bezCoinRoutes);
+// BezCoin runtime moved to BeZhas Wallet / BeZhas Pay Manager.
 app.use('/api/escrow', escrowRoutes);
 
 // Developer Portal Routes
 const developerPortalRoutes = require('./routes/developer-portal.routes');
 app.use('/developers', developerPortalRoutes);
+app.use('/api/developer/revenue', optionalRuntimeRoutes('./routes/developer/revenue.routes', 'developer revenue routes'));
 
 // Chat Routes
 app.use('/api/chat', chatRoutes);
@@ -1179,6 +1220,9 @@ if (geminiApiKey && geminiApiKey.startsWith('AIza') && geminiApiKey.length > 30)
 // --- AUTOMATION ENDPOINTS ---
 app.post('/api/automation/analyze-platform', express.json(), async (req, res) => {
     try {
+        if (!ThirdPartyAnalyzer) {
+            return res.status(503).json({ error: 'Automation analyzer disabled in test environment' });
+        }
         const { platformData, platformName } = req.body;
         if (!platformData || !platformName) {
             return res.status(400).json({ error: 'Missing platformData or platformName' });
@@ -1268,7 +1312,7 @@ app.get('/api/config', configLimiter, async (req, res) => {
 // Endpoint to update the configuration (PROTECTED)
 app.post('/api/config',
     configLimiter,
-    verifyAdminToken, // Apply the admin authentication middleware
+    verifyCoreAdminToken, // Apply the admin authentication middleware
     [
         // Define validation rules for expected config fields
         body('contractAddresses.*').isEthereumAddress().withMessage('Invalid Ethereum address in contractAddresses'),
@@ -1467,7 +1511,9 @@ if (process.env.NODE_ENV !== 'test') {
         // WEB3 CORE SERVICES INITIALIZATION
         // ===================================
         try {
-            await web3Core.initialize(server);
+            if (web3Core) {
+                await web3Core.initialize(server);
+            }
             logger.info('✅ Web3 Core services initialized (Indexer, AA, Cache, WebSocket Hub, DID, Storage)');
         } catch (error) {
             logger.error({ err: error }, '⚠️ Web3 Core services initialization warning - continuing with limited functionality');
@@ -1477,27 +1523,29 @@ if (process.env.NODE_ENV !== 'test') {
         // CRON JOBS DE AUTOMATIZACIÓN
         // ===================================
 
-        // Mantenimiento nocturno a las 3:00 AM todos los días
-        cron.schedule('0 3 * * *', async () => {
-            console.log('🌙 [CRON] Iniciando mantenimiento nocturno automático...');
-            try {
-                await DiagnosticService.runNightlyMaintenance();
-                console.log('✅ [CRON] Mantenimiento completado exitosamente');
-            } catch (error) {
-                console.error('❌ [CRON] Error en mantenimiento nocturno:', error);
-            }
-        });
+        if (DiagnosticService) {
+            // Mantenimiento nocturno a las 3:00 AM todos los días
+            cron.schedule('0 3 * * *', async () => {
+                console.log('🌙 [CRON] Iniciando mantenimiento nocturno automático...');
+                try {
+                    await DiagnosticService.runNightlyMaintenance();
+                    console.log('✅ [CRON] Mantenimiento completado exitosamente');
+                } catch (error) {
+                    console.error('❌ [CRON] Error en mantenimiento nocturno:', error);
+                }
+            });
 
-        // Análisis de salud del sistema cada 6 horas
-        cron.schedule('0 */6 * * *', async () => {
-            console.log('🏥 [CRON] Verificando salud del sistema...');
-            try {
-                await DiagnosticService.analyzeSystemHealth();
-                console.log('✅ [CRON] Análisis de salud completado');
-            } catch (error) {
-                console.error('❌ [CRON] Error en análisis de salud:', error);
-            }
-        });
+            // Análisis de salud del sistema cada 6 horas
+            cron.schedule('0 */6 * * *', async () => {
+                console.log('🏥 [CRON] Verificando salud del sistema...');
+                try {
+                    await DiagnosticService.analyzeSystemHealth();
+                    console.log('✅ [CRON] Análisis de salud completado');
+                } catch (error) {
+                    console.error('❌ [CRON] Error en análisis de salud:', error);
+                }
+            });
+        }
 
         logger.info('✅ Diagnostic Agent & Automation Cron Jobs Scheduled');
 

@@ -132,7 +132,7 @@
 ### Formato esperado:
 ```csv
 id,username,email,role,status,createdAt,lastLogin
-1,admin_user,admin@bezhas.com,admin,active,2025-01-10,2025-01-14
+1,admin_user,admin@bez.digital,admin,active,2025-01-10,2025-01-14
 2,john_doe,john@example.com,user,active,2025-01-12,2025-01-14
 ```
 

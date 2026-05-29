@@ -397,7 +397,7 @@ El sistema usa:
 Para preguntas o problemas:
 - GitHub Issues: [repo-url]
 - Discord: [discord-invite]
-- Email: support@bezhas.com
+- Email: support@bez.digital
 
 ---
 

@@ -85,8 +85,8 @@ PRIVATE_KEY=your_private_key_for_signer
 # ━━━ Notifications ━━━
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_WEBHOOK
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR_WEBHOOK
-ALERT_EMAIL_TO=admin@bezhas.com
-ALERT_EMAIL_FROM=noreply@bezhas.com
+ALERT_EMAIL_TO=admin@bez.digital
+ALERT_EMAIL_FROM=noreply@bez.digital
 
 # ━━━ SMTP (Gmail example) ━━━
 SMTP_HOST=smtp.gmail.com
@@ -163,7 +163,7 @@ Contenido:
 ```nginx
 server {
     listen 80;
-    server_name monitor.bezhas.com;
+    server_name monitor.bez.digital;
 
     location / {
         proxy_pass http://localhost:3001;
@@ -194,7 +194,7 @@ sudo systemctl reload nginx
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d monitor.bezhas.com
+sudo certbot --nginx -d monitor.bez.digital
 ```
 
 ---
@@ -579,13 +579,13 @@ Antes de lanzar a producción:
 ## 📞 Support
 
 **Emergency Contacts**:
-- DevOps: ops@bezhas.com
-- Security: security@bezhas.com
+- DevOps: ops@bez.digital
+- Security: security@bez.digital
 - On-Call: +1-XXX-XXX-XXXX
 
 **Resources**:
-- Docs: https://docs.bezhas.com
-- Status Page: https://status.bezhas.com
+- Docs: https://docs.bez.digital
+- Status Page: https://status.bez.digital
 - Slack: #bezhas-ops
 
 ---

@@ -14,8 +14,8 @@
 2. Selecciona **External** (para usuarios de cualquier cuenta Google)
 3. Completa la información:
    - **App name**: BeZhas Web3
-   - **User support email**: tu-email@bezhas.com
-   - **Developer contact**: tu-email@bezhas.com
+   - **User support email**: tu-email@bez.digital
+   - **Developer contact**: tu-email@bez.digital
 4. **Scopes**: Agrega `email`, `profile`, `openid`
 5. Guarda y continúa
 
@@ -60,7 +60,7 @@ GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
 3. Selecciona **Consumer** como tipo de app
 4. Completa:
    - **App display name**: BeZhas Web3
-   - **App contact email**: tu-email@bezhas.com
+   - **App contact email**: tu-email@bez.digital
 5. Click **Create App**
 
 ### 2. Configurar Facebook Login

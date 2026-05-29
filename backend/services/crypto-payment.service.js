@@ -11,14 +11,15 @@ const { ethers } = require('ethers');
 const logger = require('../utils/logger');
 
 // Configuración de contratos
-const BEZ_CONTRACT_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
-const USDT_POLYGON_ADDRESS = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
-const USDC_POLYGON_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+const BEZ_CONTRACT_ADDRESS = process.env.BEZ_TOKEN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
+const USDT_POLYGON_ADDRESS = process.env.USDT_POLYGON_ADDRESS || '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
+const USDC_POLYGON_ADDRESS = process.env.USDC_POLYGON_ADDRESS || '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 
 // ABI mínimo para ERC20
 const ERC20_ABI = [
     'function balanceOf(address owner) view returns (uint256)',
     'function transfer(address to, uint256 amount) returns (bool)',
+    'function transferFrom(address from, address to, uint256 amount) returns (bool)',
     'function approve(address spender, uint256 amount) returns (bool)',
     'function allowance(address owner, address spender) view returns (uint256)',
     'function decimals() view returns (uint8)'
@@ -136,19 +137,30 @@ class CryptoPaymentService {
                 };
             }
 
-            // 3. Calcular cantidad de BEZ a enviar
+            // 3. Cobrar stablecoin al usuario. El usuario firma approve; la hot wallet ejecuta transferFrom.
+            const stablecoinTx = await stablecoinContract.transferFrom(
+                userWalletAddress,
+                this.wallet.address,
+                requiredAmount
+            );
+            const stablecoinReceipt = await stablecoinTx.wait();
+            if (stablecoinReceipt.status !== 1) {
+                throw new Error(`${currency} transferFrom failed`);
+            }
+
+            // 4. Calcular cantidad de BEZ a enviar
             const bezAmount = amount / this.BEZ_PRICE_USD;
             const bezDecimals = await this.bezContract.decimals();
             const bezToSend = ethers.parseUnits(bezAmount.toString(), bezDecimals);
 
-            // 4. Verificar que tenemos suficiente BEZ en el hot wallet
+            // 5. Verificar que tenemos suficiente BEZ en el hot wallet
             const hotWalletBezBalance = await this.bezContract.balanceOf(this.wallet.address);
             if (hotWalletBezBalance < bezToSend) {
                 logger.error('Hot wallet has insufficient BEZ balance');
                 throw new Error('Insufficient BEZ in treasury. Please contact support.');
             }
 
-            // 5. Transferir BEZ al usuario
+            // 6. Transferir BEZ al usuario
             const tx = await this.bezContract.transfer(userWalletAddress, bezToSend);
             const receipt = await tx.wait();
 
@@ -157,11 +169,14 @@ class CryptoPaymentService {
             return {
                 success: true,
                 transactionHash: receipt.hash,
+                stablecoinTransferHash: stablecoinReceipt.hash,
                 bezAmount,
                 stablecoinAmount: amount,
                 currency,
                 userWallet: userWalletAddress,
-                blockNumber: receipt.blockNumber
+                blockNumber: receipt.blockNumber,
+                stablecoinBlockNumber: stablecoinReceipt.blockNumber,
+                treasuryWallet: this.wallet.address
             };
         } catch (error) {
             logger.error('Error processing stablecoin payment:', error);

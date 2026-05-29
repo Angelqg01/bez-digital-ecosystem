@@ -8,7 +8,11 @@
 
 const mongoose = require('mongoose');
 
-describe('Database Connection Tests', () => {
+const describeDatabase = process.env.DATABASE_URL || process.env.RUN_DB_TESTS === 'true'
+    ? describe
+    : describe.skip;
+
+describeDatabase('Database Connection Tests', () => {
     beforeAll(async () => {
         // Conectar a MongoDB antes de los tests
         const DATABASE_URL = process.env.DATABASE_URL || 'mongodb://localhost:27017/bezhas_test';
@@ -16,7 +20,8 @@ describe('Database Connection Tests', () => {
         try {
             await mongoose.connect(DATABASE_URL, {
                 useNewUrlParser: true,
-                useUnifiedTopology: true
+                useUnifiedTopology: true,
+                serverSelectionTimeoutMS: 5000
             });
             console.log('✅ Connected to test database');
         } catch (error) {

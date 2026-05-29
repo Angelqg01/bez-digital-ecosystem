@@ -75,7 +75,7 @@ yarn add @bezhas/sdk
 
 **Browser CDN:**
 ```html
-<script src="https://cdn.bezhas.com/sdk/v2/bezhas-sdk.min.js"></script>
+<script src="https://cdn.bez.digital/sdk/v2/bezhas-sdk.min.js"></script>
 ```
 
 ## 📚 Documentation
@@ -92,7 +92,7 @@ const { BeZhasAPIClient } = require('@bezhas/sdk');
 
 // Initialize client
 const bezhas = new BeZhasAPIClient({
-  apiUrl: 'https://api.bezhas.com',
+  apiUrl: 'https://api.bez.digital',
   network: 'polygon',
   apiKey: 'your-api-key' // Optional
 });
@@ -150,7 +150,7 @@ const tools = await bezhas.mcp.listAvailableTools();
 
 - **npm:** https://www.npmjs.com/package/@bezhas/sdk
 - **Repository:** https://github.com/Angelqg01/BeZhas_web3
-- **Documentation:** https://docs.bezhas.com/sdk
+- **Documentation:** https://docs.bez.digital/sdk
 - **Issues:** https://github.com/Angelqg01/BeZhas_web3/issues
 - **Discord:** https://discord.gg/bezhas
 
@@ -209,7 +209,7 @@ const sdk = new BeZhas({ network: 'polygon' });
 // v2.0
 const { BeZhasAPIClient } = require('@bezhas/sdk');
 const sdk = new BeZhasAPIClient({ 
-  apiUrl: 'https://api.bezhas.com',
+  apiUrl: 'https://api.bez.digital',
   network: 'polygon' 
 });
 

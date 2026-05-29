@@ -31,7 +31,7 @@ router.get('/me', protect, async (req, res) => {
 
     res.json({
       referralCode: user.affiliate.referralCode,
-      referralLink: `https://bezhas.com/join/${user.affiliate.referralCode}`,
+      referralLink: `https://bez.digital/join/${user.affiliate.referralCode}`,
       stats: {
         clicks,
         signups

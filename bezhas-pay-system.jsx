@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BeZhas.com — BEZ Payment System v2.0
+   bez.digital — BEZ Payment System v2.0
    Sistema de Pago INDEPENDIENTE con BEZ-Coin
    ─────────────────────────────────────────────────────────────────────────────
    Redes:    Polygon Amoy (testnet) → Polygon Mainnet → BNB Chain
@@ -11,7 +11,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
      • QualityEscrow:   0x3EfC42095E8503d41Ad8001328FC23388E00e8a3
      • LiquidityFarm:   deploy en localhost → Amoy → Polygon
      • Safe Wallet:     0x3EfC42095E8503d41Ad8001328FC23388E00e8a3
-   Backend:  api.bezhas.com:3001  |  ws.bezhas.com:3002
+   Backend:  api.bez.digital:3001  |  ws.bez.digital:3002
    ─────────────────────────────────────────────────────────────────────────────
    FEATURES:
    ✅ Compra directa de BEZ (Fiat/Crypto → BEZ via Hot Wallet)
@@ -22,7 +22,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
    ✅ Payment Processor propio (sin Stripe, directo en BEZ)
    ✅ Trading Bots de BEZ/USDT, BEZ/USDC, BEZ/BNB
    ✅ Webhook automático → dispenseTokens() → MongoDB
-   ✅ WebSocket live updates (ws.bezhas.com:3002)
+   ✅ WebSocket live updates (ws.bez.digital:3002)
    ✅ Reputación on-chain (6 tiers: BEGINNER → LEGENDARY)
    ✅ DAO Governance con BEZ staking
    ✅ Diseño 100% responsive: Desktop / Laptop / Tablet / Mobile
@@ -72,8 +72,8 @@ const CONTRACTS = {
 };
 
 const ENDPOINTS = {
-  api:      "https://api.bezhas.com",
-  ws:       "wss://ws.bezhas.com:3002",
+  api:      "https://api.bez.digital",
+  ws:       "wss://ws.bez.digital:3002",
   explorer: { polygon:"https://amoy.polygonscan.com", bnb:"https://bscscan.com" },
 };
 
@@ -150,7 +150,7 @@ function useBP() {
   return bp;
 }
 
-// ─── ENGINE — simula backend api.bezhas.com ───────────────────────────────────
+// ─── ENGINE — simula backend api.bez.digital ───────────────────────────────────
 class BeZhasPayEngine {
   constructor() {
     this.prices={...BASE_P}; this.txHistory=[]; this.escrows=[]; this.farmingPools=[];
@@ -561,7 +561,7 @@ function PaymentTab({wallet,bp}){
             <span style={{fontSize:24}}>💳</span>
             <div>
               <div style={{color:C.gold,fontWeight:800,fontSize:15}}>PAYMENT PROCESSOR BEZ</div>
-              <div style={{color:C.muted,fontSize:10}}>Sistema propio · api.bezhas.com · Sin Stripe</div>
+              <div style={{color:C.muted,fontSize:10}}>Sistema propio · api.bez.digital · Sin Stripe</div>
             </div>
             <div style={{marginLeft:"auto"}}>
               <Chip color={C.primary}>● HOT WALLET ACTIVA</Chip>
@@ -675,7 +675,7 @@ function PaymentTab({wallet,bp}){
           <div>
             <Card style={{marginBottom:12}}>
               <div style={{color:C.muted,fontSize:9,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>
-                🔌 API Endpoints (api.bezhas.com)
+                🔌 API Endpoints (api.bez.digital)
               </div>
               {[
                 {m:"POST",p:"/api/payment/webhook",d:"Webhook BEZ automático"},
@@ -1396,7 +1396,7 @@ export default function BeZhasPaySystem(){
       {!M&&(
         <div style={{borderTop:`1px solid ${C.border}`,padding:"10px 24px",display:"flex",justifyContent:"space-between",
           color:C.muted,fontSize:9,fontFamily:C.mono,background:C.surf,flexWrap:"wrap",gap:6}}>
-          <span>BeZhas.com · BEZ Payment System v2.0 · Polygon Amoy → Mainnet · BNB Chain</span>
+          <span>bez.digital · BEZ Payment System v2.0 · Polygon Amoy → Mainnet · BNB Chain</span>
           <span>LiquidityFarming.sol · QualityEscrow.sol · Node.js+Express+MongoDB+WebSocket</span>
         </div>
       )}

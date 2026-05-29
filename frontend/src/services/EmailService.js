@@ -10,7 +10,7 @@ class EmailService {
       },
       sendgrid: {
         apiKey: process.env.REACT_APP_SENDGRID_API_KEY || '',
-        fromEmail: process.env.REACT_APP_FROM_EMAIL || 'noreply@bezhas.com'
+        fromEmail: process.env.REACT_APP_FROM_EMAIL || 'noreply@bez.digital'
       },
       mailgun: {
         apiKey: process.env.REACT_APP_MAILGUN_API_KEY || '',
@@ -296,7 +296,7 @@ class EmailService {
             <li>Earn rewards through governance</li>
           </ul>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://bezhas.com/dashboard" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
+            <a href="https://bez.digital/dashboard" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
               Get Started
             </a>
           </div>
@@ -406,7 +406,7 @@ class EmailService {
             <p><strong>Staking Period:</strong> ${rewardDetails.period}</p>
           </div>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://bezhas.com/staking" style="background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
+            <a href="https://bez.digital/staking" style="background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
               Claim Rewards
             </a>
           </div>
@@ -431,7 +431,7 @@ class EmailService {
           </div>
           <p>If this was you, no action is needed. If you don't recognize this activity, please secure your account immediately.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://bezhas.com/security" style="background: #F44336; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
+            <a href="https://bez.digital/security" style="background: #F44336; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
               Review Security
             </a>
           </div>

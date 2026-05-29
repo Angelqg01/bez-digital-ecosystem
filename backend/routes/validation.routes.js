@@ -4,6 +4,7 @@ const { body, query, validationResult } = require('express-validator');
 const { ethers } = require('ethers');
 const logger = require('../utils/logger');
 const ContentValidatorABI = require('../contracts/ContentValidator.json');
+const { BEZ_COIN_UTILITY_VALIDATOR_TOKEN } = require('../config/bez-token.config');
 
 // Cargar configuración del contrato
 const CONTENT_VALIDATOR_ADDRESS = process.env.CONTENT_VALIDATOR_ADDRESS;
@@ -63,6 +64,7 @@ router.post('/initiate', [
                 matic: ethers.formatEther(nativeFee),
                 fiat: 9.99 // EUR
             },
+            utilityValidatorToken: BEZ_COIN_UTILITY_VALIDATOR_TOKEN,
             contractAddress: CONTENT_VALIDATOR_ADDRESS
         });
 

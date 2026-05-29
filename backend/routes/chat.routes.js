@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const UnifiedAI = require('../services/unified-ai.service');
 const chatController = require('../controllers/chat.controller');
+const unifiedAgentProxy = require('../services/unified-agent-proxy.service');
 const {
     checkAndChargeCredit,
     getUserStats,
@@ -311,7 +312,7 @@ Si no tienes datos específicos, indica que pueden consultar la plataforma para 
 // @access  Public
 router.post('/', async (req, res) => {
     try {
-        const { message, context, userId } = req.body;
+        const { message, context = {}, userId, agentId, walletAddress } = req.body;
 
         if (!message || !message.trim()) {
             return res.status(400).json({ error: 'Message is required' });
@@ -332,11 +333,35 @@ router.post('/', async (req, res) => {
         }
         // ------------------------
 
-        const reply = await getAIResponse(message, context);
+        const agentResult = await unifiedAgentProxy.chat({
+            message,
+            userId,
+            walletAddress: walletAddress || userId,
+            agentId,
+            context
+        });
+
+        if (agentResult.success && agentResult.reply) {
+            return res.json({
+                success: true,
+                reply: agentResult.reply,
+                source: agentResult.source,
+                agent: agentId || 'unified-agent',
+                data: agentResult.data,
+                timestamp: Date.now()
+            });
+        }
+
+        const reply = await getAIResponse(message, {
+            ...context,
+            unifiedAgentError: agentResult.error
+        });
 
         res.json({
             success: true,
             reply,
+            source: 'legacy-chat-fallback',
+            unifiedAgentError: agentResult.error,
             timestamp: Date.now()
         });
     } catch (error) {
@@ -346,6 +371,19 @@ router.post('/', async (req, res) => {
             reply: 'Lo siento, estoy teniendo problemas técnicos. Por favor, intenta de nuevo.'
         });
     }
+});
+
+// @route   GET /api/chat/agent-health
+// @desc    Check Unified Agent bridge status
+// @access  Public
+router.get('/agent-health', async (_req, res) => {
+    const health = await unifiedAgentProxy.health();
+    res.status(health.ok ? 200 : 503).json({
+        success: health.ok,
+        service: 'hub-to-unified-agent',
+        runtime: health,
+        timestamp: Date.now()
+    });
 });
 
 // @route   GET /api/chat/conversations/:address

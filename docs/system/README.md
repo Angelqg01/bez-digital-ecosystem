@@ -172,7 +172,7 @@ function getUserProfile(address user) external view returns (UserProfile memory)
 ## API Reference
 
 ### Base URL
-- Production: `https://api.bezhas.com`
+- Production: `https://api.bez.digital`
 - Development: `http://localhost:3001`
 
 ### Authentication
@@ -264,7 +264,7 @@ import BeZhasSDK from 'bezhas-sdk';
 // Initialize SDK
 const sdk = new BeZhasSDK({
   network: 'mainnet', // or 'testnet'
-  apiUrl: 'https://api.bezhas.com'
+  apiUrl: 'https://api.bez.digital'
 });
 
 // Connect wallet
@@ -454,7 +454,7 @@ netlify deploy --prod --dir=build
 ```
 REACT_APP_INFURA_PROJECT_ID=your_infura_id
 REACT_APP_CONTRACT_ADDRESS=deployed_contract_address
-REACT_APP_API_URL=https://api.bezhas.com
+REACT_APP_API_URL=https://api.bez.digital
 REACT_APP_NETWORK=mainnet
 ```
 
@@ -548,10 +548,10 @@ npx hardhat test
 
 ## Support
 
-- Documentation: https://docs.bezhas.com
+- Documentation: https://docs.bez.digital
 - Discord: https://discord.gg/bezhas
 - Twitter: @BeZhasOfficial
-- Email: support@bezhas.com
+- Email: support@bez.digital
 
 ## License
 

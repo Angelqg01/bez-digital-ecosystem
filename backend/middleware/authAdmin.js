@@ -1,5 +1,5 @@
 const { verifyMessage } = require('ethers');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const { UserRole } = require('../models/mockModels');
 
 // Load Super Admin Wallets from environment

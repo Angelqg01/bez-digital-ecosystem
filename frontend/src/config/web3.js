@@ -30,8 +30,8 @@ const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT
 const metadata = {
     name: 'BeZhas',
     description: 'Web3 Social Network with AI & Blockchain',
-    url: 'https://bezhas.com',
-    icons: ['https://bezhas.com/logo.png']
+    url: 'https://bez.digital',
+    icons: ['https://bez.digital/logo.png']
 };
 
 // Configuración de Wagmi

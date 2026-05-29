@@ -679,7 +679,7 @@ LIMIT 10;
 
 - **GitHub Issues**: Para reportar bugs
 - **Discord**: Canal #dev-support para preguntas
-- **Email**: dev@bezhas.com para temas urgentes
+- **Email**: dev@bez.digital para temas urgentes
 
 ### Links Útiles
 

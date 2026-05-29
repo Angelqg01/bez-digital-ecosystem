@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Workflow = require('../models/workflow.model');
+const Workflow = require('../models/pg/Workflow');
 const { executeWorkflow, TOOL_ENDPOINTS } = require('../services/automationEngine');
 const { findLeads, enrichLead } = require('../services/leadFinder');
 

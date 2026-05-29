@@ -91,7 +91,7 @@ VITE_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs/
 
 ### 2. Test Tokenization
 - Ensure wallet has >100 BEZ
-- Navigate to https://bezhas.com/create
+- Navigate to https://bez.digital/create
 - Select "Real Estate (RWA)"
 - Complete 4-step wizard
 - Upload test PDF documents
@@ -109,7 +109,7 @@ await vault.activateAsset(1); // Activate asset ID 1
 ```
 
 ### 4. Deploy Metadata API
-Create endpoint: `https://api.bezhas.com/rwa/metadata/{id}.json`
+Create endpoint: `https://api.bez.digital/rwa/metadata/{id}.json`
 
 Response format:
 ```json
@@ -117,7 +117,7 @@ Response format:
   "name": "Hotel Paradise - Suite 101",
   "description": "Luxury hotel room tokenized asset",
   "image": "ipfs://QmXXX/main.jpg",
-  "external_url": "https://bezhas.com/rwa/1",
+  "external_url": "https://bez.digital/rwa/1",
   "attributes": [
     {"trait_type": "Category", "value": "Hotel"},
     {"trait_type": "Location", "value": "Cancún, Mexico"},

@@ -513,7 +513,7 @@ router.post('/buy-fiat', async (req, res) => {
         const { userAddress, amount, paymentCurrency, paymentAmount } = req.body;
 
         // Generar URL de pago (Stripe/PayPal en producción)
-        const paymentUrl = `https://payment-gateway.bezhas.com/pay?amount=${paymentAmount}&currency=${paymentCurrency}`;
+        const paymentUrl = `https://payment-gateway.bez.digital/pay?amount=${paymentAmount}&currency=${paymentCurrency}`;
 
         res.json({
             success: true,

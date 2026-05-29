@@ -108,7 +108,7 @@ app.use(errorLogger);   // Log todos los errores
 app.use(validateOrigin);
 
 // En .env
-CORS_ORIGINS=https://bezhas.com,https://app.bezhas.com
+CORS_ORIGINS=https://bez.digital,https://app.bez.digital
 ```
 
 ---
@@ -296,7 +296,7 @@ ENABLE_AUDIT_LOG=true
 
 # Security
 ENABLE_CSP=true
-CORS_ORIGINS=https://bezhas.com,https://app.bezhas.com
+CORS_ORIGINS=https://bez.digital,https://app.bez.digital
 
 # Storage Encryption (frontend)
 VITE_STORAGE_ENCRYPTION_KEY=<generar_key_32_chars>

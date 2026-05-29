@@ -105,8 +105,8 @@ Provides centralized access to GlobalSettings with:
 | `governance.service.js` | dao.* | ✅ Integrated |
 | `farming.service.js` | farming.* | ✅ Integrated |
 | `fiat-gateway.service.js` | fiat.* | ✅ Integrated |
-| `token.service.js` | token.* | ⏳ Future |
-| `staking.service.js` | staking.* | ⏳ Future |
+| `token.service.js` | token.* | ✅ Integrated |
+| `staking.service.js` | staking.* | ✅ Integrated |
 
 ### 4.3 Implementation Pattern
 ```javascript
@@ -185,11 +185,11 @@ const minStake = config.minStake;
 
 ## Next Steps
 
-1. ~~**Immediate**: Create integration tests for GlobalSettings API~~ ✅ Done
-2. ~~**Short-term**: Update services to use GlobalSettings dynamically~~ ✅ Done (4 services)
-3. **Medium-term**: Add audit logging for configuration changes
-4. **Long-term**: Implement config versioning and rollback
-5. **Future**: Integrate remaining services (token.service, staking.service)
+1. **Immediate**: Create integration tests for GlobalSettings API ✅ Done
+2. **Short-term**: Update services to use GlobalSettings dynamically ✅ Done (TokenDistribution, Staking, Farming, Governance, AdRewards, Fiat)
+3. **Medium-term**: Add audit logging for configuration changes ✅ Done
+4. **Long-term**: Implement config versioning and rollback ✅ Done
+5. **Future**: Config Backup & Restore (JSON) ✅ Done
 
 ---
 

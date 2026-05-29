@@ -1,4 +1,4 @@
-const SDKConfig = require('../models/SDKConfig.model');
+const SDKConfig = require('../models/pg/SDKConfig');
 const mongoose = require('mongoose');
 const logger = require('../utils/logger') || console;
 
@@ -27,7 +27,7 @@ class SDKAdminService {
         this._ensureDbConnected();
         try {
             const config = await SDKConfig.getConfig();
-            return config.toObject();
+            return config;
         } catch (error) {
             logger.error?.('SDKAdminService.getFullConfig error:', error) || console.error(error);
             throw error;
@@ -80,7 +80,7 @@ class SDKAdminService {
                 }
             }
             const config = await SDKConfig.updateConfig(updates, adminId);
-            return config.toObject();
+            return config;
         } catch (error) {
             logger.error?.('SDKAdminService.updateGlobalSettings error:', error) || console.error(error);
             throw error;

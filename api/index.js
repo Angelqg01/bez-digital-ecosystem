@@ -30,7 +30,7 @@ app.use(helmet({
 // CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://bezhas.com', 'https://app.bezhas.com']
+    ? ['https://bez.digital', 'https://app.bez.digital']
     : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true,
   optionsSuccessStatus: 200
@@ -191,7 +191,7 @@ app.get('/api/nfts', (req, res) => {
     id: (page - 1) * limit + i + 1,
     name: `BeZhas NFT #${(page - 1) * limit + i + 1}`,
     description: 'A unique BeZhas collectible',
-    image: `https://api.bezhas.com/nft/image/${(page - 1) * limit + i + 1}`,
+    image: `https://api.bez.digital/nft/image/${(page - 1) * limit + i + 1}`,
     price: (Math.random() * 5 + 0.1).toFixed(3),
     owner: `0x${Math.random().toString(16).substring(2, 42)}`,
     category: category || ['Art', 'Gaming', 'Music', 'Sports'][Math.floor(Math.random() * 4)],
@@ -218,8 +218,8 @@ app.get('/api/nfts/:id', (req, res) => {
     id: parseInt(id),
     name: `BeZhas NFT #${id}`,
     description: 'A unique BeZhas collectible with special properties',
-    image: `https://api.bezhas.com/nft/image/${id}`,
-    animation_url: `https://api.bezhas.com/nft/animation/${id}`,
+    image: `https://api.bez.digital/nft/image/${id}`,
+    animation_url: `https://api.bez.digital/nft/animation/${id}`,
     price: (Math.random() * 5 + 0.1).toFixed(3),
     owner: `0x${Math.random().toString(16).substring(2, 42)}`,
     creator: `0x${Math.random().toString(16).substring(2, 42)}`,

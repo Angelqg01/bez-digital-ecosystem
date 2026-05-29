@@ -59,7 +59,7 @@ Start-Sleep -Seconds 3
 
 # Iniciar Frontend en una nueva ventana de PowerShell
 Write-Host "[2/2] Iniciando Frontend (puerto 5173)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD\frontend'; Write-Host 'FRONTEND BEZHAS' -ForegroundColor Cyan; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD\frontend'; Write-Host 'FRONTEND BEZHAS' -ForegroundColor Cyan; pnpm run dev"
 
 Write-Host ""
 Write-Host "Esperando inicialización..." -ForegroundColor Yellow
@@ -132,7 +132,7 @@ Start-Sleep -Seconds 3
 
 # Iniciar Frontend en una nueva ventana de PowerShell
 Write-Host "[2/2] Iniciando Frontend (puerto 5173)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD\frontend'; Write-Host 'FRONTEND BEZHAS' -ForegroundColor Cyan; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD\frontend'; Write-Host 'FRONTEND BEZHAS' -ForegroundColor Cyan; pnpm run dev"
 
 Write-Host ""
 Write-Host "Esperando inicialización..." -ForegroundColor Yellow

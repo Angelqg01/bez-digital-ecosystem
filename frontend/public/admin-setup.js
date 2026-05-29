@@ -13,7 +13,7 @@
         role: 'admin',
         userId: 'admin-001',
         userName: 'Admin User',
-        userEmail: 'admin@bezhas.com',
+        userEmail: 'admin@bez.digital',
     };
 
     // Función para configurar admin

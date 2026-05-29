@@ -13,7 +13,7 @@
  *  • BEZ Token (BNB):     0x8a1e3930fde1f151471c368fdbb39f3f63a65b55
  *  • QualityEscrow:       0x3EfC42095E8503d41Ad8001328FC23388E00e8a3
  *
- * Backend: api.bezhas.com / WebSocket: ws.bezhas.com:3002
+ * Backend: api.bez.digital / WebSocket: ws.bez.digital:3002
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -23,6 +23,7 @@ import { X, ExternalLink, Copy, CheckCircle2, Loader2, AlertTriangle, Activity }
 import toast from 'react-hot-toast';
 import { useBezPay, SUBSCRIPTION_PLANS, FARMING_POOLS, BEZ_PAY_TYPES } from '../../context/BezPayContext';
 import { useBezPayTransaction, TX_STATE, CONTRACTS } from '../../hooks/useBezPayTransaction';
+import { buildBankTransferInstructions, getStripePaymentLink } from '../../config/bezhasPaymentConfig';
 
 // ─── DESIGN TOKENS (alineados con el tema oscuro de BeZhas) ───────────────────
 const C = {
@@ -252,14 +253,14 @@ export default function BezPayModal() {
       const fiatAmt = type === 'subscription'
         ? (payToken === 'EUR' ? (plan.priceUSD * 0.92) : plan.priceUSD)
         : numAmount * payP;
+      const bankInstructions = buildBankTransferInstructions(refCode);
       setBankData({
+        ...bankInstructions,
         refCode,
-        currency: payToken,
+        currency: bankInstructions.currency,
+        requestedCurrency: payToken,
         amount: fiatAmt.toFixed(2),
-        iban:        payToken === 'EUR' ? 'ES91 2100 0418 4502 0005 1332' : 'US12 3456 7890 1234 5678 9012',
-        swift:       payToken === 'EUR' ? 'CAIXESBBXXX' : 'CHASUS33XXX',
-        bank:        payToken === 'EUR' ? 'CaixaBank' : 'Chase Bank',
-        beneficiary: 'BeZhas Network S.L.',
+        stripeUrl:   getStripePaymentLink(type === 'subscription' ? selPlan : 'tokenPurchase'),
         wallet:      walletAddr,
         bezAmount:   (bezOut || plan.priceBEZ).toFixed(2),
       });
@@ -360,7 +361,7 @@ export default function BezPayModal() {
                   {typeInfo.title}
                 </div>
                 <div style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>
-                  BeZhas Pay v2 · api.bezhas.com · {isConnected ? '🟢 Wallet Conectada' : '⚪ Sin wallet'}
+                  BeZhas Pay v2 · api.bez.digital · {isConnected ? '🟢 Wallet Conectada' : '⚪ Sin wallet'}
                 </div>
               </div>
               <button
@@ -841,6 +842,21 @@ function BankStep({ bankData, C, copy, copiedField, onClose }) {
           <div style={{ color: '#FFB800', marginTop: 6, fontWeight: 700 }}>Recibirás: {bankData.bezAmount} BEZ</div>
         )}
       </div>
+
+      {bankData?.stripeUrl && (
+        <a
+          href={bankData.stripeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            width: '100%', background: '#2563EB', color: '#fff', textDecoration: 'none',
+            borderRadius: 12, padding: '13px', fontWeight: 800, fontSize: 13,
+            fontFamily: 'monospace', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          <ExternalLink size={16} /> Pagar ahora con tarjeta (Stripe)
+        </a>
+      )}
 
       <button onClick={onClose} style={{
         width: '100%', background: 'linear-gradient(135deg,#10B981,#059669)', color: '#fff',

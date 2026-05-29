@@ -14,7 +14,7 @@ $basePath = "d:\Documentos D\Documentos Yoe\BeZhas\BeZhas Web\bezhas-web3"
 # Arrancar Backend
 Write-Host "`nArrancando Backend en puerto 3001..." -ForegroundColor Cyan
 $backendPath = Join-Path $basePath "backend"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$backendPath'; Write-Host 'Backend BeZhas' -ForegroundColor Green; npm start" -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$backendPath'; Write-Host 'Backend BeZhas' -ForegroundColor Green; pnpm run start" -WindowStyle Normal
 
 # Esperar 5 segundos antes de arrancar frontend
 Start-Sleep -Seconds 5
@@ -22,7 +22,7 @@ Start-Sleep -Seconds 5
 # Arrancar Frontend
 Write-Host "Arrancando Frontend en puerto 5173..." -ForegroundColor Cyan
 $frontendPath = Join-Path $basePath "frontend"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$frontendPath'; Write-Host 'Frontend BeZhas' -ForegroundColor Green; npm run dev" -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$frontendPath'; Write-Host 'Frontend BeZhas' -ForegroundColor Green; pnpm run dev" -WindowStyle Normal
 
 Write-Host "`nServidores iniciados!" -ForegroundColor Green
 Write-Host "`nAccede a:" -ForegroundColor White

@@ -13,7 +13,7 @@ const axios = require('axios');
 const logger = require('../../utils/logger');
 
 // Models
-const BridgeSyncedItem = require('../../models/BridgeSyncedItem.model');
+const BridgeSyncedItem = require('../../models/pg/BridgeSyncedItem');
 const BridgeOrder = require('../../models/BridgeOrder.model');
 
 class AirbnbAdapter extends BaseAdapter {
@@ -51,6 +51,13 @@ class AirbnbAdapter extends BaseAdapter {
             logger.error({ error, platformId: this.platformId }, 'Failed to connect to Airbnb');
             throw error;
         }
+    }
+
+    /**
+     * Airbnb Health Check
+     */
+    async verifyHealth() {
+        return this.status === 'connected' || this.status === 'connected_mock';
     }
 
     /**
@@ -185,10 +192,18 @@ class AirbnbAdapter extends BaseAdapter {
     async handleReservationConfirmed(payload) {
         const { confirmation_code } = payload;
 
-        await BridgeOrder.findOneAndUpdate(
+        const order = await BridgeOrder.findOneAndUpdate(
             { platform: 'airbnb', externalOrderId: confirmation_code },
-            { status: 'confirmed', paymentStatus: 'paid' }
+            { status: 'confirmed', paymentStatus: 'paid' },
+            { new: true }
         );
+
+        this.emit('payment_received', {
+            id: confirmation_code,
+            amount: order.totalAmount,
+            currency: 'EUR',
+            listingId: order.items[0]?.externalId
+        });
 
         return { processed: true };
     }
@@ -227,6 +242,14 @@ class AirbnbAdapter extends BaseAdapter {
         // TODO: Trigger RWA dividend distribution
         // This would call the RWA Vault contract to distribute dividends
         // to all token holders of this property
+
+        this.emit('payment_received', {
+            id: `airbnb_payout_${Date.now()}`,
+            amount: payout_amount,
+            currency: 'EUR',
+            listingId: listing_id,
+            type: 'payout'
+        });
 
         return {
             processed: true,

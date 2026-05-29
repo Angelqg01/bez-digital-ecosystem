@@ -5,8 +5,8 @@ import { FaCoins, FaHistory } from 'react-icons/fa';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useBezCoin } from '../context/BezCoinContext';
+import { useBezPay } from '../context/BezPayContext';
 import TransactionHistory from '../components/bezcoin/TransactionHistory';
-// BuyBezCoinModal -> useBezPay().openBuyBez()
 import InsufficientFundsModal from '../components/modals/InsufficientFundsModal';
 import WatchToEarnSection from '../components/WatchToEarnSection';
 
@@ -30,11 +30,10 @@ const RewardsPage = () => {
     // BezCoin Integration
     const {
         balance,
-        showBuyModal,
-        setShowBuyModal,
         insufficientFundsModal,
         setInsufficientFundsModal
     } = useBezCoin();
+    const { openBuyBez } = useBezPay();
 
     // FIX: Prevent double fetch on React 18 StrictMode
     useEffect(() => {
@@ -549,12 +548,6 @@ const RewardsPage = () => {
                     </div>
                 </>
             )}
-
-            {/* BezCoin Modals */}
-            <BuyBezCoinModal
-                isOpen={showBuyModal}
-                onClose={() => {}}
-            />
 
             <InsufficientFundsModal
                 isOpen={insufficientFundsModal.show}

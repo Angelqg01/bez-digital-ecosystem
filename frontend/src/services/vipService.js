@@ -4,6 +4,10 @@
  */
 
 import axios from 'axios';
+import {
+    buildBankTransferInstructions,
+    getVipStripeLink
+} from '../config/bezhasPaymentConfig';
 
 const api = axios.create({
     baseURL: '/api',
@@ -74,7 +78,14 @@ export async function createVIPSubscriptionSession(tierId, billingPeriod = 'mont
         throw new Error(response.data.message || 'Error al crear sesión de pago');
     } catch (error) {
         console.error('VIP Subscription Error:', error);
-        throw error;
+        const fallbackUrl = getVipStripeLink(tierId);
+        window.location.href = fallbackUrl;
+        return {
+            success: true,
+            url: fallbackUrl,
+            provider: 'stripe_payment_link',
+            fallback: true
+        };
     }
 }
 
@@ -164,16 +175,10 @@ export async function getBankDetails() {
         return response.data;
     } catch (error) {
         console.error('Error getting bank details:', error);
-        // Fallback con datos conocidos
+        const reference = 'VIP-{walletAddress}';
         return {
             success: true,
-            bankDetails: {
-                accountHolder: 'BeZhas Technology SL',
-                iban: 'ES77 1465 0100 91 1766376210',
-                bic: 'INGDESMMXXX',
-                bank: 'ING Direct',
-                concept: 'VIP-{walletAddress}'
-            }
+            bankDetails: buildBankTransferInstructions(reference)
         };
     }
 }

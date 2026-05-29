@@ -119,29 +119,53 @@ export default function SidebarDrawer({ open, setOpen }) {
                                 <ul className="space-y-1">
                                     {category.items.map(item => (
                                         <li key={item.path}>
-                                            <NavLink
-                                                to={item.path}
-                                                className={({ isActive }) => `
-                                                    flex items-center gap-4 px-4 py-3 rounded-xl transition-all group
-                                                    ${isActive
-                                                        ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 shadow-sm'
-                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
-                                                    }
-                                                    ${collapsed ? 'justify-center' : ''}
-                                                `}
-                                                onClick={() => {
-                                                    // Close mobile menu on click
-                                                    if (window.innerWidth < 768) setOpen(false);
-                                                }}
-                                                title={collapsed ? item.label : item.description || ''}
-                                            >
-                                                <span className="flex-shrink-0">
-                                                    {item.icon}
-                                                </span>
-                                                {!collapsed && (
-                                                    <span className="flex-1 font-medium">{item.label}</span>
-                                                )}
-                                            </NavLink>
+                                            {item.path.startsWith('http') ? (
+                                                <a
+                                                    href={item.path}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={`
+                                                        flex items-center gap-4 px-4 py-3 rounded-xl transition-all group
+                                                        hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300
+                                                        ${collapsed ? 'justify-center' : ''}
+                                                    `}
+                                                    onClick={() => {
+                                                        if (window.innerWidth < 768) setOpen(false);
+                                                    }}
+                                                    title={collapsed ? item.label : item.description || ''}
+                                                >
+                                                    <span className="flex-shrink-0">{item.icon}</span>
+                                                    {!collapsed && (
+                                                        <span className="flex-1 font-medium">{item.label}</span>
+                                                    )}
+                                                    {!collapsed && (
+                                                        <span className="text-xs text-gray-400 group-hover:text-purple-500">↗</span>
+                                                    )}
+                                                </a>
+                                            ) : (
+                                                <NavLink
+                                                    to={item.path}
+                                                    className={({ isActive }) => `
+                                                        flex items-center gap-4 px-4 py-3 rounded-xl transition-all group
+                                                        ${isActive
+                                                            ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 shadow-sm'
+                                                            : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
+                                                        }
+                                                        ${collapsed ? 'justify-center' : ''}
+                                                    `}
+                                                    onClick={() => {
+                                                        if (window.innerWidth < 768) setOpen(false);
+                                                    }}
+                                                    title={collapsed ? item.label : item.description || ''}
+                                                >
+                                                    <span className="flex-shrink-0">
+                                                        {item.icon}
+                                                    </span>
+                                                    {!collapsed && (
+                                                        <span className="flex-1 font-medium">{item.label}</span>
+                                                    )}
+                                                </NavLink>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>

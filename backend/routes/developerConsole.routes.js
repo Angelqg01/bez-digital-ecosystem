@@ -36,7 +36,7 @@ const requireWalletOrJwt = async (req, res, next) => {
 
             // Try to load user from DB if available
             if (mongoose.connection.readyState === 1) {
-                const User = require('../models/user.model');
+                const User = require('../models/pg/User');
                 const user = await User.findById(decoded.id).select('-password');
                 if (user) {
                     req.user = user;
@@ -58,8 +58,8 @@ const requireWalletOrJwt = async (req, res, next) => {
         // If DB is available, try to find the user
         if (mongoose.connection.readyState === 1) {
             try {
-                const User = require('../models/user.model');
-                const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+                const User = require('../models/pg/User');
+                const user = await User.findByWallet(walletAddress.toLowerCase());
                 if (user) {
                     req.user = user;
                     return next();

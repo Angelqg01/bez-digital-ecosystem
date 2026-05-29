@@ -12,15 +12,46 @@ vi.mock('wagmi', () => ({
     useBalance: () => ({ data: { formatted: "1.0", symbol: "ETH" }, isLoading: false }),
     useWalletClient: () => ({ data: {} }),
     useSwitchChain: () => ({ switchChain: vi.fn() }),
+    useConnect: () => ({ connect: vi.fn(), connectors: [{ id: 'injected', name: 'MetaMask' }] }),
+    useDisconnect: () => ({ disconnect: vi.fn() }),
     useChainId: () => 137
 }));
 
 vi.mock('../context/AuthContext', () => ({
-    useAuth: () => ({ user: { _id: '123', email: 'test@bezhas.com', roles: ['ADMIN'], vipTier: 'platinum' }, token: 'fake-token' })
+    useAuth: () => ({ user: { _id: '123', email: 'test@bez.digital', roles: ['ADMIN'], vipTier: 'platinum' }, token: 'fake-token' })
 }));
 
 vi.mock('../context/ThemeContext', () => ({
     useTheme: () => ({ isDarkMode: true, toggleTheme: vi.fn() })
+}));
+
+vi.mock('../context/Web3Context', () => ({
+    useWeb3: () => ({
+        contracts: {},
+        account: '0x123',
+        isConnected: true,
+        connectWallet: vi.fn(),
+    }),
+}));
+
+vi.mock('../context/BezPayContext', () => ({
+    useBezPay: () => ({
+        openBuyBez: vi.fn(),
+        openSubscription: vi.fn(),
+        openFarming: vi.fn(),
+        openEscrow: vi.fn(),
+        openBridge: vi.fn(),
+    }),
+}));
+
+vi.mock('../hooks/useBezPay', () => ({
+    useBezPay: () => ({
+        openBuyBez: vi.fn(),
+        openSubscription: vi.fn(),
+        openFarming: vi.fn(),
+        openEscrow: vi.fn(),
+        openBridge: vi.fn(),
+    }),
 }));
 
 vi.mock('../stores/userStore', () => ({
@@ -109,14 +140,14 @@ describe('Auditoría de Rutas Críticas (E2E y Conexiones)', () => {
     it('Verificación de Pasarela de Pagos (Stripe Mock)', () => {
         // Stripe es vital para los módulos /be-vip y /ads
         render(<BeVIP />, { wrapper: TestWrapper });
-        expect(screen.getByText(/VIP/)).toBeInTheDocument();
+        expect(screen.getAllByText(/VIP/).length).toBeGreaterThan(0);
         // Si no hay mock error de red en el runtime Web3, la aserción vivirá.
     });
 
     it('Verificación de Integración de Nodos Web3 (Wagmi Mock)', () => {
         // Páginas como BuyTokensPage instancian hooks de Wagmi explícitamente al inicio
         render(<BuyTokensPage />, { wrapper: TestWrapper });
-        expect(screen.getByText(/Comprar/)).toBeInTheDocument();
+        expect(screen.getAllByText(/Comprar/).length).toBeGreaterThan(0);
     });
 
 });

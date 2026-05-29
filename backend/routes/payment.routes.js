@@ -524,7 +524,7 @@ router.post('/bank-transfer/create-order', async (req, res) => {
             instructions: [
                 "1. Realice la transferencia usando los datos bancarios proporcionados",
                 "2. IMPORTANTE: Incluya el código de referencia en el concepto",
-                "3. Envíe el comprobante a: pagos@bezhas.com",
+                "3. Envíe el comprobante a: pagos@bez.digital",
                 "4. Los tokens serán acreditados en 24-48 horas tras verificación"
             ]
         });
@@ -652,8 +652,8 @@ router.post('/crypto/confirm', async (req, res) => {
         // Si es suscripción VIP, activar el tier
         let vipActivated = false;
         if (payment.type === 'VIP_SUBSCRIPTION_CRYPTO' && payment.metadata?.tier) {
-            const User = require('../models/user.model');
-            const user = await User.findOne({ walletAddress: payment.walletAddress });
+            const User = require('../models/pg/User');
+            const user = await User.findByWallet(payment.walletAddress);
 
             if (user) {
                 user.vipTier = payment.metadata.tier.toUpperCase();
@@ -906,7 +906,7 @@ router.post('/token-purchase', verifyTokenMiddleware, async (req, res) => {
 
         const result = await createTokenPurchaseSession(totalTokens, {
             userId,
-            email: req.user?.email || `${userId}@bezhas.com`,
+            email: req.user?.email || `${userId}@bez.digital`,
             walletAddress
         });
 

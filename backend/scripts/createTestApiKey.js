@@ -5,7 +5,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const BridgeApiKey = require('../models/BridgeApiKey.model');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 
 async function createTestApiKey() {
     try {

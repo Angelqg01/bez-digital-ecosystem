@@ -63,7 +63,7 @@ Start-Sleep -Seconds 3
 # Iniciar Frontend
 Write-Host ""
 Write-Host "2. Iniciando Frontend (Puerto 5173)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend'; Write-Host '=== FRONTEND BEZHAS ===' -ForegroundColor Blue; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend'; Write-Host '=== FRONTEND BEZHAS ===' -ForegroundColor Blue; pnpm run dev"
 Write-Host "   Frontend iniciado" -ForegroundColor Green
 
 Write-Host ""
@@ -174,7 +174,7 @@ Start-Sleep -Seconds 3
 # Iniciar Frontend
 Write-Host ""
 Write-Host "2. Iniciando Frontend (Puerto 5173)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend'; Write-Host '=== FRONTEND BEZHAS ===' -ForegroundColor Blue; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend'; Write-Host '=== FRONTEND BEZHAS ===' -ForegroundColor Blue; pnpm run dev"
 Write-Host "   Frontend iniciado" -ForegroundColor Green
 
 Write-Host ""

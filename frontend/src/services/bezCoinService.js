@@ -1,5 +1,11 @@
 /**
- * bezCoinService.js
+ * @deprecated — LEGACY SERVICE. DO NOT USE FOR NEW CODE.
+ * Replaced by: hubBlockchainService.js + _shared/bezhas-blockchain-client.js
+ * Token ops → BeZhasClient.getBEZBalance() / transferBEZ()
+ * Fiat purchase → bezhas-pay-manager SubApp
+ * VIP/billing → hubBlockchainService.js → getVIPStatus()
+ *
+ * bezCoinService.js (LEGACY)
  * 
  * Servicio para gestionar todas las operaciones de Bez-Coin:
  * - Comunicación con smart contracts

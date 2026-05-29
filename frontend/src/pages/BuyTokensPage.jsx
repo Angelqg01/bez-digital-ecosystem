@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import GlobalStatsBar from '../components/GlobalStatsBar';
 import { useBezPay } from '../context/BezPayContext';
+import { STRIPE_PAYMENT_LINKS } from '../config/bezhasPaymentConfig';
 // CryptoPaymentModal ELIMINADO – usar BezPayModal vía useBezPay()
 
 /**
@@ -20,7 +21,7 @@ export default function BuyTokensPage() {
     const { address, isConnected } = useAccount();
     const { openBuyBez } = useBezPay(); // Sistema BezPay v2
     const [selectedPackage, setSelectedPackage] = useState(null);
-    const [paymentMethod, setPaymentMethod] = useState('crypto'); // BezPay es siempre crypto/multi
+    const [paymentMethod, setPaymentMethod] = useState('card');
     const [loading, setLoading] = useState(false);
     const [userSubscription, setUserSubscription] = useState(null);
     // showCryptoModal ELIMINADO – usar openBuyBez() de BezPayContext
@@ -199,7 +200,20 @@ export default function BuyTokensPage() {
             return;
         }
 
-        // Todos los pagos pasan por BezPayModal v2
+        const requiresWallet = paymentMethod === 'crypto';
+        if (requiresWallet && !isConnected) {
+            toast.error('Conecta tu wallet para comprar con criptomonedas o tokens');
+            return;
+        }
+
+        if (paymentMethod === 'card') {
+            window.open(STRIPE_PAYMENT_LINKS.tokenPurchase, '_blank', 'noopener,noreferrer');
+            toast.success('Abriendo Stripe para comprar BEZ-Coin con FIAT');
+            return;
+        }
+
+        // Crypto y transferencia bancaria pasan por BezPayModal v2.
+        // La wallet solo es obligatoria para crypto; FIAT puede continuar sin wallet.
         openBuyBez(selectedPackage.price, {
             itemName: `Paquete ${selectedPackage.name}`,
             metadata: {
@@ -207,6 +221,7 @@ export default function BuyTokensPage() {
                 tokens: selectedPackage.tokens,
                 bonus: selectedPackage.bonus,
                 source: 'buy_tokens_page',
+                paymentMethod,
             },
             onSuccess: ({ txHash, bezAmount }) => {
                 toast.success(`✅ ${(selectedPackage.tokens + selectedPackage.bonus).toLocaleString()} BEZ activados!`, { duration: 6000 });
@@ -417,6 +432,13 @@ export default function BuyTokensPage() {
                                 ))}
                             </div>
 
+                            <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                                <p className="font-semibold text-emerald-300">Compra FIAT autorizada sin wallet conectada</p>
+                                <p className="mt-1 text-emerald-100/80">
+                                    Solo necesitas conectar wallet si compras BEZ-Coin con criptomonedas o tokens. Para tarjeta o transferencia FIAT puedes continuar directamente.
+                                </p>
+                            </div>
+
                             {/* Resumen de Compra */}
                             <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-xl p-6 border border-purple-500/30">
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -443,10 +465,10 @@ export default function BuyTokensPage() {
 
                                 <button
                                     onClick={handlePurchase}
-                                    disabled={loading || !isConnected}
+                                    disabled={loading || (paymentMethod === 'crypto' && !isConnected)}
                                     className={`
                                         w-full mt-6 py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2
-                                        ${loading || !isConnected
+                                        ${loading || (paymentMethod === 'crypto' && !isConnected)
                                             ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                             : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-purple-500/30'
                                         }
@@ -457,15 +479,15 @@ export default function BuyTokensPage() {
                                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                             Procesando...
                                         </>
-                                    ) : !isConnected ? (
+                                    ) : paymentMethod === 'crypto' && !isConnected ? (
                                         <>
                                             <Lock size={20} />
-                                            Conecta tu wallet para comprar
+                                            Conecta tu wallet para comprar con cripto
                                         </>
                                     ) : (
                                         <>
                                             <Zap size={20} />
-                                            Comprar Ahora
+                                            {paymentMethod === 'card' ? 'Comprar con FIAT en Stripe' : paymentMethod === 'bank' ? 'Comprar con transferencia FIAT' : 'Comprar con cripto'}
                                             <ArrowRight size={20} />
                                         </>
                                     )}

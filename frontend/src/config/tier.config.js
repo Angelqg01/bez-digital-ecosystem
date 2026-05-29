@@ -88,10 +88,10 @@ export const SUBSCRIPTION_TIERS = {
         popular: true,
 
         price: {
-            monthly: 14.99,
-            yearly: 149.99,
-            currency: 'USD',
-            savings: 30 // vs monthly
+            monthly: 99,
+            yearly: 990,
+            currency: 'EUR',
+            savings: 200 // vs monthly
         },
 
         tokenLock: {
@@ -142,10 +142,10 @@ export const SUBSCRIPTION_TIERS = {
         description: 'Acceso completo para organizaciones y power users',
 
         price: {
-            monthly: 99.99,
-            yearly: 999.99,
-            currency: 'USD',
-            savings: 200
+            monthly: 499,
+            yearly: 4990,
+            currency: 'EUR',
+            savings: 998
         },
 
         tokenLock: {
@@ -189,10 +189,68 @@ export const SUBSCRIPTION_TIERS = {
             gradient: 'from-amber-400 to-orange-500',
             icon: 'Building'
         }
+    },
+
+    ENTERPRISE: {
+        id: 'enterprise',
+        name: 'Enterprise VIP',
+        displayName: 'Enterprise VIP',
+        description: 'BeZhas se convierte en el motor blockchain de tu organización',
+
+        price: {
+            monthly: 2499,
+            yearly: 24990,
+            currency: 'EUR',
+            savings: 4998
+        },
+
+        tokenLock: {
+            amount: 100000,
+            durationDays: 180
+        },
+
+        staking: {
+            multiplier: 3.5,
+            effectiveAPY: BASE_STAKING_APY * 2.5,
+            maxStakeAmount: Infinity,
+            compoundingEnabled: true
+        },
+
+        gas: {
+            subsidyPercent: 1.0,
+            gasFree: true
+        },
+
+        ai: {
+            dailyQueries: Infinity,
+            monthlyQueries: Infinity,
+            models: ['all']
+        },
+
+        features: {
+            canCreateProposals: true,
+            qualityOracleAccess: true,
+            advancedAIModels: true,
+            apiAccess: true,
+            analytics: true,
+            verifiedBadge: true,
+            prioritySupport: true,
+            dedicatedManager: true,
+            webhooks: true,
+            whiteLabel: true,
+            dedicatedNode: true
+        },
+
+        ui: {
+            badge: 'enterprise',
+            color: '#FBBF24',
+            gradient: 'from-yellow-400 to-yellow-600',
+            icon: 'Crown'
+        }
     }
 };
 
-export const TIER_HIERARCHY = ['STARTER', 'CREATOR', 'BUSINESS'];
+export const TIER_HIERARCHY = ['STARTER', 'CREATOR', 'BUSINESS', 'ENTERPRISE'];
 
 /**
  * Obtener configuración de un tier

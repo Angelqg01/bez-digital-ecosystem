@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { addContactSyncJob } = require('../services/queue.service');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const Contact = require('../models/contact.model');
 const { protect } = require('../middleware/auth.middleware');
 
@@ -87,7 +87,7 @@ router.post('/:id/add-friend', protect, async (req, res) => {
         await contact.save();
 
         // Distribute 50 BEZ-Coin Reward
-        const BEZCoinTransaction = require('../models/BEZCoinTransaction.model'); // Adjust path if needed
+        const BEZCoinTransaction = require('../models/pg/BEZCoinTransaction'); // Adjust path if needed
         const user = await User.findById(req.user._id);
         
         if (user && BEZCoinTransaction) {

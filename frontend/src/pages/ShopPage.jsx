@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useBezCoin } from '../context/BezCoinContext';
+import { useBezPay } from '../context/BezPayContext';
 import { NFTGrid } from '../components/shop/NFTGrid';
 import { Link } from 'react-router-dom';
 import { PlusCircle, Search } from 'lucide-react';
 import { FaCoins } from 'react-icons/fa';
-// BuyBezCoinModal -> useBezPay().openBuyBez()
 import InsufficientFundsModal from '../components/modals/InsufficientFundsModal';
 
 const LISTINGS_PER_PAGE = 12;
@@ -17,11 +17,10 @@ const ShopPage = () => {
   const { marketplace, isConnected } = useWeb3();
   const {
     balance,
-    showBuyModal,
-    setShowBuyModal,
     insufficientFundsModal,
     setInsufficientFundsModal
   } = useBezCoin();
+  const { openBuyBez } = useBezPay();
 
   useEffect(() => {
     const fetchTotalListings = async () => {
@@ -132,12 +131,6 @@ const ShopPage = () => {
           </div>
         )}
       </div>
-
-      {/* BezCoin Modals */}
-      <BuyBezCoinModal
-        isOpen={showBuyModal}
-        onClose={() => {}}
-      />
 
       <InsufficientFundsModal
         isOpen={insufficientFundsModal.show}

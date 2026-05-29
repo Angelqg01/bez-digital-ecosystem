@@ -31,7 +31,7 @@ const mockConfig = {
     logging: { level: 'info', enabled: true },
     security: {
         requireApiKey: true,
-        allowedOrigins: ['https://bezhas.com', 'https://api.bezhas.com'],
+        allowedOrigins: ['https://bez.digital', 'https://api.bez.digital'],
         maxApiKeysPerUser: 5,
     },
     updatedAt: new Date('2026-01-15T00:00:00Z'),
@@ -64,7 +64,7 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 const sdkAdminService = require('../../services/sdkAdmin.service');
-const SDKConfig = require('../../models/SDKConfig.model');
+const SDKConfig = require('../../models/pg/SDKConfig');
 
 describe('SDKAdminService', () => {
 
@@ -121,7 +121,7 @@ describe('SDKAdminService', () => {
 
     describe('updateGlobalSettings', () => {
         it('should update allowed fields only', async () => {
-            const SDKConfig = require('../../models/SDKConfig.model');
+            const SDKConfig = require('../../models/pg/SDKConfig');
             await sdkAdminService.updateGlobalSettings(
                 { isGloballyEnabled: false, sdkVersion: '2.0.0', hackField: 'bad' },
                 'admin-0x456'

@@ -310,12 +310,12 @@ const VIPSubscriptionSchema = new Schema({
   - `VITE_STRIPE_PUBLIC_KEY=pk_live_...`
 
 - [ ] Configurar webhook de producción
-  - URL: `https://bezhas.com/api/vip/webhook/stripe`
+  - URL: `https://bez.digital/api/vip/webhook/stripe`
   - Eventos: Ver lista arriba
   - Actualizar `STRIPE_WEBHOOK_SECRET`
 
 - [ ] Actualizar `FRONTEND_URL` en `.env`
-  - `FRONTEND_URL=https://bezhas.com`
+  - `FRONTEND_URL=https://bez.digital`
 
 - [ ] Verificar SSL/HTTPS habilitado
 

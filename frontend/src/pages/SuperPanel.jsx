@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
+import http from '../services/http';
 
 export default function SuperPanel() {
     const [admin, setAdmin] = useState(null);

@@ -5,7 +5,7 @@ const DAOVote = require('../models/DAOVote');
 const DAODelegate = require('../models/DAODelegate');
 const DAOSettings = require('../models/DAOSettings');
 const TreasuryTransaction = require('../models/TreasuryTransaction');
-// const User = require('../models/user.model'); // Comentado temporalmente
+// const User = require('../models/pg/User'); // Comentado temporalmente
 // const { authenticateToken, isAdmin } = require('../middleware/auth.middleware'); // Comentado temporalmente
 const { mockProposals, mockSettings, mockTreasuryTransactions, mockDelegates } = require('./daoMockData');
 
@@ -156,7 +156,7 @@ router.get('/proposals', async (req, res) => {
                 const votesAgainst = votes.filter(v => !v.support).reduce((sum, v) => sum + v.votingPower, 0);
 
                 return {
-                    ...proposal.toObject(),
+                    ...proposal,
                     votesFor,
                     votesAgainst,
                     totalVotes: votes.length,

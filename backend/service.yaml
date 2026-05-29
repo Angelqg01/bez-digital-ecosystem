@@ -1,8 +1,10 @@
 # ===================================================
-# BeZhas Backend - Cloud Run Service Configuration
+# BeZhas Backend — Cloud Run Service v2.0
 # ===================================================
-# This file defines the Cloud Run service for the backend API
-# Deploy with: gcloud run services replace service.yaml
+# Deploy con: gcloud run services replace service.yaml --region europe-west1
+#
+# GCP Project: totemic-bonus-479312-c6
+# Región: europe-west1 (Bélgica — GDPR compliant, latencia ES ~15ms)
 # ===================================================
 
 apiVersion: serving.knative.dev/v1
@@ -10,9 +12,11 @@ kind: Service
 metadata:
   name: bezhas-backend
   labels:
-    cloud.googleapis.com/location: us-central1
+    cloud.googleapis.com/location: europe-west1
+    app: bezhas-backend
+    version: "2.0"
   annotations:
-    run.googleapis.com/description: "BeZhas Web3 Social Network - Backend API"
+    run.googleapis.com/description: "BeZhas Web3 Platform — Backend API & AI Engine"
     run.googleapis.com/ingress: all
     run.googleapis.com/launch-stage: GA
 
@@ -20,73 +24,74 @@ spec:
   template:
     metadata:
       annotations:
-        # Auto-scaling configuration
+        # ── Auto-scaling ────────────────────────────────────
+        # min=1 evita cold starts en producción
         autoscaling.knative.dev/minScale: "1"
-        autoscaling.knative.dev/maxScale: "100"
+        autoscaling.knative.dev/maxScale: "20"
         autoscaling.knative.dev/target: "80"
 
-        # CPU allocation
+        # ── CPU siempre asignada (para WebSockets y crons) ──
         run.googleapis.com/cpu-throttling: "false"
         run.googleapis.com/execution-environment: gen2
 
-        # Startup probe
+        # ── Startup boost (reduce cold start time) ───────────
         run.googleapis.com/startup-cpu-boost: "true"
 
-        # VPC connector for private services (optional)
-        # run.googleapis.com/vpc-access-connector: projects/PROJECT_ID/locations/us-central1/connectors/bezhas-connector
-        # run.googleapis.com/vpc-access-egress: all-traffic
+        # ── Acceso a Secret Manager (SA con permiso) ─────────
+        # La SA debe tener: secretmanager.secretAccessor
 
     spec:
       containerConcurrency: 80
       timeoutSeconds: 300
-      serviceAccountName: bezhas-backend-sa@PROJECT_ID.iam.gserviceaccount.com
+      serviceAccountName: bezhas-backend-sa@totemic-bonus-479312-c6.iam.gserviceaccount.com
 
       containers:
         - name: bezhas-backend
-          image: gcr.io/PROJECT_ID/bezhas-backend:latest
+          # Imagen actualizada en cada deploy por cloudbuild.yaml
+          image: gcr.io/totemic-bonus-479312-c6/bezhas-backend:latest
 
           ports:
             - name: http1
-              containerPort: 3001
+              containerPort: 8080
 
           resources:
             limits:
               cpu: "2"
-              memory: "1Gi"
+              memory: "2Gi"
             requests:
               cpu: "500m"
               memory: "512Mi"
 
+          # ── Variables de entorno ────────────────────────────
           env:
             - name: NODE_ENV
               value: "production"
             - name: PORT
-              value: "3001"
+              value: "8080"
             - name: LOG_LEVEL
               value: "info"
+            - name: DISABLE_BULLMQ
+              value: "true"
+            - name: DISABLE_BLOCKCHAIN_LISTENER
+              value: "true"
+            - name: FRONTEND_URL
+              value: "https://bez.digital"
+            - name: ALLOWED_ORIGINS
+              value: "https://bez.digital,https://www.bez.digital,https://bezhas-frontend-371791663100.us-central1.run.app"
 
-            # Database (from Secret Manager)
+            # ── Secrets desde GCP Secret Manager ─────────────
             - name: MONGODB_URI
               valueFrom:
                 secretKeyRef:
                   name: mongodb-uri
                   key: latest
 
-            # Redis (from Secret Manager)
-            - name: REDIS_URL
-              valueFrom:
-                secretKeyRef:
-                  name: redis-url
-                  key: latest
-
-            # JWT Secret
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: jwt-secret
                   key: latest
 
-            # Stripe (from Secret Manager)
             - name: STRIPE_SECRET_KEY
               valueFrom:
                 secretKeyRef:
@@ -99,51 +104,90 @@ spec:
                   name: stripe-webhook-secret
                   key: latest
 
-            # Blockchain RPC
-            - name: RPC_URL
+            - name: HOT_WALLET_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
-                  name: polygon-rpc-url
+                  name: hot-wallet-private-key
                   key: latest
 
-            # AI Services
+            - name: RELAYER_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: relayer-private-key
+                  key: latest
+
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gemini-api-key
+                  key: latest
+
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: openai-api-key
                   key: latest
 
-            - name: GOOGLE_AI_API_KEY
+            - name: REDIS_URL
               valueFrom:
                 secretKeyRef:
-                  name: google-ai-api-key
+                  name: redis-url
                   key: latest
 
-          # Startup probe
+            - name: COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cookie-secret
+                  key: latest
+
+            - name: DISCORD_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: discord-webhook-url
+                  key: latest
+
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-bot-token
+                  key: latest
+
+            # ── Blockchain (no secreto) ───────────────────────
+            - name: POLYGON_RPC_URL
+              value: "https://polygon-bor.publicnode.com"
+            - name: BEZCOIN_CONTRACT_ADDRESS
+              value: "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8"
+            - name: QUALITY_ESCROW_ADDRESS
+              value: "0x3088573c025F197A886b97440761990c9A9e83C9"
+            - name: TREASURY_WALLET
+              value: "0x89c23890c742d710265dd61be789c71dc8999b12"
+
+          # ── Probes ──────────────────────────────────────────
+          # Startup: espera hasta 60s para que el servidor arranque
           startupProbe:
             httpGet:
               path: /api/health
-              port: 3001
-            initialDelaySeconds: 10
+              port: 8080
+            initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 5
             failureThreshold: 12
 
-          # Liveness probe
+          # Liveness: reinicia el contenedor si se cuelga
           livenessProbe:
             httpGet:
               path: /api/health/live
-              port: 3001
+              port: 8080
             initialDelaySeconds: 0
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
 
-          # Readiness probe
+          # Readiness: quita de rotación si no puede servir tráfico
           readinessProbe:
             httpGet:
               path: /api/health/ready
-              port: 3001
+              port: 8080
             initialDelaySeconds: 0
             periodSeconds: 10
             timeoutSeconds: 5

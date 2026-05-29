@@ -71,7 +71,7 @@ catch {
 # 6. Iniciar Frontend
 Write-Host "`n6️⃣ Iniciando Frontend (Vite)..." -ForegroundColor Yellow
 $frontendPath = "d:\Documentos D\Documentos Yoe\BeZhas\BeZhas Web\bezhas-web3\frontend"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$frontendPath'; Write-Host 'Frontend iniciando...' -ForegroundColor Cyan; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$frontendPath'; Write-Host 'Frontend iniciando...' -ForegroundColor Cyan; pnpm run dev"
 Write-Host "   ✅ Frontend iniciado en nueva ventana (puerto 5173)`n" -ForegroundColor Green
 
 # 7. Esperar a que Frontend compile

@@ -3,7 +3,7 @@ services:
   backend:
     volumes:
       - ./backend:/app
-    command: npx nodemon server.js
+    command: pnpm exec nodemon server.js
     environment:
       - NODE_ENV=development
     ports:
@@ -11,7 +11,7 @@ services:
   frontend:
     volumes:
       - ./frontend:/app
-    command: npm run dev
+    command: pnpm run dev
     environment:
       - NODE_ENV=development
     ports:

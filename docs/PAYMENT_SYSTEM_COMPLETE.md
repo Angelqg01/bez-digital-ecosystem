@@ -17,7 +17,7 @@ El sistema de pagos de BeZhas ha sido completamente implementado y probado. Stri
 - **Banco**: ING
 - **IBAN**: ES77 1465 0100 91 1766376210
 - **BIC/SWIFT**: INGDESMMXXX
-- **Beneficiario**: BeZhas.com
+- **Beneficiario**: bez.digital
 - **Instrucciones**: Incluir dirección de wallet en concepto/referencia
 
 #### Wallets de Recepción
@@ -156,7 +156,7 @@ class FiatGatewayService {
        "bankName": "BeZhas Platform",
        "iban": "ES77 1465 0100 91 1766376210",
        "bic": "INGDESMMXXX",
-       "beneficiary": "BeZhas.com"
+       "beneficiary": "bez.digital"
      }
    }
    ```

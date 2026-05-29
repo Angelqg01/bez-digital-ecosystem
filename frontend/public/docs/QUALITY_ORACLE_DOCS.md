@@ -436,7 +436,7 @@ import QualityNotifications from './components/QualityNotifications';
 
 ### Base URL
 ```
-Production: https://api.bezhas.com
+Production: https://api.bez.digital
 Development: http://localhost:3001
 ```
 
@@ -963,9 +963,9 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ## 📞 Support
 
-- **Documentation**: https://docs.bezhas.com
+- **Documentation**: https://docs.bez.digital
 - **Discord**: https://discord.gg/bezhas
-- **Email**: support@bezhas.com
+- **Email**: support@bez.digital
 
 ---
 

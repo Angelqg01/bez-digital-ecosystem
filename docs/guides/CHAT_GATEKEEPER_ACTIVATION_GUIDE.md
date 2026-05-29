@@ -152,7 +152,7 @@ NODE_ENV=development
 LOG_LEVEL=info
 
 # CORS Origins (separados por coma)
-CORS_ORIGINS=http://localhost:5173,http://localhost:3000,https://bezhas.com
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000,https://bez.digital
 
 # Redis Configuration
 REDIS_HOST=localhost
@@ -402,7 +402,7 @@ async function testGatekeeper() {
     console.log('Words:', words1); // Debe ser 6
     
     // Test 2: Filtrar URLs
-    const words2 = countWords('Visita https://bezhas.com para más info');
+    const words2 = countWords('Visita https://bez.digital para más info');
     console.log('Words (con URL):', words2); // No debe contar la URL
     
     // Test 3: Verificar y cobrar crédito
@@ -729,7 +729,7 @@ pm2 logs bezhas-chat | grep ERROR
 ## 💡 Soporte
 
 Para issues, contactar al equipo de DevOps en:
-- **Email**: devops@bezhas.com
+- **Email**: devops@bez.digital
 - **Slack**: #bezhas-chat-support
 - **GitHub**: https://github.com/bezhas/bezhas-web3/issues
 

@@ -375,9 +375,9 @@ A: PM2 lo reinicia automáticamente. [Production Guide - Reliability](./PRODUCTI
 
 ### Contact
 
-- **Technical Support**: dev@bezhas.com
-- **Security Issues**: security@bezhas.com
-- **Business Inquiries**: hello@bezhas.com
+- **Technical Support**: dev@bez.digital
+- **Security Issues**: security@bez.digital
+- **Business Inquiries**: hello@bez.digital
 - **Emergency**: +1-XXX-XXX-XXXX (24/7)
 
 ### Community

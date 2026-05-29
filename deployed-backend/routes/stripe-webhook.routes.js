@@ -238,6 +238,7 @@ async function handleBillingPayment(paymentIntent) {
 
         const AdBalance = safeRequire('../models/adBalance.model');
         const BillingTransaction = safeRequire('../models/billingTransaction.model');
+        const bezCreditPackageService = safeRequire('../services/bezCreditPackage.service');
 
         if (!AdBalance || !BillingTransaction) {
             console.warn('[STRIPE WEBHOOK] Billing models not available, skipping billing handler');
@@ -254,9 +255,17 @@ async function handleBillingPayment(paymentIntent) {
             return null;
         }
 
+        const packageCredit = bezCreditPackageService?.resolvePackageCredit
+            ? bezCreditPackageService.resolvePackageCredit(transaction.metadata, paymentIntent.metadata)
+            : { isPackagePurchase: false };
+
         // Update transaction status
         transaction.status = 'completed';
         transaction.processedAt = new Date();
+        transaction.metadata = {
+            ...(transaction.metadata || {}),
+            stripePaymentIntentId: paymentIntent.id
+        };
         await transaction.save();
 
         // Update ad balance
@@ -274,15 +283,35 @@ async function handleBillingPayment(paymentIntent) {
             });
         }
 
-        balance.fiatBalance += transaction.amount;
+        if (packageCredit.isPackagePurchase) {
+            balance.bezBalance += packageCredit.expectedBezCredits;
+            transaction.metadata = {
+                ...(transaction.metadata || {}),
+                creditMode: 'bez_package',
+                creditedBez: packageCredit.expectedBezCredits,
+                packageId: packageCredit.packageId,
+                bonusPct: packageCredit.bonusPct
+            };
+            await transaction.save();
+        } else {
+            balance.fiatBalance += transaction.amount;
+        }
+
         balance.totalDeposited += transaction.amount;
         balance.lastDepositAt = new Date();
         balance.updatedAt = new Date();
         await balance.save();
 
-        console.log(`[STRIPE WEBHOOK] Billing: Balance updated for user ${transaction.userId}: +€${transaction.amount}`);
+        const creditLabel = packageCredit.isPackagePurchase
+            ? `+${packageCredit.expectedBezCredits} BEZ (${packageCredit.packageId})`
+            : `+€${transaction.amount}`;
+        console.log(`[STRIPE WEBHOOK] Billing: Balance updated for user ${transaction.userId}: ${creditLabel}`);
 
-        return { handled: true, source: 'billing' };
+        return {
+            handled: true,
+            source: 'billing',
+            creditMode: packageCredit.isPackagePurchase ? 'bez_package' : 'fiat_topup'
+        };
     } catch (error) {
         console.error('[STRIPE WEBHOOK] Billing handler error:', error.message);
         return { handled: false, source: 'billing', error: error.message };

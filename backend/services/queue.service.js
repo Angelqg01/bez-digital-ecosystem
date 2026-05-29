@@ -95,7 +95,11 @@ const addAnomalyDetectionJob = async (logData) => {
 
 // ── Inicialización de Redis + BullMQ (solo si REDIS_URL está configurado) ─────
 const BULLMQ_FORCE_DISABLED = ['true', '1'].includes((process.env.DISABLE_BULLMQ || '').toLowerCase());
-if (process.env.REDIS_URL && !redisDisabled && !BULLMQ_FORCE_DISABLED) {
+const IS_TEST_ENV = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+
+if (IS_TEST_ENV) {
+  disableQueues('test environment');
+} else if (process.env.REDIS_URL && !redisDisabled && !BULLMQ_FORCE_DISABLED) {
   const { Queue, Worker } = require('bullmq');
   const IORedis = require('ioredis');
 

@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Heart, DollarSign, Euro, PoundSterling, Coins, X, ShoppingCart } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Heart, DollarSign, Euro, PoundSterling, X, ShoppingCart } from 'lucide-react';
 import { LOGOS } from '../config/cryptoLogos';
-// BuyBezCoinModal -> useBezPay().openBuyBez()
 import { useBezCoin } from '../context/BezCoinContext';
+import { useBezPay } from '../context/BezPayContext';
 import { useWeb3 } from '../context/Web3Context';
 import { useTheme } from '../context/ThemeContext';
 import { toast } from 'react-hot-toast';
@@ -17,13 +17,13 @@ const DonateButton = ({
     size = 'md' // sm, md, lg
 }) => {
     const { donate, address: userAddress } = useWeb3();
-    const { balance: bezBalance, showBuyModal, setShowBuyModal } = useBezCoin();
+    const { balance: bezBalance } = useBezCoin();
+    const { openBuyBez } = useBezPay();
     const { theme } = useTheme();
     const [isExpanded, setIsExpanded] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState('BEZ');
     const [amount, setAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [showBuyTokens, setShowBuyTokens] = useState(false);
     const dropdownRef = useRef(null);
 
     const currencies = [
@@ -189,7 +189,7 @@ const DonateButton = ({
                         <p className={`text-sm text-center italic
               ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}
                         >
-                            "Con este gesto apoyas su continuo trabajo"
+                            &quot;Con este gesto apoyas su continuo trabajo&quot;
                         </p>
 
                         {/* Currency Selector */}
@@ -354,7 +354,6 @@ const DonateButton = ({
           animation: fadeIn 0.2s ease-out;
         }
       `}</style>
-            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
         </div>
     );
 };

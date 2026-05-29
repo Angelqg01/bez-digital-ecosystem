@@ -495,7 +495,7 @@ STRIPE_SECRET_KEY=sk_live_your_live_key
 STRIPE_WEBHOOK_SECRET=whsec_your_live_webhook_secret
 DATABASE_URL=postgresql://user:pass@prod-db-host:5432/bezhas_prod
 REDIS_URL=redis://prod-redis-host:6379
-FRONTEND_URL=https://bezhas.com
+FRONTEND_URL=https://bez.digital
 ```
 
 ---

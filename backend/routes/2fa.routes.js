@@ -12,11 +12,28 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 
 // Import 2FA services
 const totpService = require('../services/totp.service');
-const webauthnService = require('../services/webauthn.service');
+let webauthnService;
+try {
+    webauthnService = require('../services/webauthn.service');
+} catch (error) {
+    console.warn('⚠️ WebAuthn service unavailable; passkeys disabled:', error.message);
+    const disabled = async () => {
+        throw new Error('WebAuthn service unavailable');
+    };
+    webauthnService = {
+        isWebAuthnEnabled: () => false,
+        getWebAuthnOrigin: () => process.env.WEBAUTHN_ORIGIN || 'http://localhost:5173',
+        validateConfiguration: () => ({ valid: false, warnings: ['WebAuthn service unavailable'] }),
+        getRegistrationOptions: disabled,
+        verifyRegistration: disabled,
+        getAuthenticationOptions: disabled,
+        verifyAuthentication: disabled,
+    };
+}
 
 // Auth middleware (reuse from existing)
 const authenticateToken = require('../middleware/auth.middleware').authenticateToken ||
@@ -501,7 +518,7 @@ router.post('/webauthn/authenticate/options', async (req, res) => {
         if (userId) {
             user = await User.findById(userId);
         } else if (walletAddress) {
-            user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+            user = await User.findByWallet(walletAddress.toLowerCase());
         }
 
         if (user?.twoFactorAuth?.webauthn?.credentials) {
@@ -546,7 +563,7 @@ router.post('/webauthn/authenticate/verify', [
         if (userId) {
             user = await User.findById(userId);
         } else if (walletAddress) {
-            user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+            user = await User.findByWallet(walletAddress.toLowerCase());
         }
 
         if (!user) {

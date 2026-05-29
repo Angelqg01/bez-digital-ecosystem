@@ -8,7 +8,7 @@ const fs = require('fs/promises');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
 // Models
-const User = require('../../models/user.model');
+const User = require('../../models/pg/User');
 const Post = require('../../models/post.model');
 const VIPSubscription = require('../../models/VIPSubscription.model');
 

@@ -21,6 +21,8 @@ import DocumentationTab from '../components/developer-console/DocumentationTab';
 import LoyaltyMetricsTab from '../components/developer-console/LoyaltyMetricsTab';
 import { EmptyState, ApiKeyCard, CreateKeyModal, KeyRevealModal, KeyDetailsModal } from '../components/developer-console/ApiKeyManagement';
 import BeZhasLogisticsSimulator from '../components/logistics/BeZhasLogisticsSimulator';
+import OpenClawTab from '../components/developer-console/OpenClawTab';
+import RevenueDashboardTab from '../components/developer-console/RevenueDashboardTab';
 
 // Constantes y Mapeos
 const PERMISSION_MODULES = {
@@ -154,6 +156,8 @@ const DeveloperConsole = () => {
                 <div className="flex overflow-x-auto gap-2 mb-8 pb-2 scrollbar-hide">
                     {[
                         { id: 'simulator', label: 'SDK Simulator', icon: ZapIcon },
+                        { id: 'revenue', label: 'Ingresos (Web3)', icon: DollarSignIcon },
+                        { id: 'openclaw', label: 'OpenClaw (AI)', icon: CpuIcon },
                         { id: 'keys', label: 'API Keys', icon: KeyIcon },
                         { id: 'downloads', label: 'Downloads (MCP)', icon: TerminalIcon }, // NEW
                         { id: 'sdk', label: 'Integración SDK', icon: FileCodeIcon },
@@ -189,6 +193,11 @@ const DeveloperConsole = () => {
                                 <div className="mb-6">
                                     <BeZhasLogisticsSimulator />
                                 </div>
+                            )}
+
+                            {/* TAB: REVENUE */}
+                            {activeTab === 'revenue' && (
+                                <RevenueDashboardTab />
                             )}
 
                             {/* TAB: API KEYS */}
@@ -257,6 +266,13 @@ const DeveloperConsole = () => {
                             {activeTab === 'metrics' && (
                                 <LoyaltyMetricsTab
                                     usageStats={usageStats}
+                                />
+                            )}
+
+                            {/* TAB: OPENCLAW AI AGENT */}
+                            {activeTab === 'openclaw' && (
+                                <OpenClawTab 
+                                    address={user?.walletAddress} 
                                 />
                             )}
                         </>

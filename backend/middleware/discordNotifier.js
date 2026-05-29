@@ -197,7 +197,7 @@ async function sendDiscordNotification(eventType, severity, data) {
         // Footer
         embed.footer = {
             text: `BeZhas Security System | ${process.env.NODE_ENV || 'development'}`,
-            icon_url: 'https://bezhas.com/favicon.ico'
+            icon_url: 'https://bez.digital/favicon.ico'
         };
 
         // Agregar descripción según severidad
@@ -210,7 +210,7 @@ async function sendDiscordNotification(eventType, severity, data) {
         // Enviar a Discord
         const response = await axios.post(DISCORD_CONFIG.WEBHOOK_URL, {
             username: 'BeZhas Security Bot',
-            avatar_url: 'https://bezhas.com/assets/security-bot-avatar.png',
+            avatar_url: 'https://bez.digital/assets/security-bot-avatar.png',
             embeds: [embed]
         }, {
             timeout: 5000
@@ -403,7 +403,7 @@ async function sendDailySummary(stats) {
         ],
         footer: {
             text: `BeZhas Security Daily Report | ${new Date().toLocaleDateString()}`,
-            icon_url: 'https://bezhas.com/favicon.ico'
+            icon_url: 'https://bez.digital/favicon.ico'
         }
     };
 

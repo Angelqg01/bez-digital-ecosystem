@@ -93,25 +93,22 @@ Write-Host "`n[3/7] Verificando lock files..." -ForegroundColor White
 if (Test-Path ".\pnpm-lock.yaml") {
     Write-Status "pnpm-lock.yaml encontrado (raiz)" "SUCCESS"
 }
-elseif (Test-Path ".\package-lock.json") {
-    Write-Status "package-lock.json encontrado (usando npm)" "WARNING"
-}
 else {
-    Write-Status "No se encontro lock file en raiz" "ERROR"
+    Write-Status "No se encontro pnpm-lock.yaml en raiz" "ERROR"
 }
 
-if ((Test-Path ".\backend\pnpm-lock.yaml") -or (Test-Path ".\backend\package-lock.json")) {
-    Write-Status "Backend lock file encontrado" "SUCCESS"
+if ((Test-Path ".\backend\pnpm-lock.yaml") -or (Test-Path ".\pnpm-lock.yaml")) {
+    Write-Status "Backend cubierto por pnpm-lock.yaml" "SUCCESS"
 }
 else {
-    Write-Status "Backend sin lock file" "WARNING"
+    Write-Status "Backend sin pnpm-lock.yaml" "WARNING"
 }
 
-if ((Test-Path ".\frontend\pnpm-lock.yaml") -or (Test-Path ".\frontend\package-lock.json")) {
-    Write-Status "Frontend lock file encontrado" "SUCCESS"
+if ((Test-Path ".\frontend\pnpm-lock.yaml") -or (Test-Path ".\pnpm-lock.yaml")) {
+    Write-Status "Frontend cubierto por pnpm-lock.yaml" "SUCCESS"
 }
 else {
-    Write-Status "Frontend sin lock file" "WARNING"
+    Write-Status "Frontend sin pnpm-lock.yaml" "WARNING"
 }
 
 # ===================================================
@@ -190,7 +187,7 @@ if (-not $Quick) {
     Pop-Location
     
     Write-Host "  Compilando contratos..." -ForegroundColor Gray
-    $compileResult = & npx hardhat compile 2>&1
+    $compileResult = & pnpm exec hardhat compile 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Status "Contratos compilados correctamente" "SUCCESS"
     }

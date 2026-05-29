@@ -359,6 +359,6 @@ MIT License - ver [LICENSE](LICENSE) para detalles.
 
 **Hecho con ❤️ por el equipo BeZhas**
 
-[Website](https://bezhas.com) • [Documentation](LISTO_PARA_USAR.md) • [API Reference](sdk/README.md)
+[Website](https://bez.digital) • [Documentation](LISTO_PARA_USAR.md) • [API Reference](sdk/README.md)
 
 </div>

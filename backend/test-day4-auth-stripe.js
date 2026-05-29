@@ -133,7 +133,7 @@ const speakeasy = require('speakeasy');
 
 // Test generar secret 2FA
 console.log('✓ Generating 2FA secret...');
-generateTwoFactorSecret('test-user-2fa', 'test@bezhas.com').then(setup => {
+generateTwoFactorSecret('test-user-2fa', 'test@bez.digital').then(setup => {
     console.log('  ✅ 2FA secret generated');
     console.log('  - Secret:', setup.secret.substring(0, 20) + '...');
     console.log('  - QR Code generated:', setup.qrCode.substring(0, 50) + '...');
@@ -228,13 +228,13 @@ generateTwoFactorSecret('test-user-2fa', 'test@bezhas.com').then(setup => {
         name: 'Test NFT #1',
         description: 'A test NFT for payment integration',
         price: 49.99,
-        image: 'https://bezhas.com/assets/nft-test.png'
+        image: 'https://bez.digital/assets/nft-test.png'
     };
 
     const userInfo = {
         userId: 'test-user-payment',
         walletAddress: '0xTest123',
-        email: 'test@bezhas.com'
+        email: 'test@bez.digital'
     };
 
     createNFTCheckoutSession(nftData, userInfo).then(nftSession => {

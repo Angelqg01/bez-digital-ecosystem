@@ -16,12 +16,12 @@
     "test:integration": "jest --env=node --testPathPattern=tests/integration",
     "test:db": "jest --env=node tests/database-connection.test.js",
     "test:payments": "jest --env=node tests/payment-flow-e2e.test.js",
-    "test:all": "npm run test:db && npm run test:payments",
+    "test:all": "pnpm run test:db && pnpm run test:payments",
     "test:chat": "node chat/test-chat-integration.js",
     "lint": "eslint . --ext .js",
-    "check-updates": "npm outdated",
-    "update-safe": "npm update",
-    "clean": "rm -rf node_modules package-lock.json && npm install",
+    "check-updates": "pnpm outdated",
+    "update-safe": "pnpm update",
+    "clean": "rm -rf node_modules && pnpm install",
     "seed:dao": "node seeds/daoSeed.js",
     "health": "curl -s http://localhost:3000/api/health | node -e \"console.log(JSON.parse(require('fs').readFileSync('/dev/stdin').toString()))\""
   },
@@ -108,5 +108,9 @@
       "body-parser": ">=1.20.3",
       "axios": ">=1.7.8"
     }
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
   }
 }

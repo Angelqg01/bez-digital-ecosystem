@@ -430,7 +430,7 @@ Si encuentras problemas durante el deployment:
 2. Consultar documentación
 3. Buscar en issues de GitHub
 4. Preguntar en Discord: https://discord.gg/bezhas
-5. Email: dev@bezhas.com
+5. Email: dev@bez.digital
 
 ---
 

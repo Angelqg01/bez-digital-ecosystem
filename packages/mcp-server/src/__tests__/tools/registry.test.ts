@@ -1,18 +1,20 @@
 /**
  * Unit tests: Tool Registry
- * Verifies all 13 MCP tools are registered correctly.
+ * Verifies all 20 MCP tools are registered correctly.
  */
 import { describe, it, expect } from 'vitest';
 import { createMockMcpServer } from '../helpers/mockMcpServer.js';
 import { registerTools } from '../../tools/index.js';
 
+const EXPECTED_TOOL_COUNT = 20;
+
 describe('Tool Registry', () => {
-    it('should register all 13 MCP tools', () => {
+    it('should register all 20 MCP tools', () => {
         const { server, getToolNames } = createMockMcpServer();
         registerTools(server as any);
 
         const names = getToolNames();
-        expect(names).toHaveLength(13);
+        expect(names).toHaveLength(EXPECTED_TOOL_COUNT);
     });
 
     it('should register the 3 core tools', () => {
@@ -42,11 +44,25 @@ describe('Tool Registry', () => {
         expect(names).toContain('alpaca_markets');
     });
 
-    it('should call server.tool exactly 13 times', () => {
+    it('should register payment and communication tools', () => {
+        const { server, getToolNames } = createMockMcpServer();
+        registerTools(server as any);
+
+        const names = getToolNames();
+        expect(names).toContain('get_payment_quote');
+        expect(names).toContain('process_stripe_payment');
+        expect(names).toContain('check_payment_status');
+        expect(names).toContain('get_wallet_balance');
+        expect(names).toContain('initiate_crypto_payment');
+        expect(names).toContain('send_telegram_message');
+        expect(names).toContain('sync_contacts');
+    });
+
+    it('should call server.tool exactly 20 times', () => {
         const { server } = createMockMcpServer();
         registerTools(server as any);
 
-        expect(server.tool).toHaveBeenCalledTimes(13);
+        expect(server.tool).toHaveBeenCalledTimes(EXPECTED_TOOL_COUNT);
     });
 
     it('each tool should have name, description, schema, and handler', () => {

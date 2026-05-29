@@ -109,15 +109,15 @@ const TESTS = [
     },
     {
         tool: 'firecrawl_scraper',
-        name: 'Firecrawl Scraper — bezhas.com',
-        params: { action: 'scrape', url: 'https://bezhas.com' },
+        name: 'Firecrawl Scraper — bez.digital',
+        params: { action: 'scrape', url: 'https://bez.digital' },
         assert: (r) => ['SUCCESS', 'PARTIAL', 'FAILED'].includes(r.status),
         slow: true, // Requires FIRECRAWL_API_KEY
     },
     {
         tool: 'playwright_automation',
         name: 'Playwright — dispatch smoke test',
-        params: { action: 'run_test', testName: 'smoke', url: 'https://bezhas.com' },
+        params: { action: 'run_test', testName: 'smoke', url: 'https://bez.digital' },
         assert: (r) => r.status === 'SUCCESS' && r.data?.command,
         slow: false,
     },

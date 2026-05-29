@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { Spinner } from '../ui/Spinner';
@@ -8,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Lista de wallets admin autorizadas (Equipo Fundador y Asesores - Polygon)
 // Ref: PLATFORM_PAGES.md → Wallets Autorizadas para Admin
-const ADMIN_WALLETS = [
+export const ADMIN_WALLETS = [
   '0x52Df82920CBAE522880dD7657e43d1A754eD044E', // Super Admin - Wallet principal equipo fundador
   '0x3EfC42095E8503d41Ad8001328FC23388E00e8a3', // Super Admin - BeZhas Wallet 1
   '0x89c23890c742d710265dd61be789c71dc8999b12', // Treasury - Tesorería y Desarrollo DAO
@@ -119,13 +119,12 @@ const AdminRoute = () => {
 
   // No wallet connected
   if (!address) {
-    toast.error('Conecta tu wallet para acceder al panel de administración');
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin-login" replace />;
   }
 
   // Not an admin
   if (isAdmin === false) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin-login" replace />;
   }
 
   // Admin verified - render protected content

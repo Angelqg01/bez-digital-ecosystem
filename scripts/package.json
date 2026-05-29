@@ -1,23 +1,25 @@
 {
-    "name": "bezhas-security-scripts",
-    "version": "1.0.0",
-    "description": "Security monitoring and dependency management scripts for BeZhas",
-    "private": true,
-    "scripts": {
-        "test-discord": "node testDiscord.js",
-        "security-check": "node securityMonitor.js",
-        "security-notifier": "node securityNotifier.js",
-        "start-sentinel": "node startSentinel.js",
-        "dependency-check": "node dependencyUpdater.js",
-        "full-audit": "npm run security-check && npm run dependency-check"
-    },
-    "dependencies": {
-        "axios": "^1.6.0",
-        "@octokit/rest": "^20.0.2",
-        "dotenv": "^16.4.5"
-    },
-    "devDependencies": {},
-    "engines": {
-        "node": ">=18.0.0"
-    }
+  "name": "bezhas-security-scripts",
+  "version": "1.0.0",
+  "description": "Security monitoring and dependency management scripts for BeZhas",
+  "private": true,
+  "scripts": {
+    "test-discord": "node testDiscord.js",
+    "security-check": "node securityMonitor.js",
+    "security-notifier": "node securityNotifier.js",
+    "start-sentinel": "node startSentinel.js",
+    "dependency-check": "node dependencyUpdater.js",
+    "full-audit": "pnpm run security-check && pnpm run dependency-check"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "@octokit/rest": "^20.0.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=11"
+  },
+  "packageManager": "pnpm@11.0.0"
 }

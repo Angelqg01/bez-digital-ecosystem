@@ -1,517 +1,331 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAccount } from 'wagmi';
-import {
-    Vote, Users, TrendingUp, Clock, CheckCircle,
-    XCircle, AlertCircle, Filter, Search, Plus,
-    ArrowRight, Info, ThumbsUp, ThumbsDown, Minus
-} from 'lucide-react';
-import axios from 'axios';
-import { ethers } from 'ethers';
-import { toast } from 'react-hot-toast';
+/**
+ * BeZhas-Hub — GovernancePage
+ * Dashboard de Gobernanza DAO para BeZhas-Hub.
+ * Permite votar en propuestas, delegar poder y ver estadísticas de la DAO.
+ */
 
-const API_URL = '';
+import { useState, useCallback, useMemo } from 'react';
+import { useGovernance } from '../hooks/useGovernance';
 
-// State labels con colores
-const stateColors = {
-    0: { bg: 'bg-gray-500/20', text: 'text-gray-400', label: 'Pendiente' },
-    1: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Activa' },
-    2: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Aprobada' },
-    3: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Rechazada' },
-    4: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'En Cola' },
-    5: { bg: 'bg-purple-500/20', text: 'text-purple-400', label: 'Ejecutada' },
-    6: { bg: 'bg-gray-500/20', text: 'text-gray-400', label: 'Cancelada' }
+const C = {
+  bg:'#03060E', surface:'#070D1A', surface2:'#0A1225',
+  teal:'#00C896', tealDim:'rgba(0,200,150,0.10)', tealBrd:'rgba(0,200,150,0.18)',
+  gold:'#FFB800', goldDim:'rgba(255,184,0,0.10)', goldBrd:'rgba(255,184,0,0.20)',
+  purple:'#8B5CF6', purpleDim:'rgba(139,92,246,0.10)',
+  text:'#C8D8F0', textDim:'#6B8099', muted:'#1A2535',
+  red:'#FF4D6A', green:'#00C896',
 };
 
-export default function GovernancePage() {
-    const { address, isConnected } = useAccount();
-    const [proposals, setProposals] = useState([]);
-    const [userData, setUserData] = useState(null);
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [selectedProposal, setSelectedProposal] = useState(null);
-    const [filterState, setFilterState] = useState('all'); // 'all', 'active', 'executed'
-    const [searchQuery, setSearchQuery] = useState('');
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+const STATE_META = {
+  0: { label:'Pendiente', color:C.textDim },
+  1: { label:'Activa',    color:C.teal },
+  2: { label:'Canceled',  color:C.red },
+  3: { label:'Defeated',  color:C.red },
+  4: { label:'Succeeded', color:C.gold },
+  5: { label:'Queued',    color:C.purple },
+  6: { label:'Expired',   color:C.textDim },
+  7: { label:'Executed',  color:C.gold },
+};
 
-    useEffect(() => {
-        loadData();
-    }, [address, page]);
+const fmtN = (n) => {
+  const v = parseFloat(n || 0);
+  if (v >= 1e6) return `${(v/1e6).toFixed(2)}M`;
+  if (v >= 1e3) return `${(v/1e3).toFixed(2)}K`;
+  return v.toLocaleString();
+};
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            // Cargar propuestas
-            const proposalsRes = await axios.get(`${API_URL}/api/governance/proposals?page=${page}&limit=10`);
-            setProposals(proposalsRes.data.data.proposals || []);
-            setTotalPages(proposalsRes.data.data.pagination.totalPages || 1);
+// ─── UI Atoms ──────────────────────────────────────────────────────────────
 
-            // Cargar estadísticas
-            const statsRes = await axios.get(`${API_URL}/api/governance/stats`);
-            setStats(statsRes.data.data);
+function Card({ children, accent = C.teal, style = {} }) {
+  return (
+    <div style={{
+      background:C.surface, borderRadius:12,
+      border:`1px solid ${accent}25`, padding:'20px 24px',
+      position:'relative', overflow:'hidden', ...style,
+    }}>
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:1,
+        background:`linear-gradient(90deg,transparent,${accent}55,transparent)` }} />
+      {children}
+    </div>
+  );
+}
 
-            // Si está conectado, cargar datos del usuario
-            if (isConnected && address) {
-                const token = localStorage.getItem('token');
-                if (token) {
-                    const userRes = await axios.get(`${API_URL}/api/governance/user/${address}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    setUserData(userRes.data.data);
-                }
-            }
-        } catch (error) {
-            // Silently handle error - backend may not be available
-            if (error.code !== 'ERR_NETWORK') {
-                console.error('Error loading governance data:', error);
-                toast.error('Error al cargar datos de gobernanza');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+function StatCard({ label, value, color }) {
+  return (
+    <Card accent={color} style={{ padding:'16px 20px' }}>
+      <div style={{ fontSize:22, fontWeight:800, color, fontFamily:'JetBrains Mono,monospace' }}>{value}</div>
+      <div style={{ fontSize:10, color:C.textDim, textTransform:'uppercase', letterSpacing:'0.1em', marginTop:4 }}>{label}</div>
+    </Card>
+  );
+}
 
-    const openProposalModal = async (proposalId) => {
-        try {
-            const res = await axios.get(`${API_URL}/api/governance/proposal/${proposalId}`);
-            setSelectedProposal(res.data.data);
-        } catch (error) {
-            console.error('Error loading proposal:', error);
-            toast.error('Error al cargar propuesta');
-        }
-    };
+// ─── Proposal Row ──────────────────────────────────────────────────────────
 
-    const closeProposalModal = () => {
-        setSelectedProposal(null);
-    };
-
-    const handleVote = async (voteType) => {
-        if (!selectedProposal) return;
-
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                toast.error('Debes iniciar sesión');
-                return;
-            }
-
-            // Validar voto
-            const validation = await axios.post(
-                `${API_URL}/api/governance/validate-vote`,
-                {
-                    proposalId: selectedProposal.id,
-                    userAddress: address
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (!validation.data.data.canVote) {
-                toast.error(validation.data.data.reason);
-                return;
-            }
-
-            toast.success('Ahora aprueba la transacción en tu wallet');
-            // TODO: Implementar llamada al contrato con wagmi
-            closeProposalModal();
-
-        } catch (error) {
-            console.error('Error voting:', error);
-            toast.error('Error al votar');
-        }
-    };
-
-    const filteredProposals = proposals.filter(proposal => {
-        // Filtro por estado
-        if (filterState === 'active' && !proposal.isActive) return false;
-        if (filterState === 'executed' && proposal.state !== 5) return false;
-
-        // Filtro por búsqueda
-        if (searchQuery && !proposal.title.toLowerCase().includes(searchQuery.toLowerCase())) {
-            return false;
-        }
-
-        return true;
-    });
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-gray-900 flex items-center justify-center">
-                <div className="text-white text-xl flex items-center gap-3">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                    Cargando propuestas...
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-gray-900">
-            {/* Header */}
-            <div className="bg-black/30 backdrop-blur-sm border-b border-white/10">
-                <div className="max-w-7xl mx-auto px-4 py-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                                <Vote className="text-indigo-400" size={32} />
-                                Gobernanza DAO
-                            </h1>
-                            <p className="text-gray-400 mt-1">Participa en las decisiones de BeZhas</p>
-                        </div>
-
-                        {userData && (
-                            <div className="hidden md:block bg-white/10 backdrop-blur-md rounded-lg px-6 py-3 border border-white/20">
-                                <p className="text-gray-400 text-sm">Tu Poder de Voto</p>
-                                <p className="text-white text-xl font-bold">
-                                    {parseFloat(userData.votingPowerFormatted).toFixed(2)} BEZ
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Stats Overview */}
-            {stats && (
-                <div className="max-w-7xl mx-auto px-4 py-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl p-6 shadow-lg"
-                        >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-blue-100 text-sm">Total Propuestas</p>
-                                    <p className="text-white text-2xl font-bold mt-1">{stats.totalProposals}</p>
-                                </div>
-                                <Vote className="text-white/30" size={40} />
-                            </div>
-                        </motion.div>
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl p-6 shadow-lg"
-                        >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-green-100 text-sm">Activas</p>
-                                    <p className="text-white text-2xl font-bold mt-1">{stats.activeProposals}</p>
-                                </div>
-                                <TrendingUp className="text-white/30" size={40} />
-                            </div>
-                        </motion.div>
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-6 shadow-lg"
-                        >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-purple-100 text-sm">Ejecutadas</p>
-                                    <p className="text-white text-2xl font-bold mt-1">{stats.executedProposals}</p>
-                                </div>
-                                <CheckCircle className="text-white/30" size={40} />
-                            </div>
-                        </motion.div>
-
-                        {userData && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                className="bg-gradient-to-br from-orange-600 to-red-600 rounded-xl p-6 shadow-lg"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-orange-100 text-sm">Mis Votos</p>
-                                        <p className="text-white text-2xl font-bold mt-1">{userData.proposalsVoted}</p>
-                                    </div>
-                                    <Users className="text-white/30" size={40} />
-                                </div>
-                            </motion.div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Filters & Search */}
-            <div className="max-w-7xl mx-auto px-4 pb-6">
-                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Buscar propuestas..."
-                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500"
-                            />
-                        </div>
-
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setFilterState('all')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${filterState === 'all'
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                                    }`}
-                            >
-                                Todas
-                            </button>
-                            <button
-                                onClick={() => setFilterState('active')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${filterState === 'active'
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                                    }`}
-                            >
-                                Activas
-                            </button>
-                            <button
-                                onClick={() => setFilterState('executed')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${filterState === 'executed'
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                                    }`}
-                            >
-                                Ejecutadas
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Proposals List */}
-            <div className="max-w-7xl mx-auto px-4 pb-12">
-                {!isConnected ? (
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 text-center border border-white/20">
-                        <Vote className="mx-auto text-gray-400 mb-4" size={64} />
-                        <h3 className="text-white text-xl font-semibold mb-2">Conecta tu Wallet</h3>
-                        <p className="text-gray-400 mb-6">
-                            Conecta tu wallet para ver las propuestas y participar en la gobernanza
-                        </p>
-                    </div>
-                ) : filteredProposals.length === 0 ? (
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 text-center border border-white/20">
-                        <AlertCircle className="mx-auto text-gray-400 mb-4" size={64} />
-                        <h3 className="text-white text-xl font-semibold mb-2">No se encontraron propuestas</h3>
-                        <p className="text-gray-400">Intenta cambiar los filtros de búsqueda</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {filteredProposals.map((proposal, index) => {
-                            const stateStyle = stateColors[proposal.state];
-                            return (
-                                <motion.div
-                                    key={proposal.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:border-indigo-500 transition cursor-pointer"
-                                    onClick={() => openProposalModal(proposal.id)}
-                                >
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <span className={`px-3 py-1 ${stateStyle.bg} ${stateStyle.text} rounded-full text-xs font-semibold`}>
-                                                    {stateStyle.label}
-                                                </span>
-                                                {proposal.isActive && (
-                                                    <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-semibold flex items-center gap-1">
-                                                        <Clock size={12} />
-                                                        {proposal.timeRemaining?.label || 'En curso'}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <h3 className="text-white font-bold text-lg mb-2">{proposal.title}</h3>
-                                            <p className="text-gray-400 text-sm line-clamp-2">{proposal.description}</p>
-                                        </div>
-                                        <ArrowRight className="text-gray-400 flex-shrink-0 ml-4" size={24} />
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
-                                        <div>
-                                            <p className="text-gray-400 text-xs mb-1">A Favor</p>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-green-500"
-                                                        style={{ width: `${proposal.forPercent || 0}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-green-400 text-sm font-semibold">
-                                                    {proposal.forPercent || 0}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-400 text-xs mb-1">En Contra</p>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-red-500"
-                                                        style={{ width: `${proposal.againstPercent || 0}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-red-400 text-sm font-semibold">
-                                                    {proposal.againstPercent || 0}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-400 text-xs mb-1">Abstención</p>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-gray-500"
-                                                        style={{ width: `${proposal.abstainPercent || 0}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-gray-400 text-sm font-semibold">
-                                                    {proposal.abstainPercent || 0}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-8">
-                        <button
-                            onClick={() => setPage(Math.max(1, page - 1))}
-                            disabled={page === 1}
-                            className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                            Anterior
-                        </button>
-                        <div className="flex items-center px-4 py-2 bg-white/10 text-white rounded-lg">
-                            Página {page} de {totalPages}
-                        </div>
-                        <button
-                            onClick={() => setPage(Math.min(totalPages, page + 1))}
-                            disabled={page === totalPages}
-                            className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Proposal Detail Modal */}
-            <AnimatePresence>
-                {selectedProposal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/20"
-                        >
-                            <div className="sticky top-0 bg-gray-900 border-b border-white/10 p-6 z-10">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-white text-2xl font-bold">{selectedProposal.title}</h2>
-                                    <button
-                                        onClick={closeProposalModal}
-                                        className="text-gray-400 hover:text-white transition"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="p-6 space-y-6">
-                                {/* Description */}
-                                <div>
-                                    <h3 className="text-white font-semibold mb-2">Descripción</h3>
-                                    <p className="text-gray-300">{selectedProposal.description}</p>
-                                </div>
-
-                                {/* Voting Results */}
-                                <div>
-                                    <h3 className="text-white font-semibold mb-4">Resultados de Votación</h3>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <div className="flex justify-between text-sm mb-1">
-                                                <span className="text-green-400">A Favor</span>
-                                                <span className="text-white font-semibold">{selectedProposal.forPercent}%</span>
-                                            </div>
-                                            <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-green-500"
-                                                    style={{ width: `${selectedProposal.forPercent}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="flex justify-between text-sm mb-1">
-                                                <span className="text-red-400">En Contra</span>
-                                                <span className="text-white font-semibold">{selectedProposal.againstPercent}%</span>
-                                            </div>
-                                            <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-red-500"
-                                                    style={{ width: `${selectedProposal.againstPercent}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="flex justify-between text-sm mb-1">
-                                                <span className="text-gray-400">Abstención</span>
-                                                <span className="text-white font-semibold">{selectedProposal.abstainPercent}%</span>
-                                            </div>
-                                            <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gray-500"
-                                                    style={{ width: `${selectedProposal.abstainPercent}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Vote Buttons */}
-                                {selectedProposal.isVotingOpen && (
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <button
-                                            onClick={() => handleVote(1)}
-                                            className="py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 font-semibold"
-                                        >
-                                            <ThumbsUp size={20} />
-                                            A Favor
-                                        </button>
-                                        <button
-                                            onClick={() => handleVote(0)}
-                                            className="py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2 font-semibold"
-                                        >
-                                            <ThumbsDown size={20} />
-                                            En Contra
-                                        </button>
-                                        <button
-                                            onClick={() => handleVote(2)}
-                                            className="py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2 font-semibold"
-                                        >
-                                            <Minus size={20} />
-                                            Abstención
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+function ProposalRow({ proposal, onClick }) {
+  const meta = STATE_META[proposal.state] || STATE_META[0];
+  const totalVotes = parseFloat(proposal.forVotes) + parseFloat(proposal.againstVotes) + parseFloat(proposal.abstainVotes);
+  const forPct = totalVotes > 0 ? (parseFloat(proposal.forVotes) / totalVotes * 100) : 0;
+  
+  return (
+    <div onClick={onClick} style={{
+      background:C.surface2, border:`1px solid ${C.tealBrd}`, borderRadius:10,
+      padding:'16px 20px', cursor:'pointer', transition:'all 0.2s', marginBottom:12,
+    }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+        <div>
+          <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:6 }}>
+            <span style={{
+              fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:4,
+              background:`${meta.color}15`, color:meta.color, border:`1px solid ${meta.color}33`,
+              textTransform:'uppercase'
+            }}>{meta.label}</span>
+            <span style={{ fontSize:10, color:C.textDim, fontFamily:'JetBrains Mono,monospace' }}>
+              ID: #{proposal.id} · Proposer: {proposal.proposer}
+            </span>
+          </div>
+          <h3 style={{ fontSize:16, fontWeight:700, margin:0, color:C.text }}>{proposal.title}</h3>
         </div>
-    );
+        <div style={{ textAlign:'right' }}>
+          <div style={{ fontSize:12, fontWeight:700, color:C.teal }}>{fmtN(totalVotes)} BEZ</div>
+          <div style={{ fontSize:10, color:C.textDim }}>Total Votes</div>
+        </div>
+      </div>
+
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ flex:1, height:6, background:C.muted, borderRadius:3, overflow:'hidden', display:'flex' }}>
+          <div style={{ width:`${forPct}%`, background:C.teal, height:'100%' }} />
+          <div style={{ width:`${100 - forPct}%`, background:C.red, height:'100%', opacity:0.6 }} />
+        </div>
+        <div style={{ fontSize:11, fontFamily:'JetBrains Mono,monospace', color:C.textDim }}>
+          <span style={{ color:C.teal }}>{forPct.toFixed(1)}%</span> / <span style={{ color:C.red }}>{(100-forPct).toFixed(1)}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN PAGE ─────────────────────────────────────────────────────────────
+
+export default function GovernancePage({ userAddress }) {
+  const { proposals, stats, userPower, delegated, loading, castVote, delegate } = useGovernance(userAddress);
+
+  const [selectedProposal, setSelectedProposal] = useState(null);
+  const [voteLoading, setVoteLoading] = useState(false);
+  const [delegateLoading, setDelegateLoading] = useState(false);
+  const [delegateAddr, setDelegateAddr] = useState('');
+
+  const handleVote = async (support) => {
+    if (!selectedProposal) return;
+    setVoteLoading(true);
+    try {
+      await castVote(selectedProposal.id, support);
+      setSelectedProposal(null);
+    } catch (e) {
+      alert('Error voting: ' + e.message);
+    } finally { setVoteLoading(false); }
+  };
+
+  const handleDelegate = async () => {
+    if (!delegateAddr) return;
+    setDelegateLoading(true);
+    try {
+      await delegate(delegateAddr);
+      setDelegateAddr('');
+    } catch (e) {
+      alert('Error delegating: ' + e.message);
+    } finally { setDelegateLoading(false); }
+  };
+
+  if (loading && proposals.length === 0) return (
+    <div style={{ minHeight:'100vh', background:C.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ color:C.teal, fontFamily:'JetBrains Mono,monospace' }}>Conectando a la DAO...</div>
+    </div>
+  );
+
+  return (
+    <div style={{ minHeight:'100vh', background:C.bg, color:C.text, fontFamily:'Inter,sans-serif' }}>
+      <style>{`* { box-sizing:border-box; }`}</style>
+      
+      <div style={{ maxWidth:1200, margin:'0 auto', padding:'40px 24px' }}>
+        
+        {/* Header */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:32 }}>
+          <div>
+            <h1 style={{ fontFamily:'Syne,sans-serif', fontSize:32, fontWeight:800, margin:0, letterSpacing:'-0.02em' }}>
+              BeZhas-Hub <span style={{ color:C.teal }}>Governance</span>
+            </h1>
+            <p style={{ color:C.textDim, margin:'4px 0 0', fontSize:14 }}>
+              Participa en las decisiones clave del protocolo a través de la DAO.
+            </p>
+          </div>
+          <div style={{ textAlign:'right' }}>
+            <div style={{ fontSize:12, color:C.textDim, marginBottom:4 }}>Tu Poder de Voto</div>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:24, fontWeight:800, color:C.teal, fontFamily:'JetBrains Mono,monospace' }}>
+                {fmtN(userPower)}
+              </span>
+              <span style={{ fontSize:12, color:C.textDim, fontWeight:600 }}>BEZ</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:32 }}>
+          <StatCard label="Total Propuestas" value={stats.totalProposals} color={C.teal} />
+          <StatCard label="Propuestas Activas" value={stats.activeProposals} color={C.gold} />
+          <StatCard label="Votos Emitidos" value="1.2M+" color={C.purple} />
+          <StatCard label="Quorum Actual" value="15%" color={C.text} />
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:24 }}>
+          
+          {/* Main List */}
+          <div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+              <h2 style={{ fontSize:18, fontWeight:700, margin:0 }}>Propuestas Recientes</h2>
+              <div style={{ display:'flex', gap:8 }}>
+                {['Todas', 'Activas', 'Cerradas'].map(f => (
+                  <button key={f} style={{
+                    background:C.surface2, border:`1px solid ${C.tealBrd}`,
+                    borderRadius:6, padding:'4px 12px', fontSize:12, color:C.textDim,
+                    cursor:'pointer', transition:'all 0.2s'
+                  }}>{f}</button>
+                ))}
+              </div>
+            </div>
+            
+            {proposals.map(p => (
+              <ProposalRow key={p.id} proposal={p} onClick={() => setSelectedProposal(p)} />
+            ))}
+            
+            {proposals.length === 0 && (
+              <Card style={{ textAlign:'center', padding:'40px' }}>
+                <div style={{ fontSize:40, marginBottom:16 }}>🗳️</div>
+                <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>No hay propuestas pendientes</div>
+                <div style={{ fontSize:13, color:C.textDim }}>La DAO está tranquila por ahora. Vuelve pronto.</div>
+              </Card>
+            )}
+          </div>
+
+          {/* Sidebar Tools */}
+          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            
+            {/* Delegation Card */}
+            <Card accent={C.purple}>
+              <h3 style={{ fontSize:14, fontWeight:700, margin:'0 0 12px', color:C.purple }}>Delegación</h3>
+              <p style={{ fontSize:12, color:C.textDim, lineHeight:1.5, marginBottom:16 }}>
+                Si no tienes tiempo para votar, delega tu poder a un representante de confianza. Puedes revocarlo en cualquier momento.
+              </p>
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, color:C.textDim, marginBottom:4 }}>Delegado Actual</div>
+                <div style={{ fontFamily:'JetBrains Mono,monospace', fontSize:11, color:C.text }}>
+                  {delegated === '0x0000000000000000000000000000000000000000' ? 'Self-Delegated' : delegated || 'Sin delegar'}
+                </div>
+              </div>
+              <input 
+                placeholder="Dirección 0x..." 
+                value={delegateAddr} onChange={e => setDelegateAddr(e.target.value)}
+                style={{
+                  width:'100%', background:C.bg, border:`1px solid ${C.tealBrd}`,
+                  borderRadius:8, padding:'10px 12px', color:C.text, fontSize:12,
+                  fontFamily:'JetBrains Mono,monospace', marginBottom:12, outline:'none'
+                }}
+              />
+              <button 
+                onClick={handleDelegate}
+                disabled={delegateLoading || !delegateAddr}
+                style={{
+                  width:'100%', padding:'10px', borderRadius:8,
+                  background:C.purple, color:'#fff', fontWeight:700, fontSize:13,
+                  cursor:'pointer', border:'none', opacity: delegateAddr ? 1 : 0.5
+                }}>
+                {delegateLoading ? '⏳ Procesando...' : 'Delegar Votos'}
+              </button>
+            </Card>
+
+            {/* Treasury Card */}
+            <Card accent={C.gold}>
+              <h3 style={{ fontSize:14, fontWeight:700, margin:'0 0 12px', color:C.gold }}>DAO Treasury</h3>
+              <div style={{ marginBottom:16 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+                  <span style={{ fontSize:12, color:C.textDim }}>BEZ Liquidez</span>
+                  <span style={{ fontSize:12, fontWeight:700 }}>4.5M BEZ</span>
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+                  <span style={{ fontSize:12, color:C.textDim }}>USDT / USDC</span>
+                  <span style={{ fontSize:12, fontWeight:700 }}>$1.2M</span>
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ fontSize:12, color:C.textDim }}>Staked Eth</span>
+                  <span style={{ fontSize:12, fontWeight:700 }}>250 stETH</span>
+                </div>
+              </div>
+              <button style={{
+                width:'100%', padding:'10px', borderRadius:8,
+                background:'transparent', border:`1px solid ${C.gold}`,
+                color:C.gold, fontWeight:700, fontSize:13, cursor:'pointer'
+              }}>Ver Dashboard Financiero</button>
+            </Card>
+
+            {/* Documentation */}
+            <div style={{ padding:'16px', borderRadius:12, border:`1px solid ${C.tealBrd}`, fontSize:12, color:C.textDim, lineHeight:1.6 }}>
+              ℹ️ <strong>Documentación:</strong> Para crear una propuesta necesitas al menos 100,000 BEZ. Las votaciones duran 7 días naturales con un delay de 2 días.
+            </div>
+          </div>
+        </div>
+
+        {/* Proposal Detail Overlay */}
+        {selectedProposal && (
+          <div style={{
+            fixed:0, position:'fixed', top:0, left:0, right:0, bottom:0,
+            background:'rgba(0,0,0,0.85)', backdropFilter:'blur(4px)',
+            display:'flex', alignItems:'center', justifyContent:'center', zIndex:100,
+            padding:20
+          }} onClick={() => setSelectedProposal(null)}>
+            <Card style={{ maxWidth:600, width:'100%', maxHeight:'90vh', overflowY:'auto' }} onClick={e => e.stopPropagation()}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
+                <h2 style={{ fontSize:22, fontWeight:800, margin:0 }}>{selectedProposal.title}</h2>
+                <button onClick={() => setSelectedProposal(null)} style={{ background:'none', border:'none', color:C.textDim, cursor:'pointer', fontSize:20 }}>✕</button>
+              </div>
+              
+              <div style={{ marginBottom:20, fontSize:14, color:C.textDim, lineHeight:1.6 }}>
+                {selectedProposal.description}
+              </div>
+
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:24 }}>
+                <div style={{ padding:14, background:C.surface2, borderRadius:10, border:`1px solid ${C.tealBrd}` }}>
+                  <div style={{ fontSize:11, color:C.textDim, marginBottom:4 }}>Votos a Favor</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:C.teal }}>{fmtN(selectedProposal.forVotes)} BEZ</div>
+                </div>
+                <div style={{ padding:14, background:C.surface2, borderRadius:10, border:`1px solid ${C.tealBrd}` }}>
+                  <div style={{ fontSize:11, color:C.textDim, marginBottom:4 }}>Votos en Contra</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:C.red }}>{fmtN(selectedProposal.againstVotes)} BEZ</div>
+                </div>
+              </div>
+
+              {selectedProposal.state === 1 && (
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+                  <button onClick={() => handleVote(1)} disabled={voteLoading} style={{
+                    padding:'14px', borderRadius:10, background:C.teal, color:'#000',
+                    fontWeight:800, cursor:'pointer', border:'none'
+                  }}>A Favor</button>
+                  <button onClick={() => handleVote(0)} disabled={voteLoading} style={{
+                    padding:'14px', borderRadius:10, background:C.red, color:'#fff',
+                    fontWeight:800, cursor:'pointer', border:'none'
+                  }}>En Contra</button>
+                  <button onClick={() => handleVote(2)} disabled={voteLoading} style={{
+                    padding:'14px', borderRadius:10, background:C.surface2, color:C.text,
+                    fontWeight:800, cursor:'pointer', border:`1px solid ${C.tealBrd}`
+                  }}>Abstenerse</button>
+                </div>
+              )}
+              
+              {voteLoading && <div style={{ textAlign:'center', marginTop:16, color:C.teal, fontSize:12 }}>Enviando voto a la blockchain...</div>}
+            </Card>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
 }

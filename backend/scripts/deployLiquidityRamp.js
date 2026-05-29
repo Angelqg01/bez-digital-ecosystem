@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
+const { BEZ_COIN_UTILITY_VALIDATOR_TOKEN } = require("../config/bez-token.config");
 
 /**
  * Deployment script for BezLiquidityRamp contract
@@ -28,14 +29,14 @@ async function main() {
 
     // Polygon Mainnet Addresses
     const QUICKSWAP_ROUTER = "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"; // QuickSwap V2 Router
-    const BEZ_TOKEN = "0xYourBezTokenAddress"; // TODO: Replace with actual BEZ token address
+    const BEZ_TOKEN = BEZ_COIN_UTILITY_VALIDATOR_TOKEN.address;
     const USDC_TOKEN = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; // USDC on Polygon
     const ADMIN_ADDRESS = deployer.address; // Initial admin (can be changed later)
-    const TREASURY_ADDRESS = "0xYourTreasuryWalletAddress"; // TODO: Replace with treasury wallet
+    const TREASURY_ADDRESS = process.env.TREASURY_WALLET || process.env.VIP_TREASURY_WALLET || "0x52Df82920CBAE522880dD7657e43d1A754eD044E";
 
     // Polygon Mumbai Testnet Addresses (for testing)
     // const QUICKSWAP_ROUTER = "0x8954AfA98594b838bda56FE4C12a09D7739D179b"; // QuickSwap Router Mumbai
-    // const BEZ_TOKEN = "0xYourTestnetBezTokenAddress";
+    // const BEZ_TOKEN = process.env.BEZ_TOKEN_ADDRESS;
     // const USDC_TOKEN = "0x0FA8781a83E46826621b3BC094Ea2A0212e71B23"; // Mock USDC Mumbai
     // const ADMIN_ADDRESS = deployer.address;
     // const TREASURY_ADDRESS = "0xYourTestnetTreasuryAddress";
@@ -49,8 +50,8 @@ async function main() {
     console.log("");
 
     // Validation
-    if (BEZ_TOKEN === "0xYourBezTokenAddress" || TREASURY_ADDRESS === "0xYourTreasuryWalletAddress") {
-        throw new Error("❌ Please update BEZ_TOKEN and TREASURY_ADDRESS in deployment script!");
+    if (!ethers.isAddress(BEZ_TOKEN) || !ethers.isAddress(TREASURY_ADDRESS)) {
+        throw new Error("Invalid BEZ token or treasury address for deployment.");
     }
 
     // ========================================

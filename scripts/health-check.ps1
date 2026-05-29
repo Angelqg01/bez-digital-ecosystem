@@ -28,7 +28,7 @@ Write-Host @"
 
 $projectRoot = "d:\Documentos D\Documentos Yoe\BeZhas\BeZhas Web\bezhas-web3"
 
-# 1. Node.js & npm
+# 1. Node.js & pnpm
 Write-Host "🔧 Verificando herramientas de desarrollo..." -ForegroundColor Cyan
 $nodeVersion = node --version 2>$null
 if ($nodeVersion) {
@@ -38,12 +38,12 @@ else {
     Write-Status "Node.js no encontrado" "ERROR"
 }
 
-$npmVersion = npm --version 2>$null
-if ($npmVersion) {
-    Write-Status "npm v$npmVersion instalado" "OK"
+$pnpmVersion = pnpm --version 2>$null
+if ($pnpmVersion) {
+    Write-Status "pnpm v$pnpmVersion instalado" "OK"
 }
 else {
-    Write-Status "npm no encontrado" "ERROR"
+    Write-Status "pnpm no encontrado" "ERROR"
 }
 
 Write-Host ""

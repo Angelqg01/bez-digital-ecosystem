@@ -335,8 +335,8 @@ docker build -t bezhas-backend -f backend/Dockerfile.optimized backend/
 
 # Build del frontend
 docker build -t bezhas-frontend -f frontend/Dockerfile.optimized frontend/ `
-  --build-arg VITE_API_URL=https://api.bezhas.com `
-  --build-arg VITE_WS_URL=wss://api.bezhas.com `
+  --build-arg VITE_API_URL=https://api.bez.digital `
+  --build-arg VITE_WS_URL=wss://api.bez.digital `
   --build-arg VITE_CHAIN_ID=137 `
   --build-arg VITE_NETWORK=polygon
 
@@ -441,10 +441,10 @@ gcloud run deploy bezhas-frontend `
 
 ```powershell
 # Verificar Backend
-Invoke-WebRequest -Uri "https://api.bezhas.com/api/health" -Method GET
+Invoke-WebRequest -Uri "https://api.bez.digital/api/health" -Method GET
 
 # Verificar Frontend
-Invoke-WebRequest -Uri "https://bezhas.com" -Method HEAD
+Invoke-WebRequest -Uri "https://bez.digital" -Method HEAD
 
 # Ver logs de Cloud Run
 gcloud run services logs read bezhas-backend --region us-central1 --limit 50

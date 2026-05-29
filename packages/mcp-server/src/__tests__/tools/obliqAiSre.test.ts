@@ -22,7 +22,7 @@ describe('obliq_ai_sre', () => {
     describe('health_check', () => {
         it('should check service health with real endpoints', async () => {
             const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
-            // Mock successful responses for bezhas.com and api.bezhas.com
+            // Mock successful responses for bez.digital and api.bez.digital
             mockFetch
                 .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), text: async () => 'OK', json: async () => ({}) } as Response)
                 .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), text: async () => '{"status":"ok"}', json: async () => ({ status: 'ok' }) } as Response);

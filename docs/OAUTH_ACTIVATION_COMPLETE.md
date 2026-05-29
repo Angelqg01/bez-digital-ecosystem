@@ -314,21 +314,21 @@ const loginWithGitHub = async (code) => {
 Al desplegar a producción, actualizar:
 
 ### Google Cloud Console
-- Authorized JavaScript origins: `https://bezhas.com`
-- Authorized redirect URIs: `https://bezhas.com/auth/google/callback`
+- Authorized JavaScript origins: `https://bez.digital`
+- Authorized redirect URIs: `https://bez.digital/auth/google/callback`
 
 ### GitHub Developer Settings
-- Authorization callback URL: `https://bezhas.com/auth/github/callback`
+- Authorization callback URL: `https://bez.digital/auth/github/callback`
 
 ### Backend `.env`
 ```env
-FRONTEND_URL=https://bezhas.com
-ALLOWED_ORIGINS=https://bezhas.com
+FRONTEND_URL=https://bez.digital
+ALLOWED_ORIGINS=https://bez.digital
 ```
 
 ### Frontend `.env`
 ```env
-VITE_API_URL=https://api.bezhas.com
+VITE_API_URL=https://api.bez.digital
 ```
 
 ---
@@ -380,7 +380,7 @@ VITE_API_URL=https://api.bezhas.com
 ## 📞 Support
 
 Para reportar problemas o sugerencias sobre OAuth:
-- **Email**: dev@bezhas.com
+- **Email**: dev@bez.digital
 - **Discord**: BeZhas Developers Channel
 - **GitHub Issues**: [BeZhas OAuth Issues](https://github.com/bezhas/bezhas-web3/issues)
 

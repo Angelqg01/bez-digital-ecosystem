@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const AuditLog = require('./AuditLog.model');
 
 /**
  * GlobalSettings Model - Unified Configuration for Admin Panel
@@ -73,6 +74,8 @@ const globalSettingsSchema = new mongoose.Schema({
             allowedMinters: { type: [String], default: [] },
         },
         burningEnabled: { type: Boolean, default: true },
+        burnRate: { type: Number, default: 20, min: 0, max: 500 }, // base 10000 (20 = 0.2%)
+        treasuryRate: { type: Number, default: 100, min: 0, max: 1000 }, // base 10000 (100 = 1%)
         transferFeePercent: { type: Number, default: 0, min: 0, max: 10 },
     },
 
@@ -170,6 +173,43 @@ const globalSettingsSchema = new mongoose.Schema({
         loggingLevel: { type: String, enum: ['debug', 'info', 'warn', 'error'], default: 'info' },
     },
 
+    // OpenClaw AI Agent Configuration
+    openclaw: {
+        enabled: { type: Boolean, default: true },
+        baseUrl: { type: String, default: 'http://localhost:3001/api/openclaw' },
+        apiKey: { type: String, default: 'bzh_3p_openclaw_agent_default_key' },
+        plans: {
+            starter: {
+                platforms: { type: Number, default: 1 },
+                rateLimit: { type: Number, default: 1000 },
+                webhooksPerHour: { type: Number, default: 5 },
+                syncInterval: { type: String, default: '60m' },
+                credentialTTL: { type: Number, default: 30 } // days
+            },
+            pro: {
+                platforms: { type: Number, default: 4 },
+                rateLimit: { type: Number, default: 10000 },
+                webhooksPerHour: { type: Number, default: -1 },
+                syncInterval: { type: String, default: '15m' },
+                credentialTTL: { type: Number, default: 90 }
+            },
+            enterprise: {
+                platforms: { type: Number, default: 12 },
+                rateLimit: { type: Number, default: 100000 },
+                webhooksPerHour: { type: Number, default: -1 },
+                syncInterval: { type: String, default: '1m' },
+                credentialTTL: { type: Number, default: 365 }
+            },
+            vip: {
+                platforms: { type: Number, default: 12 },
+                rateLimit: { type: Number, default: -1 }, // -1 = unlimited
+                webhooksPerHour: { type: Number, default: -1 },
+                syncInterval: { type: String, default: 'live' },
+                credentialTTL: { type: Number, default: -1 }
+            }
+        }
+    },
+
     // Metadata
     lastUpdatedBy: { type: String, default: 'system' },
     version: { type: Number, default: 1 },
@@ -188,12 +228,17 @@ globalSettingsSchema.statics.getSettings = async function () {
     return settings;
 };
 
-// Update settings with validation
-globalSettingsSchema.statics.updateSettings = async function (updates, adminId) {
+// Update settings with validation and audit logging
+globalSettingsSchema.statics.updateSettings = async function (updates, adminId, metadata = {}) {
     const settings = await this.getSettings();
+    const previousState = settings.toObject();
+
+    // Determine the primary section being updated (for logging)
+    const updatedSections = Object.keys(updates);
+    const primarySection = updatedSections.length === 1 ? updatedSections[0] : 'multiple';
 
     // Deep merge updates
-    Object.keys(updates).forEach(key => {
+    updatedSections.forEach(key => {
         if (typeof updates[key] === 'object' && !Array.isArray(updates[key])) {
             settings[key] = { ...settings[key]?.toObject?.() || settings[key], ...updates[key] };
         } else {
@@ -205,6 +250,77 @@ globalSettingsSchema.statics.updateSettings = async function (updates, adminId) 
     settings.version += 1;
 
     await settings.save();
+
+    // Create Audit Log entry
+    await AuditLog.log({
+        user: mongoose.isValidObjectId(adminId) ? adminId : null,
+        performedBy: adminId,
+        action: 'UPDATE_GLOBAL_SETTINGS',
+        resource: 'global_settings',
+        resourceId: 'global_settings',
+        section: primarySection,
+        previousState: previousState,
+        newState: settings.toObject(),
+        metadata: {
+            ipAddress: metadata.ip,
+            userAgent: metadata.userAgent,
+            method: metadata.method,
+            path: metadata.path
+        }
+    });
+
+    return settings;
+};
+
+/**
+ * Rollback settings to a previous state from an AuditLog
+ * @param {string} auditLogId - ID of the audit log entry to rollback to
+ * @param {string} adminId - Admin performing the rollback
+ * @returns {Promise<object>} Restored settings
+ */
+globalSettingsSchema.statics.rollback = async function (auditLogId, adminId) {
+    const log = await AuditLog.findById(auditLogId);
+    if (!log || !log.previousState) {
+        throw new Error('Audit log not found or contains no previous state');
+    }
+
+    const settings = await this.getSettings();
+    const currentState = settings.toObject();
+
+    // Restore previous state (excluding protected fields)
+    const stateToRestore = { ...log.previousState };
+    delete stateToRestore._id;
+    delete stateToRestore.createdAt;
+    delete stateToRestore.updatedAt;
+    delete stateToRestore.__v;
+    
+    // Update settings document
+    Object.keys(stateToRestore).forEach(key => {
+        settings[key] = stateToRestore[key];
+    });
+
+    settings.lastUpdatedBy = adminId || 'admin';
+    settings.version += 1;
+
+    await settings.save();
+
+    // Log the rollback action itself
+    await AuditLog.log({
+        user: mongoose.isValidObjectId(adminId) ? adminId : null,
+        performedBy: adminId,
+        action: 'ROLLBACK_GLOBAL_SETTINGS',
+        resource: 'global_settings',
+        resourceId: 'global_settings',
+        section: 'rollback',
+        previousState: currentState,
+        newState: settings.toObject(),
+        metadata: {
+            referencedAuditLog: auditLogId,
+            rolledBackFromVersion: currentState.version,
+            rolledBackToVersion: log.previousState.version
+        }
+    });
+
     return settings;
 };
 

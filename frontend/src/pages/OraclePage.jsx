@@ -641,6 +641,7 @@ const OraclePage = () => {
             }
 
             toast.success(`Voto "${vote}" registrado. Oracle fee: ${ORACLE_FEE_BEZ} BEZ`);
+            console.log(`[Oracle] Voted ${vote}`);
             setValidationQueues(prev => ({
                 ...prev,
                 [activeSector]: prev[activeSector].filter(item => item.id !== itemId)
@@ -650,7 +651,7 @@ const OraclePage = () => {
             setStats(prev => ({
                 ...prev,
                 totalValidations: prev.totalValidations + 1,
-                pendingRewards: prev.pendingRewards + reward - parseFloat(ORACLE_FEE_BEZ)
+                pendingRewards: prev.pendingRewards + reward
             }));
         } catch (error) {
             console.error('Error en oracle vote:', error);

@@ -304,7 +304,7 @@ MONGODB_URI=mongodb://localhost:27017/bezhas
 ### Stripe Webhook URL
 Configurar en Stripe Dashboard:
 ```
-https://api.bezhas.com/api/payment/webhook
+https://api.bez.digital/api/payment/webhook
 ```
 
 Eventos a suscribir:

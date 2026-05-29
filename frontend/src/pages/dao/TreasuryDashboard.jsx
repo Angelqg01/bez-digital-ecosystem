@@ -116,7 +116,7 @@ const TreasuryDashboard = () => {
                 ]);
             }
         }
-    }, [riskData, onChainTotalValue, assetComposition]);
+    }, [currentExposure, needsRebalance, onChainTotalValue, assetComposition]);
 
     const handleRebalance = async () => {
         setIsLoading(true);

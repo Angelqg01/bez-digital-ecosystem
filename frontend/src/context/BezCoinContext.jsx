@@ -18,7 +18,7 @@
  * - Listeners de eventos para updates en tiempo real
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { useAccount } from 'wagmi';
 import { BezhasTokenAddress, TokenSaleAddress, BezhasTokenABI, TokenSaleABI } from '../contract-config';
@@ -26,6 +26,7 @@ import bezCoinService from '../services/bezCoinService';
 import toast from 'react-hot-toast';
 
 const BezCoinContext = createContext();
+const POLYGON_RPC_URL = import.meta.env.VITE_POLYGON_RPC_URL || 'https://polygon-bor.publicnode.com';
 
 export const useBezCoin = () => {
     const context = useContext(BezCoinContext);
@@ -88,10 +89,10 @@ export const BezCoinProvider = ({ children }) => {
                 provider = new ethers.BrowserProvider(window.ethereum);
                 const network = await provider.getNetwork();
                 if (network.chainId !== 137n && network.chainId !== 80002n && network.chainId !== 31337n) {
-                    provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+                    provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
                 }
             } else {
-                provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+                provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
             }
 
             // Verificar que el contrato existe
@@ -178,10 +179,10 @@ export const BezCoinProvider = ({ children }) => {
                 provider = new ethers.BrowserProvider(window.ethereum);
                 const network = await provider.getNetwork();
                 if (network.chainId !== 137n && network.chainId !== 80002n && network.chainId !== 31337n) {
-                    provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+                    provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
                 }
             } else {
-                provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+                provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
             }
 
             // Verificar que el contrato existe

@@ -7,8 +7,8 @@
  */
 
 const request = require('supertest');
-const mongoose = require('mongoose');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
+const pool = require('../db/pool');
 
 // Mock de servicios externos
 jest.mock('../services/fiat-gateway.service');
@@ -16,31 +16,27 @@ jest.mock('../middleware/discordNotifier');
 jest.mock('../middleware/telegramNotifier');
 
 const fiatGatewayService = require('../services/fiat-gateway.service');
-const Payment = require('../models/Payment.model');
+const Payment = require('../models/pg/Payment');
 
 describe('Payment Flow E2E Tests', () => {
     let app;
     let server;
 
     beforeAll(async () => {
-        // Conectar a base de datos de test
-        const DATABASE_URL = process.env.DATABASE_URL || 'mongodb://localhost:27017/bezhas_test';
-        await mongoose.connect(DATABASE_URL);
-
-        // Importar app después de conectar a DB
+        // App includes postgres initialization implicitly via pg pool
         app = require('../server');
     });
 
     afterAll(async () => {
-        await mongoose.connection.close();
         if (server) {
             server.close();
         }
+        await pool.end();
     });
 
     beforeEach(async () => {
         // Limpiar colección de pagos antes de cada test
-        await Payment.deleteMany({});
+        await pool.query('DELETE FROM payments');
 
         // Reset mocks
         jest.clearAllMocks();
@@ -263,41 +259,43 @@ describe('Payment Flow E2E Tests', () => {
             const paymentData = {
                 userId: 'user123',
                 walletAddress: '0x1234567890123456789012345678901234567890',
-                amount: 10.00,
-                currency: 'USD',
-                tokenAmount: 100,
+                fiatAmount: 10.00,
+                fiatCurrency: 'USD',
+                bezAmount: 100,
                 status: 'completed',
-                paymentMethod: 'stripe',
+                type: 'token_purchase',
                 paymentIntentId: 'pi_test_123',
-                transactionHash: '0xabcdef'
+                txHash: '0xabcdef'
             };
 
             const payment = await Payment.create(paymentData);
 
             expect(payment).toBeDefined();
-            expect(payment._id).toBeDefined();
+            expect(payment.id).toBeDefined();
             expect(payment.status).toBe('completed');
 
             // Verificar que se puede recuperar
-            const found = await Payment.findById(payment._id);
-            expect(found.walletAddress).toBe(paymentData.walletAddress);
+            const found = await Payment.findById(payment.id);
+            expect(found.wallet_address).toBe(paymentData.walletAddress);
         });
 
         test('should update payment status', async () => {
             const payment = await Payment.create({
                 userId: 'user123',
                 walletAddress: '0x1234567890123456789012345678901234567890',
-                amount: 10.00,
-                status: 'pending'
+                fiatAmount: 10.00,
+                status: 'pending',
+                type: 'token_purchase'
             });
 
-            payment.status = 'completed';
-            payment.transactionHash = '0xabcdef';
-            await payment.save();
+            await Payment.updateByPaymentIntent(payment.payment_intent_id, {
+                status: 'completed',
+                txHash: '0xabcdef'
+            });
 
-            const updated = await Payment.findById(payment._id);
+            const updated = await Payment.findById(payment.id);
             expect(updated.status).toBe('completed');
-            expect(updated.transactionHash).toBe('0xabcdef');
+            expect(updated.tx_hash).toBe('0xabcdef');
         });
     });
 

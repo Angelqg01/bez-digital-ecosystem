@@ -51,11 +51,11 @@ export function registerObliqAiSre(server: McpServer): void {
                         const checks = await Promise.all(
                             services.map(async (svc) => {
                                 const endpoints: Record<string, string> = {
-                                    'frontend': 'https://bezhas.com',
-                                    'backend': 'https://api.bezhas.com/api/health',
+                                    'frontend': 'https://bez.digital',
+                                    'backend': 'https://api.bez.digital/api/health',
                                     'mcp-server': `http://localhost:${config.http.port}/api/mcp/health`,
-                                    'mongodb': 'https://api.bezhas.com/api/config',
-                                    'redis': 'https://api.bezhas.com/api/config',
+                                    'mongodb': 'https://api.bez.digital/api/config',
+                                    'redis': 'https://api.bez.digital/api/config',
                                     'blockchain-rpc': config.network.activeRpc,
                                 };
 
@@ -125,8 +125,8 @@ export function registerObliqAiSre(server: McpServer): void {
                     case 'performance_metrics': {
                         // Check actual endpoints for real latency data
                         const endpoints = [
-                            { name: 'Frontend', url: 'https://bezhas.com' },
-                            { name: 'API Health', url: 'https://api.bezhas.com/api/health' },
+                            { name: 'Frontend', url: 'https://bez.digital' },
+                            { name: 'API Health', url: 'https://api.bez.digital/api/health' },
                             { name: 'MCP Health', url: `http://localhost:${config.http.port}/api/mcp/health` },
                         ];
 
@@ -204,8 +204,8 @@ export function registerObliqAiSre(server: McpServer): void {
 
                     case 'health_report': {
                         // Comprehensive health report
-                        const frontendCheck = await fetch('https://bezhas.com', { signal: AbortSignal.timeout(5000) }).then(r => r.ok).catch(() => false);
-                        const backendCheck = await fetch('https://api.bezhas.com/api/health', { signal: AbortSignal.timeout(5000) }).then(r => r.ok).catch(() => false);
+                        const frontendCheck = await fetch('https://bez.digital', { signal: AbortSignal.timeout(5000) }).then(r => r.ok).catch(() => false);
+                        const backendCheck = await fetch('https://api.bez.digital/api/health', { signal: AbortSignal.timeout(5000) }).then(r => r.ok).catch(() => false);
 
                         let overallScore = 100;
                         if (!frontendCheck) overallScore -= 30;
@@ -215,8 +215,8 @@ export function registerObliqAiSre(server: McpServer): void {
                             action, status: 'SUCCESS',
                             data: {
                                 overallScore,
-                                frontend: { status: frontendCheck ? 'UP' : 'DOWN', url: 'https://bezhas.com' },
-                                backend: { status: backendCheck ? 'UP' : 'DOWN', url: 'https://api.bezhas.com' },
+                                frontend: { status: frontendCheck ? 'UP' : 'DOWN', url: 'https://bez.digital' },
+                                backend: { status: backendCheck ? 'UP' : 'DOWN', url: 'https://api.bez.digital' },
                                 blockchain: { network: config.network.mode, rpc: config.network.activeRpc },
                                 bezToken: config.token.address,
                                 recommendations: [

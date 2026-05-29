@@ -9,11 +9,14 @@ const VintedAdapter = require('./VintedAdapter');
 const MaerskAdapter = require('./MaerskAdapter');
 const AirbnbAdapter = require('./AirbnbAdapter');
 
+const EcosystemAdapter = require('./EcosystemAdapter');
+
 // Adapter registry for dynamic loading
 const ADAPTER_REGISTRY = {
     vinted: VintedAdapter,
     maersk: MaerskAdapter,
     airbnb: AirbnbAdapter,
+    ecosystem: EcosystemAdapter,
     // Future adapters will be added here:
     // ebay: EbayAdapter,
     // amazon: AmazonAdapter,

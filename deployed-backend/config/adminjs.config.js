@@ -16,7 +16,7 @@ const { buildAuthenticatedRouter } = require('@adminjs/express');
  * Las credenciales se almacenan de forma segura en variables de entorno
  */
 const authenticate = async (email, password) => {
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@bezhas.com';
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@bez.digital';
     const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'BeZhas2024!Secure';
 
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {

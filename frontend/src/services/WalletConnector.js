@@ -1,6 +1,10 @@
+/**
+ * @deprecated — LEGACY SERVICE. Wallet connection now handled by:
+ *   - _shared/bezhas-blockchain-client.js → BeZhasClient.connectWallet()
+ *   - bez-wallet SubApp for full multi-wallet management
+ * The Hub should use hubBlockchainService.js → connectWallet() instead.
+ */
 import { ethers } from 'ethers';
-
-// Wallet connector service for multiple wallet providers
 class WalletConnector {
   constructor() {
     this.provider = null;
@@ -101,10 +105,10 @@ class WalletConnector {
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-      this.provider = new ethers.providers.Web3Provider(window.ethereum);
-      this.signer = this.provider.getSigner();
+      this.provider = new ethers.BrowserProvider(window.ethereum);
+      this.signer = await this.provider.getSigner();
       this.account = await this.signer.getAddress();
-      this.chainId = await this.provider.getNetwork().then(network => network.chainId);
+      this.chainId = await this.provider.getNetwork().then(network => Number(network.chainId));
       this.walletType = 'metamask';
 
       this.setupEventListeners();
@@ -130,10 +134,10 @@ class WalletConnector {
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-      this.provider = new ethers.providers.Web3Provider(window.ethereum);
-      this.signer = this.provider.getSigner();
+      this.provider = new ethers.BrowserProvider(window.ethereum);
+      this.signer = await this.provider.getSigner();
       this.account = await this.signer.getAddress();
-      this.chainId = await this.provider.getNetwork().then(network => network.chainId);
+      this.chainId = await this.provider.getNetwork().then(network => Number(network.chainId));
       this.walletType = 'coinbase';
 
       this.setupEventListeners();
@@ -166,10 +170,10 @@ class WalletConnector {
 
       await walletConnectProvider.enable();
 
-      this.provider = new ethers.providers.Web3Provider(walletConnectProvider);
-      this.signer = this.provider.getSigner();
+      this.provider = new ethers.BrowserProvider(walletConnectProvider);
+      this.signer = await this.provider.getSigner();
       this.account = await this.signer.getAddress();
-      this.chainId = await this.provider.getNetwork().then(network => network.chainId);
+      this.chainId = await this.provider.getNetwork().then(network => Number(network.chainId));
       this.walletType = 'walletconnect';
 
       this.setupWalletConnectListeners(walletConnectProvider);
@@ -195,10 +199,10 @@ class WalletConnector {
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-      this.provider = new ethers.providers.Web3Provider(window.ethereum);
-      this.signer = this.provider.getSigner();
+      this.provider = new ethers.BrowserProvider(window.ethereum);
+      this.signer = await this.provider.getSigner();
       this.account = await this.signer.getAddress();
-      this.chainId = await this.provider.getNetwork().then(network => network.chainId);
+      this.chainId = await this.provider.getNetwork().then(network => Number(network.chainId));
       this.walletType = 'trust';
 
       this.setupEventListeners();
@@ -224,10 +228,10 @@ class WalletConnector {
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-      this.provider = new ethers.providers.Web3Provider(window.ethereum);
-      this.signer = this.provider.getSigner();
+      this.provider = new ethers.BrowserProvider(window.ethereum);
+      this.signer = await this.provider.getSigner();
       this.account = await this.signer.getAddress();
-      this.chainId = await this.provider.getNetwork().then(network => network.chainId);
+      this.chainId = await this.provider.getNetwork().then(network => Number(network.chainId));
       this.walletType = 'brave';
 
       this.setupEventListeners();
@@ -430,7 +434,7 @@ class WalletConnector {
     try {
       const targetAddress = address || this.account;
       const balance = await this.provider.getBalance(targetAddress);
-      return ethers.utils.formatEther(balance);
+      return ethers.formatEther(balance);
     } catch (error) {
       throw new Error(`Failed to get balance: ${error.message}`);
     }

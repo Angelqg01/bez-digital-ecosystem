@@ -13,8 +13,8 @@ const { verifyToken } = require('../middleware/auth.middleware');
 
 // Modelos
 const BridgeApiKey = require('../models/BridgeApiKey.model');
-const BridgeSyncedItem = require('../models/BridgeSyncedItem.model');
-const BridgeShipment = require('../models/BridgeShipment.model');
+const BridgeSyncedItem = require('../models/pg/BridgeSyncedItem');
+const BridgeShipment = require('../models/pg/BridgeShipment');
 const BridgeOrder = require('../models/BridgeOrder.model');
 
 // Rate limiting específico para Bridge API
@@ -611,7 +611,7 @@ router.get('/status', (req, res) => {
             paymentWebhook: 'POST /api/v1/bridge/payments/webhook',
             orderCreate: 'POST /api/v1/bridge/orders/create'
         },
-        documentation: 'https://docs.bezhas.com/bridge-api',
+        documentation: 'https://docs.bez.digital/bridge-api',
         timestamp: new Date()
     });
 });

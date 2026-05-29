@@ -12,7 +12,11 @@
  */
 
 const EventEmitter = require('events');
+const BridgeOrder = require('../../models/BridgeOrder.model');
+const feedbackLoopService = require('../../services/feedback-loop.service');
+const aegisSafetyService = require('../../services/aegis-safety.service');
 const logger = require('../../utils/logger');
+const unifiedAI = require('../../services/unified-ai.service');
 
 // Bridge event types
 const BRIDGE_EVENTS = {
@@ -116,6 +120,10 @@ class UniversalBridgeCore extends EventEmitter {
             this.emit(BRIDGE_EVENTS.SHIPMENT_UPDATED, { platformId, ...data });
         });
 
+        adapter.on('payment_received', (data) => {
+            this.emit(BRIDGE_EVENTS.PAYMENT_RECEIVED, { platformId, ...data });
+        });
+
         this.emit(BRIDGE_EVENTS.ADAPTER_CONNECTED, { platformId });
         logger.info({ platformId }, '🔌 Adapter registered');
     }
@@ -194,13 +202,221 @@ class UniversalBridgeCore extends EventEmitter {
      */
     async processWebhook(platformId, eventType, payload) {
         const adapter = this.getAdapter(platformId);
+        
         if (!adapter) {
-            logger.warn({ platformId }, 'Webhook received for unregistered platform');
-            throw new Error(`Adapter not found for platform: ${platformId}`);
+            logger.info({ platformId }, '⚠️ Platform not registered. Using Dynamic AI Analysis...');
+            return this.processDynamicWebhook(payload, platformId);
         }
 
         this.emit(BRIDGE_EVENTS.WEBHOOK_RECEIVED, { platformId, eventType });
         return adapter.handleWebhook(eventType, payload);
+    }
+
+    /**
+     * Procesa un webhook de forma dinámica usando IA (para plataformas no registradas)
+     */
+    async processDynamicWebhook(payload, platformHint = 'unknown') {
+        try {
+            // EVALUACIÓN DE SALUD PREVENTIVA (AEGIS)
+            await aegisSafetyService.evaluateSystemHealth();
+            const aegisStatus = aegisSafetyService.getStatus();
+
+            if (aegisStatus === 'alert' || aegisStatus === 'lockdown') {
+                logger.warn('🛡️ [AEGIS_ENFORCEMENT] System alert! Forcing heuristic bypass to avoid AI failures.');
+                const heuristic = this._heuristicWebhookAnalysis(payload);
+                if (heuristic) {
+                    return { success: true, mode: 'dynamic_heuristic_safe', analysis: heuristic };
+                }
+            }
+
+            const prompt = `Analiza este JSON de un Webhook de la plataforma "${platformHint}". 
+            Determina si representa una venta exitosa o un pago confirmado.
+            Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin explicaciones).
+            Ejemplo de respuesta: {"isPayment": true, "amount": 150.50, "currency": "ARS", "orderId": "55667788", "confidence": 0.95}
+            Si no es un pago, pon "isPayment": false.`;
+
+            // DETECCIÓN NATIVA BEZ-PAY (Skill: bezpay.md)
+            if (payload.source === 'bezpay' || payload.bridge_type === 'native' || payload.txHash?.startsWith('0x')) {
+                logger.info('💎 [BEZ-PAY] Native payment detected. Applying triple reputation bonus.');
+                const result = {
+                    isPayment: true,
+                    amount: parseFloat(payload.amount || payload.total || 0),
+                    currency: payload.currency || 'BEZ',
+                    orderId: payload.order_id || payload.txHash,
+                    confidence: 1.0,
+                    mode: 'native_blockchain'
+                };
+                return { success: true, mode: 'native_bezpay', analysis: result };
+            }
+
+            const aiResult = await unifiedAI.process('CHAT', {
+                message: prompt + "\n\nPAYLOAD:\n" + JSON.stringify(payload),
+                context: { systemRole: 'developer' }
+            });
+
+            console.log('DEBUG AI RESPONSE:', aiResult.text);
+
+            // Extraer JSON de la respuesta de la IA
+            const match = aiResult.text.match(/\{[\s\S]*\}/);
+            if (!match) return { processed: false, reason: 'AI could not parse payload' };
+            
+            const analysis = JSON.parse(match[0]);
+
+            if (analysis.isPayment && analysis.confidence > 0.8) {
+                logger.info({ platformId: platformHint, analysis }, '🎯 Dynamic Payment Detected by AI');
+                
+                const eventData = {
+                    platformId: platformHint,
+                    payment: {
+                        id: analysis.orderId,
+                        amount: analysis.amount,
+                        currency: analysis.currency,
+                        dynamic: true
+                    }
+                };
+
+                this.emit(BRIDGE_EVENTS.PAYMENT_RECEIVED, eventData);
+
+                // PERSISTIR: Guardar la orden dinámica en la DB para que aparezca en el panel de ingresos
+                try {
+                    await BridgeOrder.create({
+                        beZhasOrderId: `BZH-DYN-${Date.now()}`,
+                        externalOrderId: analysis.orderId,
+                        platform: 'other',
+                        totalAmount: analysis.amount,
+                        currency: analysis.currency,
+                        status: 'confirmed',
+                        paymentStatus: 'paid',
+                        paidAt: new Date(),
+                        metadata: { dynamic: true, analysisMode: 'ai', platformHint },
+                        seller: { externalId: 'AUTONOMOUS_SELLER', beZhasId: `USER_${process.env.TREASURY_WALLET_ADDRESS}` },
+                        apiKey: "65f1a2b3c4d5e6f7a8b9c0d1" // Fictitious ID for dynamic
+                    });
+                    logger.info(`💾 Dynamic Order persisted for platform: ${platformHint}`);
+                    
+                    // FEEDBACK LOOP: Nutrir la IA con este éxito
+                    await feedbackLoopService.log({
+                        type: 'bridge',
+                        action: 'DYNAMIC_WEBHOOK_DETECTION',
+                        status: 'success',
+                        result: `Identified payment in ${platformHint} via AI`,
+                        solution: `Use AI regex for ${platformHint} schema`,
+                        metadata: { platform: platformHint, orderId: analysis.orderId, amount: analysis.amount }
+                    });
+                } catch (persistError) {
+                    logger.error({ persistError }, 'Failed to persist dynamic order');
+                }
+
+                return { success: true, mode: 'dynamic_ai', analysis };
+            }
+
+            // FALLBACK: Heurística si la IA falla o tiene baja confianza
+            const heuristic = this._heuristicWebhookAnalysis(payload);
+            if (heuristic) {
+                logger.info({ platformId: platformHint, heuristic }, '🛠️ Dynamic Payment Detected by Heuristic (AI Fallback)');
+                
+                const eventData = {
+                    platformId: platformHint,
+                    payment: {
+                        id: heuristic.orderId,
+                        amount: heuristic.amount,
+                        currency: heuristic.currency,
+                        dynamic: true
+                    }
+                };
+
+                this.emit(BRIDGE_EVENTS.PAYMENT_RECEIVED, eventData);
+
+                // PERSISTIR: Guardar la orden heurística en la DB
+                try {
+                    await BridgeOrder.create({
+                        beZhasOrderId: `BZH-HEU-${Date.now()}`,
+                        externalOrderId: heuristic.orderId,
+                        platform: 'other',
+                        totalAmount: heuristic.amount,
+                        currency: heuristic.currency,
+                        status: 'confirmed',
+                        paymentStatus: 'paid',
+                        paidAt: new Date(),
+                        metadata: { dynamic: true, analysisMode: 'heuristic', platformHint },
+                        seller: { externalId: 'AUTONOMOUS_SELLER', beZhasId: `USER_${process.env.TREASURY_WALLET_ADDRESS}` },
+                        apiKey: "65f1a2b3c4d5e6f7a8b9c0d1"
+                    });
+                    logger.info(`💾 Dynamic Order (Heuristic) persisted for platform: ${platformHint}`);
+
+                    // FEEDBACK LOOP: Notar fallo de IA pero éxito de Heurística para mejorar el prompt
+                    await feedbackLoopService.log({
+                        type: 'bridge',
+                        action: 'HEURISTIC_OVERRIDE',
+                        status: 'success',
+                        result: `Identified payment in ${platformHint} via Heuristic (AI failed)`,
+                        solution: `Update AI prompt to include pattern: ${JSON.stringify(payload).substring(0, 50)}...`,
+                        metadata: { platform: platformHint, orderId: heuristic.orderId }
+                    });
+                } catch (persistError) {
+                    logger.error({ persistError }, 'Failed to persist heuristic order');
+                }
+
+                return { success: true, mode: 'dynamic_heuristic', analysis: heuristic };
+            }
+
+            return { success: false, mode: 'dynamic_ai', reason: 'AI low confidence and heuristic failed' };
+
+        } catch (error) {
+            logger.error({ error }, 'Error in dynamic webhook analysis');
+            
+            // Intento final por heurística ante error fatal de IA
+            const heuristic = this._heuristicWebhookAnalysis(payload);
+            if (heuristic) {
+                const eventData = {
+                    platformId: platformHint,
+                    payment: { id: heuristic.orderId, amount: heuristic.amount, currency: heuristic.currency, dynamic: true }
+                };
+                this.emit(BRIDGE_EVENTS.PAYMENT_RECEIVED, eventData);
+                return { success: true, mode: 'dynamic_heuristic_emergency', analysis: heuristic };
+            }
+            
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Análisis heurístico basado en patrones comunes de webhooks
+     */
+    _heuristicWebhookAnalysis(payload) {
+        try {
+            const str = JSON.stringify(payload).toLowerCase();
+            
+            // Patrones universales de pago exitoso
+            // MercadoLibre usa 'approved' | Airbnb 'confirmed' | Others: 'success', 'paid', 'completed'
+            const isSuccess = str.includes('approved') || str.includes('confirmed') || str.includes('completed') || str.includes('paid') || str.includes('success');
+            const hasPaymentTerm = str.includes('payment') || str.includes('transaction') || str.includes('order') || str.includes('billing') || str.includes('amount');
+
+            if (isSuccess && hasPaymentTerm) {
+                // Extraer monto
+                const amountMatch = str.match(/amount":\s*(\d+(\.\d+)?)/) || str.match(/total":\s*(\d+(\.\d+)?)/) || str.match(/price":\s*(\d+(\.\d+)?)/);
+                const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+                
+                // Extraer moneda
+                const currencyMatch = str.match(/currency_id":\s*"([a-z]{3})"/i) || str.match(/currency":\s*"([a-z]{3})"/i);
+                const currency = currencyMatch ? currencyMatch[1].toUpperCase() : 'USD';
+
+                // Extraer ID
+                const idMatch = str.match(/id":\s*"([^"]+)"/) || str.match(/id":\s*(\d+)/);
+                const orderId = idMatch ? idMatch[1] : 'unknown_' + Date.now();
+
+                return {
+                    isPayment: true,
+                    amount,
+                    currency,
+                    orderId,
+                    confidence: 0.7
+                };
+            }
+        } catch (e) {
+            return null;
+        }
+        return null;
     }
 
     /**

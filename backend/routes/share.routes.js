@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Share = require('../models/Share');
 const Post = require('../models/post.model');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const { protect } = require('../middleware/auth.middleware');
 
 /**
@@ -256,7 +256,7 @@ router.delete('/share/:shareId', protect, async (req, res) => {
         await share.deleteOne();
 
         // Decrementar contador en el post
-        await Post.findByIdAndUpdate(share.postId, {
+        await Post.update(share.postId, {
             $inc: { shares: -1 }
         });
 

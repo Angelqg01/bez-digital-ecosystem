@@ -998,12 +998,12 @@ const webhook = await vault.read('secret/discord/webhook');
 ## 📞 SOPORTE Y CONTACTO
 
 **Desarrollador**: BeZhas Security Team  
-**Email**: security@bezhas.com  
+**Email**: security@bez.digital  
 **Discord**: https://discord.gg/bezhas  
-**Documentación**: https://docs.bezhas.com/security  
+**Documentación**: https://docs.bez.digital/security  
 
 **Issues**: https://github.com/bezhas/web3/issues  
-**Security Issues**: security@bezhas.com (PGP disponible)
+**Security Issues**: security@bez.digital (PGP disponible)
 
 ---
 

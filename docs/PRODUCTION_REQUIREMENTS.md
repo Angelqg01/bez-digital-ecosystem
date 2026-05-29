@@ -97,7 +97,7 @@ PINATA_SECRET_KEY=...
 
 ### Frontend (`.env`)
 ```bash
-VITE_API_URL=https://api.bezhas.com
+VITE_API_URL=https://api.bez.digital
 VITE_PROJECT_ID=<WalletConnect_Project_ID>
 VITE_STRIPE_PUBLIC_KEY=pk_live_...
 ```
@@ -109,9 +109,9 @@ VITE_STRIPE_PUBLIC_KEY=pk_live_...
 1.  **Certificados SSL/TLS:** Obligatorio para todas las conexiones (HTTPS y WSS). Gestionado automáticamente por Cloud Run / Load Balancer.
 2.  **WAF (Web Application Firewall):** Configurar reglas para bloquear ataques comunes (SQLi, XSS) y limitar la tasa de peticiones (Rate Limiting) a nivel de red.
 3.  **Dominios:**
-    *   `bezhas.com` (Frontend)
-    *   `api.bezhas.com` (Backend)
-    *   `ws.bezhas.com` (Chat Server - opcional si se usa path routing)
+    *   `bez.digital` (Frontend)
+    *   `api.bez.digital` (Backend)
+    *   `ws.bez.digital` (Chat Server - opcional si se usa path routing)
 
 ---
 

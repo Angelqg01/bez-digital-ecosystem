@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits } from 'viem';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,23 +39,40 @@ import ROICalculator from '../components/vip/ROICalculator';
 import GlobalStatsBar from '../components/GlobalStatsBar';
 import toast from 'react-hot-toast';
 import vipService from '../services/vipService';
+import { STRIPE_PAYMENT_LINKS } from '../config/bezhasPaymentConfig';
+
+const VIP_STRIPE_LINKS_BY_TIER = {
+    creator: STRIPE_PAYMENT_LINKS.subscriptions.starter,
+    business: STRIPE_PAYMENT_LINKS.subscriptions.pro,
+    enterprise: STRIPE_PAYMENT_LINKS.subscriptions.enterprise,
+};
+
+const getVipStripeCheckoutLink = (tierId) => VIP_STRIPE_LINKS_BY_TIER[String(tierId || '').toLowerCase()] || STRIPE_PAYMENT_LINKS.vip;
+const buildVipBankReference = (tierId, address) => `VIP-${tierId || 'plan'}-${address ? address.slice(0, 8) : Date.now().toString(36).toUpperCase()}`;
 
 // ============================================
 // CONFIGURACIÓN UNIFICADA DE TIERS VIP
 // ============================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PRECIOS EN EUROS (IVA 21% INCLUIDO) — Fuente: Planes de Suscripción BeZhas v3.0
+// Precio base → +21% IVA = precio facturado
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const UNIFIED_VIP_TIERS = {
     STARTER: {
         id: 'starter',
-        name: 'Starter',
-        subtitle: 'Comienza tu viaje en BeZhas',
+        name: 'Freemium',
+        subtitle: 'Coste segun su uso',
         icon: Star,
         color: 'from-slate-500 to-slate-600',
         borderColor: 'border-slate-500/30',
         bgGlow: 'hover:shadow-slate-500/20',
         price: {
-            monthly: 0,
+            monthly: 0,         // € base sin IVA
+            monthlyIVA: 0,      // € con IVA 21%
             yearly: 0,
-            bez: 0
+            yearlyIVA: 0,
+            bez: 0,
+            currency: 'EUR'
         },
         tokenLock: null,
         staking: {
@@ -66,43 +83,48 @@ const UNIFIED_VIP_TIERS = {
         gasSubsidy: 0,
         aiCredits: {
             daily: 5,
+            monthlyActions: 150,
             premium: false
         },
         benefits: [
-            { text: 'Acceso básico a la plataforma', included: true },
-            { text: '5 consultas AI por día', included: true },
-            { text: 'Staking básico 12.5% APY', included: true },
-            { text: 'Participación en DAO', included: true },
-            { text: 'Acceso al Marketplace NFT y RWA', included: true },
-            { text: 'Descuentos en compras', included: false },
-            { text: 'Badge NFT verificado', included: false },
-            { text: 'Soporte prioritario', included: false },
+            { text: 'Acceso básico a la plataforma BeZhas', included: true },
+            { text: '150 acciones IA/mes (Gemini Flash)', included: true },
+            { text: 'Staking $BEZ al 12,5% APY base', included: true },
+            { text: 'Participación en votaciones DAO', included: true },
+            { text: 'Marketplace NFT y RWA (solo lectura)', included: true },
+            { text: 'Wallet corporativa BeZhas', included: true },
+            { text: '5 escaneos Quality Oracle / mes', included: true },
+            { text: 'Smart Contracts propios', included: false },
             { text: 'Subsidio de gas', included: false },
-            { text: 'Real Yield LP Rewards (+2% APY)', included: false },
-            { text: 'Quality Oracle validación prioritaria', included: false }
+            { text: 'Real Yield LP Rewards', included: false },
+            { text: 'Soporte prioritario', included: false }
         ],
         badge: null,
         popular: false,
-        premium: false
+        premium: false,
+        roi: null
     },
 
     CREATOR: {
         id: 'creator',
-        name: 'Creator Pro',
-        subtitle: 'Para creadores que quieren destacar',
+        name: 'Starter',
+        subtitle: 'Automatiza. Valida. Crece. ROI en 3 semanas.',
         icon: Zap,
         color: 'from-blue-500 to-cyan-500',
         borderColor: 'border-blue-500/50',
         bgGlow: 'hover:shadow-blue-500/30',
         price: {
-            monthly: 19.99,
-            yearly: 199.99,
-            bez: 400
+            monthly: 99,         // € base sin IVA
+            monthlyIVA: 119.79,  // € con IVA 21%
+            yearly: 990,
+            yearlyIVA: 1197.90,  // ahorro 17%
+            bez: 200,            // BEZ/mes
+            currency: 'EUR'
         },
         tokenLock: {
             amount: 5000,
             days: 90,
-            description: 'Bloquea 5,000 BEZ por 90 días'
+            description: 'Bloquea 5.000 BEZ por 90 días → Acceso GRATIS'
         },
         staking: {
             baseAPY: 12.5,
@@ -112,44 +134,49 @@ const UNIFIED_VIP_TIERS = {
         gasSubsidy: 25,
         aiCredits: {
             daily: 50,
+            monthlyActions: 1500,
             premium: true
         },
         benefits: [
             { text: 'Todo lo del plan Starter', included: true },
-            { text: '50 consultas AI por día', included: true },
-            { text: '1.5x multiplicador staking (18.75% APY)', included: true },
-            { text: '25% subsidio en gas fees', included: true },
-            { text: '5% descuento en compras', included: true },
-            { text: '10% descuento en envíos', included: true },
-            { text: 'Badge NFT Creator verificado', included: true },
-            { text: 'Soporte prioritario', included: true },
-            { text: 'Acceso a eventos exclusivos', included: true },
-            { text: '🔥 Real Yield LP Rewards (+4% APY extra)', included: true },
-            { text: '⚡ Quality Oracle validación express 24h', included: true },
-            { text: '💧 Acceso a Liquidity Pool QuickSwap', included: true }
+            { text: '1.500 acciones IA/mes (Gemini Pro Vision + Authenticator)', included: true },
+            { text: '1 Smart Contract / Smart Escrow en mainnet', included: true },
+            { text: '×1.5 multiplicador staking → 18,75% APY efectivo', included: true },
+            { text: '25% subsidio en gas fees (BeZhas paga la cuota)', included: true },
+            { text: '🔥 Real Yield LP Rewards (+4% APY extra QuickSwap)', included: true },
+            { text: '⚡ Quality Oracle Express — validación en 24h', included: true },
+            { text: 'Badge NFT Creator verificado (on-chain)', included: true },
+            { text: 'Dashboard analytics completo + exportación', included: true },
+            { text: 'Soporte prioritario (respuesta < 4h)', included: true },
+            { text: 'Publicaciones programadas + métricas sociales', included: true },
+            { text: '💧 Acceso Liquidity Pool QuickSwap', included: true }
         ],
         badge: 'creator',
         popular: true,
-        premium: false
+        premium: false,
+        roi: { monthlySaving: 530, roiPercent: 343 }
     },
 
     BUSINESS: {
         id: 'business',
-        name: 'Business',
-        subtitle: 'Potencia tu negocio en Web3',
+        name: 'BeZhas Pro',
+        subtitle: 'Elimina categorías enteras de gasto operativo.',
         icon: Building2,
         color: 'from-purple-500 to-pink-500',
         borderColor: 'border-purple-500/50',
         bgGlow: 'hover:shadow-purple-500/30',
         price: {
-            monthly: 99.99,
-            yearly: 999.99,
-            bez: 2000
+            monthly: 499,         // € base sin IVA
+            monthlyIVA: 603.79,   // € con IVA 21%
+            yearly: 4990,
+            yearlyIVA: 6037.90,   // ahorro 17%
+            bez: 1000,            // BEZ/mes
+            currency: 'EUR'
         },
         tokenLock: {
             amount: 25000,
             days: 120,
-            description: 'Bloquea 25,000 BEZ por 120 días'
+            description: 'Bloquea 25.000 BEZ por 120 días → Acceso GRATIS'
         },
         staking: {
             baseAPY: 12.5,
@@ -159,47 +186,50 @@ const UNIFIED_VIP_TIERS = {
         gasSubsidy: 50,
         aiCredits: {
             daily: 200,
+            monthlyActions: 15000,
             premium: true
         },
         benefits: [
-            { text: 'Todo lo del plan Creator', included: true },
-            { text: '200 consultas AI por día', included: true },
-            { text: '2x multiplicador staking (25% APY)', included: true },
-            { text: '50% subsidio en gas fees', included: true },
-            { text: '15% descuento en compras', included: true },
-            { text: '25% descuento en envíos', included: true },
-            { text: 'Badge NFT Business', included: true },
-            { text: 'Soporte 24/7 dedicado', included: true },
-            { text: '10% bonus en BEZ-Coin rewards', included: true },
-            { text: 'Acceso a eventos Business', included: true },
-            { text: 'Analytics avanzados', included: true },
+            { text: 'Todo lo del plan Creator Pro', included: true },
+            { text: '15.000 acciones agénticas IA/mes (Cargo Fingerprint, Bio-Agent Edge)', included: true },
+            { text: '5 Smart Contracts activos simultáneos en mainnet', included: true },
+            { text: '×2.0 multiplicador staking → 25% APY efectivo', included: true },
+            { text: '50% subsidio en gas — BeZhas paga la mitad de cada tx', included: true },
+            { text: '🌐 Universal Bridge API (ERP/CRM: SAP, Odoo, Salesforce)', included: true },
+            { text: '💹 Gestión automática ERC-3643 (dividendos programados)', included: true },
+            { text: '🤖 DeFi Copilot: dashboard financiero on-chain en tiempo real', included: true },
             { text: '🔥 Real Yield LP Rewards (+8% APY extra)', included: true },
-            { text: '⚡ Quality Oracle validación inmediata 12h', included: true },
-            { text: '💧 LP Pool Premium + x0.3 multiplicador Treasury', included: true },
-            { text: '🏦 Acceso DeFi Hub Business Features', included: true }
+            { text: '⚡ Quality Oracle Inmediata — validación en 12h', included: true },
+            { text: 'Soporte 24/7 dedicado + Analytics avanzados', included: true },
+            { text: '💧 LP Pool Premium + ×0.3 multiplicador Treasury', included: true },
+            { text: '🏦 DeFi Hub Business — gestión de liquidez corporativa', included: true }
         ],
         badge: 'business',
         popular: false,
-        premium: false
+        premium: false,
+        roi: { monthlySaving: 4550, roiPercent: 654 }
     },
 
     ENTERPRISE: {
         id: 'enterprise',
         name: 'Enterprise VIP',
-        subtitle: 'Máximo poder y exclusividad',
+        subtitle: 'BeZhas se convierte en el motor blockchain de tu organización.',
         icon: Crown,
         color: 'from-amber-400 to-yellow-500',
         borderColor: 'border-amber-400/50',
         bgGlow: 'hover:shadow-amber-400/40',
         price: {
-            monthly: 299.99,
-            yearly: 2999.99,
-            bez: 6000
+            monthly: 2499,         // € base sin IVA
+            monthlyIVA: 3023.79,   // € con IVA 21%
+            yearly: 24990,
+            yearlyIVA: 30237.90,   // ahorro 17%
+            bez: 5000,             // BEZ/mes
+            currency: 'EUR'
         },
         tokenLock: {
             amount: 100000,
             days: 180,
-            description: 'Bloquea 100,000 BEZ por 180 días'
+            description: 'Bloquea 100.000 BEZ por 180 días → Acceso GRATIS'
         },
         staking: {
             baseAPY: 12.5,
@@ -209,33 +239,31 @@ const UNIFIED_VIP_TIERS = {
         gasSubsidy: 100,
         aiCredits: {
             daily: Infinity,
+            monthlyActions: 50000,
             premium: true
         },
         benefits: [
             { text: 'Todo lo del plan Business', included: true },
-            { text: 'Consultas AI ilimitadas', included: true },
-            { text: '2.5x multiplicador staking (31.25% APY)', included: true },
-            { text: '100% subsidio en gas (GRATIS)', included: true },
-            { text: '25% descuento en compras', included: true },
-            { text: '50% descuento en envíos', included: true },
-            { text: 'Badge NFT Enterprise exclusivo', included: true },
-            { text: 'Concierge Web3 personal 24/7', included: true },
-            { text: '20% bonus en BEZ-Coin rewards', included: true },
-            { text: 'Acceso a DAO Council', included: true },
-            { text: 'Fee cero en transacciones', included: true },
-            { text: 'Early access a nuevos features', included: true },
-            { text: 'Personal shopper dedicado', included: true },
-            { text: 'Eventos VIP exclusivos', included: true },
-            { text: '🔥 Real Yield LP Rewards (+12% APY máximo)', included: true },
-            { text: '⚡ Quality Oracle validación VIP instantánea', included: true },
-            { text: '💧 LP Pool Elite + x0.5 multiplicador Treasury', included: true },
-            { text: '🏦 DeFi Hub acceso completo + Analytics Pro', included: true },
+            { text: '50.000 acciones IA/mes (uso justo — sin límite real)', included: true },
+            { text: 'Smart Contracts ilimitados + despliegue asistido', included: true },
+            { text: '×2.5 multiplicador staking → 31,25% APY efectivo', included: true },
+            { text: '100% subsidio Gas — Gas GRATIS en todas las operaciones', included: true },
+            { text: '🖥️ Nodo MCP Dedicado — máxima privacidad de datos', included: true },
+            { text: '🏛️ Sub-DAOs personalizadas para gobernanza corporativa', included: true },
+            { text: '🧠 Quality Genius Oracle — IA entrenada a medida con tus datos', included: true },
+            { text: '🏷️ Integración White-Label (Marca Blanca) — BeZhas como tu producto', included: true },
+            { text: '🔥 Real Yield LP Rewards (+12% APY — máximo del ecosistema)', included: true },
+            { text: '⚡ Quality Oracle VIP — Validación instantánea', included: true },
+            { text: 'Concierge Web3 personal 24/7 + DAO Council', included: true },
+            { text: 'Fee cero en transacciones + Early access a todos los features', included: true },
+            { text: '💧 LP Pool Elite + ×0.5 multiplicador Treasury DAO', included: true },
             { text: '🎯 Participación directa en Treasury DAO', included: true },
-            { text: '💎 Acceso prioritario a RWA tokenization', included: true }
+            { text: '💎 Acceso prioritario RWA Tokenization + Analytics Pro', included: true }
         ],
         badge: 'enterprise',
         popular: false,
-        premium: true
+        premium: true,
+        roi: { monthlySaving: 30500, roiPercent: 909 }
     }
 };
 
@@ -288,7 +316,7 @@ const UnifiedTierCard = ({ tier, currentTier, onSubscribe, onTokenLock, isConnec
                                 }`}
                         >
                             <CreditCard className="w-3 h-3 inline mr-1" />
-                            USD
+                            EUR
                         </button>
                         <button
                             onClick={() => setPaymentMethod('bez')}
@@ -308,7 +336,7 @@ const UnifiedTierCard = ({ tier, currentTier, onSubscribe, onTokenLock, isConnec
                                 }`}
                         >
                             <Banknote className="w-3 h-3 inline mr-1" />
-                            Banco
+                            SEPA
                         </button>
                         {tier.tokenLock && (
                             <button
@@ -330,28 +358,42 @@ const UnifiedTierCard = ({ tier, currentTier, onSubscribe, onTokenLock, isConnec
                         <>
                             <div className="flex items-baseline justify-center gap-1">
                                 <span className="text-4xl font-bold text-white">
-                                    {tier.price.monthly === 0 ? 'Gratis' : `$${tier.price.monthly}`}
+                                    {tier.price.monthly === 0 ? 'Gratis' : `€${tier.price.monthlyIVA}`}
                                 </span>
                                 {tier.price.monthly > 0 && (
                                     <span className="text-gray-400">/mes</span>
                                 )}
                             </div>
-                            {tier.price.yearly > 0 && (
-                                <p className="text-sm text-gray-500 mt-1">
-                                    ${tier.price.yearly}/año (ahorra 17%)
+                            {tier.price.monthly > 0 && (
+                                <p className="text-xs text-gray-600 mt-0.5">
+                                    {tier.price.monthly} € + IVA 21% incluido
                                 </p>
+                            )}
+                            {tier.price.yearly > 0 && (
+                                <p className="text-sm text-blue-400/80 mt-1">
+                                    €{tier.price.yearlyIVA.toLocaleString()}/año <span className="text-green-400">(ahorra 17%)</span>
+                                </p>
+                            )}
+                            {tier.roi && (
+                                <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded-full">
+                                    <TrendingUp className="w-3 h-3 text-green-400" />
+                                    <span className="text-xs text-green-400 font-medium">ROI estimado: +{tier.roi.roiPercent}%</span>
+                                </div>
                             )}
                         </>
                     )}
 
                     {paymentMethod === 'bez' && (
-                        <div className="flex items-baseline justify-center gap-1">
-                            <Coins className="w-6 h-6 text-purple-400" />
-                            <span className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                                {tier.price.bez.toLocaleString()}
-                            </span>
-                            <span className="text-gray-400">BEZ/mes</span>
-                        </div>
+                        <>
+                            <div className="flex items-baseline justify-center gap-1">
+                                <Coins className="w-6 h-6 text-purple-400" />
+                                <span className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                                    {tier.price.bez.toLocaleString()}
+                                </span>
+                                <span className="text-gray-400">BEZ/mes</span>
+                            </div>
+                            <p className="text-xs text-gray-600 mt-1">≈ €{(tier.price.bez * 0.5).toLocaleString()} al precio referencial</p>
+                        </>
                     )}
 
                     {paymentMethod === 'lock' && tier.tokenLock && (
@@ -363,8 +405,9 @@ const UnifiedTierCard = ({ tier, currentTier, onSubscribe, onTokenLock, isConnec
                                 </span>
                             </div>
                             <p className="text-sm text-green-400/80">
-                                Bloquear por {tier.tokenLock.days} días = Acceso GRATIS
+                                Bloqueados {tier.tokenLock.days} días = Acceso GRATIS
                             </p>
+                            <p className="text-xs text-gray-500 mt-1">Tus tokens siguen generando {tier.staking.effectiveAPY}% APY</p>
                         </>
                     )}
 
@@ -373,12 +416,12 @@ const UnifiedTierCard = ({ tier, currentTier, onSubscribe, onTokenLock, isConnec
                             <div className="flex items-baseline justify-center gap-1">
                                 <Banknote className="w-6 h-6 text-amber-400" />
                                 <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
-                                    €{(tier.price.monthly * 0.92).toFixed(2)}
+                                    €{tier.price.monthlyIVA}
                                 </span>
                                 <span className="text-gray-400">/mes</span>
                             </div>
                             <p className="text-sm text-amber-400/80 mt-1">
-                                Transferencia bancaria SEPA
+                                Transferencia SEPA — IVA incluido
                             </p>
                         </>
                     )}
@@ -456,8 +499,9 @@ const UnifiedTierCard = ({ tier, currentTier, onSubscribe, onTokenLock, isConnec
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
-                            if (!isConnected) {
-                                toast.error('Conecta tu wallet primero');
+                            const requiresWallet = paymentMethod === 'bez' || paymentMethod === 'lock';
+                            if (requiresWallet && !isConnected) {
+                                toast.error('Conecta tu wallet para pagar con BEZ o bloquear tokens');
                                 return;
                             }
                             if (paymentMethod === 'lock' && tier.tokenLock) {
@@ -475,8 +519,12 @@ const UnifiedTierCard = ({ tier, currentTier, onSubscribe, onTokenLock, isConnec
                             </>
                         ) : (
                             <>
-                                <Rocket className="w-5 h-5" />
-                                {paymentMethod === 'bez' ? 'Pagar con BEZ' : 'Suscribirse'}
+                                {paymentMethod === 'fiat' ? <ExternalLink className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
+                                {paymentMethod === 'fiat'
+                                    ? 'Suscribirse con Stripe'
+                                    : paymentMethod === 'bank'
+                                    ? 'Suscribirse por SEPA'
+                                    : 'Pagar con BEZ'}
                             </>
                         )}
                     </motion.button>
@@ -688,23 +736,18 @@ const BeVIP = () => {
     }, [isConnected]);
 
     const handleSubscribe = async (tierId, paymentMethod) => {
-        if (!isConnected) {
-            toast.error('Conecta tu wallet primero');
+        const requiresWallet = paymentMethod === 'bez';
+        if (requiresWallet && !isConnected) {
+            toast.error('Conecta tu wallet para pagar con BEZ');
             return;
         }
 
         setProcessingTier(tierId);
         try {
             if (paymentMethod === 'fiat') {
-                // Pago con Stripe (tarjeta de crédito)
                 toast.loading('Redirigiendo a Stripe...', { id: 'subscribe' });
-                await vipService.createVIPSubscriptionSession(
-                    tierId,
-                    'monthly',
-                    '', // email opcional
-                    address
-                );
-                // La redirección a Stripe ocurre en el servicio
+                window.open(getVipStripeCheckoutLink(tierId), '_blank', 'noopener,noreferrer');
+                toast.success('Stripe abierto para completar tu suscripción Be-VIP', { id: 'subscribe' });
             } else if (paymentMethod === 'bez') {
                 // Pago con tokens BEZ
                 toast.loading('Procesando pago con BEZ...', { id: 'subscribe' });
@@ -720,10 +763,12 @@ const BeVIP = () => {
                 } catch (e) {
                     // Usar fallback
                     setBankDetails({
-                        accountHolder: 'BeZhas Technology SL',
+                        accountHolder: 'bez.digital',
+                        beneficiaryAlias: 'bez.digital',
                         iban: 'ES77 1465 0100 91 1766376210',
                         bic: 'INGDESMMXXX',
-                        bank: 'ING Direct'
+                        bank: 'ING',
+                        paymentRail: 'SEPA'
                     });
                 }
                 setShowBankModal(true);
@@ -791,31 +836,37 @@ const BeVIP = () => {
                     </div>
 
                     <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                        <span className="text-white">Potencia tu </span>
+                        <span className="text-white">El Motor Blockchain que </span>
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400">
-                            Experiencia Web3
+                            tu Empresa Necesita
                         </span>
                     </h1>
 
-                    <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-8">
-                        Elige tu plan VIP y desbloquea multiplicadores de staking, subsidios de gas,
-                        acceso premium a IA y beneficios exclusivos. Paga con USD, BEZ, o bloquea tokens
-                        para acceso gratuito.
+                    <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-3">
+                        IA de producción + Contratos inteligentes + Automatización financiera en un único plan.
+                        Facturación en <strong className="text-white">Euros (IVA incluido)</strong>, pago en BEZ o transferencia SEPA.
+                    </p>
+                    <p className="text-blue-400/80 text-sm max-w-xl mx-auto mb-8">
+                        Desde 119,79 €/mes con IVA — ROI documentado de +343% en Creator Pro y +909% en Enterprise
                     </p>
 
                     {/* Quick Stats */}
-                    <div className="flex flex-wrap justify-center gap-6 mb-8">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-lg">
+                    <div className="flex flex-wrap justify-center gap-4 mb-8">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
                             <TrendingUp className="w-5 h-5 text-green-400" />
-                            <span className="text-white">Hasta <strong className="text-green-400">31.25% APY</strong></span>
+                            <span className="text-white">Hasta <strong className="text-green-400">31,25% APY</strong> en staking</span>
                         </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-lg">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
                             <Fuel className="w-5 h-5 text-blue-400" />
-                            <span className="text-white">Hasta <strong className="text-blue-400">100% Gas Gratis</strong></span>
+                            <span className="text-white">Hasta <strong className="text-blue-400">100% Gas Gratuito</strong></span>
                         </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-lg">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
                             <Bot className="w-5 h-5 text-purple-400" />
-                            <span className="text-white">Hasta <strong className="text-purple-400">∞ AI Queries</strong></span>
+                            <span className="text-white">Hasta <strong className="text-purple-400">50.000 acciones IA/mes</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                            <Banknote className="w-5 h-5 text-amber-400" />
+                            <span className="text-white"><strong className="text-amber-400">IVA 21%</strong> incluido en todos los planes</span>
                         </div>
                     </div>
                 </motion.div>
@@ -954,21 +1005,24 @@ const BeVIP = () => {
                     className="text-center p-8 bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 rounded-2xl border border-amber-500/20 max-w-4xl mx-auto"
                 >
                     <Crown className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-white mb-2">¿Listo para potenciar tu experiencia?</h3>
-                    <p className="text-gray-400 mb-6">
-                        Únete a miles de usuarios que ya disfrutan de beneficios VIP en BeZhas
+                    <h3 className="text-2xl font-bold text-white mb-2">¿Tu empresa sigue pagando por ineficiencias?</h3>
+                    <p className="text-gray-300 mb-2">
+                        Creator Pro elimina hasta <strong className="text-green-400">530 €/mes</strong> en costes operativos.
+                        Enterprise VIP hasta <strong className="text-amber-400">30.500 €/mes</strong>.
+                    </p>
+                    <p className="text-gray-500 text-sm mb-6">
+                        Facturación legal en euros con IVA incluido — Pagos vía Stripe, SEPA o $BEZ
                     </p>
                     <div className="flex flex-wrap justify-center gap-4">
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => {
-                                const creatorCard = document.getElementById('creator');
-                                creatorCard?.scrollIntoView({ behavior: 'smooth' });
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
                             className="px-8 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold rounded-xl shadow-lg hover:shadow-amber-500/30 transition-all"
                         >
-                            Comenzar Ahora
+                            Ver Planes y Precios
                         </motion.button>
                         <motion.button
                             whileHover={{ scale: 1.05 }}
@@ -1096,12 +1150,12 @@ const BeVIP = () => {
                                 <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
                                     <div className="flex justify-between items-center mb-2">
                                         <span className="text-amber-400 text-sm font-medium">Concepto (IMPORTANTE)</span>
-                                        <button onClick={() => copyToClipboard(`VIP-${selectedTierForBank}-${address?.slice(0, 8)}`)} className="text-amber-400 hover:text-amber-300">
+                                        <button onClick={() => copyToClipboard(buildVipBankReference(selectedTierForBank, address))} className="text-amber-400 hover:text-amber-300">
                                             <Copy className="w-4 h-4" />
                                         </button>
                                     </div>
                                     <p className="text-white font-mono text-lg">
-                                        VIP-{selectedTierForBank}-{address?.slice(0, 8)}
+                                        {buildVipBankReference(selectedTierForBank, address)}
                                     </p>
                                     <p className="text-amber-400/70 text-xs mt-2">
                                         Incluye este concepto exacto para identificar tu pago

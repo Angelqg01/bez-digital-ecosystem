@@ -324,7 +324,7 @@ npm run test
 ### Contacto
 - **GitHub Issues**: Para bugs y features
 - **Slack**: #ai-platform-support
-- **Email**: dev-team@bezhas.com
+- **Email**: dev-team@bez.digital
 
 ---
 

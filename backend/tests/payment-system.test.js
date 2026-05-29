@@ -41,7 +41,7 @@ jest.mock('../services/fiat-gateway.service', () => ({
         bankName: 'BeZhas Platform',
         iban: 'ES77 1465 0100 91 1766376210',
         bic: 'INGDESMMXXX',
-        beneficiary: 'BeZhas.com',
+        beneficiary: 'bez.digital',
         instructions: 'Include your wallet address in the transfer concept/reference'
     }),
     dispenseTokens: jest.fn().mockResolvedValue({
@@ -113,11 +113,11 @@ jest.mock('stripe', () => {
         },
         customers: {
             list: jest.fn().mockResolvedValue({
-                data: [{ id: 'cus_test_123', email: 'test@bezhas.com' }]
+                data: [{ id: 'cus_test_123', email: 'test@bez.digital' }]
             }),
             create: jest.fn().mockResolvedValue({
                 id: 'cus_test_123',
-                email: 'test@bezhas.com'
+                email: 'test@bez.digital'
             })
         },
         refunds: {
@@ -194,6 +194,12 @@ jest.mock('../models/user.model', () => ({
 // IMPORTS
 // ============================================================================
 
+// Set environment variables required by imported modules (specifically Stripe)
+process.env.STRIPE_SECRET_KEY = 'sk_test_12345';
+process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_12345';
+process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_12345';
+process.env.FRONTEND_URL = 'https://bezhas.test';
+
 const stripeService = require('../services/stripe.service');
 const fiatGatewayService = require('../services/fiat-gateway.service');
 const subscriptionService = require('../services/subscription.service');
@@ -229,7 +235,7 @@ describe('BeZhas Payment System', () => {
         describe('Checkout Sessions', () => {
             const mockUserInfo = {
                 userId: 'user123',
-                email: 'test@bezhas.com',
+                email: 'test@bez.digital',
                 walletAddress: '0x1234567890123456789012345678901234567890'
             };
 
@@ -239,7 +245,7 @@ describe('BeZhas Payment System', () => {
                     name: 'BeZhas Exclusive NFT',
                     description: 'Limited edition NFT',
                     price: 99.99,
-                    image: 'https://bezhas.com/nft.png'
+                    image: 'https://bez.digital/nft.png'
                 };
 
                 const result = await stripeService.createNFTCheckoutSession(nftData, mockUserInfo);
@@ -301,7 +307,7 @@ describe('BeZhas Payment System', () => {
 
         describe('Subscription Management', () => {
             test('should retrieve customer subscriptions', async () => {
-                const result = await stripeService.getCustomerSubscriptions('test@bezhas.com');
+                const result = await stripeService.getCustomerSubscriptions('test@bez.digital');
 
                 expect(result).toBeDefined();
             });
@@ -585,7 +591,7 @@ describe('BeZhas Payment System', () => {
             bankName: 'BeZhas Platform',
             iban: 'ES77 1465 0100 91 1766376210',
             bic: 'INGDESMMXXX',
-            beneficiary: 'BeZhas.com',
+            beneficiary: 'bez.digital',
             instructions: 'Include your wallet address in the transfer concept/reference'
         };
         const FIAT_CONFIG = {

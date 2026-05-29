@@ -224,7 +224,7 @@ npm install express@4.22.1 ethers@6.16.0 mongoose@8.20.3 \
 ## Contacto
 
 Para preguntas sobre esta actualización:
-- **Security Team:** security@bezhas.com
+- **Security Team:** security@bez.digital
 - **Developer Lead:** @YoeDistro
 
 ---

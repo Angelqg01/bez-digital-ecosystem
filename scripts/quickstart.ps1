@@ -18,7 +18,7 @@ else {
 # Install dependencies
 Write-Host "2️⃣  Instalando dependencias..." -ForegroundColor Yellow
 Set-Location "$PSScriptRoot\scripts"
-npm install
+pnpm install
 Write-Host "   ✅ Dependencias instaladas`n" -ForegroundColor Green
 
 # Check .env file
@@ -42,7 +42,7 @@ else {
 # Test Discord connection if configured
 if ($webhookConfigured) {
     Write-Host "4️⃣  Probando conexión Discord..." -ForegroundColor Yellow
-    npm run test-discord
+    pnpm run test-discord
     Write-Host ""
 }
 else {
@@ -56,7 +56,7 @@ else {
     
     $continue = Read-Host "   ¿Ya configuraste el webhook? (s/n)"
     if ($continue -eq "s" -or $continue -eq "S") {
-        npm run test-discord
+        pnpm run test-discord
     }
     Write-Host ""
 }
@@ -77,9 +77,9 @@ else {
     Write-Host "   .\sentinel.ps1 -Status      # Ver estado del servicio" -ForegroundColor White
     Write-Host "   .\sentinel.ps1 -Logs        # Ver logs en tiempo real" -ForegroundColor White
     Write-Host "   .\sentinel.ps1 -Stop        # Detener el servicio" -ForegroundColor White
-    Write-Host "   npm run test-discord        # Probar Discord" -ForegroundColor White
-    Write-Host "   npm run security-check      # Escaneo único" -ForegroundColor White
-    Write-Host "   npm run full-audit          # Auditoría completa`n" -ForegroundColor White
+    Write-Host "   pnpm run test-discord        # Probar Discord" -ForegroundColor White
+    Write-Host "   pnpm run security-check      # Escaneo único" -ForegroundColor White
+    Write-Host "   pnpm run full-audit          # Auditoría completa`n" -ForegroundColor White
 }
 
 Write-Host "========================================" -ForegroundColor Cyan

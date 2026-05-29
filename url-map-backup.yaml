@@ -3,7 +3,7 @@ defaultService: https://www.googleapis.com/compute/v1/projects/totemic-bonus-479
 fingerprint: 7ZXOpzMrHAM=
 hostRules:
 - hosts:
-  - api.bezhas.com
+  - api.bez.digital
   pathMatcher: api-matcher
 id: 284367296660103518
 kind: compute#urlMap

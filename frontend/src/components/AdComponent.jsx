@@ -40,7 +40,7 @@ const AdComponent = ({ context, creatorId = null }) => {
             // Fallback a anuncio demo
             setAd({
                 image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="728" height="90"%3E%3Crect fill="%234F46E5" width="728" height="90"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="18" fill="white" text-anchor="middle" dy=".3em"%3EBeZhas Partner Ad%3C/text%3E%3C/svg%3E',
-                link: 'https://bezhas.com',
+                link: 'https://bez.digital',
                 text: 'Anuncio de demostración - Click para ganar BEZ',
                 type: 'adsense'
             });

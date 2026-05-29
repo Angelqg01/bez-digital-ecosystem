@@ -10,8 +10,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-changeme123}
       MONGO_INITDB_DATABASE: bezhas
     volumes:
-      - mongo_data:/data/db
-      - mongo_config:/data/configdb
+      - postgres_data:/data/db
+      - postgres_config:/data/configdb
     networks:
       - bezhas-network
     healthcheck:
@@ -64,7 +64,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      MONGODB_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-changeme123}@mongo:27017/bezhas?authSource=admin
+      DATABASE_URL: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-changeme123}@mongo:27017/bezhas?authSource=admin
       REDIS_URL: redis://redis:6379
       TIMESCALE_URI: postgresql://${TIMESCALE_USER:-postgres}:${TIMESCALE_PASSWORD:-changeme123}@timescaledb:5432/${TIMESCALE_DB:-bezhas_analytics}
       JWT_SECRET: ${JWT_SECRET}

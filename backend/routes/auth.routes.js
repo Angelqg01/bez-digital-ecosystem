@@ -4,13 +4,16 @@ const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const { ethers } = require('ethers');
 const crypto = require('crypto');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 // Use mock model for AffiliateEvent to avoid Mongoose dependency issues
 const { AffiliateEvent } = require('../models/mockModels');
 const { grantReferralReward } = require('../services/rewards.service');
 const { ensureSuperAdminRole, protect } = require('../middleware/auth.middleware');
+const bridge = require('../bridge'); // Dynamic ecosystem sync
 const emailService = require('../services/email.service');
 const totpService = require('../services/totp.service');
+const keyManagementService = require('../services/key-management.service');
+const accountAbstractionService = require('../services/account-abstraction.service');
 
 // In-memory storage for verification codes (en producción usa Redis)
 const verificationCodes = new Map();
@@ -94,7 +97,7 @@ router.post('/login-or-register', loginOrRegisterRules(), async (req, res) => {
   const { walletAddress, referralCode } = req.body;
 
   try {
-    let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+    let user = await User.findByWallet(walletAddress.toLowerCase());
     let isNewUser = false;
 
     if (!user) {
@@ -119,6 +122,12 @@ router.post('/login-or-register', loginOrRegisterRules(), async (req, res) => {
 
       user = new User(newUserPayload);
       await user.save();
+
+      // Trigger Ecosystem Sync for new users
+      try {
+        const ecosystem = bridge.bridgeCore.getAdapter('ecosystem');
+        if (ecosystem) ecosystem.syncUser(user);
+      } catch (_) { /* Background sync failed, ignore */ }
 
       // If referral was successful, create event and trigger reward
       if (isNewUser && referrer) {
@@ -202,7 +211,7 @@ router.post('/login-wallet', [
     }
 
     // Find user by wallet address
-    let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+    let user = await User.findByWallet(walletAddress.toLowerCase());
 
     if (!user) {
       return res.status(404).json({ error: 'User not found. Please register first.' });
@@ -271,7 +280,7 @@ router.post('/register-email', [
 
   try {
     // 1. Verify if email exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findByEmail(email.toLowerCase());
     if (existingUser) {
       return res.status(400).json({ error: 'Email ya registrado' });
     }
@@ -281,11 +290,43 @@ router.post('/register-email', [
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // ── Custodial Wallet Generation ──
+    let encryptedPrivateKey = null;
+    let smartAccountAddress = null;
+    let walletAddress = null;
+
+    try {
+      const custodialWallet = ethers.Wallet.createRandom();
+      walletAddress = custodialWallet.address.toLowerCase();
+      
+      // Encriptar la clave privada con el KMS centralizado
+      encryptedPrivateKey = keyManagementService.encryptCustodialKey(custodialWallet.privateKey);
+      console.log(`[CUSTODIAL WALLET] Generated wallet for Web2 user ${email}: ${walletAddress}`);
+
+      // Obtener dirección counterfactual Smart Account (ERC-4337)
+      try {
+        smartAccountAddress = await accountAbstractionService.getSmartAccountAddress(walletAddress);
+        console.log(`[CUSTODIAL WALLET] Computed ERC-4337 smart account address: ${smartAccountAddress}`);
+      } catch (aaError) {
+        console.warn('[CUSTODIAL WALLET] Account factory not loaded. Using EOA as smart account fallback.');
+        smartAccountAddress = walletAddress;
+      }
+    } catch (kmsError) {
+      console.error('[CUSTODIAL WALLET] Failed to generate custodial key:', kmsError.message);
+      // Fallback para evitar interrumpir el registro del usuario
+      const fallbackWallet = ethers.Wallet.createRandom();
+      walletAddress = fallbackWallet.address.toLowerCase();
+      smartAccountAddress = walletAddress;
+    }
+
     // 3. Prepare User Data
     const userData = {
       email: email.toLowerCase(),
       password: hashedPassword,
       username: username || (companyName ? companyName.replace(/\s+/g, '') : `User_${Date.now()}`),
+      walletAddress,
+      encryptedPrivateKey,
+      smartAccountAddress,
       accountType,
       phone,
       address, // Object { street, city, country... }
@@ -312,6 +353,12 @@ router.post('/register-email', [
     // 4. Create User
     const user = new User(userData);
     await user.save();
+
+    // Trigger Ecosystem Sync for new users (email flow)
+    try {
+      const ecosystem = bridge.bridgeCore.getAdapter('ecosystem');
+      if (ecosystem) ecosystem.syncUser(user);
+    } catch (_) { }
 
     // 5. Process Referral
     if (referralCode) {
@@ -370,7 +417,7 @@ router.post('/login-email', [
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password +twoFactorSecret +backupCodes');
+    const user = await User.findByEmail(email.toLowerCase()).select('+password +twoFactorSecret +backupCodes');
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
@@ -598,7 +645,7 @@ router.post('/google', [
     let isNewUser = false;
 
     if (!user) {
-      user = await User.findOne({ email: payload.email });
+      user = await User.findByEmail(payload.email);
       if (user) {
         user.googleId = payload.sub;
         user.authMethod = 'google';
@@ -674,7 +721,7 @@ router.post('/facebook', [
     let isNewUser = false;
 
     if (!user) {
-      user = await User.findOne({ email: userData.email });
+      user = await User.findByEmail(userData.email);
       if (user) {
         user.facebookId = userData.id;
         user.authMethod = 'facebook';
@@ -756,7 +803,7 @@ router.post('/x-twitter', [
     let isNewUser = false;
 
     if (!user) {
-      user = await User.findOne({ email: userData.email });
+      user = await User.findByEmail(userData.email);
       if (user) {
         user.twitterId = userData.id;
         user.authMethod = 'x-twitter';
@@ -882,7 +929,7 @@ router.post('/github', [
     let isNewUser = false;
 
     if (!user) {
-      user = await User.findOne({ email: userData.email });
+      user = await User.findByEmail(userData.email);
       if (user) {
         user.githubId = userData.id.toString();
         user.authMethod = 'github';
@@ -960,7 +1007,7 @@ router.post('/register-wallet', [
     }
 
     // Check if user already exists
-    let existingUser = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+    let existingUser = await User.findByWallet(walletAddress.toLowerCase());
 
     if (existingUser) {
       return res.status(400).json({ error: 'Wallet address already registered' });
@@ -968,7 +1015,7 @@ router.post('/register-wallet', [
 
     // Check if email is already used
     if (email) {
-      const emailUser = await User.findOne({ email: email.toLowerCase() });
+      const emailUser = await User.findByEmail(email.toLowerCase());
       if (emailUser) {
         return res.status(400).json({ error: 'Email already registered' });
       }
@@ -1353,7 +1400,7 @@ router.delete('/sessions/:tokenId', verifyTokenMiddleware, async (req, res) => {
 router.post('/2fa/setup', verifyTokenMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId || req.user.id;
-    const userEmail = req.body.email || `${userId}@bezhas.com`;
+    const userEmail = req.body.email || `${userId}@bez.digital`;
 
     if (is2FAEnabled(userId)) {
       return res.status(400).json({
@@ -1539,7 +1586,7 @@ router.post('/forgot-password', [
 
   try {
     // Always respond with success to avoid user enumeration
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findByEmail(email.toLowerCase());
 
     if (user) {
       // Generate a cryptographically secure reset token
@@ -1664,7 +1711,7 @@ router.post('/link-wallet', [
     }
 
     // Check wallet not already used by another user
-    const existingWalletUser = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+    const existingWalletUser = await User.findByWallet(walletAddress.toLowerCase());
     if (existingWalletUser && existingWalletUser._id.toString() !== decoded.id) {
       return res.status(400).json({ error: 'Esta wallet ya está vinculada a otra cuenta' });
     }
@@ -1793,7 +1840,7 @@ router.post('/linkedin', [
     let isNewUser = false;
 
     if (!user) {
-      user = await User.findOne({ email: userData.email });
+      user = await User.findByEmail(userData.email);
       if (user) {
         user.linkedinId = userData.id;
         user.authMethod = 'linkedin';

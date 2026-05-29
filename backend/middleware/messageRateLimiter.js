@@ -19,7 +19,10 @@ class MessageRateLimiter {
         this.useMemory = false;
         this.memoryStore = new Map();
 
-        try {
+        if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
+            this.useMemory = true;
+            this.redis = null;
+        } else try {
             // Use REDIS_URL if available (Upstash, cloud Redis)
             if (options.redis) {
                 this.redis = options.redis;
@@ -134,9 +137,11 @@ class MessageRateLimiter {
             enabled: options.enabled !== false
         };
 
-        this.redis.on('error', (err) => {
-            console.error('Redis Message Limiter Error:', err);
-        });
+        if (this.redis) {
+            this.redis.on('error', (err) => {
+                console.error('Redis Message Limiter Error:', err);
+            });
+        }
     }
 
     /**

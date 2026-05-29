@@ -87,7 +87,7 @@ async function syncContacts(contacts: any[], userToken: string) {
             };
         }
 
-        const API_URL = process.env.BEZHAS_API_URL || 'https://api.bezhas.com/api';
+        const API_URL = process.env.BEZHAS_API_URL || 'https://api.bez.digital/api';
 
         const response = await axios.post(`${API_URL}/contacts/sync`, {
             contacts: formattedContacts

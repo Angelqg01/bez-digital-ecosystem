@@ -32,82 +32,18 @@ services:
     env_file:
       - .env.production
     depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - bezhas-internal
-      - bezhas-external
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ============================================
-  # Frontend (Nginx + Static Build)
-  # ============================================
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
-      args:
-        VITE_API_URL: ${VITE_API_URL:-https://api.bezhas.com}
-        VITE_WS_URL: ${VITE_WS_URL:-wss://api.bezhas.com}
-    container_name: bezhas-frontend
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-    depends_on:
-      - backend
-    networks:
-      - bezhas-external
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-
-  # ============================================
-  # MongoDB Database
-  # ============================================
-  mongo:
-    image: mongo:6.0
-    container_name: bezhas-mongo
-    restart: always
-    ports:
-      - "127.0.0.1:27017:27017"
+      postgres:
+    image: postgres:16
+    restart: unless-stopped
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-bezhas_admin}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
-      - MONGO_INITDB_DATABASE=bezhas
+      POSTGRES_USER: bezhas
+      POSTGRES_PASSWORD: bezhas_password
+      POSTGRES_DB: bezhas
+    ports:
+      - "5433:5432"
     volumes:
-      - mongo-data:/data/db
-      - mongo-config:/data/configdb
+      - postgres-data:/var/lib/postgresql/data
+      - postgres-config:/data/configdb
       - ./docker/mongo/init:/docker-entrypoint-initdb.d:ro
     networks:
       - bezhas-internal
@@ -190,7 +126,7 @@ services:
     ports:
       - "127.0.0.1:8001:8001"
     environment:
-      - MONGODB_URI=mongodb://${MONGO_ROOT_USER:-bezhas_admin}:${MONGO_ROOT_PASSWORD}@mongo:27017/bezhas_aegis?authSource=admin
+      - DATABASE_URL=postgresql://bezhas:bezhas_password@postgres:5432/bezhas?authSource=admin
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - AEGIS_PORT=8001
@@ -291,7 +227,7 @@ networks:
 # Volumes
 # ============================================
 volumes:
-  mongo-data:
+  postgres-data:
     driver: local
   mongo-config:
     driver: local

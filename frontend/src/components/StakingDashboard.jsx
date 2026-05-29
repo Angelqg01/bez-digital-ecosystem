@@ -453,6 +453,9 @@ const StakingDashboard = ({
         {activeTab === 'governance' && renderGovernance()}
         {activeTab === 'earnings' && renderEarnings()}
       </div>
+    </div>
+  );
+};
 
 
-      export default StakingDashboard;
+export default StakingDashboard;

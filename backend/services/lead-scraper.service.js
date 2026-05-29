@@ -5,6 +5,7 @@
 
 const axios = require('axios');
 const dotenv = require('dotenv');
+const crypto = require('crypto');
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ class LeadScraperService {
             this.status = 'Idle';
             return {
                 success: true,
+                campaignId: `b2b_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
                 message: `Campaña completada. Se evaluaron ${targetUrls.length} prospectos.`,
                 leadsFound: leads.length,
                 leads: leads
@@ -114,8 +116,28 @@ class LeadScraperService {
         const mockEmails = markdown.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
         let contactEmail = mockEmails && mockEmails.length > 0 ? mockEmails[0] : `contacto@${new URL(url).hostname.replace('www.', '')}`;
 
-        // Determinar calificación básica
-        const isQualified = content.length > 50;
+        const scoreReasons = [];
+        let score = 30;
+
+        if (type === 'B2B' || type === 'B2G') {
+            score += 15;
+            scoreReasons.push(`Tipo ${type} compatible`);
+        }
+        if (content.includes('automatizar') || content.includes('automation') || content.includes('innovación') || content.includes('innovation')) {
+            score += 20;
+            scoreReasons.push('Señal de automatización/innovación');
+        }
+        if (content.includes('enterprise') || content.includes('corporativas') || content.includes('supply') || content.includes('logística')) {
+            score += 15;
+            scoreReasons.push('Lenguaje empresarial/sectorial');
+        }
+        if (contactEmail) {
+            score += 10;
+            scoreReasons.push('Contacto disponible');
+        }
+
+        score = Math.min(score, 100);
+        const isQualified = content.length > 50 && score >= 50;
 
         return {
             url,
@@ -124,7 +146,9 @@ class LeadScraperService {
             companyName: new URL(url).hostname,
             contactEmail,
             isQualified,
-            estimatedValueToken: Math.floor(Math.random() * 500) + 100 // Estimación BEZ
+            score,
+            scoreReasons,
+            estimatedValueToken: Math.floor(Math.random() * 500) + 100
         };
     }
 

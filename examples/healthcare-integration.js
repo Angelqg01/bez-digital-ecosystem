@@ -7,7 +7,7 @@ const BeZhasUniversal = require('@bezhas/universal-sdk');
 
 const bezhas = new BeZhasUniversal({
     apiKey: process.env.BEZHAS_API_KEY,
-    endpoint: 'https://api.bezhas.com/v1',
+    endpoint: 'https://api.bez.digital/v1',
     debug: true
 });
 

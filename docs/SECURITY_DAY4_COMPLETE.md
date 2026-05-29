@@ -158,7 +158,7 @@ Las claves proporcionadas necesitan ser actualizadas en `.env`:
 STRIPE_SECRET_KEY=sk_live_YOUR_SECRET_KEY_HERE
 STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_PUBLISHABLE_KEY_HERE
 STRIPE_WEBHOOK_SECRET=whsec_OBTENER_DE_STRIPE_DASHBOARD
-FRONTEND_URL=https://bezhas.com
+FRONTEND_URL=https://bez.digital
 ```
 
 **Tipos de Pagos Implementados:**
@@ -613,7 +613,7 @@ STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...  # Obtener de dashboard
 
 # Frontend
-FRONTEND_URL=https://bezhas.com
+FRONTEND_URL=https://bez.digital
 ```
 
 2. **Stripe Webhook:**

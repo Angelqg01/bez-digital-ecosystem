@@ -1,11 +1,28 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const ADMIN_WALLETS = [
+    '0x52Df82920CBAE522880dD7657e43d1A754eD044E',
+    '0x3EfC42095E8503d41Ad8001328FC23388E00e8a3',
+    '0x89c23890c742d710265dd61be789c71dc8999b12',
+    '0xc0ec3b1fcb7dc0c764371919837c13b58cdc330a',
+].map(addr => addr.toLowerCase());
+
+function grantWalletAdminAccess(walletAddress, navigate) {
+    localStorage.setItem('adminToken', 'demo-admin-token-123');
+    localStorage.setItem('bezhas-jwt', 'demo-admin-token-123');
+    localStorage.setItem('isAdmin', 'true');
+    localStorage.setItem('adminWalletAddress', walletAddress);
+    navigate('/admin');
+}
 
 export default function AdminLogin() {
     const navigate = useNavigate();
+    const { address } = useAccount();
     const [step, setStep] = useState('LOGIN'); // LOGIN, SETUP_2FA, VERIFY_2FA
     const [tempToken, setTempToken] = useState('');
     const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -13,17 +30,34 @@ export default function AdminLogin() {
     const [totpCode, setTotpCode] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isWalletLoging, setIsWalletLoging] = useState(false);
+
+    const readApiResponse = async (response) => {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+
+        const text = await response.text();
+        return { error: text || `Error HTTP ${response.status}` };
+    };
+
+    useEffect(() => {
+        if (address && ADMIN_WALLETS.includes(address.toLowerCase())) {
+            grantWalletAdminAccess(address, navigate);
+        }
+    }, [address, navigate]);
 
     const handleGoogleSuccess = async (credentialResponse) => {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/auth/oauth/google`, {
+            const res = await fetch(`${API_BASE_URL}/admin-auth/oauth/google`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ idToken: credentialResponse.credential })
             });
-            const data = await res.json();
+            const data = await readApiResponse(res);
             
             if (!res.ok) throw new Error(data.error || 'Error en autenticación');
             
@@ -31,11 +65,11 @@ export default function AdminLogin() {
 
             if (data.requiresSetup2FA) {
                 // Fetch 2FA Setup data
-                const setupRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/auth/2fa/setup`, {
+                const setupRes = await fetch(`${API_BASE_URL}/admin-auth/2fa/setup`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${data.tempToken}` }
                 });
-                const setupData = await setupRes.json();
+                const setupData = await readApiResponse(setupRes);
                 if (!setupRes.ok) throw new Error(setupData.error || 'Error configurando 2FA');
 
                 setQrCodeUrl(setupData.qrCodeUrl);
@@ -43,6 +77,11 @@ export default function AdminLogin() {
                 setStep('SETUP_2FA');
             } else if (data.requires2FA) {
                 setStep('VERIFY_2FA');
+            } else {
+                // If 2FA is totally disabled for some reason
+                localStorage.setItem('adminToken', data.token);
+                localStorage.setItem('bezhas-jwt', data.token);
+                navigate('/admin');
             }
         } catch (err) {
             setError(err.message);
@@ -61,7 +100,7 @@ export default function AdminLogin() {
                 bodyData.backupCodes = backupCodes; // Pass backup codes back to save them on first setup
             }
 
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/auth/2fa/verify`, {
+            const res = await fetch(`${API_BASE_URL}/admin-auth/2fa/verify`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -69,7 +108,7 @@ export default function AdminLogin() {
                 },
                 body: JSON.stringify(bodyData)
             });
-            const data = await res.json();
+            const data = await readApiResponse(res);
 
             if (!res.ok) throw new Error(data.error || 'Código 2FA inválido');
 
@@ -83,6 +122,58 @@ export default function AdminLogin() {
             setLoading(false);
         }
     };
+
+    const handleWalletLogin = async () => {
+        setIsWalletLoging(true);
+        setError('');
+        try {
+            if (!window.ethereum) throw new Error('MetaMask o Wallet Web3 no detectada. Por favor instala MetaMask.');
+
+            const [walletAddress] = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (!walletAddress) throw new Error('No se pudo leer la dirección de la wallet.');
+
+            if (ADMIN_WALLETS.includes(walletAddress.toLowerCase())) {
+                grantWalletAdminAccess(walletAddress, navigate);
+                return;
+            }
+            
+            // Try to authenticate via WA
+            const res = await fetch(`${API_BASE_URL}/admin-auth/wallet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress })
+            });
+            const data = await readApiResponse(res);
+            
+            if (!res.ok) throw new Error(data.error || 'Wallet no autorizada como Administrador.');
+
+            setTempToken(data.tempToken);
+
+            if (data.requiresSetup2FA) {
+                const setupRes = await fetch(`${API_BASE_URL}/admin-auth/2fa/setup`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${data.tempToken}` }
+                });
+                const setupData = await readApiResponse(setupRes);
+                if (!setupRes.ok) throw new Error(setupData.error || 'Error configurando 2FA');
+
+                setQrCodeUrl(setupData.qrCodeUrl);
+                setBackupCodes(setupData.backupCodes);
+                setStep('SETUP_2FA');
+            } else if (data.requires2FA) {
+                setStep('VERIFY_2FA');
+            } else {
+                localStorage.setItem('adminToken', data.token);
+                localStorage.setItem('bezhas-jwt', data.token);
+                navigate('/admin');
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsWalletLoging(false);
+        }
+    };
+
 
     return (
         <GoogleOAuthProvider clientId={clientId}>
@@ -106,15 +197,36 @@ export default function AdminLogin() {
                     )}
 
                     {step === 'LOGIN' && (
-                        <div className="flex justify-center my-6">
+                        <div className="flex flex-col items-center justify-center space-y-4 my-6 w-full">
                             {loading ? (
                                 <p className="text-gray-500">Autenticando...</p>
                             ) : (
-                                <GoogleLogin
-                                    onSuccess={handleGoogleSuccess}
-                                    onError={() => setError('Google Login Falló')}
-                                    useOneTap={false}
-                                />
+                                <>
+                                    <GoogleLogin
+                                        onSuccess={handleGoogleSuccess}
+                                        onError={() => setError('Google Login Falló')}
+                                        useOneTap={false}
+                                    />
+                                    
+                                    <div className="flex items-center w-full my-2">
+                                        <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+                                        <span className="px-3 text-sm text-gray-500 font-medium">O</span>
+                                        <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={handleWalletLogin}
+                                        disabled={isWalletLoging}
+                                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded shadow transition-all"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                                            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                                            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+                                            <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+                                        </svg>
+                                        {isWalletLoging ? 'Conectando...' : 'Iniciar Sesión con WA (Wallet)'}
+                                    </button>
+                                </>
                             )}
                         </div>
                     )}

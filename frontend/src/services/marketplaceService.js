@@ -1,3 +1,10 @@
+/**
+ * @deprecated — LEGACY SERVICE. Marketplace operations now live in BZ Sphere SubApp.
+ * Replacement: BZ Sphere/src/services/blockchainService.js
+ * DEX swaps → BZ Sphere → executeSwap()
+ * Delivery escrow → BZ Sphere → createDeliveryEscrow()
+ * The Hub should link to BZ Sphere instead of handling marketplace directly.
+ */
 import { ethers } from 'ethers';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';

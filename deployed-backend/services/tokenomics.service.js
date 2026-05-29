@@ -16,6 +16,10 @@
 const { getTierConfig, BEZ_TO_USD_RATE, GAS_CONFIG, BASE_STAKING_APY } = require('../config/tier.config');
 const Redis = require('ioredis');
 const axios = require('axios');
+const AdBalance = require('../models/adBalance.model');
+const BillingTransaction = require('../models/billingTransaction.model');
+const priceOracleService = require('./price-oracle.service');
+const aiUsagePricing = require('./aiUsagePricing.service');
 
 // Redis client para cache
 let redis = null;
@@ -544,6 +548,113 @@ class TokenomicsService {
         return results;
     }
 
+    /**
+     * Estimate a BEZ-Coin charge for a real AI usage payload.
+     */
+    async estimateAIUsageCharge(model, usage = {}, options = {}) {
+        const bezEurRate = options.bezEurRate || await this._getBezEurRate();
+        return aiUsagePricing.estimateAIUsageCharge({
+            model,
+            usage,
+            bezEurRate,
+            usdEur: options.usdEur,
+            infraMultiplier: options.infraMultiplier,
+            marginMultiplier: options.marginMultiplier,
+            vatRate: options.vatRate
+        });
+    }
+
+    /**
+     * Charge a user's BEZ balance for AI usage and write an auditable ledger row.
+     *
+     * Supports both the old signature:
+     *   chargeForAIUsage(userId, model, tokens)
+     * and the richer signature:
+     *   chargeForAIUsage({ userId, walletAddress, model, usage, feature, projectId })
+     */
+    async chargeForAIUsage(userOrParams, modelArg, tokensArg = 0) {
+        const params = typeof userOrParams === 'object'
+            ? userOrParams
+            : {
+                userId: userOrParams,
+                model: modelArg,
+                usage: { inputTokens: tokensArg, outputTokens: 0 }
+            };
+
+        if (!params.userId) throw new Error('userId is required');
+        if (!params.model) throw new Error('model is required');
+
+        const walletAddress = params.walletAddress || String(params.userId);
+        const estimate = await this.estimateAIUsageCharge(params.model, params.usage || {}, params.pricing || {});
+        const chargeBez = estimate.chargedBez;
+
+        let balance = await AdBalance.findOne({
+            $or: [
+                { userId: params.userId },
+                { walletAddress }
+            ]
+        });
+
+        if (!balance) {
+            balance = new AdBalance({
+                userId: params.userId,
+                walletAddress
+            });
+        }
+
+        if ((balance.bezBalance || 0) < chargeBez) {
+            throw new Error(`Insufficient BEZ-Coin balance. Need ${chargeBez} BEZ, available ${balance.bezBalance || 0} BEZ`);
+        }
+
+        balance.bezBalance -= chargeBez;
+        balance.totalSpent += estimate.grossEur;
+        balance.lastChargeAt = new Date();
+        balance.updatedAt = new Date();
+        await balance.save();
+
+        const transaction = new BillingTransaction({
+            userId: params.userId,
+            walletAddress,
+            type: 'ai_usage',
+            amount: chargeBez,
+            currency: 'BEZ',
+            status: 'completed',
+            paymentMethod: 'system',
+            campaignId: params.campaignId,
+            description: params.description || `Consumo IA ${params.feature || 'AI_AGENT'} - ${params.model}`,
+            metadata: {
+                feature: params.feature || 'AI_AGENT',
+                projectId: params.projectId,
+                provider: estimate.provider,
+                model: params.model,
+                usage: estimate.usage,
+                openaiCostUsd: estimate.openaiCostUsd,
+                apiCostEur: estimate.apiCostEur,
+                infrastructureCostEur: estimate.infrastructureCostEur,
+                grossEur: estimate.grossEur,
+                chargedBez: estimate.chargedBez,
+                marginEur: estimate.marginEur,
+                bezEurRate: estimate.bezEurRate,
+                pricing: {
+                    usdEur: estimate.usdEur,
+                    infraMultiplier: estimate.infraMultiplier,
+                    marginMultiplier: estimate.marginMultiplier,
+                    vatRate: estimate.vatRate
+                }
+            },
+            processedAt: new Date()
+        });
+        await transaction.save();
+
+        return {
+            success: true,
+            transactionId: transaction._id,
+            chargedBez: chargeBez,
+            remainingBez: this._round(balance.bezBalance, 4),
+            estimate
+        };
+    }
+
     // ===========================================================================
     // UTILITY METHODS
     // ===========================================================================
@@ -582,6 +693,16 @@ class TokenomicsService {
      */
     usdToBEZ(usdAmount) {
         return this._round(usdAmount / BEZ_TO_USD_RATE, 4);
+    }
+
+    async _getBezEurRate() {
+        try {
+            return await priceOracleService.getBezEurPrice(false);
+        } catch (error) {
+            const fallback = parseFloat(process.env.BEZ_EUR_RATE) || BEZ_TO_USD_RATE * (parseFloat(process.env.USD_EUR_RATE) || 0.92);
+            console.warn('[Tokenomics] BEZ/EUR oracle unavailable, using fallback:', fallback);
+            return fallback;
+        }
     }
 
     /**

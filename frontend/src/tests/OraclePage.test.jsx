@@ -259,7 +259,7 @@ describe('OraclePage', () => {
             fireEvent.click(initialApproveButtons[0]);
 
             await waitFor(() => {
-                const currentApproveButtons = screen.getAllByRole('button', { name: /Aprobar/i });
+                const currentApproveButtons = screen.queryAllByRole('button', { name: /Aprobar/i });
                 expect(currentApproveButtons.length).toBe(initialCount - 1);
             });
         });

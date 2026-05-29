@@ -3,7 +3,7 @@ const router = express.Router();
 const { body, param, query, validationResult } = require('express-validator');
 const Campaign = require('../models/campaign.model');
 const AdvertiserProfile = require('../models/advertiserProfile.model');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const { protect: authMiddleware } = require('../middleware/auth.middleware');
 const { verifyAdminToken: adminMiddleware } = require('../middleware/admin.middleware');
 

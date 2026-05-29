@@ -14,7 +14,7 @@ const crypto = require('crypto');
 const logger = require('../../utils/logger');
 
 // Models
-const BridgeSyncedItem = require('../../models/BridgeSyncedItem.model');
+const BridgeSyncedItem = require('../../models/pg/BridgeSyncedItem');
 const BridgeOrder = require('../../models/BridgeOrder.model');
 
 class VintedAdapter extends BaseAdapter {
@@ -70,6 +70,14 @@ class VintedAdapter extends BaseAdapter {
             logger.error({ error, platformId: this.platformId }, 'Failed to connect to Vinted');
             throw error;
         }
+    }
+
+    /**
+     * Vinted Health Check
+     */
+    async verifyHealth() {
+        // En modo producción aquí se haría un ping al endpoint /user/me
+        return this.status === 'connected' || this.status === 'connected_mock';
     }
 
     /**
@@ -224,6 +232,13 @@ class VintedAdapter extends BaseAdapter {
             totalAmount: price,
             status: 'pending_shipment',
             paymentStatus: 'paid',
+        });
+
+        this.emit('payment_received', {
+            id: transaction_id,
+            amount: price,
+            currency: 'EUR',
+            sellerWallet: order.seller?.walletAddress
         });
 
         this.emit('order_created', { order });

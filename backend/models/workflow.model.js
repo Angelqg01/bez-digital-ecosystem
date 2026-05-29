@@ -43,6 +43,13 @@ const WorkflowSchema = new mongoose.Schema({
     runHistory: [RunLogSchema],
     lastRun: { type: Date },
     totalRuns: { type: Number, default: 0 },
+    blockchain: {
+        onChainId: { type: Number },
+        contractAddress: { type: String },
+        txHash: { type: String },
+        isVerified: { type: Boolean, default: false },
+        chainId: { type: Number, default: 137 } // default Polygon/Amoy
+    },
 }, {
     timestamps: true,
 });
@@ -50,5 +57,7 @@ const WorkflowSchema = new mongoose.Schema({
 WorkflowSchema.index({ createdBy: 1 });
 WorkflowSchema.index({ status: 1 });
 WorkflowSchema.index({ 'trigger.type': 1 });
+WorkflowSchema.index({ 'blockchain.onChainId': 1 });
+WorkflowSchema.index({ 'blockchain.txHash': 1 });
 
 module.exports = mongoose.model('Workflow', WorkflowSchema);

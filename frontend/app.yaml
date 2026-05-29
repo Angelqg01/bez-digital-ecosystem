@@ -32,5 +32,5 @@ build_env_variables:
   VITE_NETWORK: "polygon"
 
 # Handlers removed for dynamic Node.js runtime (build on cloud)
-# App Engine will run 'npm start' which serves the built 'dist' folder
+# App Engine will run 'pnpm run start' which serves the built 'dist' folder
 

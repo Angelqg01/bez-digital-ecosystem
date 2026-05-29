@@ -140,7 +140,7 @@ STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_KEY_HERE
 STRIPE_WEBHOOK_SECRET=whsec_OBTENER_DE_DASHBOARD
 
 # Frontend URL
-FRONTEND_URL=https://bezhas.com
+FRONTEND_URL=https://bez.digital
 ```
 
 ### 2. Stripe Webhook Setup
@@ -148,7 +148,7 @@ FRONTEND_URL=https://bezhas.com
 **Pasos:**
 1. Ir a: https://dashboard.stripe.com/webhooks
 2. Click "Add endpoint"
-3. URL: `https://bezhas.com/api/stripe/webhook`
+3. URL: `https://bez.digital/api/stripe/webhook`
 4. Seleccionar eventos:
    - `checkout.session.completed`
    - `payment_intent.succeeded`

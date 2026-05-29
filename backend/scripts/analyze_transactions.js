@@ -11,8 +11,8 @@ async function analyze() {
     console.log("Connected to MongoDB");
 
     // Load models
-    require('../models/user.model');
-    const BEZCoinTransaction = require('../models/BEZCoinTransaction.model');
+    require('../models/pg/User');
+    const BEZCoinTransaction = require('../models/pg/BEZCoinTransaction');
 
     const transactions = await BEZCoinTransaction.find({})
       .populate('user', 'email username walletAddress firstName lastName')

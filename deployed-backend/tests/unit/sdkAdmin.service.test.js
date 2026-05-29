@@ -31,7 +31,7 @@ const mockConfig = {
     logging: { level: 'info', enabled: true },
     security: {
         requireApiKey: true,
-        allowedOrigins: ['https://bezhas.com', 'https://api.bezhas.com'],
+        allowedOrigins: ['https://bez.digital', 'https://api.bez.digital'],
         maxApiKeysPerUser: 5,
     },
     updatedAt: new Date('2026-01-15T00:00:00Z'),

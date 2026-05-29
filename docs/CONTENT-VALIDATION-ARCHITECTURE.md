@@ -578,7 +578,7 @@ async function createValidationCheckoutSession(data) {
         product_data: {
           name: 'Certificación Blockchain',
           description: `Valida tu ${data.contentType} en blockchain`,
-          images: ['https://bezhas.com/assets/blockchain-cert.png']
+          images: ['https://bez.digital/assets/blockchain-cert.png']
         },
         unit_amount: 999, // €9.99 en centavos
       },

@@ -75,16 +75,16 @@ jobs:
           echo "📦 @bezhas/sdk@$SDK_VERSION"
 
       - name: Install SDK dependencies
-        run: cd sdk && npm ci
+        run: cd sdk && pnpm install --frozen-lockfile
 
       - name: Build SDK (webpack bundle)
-        run: cd sdk && npm run build
+        run: cd sdk && pnpm run build
 
       - name: Run SDK tests
         run: |
           cd sdk
           if [ -f "package.json" ] && grep -q '"test"' package.json; then
-            npm test --if-present
+            pnpm test --if-present
           else
             echo "No test script configured, skipping..."
           fi
@@ -126,7 +126,7 @@ jobs:
           path: sdk/
 
       - name: Install dependencies
-        run: cd sdk && npm ci
+        run: cd sdk && pnpm install --frozen-lockfile
 
       - name: Set npm tag
         id: npm_tag
@@ -222,7 +222,7 @@ jobs:
       - name: Build MCP Server (TypeScript)
         run: |
           cd packages/mcp-server
-          pnpm run build --if-present || npx tsc --noEmit
+          pnpm run build --if-present || pnpm exec tsc --noEmit
 
       - name: Publish @bezhas/mcp-server
         run: |
@@ -264,7 +264,7 @@ jobs:
             ### Install
             ```bash
             # npm
-            npm install @bezhas/sdk@${{ needs.validate.outputs.sdk_version }}
+            pnpm install @bezhas/sdk@${{ needs.validate.outputs.sdk_version }}
 
             # pnpm
             pnpm add @bezhas/sdk@${{ needs.validate.outputs.sdk_version }}

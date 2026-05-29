@@ -136,6 +136,18 @@ async function autoRegisterAdapters(config = {}) {
         adaptersToRegister.push({ id: 'airbnb', config: {} });
     }
 
+    // Ecosystem Bridge (L2 Sync)
+    if (process.env.ECOSYSTEM_BRIDGE_KEY || config.ecosystem?.apiKey) {
+        adaptersToRegister.push({
+            id: 'ecosystem',
+            config: {
+                apiKey: process.env.ECOSYSTEM_BRIDGE_KEY,
+                baseUrl: process.env.BLOCKCHAIN_API_URL,
+                ...config.ecosystem,
+            },
+        });
+    }
+
     // Register all adapters
     for (const { id, config: adapterConfig } of adaptersToRegister) {
         try {

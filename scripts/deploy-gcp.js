@@ -36,5 +36,5 @@ try {
 }
 
 console.log('\n✅ Deployment Initiated Successfully!');
-console.log('Backend: https://api.bezhas.com');
-console.log('Frontend: https://bezhas.com');
+console.log('Backend: https://api.bez.digital');
+console.log('Frontend: https://bez.digital');

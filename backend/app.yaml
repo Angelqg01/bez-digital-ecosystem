@@ -27,7 +27,7 @@ env_variables:
   NODE_ENV: "production"
   PORT: "8080"
   LOG_LEVEL: "info"
-  ALLOWED_ORIGINS: "https://bezhas.com,https://www.bezhas.com,https://bezhas-frontend-371791663100.us-central1.run.app,https://totemic-bonus-479312-c6.ew.r.appspot.com"
+  ALLOWED_ORIGINS: "https://bez.digital,https://www.bez.digital,https://bezhas-frontend-371791663100.us-central1.run.app,https://totemic-bonus-479312-c6.ew.r.appspot.com"
 
 # Build configuration
 build_env_variables:

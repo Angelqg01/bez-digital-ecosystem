@@ -122,7 +122,7 @@ jest.mock('../../services/fiat-gateway.service', () => ({
         bankName: 'BeZhas Platform',
         iban: 'ES77 1465 0100 91 1766376210',
         bic: 'INGDESMMXXX',
-        beneficiary: 'BeZhas.com'
+        beneficiary: 'bez.digital'
     }),
     dispenseTokens: jest.fn().mockResolvedValue({
         success: true,
@@ -223,7 +223,7 @@ describe('Fiat to BEZ E2E Integration', () => {
         fiat.calculateBezOutput.mockImplementation(async (eurAmount) => eurAmount / 0.000694);
         fiat.processFiatPayment.mockResolvedValue({ success: true, txHash: '0xe2e_test_tx_hash_fiat', blockNumber: 12345, tokensSent: 144092.22, rate: 0.000694, eurProcessed: 100 });
         fiat.getSafeStatus.mockResolvedValue({ safeAddress: '0x3EfC42095E8503d41Ad8001328FC23388E00e8a3', hotWalletAddress: '0x52Df82920CBAE522880dD7657e43d1A754eD044E', bezBalance: '1000000', allowance: '1000000', hotWalletMaticBalance: '1.0', isConfigured: true, needsApproval: false });
-        fiat.getBankDetails.mockReturnValue({ bankName: 'BeZhas Platform', iban: 'ES77 1465 0100 91 1766376210', bic: 'INGDESMMXXX', beneficiary: 'BeZhas.com' });
+        fiat.getBankDetails.mockReturnValue({ bankName: 'BeZhas Platform', iban: 'ES77 1465 0100 91 1766376210', bic: 'INGDESMMXXX', beneficiary: 'bez.digital' });
         fiat.dispenseTokens.mockResolvedValue({ success: true, txHash: '0xe2e_dispense_hash', blockNumber: 12347 });
 
         // Re-apply token distribution mocks
@@ -242,7 +242,7 @@ describe('Fiat to BEZ E2E Integration', () => {
             test('should create token purchase session with correct amount', async () => {
                 const userInfo = {
                     userId: TEST_USER_ID,
-                    email: 'e2e@bezhas.com',
+                    email: 'e2e@bez.digital',
                     walletAddress: TEST_WALLET
                 };
 

@@ -1,5 +1,5 @@
-const ApiLog = require('../models/ApiLog.model');
-const ApiKey = require('../models/ApiKey.model');
+const ApiLog = require('../models/pg/ApiLog');
+const ApiKey = require('../models/pg/ApiKey');
 
 /**
  * Middleware para logging automático de peticiones al SDK

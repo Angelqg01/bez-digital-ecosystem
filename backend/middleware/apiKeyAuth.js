@@ -126,7 +126,7 @@ const requireTier = (requiredTier) => {
             return res.status(403).json({
                 error: 'Insufficient API Tier',
                 message: `Este endpoint requiere tier ${requiredTier} o superior. Tu tier actual: ${userTier}`,
-                upgrade: 'https://bezhas.com/pricing'
+                upgrade: 'https://bez.digital/pricing'
             });
         }
 

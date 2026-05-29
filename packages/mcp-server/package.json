@@ -1,35 +1,39 @@
 {
-    "name": "@bezhas/mcp-server",
-    "version": "1.0.0",
-    "description": "BeZhas Intelligence - MCP Server for AI-driven Web3 decisions",
-    "type": "module",
-    "main": "dist/index.js",
-    "scripts": {
-        "build": "tsc",
-        "start": "node dist/index.js",
-        "start:http": "node dist/http-server.js",
-        "dev": "tsx watch src/index.ts",
-        "dev:http": "tsx watch src/http-server.ts",
-        "lint": "eslint src/",
-        "test": "vitest run"
-    },
-    "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.12.1",
-        "ethers": "^6.13.4",
-        "zod": "^3.24.2",
-        "express": "^4.21.2",
-        "cors": "^2.8.5",
-        "dotenv": "^16.4.7",
-        "mongoose": "^8.9.5",
-        "pino": "^9.6.0",
-        "axios": "^1.7.9"
-    },
-    "devDependencies": {
-        "@types/node": "^22.12.0",
-        "@types/express": "^5.0.0",
-        "@types/cors": "^2.8.17",
-        "typescript": "^5.7.3",
-        "tsx": "^4.19.2",
-        "vitest": "^3.0.4"
-    }
+  "name": "@bezhas/mcp-server",
+  "version": "1.0.0",
+  "description": "BeZhas Intelligence - MCP Server for AI-driven Web3 decisions",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:http": "node dist/http-server.js",
+    "dev": "tsx watch src/index.ts",
+    "dev:http": "tsx watch src/http-server.ts",
+    "lint": "eslint src/",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "ethers": "^6.13.4",
+    "zod": "^3.24.2",
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "mongoose": "^8.9.5",
+    "pino": "^9.6.0",
+    "axios": "^1.7.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.12.0",
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "typescript": "^5.7.3",
+    "tsx": "^4.19.2",
+    "vitest": "^3.0.4"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
 }

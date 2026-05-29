@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useBezCoin } from '../context/BezCoinContext';
+import { useBezPay } from '../context/BezPayContext';
 import { LOGOS } from '../config/cryptoLogos';
-// BuyBezCoinModal -> useBezPay().openBuyBez()
 import { Wallet, Copy, ExternalLink, TrendingUp, Send, ArrowDownToLine } from 'lucide-react';
 import { useAccount, useBalance } from 'wagmi';
 import { useWalletConnect } from '../hooks/useWalletConnect';
@@ -18,7 +18,8 @@ const WalletPage = () => {
 
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(false);
-    const { balance: bezBalance, showBuyModal, setShowBuyModal, verifyAndProceed } = useBezCoin();
+    const { balance: bezBalance, verifyAndProceed } = useBezCoin();
+    const { openBuyBez } = useBezPay();
 
     const fetchWalletData = useCallback(async () => {
         if (!address) return;
@@ -243,7 +244,6 @@ const WalletPage = () => {
                     </div>
                 )}
             </div>
-            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
         </div>
     );
 };

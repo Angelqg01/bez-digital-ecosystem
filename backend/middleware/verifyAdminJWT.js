@@ -1,6 +1,28 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'bezhas_super_secret_key';
 const db = require('../database/inMemoryDB');
+
+function getJwtSecret() {
+    if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+        throw new Error('JWT_SECRET is required in production');
+    }
+    return process.env.JWT_SECRET || 'bezhas-local-dev-only-secret';
+}
+
+const CORE_ADMIN_ROLES = new Set([
+    'admin',
+    'dev',
+    'developer',
+    'devops',
+    'security',
+    'human_resources',
+    'super_admin',
+    'ADMIN',
+    'DEVELOPER',
+    'DEVOPS',
+    'SECURITY',
+    'HUMAN_RESOURCES',
+    'SUPER_ADMIN',
+]);
 
 
 
@@ -20,23 +42,25 @@ async function verifyAdminJWT(req, res, next) {
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, getJwtSecret());
 
         // If the token explicitly carries a role, honor it
-        if (decoded.role === 'admin' || decoded.role === 'dev' || decoded.role === 'human_resources' || decoded.role === 'super_admin') {
-            if (!decoded.twoFactorVerified) {
+        if (CORE_ADMIN_ROLES.has(decoded.role)) {
+            if (!decoded.twoFactorVerified && !decoded.bootstrap) {
                 return res.status(403).json({ error: 'Acceso denegado. 2FA requerido para administradores.' });
             }
             req.admin = decoded;
             return next();
         }
 
-        const User = require('../models/user.model');
+        const User = require('../models/pg/User');
         const user = await User.findById(decoded.id);
         if (user) {
             const isAdmin = user.roles && (
                 user.roles.includes('ADMIN') || 
                 user.roles.includes('DEVELOPER') ||
+                user.roles.includes('DEVOPS') ||
+                user.roles.includes('SECURITY') ||
                 user.roles.includes('HUMAN_RESOURCES') ||
                 user.roles.includes('SUPER_ADMIN')
             );
@@ -53,7 +77,7 @@ async function verifyAdminJWT(req, res, next) {
         // Also fallback to inMemoryDB if necessary
         if (decoded.id && db.users.has(decoded.id)) {
             const user = db.users.get(decoded.id);
-            if (user.role === 'admin' || user.role === 'HUMAN_RESOURCES' || (Array.isArray(user.roles) && user.roles.some(r => ['ADMIN', 'DEVELOPER', 'HUMAN_RESOURCES'].includes(r)))) {
+            if (user.role === 'admin' || user.role === 'HUMAN_RESOURCES' || (Array.isArray(user.roles) && user.roles.some(r => ['ADMIN', 'DEVELOPER', 'DEVOPS', 'SECURITY', 'HUMAN_RESOURCES', 'SUPER_ADMIN'].includes(r)))) {
                 if (!decoded.twoFactorVerified) {
                     return res.status(403).json({ error: 'Acceso denegado. 2FA requerido para administradores.' });
                 }

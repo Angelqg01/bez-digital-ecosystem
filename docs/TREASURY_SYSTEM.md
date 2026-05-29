@@ -425,7 +425,7 @@ paymentProcessors: {
 paymentProcessors: {
   paypal: {
     enabled: true,
-    email: "treasury@bezhas.com",
+    email: "treasury@bez.digital",
     clientId: process.env.PAYPAL_CLIENT_ID
   }
 }
@@ -744,7 +744,7 @@ Authorization: Bearer {admin_jwt_token}
 - [Security Best Practices](./SECURITY.md)
 
 **Contacto:**
-- Email: dev@bezhas.com
+- Email: dev@bez.digital
 - Discord: BeZhas Dev Server
 - GitHub Issues: bezhas/bezhas-web3
 

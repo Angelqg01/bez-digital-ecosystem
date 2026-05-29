@@ -118,7 +118,7 @@ app.get('/api/mcp/tools', (_req, res) => {
                 category: 'testing',
                 params: {
                     action: 'test_page_load | test_wallet_flow | capture_screenshot | audit_performance | audit_accessibility | test_api_endpoints',
-                    targetUrl: 'string (URL, default: https://bezhas.com)',
+                    targetUrl: 'string (URL, default: https://bez.digital)',
                 },
             },
             {
@@ -471,7 +471,7 @@ app.post('/api/mcp/firecrawl', async (req, res) => {
 // POST /api/mcp/playwright
 app.post('/api/mcp/playwright', async (req, res) => {
     try {
-        const { action, targetUrl = 'https://bezhas.com' } = req.body;
+        const { action, targetUrl = 'https://bez.digital' } = req.body;
         if (!action) {
             return res.status(400).json({ error: 'Missing required field: action' });
         }
@@ -572,7 +572,7 @@ app.post('/api/mcp/obliq-sre', async (req, res) => {
 
         if (action === 'health_check') {
             const checks = await Promise.all(
-                ['https://bezhas.com', 'https://api.bezhas.com/api/health'].map(async (url) => {
+                ['https://bez.digital', 'https://api.bez.digital/api/health'].map(async (url) => {
                     try {
                         const start = Date.now();
                         const r = await fetch(url, { signal: AbortSignal.timeout(5000) });

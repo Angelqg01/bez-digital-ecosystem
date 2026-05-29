@@ -24,7 +24,7 @@ pnpm dev
 1. **URL**: `http://localhost:5173/admin`
 2. **Login**: `/admin-login`
 3. **Credenciales de prueba**:
-   - Email: `admin@bezhas.com`
+   - Email: `admin@bez.digital`
    - Password: `Admin123!`
 
 ---
@@ -304,9 +304,9 @@ MIT License - Ver `LICENSE` para más detalles.
 
 ## 📞 Soporte
 
-- **Email**: support@bezhas.com
+- **Email**: support@bez.digital
 - **Discord**: [BeZhas Community](https://discord.gg/bezhas)
-- **Docs**: [docs.bezhas.com](https://docs.bezhas.com)
+- **Docs**: [docs.bez.digital](https://docs.bez.digital)
 - **Issues**: [GitHub Issues](https://github.com/bezhas/bezhas-web3/issues)
 
 ---

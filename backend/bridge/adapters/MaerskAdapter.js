@@ -13,8 +13,8 @@ const crypto = require('crypto');
 const logger = require('../../utils/logger');
 
 // Models
-const BridgeShipment = require('../../models/BridgeShipment.model');
-const LogisticsShipment = require('../../models/LogisticsShipment.model');
+const BridgeShipment = require('../../models/pg/BridgeShipment');
+const LogisticsShipment = require('../../models/pg/LogisticsShipment');
 
 class MaerskAdapter extends BaseAdapter {
     constructor(config = {}) {
@@ -63,6 +63,13 @@ class MaerskAdapter extends BaseAdapter {
             logger.error({ error, platformId: this.platformId }, 'Failed to connect to Maersk');
             throw error;
         }
+    }
+
+    /**
+     * Maersk Health Check
+     */
+    async verifyHealth() {
+        return this.status === 'connected' || this.status === 'connected_mock';
     }
 
     /**
@@ -217,7 +224,7 @@ class MaerskAdapter extends BaseAdapter {
             status: 'delivered',
         });
 
-        // Also update the LogisticsShipment model if exists
+        // Also update the pg/LogisticsShipment if exists
         await LogisticsShipment.findOneAndUpdate(
             { 'tracking.trackingNumber': payload.trackingNumber },
             {

@@ -3,7 +3,7 @@
  * Protege endpoints y features premium
  */
 
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const logger = require('../utils/logger');
 
 /**

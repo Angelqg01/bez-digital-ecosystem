@@ -14,7 +14,7 @@
  */
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const {
     SUBSCRIPTION_TIERS,
     TIER_HIERARCHY,
@@ -164,7 +164,7 @@ class SubscriptionService {
 
         const usageKey = this._getUsageKey(userId, limitType);
 
-        await User.findByIdAndUpdate(userId, {
+        await User.update(userId, {
             $inc: { [`usage.${usageKey}`]: amount }
         });
 
@@ -408,7 +408,7 @@ class SubscriptionService {
             expiresAt.setMonth(expiresAt.getMonth() + 1);
         }
 
-        await User.findByIdAndUpdate(userId, {
+        await User.update(userId, {
             subscriptionTier: tier.toUpperCase(),
             subscriptionExpiresAt: expiresAt,
             stripeCustomerId: session.customer,
@@ -428,13 +428,13 @@ class SubscriptionService {
         // Verificar si tiene token lock activo
         if (user.tokenLockData?.active) {
             // Mantener tier del token lock
-            await User.findByIdAndUpdate(user._id, {
+            await User.update(user._id, {
                 subscriptionTier: user.tokenLockData.tier,
                 subscriptionSource: 'token_lock',
                 stripeSubscriptionId: null
             });
         } else {
-            await User.findByIdAndUpdate(user._id, {
+            await User.update(user._id, {
                 subscriptionTier: DEFAULT_TIER,
                 subscriptionExpiresAt: null,
                 stripeSubscriptionId: null,
@@ -472,7 +472,7 @@ class SubscriptionService {
         const unlocksAt = new Date();
         unlocksAt.setDate(unlocksAt.getDate() + config.tokenLock.durationDays);
 
-        await User.findByIdAndUpdate(userId, {
+        await User.update(userId, {
             tokenLockData: {
                 active: true,
                 tier: tier.toUpperCase(),
@@ -491,7 +491,7 @@ class SubscriptionService {
         const effectiveTier = this._getHigherTier(currentTier, tier.toUpperCase());
 
         if (effectiveTier !== currentTier) {
-            await User.findByIdAndUpdate(userId, {
+            await User.update(userId, {
                 subscriptionTier: effectiveTier
             });
         }
@@ -518,7 +518,7 @@ class SubscriptionService {
             throw new Error(`Tokens locked until ${user.tokenLockData.unlocksAt}`);
         }
 
-        await User.findByIdAndUpdate(userId, {
+        await User.update(userId, {
             tokenLockData: {
                 active: false,
                 tier: null,
@@ -529,7 +529,7 @@ class SubscriptionService {
 
         // Revertir al tier de pago o default
         const paidTier = user.stripeSubscriptionId ? user.subscriptionTier : DEFAULT_TIER;
-        await User.findByIdAndUpdate(userId, {
+        await User.update(userId, {
             subscriptionTier: paidTier
         });
 
@@ -558,7 +558,7 @@ class SubscriptionService {
         const trialEndsAt = new Date();
         trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_PERIOD_DAYS);
 
-        await User.findByIdAndUpdate(userId, {
+        await User.update(userId, {
             subscriptionTier: tier.toUpperCase(),
             isTrialActive: true,
             trialEndsAt,

@@ -9,7 +9,7 @@
 
 const express = require('express');
 const router = express.Router();
-const FiatOrder = require('../models/fiatOrder.model');
+const FiatOrder = require('../models/pg/FiatOrder');
 const { processFiatPayment, getBezPriceInEur, calculateBezOutput } = require('../services/fiat-gateway.service');
 
 /**

@@ -16,7 +16,7 @@ STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_PUBLISHABLE_KEY_HERE
 STRIPE_WEBHOOK_SECRET=whsec_PENDIENTE_CONFIGURAR
 
 # URL del frontend
-FRONTEND_URL=https://bezhas.com
+FRONTEND_URL=https://bez.digital
 ```
 
 ### 2️⃣ Configurar Webhook en Stripe
@@ -26,7 +26,7 @@ FRONTEND_URL=https://bezhas.com
 
 2. **Crear Endpoint:**
    - Click "Add endpoint"
-   - URL: `https://bezhas.com/api/stripe/webhook`
+   - URL: `https://bez.digital/api/stripe/webhook`
    - (Para testing local: `https://your-ngrok-url/api/stripe/webhook`)
 
 3. **Seleccionar Eventos:**
@@ -80,7 +80,7 @@ node test-day4-auth-stripe.js
 
 ```javascript
 // 1. Obtener configuración
-fetch('https://bezhas.com/api/stripe/config')
+fetch('https://bez.digital/api/stripe/config')
   .then(res => res.json())
   .then(data => {
     console.log('Stripe Config:', data);
@@ -88,7 +88,7 @@ fetch('https://bezhas.com/api/stripe/config')
   });
 
 // 2. Crear sesión de pago NFT
-fetch('https://bezhas.com/api/stripe/create-nft-session', {
+fetch('https://bez.digital/api/stripe/create-nft-session', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -112,10 +112,10 @@ fetch('https://bezhas.com/api/stripe/create-nft-session', {
 
 ```bash
 # 1. Obtener config
-curl https://bezhas.com/api/stripe/config
+curl https://bez.digital/api/stripe/config
 
 # 2. Crear sesión NFT
-curl -X POST https://bezhas.com/api/stripe/create-nft-session \
+curl -X POST https://bez.digital/api/stripe/create-nft-session \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -126,7 +126,7 @@ curl -X POST https://bezhas.com/api/stripe/create-nft-session \
   }'
 
 # 3. Crear suscripción
-curl -X POST https://bezhas.com/api/stripe/create-subscription-session \
+curl -X POST https://bez.digital/api/stripe/create-subscription-session \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{

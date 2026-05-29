@@ -11,6 +11,8 @@
 const pino = require('pino');
 const logger = pino({ name: 'UnifiedAI' });
 const aiProviderService = require('./ai-provider.service');
+const fs = require('fs');
+const path = require('path');
 
 class UnifiedAIService {
     constructor() {
@@ -73,6 +75,9 @@ class UnifiedAIService {
 
             case 'VIP_AUDIO':
                 return this._processVipAudio(payload.audioPart, payload.userContext);
+
+            case 'CODE_GENERATION':
+                return this._generateCode(payload.language, payload.description, payload.context);
 
             default:
                 throw new Error(`Unknown AI task type: ${taskType}`);
@@ -356,6 +361,10 @@ Tu objetivo es ayudar a los usuarios con:
 
 Responde de manera amigable, clara y profesional en español. Si no sabes algo, admítelo.`;
 
+        // INYECCIÓN DINÁMICA DE SKILLS (Aprendizaje Autónomo)
+        const skillsContext = await this._getSkillContext();
+        const finalSystemPrompt = `${systemPrompt}\n\n[MEMORIA_DE_SKILLS_BEZHAS]:\n${skillsContext}`;
+
         // Modo local: respuestas predefinidas
         if (this.mode === 'LOCAL' || !this.initialized) {
             return this._localChatResponse(message);
@@ -364,11 +373,11 @@ Responde de manera amigable, clara y profesional en español. Si no sabes algo, 
         try {
             // Integrar RAG antes de responder
             const relevantContext = await this._semanticSearch(message, context.page ? [`Contexto de página: ${context.page}`] : []);
-            const finalSystemPrompt = `${systemPrompt}\n\nConocimiento en base de código:\n${relevantContext.join('\\n')}`;
+            const contextualPrompt = `${finalSystemPrompt}\n\nConocimiento en base de código:\n${relevantContext.join('\\n')}`;
 
             // Usar aiProviderService (ya maneja todos los proveedores automáticamente de acuerdo al `.env`)
             let providerToUse = this.primaryProvider;
-            let modelToUse = providerToUse === 'google' ? 'gemini-1.5-pro' : (providerToUse === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
+            let modelToUse = providerToUse === 'google' ? 'gemini-1.5-flash' : (providerToUse === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
 
             // Determinar necesidad según el agente (si tuvieran rol de genAI heavy, dar deepseek o grok)
             if (context.systemRole === 'developer' && aiProviderService.isProviderAvailable('deepseek')) {
@@ -380,7 +389,7 @@ Responde de manera amigable, clara y profesional en español. Si no sabes algo, 
                 provider: providerToUse,
                 model: modelToUse,
                 messages: [
-                    { role: "system", content: finalSystemPrompt },
+                    { role: "system", content: contextualPrompt },
                     { role: "user", content: message }
                 ],
                 temperature: 0.7,
@@ -511,6 +520,66 @@ Responde de manera amigable, clara y profesional en español. Si no sabes algo, 
     }
 
     /**
+     * Generación de código autónoma para BeZhas
+     */
+    async _generateCode(language, description, context = '') {
+        try {
+            const prompt = `
+                Eres el BeZhas Autonomous Architect. Genera código funcional y profesional.
+                
+                LENGUAJE: ${language}
+                DESCRIPCIÓN: ${description}
+                CONTEXTO DEL PROYECTO: ${context}
+                
+                REGLAS:
+                1. Solo devuelve el código dentro de bloques \`\`\`.
+                2. Usa las mejores prácticas y estándares de BeZhas.
+                3. Incluye comentarios técnicos claros.
+                4. Si es un adaptador de Bridge, extiende de BaseAdapter.
+            `;
+
+            const response = await aiProviderService.chat({
+                provider: this.primaryProvider,
+                model: 'gemini-2.0-flash',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.2, // Baja temperatura para código preciso
+                maxTokens: 3000
+            });
+
+            // Limpiar Markdown si el modelo lo incluyó
+            let code = response.content;
+            const match = code.match(/```(?:[a-z]+)?\n([\s\S]*?)```/);
+            if (match) {
+                code = match[1];
+            }
+
+            return {
+                code,
+                language,
+                provider: response.provider,
+                timestamp: new Date()
+            };
+
+        } catch (error) {
+            logger.error('Code generation error', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Búsqueda semántica (Placeholder para RAG)
+     */
+    async _semanticSearch(query, additionalContext = []) {
+        try {
+            // En una implementación real se usaría Vector DB
+            return additionalContext;
+        } catch (error) {
+            logger.error('Semantic search error', error);
+            return additionalContext;
+        }
+    }
+
+    /**
      * Estado del servicio
      */
     getStatus() {
@@ -520,6 +589,33 @@ Responde de manera amigable, clara y profesional en español. Si no sabes algo, 
             initialized: this.initialized,
             available: aiProviderService.getAvailableProviders()
         };
+    }
+
+    /**
+     * Helper para cargar contexto de Skills dinámicamente
+     */
+    async _getSkillContext() {
+        // La carpeta _agents está en la raíz del proyecto, dos niveles arriba de backend/services/
+        const skillsDir = path.join(__dirname, '..', '..', '_agents', 'skills');
+        let context = '';
+        
+        try {
+            const sectors = fs.readdirSync(skillsDir);
+            for (const sector of sectors) {
+                const sectorPath = path.join(skillsDir, sector);
+                if (fs.statSync(sectorPath).isDirectory()) {
+                    const files = fs.readdirSync(sectorPath).filter(f => f.endsWith('.md'));
+                    for (const file of files) {
+                        const content = fs.readFileSync(path.join(sectorPath, file), 'utf8');
+                        context += `\n--- SKILL: ${sector}/${file} ---\n${content.substring(0, 1000)}\n`;
+                    }
+                }
+            }
+        } catch (e) {
+            logger.warn('Failed to load skills context: ' + e.message);
+        }
+
+        return context || 'No hay skills adicionales cargadas.';
     }
 }
 

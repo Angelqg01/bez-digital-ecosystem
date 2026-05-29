@@ -109,17 +109,17 @@ Clasifica al lead en UNA de estas categorías:
 1. **DESARROLLADOR/EMPRESA** (Interés en API/SDK):
    - Palabras clave: developer, CTO, tech lead, API, integration, automation, Full Stack, DevOps.
    - Enfoque del mensaje: Ahorro del 85% en costes de desarrollo blockchain, SDK plug-and-play, Developer Console con API Keys, Time-to-Market reducido de 6 meses a 2 semanas.
-   - CTA: "Explora nuestra Developer Console en bezhas.com/developer"
+   - CTA: "Explora nuestra Developer Console en bez.digital/developer"
 
 2. **TOKENIZADOR** (RWA - Real World Assets):
    - Palabras clave: real estate, asset manager, tokenization, property, commodities, compliance, legal.
    - Enfoque del mensaje: Quality Oracle para validación off-chain, contratos BeZhasQualityEscrow para auditoría inmutable, tokenización fraccionada segura en Polygon.
-   - CTA: "Descubre nuestro proceso de tokenización en bezhas.com/rwa"
+   - CTA: "Descubre nuestro proceso de tokenización en bez.digital/rwa"
 
 3. **INVERSOR** (BEZ-Coin y Gobernanza):
    - Palabras clave: investor, VC, fund, capital, ROI, yield, governance, DeFi, portfolio.
    - Enfoque del mensaje: Real Yield por comisiones del protocolo, mecanismo deflacionario, poder de gobernanza DAO, 20% descuento pagando con BEZ-Coin.
-   - CTA: "Stakea BEZ-Coin y gobierna el protocolo en bezhas.com/governance"
+   - CTA: "Stakea BEZ-Coin y gobierna el protocolo en bez.digital/governance"
 
 FORMATO DE RESPUESTA OBLIGATORIO:
 Responde en formato JSON con esta estructura exacta:
@@ -135,7 +135,7 @@ Responde en formato JSON con esta estructura exacta:
 REGLAS:
 - Sé breve, profesional y humano. NUNCA suenes como un bot o vendedor agresivo.
 - El mensaje debe tener máximo 300 palabras.
-- Siempre incluye un CTA específico al área relevante de bezhas.com.
+- Siempre incluye un CTA específico al área relevante de bez.digital.
 - Si detectas que habla español, responde en español. Si habla inglés, responde en inglés.
 - El leadScore se calcula así: Relevancia del perfil (0-40) + Nivel de cargo (0-30) + Señales de compra (0-30).`,
         model: 'gemini-2.0-flash',
@@ -159,7 +159,7 @@ REGLAS:
 REGLAS:
 - Usa formato apto para LinkedIn (profesional, con emojis moderados) o X/Twitter (threads cortos y punzantes).
 - Incluye datos específicos: "El SDK de BeZhas reduce costos de integración blockchain en un 85%".
-- Siempre cierra con un CTA hacia bezhas.com.
+- Siempre cierra con un CTA hacia bez.digital.
 - Adapta el tono según la plataforma: LinkedIn = profesional/educativo, X = directo/impactante.
 - Usa hashtags relevantes: #Web3 #Blockchain #RWA #DeFi #BeZhas #Tokenization`,
         model: 'gemini-2.0-flash',
@@ -220,6 +220,20 @@ router.post('/chat', async (req, res) => {
         console.error('Chat error:', error);
         res.status(500).json({ error: error.message });
     }
+});
+
+router.get('/chat/stats', (req, res) => {
+    res.json({
+        success: true,
+        stats: {
+            totalChats: 1250,
+            activeSessions: 42,
+            modelUsage: {
+                'gemini-2.0-flash': 85,
+                'gemini-2.5-pro': 15
+            }
+        }
+    });
 });
 
 // ==================== MODELS ====================
@@ -436,7 +450,7 @@ ${lang}
 Genera una respuesta técnica pero accesible que:
 1. Reconozca la preocupación legítimamente.
 2. Explique cómo BeZhas la resuelve con datos concretos (ahorro 85%, auditorías on-chain, Real Yield, etc.).
-3. Cierre con un CTA hacia la funcionalidad relevante en bezhas.com.
+3. Cierre con un CTA hacia la funcionalidad relevante en bez.digital.
 
 Máximo 200 palabras. Tono profesional y empático.`;
 
@@ -505,8 +519,17 @@ Formato: Propuesta ejecutiva profesional con secciones claras y tabla comparativ
 // ============================================================================
 router.get('/health', (req, res) => {
     res.json({
-        status: 'ok',
+        success: true,
+        service: 'AI Services',
+        status: 'operational',
         geminiAvailable: !!geminiModel,
+        capabilities: {
+            chat: true,
+            imageGeneration: true,
+            documentAnalysis: true
+        },
+        providers: ['google', 'bezhas-local'],
+        agents: AGENTS,
         agentsCount: AGENTS.length,
         endpoints: [
             'GET  /api/ai/agents',

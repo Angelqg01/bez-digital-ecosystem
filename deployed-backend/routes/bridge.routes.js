@@ -611,7 +611,7 @@ router.get('/status', (req, res) => {
             paymentWebhook: 'POST /api/v1/bridge/payments/webhook',
             orderCreate: 'POST /api/v1/bridge/orders/create'
         },
-        documentation: 'https://docs.bezhas.com/bridge-api',
+        documentation: 'https://docs.bez.digital/bridge-api',
         timestamp: new Date()
     });
 });

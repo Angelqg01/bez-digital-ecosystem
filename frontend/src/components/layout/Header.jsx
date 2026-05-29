@@ -14,7 +14,7 @@ function formatTimeAgo(timestamp) {
 }
 
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, Sun, Moon, Wallet, ShoppingBag, LogIn, UserPlus, User, LogOut, Coins, Sparkles, ExternalLink, Globe, Eye, EyeOff } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Wallet, ShoppingBag, LogIn, UserPlus, User, LogOut, Coins, Sparkles, ExternalLink, Globe, Eye, EyeOff, Shield } from 'lucide-react';
 import { useAccount, useDisconnect, useBalance } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useTheme } from '../../context/ThemeContext';
@@ -26,9 +26,11 @@ import AuthModal from '../modals/AuthModal';
 import { useBezPay } from '../../context/BezPayContext';
 import WalletHeaderButton from '../common/WalletHeaderButton';
 import UnifiedBuyBezButton from '../UnifiedBuyBezButton';
+import AppSwitcher from './AppSwitcher';
 import { ethers } from 'ethers';
 import { BezhasTokenAddress, TokenSaleAddress, TokenSaleABI, BezhasTokenABI } from '../../contract-config';
 import { FaCoins } from 'react-icons/fa';
+import { ADMIN_WALLETS } from '../auth/AdminRoute';
 
 const Header = () => {
 
@@ -281,6 +283,7 @@ const Header = () => {
   };
 
   const unifiedButton = getUnifiedButtonConfig();
+  const isAdminWallet = Boolean(address && ADMIN_WALLETS.includes(address.toLowerCase()));
 
   return (
     <>
@@ -384,6 +387,9 @@ const Header = () => {
                 <Sun size={24} className="text-yellow-500" />
               )}
             </button>
+
+            {/* App Switcher */}
+            <AppSwitcher />
 
             {/* 🔐 NUEVO: Botón Inteligente de Wallet (ELIMINADO POR DUPLICIDAD) */}
             {/* <WalletHeaderButton /> */}
@@ -493,6 +499,18 @@ const Header = () => {
                           <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
 
                           {/* Menu Items */}
+                          {isAdminWallet && (
+                            <Link
+                              to="/admin"
+                              onClick={() => setShowUserMenu(false)}
+                              className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg transition-all group cursor-pointer border border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 dark:hover:border-indigo-600"
+                            >
+                              <Shield size={18} className="text-indigo-600 dark:text-indigo-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-200 transition-colors" />
+                              <span className="font-semibold text-indigo-700 dark:text-indigo-200">Panel Admin</span>
+                              <span className="ml-auto text-xs text-indigo-400 group-hover:text-indigo-500">→</span>
+                            </Link>
+                          )}
+
                           <Link
                             to="/profile"
                             onClick={() => setShowUserMenu(false)}

@@ -197,7 +197,7 @@ Obtiene los datos bancarios para el frontend.
     "bankName": "BeZhas Platform",
     "iban": "ES77 1465 0100 91 1766376210",
     "bic": "INGDESMMXXX",
-    "beneficiary": "BeZhas.com"
+    "beneficiary": "bez.digital"
   }
 }
 ```

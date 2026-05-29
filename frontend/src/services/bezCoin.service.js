@@ -1,6 +1,15 @@
 /**
- * BEZ-Coin Service
- * Servicio completo para interactuar con el token BEZ-Coin en Polygon
+ * @deprecated — LEGACY SERVICE. DO NOT USE FOR NEW CODE.
+ * ═══════════════════════════════════════════════════════
+ * Replaced by:
+ *   - hubBlockchainService.js (Hub Control Plane)
+ *   - _shared/bezhas-blockchain-client.js (all SubApps)
+ * Issues: Uses OBSOLETE address 0xE65F...5744 on Polygon 137.
+ * Real production token: 0xEcBa873B...A8 on BSC (56).
+ * @see hubBlockchainService.js
+ * ═══════════════════════════════════════════════════════
+ *
+ * BEZ-Coin Service (LEGACY)
  * Contrato: 0xE65F6B8ADbcd604dBCbb826b5792D17e2FD95744
  * Red: Polygon Mainnet (Chain ID: 137)
  */
@@ -354,7 +363,7 @@ export const addBEZToWallet = async () => {
                     address: BEZ_COIN_ADDRESS,
                     symbol: 'BEZ',
                     decimals: 18,
-                    image: 'https://bezhas.com/logo-bez.png', // Cambia por tu logo
+                    image: 'https://bez.digital/logo-bez.png', // Cambia por tu logo
                 },
             },
         });

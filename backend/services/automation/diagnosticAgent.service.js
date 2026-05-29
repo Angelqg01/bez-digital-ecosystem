@@ -3,11 +3,12 @@ const mongoose = require('mongoose');
 const ethers = require('ethers');
 const UnifiedAI = require('../unified-ai.service');
 const alertSystem = require('../alert-system.service');
-const User = require('../../models/user.model');
-const Transaction = require('../../models/transaction.model');
+const User = require('../../models/pg/User');
+const Transaction = require('../../models/pg/Transaction');
 const Post = require('../../models/post.model');
 const fs = require('fs').promises;
 const path = require('path');
+const skillAutomator = require('./skillAutomator.service');
 
 // ===================================
 // 1. CONFIGURACIÓN DEL SISTEMA
@@ -53,7 +54,7 @@ if (REDIS_AVAILABLE) {
 const DiagnosticLogSchema = new mongoose.Schema({
     category: {
         type: String,
-        enum: ['blockchain', 'database', 'payment', 'content', 'system'],
+        enum: ['blockchain', 'database', 'payment', 'content', 'system', 'bridge'],
         required: true
     },
     severity: {
@@ -261,6 +262,48 @@ class DiagnosticTools {
 
         return result;
     }
+
+    /**
+     * Diagnose Universal Bridge Adapters
+     * Checks if third-party adapters (Airbnb, Maersk, Vinted) are healthy
+     */
+    static async verifyBridgeConnectivity() {
+        const { getAvailableAdapters, createAdapter } = require('../../bridge/adapters');
+        const adapters = getAvailableAdapters();
+        const results = [];
+
+        for (const platformId of adapters) {
+            try {
+                // Instanciar un adaptador de prueba (con config vacía o mock)
+                const adapter = createAdapter(platformId, { isHealthCheck: true });
+                
+                // Si el adaptador tiene un método verifyHealth, lo usamos
+                const isHealthy = adapter.verifyHealth ? await adapter.verifyHealth() : true;
+                
+                results.push({
+                    platform: platformId,
+                    status: isHealthy ? 'healthy' : 'degraded',
+                    latency: 0 // TODO: medir latencia real
+                });
+            } catch (err) {
+                results.push({
+                    platform: platformId,
+                    status: 'error',
+                    error: err.message
+                });
+            }
+        }
+
+        const degradedCount = results.filter(r => r.status !== 'healthy').length;
+
+        return {
+            totalAdapters: adapters.length,
+            results,
+            hasIssue: degradedCount > 0,
+            issueCount: degradedCount,
+            recommendation: degradedCount > 0 ? 'Review API keys and platform status' : 'All bridges online'
+        };
+    }
 }
 
 // ===================================
@@ -300,6 +343,14 @@ class AutoRecoveryActions {
             } catch (err) {
                 console.error('Failed to send sync alert:', err.message);
             }
+
+            // Registrar en SkillAutomator para aprendizaje IA
+            await skillAutomator.registerOptimization({
+                area: 'database',
+                before: `User ${userId} balance mismatch (${oldBalance} BEZ)`,
+                after: `Synced with blockchain (${blockchainBalance} BEZ)`,
+                impact: 'Resolved discrepancy between on-chain and off-chain data'
+            });
 
             return {
                 success: true,
@@ -378,23 +429,21 @@ if (REDIS_AVAILABLE) {
                 case 'analyze_system_health': {
                     const health = await DiagnosticTools.generateHealthScore();
                     const errorPatterns = await DiagnosticTools.analyzeErrorPatterns();
+                    const bridgeStatus = await DiagnosticTools.verifyBridgeConnectivity();
 
                     const aiPrompt = `
                         Actúa como SRE de BeZhas. Analiza estos datos del sistema:
                         
                         Health Score: ${health.score}/100
                         Estado: ${health.status}
+                        Puente Universal: ${bridgeStatus.issueCount} incidentes en ${bridgeStatus.totalAdapters} adaptadores.
                         Errores recientes: ${errorPatterns.totalErrors}
-                        Errores críticos: ${errorPatterns.criticalCount}
                         
-                        Métricas:
-                        - Usuarios: ${health.metrics.totalUsers}
-                        - Transacciones pendientes: ${health.metrics.pendingTransactions}
-                        - Contenido activo (7 días): ${health.metrics.activeContent}
+                        Puentes degradados: ${bridgeStatus.results.filter(r => r.status !== 'healthy').map(r => r.platform).join(', ')}
                         
                         Provee:
                         1. Diagnóstico ejecutivo (2 líneas)
-                        2. Top 3 recomendaciones
+                        2. Top 3 recomendaciones (prioriza el puente si fallan)
                         3. Predicción de estabilidad para próximas 48h
                     `;
 
@@ -403,14 +452,16 @@ if (REDIS_AVAILABLE) {
                     await MaintenanceReport.create({
                         summary: aiAnalysis,
                         healthScore: health.score,
-                        checksPerformed: { blockchain: 1, database: 1, payments: 1, content: 1 },
-                        issuesDetected: errorPatterns.totalErrors,
+                        checksPerformed: { blockchain: 1, database: 1, payments: 1, content: 1, bridge: 1 },
+                        issuesDetected: errorPatterns.totalErrors + bridgeStatus.issueCount,
                         issuesResolved: 0,
-                        recommendations: ['Check logs', 'Monitor blockchain sync', 'Review pending transactions'],
-                        detailedFindings: { health, errorPatterns }
+                        recommendations: bridgeStatus.hasIssue 
+                            ? [`Review ${bridgeStatus.issueCount} bridge issues`, ...health.metrics.pendingTransactions > 5 ? ['Check txs'] : []]
+                            : ['Check logs', 'Monitor blockchain sync'],
+                        detailedFindings: { health, errorPatterns, bridgeStatus }
                     });
 
-                    return { health, errorPatterns, aiAnalysis };
+                    return { health, errorPatterns, bridgeStatus, aiAnalysis };
                 }
 
                 case 'nightly_maintenance': {
@@ -471,6 +522,9 @@ if (REDIS_AVAILABLE) {
                     );
 
                     console.log(`✅ Mantenimiento completado. Reporte guardado: ${filename}`);
+
+                    // Guardar snapshot de configuración actual como parte del mantenimiento
+                    await skillAutomator.snapshotConfig();
 
                     return { report, syncedUsers, filename };
                 }

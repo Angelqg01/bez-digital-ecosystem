@@ -40,44 +40,7 @@ const AdvancedMarketplace = ({
     setPriceRange(prev => ({ ...prev, [field]: sanitizedValue }));
   };
 
-  const loadMarketplaceData = useCallback(async () => {
-    setLoading(true);
-    try {
-      await Promise.all([
-        loadCategories(),
-        loadListings(),
-        loadAuctions()
-      ]);
-    } catch (error) {
-      console.error('Error loading marketplace data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [loadCategories, loadListings, loadAuctions]);
-
-  const loadUserNFTs = useCallback(async () => {
-    try {
-      if (!nftContract || !userAddress) return;
-      
-      // Mock data
-      const mockNFTs = [
-        { tokenId: 1, tokenURI: '', isListed: false },
-        { tokenId: 2, tokenURI: '', isListed: false }
-      ];
-      setUserNFTs(mockNFTs);
-    } catch (error) {
-      console.error('Error loading user NFTs:', error);
-    }
-  }, [nftContract, userAddress]);
-
-  useEffect(() => {
-    if (contract && userAddress) {
-      loadMarketplaceData();
-      loadUserNFTs();
-    }
-  }, [contract, userAddress, loadMarketplaceData, loadUserNFTs]);
-
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const categoryNames = ['Art', 'Gaming', 'Music', 'Sports', 'Collectibles', 'Utility'];
       const categoryData = categoryNames.map((name, index) => ({
@@ -90,11 +53,10 @@ const AdvancedMarketplace = ({
     } catch (error) {
       console.error('Error loading categories:', error);
     }
-  };
+  }, []);
 
-  const loadListings = async () => {
+  const loadListings = useCallback(async () => {
     try {
-      // Mock data - replace with actual contract calls
       const mockListings = [
         {
           id: 1,
@@ -116,11 +78,10 @@ const AdvancedMarketplace = ({
     } catch (error) {
       console.error('Error loading listings:', error);
     }
-  };
+  }, []);
 
-  const loadAuctions = async () => {
+  const loadAuctions = useCallback(async () => {
     try {
-      // Mock data - replace with actual contract calls
       const mockAuctions = [
         {
           id: 1,
@@ -141,13 +102,12 @@ const AdvancedMarketplace = ({
     } catch (error) {
       console.error('Error loading auctions:', error);
     }
-  };
+  }, []);
 
-  const loadUserNFTs = async () => {
+  const loadUserNFTs = useCallback(async () => {
     try {
       if (!nftContract || !userAddress) return;
-      
-      // Mock data
+
       const mockNFTs = [
         { tokenId: 1, tokenURI: '', isListed: false },
         { tokenId: 2, tokenURI: '', isListed: false }
@@ -156,7 +116,29 @@ const AdvancedMarketplace = ({
     } catch (error) {
       console.error('Error loading user NFTs:', error);
     }
-  };
+  }, [nftContract, userAddress]);
+
+  const loadMarketplaceData = useCallback(async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadCategories(),
+        loadListings(),
+        loadAuctions()
+      ]);
+    } catch (error) {
+      console.error('Error loading marketplace data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadCategories, loadListings, loadAuctions]);
+
+  useEffect(() => {
+    if (contract && userAddress) {
+      loadMarketplaceData();
+      loadUserNFTs();
+    }
+  }, [contract, userAddress, loadMarketplaceData, loadUserNFTs]);
 
   const listItem = async () => {
     if (!contract || !listingForm.tokenId || !listingForm.price) return;
@@ -216,7 +198,6 @@ const AdvancedMarketplace = ({
       await tx.wait();
 
       await loadListings();
-      setSelectedListing(null);
     } catch (error) {
       console.error('Error buying item:', error);
     } finally {

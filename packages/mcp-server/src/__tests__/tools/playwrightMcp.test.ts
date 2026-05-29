@@ -29,7 +29,7 @@ describe('playwright_automation', () => {
                 json: async () => ({}),
             } as Response);
 
-            const response = await handler({ action: 'test_page_load', targetUrl: 'https://bezhas.com' });
+            const response = await handler({ action: 'test_page_load', targetUrl: 'https://bez.digital' });
             const result = parseToolResult(response);
 
             expect(result).toHaveProperty('status', 'SUCCESS');
@@ -45,7 +45,7 @@ describe('playwright_automation', () => {
                 json: async () => ({}),
             } as Response);
 
-            const response = await handler({ action: 'test_wallet_flow', targetUrl: 'https://bezhas.com' });
+            const response = await handler({ action: 'test_wallet_flow', targetUrl: 'https://bez.digital' });
             const result = parseToolResult(response);
 
             expect(result).toHaveProperty('status');
@@ -62,7 +62,7 @@ describe('playwright_automation', () => {
                 json: async () => ({}),
             } as Response);
 
-            const response = await handler({ action: 'audit_performance', targetUrl: 'https://bezhas.com' });
+            const response = await handler({ action: 'audit_performance', targetUrl: 'https://bez.digital' });
             const result = parseToolResult(response);
 
             expect(result).toHaveProperty('status');
@@ -78,7 +78,7 @@ describe('playwright_automation', () => {
                 json: async () => ({}),
             } as Response);
 
-            const response = await handler({ action: 'audit_accessibility', targetUrl: 'https://bezhas.com' });
+            const response = await handler({ action: 'audit_accessibility', targetUrl: 'https://bez.digital' });
             const result = parseToolResult(response);
 
             expect(result).toHaveProperty('status');
@@ -93,7 +93,7 @@ describe('playwright_automation', () => {
                 .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), text: async () => '{}', json: async () => ({}) } as Response)
                 .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), text: async () => '{}', json: async () => ({}) } as Response);
 
-            const response = await handler({ action: 'test_api_endpoints', targetUrl: 'https://api.bezhas.com' });
+            const response = await handler({ action: 'test_api_endpoints', targetUrl: 'https://api.bez.digital' });
             const result = parseToolResult(response);
 
             expect(result).toHaveProperty('status');

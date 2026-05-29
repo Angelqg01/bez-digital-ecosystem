@@ -5,7 +5,6 @@ import {
   BarChart,
   User,
   Info,
-  Shield,
   BadgeCheck,
   PlusCircle,
   Sprout,
@@ -83,7 +82,7 @@ export const sidebarNavItems = [
     category: 'web3'
   },
   {
-    path: '/staking',
+    path: 'http://localhost:3014',
     icon: <Coins size={22} />,
     label: 'DeFi Hub',
     description: 'Staking, Farming y rendimientos DeFi',
@@ -91,7 +90,7 @@ export const sidebarNavItems = [
     category: 'web3'
   },
   {
-    path: '/dao-page',
+    path: 'http://localhost:3010/dao',
     icon: <Vote size={22} />,
     label: 'Gobernanza DAO',
     description: 'Votaciones, propuestas y tesorería comunitaria',
@@ -100,7 +99,7 @@ export const sidebarNavItems = [
     badge: 'Nuevo'
   },
   {
-    path: '/oracle',
+    path: 'http://localhost:3013',
     icon: <ActivitySquare size={22} />,
     label: 'Quality Oracle',
     description: 'Valida contenido y gana recompensas BEZ',
@@ -115,6 +114,15 @@ export const sidebarNavItems = [
     description: 'Beneficios exclusivos y recompensas',
     roles: ['public', 'user', 'admin'],
     category: 'web3'
+  },
+  {
+    path: '/magazine',
+    icon: <BookOpen size={22} />,
+    label: 'Magazine',
+    description: 'Noticias y actualizaciones del ecosistema',
+    roles: ['public', 'user', 'admin'],
+    category: 'web3',
+    badge: 'Nuevo'
   },
   {
     path: '/buy-tokens',
@@ -135,7 +143,7 @@ export const sidebarNavItems = [
     badge: 'v2.0'
   },
   {
-    path: '/liquidity',
+    path: 'http://localhost:3014/liquidity',
     icon: <Droplets size={22} />,
     label: 'Proveer Liquidez',
     description: 'Añade liquidez y gana Real Yield',
@@ -202,15 +210,6 @@ export const sidebarNavItems = [
     category: 'platform',
     badge: 'API'
   },
-  {
-    path: '/admin',
-    icon: <Shield size={22} />,
-    label: 'Administración',
-    description: 'Panel de control administrativo',
-    roles: ['admin'],
-    category: 'platform'
-  },
-
   // ========================================
   // 📚 SUPPORT - SOPORTE Y RECURSOS
   // ========================================

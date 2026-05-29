@@ -2,7 +2,7 @@
  * SKILL: playwright_automation
  * 
  * Browser automation and UI testing for BeZhas platform:
- * - Automated UI testing of bezhas.com flows
+ * - Automated UI testing of bez.digital flows
  * - Screenshot capture for QA verification
  * - Form submission testing (login, wallet connect, etc.)
  * - Performance and accessibility audits
@@ -34,7 +34,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
                 'audit_accessibility',
                 'test_api_endpoints',
             ]),
-            targetUrl: z.string().url().default('https://bezhas.com'),
+            targetUrl: z.string().url().default('https://bez.digital'),
             viewport: z.object({
                 width: z.number().optional().default(1920),
                 height: z.number().optional().default(1080),
@@ -221,7 +221,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
 
                     case 'test_api_endpoints': {
                         const apiBase = config.network.mode === 'mainnet'
-                            ? 'https://api.bezhas.com'
+                            ? 'https://api.bez.digital'
                             : 'http://localhost:3001';
 
                         const endpoints = [

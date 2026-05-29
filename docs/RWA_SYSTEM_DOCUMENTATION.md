@@ -510,7 +510,7 @@ console.log("Balance:", ethers.utils.formatEther(balance), "BEZ");
 
 - **GitHub**: [bezhas-web3/issues](https://github.com/bezhas/bezhas-web3)
 - **Discord**: BeZhas Community
-- **Email**: support@bezhas.com
+- **Email**: support@bez.digital
 
 ---
 

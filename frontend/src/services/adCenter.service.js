@@ -128,6 +128,24 @@ export const billingService = {
     getHistory: async (params = {}) => {
         const response = await api.get('/api/billing/history', { params });
         return response.data;
+    },
+
+    // Estimar consumo IA antes de ejecutar un job
+    estimateAIUsage: async (model, usage) => {
+        const response = await api.post('/api/billing/ai/estimate', { model, usage });
+        return response.data;
+    },
+
+    // Registrar y cobrar consumo IA real
+    chargeAIUsage: async ({ model, usage, feature, projectId }) => {
+        const response = await api.post('/api/billing/ai/charge', { model, usage, feature, projectId });
+        return response.data;
+    },
+
+    // Resumen de saldo y consumo IA para dashboard
+    getAIUsageSummary: async () => {
+        const response = await api.get('/api/billing/ai/summary');
+        return response.data;
     }
 };
 

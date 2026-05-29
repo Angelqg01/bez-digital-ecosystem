@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
@@ -48,6 +48,8 @@
   "author": "BeZhas Team",
   "license": "MIT",
   "engines": {
-    "node": ">=16.0.0"
-  }
+    "node": ">=16.0.0",
+    "pnpm": ">=11"
+  },
+  "packageManager": "pnpm@11.0.0"
 }

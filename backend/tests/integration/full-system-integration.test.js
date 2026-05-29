@@ -358,7 +358,7 @@ describe('🔗 Full System Integration Tests', () => {
                     .send({
                         amountBez: 1000,
                         userWallet: TEST_WALLET,
-                        userEmail: 'test@bezhas.com'
+                        userEmail: 'test@bez.digital'
                     })
                     .expect(201);
 
@@ -619,10 +619,10 @@ describe('🔗 Full System Integration Tests', () => {
                     .get('/api/ai/agents')
                     .expect(200);
 
-                // El endpoint devuelve { agents: [...] }
-                expect(res.body.agents).toBeDefined();
-                expect(Array.isArray(res.body.agents)).toBe(true);
-                expect(res.body.agents.length).toBeGreaterThan(0);
+                // El endpoint devuelve [...] (un array directamente)
+                expect(res.body).toBeDefined();
+                expect(Array.isArray(res.body)).toBe(true);
+                expect(res.body.length).toBeGreaterThan(0);
             });
 
             it('should get agent by ID', async () => {
@@ -644,7 +644,7 @@ describe('🔗 Full System Integration Tests', () => {
         describe('SDK Configuration', () => {
             const SDKConfig = {
                 apiKey: 'test-api-key',
-                endpoint: 'https://api.bezhas.com/v1/bridge',
+                endpoint: 'https://api.bez.digital/v1/bridge',
                 bezContract: BEZ_CONTRACT
             };
 
@@ -653,7 +653,7 @@ describe('🔗 Full System Integration Tests', () => {
             });
 
             it('should have valid API endpoint', () => {
-                expect(SDKConfig.endpoint).toContain('api.bezhas.com');
+                expect(SDKConfig.endpoint).toContain('api.bez.digital');
             });
         });
 

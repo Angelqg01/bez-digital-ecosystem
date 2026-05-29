@@ -26,19 +26,19 @@ X-API-Key: YOUR_API_KEY
 Solo se documentan endpoints seguros para desarrolladores externos.
 
 ## 📝 Cómo obtener tu API Key
-1. Visita https://bezhas.com/developers
+1. Visita https://bez.digital/developers
 2. Crea una cuenta o inicia sesión
 3. Ve a Settings > Developer
 4. Genera tu API Key
             `,
             contact: {
                 name: 'BeZhas Developer Support',
-                email: 'dev@bezhas.com',
-                url: 'https://bezhas.com/developers'
+                email: 'dev@bez.digital',
+                url: 'https://bez.digital/developers'
             },
             license: {
                 name: 'Proprietary',
-                url: 'https://bezhas.com/terms'
+                url: 'https://bez.digital/terms'
             }
         },
         servers: [
@@ -47,7 +47,7 @@ Solo se documentan endpoints seguros para desarrolladores externos.
                 description: 'Development Server'
             },
             {
-                url: 'https://api.bezhas.com',
+                url: 'https://api.bez.digital',
                 description: 'Production Server'
             }
         ],
@@ -142,7 +142,7 @@ Solo se documentan endpoints seguros para desarrolladores externos.
                 description: 'Endpoints para gestionar servicios con garantía de calidad',
                 externalDocs: {
                     description: 'Ver Whitepaper',
-                    url: 'https://bezhas.com/whitepaper'
+                    url: 'https://bez.digital/whitepaper'
                 }
             },
             {

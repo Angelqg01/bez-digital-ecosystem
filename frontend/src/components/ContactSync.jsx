@@ -7,7 +7,7 @@ const getMockContacts = () => [
   { name: 'Alice', email: 'alice@example.com', phone: '111222333' },
   { name: 'Bob', email: 'bob@example.com' },
   { name: 'Charlie', phone: '444555666' },
-  { name: 'David (Already on BeZhas)', email: 'david.existing@bezhas.com' }
+  { name: 'David (Already on BeZhas)', email: 'david.existing@bez.digital' }
 ];
 
 const ContactSync = ({ walletAddress }) => {

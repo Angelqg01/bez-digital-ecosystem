@@ -1,4 +1,4 @@
-const ApiKey = require('../models/ApiKey.model');
+const ApiKey = require('../models/pg/ApiKey');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const mongoose = require('mongoose');

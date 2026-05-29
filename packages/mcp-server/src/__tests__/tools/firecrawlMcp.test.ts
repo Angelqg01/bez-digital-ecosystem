@@ -35,7 +35,7 @@ describe('firecrawl_scraper', () => {
                 success: true, data: { content: '<html>Hello</html>', title: 'Test Page', links: [] },
             }));
 
-            const response = await handler({ action: 'scrape_page', url: 'https://bezhas.com', format: 'json' });
+            const response = await handler({ action: 'scrape_page', url: 'https://bez.digital', format: 'json' });
             const result = parseToolResult(response);
 
             expect(result).toHaveProperty('status');
@@ -49,7 +49,7 @@ describe('firecrawl_scraper', () => {
                 success: true, data: { products: [{ name: 'BEZ Token', price: '$0.50' }] },
             }));
 
-            const response = await handler({ action: 'extract_products', url: 'https://marketplace.bezhas.com', format: 'json' });
+            const response = await handler({ action: 'extract_products', url: 'https://marketplace.bez.digital', format: 'json' });
             const result = parseToolResult(response);
 
             expect(result).toHaveProperty('status');
@@ -89,7 +89,7 @@ describe('firecrawl_scraper', () => {
             const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
             mockFetch.mockRejectedValue(new Error('Firecrawl API timeout'));
 
-            const response = await handler({ action: 'scrape_page', url: 'https://bezhas.com', format: 'json' });
+            const response = await handler({ action: 'scrape_page', url: 'https://bez.digital', format: 'json' });
             const result = parseToolResult(response);
 
             expect(result).toHaveProperty('status', 'FAILED');

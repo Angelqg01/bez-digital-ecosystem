@@ -49,7 +49,7 @@ jobs:
       - name: Install backend dependencies
         run: |
           cd backend
-          npm ci --prefer-offline 2>/dev/null || npm install
+          pnpm install --frozen-lockfile --prefer-offline 2>/dev/null || pnpm install
 
       - name: Run E2E Smoke Test
         run: |

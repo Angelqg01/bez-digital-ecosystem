@@ -1,3 +1,11 @@
+/**
+ * @deprecated — LEGACY MODULE. ABIs and contract addresses now resolved via:
+ *   - API Gateway: /contracts/catalog, /abi-public/:name
+ *   - SDK: sdk/contracts.js (88 contracts, 14 sectors)
+ *   - Shared client: BeZhasClient.getContractInfo(name)
+ * These local artifact imports have BROKEN paths (../../artifacts/).
+ * Use hubBlockchainService.js → getContractABI() for the Developer Console.
+ */
 import contractAddresses from './contract-addresses.json';
 
 // ABIs importados desde los artefactos de compilación

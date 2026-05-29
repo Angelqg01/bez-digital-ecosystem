@@ -10,7 +10,7 @@
  * Usage:
  * await sendDiscordAlert({ title: 'Revenue!', description: '$5.00 collected' });
  * await sendSlackAlert({ text: 'New swap executed' });
- * await sendEmailAlert({ to: 'admin@bezhas.com', subject: 'Alert', body: '...' });
+ * await sendEmailAlert({ to: 'admin@bez.digital', subject: 'Alert', body: '...' });
  */
 
 const axios = require('axios');
@@ -20,7 +20,7 @@ class NotificationService {
         this.config = {
             discordWebhook: config.discordWebhook || process.env.DISCORD_WEBHOOK_URL,
             slackWebhook: config.slackWebhook || process.env.SLACK_WEBHOOK_URL,
-            emailFrom: config.emailFrom || process.env.ALERT_EMAIL_FROM || 'noreply@bezhas.com',
+            emailFrom: config.emailFrom || process.env.ALERT_EMAIL_FROM || 'noreply@bez.digital',
             emailTo: config.emailTo || process.env.ALERT_EMAIL_TO,
             smtpHost: config.smtpHost || process.env.SMTP_HOST,
             smtpPort: config.smtpPort || process.env.SMTP_PORT || 587,

@@ -113,8 +113,12 @@ class BaseAdapter extends EventEmitter {
      * Health check for the adapter
      * @returns {Promise<boolean>} true if healthy
      */
-    async healthCheck() {
-        return this.status === 'connected';
+    async verifyHealth() {
+        // Por defecto, chequeamos si está conectado
+        if (this.status === 'connected' || this.status === 'connected_mock') {
+            return true;
+        }
+        return false;
     }
 
     /**

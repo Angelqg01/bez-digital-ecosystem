@@ -55,7 +55,7 @@ router.post('/create-nft-session', verifyTokenMiddleware, async (req, res) => {
             {
                 userId,
                 walletAddress: req.user.walletAddress,
-                email: req.body.email || `${userId}@bezhas.com`
+                email: req.body.email || `${userId}@bez.digital`
             }
         );
 
@@ -97,7 +97,7 @@ router.post('/create-subscription-session', verifyTokenMiddleware, async (req, r
             {
                 userId,
                 walletAddress: req.user.walletAddress,
-                email: req.body.email || `${userId}@bezhas.com`
+                email: req.body.email || `${userId}@bez.digital`
             }
         );
 
@@ -139,7 +139,7 @@ router.post('/create-token-purchase-session', verifyTokenMiddleware, async (req,
             {
                 userId,
                 walletAddress: req.user.walletAddress,
-                email: req.body.email || `${userId}@bezhas.com`
+                email: req.body.email || `${userId}@bez.digital`
             }
         );
 
@@ -231,7 +231,7 @@ router.post('/create-payment-intent', verifyTokenMiddleware, async (req, res) =>
  */
 router.get('/subscriptions', verifyTokenMiddleware, async (req, res) => {
     try {
-        const email = req.query.email || `${req.user.userId}@bezhas.com`;
+        const email = req.query.email || `${req.user.userId}@bez.digital`;
 
         const result = await getCustomerSubscriptions(email);
 

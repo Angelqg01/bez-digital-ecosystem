@@ -16,12 +16,13 @@
     "test:integration": "jest --env=node --testPathPattern=tests/integration",
     "test:db": "jest --env=node tests/database-connection.test.js",
     "test:payments": "jest --env=node tests/payment-flow-e2e.test.js",
-    "test:all": "npm run test:db && npm run test:payments",
+    "test:e2e:polygon-crypto": "node tests/polygon-crypto-payment.e2e.js",
+    "test:all": "pnpm run test:db && pnpm run test:payments",
     "test:chat": "node chat/test-chat-integration.js",
     "lint": "eslint . --ext .js",
-    "check-updates": "npm outdated",
-    "update-safe": "npm update",
-    "clean": "rm -rf node_modules package-lock.json && npm install",
+    "check-updates": "pnpm outdated",
+    "update-safe": "pnpm update",
+    "clean": "rm -rf node_modules && pnpm install",
     "seed:dao": "node seeds/daoSeed.js",
     "health": "curl -s http://localhost:3000/api/health | node -e \"console.log(JSON.parse(require('fs').readFileSync('/dev/stdin').toString()))\""
   },
@@ -52,7 +53,7 @@
     "helmet": "^8.1.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^8.20.3",
+    "mongoose": "8.22.0",
     "multer": "^2.0.2",
     "nanoid": "^5.1.6",
     "natural": "^8.1.0",
@@ -62,11 +63,13 @@
     "openai": "^6.15.0",
     "otplib": "^13.2.1",
     "path-to-regexp": "0.1.7",
+    "pg": "^8.20.0",
     "pino": "^9.14.0",
     "pino-pretty": "^11.3.0",
     "prom-client": "^15.1.3",
     "qrcode": "^1.5.4",
     "rss-parser": "^3.13.0",
+    "siwe": "^3.0.0",
     "speakeasy": "^2.0.0",
     "stripe": "^14.25.0",
     "swagger-jsdoc": "^6.2.8",
@@ -80,10 +83,8 @@
   },
   "devDependencies": {
     "@babel/traverse": "^7.29.0",
-    "@prisma/client": "5.10.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.11",
-    "prisma": "5.10.0",
     "supertest": "^7.0.0"
   },
   "keywords": [
@@ -93,5 +94,9 @@
     "security"
   ],
   "author": "BeZhas Team",
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
 }

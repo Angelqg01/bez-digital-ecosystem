@@ -12,7 +12,7 @@ const billingTransactionSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['deposit_fiat', 'deposit_bez', 'campaign_charge', 'daily_charge', 'refund', 'adjustment'],
+        enum: ['deposit_fiat', 'deposit_bez', 'campaign_charge', 'daily_charge', 'ai_usage', 'ai_reservation', 'refund', 'adjustment'],
         required: true
     },
     amount: {

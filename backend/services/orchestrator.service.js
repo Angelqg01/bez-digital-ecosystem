@@ -26,6 +26,7 @@
  */
 
 const axios = require('axios');
+const aiProviderService = require('./ai-provider.service');
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const BEZ_TOKEN = process.env.BEZ_TOKEN_ADDRESS || '0x89c23890c742d710265dd61be789c71dc8999b12';
@@ -112,6 +113,12 @@ const TOOL_REGISTRY = {
         type: 'creator',
         description: 'Creación y gestión de skills y workflows de la plataforma',
         handler: skillCreatorHandler,
+    },
+    'generate_marketing_post': {
+        name: 'BeZhas Marketing Post Generator',
+        type: 'marketing',
+        description: 'Genera posts estructurados para BeZhas Magazine desde un vibe usando Gemini cuando esta disponible',
+        handler: generateMarketingPostHandler,
     },
 };
 
@@ -584,7 +591,7 @@ async function auditSmartContractHandler({ contractAddress = BEZ_TOKEN, checks =
  * Obliq SRE Monitor — system health checks
  */
 async function obliqSreHandler({ action = 'health_check', endpoint } = {}) {
-    const targetUrl = endpoint || process.env.VITE_API_URL || 'https://bezhas.com';
+    const targetUrl = endpoint || process.env.VITE_API_URL || 'https://bez.digital';
     const startTime = Date.now();
     try {
         const { status } = await axios.get(`${targetUrl}/health`, { timeout: 5000 });
@@ -643,6 +650,134 @@ async function skillCreatorHandler({ action = 'list_skills', skillName, descript
         };
     }
     return { action, status: 'FAILED', reasoning: `Unknown action: ${action}` };
+}
+
+function normalizeMarketingCategory(category) {
+    const allowed = ['Core Updates', 'DePIN', 'RWA', 'Supply Chain'];
+    return allowed.includes(category) ? category : 'Core Updates';
+}
+
+function extractJsonObject(rawText) {
+    const text = String(rawText || '').trim();
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const candidate = fenced ? fenced[1] : text;
+    const start = candidate.indexOf('{');
+    const end = candidate.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) {
+        throw new Error('AI response did not include a JSON object');
+    }
+    return JSON.parse(candidate.slice(start, end + 1));
+}
+
+function buildMarketingFallback(vibe = '') {
+    const lower = String(vibe).toLowerCase();
+    const category = lower.includes('depin')
+        ? 'DePIN'
+        : lower.includes('rwa')
+            ? 'RWA'
+            : lower.includes('aduan') || lower.includes('supply') || lower.includes('logistic')
+                ? 'Supply Chain'
+                : 'Core Updates';
+
+    return {
+        title: 'BeZhas convierte la confianza operativa en infraestructura verificable',
+        category,
+        excerpt:
+            'Un enfoque tecnico y ejecutivo sobre como BeZhas combina IA, blockchain y trazabilidad para reducir friccion, fraude y opacidad operativa.',
+        content: [
+            '## Contexto',
+            'BeZhas esta construyendo una capa operativa donde los eventos criticos de negocio pueden registrarse, analizarse y verificarse con evidencia criptografica.',
+            '',
+            '## Lectura tecnica',
+            'El sistema conecta agentes IA, herramientas MCP, pagos on-chain y registros de trazabilidad para que cada decision tenga contexto, auditoria y continuidad entre departamentos.',
+            '',
+            '## Impacto',
+            'Para equipos de supply chain, RWA y compliance, esto reduce dependencias manuales y ayuda a convertir procesos opacos en flujos medibles, verificables y preparados para automatizacion.',
+            '',
+            '## Cierre',
+            `Vibe aplicado: ${vibe || 'corporativo, tecnico y optimista'}.`,
+        ].join('\n'),
+        coverImagePrompt:
+            'Corporate cyberpunk logistics command center, cyan and violet lights, blockchain data trails, realistic high-detail editorial cover, dark BeZhas brand background.',
+    };
+}
+
+async function generateMarketingPostHandler({ vibe = '', audience = 'BeZhas Blockchain ecosystem', categories = [] } = {}) {
+    const cleanVibe = String(vibe || '').trim();
+    if (!cleanVibe) {
+        return {
+            action: 'generate_marketing_post',
+            status: 'FAILED',
+            reasoning: 'Missing vibe or marketing intent.',
+        };
+    }
+
+    const systemPrompt = `Eres el Agente IA del Departamento de Marketing de BeZhas.
+Genera un borrador editorial para BeZhas Magazine en espanol.
+Identidad visual y narrativa: Web3, IA, RWA, DePIN, supply chain, fondo oscuro #0A0E1A, acentos cyan #00D4FF y violeta #7B2FFF.
+Devuelve SOLO JSON valido con esta forma:
+{
+  "title": "string",
+  "category": "Core Updates | DePIN | RWA | Supply Chain",
+  "excerpt": "string max 220 caracteres",
+  "content": "markdown body with sections",
+  "coverImagePrompt": "prompt para imagen editorial"
+}`;
+
+    const userPrompt = `Vibe: ${cleanVibe}
+Audiencia: ${audience}
+Categorias permitidas: ${Array.isArray(categories) && categories.length ? categories.join(', ') : 'Core Updates, DePIN, RWA, Supply Chain'}`;
+
+    try {
+        const provider = aiProviderService.isProviderAvailable('google')
+            ? 'google'
+            : aiProviderService.isProviderAvailable('openai')
+                ? 'openai'
+                : null;
+
+        if (!provider) {
+            const fallback = buildMarketingFallback(cleanVibe);
+            return {
+                action: 'generate_marketing_post',
+                status: 'SUCCESS',
+                data: fallback,
+                reasoning: 'No external AI provider configured. Returned deterministic local marketing draft.',
+            };
+        }
+
+        const response = await aiProviderService.chat({
+            provider,
+            model: provider === 'google' ? 'gemini-2.0-flash' : 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.72,
+            maxTokens: 1600,
+        });
+
+        const parsed = extractJsonObject(response.content);
+        return {
+            action: 'generate_marketing_post',
+            status: 'SUCCESS',
+            data: {
+                title: String(parsed.title || '').trim() || buildMarketingFallback(cleanVibe).title,
+                category: normalizeMarketingCategory(parsed.category),
+                excerpt: String(parsed.excerpt || '').trim() || buildMarketingFallback(cleanVibe).excerpt,
+                content: String(parsed.content || '').trim() || buildMarketingFallback(cleanVibe).content,
+                coverImagePrompt: String(parsed.coverImagePrompt || parsed.imagePrompt || '').trim() || buildMarketingFallback(cleanVibe).coverImagePrompt,
+            },
+            provider: response.provider,
+            reasoning: 'Marketing draft generated through BeZhas MCP orchestrator.',
+        };
+    } catch (error) {
+        return {
+            action: 'generate_marketing_post',
+            status: 'PARTIAL',
+            data: buildMarketingFallback(cleanVibe),
+            reasoning: `AI provider failed, returned local fallback: ${error.message}`,
+        };
+    }
 }
 
 // ─── ORCHESTRATOR API ─────────────────────────────────────────────────────────

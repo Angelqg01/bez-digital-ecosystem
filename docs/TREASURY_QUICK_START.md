@@ -410,12 +410,12 @@ SI NECESITAS RETIRO URGENTE:
    - Discord: #emergency-treasury
 
 🟡 SOPORTE NORMAL:
-   - Email: treasury@bezhas.com
+   - Email: treasury@bez.digital
    - Discord: #admin-support
 
 🟢 CONSULTAS GENERALES:
-   - Docs: docs.bezhas.com/treasury
-   - FAQ: bezhas.com/faq
+   - Docs: docs.bez.digital/treasury
+   - FAQ: bez.digital/faq
 ```
 
 ### Horario de Soporte
@@ -510,4 +510,4 @@ SI NECESITAS RETIRO URGENTE:
 **Última actualización:** 2024-01-15  
 **Mantenedor:** Equipo BeZhas  
 
-**¿Necesitas ayuda? → treasury@bezhas.com**
+**¿Necesitas ayuda? → treasury@bez.digital**

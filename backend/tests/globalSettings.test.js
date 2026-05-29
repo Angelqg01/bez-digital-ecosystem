@@ -4,7 +4,7 @@
  * Tests for the Admin Configuration API
  */
 
-const GlobalSettings = require('../models/GlobalSettings.model');
+const GlobalSettings = require('../models/pg/GlobalSettings');
 
 // Mock logger
 jest.mock('../utils/logger', () => ({

@@ -8,8 +8,8 @@ import { TrendingUp, DollarSign, Zap, Gift, Droplets, Lock, Waves, Flame } from 
 import { Spinner } from '../../components/ui/Spinner';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-// BuyBezCoinModal -> useBezPay().openBuyBez()
 import GlobalStatsBar from '../../components/GlobalStatsBar';
+import { useBezPay } from '../../hooks/useBezPay';
 
 // Componente para una tarjeta de estadísticas
 const StatCard = ({ icon, title, value, isLoading }) => (
@@ -45,6 +45,7 @@ const TabButton = ({ active, onClick, icon, children }) => (
 // Tab: Simple Staking (Staking de BEZ tokens)
 const SimpleStakingTab = ({ address, isConnected, balance, setShowBuyModal }) => {
   const { connect, connectors } = useConnect();
+  const { openBuyBez } = useBezPay();
   const [amount, setAmount] = useState('');
 
   // Hooks de wagmi para leer datos del contrato con timeout
@@ -118,7 +119,7 @@ const SimpleStakingTab = ({ address, isConnected, balance, setShowBuyModal }) =>
           icon: '⚠️'
         });
 
-        // Abrir modal de compra de BEZ
+        setShowBuyModal(true);
         openBuyBez();
         return;
       }
@@ -144,7 +145,7 @@ const SimpleStakingTab = ({ address, isConnected, balance, setShowBuyModal }) =>
       functionName: functions[actionType],
       args
     });
-  }, [isConnected, connectors, connect, amount, allowance, writeContract]);
+  }, [isConnected, connectors, connect, amount, allowance, writeContract, balance, setShowBuyModal, openBuyBez]);
 
   return (
     <div className="space-y-8">
@@ -534,8 +535,6 @@ const StakingPageUnifiedV2 = ({ farmingContract, lpTokenContract }) => {
         />
       )}
 
-      {/* Modal de Compra de BEZ */}
-      {showBuyModal && <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />}
     </div>
   );
 };

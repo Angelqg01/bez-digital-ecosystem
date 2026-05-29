@@ -4,8 +4,8 @@ import { ethers } from 'ethers';
 import { apiGet, apiPost } from '../lib/api';
 import { toast } from 'react-hot-toast';
 import { useBezCoin } from '../context/BezCoinContext';
+import { useBezPay } from '../context/BezPayContext';
 import { FaCoins, FaHeart } from 'react-icons/fa';
-// BuyBezCoinModal -> useBezPay().openBuyBez()
 import InsufficientFundsModal from '../components/modals/InsufficientFundsModal';
 import DonateButton from '../components/DonateButton';
 
@@ -66,11 +66,10 @@ export default function BeZhasFeed() {
     const {
         balance,
         donate,
-        showBuyModal,
-        setShowBuyModal,
         insufficientFundsModal,
         setInsufficientFundsModal
     } = useBezCoin();
+    const { openBuyBez } = useBezPay();
 
     const load = async (showToast = false) => {
         try {
@@ -350,12 +349,6 @@ export default function BeZhasFeed() {
                     </div>
                 </div>
             ))}
-
-            {/* BezCoin Modals */}
-            <BuyBezCoinModal
-                isOpen={showBuyModal}
-                onClose={() => {}}
-            />
 
             <InsufficientFundsModal
                 isOpen={insufficientFundsModal.show}

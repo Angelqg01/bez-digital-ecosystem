@@ -10,7 +10,7 @@ const EmbedWidgetsTab = () => {
     const embedCodes = {
         tracking: `<!-- BeZhas Tracking Widget -->
 <div id="bezhas-tracking"></div>
-<script src="https://cdn.bezhas.com/widgets/tracking.js"></script>
+<script src="https://cdn.bez.digital/widgets/tracking.js"></script>
 <script>
     BeZhasTracking.init({
         containerId: 'bezhas-tracking',
@@ -20,7 +20,7 @@ const EmbedWidgetsTab = () => {
 </script>`,
         marketplace: `<!-- BeZhas Marketplace Widget -->
 <div id="bezhas-marketplace"></div>
-<script src="https://cdn.bezhas.com/widgets/marketplace.js"></script>
+<script src="https://cdn.bez.digital/widgets/marketplace.js"></script>
 <script>
     BeZhasMarketplace.init({
         containerId: 'bezhas-marketplace',
@@ -30,7 +30,7 @@ const EmbedWidgetsTab = () => {
 </script>`,
         wallet: `<!-- BeZhas Wallet Connect Button -->
 <div id="bezhas-wallet-btn"></div>
-<script src="https://cdn.bezhas.com/widgets/wallet.js"></script>
+<script src="https://cdn.bez.digital/widgets/wallet.js"></script>
 <script>
     BeZhasWallet.init({
         containerId: 'bezhas-wallet-btn',

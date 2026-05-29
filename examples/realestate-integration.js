@@ -8,7 +8,7 @@ const BeZhasUniversal = require('@bezhas/universal-sdk');
 // Initialize SDK
 const bezhas = new BeZhasUniversal({
     apiKey: process.env.BEZHAS_API_KEY,
-    endpoint: 'https://api.bezhas.com/v1',
+    endpoint: 'https://api.bez.digital/v1',
     debug: true
 });
 
@@ -21,9 +21,9 @@ async function tokenizeResidentialProperty() {
             valuation: 850000,
             cadastralReference: 'CAD-FL-MIA-001428',
             legalDocuments: [
-                'https://storage.bezhas.com/docs/deed_1428elm.pdf',
-                'https://storage.bezhas.com/docs/inspection_1428elm.pdf',
-                'https://storage.bezhas.com/docs/title_search_1428elm.pdf'
+                'https://storage.bez.digital/docs/deed_1428elm.pdf',
+                'https://storage.bez.digital/docs/inspection_1428elm.pdf',
+                'https://storage.bez.digital/docs/title_search_1428elm.pdf'
             ],
             metadata: {
                 bedrooms: 4,

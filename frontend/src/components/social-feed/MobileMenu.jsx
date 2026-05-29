@@ -12,16 +12,14 @@ import {
     ShoppingCart,
     Coins,
     Crown,
-    Gift,
     Menu,
     X,
     Megaphone,
-    Trophy,
-    BadgeCheck,
     Image,
     Video,
     Music,
     FileText,
+    MapPin,
     Globe,
     Lock,
     Users,
@@ -294,7 +292,7 @@ const MobileMenu = ({ notificationsCount = 0 }) => {
                             return (
                                 <button
                                     key={item.id}
-                                    onClick={() => navigate('/create')}
+                                    onClick={handleCreatePost}
                                     className="relative -mt-6 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded-2xl"
                                     aria-label={item.label}
                                 >

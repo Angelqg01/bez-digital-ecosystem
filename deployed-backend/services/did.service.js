@@ -230,7 +230,7 @@ class DIDService {
         const credential = {
             '@context': [
                 'https://www.w3.org/2018/credentials/v1',
-                'https://bezhas.com/credentials/v1'
+                'https://bez.digital/credentials/v1'
             ],
             id: credentialId,
             type: ['VerifiableCredential', credentialType],

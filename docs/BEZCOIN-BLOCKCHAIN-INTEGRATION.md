@@ -644,7 +644,7 @@ VITE_NETWORK=mainnet
 VITE_BEZCOIN_TOKEN_ADDRESS=0x...
 VITE_TOKEN_SALE_ADDRESS=0x...
 VITE_CHAIN_ID=1
-VITE_BACKEND_URL=https://api.bezhas.com
+VITE_BACKEND_URL=https://api.bez.digital
 ```
 
 #### 3. **Deploy Contracts**

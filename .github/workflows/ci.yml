@@ -37,31 +37,31 @@ jobs:
           test -f frontend/.env.example
 
       - name: Install root dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install backend dependencies
         working-directory: ./backend
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run Solidity tests (Hardhat)
-        run: npm test --workspaces=false
+        run: pnpm test --workspaces=false
         # The root package.json `test` runs `hardhat test`.
 
       - name: Run backend tests
         working-directory: ./backend
-        run: npm test
+        run: pnpm test
 
       - name: Lint frontend (blocking)
         working-directory: ./frontend
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Build frontend
         working-directory: ./frontend
-        run: npm run build
+        run: pnpm run build
 
       - name: Upload build artifacts
         if: success()

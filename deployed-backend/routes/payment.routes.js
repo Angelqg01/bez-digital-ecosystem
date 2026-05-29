@@ -520,7 +520,7 @@ router.post('/bank-transfer/create-order', async (req, res) => {
             instructions: [
                 "1. Realice la transferencia usando los datos bancarios proporcionados",
                 "2. IMPORTANTE: Incluya el código de referencia en el concepto",
-                "3. Envíe el comprobante a: pagos@bezhas.com",
+                "3. Envíe el comprobante a: pagos@bez.digital",
                 "4. Los tokens serán acreditados en 24-48 horas tras verificación"
             ]
         });
@@ -902,7 +902,7 @@ router.post('/token-purchase', verifyTokenMiddleware, async (req, res) => {
 
         const result = await createTokenPurchaseSession(totalTokens, {
             userId,
-            email: req.user?.email || `${userId}@bezhas.com`,
+            email: req.user?.email || `${userId}@bez.digital`,
             walletAddress
         });
 

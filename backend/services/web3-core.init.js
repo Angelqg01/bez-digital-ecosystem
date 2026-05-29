@@ -12,6 +12,7 @@ const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 const cacheService = require('./cache.service');
 const blockchainIndexer = require('./blockchain-indexer.service');
 const blockchainQueue = require('./blockchain-queue.service');
+const bridge = require('../bridge'); // Join Ecosystem Bridge
 const accountAbstraction = require('./account-abstraction.service');
 const wsHub = require('./websocket-hub.service');
 const decentralizedStorage = require('./decentralized-storage.service');
@@ -101,6 +102,12 @@ class Web3CoreInitializer {
                 if (event.decodedArgs?.to) {
                     wsHub.emitToUser(event.decodedArgs.to, 'blockchain:event', event);
                 }
+
+                // Notify Ecosystem Bridge
+                try {
+                    const ecosystem = bridge.bridgeCore.getAdapter('ecosystem');
+                    if (ecosystem) await ecosystem.handleBlockchainEvent(event);
+                } catch (_) { }
 
                 // Emit to contract-specific rooms
                 wsHub.emitToRoom(`contract:${event.contractName}`, 'blockchain:event', event);

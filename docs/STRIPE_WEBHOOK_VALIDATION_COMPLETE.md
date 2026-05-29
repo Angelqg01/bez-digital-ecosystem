@@ -45,7 +45,7 @@ Deploy Backend to Cloud Run (Production):
 STRIPE_PUBLISHABLE_KEY="pk_live_..."
 STRIPE_SECRET_KEY="sk_live_..."
 STRIPE_WEBHOOK_SECRET="whsec_your_webhook_signing_secret_here"  # ← CRÍTICO
-STRIPE_WEBHOOK_URL="https://api.bezhas.com/api/payment/webhook"
+STRIPE_WEBHOOK_URL="https://api.bez.digital/api/payment/webhook"
 ```
 
 **Ubicación:** [.env.example](.env.example#L55-L68)
@@ -123,7 +123,7 @@ node test-webhook.js
 gcloud run services describe bezhas-backend --region us-central1
 
 # Verificar que las variables están configuradas:
-curl https://api.bezhas.com/api/payment/health
+curl https://api.bez.digital/api/payment/health
 ```
 
 ---

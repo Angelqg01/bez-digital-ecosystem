@@ -10,14 +10,14 @@ Start-Sleep -Seconds 2
 
 # Iniciar Backend en nueva ventana
 Write-Host "Iniciando Backend (Puerto 3001)..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\backend'; npm start"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\backend'; pnpm run start"
 
 # Esperar un poco para que el backend inicie
 Start-Sleep -Seconds 5
 
 # Iniciar Frontend en nueva ventana
 Write-Host "Iniciando Frontend (Puerto 5173)..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend'; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend'; pnpm run dev"
 
 Write-Host ""
 Write-Host "Servidores iniciados!" -ForegroundColor Green

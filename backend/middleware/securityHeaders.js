@@ -49,8 +49,8 @@ const CSP_CONFIG = {
         ],
         connectSrc: [
             "'self'",
-            "https://api.bezhas.com",
-            "wss://api.bezhas.com",
+            "https://api.bez.digital",
+            "wss://api.bez.digital",
             "https://mainnet.infura.io",
             "https://polygon-rpc.com",
             "https://api.stripe.com",
@@ -219,9 +219,9 @@ function secureCORS(allowedOrigins = []) {
 
         // Lista blanca de orígenes permitidos
         const defaultAllowed = [
-            'https://bezhas.com',
-            'https://www.bezhas.com',
-            'https://app.bezhas.com',
+            'https://bez.digital',
+            'https://www.bez.digital',
+            'https://app.bez.digital',
             'http://localhost:3000',
             'http://localhost:5173'
         ];

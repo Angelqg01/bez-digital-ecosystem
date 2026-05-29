@@ -24,7 +24,7 @@ El sistema de pagos de BeZhas está **completamente operativo** y listo para pro
 - **Banco**: ING España
 - **IBAN**: ES77 1465 0100 91 1766376210
 - **BIC**: INGDESMMXXX
-- **Beneficiario**: BeZhas.com
+- **Beneficiario**: bez.digital
 
 **Wallets**:
 - **Safe Wallet** (Cold Storage): `0x3EfC42095E8503d41Ad8001328FC23388E00e8a3`
@@ -183,7 +183,7 @@ El sistema de pagos de BeZhas está **completamente operativo** y listo para pro
     "bankName": "BeZhas Platform",
     "iban": "ES77 1465 0100 91 1766376210",
     "bic": "INGDESMMXXX",
-    "beneficiary": "BeZhas.com",
+    "beneficiary": "bez.digital",
     "instructions": "Include your wallet address in the transfer concept/reference"
   }
 }

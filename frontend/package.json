@@ -5,7 +5,7 @@
   "type": "module",
   "engines": {
     "node": ">=22.0.0",
-    "npm": ">=10.0.0"
+    "pnpm": ">=11"
   },
   "scripts": {
     "dev": "vite",
@@ -13,12 +13,13 @@
     "build": "node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
+    "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "check-updates": "npm outdated",
-    "update-safe": "npm update",
-    "clean": "rm -rf node_modules package-lock.json && npm install",
+    "check-updates": "pnpm outdated",
+    "update-safe": "pnpm update",
+    "clean": "pnpm install",
     "analyze": "vite build --mode analyze"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "@prisma/client": "^7.2.0",
     "@react-oauth/google": "^0.13.4",
     "@simplewebauthn/browser": "^13.2.2",
+    "@bezhas/sdk": "file:../../../sdk",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.6.0",
     "@tanstack/react-query": "^5.90.12",
@@ -77,13 +79,15 @@
     "process": "^0.11.10",
     "stream-browserify": "^3.0.0",
     "tailwindcss": "^3.4.18",
+    "typescript": "5.6.3",
     "util": "^0.12.5",
     "vite": "^5.2.0",
     "vite-plugin-node-polyfills": "^0.24.0",
     "vite-plugin-pwa": "^1.2.0",
-    "vitest": "^4.0.18"
+    "vitest": "^1.6.1"
   },
   "overrides": {
     "abitype": "1.2.3"
-  }
+  },
+  "packageManager": "pnpm@11.0.0"
 }

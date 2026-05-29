@@ -1,10 +1,10 @@
 {
-  "name": "bezhas-web3",
+  "name": "bezhas-hub",
   "version": "1.0.0",
   "description": "Smart Contracts for Bezhas Social Network",
   "main": "index.js",
   "scripts": {
-    "test": "hardhat test",
+    "test": "forge test",
     "test:backend": "cd backend && pnpm test",
     "test:all": "pnpm test && cd backend && pnpm test",
     "start:backend": "node backend/server.js",
@@ -16,6 +16,8 @@
     "build:frontend:docker": "docker build -t bezhas-frontend -f frontend/Dockerfile.optimized frontend/",
     "build:docker": "pnpm build:backend:docker && pnpm build:frontend:docker",
     "validate:deploy": "node scripts/validate-deployment.js",
+    "smoke:online": "node scripts/smoke-online.js",
+    "scan:secrets": "node scripts/scan-secrets.js",
     "grant:bridge:roles": "hardhat run scripts/grant-bridge-roles.js --network localhost",
     "dev:up": "docker compose up -d",
     "dev:down": "docker compose down",
@@ -27,11 +29,13 @@
     "deploy:quality-oracle:polygon": "hardhat run scripts/deploy-quality-oracle.js --network polygon",
     "deploy:mainnet-core": "hardhat run scripts/deploy-mainnet-core.js --network polygon",
     "deploy:mainnet-core:dry": "TREASURY_WALLET=0x52Df82920CBAE522880dD7657e43d1A754eD044E hardhat run scripts/deploy-mainnet-core.js --network polygon",
+    "admin:activate-wallets": "node scripts/activate-admin-wallets.js",
+    "admin:activate-wallets:execute": "node scripts/activate-admin-wallets.js --execute",
     "test:orchestrator-e2e": "node scripts/test-orchestrator-e2e.js",
     "test:orchestrator-e2e:fast": "node scripts/test-orchestrator-e2e.js --fast",
-    "sdk:publish-npm": "cd sdk && npm publish --access public",
+    "sdk:publish-npm": "cd sdk && pnpm publish --access public",
     "sdk:publish-pnpm": "cd sdk && pnpm publish --access public --no-git-checks",
-    "sdk:publish-all": "pnpm sdk:publish-npm && pnpm sdk:publish-pnpm",
+    "sdk:publish-all": "pnpm sdk:publish-npm && pnpm sdk:publish-npm",
     "gcp:deploy": "gcloud builds submit --config=cloudbuild.yaml",
     "gcp:deploy:backend": "gcloud builds submit --config=cloudbuild.yaml --substitutions=_TAG=v$(date +%Y%m%d)",
     "deploy:farming": "hardhat run scripts/deploy-liquidity-farming.js --network localhost",
@@ -43,12 +47,13 @@
     "transfer-from-safe": "hardhat run scripts/transfer-from-safe.js --network amoy",
     "verify-deployment": "hardhat run scripts/verify-deployment.js --network amoy",
     "simulate-quality-oracle": "node scripts/simulate-quality-oracle.js",
-    "compile": "hardhat compile",
+    "compile": "forge build",
     "bez:info": "node scripts/show-bez-info.js",
     "bez:verify": "node scripts/verify-contract-address.js",
     "lint": "cd frontend && pnpm lint",
     "clean": "rimraf node_modules backend/node_modules frontend/node_modules",
-    "install:all": "pnpm install && cd backend && pnpm install && cd ../frontend && pnpm install"
+    "install:all": "pnpm install && cd backend && pnpm install && cd ../frontend && pnpm install",
+    "test:e2e": "playwright test"
   },
   "keywords": [
     "web3",
@@ -58,11 +63,11 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-ethers": "4.0.5",
-    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@playwright/test": "^1.41.0",
     "concurrently": "^9.2.1",
     "ethers": "6.16.0",
-    "hardhat": "^3.1.10",
+    "hardhat": "^2.22.19",
     "supertest": "^7.2.2"
   },
   "dependencies": {
@@ -74,23 +79,8 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1"
   },
-  "pnpm": {
-    "overrides": {
-      "secp256k1": ">=5.0.1",
-      "qs": ">=6.14.2",
-      "cross-spawn": ">=7.0.6",
-      "braces": ">=3.0.3",
-      "micromatch": ">=4.0.8",
-      "semver": ">=7.6.3",
-      "tar": ">=6.2.1",
-      "ws": ">=8.17.1",
-      "undici": ">=6.21.1",
-      "cookie": ">=0.7.0",
-      "path-to-regexp": "0.1.7",
-      "send": ">=0.19.0",
-      "serve-static": ">=1.16.0",
-      "body-parser": ">=1.20.3",
-      "axios": ">=1.7.8"
-    }
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
   }
 }

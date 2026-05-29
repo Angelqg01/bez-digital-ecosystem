@@ -46,10 +46,13 @@ const BillingPage = () => {
 
             const response = await billingService.getHistory(params);
             if (response.success) {
-                setHistory(response.data.transactions);
+                const transactions = Array.isArray(response.data)
+                    ? response.data
+                    : response.data?.transactions || [];
+                setHistory(transactions);
                 setPagination(prev => ({
                     ...prev,
-                    total: response.data.pagination.totalPages
+                    total: response.data?.pagination?.totalPages || response.pagination?.pages || 0
                 }));
             }
         } catch (error) {
@@ -141,6 +144,8 @@ const BillingPage = () => {
         deposit_bez: 'Depósito BEZ',
         campaign_charge: 'Cargo de Campaña',
         daily_charge: 'Cargo Diario',
+        ai_usage: 'Consumo IA',
+        ai_reservation: 'Reserva IA',
         refund: 'Reembolso',
         adjustment: 'Ajuste'
     };
@@ -150,6 +155,8 @@ const BillingPage = () => {
         deposit_bez: 'text-purple-400',
         campaign_charge: 'text-red-400',
         daily_charge: 'text-orange-400',
+        ai_usage: 'text-cyan-400',
+        ai_reservation: 'text-amber-400',
         refund: 'text-blue-400',
         adjustment: 'text-yellow-400'
     };
@@ -297,6 +304,8 @@ const BillingPage = () => {
                                 <option value="deposit_bez">Depósitos BEZ</option>
                                 <option value="campaign_charge">Cargos de Campaña</option>
                                 <option value="daily_charge">Cargos Diarios</option>
+                                <option value="ai_usage">Consumo IA</option>
+                                <option value="ai_reservation">Reservas IA</option>
                                 <option value="refund">Reembolsos</option>
                             </select>
                         </div>
@@ -350,7 +359,9 @@ const BillingPage = () => {
                                                     : 'text-red-400'
                                                     }`}>
                                                     {tx.type.includes('deposit') || tx.type === 'refund' ? '+' : '-'}
-                                                    €{tx.amountEur.toFixed(2)}
+                                                    {tx.currency === 'BEZ'
+                                                        ? `${Number(tx.amount || 0).toFixed(2)} BEZ`
+                                                        : `€${Number(tx.amountEur ?? tx.amount ?? 0).toFixed(2)}`}
                                                 </td>
                                                 <td className="py-4 px-4 text-center">
                                                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${tx.status === 'completed'

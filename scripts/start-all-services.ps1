@@ -32,7 +32,7 @@ Write-Host "`n🚀 Iniciando servicios en segundo plano...`n" -ForegroundColor C
 
 # Terminal 1: Hardhat Node
 Write-Host "1️⃣  Iniciando Hardhat Local Node (Puerto 8545)..." -ForegroundColor Magenta
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD'; Write-Host '⛓️  HARDHAT NODE' -ForegroundColor Magenta; npx hardhat node" -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD'; Write-Host '⛓️  HARDHAT NODE' -ForegroundColor Magenta; pnpm exec hardhat node" -WindowStyle Normal
 
 Start-Sleep -Seconds 8
 
@@ -67,7 +67,7 @@ Write-Host "   Backend:   http://localhost:3001" -ForegroundColor White
 Write-Host "   Hardhat:   http://localhost:8545" -ForegroundColor White
 
 Write-Host "`n💡 Próximos Pasos:" -ForegroundColor Yellow
-Write-Host "   1. Despliega los contratos: npx hardhat run scripts/deploy-quality-oracle.js --network localhost" -ForegroundColor White
+Write-Host "   1. Despliega los contratos: pnpm exec hardhat run scripts/deploy-quality-oracle.js --network localhost" -ForegroundColor White
 Write-Host "   2. Abre el navegador: http://localhost:5173" -ForegroundColor White
 Write-Host "   3. Conecta MetaMask a localhost:8545" -ForegroundColor White
 

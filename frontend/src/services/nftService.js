@@ -1,3 +1,10 @@
+/**
+ * @deprecated — LEGACY SERVICE. NFT operations now live in BZ Prestige SubApp.
+ * Replacement: BZ Prestige/src/services/blockchainService.js
+ * NFT minting → BZ Prestige → registerProduct()
+ * Provenance → BZ Prestige → getProvenance()
+ * The Hub should link to BZ Prestige instead of handling NFTs directly.
+ */
 import { toast } from 'react-hot-toast';
 
 /**

@@ -1148,7 +1148,7 @@ router.delete('/sessions/:tokenId', verifyTokenMiddleware, async (req, res) => {
 router.post('/2fa/setup', verifyTokenMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId || req.user.id;
-    const userEmail = req.body.email || `${userId}@bezhas.com`;
+    const userEmail = req.body.email || `${userId}@bez.digital`;
 
     if (is2FAEnabled(userId)) {
       return res.status(400).json({

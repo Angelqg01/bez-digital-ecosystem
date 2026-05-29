@@ -41,7 +41,7 @@ const ContactSyncScreen = ({ navigation }) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       // Replace with your actual backend URL config
-      const response = await fetch('https://api.bezhas.com/api/contacts/matches', {
+      const response = await fetch('https://api.bez.digital/api/contacts/matches', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -107,7 +107,7 @@ const ContactSyncScreen = ({ navigation }) => {
       }
 
       const token = await AsyncStorage.getItem('userToken');
-      const response = await fetch('https://api.bezhas.com/api/contacts/sync', {
+      const response = await fetch('https://api.bez.digital/api/contacts/sync', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ const ContactSyncScreen = ({ navigation }) => {
   const handleAddFriend = async (contactId) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      const response = await fetch(`https://api.bezhas.com/api/contacts/${contactId}/add-friend`, {
+      const response = await fetch(`https://api.bez.digital/api/contacts/${contactId}/add-friend`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });

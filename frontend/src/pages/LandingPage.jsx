@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import { useNavigate, Link } from 'react-router-dom';
@@ -8,10 +8,10 @@ import SafeGoogleLogin from '../components/common/SafeGoogleLogin';
 import OAuthButtons from '../components/common/OAuthButtons';
 import {
     ShieldCheck, Coins, Globe2, BrainCircuit, ArrowRight,
-    CheckCircle2, Code2, Terminal, LayoutGrid, ChevronRight,
+    CheckCircle2, Code2, Terminal, ChevronRight,
     Layers, Vote, Percent, Twitter, Github, Disc,
     Zap, Lock, TrendingUp, Activity, X, Briefcase, User, Building2, Wallet,
-    Ship, Anchor, Server, Box, Cpu, Database, Crown, Building, Droplets, LineChart, Cpu as CpuIcon
+    Ship, Anchor, Box, Cpu, Database, Crown, Building, Droplets, LineChart
 } from 'lucide-react';
 import ConnectWalletModal from '../components/auth/ConnectWalletModal';
 import http from '../services/http';
@@ -20,6 +20,9 @@ import http from '../services/http';
 import CosmosCanvas from '../components/landing/CosmosCanvas';
 import LogoScroll from '../components/landing/LogoScroll';
 import TokenWidget from '../components/landing/TokenWidget';
+import EcosystemAppsSection from '../components/landing/EcosystemAppsSection';
+import { STRIPE_PAYMENT_LINKS } from '../config/bezhasPaymentConfig';
+import { BEZ_POLYGONSCAN_URL, DEFI_TOKENOMICS_URL } from '../data/landing';
 
 import '../components/landing/Landing.css';
 
@@ -27,8 +30,14 @@ const LandingPage = () => {
     const { playHover, playClick, playBoot } = useSoundEffects();
     useEffect(() => { 
         // Boot sound on initial load for futuristic feel
-        try { playBoot(); } catch(e) {}
-    }, []);
+        try {
+            playBoot();
+        } catch (error) {
+            if (import.meta.env.DEV) {
+                console.warn('Landing boot sound could not be played', error);
+            }
+        }
+    }, [playBoot]);
 
     const navigate = useNavigate();
     const { open } = useWeb3Modal();
@@ -239,6 +248,7 @@ const LandingPage = () => {
                     <div className="hidden md:flex items-center gap-8">
                         <a onMouseEnter={playHover} onClick={playClick} href="#solutions" className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-[#22d3ee] transition-colors uppercase tracking-widest hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">La Solución</a>
                         <a onMouseEnter={playHover} onClick={playClick} href="#ecosystem" className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-[#22d3ee] transition-colors uppercase tracking-widest hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">Ecosistema</a>
+                        <a onMouseEnter={playHover} onClick={playClick} href="#apps" className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-[#22d3ee] transition-colors uppercase tracking-widest hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">App's</a>
                         <a onMouseEnter={playHover} onClick={playClick} href="#technology" className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-[#22d3ee] transition-colors uppercase tracking-widest hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">BEZ-Coin</a>
                         
                         <div className="flex items-center gap-3">
@@ -330,6 +340,56 @@ const LandingPage = () => {
                             Leer Whitepaper
                         </a>
                     </div>
+                </div>
+            </section>
+
+            {/* BEZ-Coin Direct Sale */}
+            <section className="py-16 px-6 relative z-10">
+                <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.15fr_0.85fr] gap-6 items-stretch">
+                    <div className="rounded-3xl border border-cyan-400/20 bg-[#06111d]/90 p-8 md:p-10 shadow-[0_0_45px_rgba(34,211,238,0.10)]">
+                        <div className="text-[10px] uppercase tracking-[0.35em] text-cyan-300 font-bold mb-4">Venta directa en Polygon</div>
+                        <h2 className="text-3xl md:text-5xl font-black italic uppercase text-white mb-4">Compra BEZ-Coin real</h2>
+                        <p className="text-gray-300 max-w-2xl leading-relaxed mb-6">
+                            Accede a la venta directa del token BEZ-Coin en Polygon Mainnet. Este flujo usa el contrato verificado actual hasta el despliegue de BEZ-CoinV2.
+                        </p>
+                        <div className="grid sm:grid-cols-3 gap-3 mb-8">
+                            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                                <div className="text-gray-500 text-xs uppercase">Red</div>
+                                <div className="text-white font-bold">Polygon</div>
+                            </div>
+                            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                                <div className="text-gray-500 text-xs uppercase">Símbolo</div>
+                                <div className="text-white font-bold">BEZ</div>
+                            </div>
+                            <a href={BEZ_POLYGONSCAN_URL} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-white/5 border border-white/10 p-4 hover:border-cyan-300/50 transition-colors">
+                                <div className="text-gray-500 text-xs uppercase">Contrato</div>
+                                <div className="text-cyan-300 font-mono text-sm">0xEcBa...11A8</div>
+                            </a>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <a href={STRIPE_PAYMENT_LINKS.tokenPurchase} target="_blank" rel="noopener noreferrer" className="min-h-14 px-6 rounded-xl bg-cyan-300 text-[#06111d] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:brightness-110 transition-all">
+                                Comprar BEZ-Coin <ArrowRight size={18} />
+                            </a>
+                            <a href={DEFI_TOKENOMICS_URL} className="min-h-14 px-6 rounded-xl bg-white/5 text-white border border-white/15 font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
+                                Tokenomics en DeFi <LineChart size={18} />
+                            </a>
+                        </div>
+                    </div>
+                    <div className="rounded-3xl border border-purple-400/20 bg-[#0d0918]/90 p-8 md:p-10 flex flex-col justify-between">
+                        <div>
+                            <div className="text-[10px] uppercase tracking-[0.35em] text-purple-300 font-bold mb-4">DeFi & tokenomics</div>
+                            <h3 className="text-2xl md:text-3xl font-black text-white uppercase italic mb-4">Gestiona liquidez, staking y farming</h3>
+                            <p className="text-gray-400 leading-relaxed">
+                                Para análisis tokenómico, staking, farming y tesorería, entra en la plataforma DeFi de BeZhas y opera desde el panel financiero.
+                            </p>
+                        </div>
+                        <a href={DEFI_TOKENOMICS_URL} className="mt-8 min-h-14 px-6 rounded-xl bg-purple-500 text-white font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-purple-400 transition-colors">
+                            Ir a DeFi <ChevronRight size={18} />
+                        </a>
+                    </div>
+
+                    {/* App's Secundarias (SSO Ecosystem) */}
+                    <EcosystemAppsSection onHover={playHover} onClick={playClick} />
                 </div>
             </section>
 
@@ -724,10 +784,10 @@ const LandingPage = () => {
                         Telegram
                     </a>
                     <a
-                        href="mailto:info.bezcoin@bezhas.com"
+                        href="mailto:info.bezcoin@bez.digital"
                         className="px-8 py-3 bg-transparent border border-gray-400 dark:border-white/20 text-gray-900 dark:text-white hover:bg-white/5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
                     >
-                        ✉️ info.bezcoin@bezhas.com
+                        ✉️ info.bezcoin@bez.digital
                     </a>
                 </div>
             </section>

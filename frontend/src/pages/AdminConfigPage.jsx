@@ -19,6 +19,7 @@ import {
     Info,
     Loader2,
     Undo2,
+    Cpu,
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -767,6 +768,75 @@ const AdminConfigPage = () => {
                                         setHasChanges(true);
                                     }}
                                 />
+                            </div>
+                        </div>
+                    </ConfigSection>
+
+                    {/* OpenClaw AI Agent Configuration */}
+                    <ConfigSection title="OpenClaw AI Agent" icon={Cpu} color="bg-rose-500">
+                        <ToggleSwitch
+                            label="OpenClaw Habilitado"
+                            value={settings?.openclaw?.enabled}
+                            onChange={(v) => updateSetting('openclaw', 'enabled', v)}
+                            description="Activa el aprovisionamiento automático de agentes IA"
+                        />
+                        <TextInput
+                            label="URL Base del Agente"
+                            value={settings?.openclaw?.baseUrl}
+                            onChange={(v) => updateSetting('openclaw', 'baseUrl', v)}
+                            description="Endpoint de la API de OpenClaw"
+                        />
+                        <TextInput
+                            label="Global API Key"
+                            value={settings?.openclaw?.apiKey}
+                            onChange={(v) => updateSetting('openclaw', 'apiKey', v)}
+                            description="Clave maestra para comunicación Bridge-OpenClaw"
+                        />
+
+                        <div className="mt-4 p-4 bg-gray-700/30 rounded-xl border border-gray-700/50">
+                            <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
+                                <Shield className="w-4 h-4 text-rose-400" />
+                                Configuración de Planes
+                            </h4>
+                            
+                            {/* Pro Plan Limits (Example of editable plan) */}
+                            <div className="space-y-4">
+                                <div className="border-b border-gray-700/50 pb-4">
+                                    <p className="text-rose-400 text-xs font-bold uppercase mb-2">Plan Pro (Creator)</p>
+                                    <NumberInput
+                                        label="Límite de Plataformas"
+                                        value={settings?.openclaw?.plans?.pro?.platforms}
+                                        onChange={(v) => updateSetting('openclaw', 'plans.pro.platforms', v)}
+                                        min={1}
+                                    />
+                                    <NumberInput
+                                        label="TTL de Credenciales (días)"
+                                        value={settings?.openclaw?.plans?.pro?.credentialTTL}
+                                        onChange={(v) => updateSetting('openclaw', 'plans.pro.credentialTTL', v)}
+                                        min={1}
+                                    />
+                                    <TextInput
+                                        label="Intervalo de Sincronización"
+                                        value={settings?.openclaw?.plans?.pro?.syncInterval}
+                                        onChange={(v) => updateSetting('openclaw', 'plans.pro.syncInterval', v)}
+                                    />
+                                </div>
+
+                                <div className="pb-2">
+                                    <p className="text-rose-400 text-xs font-bold uppercase mb-2">Plan Enterprise (Business)</p>
+                                    <NumberInput
+                                        label="Límite de Plataformas"
+                                        value={settings?.openclaw?.plans?.enterprise?.platforms}
+                                        onChange={(v) => updateSetting('openclaw', 'plans.enterprise.platforms', v)}
+                                        min={1}
+                                    />
+                                    <NumberInput
+                                        label="Rate Limit (Req/Min)"
+                                        value={settings?.openclaw?.plans?.enterprise?.rateLimit}
+                                        onChange={(v) => updateSetting('openclaw', 'plans.enterprise.rateLimit', v)}
+                                        min={1}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </ConfigSection>

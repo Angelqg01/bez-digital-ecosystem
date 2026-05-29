@@ -10,6 +10,7 @@ const { ethers } = require('ethers');
 const pino = require('pino');
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 const tokenomics = require('../config/tokenomics.config');
+const settingsHelper = require('../utils/settingsHelper');
 
 // ============================================================
 // CONFIGURATION
@@ -25,9 +26,17 @@ const BEZ_TOKEN_ADDRESS = tokenomics.token.address;
 const BURN_ADDRESS = tokenomics.burn.address;
 const TREASURY_ADDRESS = tokenomics.treasury.address;
 
-// Distribution rates (base 10000 = 100%)
-const BURN_RATE = tokenomics.burn.rates.fiatPurchase || 20;      // 0.2%
-const TREASURY_RATE = tokenomics.treasury.rates.fiatPurchase || 100; // 1%
+/**
+ * Obtiene las tasas actuales de distribución desde el sistema de configuración global
+ * @returns {Promise<object>} Tasas actuales
+ */
+async function getCurrentRates() {
+    const config = await settingsHelper.getTokenConfig();
+    return {
+        burn: config.burnRate || 20,
+        treasury: config.treasuryRate || 100
+    };
+}
 
 // ERC20 ABI for transfers
 const TOKEN_ABI = [
@@ -44,13 +53,13 @@ if (HOT_WALLET_PK) {
     try {
         hotWalletSigner = new ethers.Wallet(HOT_WALLET_PK, provider);
         bezContract = new ethers.Contract(BEZ_TOKEN_ADDRESS, TOKEN_ABI, hotWalletSigner);
+        
+        // Log setup but rates will be dynamic per transaction
         logger.info({
             hotWallet: HOT_WALLET_ADDRESS,
             burnAddress: BURN_ADDRESS,
             treasuryAddress: TREASURY_ADDRESS,
-            burnRate: BURN_RATE / 100 + '%',
-            treasuryRate: TREASURY_RATE / 100 + '%'
-        }, '✅ Token Distribution Service initialized');
+        }, '✅ Token Distribution Service initialized (using GlobalSettings)');
     } catch (error) {
         logger.error({ error: error.message }, '❌ Error initializing Token Distribution Service');
     }
@@ -60,14 +69,17 @@ if (HOT_WALLET_PK) {
 }
 
 /**
- * Calcula la distribución de tokens para una compra FIAT
+ * Calcula la distribución de tokens para una compra FIAT usando tasas dinámicas
  * @param {number} totalBez - Cantidad total de BEZ a distribuir
- * @returns {object} Desglose de la distribución
+ * @param {object} overrideRates - Opcional: Tasas para forzar
+ * @returns {Promise<object>} Desglose de la distribución
  */
-function calculateDistribution(totalBez) {
+async function calculateDistribution(totalBez, overrideRates = null) {
+    const rates = overrideRates || await getCurrentRates();
+    
     // Calcular cada componente
-    const burnAmount = (totalBez * BURN_RATE) / 10000;
-    const treasuryAmount = (totalBez * TREASURY_RATE) / 10000;
+    const burnAmount = (totalBez * rates.burn) / 10000;
+    const treasuryAmount = (totalBez * rates.treasury) / 10000;
     const userAmount = totalBez - burnAmount - treasuryAmount;
 
     return {
@@ -76,9 +88,9 @@ function calculateDistribution(totalBez) {
         burn: burnAmount,
         treasury: treasuryAmount,
         rates: {
-            burnPercent: BURN_RATE / 100,
-            treasuryPercent: TREASURY_RATE / 100,
-            userPercent: (10000 - BURN_RATE - TREASURY_RATE) / 100
+            burnPercent: rates.burn / 100,
+            treasuryPercent: rates.treasury / 100,
+            userPercent: (10000 - rates.burn - rates.treasury) / 100
         }
     };
 }
@@ -105,7 +117,7 @@ async function distributeTokens(userWallet, totalBez) {
         throw new Error('Invalid BEZ amount');
     }
 
-    const distribution = calculateDistribution(totalBez);
+    const distribution = await calculateDistribution(totalBez);
 
     logger.info({
         userWallet,
@@ -240,15 +252,18 @@ async function distributeTokens(userWallet, totalBez) {
 }
 
 /**
- * Obtiene estadísticas de distribución
- * @returns {object} Estadísticas de configuración
+ * Obtiene estadísticas de distribución incluyendo las tasas dinámicas
+ * @returns {Promise<object>} Estadísticas de configuración
  */
-function getDistributionStats() {
+async function getDistributionStats() {
+    const rates = await getCurrentRates();
+    const config = await settingsHelper.getTokenConfig();
+
     return {
         rates: {
-            burn: BURN_RATE / 100 + '%',
-            treasury: TREASURY_RATE / 100 + '%',
-            user: (10000 - BURN_RATE - TREASURY_RATE) / 100 + '%'
+            burn: rates.burn / 100 + '%',
+            treasury: rates.treasury / 100 + '%',
+            user: (10000 - rates.burn - rates.treasury) / 100 + '%'
         },
         addresses: {
             hotWallet: HOT_WALLET_ADDRESS,
@@ -257,19 +272,19 @@ function getDistributionStats() {
             token: BEZ_TOKEN_ADDRESS
         },
         enabled: {
-            burn: tokenomics.burn.enabled,
+            burn: config.burningEnabled,
             service: !!hotWalletSigner
         }
     };
 }
 
 /**
- * Simula una distribución sin ejecutar transacciones
+ * Simula una distribución sin ejecutar transacciones usando tasas dinámicas
  * @param {number} totalBez - Cantidad a simular
- * @returns {object} Distribución simulada
+ * @returns {Promise<object>} Distribución simulada
  */
-function simulateDistribution(totalBez) {
-    return calculateDistribution(totalBez);
+async function simulateDistribution(totalBez) {
+    return await calculateDistribution(totalBez);
 }
 
 module.exports = {
@@ -277,7 +292,5 @@ module.exports = {
     calculateDistribution,
     getDistributionStats,
     simulateDistribution,
-    // Export rates for external use
-    BURN_RATE,
-    TREASURY_RATE
+    getCurrentRates
 };

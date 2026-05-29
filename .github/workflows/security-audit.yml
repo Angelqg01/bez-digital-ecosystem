@@ -57,14 +57,14 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./${{ matrix.workspace }}
-        run: npm ci --audit=false
+        run: pnpm install --frozen-lockfile --audit=false
 
       - name: Run NPM Audit (JSON Report)
         id: npm-audit
         working-directory: ./${{ matrix.workspace }}
         continue-on-error: true
         run: |
-          npm audit --json > npm-audit-report.json 2>&1 || true
+          pnpm audit --json > npm-audit-report.json 2>&1 || true
           if [ ! -s npm-audit-report.json ]; then
             echo '{"metadata":{"vulnerabilities":{"critical":0,"high":0,"moderate":0}}}' > npm-audit-report.json
           fi
@@ -145,7 +145,7 @@ jobs:
 
       - name: Install Hardhat Dependencies
         if: steps.check-contracts.outputs.has_contracts == 'true'
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Setup Python
         if: steps.check-contracts.outputs.has_contracts == 'true'
@@ -162,7 +162,7 @@ jobs:
 
       - name: Compile Contracts
         if: steps.check-contracts.outputs.has_contracts == 'true'
-        run: npx hardhat compile
+        run: pnpm exec hardhat compile
         continue-on-error: true
 
       - name: Run Slither Analysis
@@ -234,7 +234,7 @@ jobs:
         working-directory: ./frontend
         continue-on-error: true
         run: |
-          npm outdated --json > frontend-outdated.json 2>/dev/null || echo '{}' > frontend-outdated.json
+          pnpm outdated --json > frontend-outdated.json 2>/dev/null || echo '{}' > frontend-outdated.json
           echo "## 📦 Frontend Outdated Packages" >> $GITHUB_STEP_SUMMARY
           if [ -s frontend-outdated.json ] && jq empty frontend-outdated.json 2>/dev/null; then
             jq -r 'to_entries[]? | "- \(.key): \(.value.current // "?") → \(.value.latest // "?")"' frontend-outdated.json >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
@@ -244,7 +244,7 @@ jobs:
         working-directory: ./backend
         continue-on-error: true
         run: |
-          npm outdated --json > backend-outdated.json 2>/dev/null || echo '{}' > backend-outdated.json
+          pnpm outdated --json > backend-outdated.json 2>/dev/null || echo '{}' > backend-outdated.json
           echo "## 📦 Backend Outdated Packages" >> $GITHUB_STEP_SUMMARY
           if [ -s backend-outdated.json ] && jq empty backend-outdated.json 2>/dev/null; then
             jq -r 'to_entries[]? | "- \(.key): \(.value.current // "?") → \(.value.latest // "?")"' backend-outdated.json >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
@@ -287,9 +287,9 @@ jobs:
         working-directory: scripts
         run: |
           if [ -f "package-lock.json" ]; then
-            npm ci
+            pnpm install --frozen-lockfile
           else
-            npm install
+            pnpm install
           fi
 
       - name: Run Security Monitor Script
@@ -340,17 +340,17 @@ jobs:
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install ESLint Security Plugins
         working-directory: ./frontend
-        run: npm install --no-save eslint-plugin-security eslint-plugin-no-unsanitized
+        run: pnpm install --no-save eslint-plugin-security eslint-plugin-no-unsanitized
 
       - name: Run ESLint Security Scan
         working-directory: ./frontend
         continue-on-error: true
         run: |
-          npx eslint src --ext .js,.jsx \
+          pnpm exec eslint src --ext .js,.jsx \
             --plugin security --plugin no-unsanitized \
             --format json --output-file eslint-security.json 2>&1 || true
 

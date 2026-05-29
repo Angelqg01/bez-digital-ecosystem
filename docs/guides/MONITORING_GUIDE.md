@@ -52,8 +52,8 @@ BEZ_LIQUIDITY_RAMP_ADDRESS=0xYourContractAddress
 # Notifications
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_WEBHOOK
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR_WEBHOOK
-ALERT_EMAIL_TO=admin@bezhas.com
-ALERT_EMAIL_FROM=noreply@bezhas.com
+ALERT_EMAIL_TO=admin@bez.digital
+ALERT_EMAIL_FROM=noreply@bez.digital
 
 # SMTP (for email)
 SMTP_HOST=smtp.gmail.com

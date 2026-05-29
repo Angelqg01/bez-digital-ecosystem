@@ -6,7 +6,7 @@ import { useBezCoin } from '../context/BezCoinContext';
 import { useConnect, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
 import { parseUnits } from 'viem';
 import ConnectWalletButton from '../components/common/ConnectWalletButton';
-// BuyBezCoinModal -> useBezPay().openBuyBez()
+import { useBezPay } from '../context/BezPayContext';
 import GlobalStatsBar from '../components/GlobalStatsBar';
 import toast from 'react-hot-toast';
 import {
@@ -271,7 +271,8 @@ const DAOPage = () => {
     const { isConnected, shortAddress } = useWalletConnect();
     const { address } = useAccount();
     const { connect, connectors } = useConnect();
-    const { balance, showBuyModal, setShowBuyModal } = useBezCoin();
+    const { balance } = useBezCoin();
+    const { openBuyBez } = useBezPay();
 
     // ── Wagmi on-chain vote transfer ────────────────────────────────────────────
     const BEZ_TOKEN = '0x89c23890c742d710265dd61be789c71dc8999b12';
@@ -1689,8 +1690,6 @@ const DAOPage = () => {
                 </div>
             </div>
 
-            {/* MODAL OPTIMIZADO */}
-            <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
         </div>
     );
 };

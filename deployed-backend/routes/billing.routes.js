@@ -4,6 +4,12 @@ const { body, query, validationResult } = require('express-validator');
 const AdBalance = require('../models/adBalance.model');
 const BillingTransaction = require('../models/billingTransaction.model');
 const priceOracleService = require('../services/price-oracle.service');
+const tokenomicsService = require('../services/tokenomics.service');
+const {
+    buildPackageMetadata,
+    buildStripeMetadata,
+    normalizePackageMetadata
+} = require('../services/bezCreditPackage.service');
 const { protect: authMiddleware } = require('../middleware/auth.middleware');
 
 // Obtener o crear Stripe client
@@ -22,7 +28,10 @@ async function getStripeClient() {
 router.post('/add-fiat-funds',
     authMiddleware,
     [
-        body('amount').isFloat({ min: 10, max: 10000 }).withMessage('Monto debe estar entre 10 y 10,000 EUR')
+        body('amount').isFloat({ min: 10, max: 10000 }).withMessage('Monto debe estar entre 10 y 10,000 EUR'),
+        body('packageId').optional().trim().isLength({ min: 1, max: 40 }),
+        body('expectedBezCredits').optional().isFloat({ min: 0 }).toFloat(),
+        body('bonusPct').optional().isFloat({ min: 0, max: 100 }).toFloat()
     ],
     async (req, res) => {
         try {
@@ -35,6 +44,11 @@ router.post('/add-fiat-funds',
             }
 
             const { amount } = req.body;
+            const packageMetadata = buildPackageMetadata(req.body);
+            const packageInfo = normalizePackageMetadata(packageMetadata);
+            const packageLabel = packageInfo.packageId
+                ? packageInfo.packageId.charAt(0).toUpperCase() + packageInfo.packageId.slice(1)
+                : null;
 
             // Crear transacción pendiente
             const transaction = new BillingTransaction({
@@ -45,7 +59,10 @@ router.post('/add-fiat-funds',
                 currency: 'EUR',
                 status: 'pending',
                 paymentMethod: 'stripe',
-                description: `Recarga de saldo publicitario - €${amount}`
+                description: packageInfo.isPackagePurchase
+                    ? `Compra paquete BEZ-Coin ${packageLabel} - €${amount}`
+                    : `Recarga de saldo publicitario - €${amount}`,
+                metadata: packageMetadata
             });
 
             await transaction.save();
@@ -59,7 +76,8 @@ router.post('/add-fiat-funds',
                     userId: req.user._id.toString(),
                     walletAddress: req.user.walletAddress,
                     transactionId: transaction._id.toString(),
-                    purpose: 'ad_balance_topup'
+                    purpose: 'ad_balance_topup',
+                    ...buildStripeMetadata(req.body)
                 }
             });
 
@@ -274,7 +292,7 @@ router.get('/history',
     [
         query('page').optional().isInt({ min: 1 }).toInt(),
         query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
-        query('type').optional().isIn(['deposit_fiat', 'deposit_bez', 'campaign_charge', 'daily_charge', 'refund', 'adjustment'])
+        query('type').optional().isIn(['deposit_fiat', 'deposit_bez', 'campaign_charge', 'daily_charge', 'ai_usage', 'ai_reservation', 'refund', 'adjustment'])
     ],
     async (req, res) => {
         try {
@@ -313,6 +331,208 @@ router.get('/history',
             res.status(500).json({
                 success: false,
                 error: 'Error al obtener historial',
+                details: error.message
+            });
+        }
+    }
+);
+
+/**
+ * POST /api/billing/ai/estimate
+ * Estimar consumo IA en BEZ-Coin antes de ejecutar un job caro.
+ */
+router.post('/ai/estimate',
+    authMiddleware,
+    [
+        body('model').trim().notEmpty().withMessage('Modelo requerido'),
+        body('usage').isObject().withMessage('usage requerido'),
+        body('usage.inputTokens').optional().isInt({ min: 0 }).toInt(),
+        body('usage.cachedInputTokens').optional().isInt({ min: 0 }).toInt(),
+        body('usage.outputTokens').optional().isInt({ min: 0 }).toInt(),
+        body('usage.reasoningTokens').optional().isInt({ min: 0 }).toInt(),
+        body('usage.images').optional().isInt({ min: 0 }).toInt(),
+        body('usage.hdImages').optional().isInt({ min: 0 }).toInt(),
+        body('usage.minutes').optional().isFloat({ min: 0 }).toFloat()
+    ],
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ success: false, errors: errors.array() });
+            }
+
+            const estimate = await tokenomicsService.estimateAIUsageCharge(req.body.model, req.body.usage);
+
+            res.json({
+                success: true,
+                data: estimate
+            });
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                error: 'Error al estimar consumo IA',
+                details: error.message
+            });
+        }
+    }
+);
+
+/**
+ * POST /api/billing/ai/charge
+ * Descontar BEZ-Coin por consumo IA real y registrar evento auditable.
+ */
+router.post('/ai/charge',
+    authMiddleware,
+    [
+        body('model').trim().notEmpty().withMessage('Modelo requerido'),
+        body('usage').isObject().withMessage('usage requerido'),
+        body('feature').optional().trim().isLength({ min: 1, max: 80 }),
+        body('projectId').optional().trim().isLength({ min: 1, max: 120 }),
+        body('usage.inputTokens').optional().isInt({ min: 0 }).toInt(),
+        body('usage.cachedInputTokens').optional().isInt({ min: 0 }).toInt(),
+        body('usage.outputTokens').optional().isInt({ min: 0 }).toInt(),
+        body('usage.reasoningTokens').optional().isInt({ min: 0 }).toInt(),
+        body('usage.images').optional().isInt({ min: 0 }).toInt(),
+        body('usage.hdImages').optional().isInt({ min: 0 }).toInt(),
+        body('usage.minutes').optional().isFloat({ min: 0 }).toFloat()
+    ],
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ success: false, errors: errors.array() });
+            }
+
+            const result = await tokenomicsService.chargeForAIUsage({
+                userId: req.user._id,
+                walletAddress: req.user.walletAddress,
+                model: req.body.model,
+                usage: req.body.usage,
+                feature: req.body.feature,
+                projectId: req.body.projectId
+            });
+
+            res.json({
+                success: true,
+                data: result
+            });
+        } catch (error) {
+            res.status(error.message.includes('Insufficient') ? 402 : 400).json({
+                success: false,
+                error: 'Error al cobrar consumo IA',
+                details: error.message
+            });
+        }
+    }
+);
+
+/**
+ * GET /api/billing/ai/summary
+ * Resumen para dashboard de consumo IA del usuario.
+ */
+router.get('/ai/summary',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            const filter = {
+                type: 'ai_usage',
+                status: 'completed',
+                $or: [
+                    { userId: req.user._id },
+                    { walletAddress: req.user.walletAddress }
+                ]
+            };
+
+            const [balance, transactions] = await Promise.all([
+                AdBalance.findOne({
+                    $or: [
+                        { userId: req.user._id },
+                        { walletAddress: req.user.walletAddress }
+                    ]
+                }).lean(),
+                BillingTransaction.find(filter)
+                    .sort({ createdAt: -1 })
+                    .limit(500)
+                    .lean()
+            ]);
+
+            const summary = transactions.reduce((acc, tx) => {
+                const createdAt = new Date(tx.createdAt);
+                const amount = Number(tx.amount || 0);
+                const grossEur = Number(tx.metadata?.grossEur || 0);
+                const feature = tx.metadata?.feature || 'AI_AGENT';
+                const model = tx.metadata?.model || 'unknown';
+
+                acc.totalBez += amount;
+                acc.totalEur += grossEur;
+
+                if (createdAt >= startOfToday) {
+                    acc.todayBez += amount;
+                    acc.todayEur += grossEur;
+                }
+                if (createdAt >= startOfMonth) {
+                    acc.monthBez += amount;
+                    acc.monthEur += grossEur;
+                }
+
+                acc.byFeature[feature] = (acc.byFeature[feature] || 0) + amount;
+                acc.byModel[model] = (acc.byModel[model] || 0) + amount;
+                acc.cachedInputTokens += Number(tx.metadata?.usage?.cachedInputTokens || 0);
+                acc.inputTokens += Number(tx.metadata?.usage?.inputTokens || 0);
+                return acc;
+            }, {
+                todayBez: 0,
+                todayEur: 0,
+                monthBez: 0,
+                monthEur: 0,
+                totalBez: 0,
+                totalEur: 0,
+                cachedInputTokens: 0,
+                inputTokens: 0,
+                byFeature: {},
+                byModel: {}
+            });
+
+            const formatBreakdown = (obj) => Object.entries(obj)
+                .map(([name, value]) => ({ name, bez: Math.round(value * 100) / 100 }))
+                .sort((a, b) => b.bez - a.bez);
+
+            res.json({
+                success: true,
+                data: {
+                    balance: {
+                        bez: balance?.bezBalance || 0,
+                        fiat: balance?.fiatBalance || 0,
+                        pendingCharges: balance?.pendingCharges || 0
+                    },
+                    spend: {
+                        todayBez: Math.round(summary.todayBez * 100) / 100,
+                        todayEur: Math.round(summary.todayEur * 100) / 100,
+                        monthBez: Math.round(summary.monthBez * 100) / 100,
+                        monthEur: Math.round(summary.monthEur * 100) / 100,
+                        totalBez: Math.round(summary.totalBez * 100) / 100,
+                        totalEur: Math.round(summary.totalEur * 100) / 100
+                    },
+                    cache: {
+                        inputTokens: summary.inputTokens,
+                        cachedInputTokens: summary.cachedInputTokens,
+                        cachedRatio: summary.inputTokens > 0
+                            ? Math.round((summary.cachedInputTokens / summary.inputTokens) * 10000) / 100
+                            : 0
+                    },
+                    byFeature: formatBreakdown(summary.byFeature),
+                    byModel: formatBreakdown(summary.byModel),
+                    recent: transactions.slice(0, 25)
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: 'Error al obtener resumen IA',
                 details: error.message
             });
         }

@@ -131,6 +131,7 @@ const shortcuts = [
     { path: '/audit-contract', tool: 'auditmos_auditor' },
     { path: '/sre-monitor', tool: 'obliq_sre_monitor' },
     { path: '/skill-creator', tool: 'skill_creator' },
+    { path: '/marketing-post', tool: 'generate_marketing_post' },
 ];
 
 shortcuts.forEach(({ path: routePath, tool }) => {

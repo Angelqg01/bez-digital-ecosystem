@@ -3,8 +3,12 @@ import react from '@vitejs/plugin-react'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
 // https://vitejs.dev/config/
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const isWindowsPathWithApostrophe = process.cwd().includes("'")
+
 export default defineConfig({
   plugins: [
     react(),
@@ -13,6 +17,7 @@ export default defineConfig({
       protocolImports: true,
     }),
     VitePWA({
+      disable: isWindowsPathWithApostrophe,
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'apple-touch-icon.png'],
       manifest: {

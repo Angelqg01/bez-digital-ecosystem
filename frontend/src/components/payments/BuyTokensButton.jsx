@@ -45,7 +45,7 @@ const BuyTokensButton = ({ tokenAmount = 100, customClass = '' }) => {
                 `${API_URL}/api/stripe/create-token-purchase-session`,
                 {
                     tokenAmount: tokenAmount,
-                    email: localStorage.getItem('userEmail') || `${address}@bezhas.com`
+                    email: localStorage.getItem('userEmail') || `${address}@bez.digital`
                 },
                 {
                     headers: {

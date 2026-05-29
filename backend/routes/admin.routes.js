@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verifyAdminToken } = require('../middleware/admin.middleware');
-const User = require('../models/user.model');
+const User = require('../models/pg/User');
 const { UserRole } = require('../models/mockModels');
 const { ensureSuperAdminRole } = require('../middleware/auth.middleware');
 

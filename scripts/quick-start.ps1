@@ -17,7 +17,7 @@ if (-not $mongoProcess) {
 # Iniciar Backend
 Write-Host ""
 Write-Host "Iniciando Backend en nueva ventana..." -ForegroundColor Green
-$backendCmd = "cd '$projectRoot\backend'; Write-Host 'BeZhas Backend Server - Port 3001' -ForegroundColor Cyan; npm start"
+$backendCmd = "cd '$projectRoot\backend'; Write-Host 'BeZhas Backend Server - Port 3001' -ForegroundColor Cyan; pnpm run start"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd
 
 Write-Host "Esperando 5 segundos para que el backend inicie..." -ForegroundColor Yellow
@@ -26,7 +26,7 @@ Start-Sleep -Seconds 5
 # Iniciar Frontend
 Write-Host ""
 Write-Host "Iniciando Frontend en nueva ventana..." -ForegroundColor Green
-$frontendCmd = "cd '$projectRoot\frontend'; Write-Host 'BeZhas Frontend App - Port 3000' -ForegroundColor Cyan; npm start"
+$frontendCmd = "cd '$projectRoot\frontend'; Write-Host 'BeZhas Frontend App - Port 3000' -ForegroundColor Cyan; pnpm run start"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $frontendCmd
 
 Write-Host ""

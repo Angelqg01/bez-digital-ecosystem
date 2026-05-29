@@ -1,7 +1,7 @@
 const RewardAutomationService = require('../../services/automation/rewardSystem.service');
 const { Queue, Worker } = require('bullmq');
 const Post = require('../../models/post.model');
-const User = require('../../models/user.model');
+const User = require('../../models/pg/User');
 const VIPSubscription = require('../../models/VIPSubscription.model');
 const UnifiedAI = require('../../services/unified-ai.service');
 

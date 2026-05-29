@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useBezCoin } from '../context/BezCoinContext';
+import { useBezPay } from '../context/BezPayContext';
 import { LOGOS } from '../config/cryptoLogos';
-// BuyBezCoinModal -> useBezPay().openBuyBez()
 import { useNavigate } from 'react-router-dom';
 import { useWeb3 } from '../context/Web3Context';
 import { mintNFT } from '../services/nftService';
@@ -11,7 +11,8 @@ import { toast } from 'react-hot-toast';
 
 const CreateItemPage = () => {
   const { address, contracts } = useWeb3();
-  const { balance, showBuyModal, setShowBuyModal, verifyAndProceed } = useBezCoin();
+  const { balance, verifyAndProceed } = useBezCoin();
+  const { openBuyBez } = useBezPay();
   const [tokenURI, setTokenURI] = useState('');
   const [price, setPrice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -114,7 +115,6 @@ const CreateItemPage = () => {
           {isLoading ? <Spinner size="sm" /> : 'Mint and List Item'}
         </button>
       </form>
-      <BuyBezCoinModal isOpen={showBuyModal} onClose={() => {}} />
     </div>
   );
 };
