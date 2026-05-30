@@ -2,65 +2,92 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master ]
 
 permissions:
   contents: read
 
+env:
+  NODE_VERSION: "20"
+
 jobs:
   build-and-test:
+    name: Build and Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [20.x]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: |
-            package-lock.json
-            backend/package-lock.json
-            frontend/package-lock.json
 
-      - name: Check .env.example files
-        run: |
-          test -f backend/.env.example
-          test -f frontend/.env.example
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.local/share/pnpm/store
+          key: pnpm-deps-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-deps-
 
       - name: Install root dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install backend dependencies
-        working-directory: ./backend
+      - name: Install api dependencies
+        working-directory: ./api
         run: pnpm install --frozen-lockfile
 
       - name: Install frontend dependencies
-        working-directory: ./frontend
+        working-directory: ./frontend-next
         run: pnpm install --frozen-lockfile
 
-      - name: Run Solidity tests (Hardhat)
-        run: pnpm test --workspaces=false
-        # The root package.json `test` runs `hardhat test`.
+      # ==========================================
+      # 1. smart-contracts (Foundry at root)
+      # ==========================================
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run backend tests
-        working-directory: ./backend
+      - name: Run Solidity tests (Foundry)
+        working-directory: ./
+        run: forge test -vvv
+
+      # ==========================================
+      # 2. api backend (Jest)
+      # ==========================================
+      - name: Run Backend API Tests
+        working-directory: ./api
         run: pnpm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-jwt-secret-key-12345
+          DATABASE_URL: sqlite://:memory:
 
+      # ==========================================
+      # 3. frontend-next (Next.js)
+      # ==========================================
       - name: Lint frontend (blocking)
-        working-directory: ./frontend
+        working-directory: ./frontend-next
         run: pnpm run lint
 
       - name: Build frontend
-        working-directory: ./frontend
+        working-directory: ./frontend-next
         run: pnpm run build
 
       - name: Upload build artifacts
@@ -70,5 +97,5 @@ jobs:
           name: frontend-build
           if-no-files-found: ignore
           path: |
-            frontend/dist
-            frontend/build
+            frontend-next/.next
+            frontend-next/dist

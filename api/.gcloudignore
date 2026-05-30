@@ -1,0 +1,9 @@
+# Ignore local node modules, environment files, and git configurations
+node_modules/
+.git/
+.env
+.env.*
+*.log
+__tests__/
+coverage/
+*.test.js

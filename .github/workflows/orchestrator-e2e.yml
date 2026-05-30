@@ -43,12 +43,25 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.local/share/pnpm/store
+          key: pnpm-orch-deps-${{ hashFiles('backend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-orch-deps-
 
       - name: Install backend dependencies
+        working-directory: ./backend
         run: |
-          cd backend
           pnpm install --frozen-lockfile --prefer-offline 2>/dev/null || pnpm install
 
       - name: Run E2E Smoke Test

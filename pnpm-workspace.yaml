@@ -1,5 +1,7 @@
 packages:
   - 'backend'
   - 'frontend'
+  - 'frontend-next'
+  - 'api'
   - 'sdk'
   - 'packages/*'
