@@ -52,8 +52,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - name: Cache npm dependencies
         uses: actions/cache@v4
@@ -204,8 +202,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - name: Check Frontend Dependencies
         working-directory: ./frontend-next
@@ -255,8 +251,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - name: Cache Script Dependencies
         uses: actions/cache@v4
@@ -309,8 +303,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend-next
