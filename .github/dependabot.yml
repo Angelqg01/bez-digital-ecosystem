@@ -1,76 +1,31 @@
 version: 2
 updates:
-  # Frontend dependencies
+  # =========================================================================
+  # Unified Monorepo Workspace (pnpm)
+  # Tracks all workspaces natively: api, backend, frontend, frontend-next, sdk, packages/*
+  # =========================================================================
   - package-ecosystem: "npm"
-    directory: "/frontend"
+    directory: "/"
     schedule:
       interval: "daily"
       time: "03:00"
     open-pull-requests-limit: 10
-    reviewers:
-      - "bezhas-security-team"
     labels:
       - "dependencies"
-      - "frontend"
       - "security"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    # Group non-security updates
+    # Group updates to prevent PR spam
     groups:
-      react-ecosystem:
+      dependencies:
         patterns:
-          - "react*"
-          - "@types/react*"
-      web3-ecosystem:
-        patterns:
-          - "ethers"
-          - "wagmi"
-          - "@web3modal/*"
-          - "viem"
-      build-tools:
-        patterns:
-          - "vite*"
-          - "@vitejs/*"
-          - "eslint*"
-    # Auto-update security patches
+          - "*"
     versioning-strategy: increase-if-necessary
 
-  # Backend dependencies
-  - package-ecosystem: "npm"
-    directory: "/backend"
-    schedule:
-      interval: "daily"
-      time: "03:00"
-    open-pull-requests-limit: 10
-    reviewers:
-      - "bezhas-security-team"
-    labels:
-      - "dependencies"
-      - "backend"
-      - "security"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-    groups:
-      express-ecosystem:
-        patterns:
-          - "express*"
-          - "helmet"
-          - "cors"
-      database:
-        patterns:
-          - "mongoose"
-          - "redis"
-      security:
-        patterns:
-          - "bcrypt*"
-          - "jsonwebtoken"
-          - "validator"
-    versioning-strategy: increase-if-necessary
-
+  # =========================================================================
   # GitHub Actions
-  # GitHub Actions
+  # =========================================================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -80,15 +35,3 @@ updates:
       - "github-actions"
     commit-message:
       prefix: "ci"
-
-  # Root directory for shared dependencies
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "03:00"
-    open-pull-requests-limit: 10
-    groups:
-      dependencies:
-        patterns:
-          - "*"
