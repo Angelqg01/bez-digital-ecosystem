@@ -20,9 +20,9 @@
     "express": "^4.21.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "mongoose": "^8.9.5",
+    "mongoose": "^8.10.0",
     "pino": "^9.6.0",
-    "axios": "^1.7.9"
+    "axios": "^1.16.0"
   },
   "devDependencies": {
     "@types/node": "^22.12.0",
