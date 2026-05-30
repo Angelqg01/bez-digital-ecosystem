@@ -100,7 +100,7 @@ jobs:
           echo "- 🟡 Moderate: $MODERATE" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Audit Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: npm-audit-${{ matrix.name }}
           path: ./${{ matrix.path }}/npm-audit-report.json
@@ -177,7 +177,7 @@ jobs:
 
       - name: Upload Slither Report
         if: steps.check-contracts.outputs.has_contracts == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: slither-security-report
           path: slither-results.sarif
@@ -224,7 +224,7 @@ jobs:
           fi
 
       - name: Upload Outdated Reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: outdated-dependencies
           path: |
@@ -278,7 +278,7 @@ jobs:
           }
 
       - name: Upload Security Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: security-advisory-report
           path: scripts/security-report.json
@@ -326,7 +326,7 @@ jobs:
           fi
 
       - name: Upload ESLint Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: eslint-security-report
           path: ./frontend-next/eslint-security.json
