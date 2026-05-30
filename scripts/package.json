@@ -12,7 +12,7 @@
     "full-audit": "pnpm run security-check && pnpm run dependency-check"
   },
   "dependencies": {
-    "axios": "^1.6.0",
+    "axios": "^1.16.0",
     "@octokit/rest": "^20.0.2",
     "dotenv": "^16.4.5"
   },

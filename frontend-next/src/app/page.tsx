@@ -359,14 +359,14 @@ export default function HomePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                        { title: 'BEZ Wallet', desc: 'Gestión on-chain de activos, NFTs y staking.', port: 3010, color: '#00C896', icon: <Wallet size={24} /> },
-                        { title: 'Gas Tank', desc: 'Recarga de gas con Stripe y predicción Aegis.', port: 3011, color: '#FFB800', icon: <Zap size={24} /> },
-                        { title: 'Edge Nodes', desc: 'Gestión de nodos DePIN y recompensas.', port: 3012, color: '#06B6D4', icon: <Cpu size={24} /> },
-                        { title: 'Vision Scan', desc: 'Verificación mediante AI Vision + Blockchain.', port: 3013, color: '#F97316', icon: <ShieldCheck size={24} /> },
+                        { title: 'BEZ Wallet', desc: 'Gestión on-chain de activos, NFTs y staking.', href: 'https://bez.digital/dashboard/wallet', color: '#00C896', icon: <Wallet size={24} /> },
+                        { title: 'Gas Tank', desc: 'Recarga de gas con Stripe y predicción Aegis.', href: 'https://bez.digital/dashboard/gas', color: '#FFB800', icon: <Zap size={24} /> },
+                        { title: 'Edge Nodes', desc: 'Gestión de nodos DePIN y recompensas.', href: 'https://bez.digital/dashboard/validators', color: '#06B6D4', icon: <Cpu size={24} /> },
+                        { title: 'Vision Scan', desc: 'Verificación mediante AI Vision + Blockchain.', href: 'https://bez.digital/dashboard/qr', color: '#F97316', icon: <ShieldCheck size={24} /> },
                     ].map((app) => (
                         <a
                             key={app.title}
-                            href={`http://localhost:${app.port}`}
+                            href={app.href}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="group"
@@ -429,35 +429,35 @@ export default function HomePage() {
                         { 
                             title: 'Bezhas-Hub', 
                             desc: 'Consola central de mando. Supervisa la red L2, gestiona la gobernanza DAO y visualiza métricas globales en tiempo real.', 
-                            port: 3000, 
+                            href: 'https://bez.digital/dashboard', 
                             color: '#00C896', 
                             icon: <Globe size={24} /> 
                         },
                         { 
                             title: 'BZ CargoLink', 
                             desc: 'Logística inteligente. Conecta la cadena de suministro física con blockchain para rastreo inmutable y liquidación automática.', 
-                            port: 3014, 
+                            href: 'https://bez.digital/dashboard/sectors', 
                             color: '#FFB800', 
                             icon: <TrendingUp size={24} /> 
                         },
                         { 
                             title: 'BZ Prestige', 
                             desc: 'Mercado de lujo y RWA. Verificación de autenticidad para activos de alto valor mediante certificados NFT de propiedad.', 
-                            port: 3015, 
+                            href: 'https://bez.digital/dashboard/nfts', 
                             color: '#7C3AED', 
                             icon: <ShoppingBag size={24} /> 
                         },
                         { 
                             title: 'BZ Sphere', 
                             desc: 'Nexo social y comunidad. Espacio descentralizado para colaboración entre nodos, votaciones e intercambio de conocimientos.', 
-                            port: 3016, 
+                            href: 'https://bez.digital/solutions', 
                             color: '#06B6D4', 
                             icon: <Cpu size={24} /> 
                         },
                     ].map((app) => (
                         <a
                             key={app.title}
-                            href={`http://localhost:${app.port}`}
+                            href={app.href}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="group"

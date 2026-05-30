@@ -20,7 +20,7 @@ const apps = [
   {
     id: 'hub',
     name: 'BeZhas Hub',
-    url: 'http://localhost:5173',
+    url: 'https://bez.digital/dashboard',
     icon: <LayoutGrid size={24} />,
     color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
     description: 'SSO y consola central'
@@ -28,7 +28,7 @@ const apps = [
   {
     id: 'wallet',
     name: 'BeZhas Wallet',
-    url: 'http://localhost:3010',
+    url: 'https://bez.digital/dashboard/wallet',
     icon: <Wallet size={24} />,
     color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
     description: 'Pagos y gobernanza'
@@ -36,7 +36,7 @@ const apps = [
   {
     id: 'gas',
     name: 'Gas Tank',
-    url: 'http://localhost:3011',
+    url: 'https://bez.digital/dashboard/gas',
     icon: <Fuel size={24} />,
     color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
     description: 'Gestión de gas fee'
@@ -44,7 +44,7 @@ const apps = [
   {
     id: 'nodes',
     name: 'Edge Nodes',
-    url: 'http://localhost:3012',
+    url: 'https://bez.digital/dashboard/validators',
     icon: <Server size={24} />,
     color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
     description: 'DePIN y recursos'
@@ -52,7 +52,7 @@ const apps = [
   {
     id: 'vision',
     name: 'Vision Scan',
-    url: 'http://localhost:3013',
+    url: 'https://bez.digital/dashboard/qr',
     icon: <Eye size={24} />,
     color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400',
     description: 'IA y escaneo'
@@ -60,7 +60,7 @@ const apps = [
   {
     id: 'capital',
     name: 'BZ Capital',
-    url: 'http://localhost:3014',
+    url: 'https://bez.digital/dashboard/farming',
     icon: <LineChart size={24} />,
     color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
     description: 'DeFi y Staking'
@@ -68,7 +68,7 @@ const apps = [
   {
     id: 'prestige',
     name: 'BZ Prestige',
-    url: 'http://localhost:3015',
+    url: 'https://bez.digital/dashboard/nfts',
     icon: <Crown size={24} />,
     color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
     description: 'Luxury DPP y royalties'
@@ -76,7 +76,7 @@ const apps = [
   {
     id: 'cargo',
     name: 'BZ CargoLink',
-    url: 'http://localhost:3019',
+    url: 'https://bez.digital/dashboard/sectors',
     icon: <Ship size={24} />,
     color: 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
     description: 'Logística y manifiestos'
@@ -84,7 +84,7 @@ const apps = [
   {
     id: 'energy',
     name: 'BEZ Energy',
-    url: 'http://localhost:3017',
+    url: 'https://bez.digital/enterprise',
     icon: <Droplets size={24} />,
     color: 'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
     description: 'Energía tokenizada'
@@ -92,7 +92,7 @@ const apps = [
   {
     id: 'purescan',
     name: 'BZ PureScan',
-    url: 'http://localhost:3018',
+    url: 'https://bez.digital/dashboard/qr',
     icon: <ShieldCheck size={24} />,
     color: 'bg-lime-100 text-lime-600 dark:bg-lime-900/30 dark:text-lime-400',
     description: 'Certificación y auditoría'
@@ -100,7 +100,7 @@ const apps = [
   {
     id: 'sphere',
     name: 'BZ Sphere',
-    url: 'http://localhost:3020',
+    url: 'https://bez.digital/solutions',
     icon: <Globe2 size={24} />,
     color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
     description: 'Mapa operativo global'
@@ -108,7 +108,7 @@ const apps = [
   {
     id: 'genesis',
     name: 'BZ Genesis',
-    url: 'http://localhost:3004',
+    url: 'https://bez.digital/dashboard',
     icon: <Cpu size={24} />,
     color: 'bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-400',
     description: 'Onboarding de proyectos'
@@ -116,7 +116,7 @@ const apps = [
   {
     id: 'pay',
     name: 'Pay Manager',
-    url: 'http://localhost:5173',
+    url: 'https://bez.digital/payments',
     icon: <Coins size={24} />,
     color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
     description: 'Cobros y monetización'
@@ -143,11 +143,11 @@ export default function AppSwitcher() {
       'capital': '/dashboard/farming',
       'prestige': '/dashboard/nfts',
       'cargo': '/dashboard/sectors',
-      'energy': '/dashboard/sectors',
-      'purescan': '/dashboard/sectors',
-      'sphere': '/dashboard/channels',
+      'energy': '/enterprise',
+      'purescan': '/dashboard/qr',
+      'sphere': '/solutions',
       'genesis': '/dashboard',
-      'pay': '/dashboard/wallet'
+      'pay': '/payments'
     };
     return prodPaths[app.id] || `/${app.id}`;
   };

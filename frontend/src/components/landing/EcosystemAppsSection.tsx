@@ -44,7 +44,7 @@ export default function EcosystemAppsSection({ onHover, onClick }: EcosystemApps
               <p className="text-gray-400 text-xs leading-relaxed flex-grow">{app.description}</p>
               <div className="mt-4 flex items-center justify-between gap-3">
                 <span className={`text-[10px] font-mono px-2 py-1 rounded border ${app.accent}`}>
-                  PORT {app.port}
+                  {app.port}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors flex items-center gap-1">
                   Abrir <ArrowRight size={12} />
