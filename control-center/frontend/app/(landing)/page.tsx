@@ -149,8 +149,8 @@ const secondaryApps = [
   },
   {
     name: 'BZ-CargoLink',
-    status: 'En desarrollo',
-    href: 'https://cargolink.bez.digital',
+    status: 'Online',
+    href: 'https://bezhas-cargolink-o5xep6gbwq-ew.a.run.app',
     icon: 'local_shipping',
     label: 'Logistica y aduanas',
     desc: 'Logistica y aduanas on-chain: tracking de cargas, NFTs de envio, escrow de entrega y despacho aduanero verificable.',

@@ -1,0 +1,14 @@
+# Upload only source needed to build a subapp; exclude heavy/local artifacts.
+**/node_modules/
+**/dist/
+**/build/
+.git/
+**/.tmp.driveupload/
+**/*.log
+**/.env
+**/.env.*
+*.zip
+*.pdf
+*.xlsx
+*.bak
+**/vite.config.js.timestamp-*

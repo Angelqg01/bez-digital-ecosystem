@@ -172,12 +172,12 @@ const SUBAPP_URLS: Record<string, string> = {
     'BEZ Vision Scan': 'https://vision.bez.digital',
     'BZ Capital': 'https://capital.bez.digital',
     'BZ Prestige': 'https://prestige.bez.digital',
-    'BZ CargoLink': 'https://cargolink.bez.digital',
-    'BeZhas Pay Manager': 'https://pay.bez.digital',
+    'BZ CargoLink': 'https://bezhas-cargolink-o5xep6gbwq-ew.a.run.app',
+    'BeZhas Pay Manager': 'https://bezhas-pay-o5xep6gbwq-ew.a.run.app',
     'BZ PureScan': 'https://purescan.bez.digital',
-    'BZ Sphere': 'https://sphere.bez.digital',
+    'BZ Sphere': 'https://bezhas-sphere-o5xep6gbwq-ew.a.run.app',
     'BEZ Energy': 'https://energy.bez.digital',
-    'BZ Genesis': 'https://genesis.bez.digital',
+    'BZ Genesis': 'https://bezhas-genesis-o5xep6gbwq-ew.a.run.app',
 };
 const subAppUrl = (name: string) => SUBAPP_URLS[name] || '#';
 
