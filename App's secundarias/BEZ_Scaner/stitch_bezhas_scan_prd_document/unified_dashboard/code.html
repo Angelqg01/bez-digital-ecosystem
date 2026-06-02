@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Scan - Unified Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "tech-blue": "#0ea5e9",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#121212",
+                        "surface-dark": "#1e1e1e",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .neomorph-inset {
+            background: #1e1e1e;
+            box-shadow: inset 4px 4px 8px #131313, inset -4px -4px 8px #292929;
+        }
+        .neomorph-flat {
+            background: #1e1e1e;
+            box-shadow: 6px 6px 12px #131313, -6px -6px 12px #292929;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden pb-24">
+<!-- Header -->
+<header class="flex items-center bg-background-light dark:bg-background-dark p-4 justify-between sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-center size-10 rounded-xl neomorph-flat text-primary">
+<span class="material-symbols-outlined">menu</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">Unified Dashboard</h2>
+<div class="flex size-10 items-center justify-end">
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-full neomorph-flat text-tech-blue">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Recent Scans Section -->
+<section class="mt-6">
+<div class="flex items-center justify-between px-6 mb-4">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight">Recent Scans</h2>
+<span class="text-primary text-sm font-semibold">View All</span>
+</div>
+<div class="flex overflow-x-auto hide-scrollbar px-4 gap-4">
+<!-- Card 1 -->
+<div class="flex flex-col gap-3 p-3 rounded-2xl neomorph-flat min-w-[240px] border border-white/5">
+<div class="w-full aspect-[4/3] rounded-xl overflow-hidden relative group">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" data-alt="3D laser scan of industrial warehouse storage" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAb5tfJcybI4GBfLotiC5bhuN9T55UMK1hL6UPTcclAtoFsW3yEybPTBRJzFM9qPo4Kb2YnQ1O-LO6kMtP0e9iEO90Iq0cICUQ-9rOib-f7imgISLKGKKL6lArgyH-dJQE1782XD_c4ug4kNJk9nn6l0X2K-r45zSPic54cnF3rbozLQBnAFyeZ5z-JcXrs258Dnr8Q9W2YZJpu_m9hLCIeHVYDYVS3tvT32uaVzRTYSGyJeABS4REAekcUk_Zv0R3JuV8c-9d6csQw"/>
+<div class="absolute bottom-2 left-2 z-20 flex gap-1">
+<span class="bg-tech-blue/80 backdrop-blur-md text-[10px] px-2 py-0.5 rounded-full text-white uppercase font-bold">Lidar</span>
+</div>
+</div>
+<div class="px-1">
+<p class="text-slate-900 dark:text-white text-base font-bold">Warehouse A-9</p>
+<div class="flex items-center justify-between mt-1">
+<p class="text-slate-500 dark:text-slate-400 text-xs">24MB • 2 mins ago</p>
+<span class="material-symbols-outlined text-tech-blue text-lg">3d_rotation</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="flex flex-col gap-3 p-3 rounded-2xl neomorph-flat min-w-[240px] border border-white/5">
+<div class="w-full aspect-[4/3] rounded-xl overflow-hidden relative group">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" data-alt="Digital twin representation of a modern luxury loft" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBROlval_aXGU-9dsG4mer69G5R6EvzcEFeEmo0b3GwqzjTuckQ7CKYSk4C4E5Dd5SHuofHd3VKoApEU8E-iHzrYrpziuH10YKZkixUdGcvVUxx2917DR9gBKyU5ysXJbCfm2xswHLBPnTzsTmr3htqgwodWM5EQH3tDk5l6HRRX3BDhS2E0kFkl2V-bNjdp_wvhx6bxR_DTQT9RVA2eELqrd83YZ8EGIqFf25K2R0IOPJwPFL4SXn59-VlNfzhRxePkoW53huFlKM9"/>
+<div class="absolute bottom-2 left-2 z-20 flex gap-1">
+<span class="bg-primary/80 backdrop-blur-md text-[10px] px-2 py-0.5 rounded-full text-white uppercase font-bold">BIM</span>
+</div>
+</div>
+<div class="px-1">
+<p class="text-slate-900 dark:text-white text-base font-bold">Modern Loft</p>
+<div class="flex items-center justify-between mt-1">
+<p class="text-slate-500 dark:text-slate-400 text-xs">112MB • 1 hour ago</p>
+<span class="material-symbols-outlined text-tech-blue text-lg">3d_rotation</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="flex flex-col gap-3 p-3 rounded-2xl neomorph-flat min-w-[240px] border border-white/5">
+<div class="w-full aspect-[4/3] rounded-xl overflow-hidden relative group">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" data-alt="High precision 3D medical device component scan" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC88z1aAMgLQktgyyFvoPVz5lDVTOUlwCvloTU10ga7SoFK9EIJ2IOheFJVOpc1HTTrSYNF1jlzBamXyMYlWqO1JxNfZgknQ7Fts4C4EskidyA04YouSmbdhzGZbFuneSntiGyADwvQgeJ6oggzNLn_tuwZvWCn6mbiioMG_vqnd5R_kZCJcygXJYm2u1AltREvha7gZeyYPnQHZtxyxjV9JuF-u8OE0UaXHQl8tuSrxIUTk2i7QM7zVg84a78GIVBs-pGFvlyPVtSI"/>
+<div class="absolute bottom-2 left-2 z-20 flex gap-1">
+<span class="bg-green-500/80 backdrop-blur-md text-[10px] px-2 py-0.5 rounded-full text-white uppercase font-bold">CAD</span>
+</div>
+</div>
+<div class="px-1">
+<p class="text-slate-900 dark:text-white text-base font-bold">Leg Brace Design</p>
+<div class="flex items-center justify-between mt-1">
+<p class="text-slate-500 dark:text-slate-400 text-xs">15MB • 4 hours ago</p>
+<span class="material-symbols-outlined text-tech-blue text-lg">3d_rotation</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Sector Shortcuts -->
+<section class="mt-8 px-6">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight mb-4">Sector Shortcuts</h2>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex flex-col items-center justify-center p-4 rounded-2xl neomorph-flat border border-white/5 group active:scale-95 transition-transform">
+<div class="size-12 rounded-xl bg-tech-blue/10 flex items-center justify-center mb-3 group-hover:bg-tech-blue/20">
+<span class="material-symbols-outlined text-tech-blue text-3xl">inventory_2</span>
+</div>
+<span class="text-slate-900 dark:text-slate-200 font-bold text-sm">Logistics</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 rounded-2xl neomorph-flat border border-white/5 group active:scale-95 transition-transform">
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20">
+<span class="material-symbols-outlined text-primary text-3xl">domain</span>
+</div>
+<span class="text-slate-900 dark:text-slate-200 font-bold text-sm">Real Estate</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 rounded-2xl neomorph-flat border border-white/5 group active:scale-95 transition-transform">
+<div class="size-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-3 group-hover:bg-green-500/20">
+<span class="material-symbols-outlined text-green-500 text-3xl">medical_services</span>
+</div>
+<span class="text-slate-900 dark:text-slate-200 font-bold text-sm">Medical</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 rounded-2xl neomorph-flat border border-white/5 group active:scale-95 transition-transform">
+<div class="size-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-3 group-hover:bg-purple-500/20">
+<span class="material-symbols-outlined text-purple-500 text-3xl">car_rental</span>
+</div>
+<span class="text-slate-900 dark:text-slate-200 font-bold text-sm">Rental</span>
+</button>
+</div>
+</section>
+<!-- Blockchain Status / Immutable Ledger -->
+<section class="mt-8 px-6 pb-4">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight">Blockchain Status</h2>
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-green-500 animate-pulse"></div>
+<span class="text-[10px] font-bold text-green-500 uppercase tracking-widest">Live</span>
+</div>
+</div>
+<div class="rounded-2xl neomorph-inset p-4 flex flex-col gap-4">
+<div class="flex items-center justify-between border-b border-slate-700/30 pb-3">
+<span class="text-xs font-mono text-slate-500">Immutable Ledger</span>
+<span class="material-symbols-outlined text-slate-500 text-sm">security</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-start gap-3">
+<div class="mt-1 size-2 rounded-full bg-tech-blue"></div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-slate-300">Hash verified</span>
+<span class="text-[10px] text-slate-500">12:45:01</span>
+</div>
+<p class="text-[11px] font-mono text-slate-500 truncate mt-1">0x8a2f...b3c9 - WH_A9_SCAN_V1</p>
+</div>
+</div>
+<div class="flex items-start gap-3 opacity-80">
+<div class="mt-1 size-2 rounded-full bg-slate-600"></div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-slate-300">Block Confirmed</span>
+<span class="text-[10px] text-slate-500">11:30:22</span>
+</div>
+<p class="text-[11px] font-mono text-slate-500 truncate mt-1">0x4d1e...a1f0 - LOFT_RE_304</p>
+</div>
+</div>
+<div class="flex items-start gap-3 opacity-60">
+<div class="mt-1 size-2 rounded-full bg-slate-600"></div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-slate-300">Meta Seal Applied</span>
+<span class="text-[10px] text-slate-500">09:15:45</span>
+</div>
+<p class="text-[11px] font-mono text-slate-500 truncate mt-1">0x9c8b...eef2 - MED_BRACE_FINAL</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-2 py-2 rounded-xl bg-tech-blue/10 text-tech-blue text-xs font-bold uppercase tracking-wider border border-tech-blue/20">
+                    Audit Full Chain
+                </button>
+</div>
+</section>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 bg-background-light dark:bg-background-dark/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 px-4 pb-6 pt-3 z-50">
+<div class="flex justify-between items-center max-w-md mx-auto">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined text-2xl">grid_view</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined text-2xl">view_in_ar</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Scans</span>
+</a>
+<div class="relative -top-8">
+<button class="size-14 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/40 border-4 border-background-light dark:border-background-dark">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined text-2xl">database</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Blockchain</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined text-2xl">settings</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Settings</span>
+</a>
+</div>
+</nav>
+</div>
+</body></html>

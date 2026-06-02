@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Food Oracle | ASYCUDA Integration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b8cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Space Grotesk", sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header / Top Bar -->
+<header class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 sticky top-0 z-10 backdrop-blur-md">
+<div class="flex items-center p-4 justify-between max-w-7xl mx-auto w-full">
+<div class="flex items-center gap-3">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">globe</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">BeZhas Food Oracle</h2>
+<p class="text-xs text-slate-500 dark:text-slate-400 font-medium">ASYCUDA World Integrated Portal</p>
+</div>
+</div>
+<div class="flex gap-4 items-center">
+<div class="hidden md:flex flex-col items-end mr-2">
+<span class="text-xs text-slate-500">Terminal Node</span>
+<span class="text-sm font-mono text-primary">BZ-DXB-092</span>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex size-10 items-center justify-center rounded-full bg-primary text-white">
+<span class="material-symbols-outlined">person</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-6">
+<!-- Status Banner -->
+<div class="flex flex-col md:flex-row items-start md:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<div class="text-emerald-500 flex items-center justify-center rounded-full bg-emerald-500/10 shrink-0 size-12">
+<span class="material-symbols-outlined text-3xl">sync_saved_locally</span>
+</div>
+<div class="flex flex-col justify-center">
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold leading-normal">Status: Sincronizado con ASYCUDA</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal leading-normal">Active Pipeline: XML/UNCTAD V4.2 Gateway</p>
+</div>
+</div>
+<div class="flex items-center gap-3 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+<div class="size-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-emerald-500 text-xs font-bold uppercase tracking-wider">Live Connection</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Data Mapping Section -->
+<div class="lg:col-span-2 space-y-6">
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+<div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+<h3 class="font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">schema</span>
+                            UNCTAD XML Data Mapping
+                        </h3>
+<span class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Mapping Engine v2.4</span>
+</div>
+<div class="p-6 space-y-4">
+<!-- Mapping Row 1 -->
+<div class="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+<div class="flex-1">
+<span class="text-[10px] uppercase text-slate-400 font-bold block mb-1">Internal Data</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-primary">database</span>
+<span class="text-sm font-semibold">Volume (Net)</span>
+</div>
+<span class="text-xs font-mono text-slate-500">42,500.00 m³</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-primary">arrow_forward</span>
+</div>
+<div class="flex-1 text-right">
+<span class="text-[10px] uppercase text-slate-400 font-bold block mb-1">XML Field</span>
+<div class="flex items-center justify-end gap-2">
+<span class="text-sm font-mono text-emerald-500">&lt;GrossVolume&gt;</span>
+<span class="material-symbols-outlined text-sm text-emerald-500">code</span>
+</div>
+<span class="text-xs text-slate-500">Customs Code: 402</span>
+</div>
+</div>
+<!-- Mapping Row 2 -->
+<div class="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+<div class="flex-1">
+<span class="text-[10px] uppercase text-slate-400 font-bold block mb-1">Internal Data</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-primary">monitor_weight</span>
+<span class="text-sm font-semibold">Total Weight</span>
+</div>
+<span class="text-xs font-mono text-slate-500">18,240.00 kg</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-primary">arrow_forward</span>
+</div>
+<div class="flex-1 text-right">
+<span class="text-[10px] uppercase text-slate-400 font-bold block mb-1">XML Field</span>
+<div class="flex items-center justify-end gap-2">
+<span class="text-sm font-mono text-emerald-500">&lt;NetWeight&gt;</span>
+<span class="material-symbols-outlined text-sm text-emerald-500">code</span>
+</div>
+<span class="text-xs text-slate-500">Customs Code: 112</span>
+</div>
+</div>
+<!-- Mapping Row 3 -->
+<div class="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+<div class="flex-1">
+<span class="text-[10px] uppercase text-slate-400 font-bold block mb-1">Internal Data</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-primary">high_quality</span>
+<span class="text-sm font-semibold">Quality Score</span>
+</div>
+<span class="text-xs font-mono text-slate-500">98.4/100 (A+)</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-primary">arrow_forward</span>
+</div>
+<div class="flex-1 text-right">
+<span class="text-[10px] uppercase text-slate-400 font-bold block mb-1">XML Field</span>
+<div class="flex items-center justify-end gap-2">
+<span class="text-sm font-mono text-emerald-500">&lt;QualityCert&gt;</span>
+<span class="material-symbols-outlined text-sm text-emerald-500">code</span>
+</div>
+<span class="text-xs text-slate-500">SPS Validation Node</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Validation e-SPS Section -->
+<div class="bg-primary/5 border border-primary/20 rounded-xl p-6">
+<div class="flex items-start gap-4">
+<div class="bg-primary text-white p-3 rounded-lg">
+<span class="material-symbols-outlined text-2xl">verified_user</span>
+</div>
+<div class="flex-1">
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">Validación e-SPS</h3>
+<p class="text-slate-600 dark:text-slate-400 text-sm mt-1">
+                                BeZhas AI Fungal-Free Certification has been digitally signed and accepted by ASYCUDA customs protocol.
+                            </p>
+<div class="mt-4 flex flex-wrap gap-3">
+<div class="flex items-center gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-md border border-emerald-500/20 text-xs font-bold">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+                                    Fungal Analysis: 0.00%
+                                </div>
+<div class="flex items-center gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-md border border-emerald-500/20 text-xs font-bold">
+<span class="material-symbols-outlined text-sm">task_alt</span>
+                                    Cert ID: BZ-SPS-2024
+                                </div>
+<div class="flex items-center gap-2 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-md text-xs font-bold">
+<span class="material-symbols-outlined text-sm">history</span>
+                                    Accepted: 14:02 UTC
+                                </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Info -->
+<div class="space-y-6">
+<!-- Pre-arrival Clearance Card -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-bold uppercase tracking-wider text-slate-500">Customs Status</span>
+<span class="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Active</span>
+</div>
+<h4 class="text-xl font-bold mb-2">Pre-arrival Clearance</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Global customs pre-clearance status is active for shipment BZ-992. No manual intervention required.</p>
+<button class="w-full py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">description</span>
+                        View Certificate
+                    </button>
+</div>
+<!-- Integration Details -->
+<div class="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+<h4 class="font-bold text-sm mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">Technical Summary</h4>
+<ul class="space-y-4">
+<li class="flex justify-between text-xs">
+<span class="text-slate-500">API Protocol</span>
+<span class="font-mono text-primary">REST/SOAP Hybrid</span>
+</li>
+<li class="flex justify-between text-xs">
+<span class="text-slate-500">Encryption</span>
+<span class="font-mono text-primary">AES-256-GCM</span>
+</li>
+<li class="flex justify-between text-xs">
+<span class="text-slate-500">Last Latency</span>
+<span class="font-mono text-emerald-500">42ms</span>
+</li>
+</ul>
+</div>
+<!-- Shipment Timeline (Mini) -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+<h4 class="font-bold text-sm mb-4">Real-time Log</h4>
+<div class="space-y-4 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-slate-200 dark:before:bg-slate-800">
+<div class="relative pl-6">
+<div class="absolute left-0 top-1 size-4 rounded-full bg-emerald-500 border-4 border-white dark:border-slate-900"></div>
+<p class="text-xs font-bold">XML Export Successful</p>
+<p class="text-[10px] text-slate-500">2 minutes ago</p>
+</div>
+<div class="relative pl-6">
+<div class="absolute left-0 top-1 size-4 rounded-full bg-primary border-4 border-white dark:border-slate-900"></div>
+<p class="text-xs font-bold">SPS Validation Token Issued</p>
+<p class="text-[10px] text-slate-500">5 minutes ago</p>
+</div>
+<div class="relative pl-6">
+<div class="absolute left-0 top-1 size-4 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-slate-900"></div>
+<p class="text-xs font-bold">Data Mapping Initialized</p>
+<p class="text-[10px] text-slate-500">8 minutes ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Mobile Optimization) -->
+<nav class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 pb-6 md:pb-2">
+<div class="flex gap-2 max-w-lg mx-auto">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition-colors py-2" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<p class="text-[10px] font-bold uppercase tracking-tight">Dashboard</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition-colors py-2" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<p class="text-[10px] font-bold uppercase tracking-tight">Shipments</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary py-2 relative" href="#">
+<span class="material-symbols-outlined">description</span>
+<p class="text-[10px] font-bold uppercase tracking-tight">Customs</p>
+<div class="absolute top-0 h-1 w-8 bg-primary rounded-full"></div>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition-colors py-2" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-bold uppercase tracking-tight">Settings</p>
+</a>
+</div>
+</nav>
+</body></html>

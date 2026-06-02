@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Bio-Agent | IoT Data Fusion</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .json-block {
+            background: rgba(37, 175, 244, 0.05);
+            border-left: 2px solid #25aff4;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #25aff4;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased overflow-x-hidden">
+<div class="flex flex-col min-h-screen max-w-md mx-auto border-x border-slate-200 dark:border-slate-800 shadow-2xl relative">
+<!-- Header -->
+<header class="sticky top-0 z-20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">biotech</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-tight tracking-tight">BeZhas Bio-Agent</h1>
+<p class="text-[10px] uppercase tracking-widest text-primary font-bold">Node: Alpha-7-Verified</p>
+</div>
+</div>
+<button class="size-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+<span class="material-symbols-outlined text-xl">fingerprint</span>
+</button>
+</div>
+</header>
+<!-- Main Scrollable Content -->
+<main class="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar pb-24">
+<!-- Quick Stats -->
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-4 rounded-xl">
+<p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Active Sensors</p>
+<div class="flex items-end justify-between mt-1">
+<p class="text-2xl font-bold">14</p>
+<span class="text-xs text-emerald-500 flex items-center mb-1"><span class="material-symbols-outlined text-sm">trending_up</span> 2%</span>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-4 rounded-xl">
+<p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Node Status</p>
+<div class="flex items-end justify-between mt-1">
+<p class="text-2xl font-bold text-primary">Online</p>
+<span class="text-xs text-slate-400 mb-1">STABLE</span>
+</div>
+</div>
+</div>
+<!-- Hardware Sensors Section -->
+<section>
+<div class="flex items-center justify-between mb-3">
+<h2 class="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Bio-Hardware</h2>
+<span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">SYNCED</span>
+</div>
+<div class="space-y-2">
+<!-- Sensor Item 1 -->
+<div class="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded bg-background-light dark:bg-background-dark flex items-center justify-center border border-slate-200 dark:border-slate-800">
+<span class="material-symbols-outlined text-primary">genetics</span>
+</div>
+<div>
+<h3 class="text-sm font-semibold">DNA Sequencer X1</h3>
+<p class="text-[10px] text-slate-500">DID: trial-0x82...a4e</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-emerald-500">ACTIVE</p>
+<p class="text-[10px] text-slate-500">2s ago</p>
+</div>
+</div>
+<!-- Sensor Item 2 -->
+<div class="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded bg-background-light dark:bg-background-dark flex items-center justify-center border border-slate-200 dark:border-slate-800">
+<span class="material-symbols-outlined text-primary">thermostat</span>
+</div>
+<div>
+<h3 class="text-sm font-semibold">Temp Bio-sensor</h3>
+<p class="text-[10px] text-slate-500">DID: trial-0x12...c91</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-emerald-500">ACTIVE</p>
+<p class="text-[10px] text-slate-500">Just now</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Real-time Stream -->
+<section class="space-y-3">
+<div class="flex items-center justify-between">
+<h2 class="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Real-time Stream</h2>
+<div class="flex gap-1">
+<div class="size-1.5 rounded-full bg-primary animate-pulse"></div>
+<div class="size-1.5 rounded-full bg-primary/40"></div>
+<div class="size-1.5 rounded-full bg-primary/20"></div>
+</div>
+</div>
+<!-- JSON Block -->
+<div class="json-block p-4 rounded-lg font-mono text-[11px] leading-relaxed text-primary/80 dark:text-primary/90">
+<p><span class="text-slate-400">"timestamp":</span> "2023-11-24T14:22:01Z",</p>
+<p><span class="text-slate-400">"sensor_id":</span> "seq_x1_alpha",</p>
+<p><span class="text-slate-400">"base_pairs":</span> [</p>
+<p class="pl-4">{"type": "G", "confidence": 0.998},</p>
+<p class="pl-4">{"type": "C", "confidence": 0.992},</p>
+<p class="pl-4">{"type": "A", "confidence": 0.999}</p>
+<p>],</p>
+<p><span class="text-slate-400">"attestation":</span> "sha256:0x8f...e21"</p>
+</div>
+<!-- Progress Section -->
+<div class="space-y-4 pt-2">
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+<span>Data Structuring</span>
+<span class="text-primary">88%</span>
+</div>
+<div class="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 88%"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+<span>Cryptographic Hashing</span>
+<span class="text-primary">62%</span>
+</div>
+<div class="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 62%"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Mint Verifiable Credential Action -->
+<section class="pb-10">
+<div class="bg-primary/10 border border-primary/30 p-5 rounded-xl text-center space-y-4">
+<div class="size-12 bg-primary rounded-full mx-auto flex items-center justify-center text-background-dark shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined font-bold">verified_user</span>
+</div>
+<div>
+<h3 class="font-bold text-lg">Trial ID: 0x821...A4E</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 px-4">Secure current biometric stream and anchor it to the decentralized ledger as a verifiable credential.</p>
+</div>
+<button class="w-full bg-primary text-background-dark font-bold py-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-xl">token</span>
+                        Mint Verifiable Credential
+                    </button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 px-6 py-2 pb-6 z-30">
+<div class="flex justify-between items-center">
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">hub</span>
+<span class="text-[10px] font-medium">Nodes</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">sensors</span>
+<span class="text-[10px] font-medium">Sensors</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="text-[10px] font-medium">Creds</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="text-[10px] font-medium">Logs</span>
+</a>
+</div>
+</nav>
+</div>
+</body></html>

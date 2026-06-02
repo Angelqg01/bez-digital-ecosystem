@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Customs Declaration Detail - Logistics OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed": "#d6e3ff",
+                      "on-tertiary-container": "#b67300",
+                      "primary-container": "#0a192f",
+                      "on-tertiary": "#472a00",
+                      "surface-bright": "#2c3a4c",
+                      "on-tertiary-fixed-variant": "#653e00",
+                      "surface-container-lowest": "#010f1f",
+                      "on-secondary-fixed": "#002113",
+                      "inverse-primary": "#515f78",
+                      "surface-container-high": "#1c2b3c",
+                      "secondary-container": "#00a572",
+                      "secondary-fixed": "#6ffbbe",
+                      "on-secondary": "#003824",
+                      "on-primary-container": "#74829d",
+                      "on-secondary-container": "#00311f",
+                      "surface-tint": "#b9c7e4",
+                      "tertiary-container": "#271500",
+                      "on-primary-fixed": "#0d1c32",
+                      "on-error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#4edea3",
+                      "on-error": "#690005",
+                      "inverse-surface": "#d4e4fa",
+                      "outline": "#8f9097",
+                      "primary": "#b9c7e4",
+                      "on-primary": "#233148",
+                      "surface-variant": "#273647",
+                      "tertiary-fixed": "#ffddb8",
+                      "on-surface": "#d4e4fa",
+                      "surface-container-highest": "#273647",
+                      "inverse-on-surface": "#233143",
+                      "error-container": "#93000a",
+                      "tertiary-fixed-dim": "#ffb95f",
+                      "tertiary": "#ffb95f",
+                      "surface-container": "#122131",
+                      "surface-dim": "#051424",
+                      "error": "#ffb4ab",
+                      "outline-variant": "#44474d",
+                      "on-secondary-fixed-variant": "#005236",
+                      "surface-container-low": "#0d1c2d",
+                      "primary-fixed-dim": "#b9c7e4",
+                      "on-background": "#d4e4fa",
+                      "surface": "#051424",
+                      "on-surface-variant": "#c5c6cd",
+                      "on-primary-fixed-variant": "#39475f",
+                      "secondary": "#4edea3",
+                      "on-tertiary-fixed": "#2a1700",
+                      "background": "#051424"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "margin": "32px",
+                      "container-max": "1440px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "Inter"
+                      ],
+                      "body-base": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-base": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-base h-screen flex overflow-hidden">
+<!-- NavigationDrawer -->
+<nav class="hidden lg:flex flex-col fixed left-0 top-0 h-full py-8 w-64 border-r border-[#1E293B] bg-[#020617] z-50">
+<div class="px-6 mb-12">
+<h1 class="text-xl font-black tracking-tighter text-slate-100 uppercase">LOGISTICS OS</h1>
+</div>
+<ul class="flex flex-col w-full font-inter tracking-tight text-sm font-semibold uppercase">
+<li>
+<a class="flex items-center px-6 py-4 text-slate-400 font-medium hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150" href="#">
+<span class="material-symbols-outlined mr-4">hub</span>
+                    Network
+                </a>
+</li>
+<li>
+<a class="flex items-center px-6 py-4 text-emerald-400 border-l-2 border-emerald-500 bg-emerald-500/5 font-bold ring-inset ring-1 ring-emerald-500/20" href="#">
+<span class="material-symbols-outlined mr-4">gavel</span>
+                    Customs
+                </a>
+</li>
+<li>
+<a class="flex items-center px-6 py-4 text-slate-400 font-medium hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150" href="#">
+<span class="material-symbols-outlined mr-4">local_shipping</span>
+                    Logistics
+                </a>
+</li>
+<li>
+<a class="flex items-center px-6 py-4 text-slate-400 font-medium hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150" href="#">
+<span class="material-symbols-outlined mr-4">qr_code_scanner</span>
+                    Terminal
+                </a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 lg:ml-64 flex flex-col h-screen overflow-y-auto bg-background">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-6 py-4 sticky top-0 z-40 bg-[#0B1120] border-b border-[#1E293B] shadow-sm dark:shadow-none">
+<div class="flex items-center">
+<button class="lg:hidden text-emerald-500 dark:text-emerald-400 mr-4">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h2 class="font-inter text-lg font-bold tracking-tight text-slate-100">Operational Overview</h2>
+</div>
+<div class="flex items-center">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant font-label-caps text-label-caps border border-outline-variant">UP</div>
+</div>
+</header>
+<div class="p-margin max-w-container-max mx-auto w-full space-y-gutter pb-32 lg:pb-margin">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-secondary text-on-secondary px-2 py-1 rounded font-label-caps text-label-caps uppercase tracking-wider">In Progress</span>
+<span class="text-on-surface-variant font-data-mono text-data-mono flex items-center"><span class="material-symbols-outlined text-[16px] mr-1">timer</span> ETA 4 HRS</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-on-background">Pedimento #4002938</h1>
+<p class="font-body-base text-body-base text-on-surface-variant mt-1">Nuevo Laredo Customs Border Crossing</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-surface-variant text-on-surface px-4 py-2 rounded-lg border border-outline-variant font-label-caps text-label-caps hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[18px]">upload_file</span>
+                        Subir Documento
+                    </button>
+<button class="flex items-center gap-2 bg-secondary text-on-secondary px-4 py-2 rounded-lg font-label-caps text-label-caps hover:bg-secondary-fixed transition-colors bg-gradient-to-b from-secondary to-[#3ab582]">
+<span class="material-symbols-outlined text-[18px]">support_agent</span>
+                        Contactar Agente
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Status Stepper (Span 2) -->
+<div class="lg:col-span-2 bg-surface-container-low border border-outline-variant rounded-lg p-6 relative overflow-hidden">
+<h3 class="font-headline-md text-headline-md text-on-background mb-8">Declaration Lifecycle</h3>
+<div class="relative">
+<!-- Connector Line -->
+<div class="absolute left-6 top-10 bottom-10 w-[2px] bg-surface-variant"></div>
+<div class="absolute left-6 top-10 h-1/2 w-[2px] bg-secondary"></div>
+<ul class="space-y-8 relative">
+<!-- Step 1: Completed -->
+<li class="flex items-start gap-6">
+<div class="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center border-2 border-secondary relative z-10 shrink-0">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="pt-2">
+<h4 class="font-data-mono text-data-mono text-on-background">Pago de Contribuciones</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Taxes and duties cleared via PECE.</p>
+<span class="text-xs text-on-surface-variant mt-2 block">10:42 AM, Today</span>
+</div>
+</li>
+<!-- Step 2: Active -->
+<li class="flex items-start gap-6">
+<div class="w-12 h-12 rounded-full bg-surface border-2 border-tertiary flex items-center justify-center relative z-10 shrink-0 shadow-[0_0_15px_rgba(255,185,95,0.2)]">
+<span class="material-symbols-outlined text-tertiary animate-pulse" style="font-variation-settings: 'FILL' 1;">pending_actions</span>
+</div>
+<div class="pt-2">
+<h4 class="font-data-mono text-data-mono text-tertiary">Despacho Aduanero</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Physical inspection (Reconocimiento Aduanero) pending.</p>
+<div class="mt-3 bg-surface p-3 rounded border border-outline-variant flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-background">Lane 4 Assignment</span>
+<span class="material-symbols-outlined text-tertiary">warning</span>
+</div>
+</div>
+</li>
+<!-- Step 3: Pending -->
+<li class="flex items-start gap-6">
+<div class="w-12 h-12 rounded-full bg-surface border-2 border-surface-variant flex items-center justify-center relative z-10 shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">exit_to_app</span>
+</div>
+<div class="pt-2">
+<h4 class="font-data-mono text-data-mono text-on-surface-variant">Salida</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Release from customs compound.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<!-- Right Column (Span 1) -->
+<div class="space-y-gutter flex flex-col">
+<!-- Documents Section -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-6 flex-1">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-headline-md text-on-background">Documents</h3>
+<button class="text-secondary hover:text-secondary-fixed transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 bg-surface rounded border border-outline-variant hover:border-secondary/50 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary transition-colors">description</span>
+<div>
+<p class="font-data-mono text-data-mono text-on-background">e-Document (VUCEM)</p>
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase">EDOC-2023-8849</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface rounded border border-outline-variant hover:border-secondary/50 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary transition-colors">receipt_long</span>
+<div>
+<p class="font-data-mono text-data-mono text-on-background">COVE</p>
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase">COVE-992-MEX</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface rounded border border-tertiary/50 bg-tertiary/5 cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">request_quote</span>
+<div>
+<p class="font-data-mono text-data-mono text-on-background">Commercial Invoice</p>
+<p class="font-label-caps text-[10px] text-tertiary uppercase">Review Required</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-tertiary">error</span>
+</div>
+</div>
+</div>
+<!-- Compliance Checklist -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-6">
+<h3 class="font-headline-md text-headline-md text-on-background mb-4">Compliance</h3>
+<div class="space-y-4">
+<label class="flex items-start gap-3 cursor-pointer group">
+<input checked="" class="mt-1 form-checkbox h-4 w-4 text-secondary rounded border-outline-variant bg-surface disabled:opacity-50 focus:ring-secondary focus:ring-offset-background" disabled="" type="checkbox"/>
+<div>
+<span class="font-data-mono text-data-mono text-on-background group-hover:text-secondary transition-colors block">Clasificación Arancelaria</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">HTS Code validated.</span>
+</div>
+</label>
+<label class="flex items-start gap-3 cursor-pointer group">
+<input checked="" class="mt-1 form-checkbox h-4 w-4 text-secondary rounded border-outline-variant bg-surface disabled:opacity-50 focus:ring-secondary focus:ring-offset-background" disabled="" type="checkbox"/>
+<div>
+<span class="font-data-mono text-data-mono text-on-background group-hover:text-secondary transition-colors block">Restricciones No Arancelarias</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Permits cleared.</span>
+</div>
+</label>
+<label class="flex items-start gap-3 cursor-pointer group">
+<input class="mt-1 form-checkbox h-4 w-4 text-secondary rounded border-outline-variant bg-surface focus:ring-secondary focus:ring-offset-background" type="checkbox"/>
+<div>
+<span class="font-data-mono text-data-mono text-tertiary group-hover:text-tertiary-fixed transition-colors block">Normas Oficiales Mexicanas (NOMs)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Pending physical tag verification.</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Data Grid -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-6 overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[600px]">
+<thead>
+<tr class="border-b border-outline-variant">
+<th class="font-label-caps text-label-caps text-on-surface-variant uppercase pb-3 font-normal">Field</th>
+<th class="font-label-caps text-label-caps text-on-surface-variant uppercase pb-3 font-normal">Value</th>
+<th class="font-label-caps text-label-caps text-on-surface-variant uppercase pb-3 font-normal">Status</th>
+</tr>
+</thead>
+<tbody class="font-data-mono text-data-mono text-on-background">
+<tr class="border-b border-surface-variant hover:bg-surface-variant/30 transition-colors">
+<td class="py-3">Importer of Record</td>
+<td class="py-3">LogisticsCorp S.A. de C.V.</td>
+<td class="py-3"><span class="text-secondary flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">verified</span> Verified</span></td>
+</tr>
+<tr class="border-b border-surface-variant hover:bg-surface-variant/30 transition-colors">
+<td class="py-3">Customs Broker (Patente)</td>
+<td class="py-3">3921 - Garcia &amp; Assoc.</td>
+<td class="py-3"><span class="text-secondary flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">verified</span> Verified</span></td>
+</tr>
+<tr class="hover:bg-surface-variant/30 transition-colors">
+<td class="py-3">Total Value (USD)</td>
+<td class="py-3">$145,200.00</td>
+<td class="py-3"><span class="text-tertiary flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">sync</span> Calculating</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed lg:hidden bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-[#0B1120] border-t border-[#1E293B] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)] font-inter text-[10px] font-bold uppercase tracking-widest">
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-200" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+            Home
+        </a>
+<a class="flex flex-col items-center justify-center text-emerald-400 bg-emerald-900/20 rounded-sm py-1 px-3 scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">description</span>
+            Customs
+        </a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-200" href="#">
+<span class="material-symbols-outlined mb-1">route</span>
+            Transport
+        </a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-200" href="#">
+<span class="material-symbols-outlined mb-1">center_focus_strong</span>
+            Scan
+        </a>
+</nav>
+</body></html>

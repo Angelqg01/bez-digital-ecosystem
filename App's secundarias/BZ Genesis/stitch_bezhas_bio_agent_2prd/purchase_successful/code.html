@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Purchase Success - BeZhas Bio-Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden">
+<div class="flex items-center p-4 pb-2 justify-between">
+<div class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center cursor-pointer">
+<span class="material-symbols-outlined">close</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Confirmation</h2>
+</div>
+<div class="flex flex-col items-center justify-center pt-12 pb-8 px-4">
+<div class="flex items-center justify-center w-24 h-24 rounded-full bg-primary/20 text-primary mb-6 ring-4 ring-primary/10">
+<span class="material-symbols-outlined !text-5xl" style="font-variation-settings: 'wght' 600;">check_circle</span>
+</div>
+<h1 class="text-slate-900 dark:text-slate-100 tracking-tight text-[32px] font-bold leading-tight text-center pb-2">Purchase Successful</h1>
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-normal text-center max-w-xs">Your bio-agent assets have been securely added to your wallet.</p>
+</div>
+<div class="px-6 py-4 mx-4 mb-8 rounded-xl bg-slate-200/50 dark:bg-slate-800/40 border border-slate-300/50 dark:border-slate-700/50">
+<div class="flex flex-col gap-y-4">
+<div class="flex justify-between items-center py-1">
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium">Amount Purchased</p>
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold text-right">5,000 $BEZ</p>
+</div>
+<div class="h-px bg-slate-300 dark:bg-slate-700/50"></div>
+<div class="flex justify-between items-center py-1">
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium">Total USD Spent</p>
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold text-right">$1,250.00</p>
+</div>
+<div class="h-px bg-slate-300 dark:bg-slate-700/50"></div>
+<div class="flex justify-between items-center py-1">
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium">Payment Method</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">credit_card</span>
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold text-right">Visa •••• 4242</p>
+</div>
+</div>
+<div class="h-px bg-slate-300 dark:bg-slate-700/50"></div>
+<div class="flex justify-between items-center py-1">
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium">Transaction Hash</p>
+<div class="flex items-center gap-1">
+<p class="text-primary text-sm font-mono font-medium text-right">0x7a...fb2b</p>
+<span class="material-symbols-outlined text-primary text-xs cursor-pointer">content_copy</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto px-4 pb-12 flex flex-col gap-3">
+<button class="w-full bg-primary hover:bg-primary/90 text-slate-100 font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+                View in Wallet
+            </button>
+<button class="w-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 font-bold py-4 rounded-xl transition-colors">
+                Done
+            </button>
+</div>
+<div class="absolute bottom-0 left-0 w-full overflow-hidden opacity-10 pointer-events-none h-64">
+<div class="w-full h-full bg-gradient-to-t from-primary to-transparent" data-alt="Abstract blue digital gradient pattern"></div>
+</div>
+</div>
+</body></html>

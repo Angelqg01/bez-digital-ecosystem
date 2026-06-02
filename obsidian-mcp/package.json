@@ -1,0 +1,27 @@
+{
+  "name": "@bezhas/obsidian-mcp",
+  "version": "1.0.0",
+  "description": "BeZhas Obsidian MCP: Markdown vault, agent memory notes, backlinks and self-model ops",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "canvas:build": "node scripts/bezhasCanvasBuilder.cjs",
+    "canvas:watch": "node scripts/bezhasCanvasBuilder.cjs --watch",
+    "start": "node src/index.js",
+    "health": "node -e \"fetch('http://localhost:4007/health').then(r=>r.json()).then(console.log)\""
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "gray-matter": "^4.0.3",
+    "zod": "^4.3.6"
+  },
+  "private": true,
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "skill_1776592397345_abad40",
+  "created_at": "2026-04-19T09:53:17.345Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "blockchain"
+  ],
+  "turn": {
+    "user": "Cuánto cuesta usar tú chatbot con gemini para preguntas cómo gestor de la plataforma BeZhas?",
+    "agent": "Como Agente IA unificado de la plataforma BeZhas Blockchain, mi uso para gestionar y consultar la plataforma no tiene un coste directo por pregunta para ti como operador.\n\nLas operaciones y consultas que realizas a través de mí son parte de los servicios integrados de la plataforma BeZhas. Los costes asociados con el uso de modelos de IA como Gemini son gestionados internamente por la plataforma y no se te facturan de forma individual por cada interacción."
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "operator"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "bezhas-blockchain-sync",
+  "version": "1.0.0",
+  "description": "BeZhas Blockchain ↔ Web3 Sync Daemon",
+  "main": "sync/sync-daemon.js",
+  "scripts": {
+    "sync": "node sync/sync-daemon.js --once",
+    "sync:watch": "node sync/sync-daemon.js --watch",
+    "sync:force": "node sync/sync-daemon.js --force --watch",
+    "sync:validate": "node sync/sync-daemon.js --dry-run",
+    "sync:status": "node sync/sync-daemon.js --status"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "chokidar": "^3.6.0",
+    "fs-extra": "^11.2.0",
+    "glob": "^10.3.10"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=11"
+  },
+  "packageManager": "pnpm@11.0.0"
+}

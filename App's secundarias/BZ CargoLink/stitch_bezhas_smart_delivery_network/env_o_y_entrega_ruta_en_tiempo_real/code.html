@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Validator Terminal - Ruta Activa</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#ffcec4",
+                        "outline-variant": "#3b494b",
+                        "on-tertiary-fixed": "#3e0400",
+                        "surface-tint": "#00dbe9",
+                        "on-secondary-container": "#0f6d00",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-highest": "#353534",
+                        "primary": "#dbfcff",
+                        "on-surface": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#095300",
+                        "surface-container-high": "#2a2a2a",
+                        "on-tertiary-container": "#b91e00",
+                        "inverse-on-surface": "#313030",
+                        "outline": "#849495",
+                        "on-primary": "#00363a",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#006970",
+                        "on-tertiary-fixed-variant": "#8e1400",
+                        "surface-bright": "#393939",
+                        "error": "#ffb4ab",
+                        "background": "#131313",
+                        "surface-variant": "#353534",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-secondary-fixed": "#022100",
+                        "inverse-surface": "#e5e2e1",
+                        "on-tertiary": "#650b00",
+                        "on-secondary": "#053900",
+                        "secondary-container": "#2ff801",
+                        "primary-container": "#00f0ff",
+                        "surface": "#131313",
+                        "on-surface-variant": "#b9cacb",
+                        "secondary-fixed-dim": "#2ae500",
+                        "on-primary-fixed-variant": "#004f54",
+                        "secondary": "#d7ffc5",
+                        "on-error": "#690005",
+                        "surface-dim": "#131313",
+                        "tertiary-fixed-dim": "#ffb4a5",
+                        "tertiary": "#fff3f1",
+                        "surface-container": "#201f1f",
+                        "on-primary-fixed": "#002022",
+                        "tertiary-fixed": "#ffdad3",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-background": "#e5e2e1",
+                        "secondary-fixed": "#79ff5b",
+                        "primary-fixed": "#7df4ff",
+                        "on-primary-container": "#006970",
+                        "error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "stack-sm": "8px",
+                        "margin": "20px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Space Grotesk"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Space Grotesk"],
+                        "body-md": ["Inter"],
+                        "data-display": ["Space Grotesk"],
+                        "label-mono": ["Space Grotesk"],
+                        "headline-md": ["Space Grotesk"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 240, 255, 0.05) 50%);
+            background-size: 100% 4px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-5 h-16 bg-[#0C0C0C] dark:bg-[#0C0C0C] border-b border-[#2D2D2D] flat no-shadows">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#00F0FF]">terminal</span>
+<h1 class="font-['Space_Grotesk'] uppercase tracking-widest text-[#00F0FF] font-black text-lg">VALIDATOR_TERMINAL</h1>
+</div>
+<div class="w-10 h-10 rounded-full border border-[#2D2D2D] bg-surface-container overflow-hidden">
+<img alt="Validator Profile" class="w-full h-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-500" data-alt="A high-contrast portrait of a tech-focused logistics professional in a dark studio setting. The lighting is dominated by a sharp neon cyan glow reflecting off their skin and technical gear. The subject wears a minimalist black utility jacket with subtle circuit patterns. The aesthetic is gritty yet highly professional, matching a tech-industrial cyberpunk theme with deep charcoal shadows and electric highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcITkgWyh1lWJLc9TAJvPj6Ik9X1r1FpaU1XRM8KBv1Ixne8f0CWBfrMZFlKgQqXB9yRl2WvyMK5Jf7gBl5W2Y0lEbr1dMe5inc3P4A0SmifUE85bYqXBxyXLvexf83yZRVBp6JwTZIYA6xakYGQSEvLUpX228DXMtexaD3oQYoV-ZLs-vxkhmFyY-rnvvB1bI5sR87_t1YDgugCX3qd4Gd1_56LYWyi2LOOQ5PrEolYdOVIDm_Q5i40xAweZ2zNsDLv9eKiHOUSQ"/>
+</div>
+</header>
+<main class="pt-16 pb-24 min-h-screen flex flex-col">
+<!-- Status Banner -->
+<section class="bg-surface-container-lowest px-margin py-stack-sm flex justify-between items-center border-b border-[#2D2D2D]">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse shadow-[0_0_8px_#2ff801]"></span>
+<span class="font-label-mono text-label-mono text-secondary uppercase">Estado: En Tránsito</span>
+</div>
+<div class="font-label-mono text-label-mono text-outline uppercase tracking-wider">
+                ID: #TRX-9921-X
+            </div>
+</section>
+<!-- Active Route Map Section -->
+<section class="relative h-[397px] w-full overflow-hidden border-b border-[#2D2D2D]">
+<div class="absolute inset-0 bg-surface">
+<img class="w-full h-full object-cover opacity-60 mix-blend-screen grayscale contrast-150" data-alt="A highly detailed night-time satellite-style map view of a complex metropolitan area with glowing blue and green data overlays. The streets are represented by thin electric cyan lines, and the route path is a thick, pulsating neon green vector. There are digital UI elements like coordinate markers and distance labels floating over the terrain. The lighting is dark and moody, emphasizing the luminous data layers." data-location="Madrid" src="https://lh3.googleusercontent.com/aida-public/AB6AXuApEmtOoMOR0gHyfNGnqiWSlAJecE5tZoU67IJV-1QMUYsZz1eyMCEcfcE74mwuiUImB1bobbnRDzW6W4Esf6fjFqItdsPZEaY-0xNpgABbvg-TK7yCBMzSvcqhTOGWQzsnyakoObcoIPKiy01eCN6cUHqze68MMymA8qBzgk_ddPGjdQyy782srW5fR3BD6zKcqDutibAO_QYht-nJK36VeF_LzoortUnMtF_CdVklPwBPsVGQZMc-DsBN33ySuZtNBGV6Q0h_-6U"/>
+</div>
+<!-- Map Overlay Controls -->
+<div class="absolute top-4 right-4 flex flex-col gap-2">
+<button class="w-10 h-10 bg-[#0C0C0C] border border-[#2D2D2D] flex items-center justify-center text-on-surface hover:text-[#00F0FF] transition-colors shadow-lg">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+<button class="w-10 h-10 bg-[#0C0C0C] border border-[#2D2D2D] flex items-center justify-center text-on-surface hover:text-[#00F0FF] transition-colors shadow-lg">
+<span class="material-symbols-outlined">layers</span>
+</button>
+</div>
+<!-- Floating Navigation Cue -->
+<div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-[#1E1E1E]/90 backdrop-blur-xl border border-[#2D2D2D] p-stack-md flex items-center gap-4">
+<div class="flex-none w-12 h-12 bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-3xl font-bold">turn_right</span>
+</div>
+<div class="flex-grow">
+<p class="font-label-mono text-label-mono text-primary uppercase">Giro a la derecha en 250m</p>
+<p class="font-headline-sm text-headline-sm text-on-surface uppercase">Calle de la Victoria</p>
+</div>
+</div>
+</section>
+<!-- Delivery Logic Panel -->
+<section class="flex-grow px-margin pt-stack-lg space-y-stack-lg bg-background">
+<!-- Progress Bar -->
+<div class="space-y-stack-sm">
+<div class="flex justify-between items-end">
+<h3 class="font-headline-sm text-headline-sm uppercase text-primary">Progreso de Entrega</h3>
+<span class="font-data-display text-data-display text-primary">82%</span>
+</div>
+<div class="h-3 w-full bg-surface-container-high border border-[#2D2D2D] relative overflow-hidden">
+<div class="absolute top-0 left-0 h-full bg-primary-container shadow-[0_0_12px_rgba(0,240,255,0.4)] transition-all duration-1000" style="width: 82%;"></div>
+<div class="absolute inset-0 scanline opacity-20 pointer-events-none"></div>
+</div>
+</div>
+<!-- Bento Grid - Actions and Info -->
+<div class="grid grid-cols-2 gap-gutter">
+<!-- Delivery Info -->
+<div class="col-span-2 p-stack-md bg-[#1E1E1E] border border-[#2D2D2D] relative">
+<div class="absolute top-0 right-0 p-2 font-label-mono text-[10px] text-outline">MANIFEST_V2.4</div>
+<div class="flex flex-col gap-1 border-l-2 border-primary-container pl-stack-md">
+<span class="font-label-mono text-label-mono text-outline uppercase">Destino Final</span>
+<span class="font-headline-sm text-headline-sm">Apartamento 402, Torre Norte</span>
+<span class="font-body-md text-on-surface-variant">Calle Goya 45, Madrid</span>
+</div>
+</div>
+<!-- Contactless Option -->
+<div class="p-stack-md bg-[#1E1E1E] border border-[#2D2D2D] flex flex-col gap-stack-sm group cursor-pointer hover:border-primary transition-colors">
+<div class="flex justify-between">
+<span class="material-symbols-outlined text-primary text-3xl">connect_without_contact</span>
+<span class="material-symbols-outlined text-outline text-sm">info</span>
+</div>
+<p class="font-label-mono text-label-mono uppercase leading-tight">Entrega sin contacto</p>
+<div class="mt-auto h-1 w-full bg-surface-variant overflow-hidden">
+<div class="h-full w-1/2 bg-primary"></div>
+</div>
+</div>
+<!-- Messaging -->
+<div class="p-stack-md bg-[#1E1E1E] border border-[#2D2D2D] flex flex-col gap-stack-sm cursor-pointer hover:border-primary transition-colors">
+<div class="flex justify-between">
+<span class="material-symbols-outlined text-primary text-3xl">chat_bubble</span>
+<span class="flex h-2 w-2 rounded-full bg-error animate-ping"></span>
+</div>
+<p class="font-label-mono text-label-mono uppercase leading-tight">Mensaje Cliente</p>
+<p class="text-[10px] text-on-surface-variant line-clamp-1">"Dejar en la puerta..."</p>
+</div>
+</div>
+<!-- Action Button - Generate QR -->
+<div class="pt-stack-md pb-stack-lg">
+<button class="w-full bg-primary-container hover:bg-surface-tint text-on-primary-container font-headline-sm uppercase py-5 flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+<span class="material-symbols-outlined font-bold">qr_code_2</span>
+                    GENERAR PRUEBA DE ENTREGA
+                </button>
+<p class="text-center mt-stack-sm font-label-mono text-[10px] text-outline uppercase tracking-tighter">
+                    Pulse una vez haya llegado al destino para validar smart contract
+                </p>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 pb-4 px-2 bg-[#0C0C0C]/95 backdrop-blur-md border-t border-[#2D2D2D] shadow-[0_-4px_15px_rgba(0,240,255,0.1)]">
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest mt-1">MISSIONS</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#00F0FF] drop-shadow-[0_0_8px_rgba(0,240,255,0.6)] border-t-2 border-[#00F0FF] pt-2 scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="route">route</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest mt-1">ACTIVE</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest mt-1">WALLET</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="fingerprint">fingerprint</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest mt-1">ID</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Configuración NOM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed": "#d6e3ff",
+                        "on-primary-fixed": "#0d1c32",
+                        "surface-container-high": "#1c2b3c",
+                        "surface-bright": "#2c3a4c",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#233148",
+                        "surface-variant": "#273647",
+                        "surface-container-lowest": "#010f1f",
+                        "surface-container": "#122131",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-error": "#690005",
+                        "on-secondary-container": "#00311f",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-primary-fixed-variant": "#39475f",
+                        "on-surface": "#d4e4fa",
+                        "primary": "#b9c7e4",
+                        "primary-fixed-dim": "#b9c7e4",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-primary-container": "#74829d",
+                        "inverse-primary": "#515f78",
+                        "surface-container-highest": "#273647",
+                        "on-tertiary-container": "#b67300",
+                        "background": "#051424",
+                        "secondary": "#4edea3",
+                        "on-secondary-fixed": "#002113",
+                        "secondary-container": "#00a572",
+                        "surface-tint": "#b9c7e4",
+                        "inverse-on-surface": "#233143",
+                        "tertiary-fixed": "#ffddb8",
+                        "tertiary-container": "#271500",
+                        "primary-container": "#0a192f",
+                        "on-secondary-fixed-variant": "#005236",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-surface-variant": "#c5c6cd",
+                        "outline": "#8f9097",
+                        "inverse-surface": "#d4e4fa",
+                        "surface": "#051424",
+                        "surface-container-low": "#0d1c2d",
+                        "on-background": "#d4e4fa",
+                        "tertiary": "#ffb95f",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#4edea3",
+                        "outline-variant": "#44474d",
+                        "on-tertiary": "#472a00",
+                        "error": "#ffb4ab",
+                        "surface-dim": "#051424",
+                        "on-secondary": "#003824"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.125rem",
+                        lg: "0.25rem",
+                        xl: "0.5rem",
+                        full: "0.75rem"
+                    },
+                    spacing: {
+                        gutter: "24px",
+                        margin: "32px",
+                        "container-max": "1440px",
+                        unit: "4px"
+                    },
+                    fontFamily: {
+                        "display-lg": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-base": ["Inter"]
+                    },
+                    fontSize: {
+                        "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "data-mono": ["14px", { lineHeight: "20px", letterSpacing: "-0.01em", fontWeight: "500" }],
+                        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700" }],
+                        "body-sm": ["14px", { lineHeight: "20px", letterSpacing: "0", fontWeight: "400" }],
+                        "headline-md": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "body-base": ["16px", { lineHeight: "24px", letterSpacing: "0", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col pt-16 pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-slate-950 border-b border-slate-800 flat no shadows">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-emerald-500 text-2xl">account_circle</span>
+<span class="text-lg font-bold tracking-tighter text-slate-100">LogiFlow Global</span>
+</div>
+<div class="hidden md:flex gap-8">
+<a class="font-['Inter'] uppercase tracking-wider text-xs font-semibold text-slate-400 hover:bg-slate-900 transition-colors active:opacity-80 transition-opacity" href="#">Home</a>
+<a class="font-['Inter'] uppercase tracking-wider text-xs font-semibold text-emerald-500 font-bold hover:bg-slate-900 transition-colors active:opacity-80 transition-opacity flex-col" href="#">Customs</a>
+<a class="font-['Inter'] uppercase tracking-wider text-xs font-semibold text-slate-400 hover:bg-slate-900 transition-colors active:opacity-80 transition-opacity" href="#">Transport</a>
+<a class="font-['Inter'] uppercase tracking-wider text-xs font-semibold text-slate-400 hover:bg-slate-900 transition-colors active:opacity-80 transition-opacity" href="#">Scan</a>
+</div>
+<button class="text-emerald-500 hover:bg-slate-900 transition-colors p-2 rounded">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin py-margin">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-margin gap-4">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-background mb-2">Configuración NOM</h1>
+<p class="font-body-base text-body-base text-on-surface-variant">Manage active compliance rules and threshold settings for Mexican Official Standards.</p>
+</div>
+<button class="bg-secondary-container text-on-secondary-container px-6 py-3 rounded hover:bg-secondary transition-colors flex items-center gap-2 active:scale-95 shadow-lg">
+<span class="material-symbols-outlined">add</span>
+<span class="font-label-caps text-label-caps uppercase">Add New Compliance Rule</span>
+</button>
+</div>
+<!-- Dashboard Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Main Alerts Area -->
+<div class="lg:col-span-2 space-y-gutter">
+<!-- Category Section: Electronics -->
+<section class="bg-surface-container rounded-lg border border-surface-container-high overflow-hidden shadow-sm">
+<div class="px-6 py-4 border-b border-surface-container-high bg-surface-container-highest flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">devices</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Electronics</h2>
+</div>
+<span class="font-label-caps text-label-caps bg-surface-variant text-on-surface-variant px-2 py-1 rounded-full">2 Active Rules</span>
+</div>
+<div class="p-6 space-y-4">
+<!-- Rule Card 1 -->
+<div class="bg-surface rounded-DEFAULT border border-surface-container-high p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-outline-variant transition-colors">
+<div class="flex-grow">
+<div class="flex items-center gap-3 mb-2">
+<span class="font-label-caps text-label-caps text-primary px-2 py-1 bg-primary-container rounded">NOM-001-SCFI-2018</span>
+<span class="font-label-caps text-label-caps bg-error-container text-error px-2 py-1 rounded">Critical</span>
+</div>
+<h3 class="font-body-base text-body-base text-on-background">Electronic equipment safety requirements</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Applies to imported electronics requiring testing certs before customs entry.</p>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-end">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">Early Warning</span>
+<select class="bg-surface-container-high border border-outline-variant rounded font-data-mono text-data-mono text-on-surface px-2 py-1 focus:ring-1 focus:ring-primary focus:border-primary">
+<option>7 Days Prior</option>
+<option selected="">14 Days Prior</option>
+<option>21 Days Prior</option>
+</select>
+</div>
+<!-- Custom Toggle -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-background after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<!-- Rule Card 2 -->
+<div class="bg-surface rounded-DEFAULT border border-surface-container-high p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-outline-variant transition-colors opacity-75">
+<div class="flex-grow">
+<div class="flex items-center gap-3 mb-2">
+<span class="font-label-caps text-label-caps text-primary px-2 py-1 bg-primary-container rounded">NOM-024-SCFI-2013</span>
+<span class="font-label-caps text-label-caps bg-surface-variant text-on-surface-variant px-2 py-1 rounded">Inactive</span>
+</div>
+<h3 class="font-body-base text-body-base text-on-background">Packaging, labeling, and warranties</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Commercial information requirements for electronic, electrical, and household appliances.</p>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-end">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">Early Warning</span>
+<select class="bg-surface border border-surface-container-high rounded font-data-mono text-data-mono text-on-surface-variant px-2 py-1 opacity-50 cursor-not-allowed" disabled="">
+<option>None</option>
+</select>
+</div>
+<!-- Custom Toggle -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface-variant after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Category Section: Textiles -->
+<section class="bg-surface-container rounded-lg border border-surface-container-high overflow-hidden shadow-sm">
+<div class="px-6 py-4 border-b border-surface-container-high bg-surface-container-highest flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">checkroom</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Textiles &amp; Apparel</h2>
+</div>
+<span class="font-label-caps text-label-caps bg-surface-variant text-on-surface-variant px-2 py-1 rounded-full">1 Active Rule</span>
+</div>
+<div class="p-6 space-y-4">
+<!-- Rule Card 3 -->
+<div class="bg-surface rounded-DEFAULT border border-surface-container-high p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-outline-variant transition-colors">
+<div class="flex-grow">
+<div class="flex items-center gap-3 mb-2">
+<span class="font-label-caps text-label-caps text-primary px-2 py-1 bg-primary-container rounded">NOM-004-SCFI-2006</span>
+<span class="font-label-caps text-label-caps bg-tertiary-container text-tertiary px-2 py-1 rounded">Warning</span>
+</div>
+<h3 class="font-body-base text-body-base text-on-background">Textile labeling commercial information</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Fiber content, care instructions, and country of origin requirements.</p>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-end">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">Early Warning</span>
+<select class="bg-surface-container-high border border-outline-variant rounded font-data-mono text-data-mono text-on-surface px-2 py-1 focus:ring-1 focus:ring-primary focus:border-primary">
+<option>7 Days Prior</option>
+<option>14 Days Prior</option>
+<option selected="">21 Days Prior</option>
+</select>
+</div>
+<!-- Custom Toggle -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-background after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Side Panel: Global Settings & Summary -->
+<div class="space-y-gutter">
+<!-- Summary Card -->
+<div class="bg-surface-container rounded-lg border border-surface-container-high p-6 shadow-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">Compliance Status</h3>
+<div class="space-y-4">
+<div class="flex justify-between items-center border-b border-surface-container-high pb-2">
+<span class="font-body-base text-body-base text-on-surface-variant">Active Rules</span>
+<span class="font-data-mono text-data-mono text-on-background font-bold">12</span>
+</div>
+<div class="flex justify-between items-center border-b border-surface-container-high pb-2">
+<span class="font-body-base text-body-base text-on-surface-variant">Critical Alerts</span>
+<span class="font-data-mono text-data-mono text-error font-bold">3</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-base text-body-base text-on-surface-variant">Pending Certs</span>
+<span class="font-data-mono text-data-mono text-tertiary font-bold">5</span>
+</div>
+</div>
+</div>
+<!-- Global Notification Settings -->
+<div class="bg-surface-container rounded-lg border border-surface-container-high p-6 shadow-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">settings</span>
+                        Global Alert Settings
+                    </h3>
+<div class="space-y-5">
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-2">Default Notification Channel</label>
+<div class="space-y-2">
+<label class="flex items-center gap-2">
+<input checked="" class="form-checkbox bg-surface-container-lowest border-outline text-secondary focus:ring-secondary rounded-sm" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">Dashboard Alerts</span>
+</label>
+<label class="flex items-center gap-2">
+<input checked="" class="form-checkbox bg-surface-container-lowest border-outline text-secondary focus:ring-secondary rounded-sm" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">Email Notifications</span>
+</label>
+<label class="flex items-center gap-2">
+<input class="form-checkbox bg-surface-container-lowest border-outline text-secondary focus:ring-secondary rounded-sm" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">SMS (Critical Only)</span>
+</label>
+</div>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-2">Escalation Policy</label>
+<select class="w-full bg-surface-container-lowest border border-outline-variant rounded font-body-sm text-body-sm text-on-surface px-3 py-2 focus:ring-1 focus:ring-primary focus:border-primary">
+<option>Escalate to Compliance Mgr (48h)</option>
+<option>Escalate immediately</option>
+<option>No escalation</option>
+</select>
+</div>
+</div>
+<button class="w-full mt-6 bg-surface-bright border border-outline-variant text-on-surface py-2 rounded font-label-caps text-label-caps uppercase hover:bg-surface-variant transition-colors">
+                        Save Global Settings
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 h-20 pb-safe bg-slate-950/95 backdrop-blur-md border-t border-slate-800 shadow-2xl">
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1 hover:text-slate-300 scale-95 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-widest">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-emerald-400 bg-emerald-500/5 rounded-xl px-3 py-1 hover:text-slate-300 scale-95 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">gavel</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-widest text-emerald-500">Customs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1 hover:text-slate-300 scale-95 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">local_shipping</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-widest">Transport</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1 hover:text-slate-300 scale-95 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">qr_code_scanner</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-widest">Scan</span>
+</a>
+</nav>
+</body></html>

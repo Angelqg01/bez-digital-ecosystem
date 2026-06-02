@@ -1,0 +1,259 @@
+# ─────────────────────────────────────────────────────
+#  BeZhas Platform — Prometheus Alert Rules
+#  Validator, blockchain, and infrastructure alerts
+# ─────────────────────────────────────────────────────
+groups:
+
+  # ═══ Validator Alerts ═══════════════════════════════
+  - name: bezhas_validators
+    rules:
+      # Validator inactive for >2 hours (no heartbeat)
+      - alert: ValidatorInactive
+        expr: |
+          (time() - bezhas_validator_last_heartbeat_timestamp) > 7200
+        for: 5m
+        labels:
+          severity: warning
+          team: blockchain
+        annotations:
+          summary: "Validator {{ $labels.validator }} inactive >2h"
+          description: "Validator {{ $labels.validator }} has not sent a heartbeat in {{ $value | humanizeDuration }}. May require slashing if prolonged."
+
+      # Validator count dropped
+      - alert: ActiveValidatorsDrop
+        expr: |
+          bezhas_active_validators < 3
+        for: 5m
+        labels:
+          severity: critical
+          team: blockchain
+        annotations:
+          summary: "Active validators dropped to {{ $value }}"
+          description: "Active validator count is {{ $value }}, minimum 3 required for consensus safety."
+
+      # Slash executed
+      - alert: SlashingExecuted
+        expr: |
+          increase(bezhas_slash_events_total[5m]) > 0
+        labels:
+          severity: warning
+          team: blockchain
+        annotations:
+          summary: "Slash event detected"
+          description: "{{ $value }} slash event(s) executed in the last 5 minutes. Review SlashingManager logs."
+
+      # Total staked below threshold
+      - alert: LowTotalStake
+        expr: |
+          bezhas_total_staked_bez < 100000
+        for: 10m
+        labels:
+          severity: warning
+          team: blockchain
+        annotations:
+          summary: "Total staked BEZ below 100K"
+          description: "Total staked is {{ $value }} BEZ. Low stake reduces network security."
+
+  # ═══ Sequencer Alerts ═══════════════════════════════
+  - name: bezhas_sequencer
+    rules:
+      # Sequencer failed to produce blocks
+      - alert: SequencerNotProducing
+        expr: |
+          increase(bezhas_l2_blocks_total[5m]) == 0
+        for: 3m
+        labels:
+          severity: critical
+          team: blockchain
+        annotations:
+          summary: "Sequencer not producing blocks"
+          description: "No new L2 blocks produced in 5 minutes. Sequencer rotation may be needed."
+
+      # Sequencer rotation failed
+      - alert: SequencerRotationFailed
+        expr: |
+          bezhas_sequencer_rotation_failures_total > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: blockchain
+        annotations:
+          summary: "Sequencer rotation failure"
+          description: "Sequencer rotation failed {{ $value }} time(s). Manual intervention may be required."
+
+      # Epoch nearing end without rotation
+      - alert: EpochEndApproaching
+        expr: |
+          (bezhas_epoch_blocks_remaining / bezhas_epoch_total_blocks) < 0.05
+        for: 1m
+        labels:
+          severity: info
+          team: blockchain
+        annotations:
+          summary: "Epoch ending soon (<5% blocks remaining)"
+          description: "Current epoch has {{ $value | humanizePercentage }} remaining. Rotation imminent."
+
+  # ═══ Edge Node / DePIN Alerts ═══════════════════════
+  - name: bezhas_edge_node
+    rules:
+      # Edge node down
+      - alert: EdgeNodeDown
+        expr: |
+          up{job="bezhas-edge-node"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "Edge Node is down"
+          description: "BeZhas Edge Node has been unreachable for 2 minutes."
+
+      # Edge node uptime below 90%
+      - alert: EdgeNodeLowUptime
+        expr: |
+          bezhas_edge_node_uptime_ratio < 0.90
+        for: 10m
+        labels:
+          severity: warning
+          team: blockchain
+        annotations:
+          summary: "Edge Node uptime below 90%"
+          description: "Edge Node uptime is {{ $value | humanizePercentage }}, below the 90% target."
+
+  # ═══ Blockchain / Geth Alerts ═══════════════════════
+  - name: bezhas_blockchain
+    rules:
+      # Geth node down
+      - alert: GethNodeDown
+        expr: |
+          up{job="bezhas-geth"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "Geth (L2) node is down"
+          description: "BeZhas L2 geth node unreachable for 2 minutes."
+
+      # op-node down
+      - alert: OpNodeDown
+        expr: |
+          up{job="bezhas-op-node"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "OP Node (L2 consensus) is down"
+          description: "op-node has been unreachable for 2 minutes. L2 derivation may be stalled."
+
+      # High peer count drop (connectivity issue)
+      - alert: LowPeerCount
+        expr: |
+          eth_peers < 2
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "Geth peer count low ({{ $value }})"
+          description: "L2 node has fewer than 2 peers. Network connectivity may be impacted."
+
+      # Chain head not advancing
+      - alert: ChainHeadStale
+        expr: |
+          increase(eth_block_number[5m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: blockchain
+        annotations:
+          summary: "L2 chain head not advancing"
+          description: "Block number has not increased in 5 minutes."
+
+  # ═══ Infrastructure Alerts ═════════════════════════
+  - name: bezhas_infra
+    rules:
+      # API service down
+      - alert: APIDown
+        expr: |
+          up{job="bezhas-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "BeZhas API is down"
+          description: "Core API service has been unreachable for 1 minute."
+
+      # Aegis AI down
+      - alert: AegisAIDown
+        expr: |
+          up{job="bezhas-aegis"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "Aegis AI Engine is down"
+          description: "Aegis AI service unreachable for 2 minutes."
+
+      # High API response time
+      - alert: APIHighLatency
+        expr: |
+          histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="bezhas-api"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "API p95 latency >2s"
+          description: "95th percentile API response time is {{ $value }}s."
+
+      # Disk space low
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.10
+        for: 5m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "Disk space below 10%"
+          description: "Root filesystem has {{ $value | humanizePercentage }} free."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.90
+        for: 10m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "Memory usage above 90%"
+          description: "System memory usage is {{ $value | humanizePercentage }}."
+
+      # PostgreSQL down
+      - alert: PostgresDown
+        expr: |
+          up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "Database is unreachable."
+
+      # Redis down
+      - alert: RedisDown
+        expr: |
+          up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "Redis is down"
+          description: "Cache layer is unreachable."

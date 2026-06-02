@@ -1,0 +1,50 @@
+{
+  "name": "@bezhas/agent-runtime",
+  "version": "0.1.0",
+  "description": "BeZhas Agent Runtime — tool orchestration, commands, permissions, and plugin system",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --verbose",
+    "test:agentic": "node --test tests/obsidian-agentic-system.node.test.cjs",
+    "test:watch": "jest --watch",
+    "start": "node bootstrap-v2.js",
+    "dev": "nodemon bootstrap-v2.js",
+    "bot": "node bezhas-agent-integration/telegram-bot.js",
+    "all": "concurrently \"pnpm run dev\" \"pnpm run bot\"",
+    "legacy-server": "node bezhas-agent-integration/bezhas-agent-server.js",
+    "orchestration": "node scripts/orchestration-cli.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "ajv": "^8.17.1",
+    "axios": "^1.6.0",
+    "body-parser": "^1.20.5",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "ethers": "^6.16.0",
+    "express": "^4.22.1",
+    "node-telegram-bot-api": "^0.66.0",
+    "socket.io": "^4.8.1"
+  },
+  "peerDependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.7"
+  },
+  "keywords": [
+    "bezhas",
+    "agent",
+    "runtime",
+    "mcp",
+    "blockchain"
+  ],
+  "license": "UNLICENSED",
+  "private": true,
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

@@ -1,0 +1,216 @@
+/*
+ * ═══════════════════════════════════════════════════════════
+ *  BeZhas Design System — Foundational Tokens
+ *  @bezhas/ui-components/tokens.css
+ * ═══════════════════════════════════════════════════════════
+ *
+ *  Import this file in every sub-app's root CSS:
+ *    @import '@bezhas/ui-components/tokens.css';
+ *
+ *  All tokens are CSS custom properties scoped to :root
+ *  and auto-adapt to dark/light mode via data-theme.
+ * ═══════════════════════════════════════════════════════════
+ */
+
+/* ─── Google Fonts ─────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ─── Brand Colors ────────────────────────────────────── */
+  --bezhas-primary:        #00D4FF;    /* Cyan BeZhas — identity color */
+  --bezhas-primary-hover:  #00BFEA;
+  --bezhas-primary-rgb:    0, 212, 255;
+  --bezhas-secondary:      #7B2FFF;    /* Violet — accent */
+  --bezhas-secondary-hover:#6B22E8;
+  --bezhas-secondary-rgb:  123, 47, 255;
+  --bezhas-accent:         #FF6B35;    /* Orange — critical actions */
+  --bezhas-accent-rgb:     255, 107, 53;
+
+  /* ─── Backgrounds ─────────────────────────────────────── */
+  --bezhas-bg:             #0A0E1A;    /* Deep navy */
+  --bezhas-bg-rgb:         10, 14, 26;
+  --bezhas-surface:        #111827;    /* Card surface */
+  --bezhas-surface-2:      #1F2937;    /* Elevated surface */
+  --bezhas-surface-3:      #374151;    /* Highest elevation */
+  --bezhas-border:         #374151;    /* Default border */
+  --bezhas-border-subtle:  #1F2937;    /* Subtle border */
+
+  /* ─── Text ────────────────────────────────────────────── */
+  --bezhas-text:           #F9FAFB;    /* Primary text */
+  --bezhas-text-secondary: #9CA3AF;    /* Secondary text */
+  --bezhas-text-muted:     #6B7280;    /* Muted / disabled */
+  --bezhas-text-inverse:   #0A0E1A;    /* Text on light bg */
+
+  /* ─── Semantic Status ─────────────────────────────────── */
+  --bezhas-success:        #10B981;
+  --bezhas-success-bg:     rgba(16, 185, 129, 0.1);
+  --bezhas-warning:        #F59E0B;
+  --bezhas-warning-bg:     rgba(245, 158, 11, 0.1);
+  --bezhas-error:          #EF4444;
+  --bezhas-error-bg:       rgba(239, 68, 68, 0.1);
+  --bezhas-info:           #3B82F6;
+  --bezhas-info-bg:        rgba(59, 130, 246, 0.1);
+
+  /* ─── Vision States (BEZ_Scaner / PureScan) ───────────── */
+  --vision-approved:       #10B981;    /* SIFT match confirmed */
+  --vision-approved-bg:    rgba(16, 185, 129, 0.15);
+  --vision-rejected:       #EF4444;    /* SIFT mismatch / counterfeit */
+  --vision-rejected-bg:    rgba(239, 68, 68, 0.15);
+  --vision-scanning:       #F59E0B;    /* Analysis in progress */
+  --vision-scanning-bg:    rgba(245, 158, 11, 0.15);
+  --vision-pending:        #3B82F6;    /* Awaiting review */
+
+  /* ─── Typography ──────────────────────────────────────── */
+  --font-display:          'Syne', system-ui, sans-serif;
+  --font-body:             'DM Sans', system-ui, sans-serif;
+  --font-mono:             'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Size scale */
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+  --text-4xl:  2.25rem;    /* 36px */
+  --text-5xl:  3rem;       /* 48px */
+
+  /* ─── Spacing ─────────────────────────────────────────── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ─── Radius ──────────────────────────────────────────── */
+  --radius-sm:    0.375rem;   /* 6px — inputs, small buttons */
+  --radius-md:    0.5rem;     /* 8px — cards */
+  --radius-lg:    0.75rem;    /* 12px — modals */
+  --radius-xl:    1rem;       /* 16px — large panels */
+  --radius-2xl:   1.5rem;     /* 24px — feature cards */
+  --radius-full:  9999px;     /* Pills, avatars */
+
+  /* ─── Shadows ─────────────────────────────────────────── */
+  --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md:    0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg:    0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-xl:    0 20px 25px rgba(0, 0, 0, 0.6);
+  --shadow-glow:  0 0 20px rgba(var(--bezhas-primary-rgb), 0.3);
+  --shadow-glow-secondary: 0 0 20px rgba(var(--bezhas-secondary-rgb), 0.3);
+
+  /* ─── Transitions ─────────────────────────────────────── */
+  --transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base:   200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ─── Z-Index Scale ───────────────────────────────────── */
+  --z-dropdown:  50;
+  --z-sticky:    100;
+  --z-modal:     200;
+  --z-popover:   300;
+  --z-tooltip:   400;
+  --z-toast:     500;
+}
+
+/* ─── Base Resets ──────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-body);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bezhas-bg);
+  color: var(--bezhas-text);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+code, pre, .mono {
+  font-family: var(--font-mono);
+}
+
+/* ─── Utility Classes ─────────────────────────────────── */
+.bezhas-gradient-text {
+  background: linear-gradient(135deg, var(--bezhas-primary), var(--bezhas-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bezhas-card {
+  background: var(--bezhas-surface);
+  border: 1px solid var(--bezhas-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.bezhas-card:hover {
+  border-color: var(--bezhas-primary);
+  box-shadow: var(--shadow-glow);
+}
+
+.bezhas-glass {
+  background: rgba(var(--bezhas-bg-rgb), 0.7);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bezhas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bezhas-badge--success { background: var(--bezhas-success-bg); color: var(--bezhas-success); }
+.bezhas-badge--warning { background: var(--bezhas-warning-bg); color: var(--bezhas-warning); }
+.bezhas-badge--error   { background: var(--bezhas-error-bg);   color: var(--bezhas-error); }
+.bezhas-badge--info    { background: var(--bezhas-info-bg);    color: var(--bezhas-info); }
+
+/* ─── Vision Status Badges ────────────────────────────── */
+.vision-badge--approved { background: var(--vision-approved-bg); color: var(--vision-approved); }
+.vision-badge--rejected { background: var(--vision-rejected-bg); color: var(--vision-rejected); }
+.vision-badge--scanning { background: var(--vision-scanning-bg); color: var(--vision-scanning); animation: bezhas-pulse 2s ease-in-out infinite; }
+
+@keyframes bezhas-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes bezhas-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(var(--bezhas-primary-rgb), 0.2); }
+  50% { box-shadow: 0 0 20px rgba(var(--bezhas-primary-rgb), 0.4); }
+}
+
+/* ─── Scrollbar Styling ───────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bezhas-bg); }
+::-webkit-scrollbar-thumb { background: var(--bezhas-surface-3); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--bezhas-primary); }

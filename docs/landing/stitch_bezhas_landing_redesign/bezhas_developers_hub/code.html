@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BEZHAS | Developer Hub</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #080911;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .hero-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(13, 51, 242, 0.15) 0%, rgba(8, 9, 17, 0) 70%);
+        }
+
+        .holographic-border {
+            position: relative;
+        }
+
+        .holographic-border::after {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(45deg, transparent, rgba(13, 51, 242, 0.3), transparent);
+            z-index: -1;
+            border-radius: inherit;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-container": "#a6b0ff",
+                        "on-primary-fixed-variant": "#0027d4",
+                        "primary-container": "#001998",
+                        "secondary-fixed": "#f3daff",
+                        "inverse-surface": "#e2e1ef",
+                        "on-tertiary": "#000000",
+                        "surface-bright": "#1a1b25",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#05060a",
+                        "secondary-fixed-dim": "#e0b6ff",
+                        "on-secondary-fixed-variant": "#7022b4",
+                        "surface-dim": "#080911",
+                        "on-background": "#f5f6f8",
+                        "outline-variant": "rgba(255, 255, 255, 0.1)",
+                        "error-container": "#93000a",
+                        "surface-tint": "#0d33f2",
+                        "on-primary-container": "#dfe0ff",
+                        "tertiary-container": "#004f58",
+                        "on-tertiary-container": "#97f0ff",
+                        "inverse-primary": "#bcc2ff",
+                        "on-error-container": "#ffdad6",
+                        "background": "#080911",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#1a1b25",
+                        "on-tertiary-fixed-variant": "#004f58",
+                        "surface-container-low": "#0c0d17",
+                        "inverse-on-surface": "#080911",
+                        "surface-container-high": "#1e1f29",
+                        "tertiary-fixed": "#97f0ff",
+                        "primary": "#0d33f2",
+                        "on-surface-variant": "#c5c5da",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#12131c",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "surface": "#080911",
+                        "on-error": "#690005",
+                        "secondary-container": "#323e92",
+                        "on-primary-fixed": "#000c61",
+                        "secondary": "#a855f7",
+                        "surface-container-highest": "#282934",
+                        "tertiary-fixed-dim": "#22d3ee",
+                        "on-tertiary-fixed": "#001f24",
+                        "on-surface": "#f5f6f8",
+                        "on-secondary-fixed": "#2d0050",
+                        "primary-fixed": "#dfe0ff",
+                        "outline": "#444657",
+                        "tertiary": "#22d3ee"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Space Grotesk"],
+                        "label": ["Space Grotesk"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="bg-background text-on-surface selection:bg-primary selection:text-white">
+    <!-- TopNavBar -->
+    <nav
+        class="fixed top-0 w-full z-50 bg-[#080911]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_20px_rgba(13,51,242,0.15)] flex justify-between items-center px-8 h-20 w-full">
+        <div class="text-2xl font-black italic tracking-tighter text-white font-['Space_Grotesk'] uppercase">
+            BEZHAS
+        </div>
+        <div class="hidden md:flex items-center space-x-8">
+            <a class="text-white/70 font-['Space_Grotesk'] italic tracking-tighter font-bold uppercase hover:text-white hover:bg-white/5 transition-all duration-300 px-4 py-2 rounded-four active:scale-95"
+                href="#">Ecosystem</a>
+            <a class="text-white/70 font-['Space_Grotesk'] italic tracking-tighter font-bold uppercase hover:text-white hover:bg-white/5 transition-all duration-300 px-4 py-2 rounded-four active:scale-95"
+                href="#">AI Protocol</a>
+            <a class="text-white/70 font-['Space_Grotesk'] italic tracking-tighter font-bold uppercase hover:text-white hover:bg-white/5 transition-all duration-300 px-4 py-2 rounded-four active:scale-95"
+                href="#">Supply Chain</a>
+            <a class="text-white/70 font-['Space_Grotesk'] italic tracking-tighter font-bold uppercase hover:text-white hover:bg-white/5 transition-all duration-300 px-4 py-2 rounded-four active:scale-95"
+                href="#">Governance</a>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="hidden md:flex items-center border border-white/10 rounded-lg overflow-hidden"
+                aria-label="Language selector">
+                <button data-lang-switch="en"
+                    class="px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-white/80 hover:bg-white/10 transition-colors">EN</button>
+                <button data-lang-switch="es"
+                    class="px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-white/80 hover:bg-white/10 transition-colors">ES</button>
+            </div>
+            <button
+                class="hidden md:block glass-btn px-4 py-2 rounded-four active:scale-95 text-white/70 font-['Space_Grotesk'] italic tracking-tighter font-bold uppercase hover:text-white transition-all">Log
+                In</button>
+            <button
+                class="bg-[#0d33f2] text-white px-6 py-2 rounded-four font-['Space_Grotesk'] italic tracking-tighter font-bold uppercase active:scale-95 shadow-[0_0_15px_rgba(13,51,242,0.4)]">Connect
+                Wallet</button>
+            <button class="md:hidden text-white">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+        </div>
+    </nav>
+    <div class="flex min-h-screen pt-20">
+        <!-- SideNavBar -->
+        <aside
+            class="hidden lg:flex flex-col h-[calc(100vh-5rem)] w-72 fixed left-0 top-20 border-r border-white/5 bg-[#080911] py-6 shadow-xl z-40">
+            <div class="px-6 mb-8">
+                <div class="flex items-center space-x-3 mb-1">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
+                        <img alt="User Profile"
+                            data-alt="Futuristic digital avatar profile silhouette with glowing cyan neural network lines on dark background"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9zCkcf_jIG-O_-qmTo45na896QsA8sTisQyTyWrqEOmUeQQhWp1wKIRk430TtAA2tzXoRu939wgs9eUGD_9NSY_0w4KztPB0Gj5IqpefCP9vzAmGPqxZEne5R34-wPQqBn321ZHuhnjB0XHykZJTh3A_4f3N5NfxkGmtgIz7O-M7W9Wbxlw_BZEUFR5E1U326SKAZ5aK17fS2UE_J-AR2r7H6SOch4Cpo6RNCwDjBGUwwdNmtKZN3BA7dLEvYccimrNRstgrI2uU" />
+                    </div>
+                    <div>
+                        <div
+                            class="text-[#0d33f2] font-black italic font-['Space_Grotesk'] uppercase tracking-widest text-xs">
+                            OPERATOR_01</div>
+                        <div class="text-white/40 text-[10px] tracking-widest uppercase">Protocol Status: Online</div>
+                    </div>
+                </div>
+            </div>
+            <nav class="flex-1 px-4 space-y-1">
+                <a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-[#0d33f2] bg-[#0d33f2]/10 border-r-4 border-[#0d33f2] font-['Space_Grotesk'] tracking-widest uppercase text-xs transition-colors duration-200"
+                    href="#">
+                    <span class="material-symbols-outlined">grid_view</span>
+                    <span>Dashboard</span>
+                </a>
+                <a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-white/40 hover:bg-white/5 hover:text-white font-['Space_Grotesk'] tracking-widest uppercase text-xs transition-colors duration-200"
+                    href="#">
+                    <span class="material-symbols-outlined">query_stats</span>
+                    <span>Protocol Stats</span>
+                </a>
+                <a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-white/40 hover:bg-white/5 hover:text-white font-['Space_Grotesk'] tracking-widest uppercase text-xs transition-colors duration-200"
+                    href="#">
+                    <span class="material-symbols-outlined">hub</span>
+                    <span>Supply Nodes</span>
+                </a>
+                <a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-white/40 hover:bg-white/5 hover:text-white font-['Space_Grotesk'] tracking-widest uppercase text-xs transition-colors duration-200"
+                    href="#">
+                    <span class="material-symbols-outlined">psychology</span>
+                    <span>Neural Network</span>
+                </a>
+                <a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-white/40 hover:bg-white/5 hover:text-white font-['Space_Grotesk'] tracking-widest uppercase text-xs transition-colors duration-200"
+                    href="#">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="px-4 mt-auto space-y-4">
+                <button
+                    class="w-full bg-primary text-white py-3 rounded-xl font-['Space_Grotesk'] tracking-widest uppercase text-xs font-bold shadow-[0_0_20px_rgba(13,51,242,0.3)] hover:brightness-110 transition-all">
+                    Upgrade Node
+                </button>
+                <div class="pt-4 border-t border-white/5 space-y-1">
+                    <a class="flex items-center space-x-3 px-4 py-2 text-white/40 hover:text-white font-['Space_Grotesk'] tracking-widest uppercase text-[10px] transition-colors"
+                        href="#">
+                        <span class="material-symbols-outlined text-sm">shield</span>
+                        <span>Security</span>
+                    </a>
+                    <a class="flex items-center space-x-3 px-4 py-2 text-white/40 hover:text-white font-['Space_Grotesk'] tracking-widest uppercase text-[10px] transition-colors"
+                        href="#">
+                        <span class="material-symbols-outlined text-sm">help_center</span>
+                        <span>Support</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+        <!-- Main Content Area -->
+        <main class="flex-1 lg:ml-72 bg-surface">
+            <!-- Hero Section -->
+            <section
+                class="relative min-h-[716px] flex flex-col items-center justify-center px-8 overflow-hidden hero-gradient">
+                <div class="absolute inset-0 z-0 opacity-20 pointer-events-none">
+                    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary blur-[120px]"></div>
+                    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-tertiary blur-[120px]"></div>
+                </div>
+                <div class="relative z-10 text-center max-w-4xl mx-auto">
+                    <div
+                        class="inline-flex items-center space-x-2 bg-surface-container-high border border-outline-variant px-3 py-1 rounded-full mb-8">
+                        <span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                        <span class="text-[10px] tracking-[0.3em] uppercase text-tertiary font-bold">SDK v4.2.0 Stable
+                            Released</span>
+                    </div>
+                    <h1 class="text-6xl md:text-8xl font-black italic tracking-tighter uppercase mb-6 leading-none">
+                        Architecting <span class="text-primary">Intelligence.</span>
+                    </h1>
+                    <p
+                        class="text-xl md:text-2xl text-on-surface-variant font-light max-w-2xl mx-auto mb-10 leading-relaxed italic">
+                        The ultimate developer environment for decentralized AI protocols and autonomous supply chain
+                        logistics.
+                    </p>
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <button
+                            class="w-full sm:w-auto px-10 py-4 bg-primary text-white text-lg font-bold tracking-widest uppercase rounded-xl shadow-[0_0_30px_rgba(13,51,242,0.5)] active:scale-95 transition-all">
+                            Get Started with the SDK
+                        </button>
+                        <button
+                            class="w-full sm:w-auto px-10 py-4 glass-btn text-white text-lg font-bold tracking-widest uppercase rounded-xl active:scale-95 transition-all">
+                            Read the Docs
+                        </button>
+                    </div>
+                </div>
+                <!-- Abstract Visualizer Background Element -->
+                <div
+                    class="absolute bottom-0 left-0 right-0 h-32 flex items-end justify-between px-4 opacity-10 pointer-events-none">
+                    <div class="flex gap-1 items-end">
+                        <div class="w-2 bg-primary h-12"></div>
+                        <div class="w-2 bg-primary h-24"></div>
+                        <div class="w-2 bg-primary h-16"></div>
+                        <div class="w-2 bg-primary h-32"></div>
+                        <div class="w-2 bg-primary h-8"></div>
+                    </div>
+                    <div class="flex gap-1 items-end">
+                        <div class="w-2 bg-tertiary h-32"></div>
+                        <div class="w-2 bg-tertiary h-12"></div>
+                        <div class="w-2 bg-tertiary h-24"></div>
+                        <div class="w-2 bg-tertiary h-16"></div>
+                        <div class="w-2 bg-tertiary h-8"></div>
+                    </div>
+                </div>
+            </section>
+            <!-- Technical Bento Grid -->
+            <section class="px-8 py-24 max-w-7xl mx-auto">
+                <div class="flex items-end justify-between mb-16">
+                    <div>
+                        <div class="text-[10px] tracking-[0.4em] uppercase text-primary font-bold mb-2">Protocol
+                            Infrastructure</div>
+                        <h2 class="text-4xl font-black italic tracking-tighter uppercase">Developer Resources</h2>
+                    </div>
+                    <div class="hidden md:block text-right">
+                        <div class="text-[10px] tracking-[0.2em] uppercase text-on-surface-variant">Global System Uptime
+                        </div>
+                        <div class="text-2xl font-['Space_Grotesk'] text-tertiary">99.9998%</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    <!-- Core Protocol APIs -->
+                    <div
+                        class="md:col-span-8 group relative overflow-hidden rounded-xl bg-surface-container border border-outline-variant p-8 glass-panel">
+                        <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-9xl">api</span>
+                        </div>
+                        <div class="relative z-10 h-full flex flex-col">
+                            <div class="flex items-center space-x-3 mb-6">
+                                <div
+                                    class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined text-3xl">terminal</span>
+                                </div>
+                                <h3 class="text-2xl font-bold italic uppercase tracking-tight">Core Protocol APIs</h3>
+                            </div>
+                            <p class="text-on-surface-variant mb-8 max-w-md">
+                                Direct interaction layer for neural-consensus and state management. Optimized for
+                                low-latency transaction processing and high-throughput data streams.
+                            </p>
+                            <div class="mt-auto grid grid-cols-2 gap-4">
+                                <div class="p-4 bg-surface-container-high rounded-lg border border-white/5">
+                                    <div class="text-[10px] tracking-widest uppercase text-white/40 mb-1">REST Endpoint
+                                    </div>
+                                    <div class="text-xs font-mono text-tertiary truncate">api.bezhas.protocol/v4/*</div>
+                                </div>
+                                <div class="p-4 bg-surface-container-high rounded-lg border border-white/5">
+                                    <div class="text-[10px] tracking-widest uppercase text-white/40 mb-1">Websocket
+                                    </div>
+                                    <div class="text-xs font-mono text-tertiary truncate">wss://stream.bezhas.io</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Side Stats / Small Card -->
+                    <div
+                        class="md:col-span-4 rounded-xl bg-surface-container border border-outline-variant p-8 flex flex-col justify-between group">
+                        <div class="flex justify-between items-start">
+                            <span class="material-symbols-outlined text-primary text-4xl">bolt</span>
+                            <span class="text-[10px] tracking-[0.3em] font-bold text-tertiary">FAST-PATH</span>
+                        </div>
+                        <div>
+                            <div class="text-4xl font-black italic mb-2 tracking-tighter">1.2ms</div>
+                            <div class="text-xs uppercase tracking-widest text-on-surface-variant">Avg Consensus
+                                Finality</div>
+                        </div>
+                        <div class="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div class="w-3/4 h-full bg-primary group-hover:w-full transition-all duration-700"></div>
+                        </div>
+                    </div>
+                    <!-- Smart Contract Tooling -->
+                    <div
+                        class="md:col-span-6 rounded-xl bg-surface-container-high border border-outline-variant p-8 holographic-border group">
+                        <span
+                            class="material-symbols-outlined text-secondary text-4xl mb-6">integration_instructions</span>
+                        <h3 class="text-2xl font-bold italic uppercase tracking-tight mb-4">Smart Contract Tooling</h3>
+                        <p class="text-on-surface-variant mb-6">
+                            Deploy high-performance, AI-aware smart contracts using our custom 'Kinetic' compiler.
+                            Built-in formal verification and security auditing.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span
+                                class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">Kinetic-CLI</span>
+                            <span
+                                class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">Solidity
+                                Bridge</span>
+                            <span
+                                class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">EVM
+                                Compatible</span>
+                        </div>
+                    </div>
+                    <!-- Supply Chain Node Validators -->
+                    <div class="md:col-span-6 rounded-xl bg-[#0d33f2] p-8 text-white relative overflow-hidden group">
+                        <div
+                            class="absolute -bottom-10 -right-10 opacity-20 transform rotate-12 transition-transform group-hover:rotate-0 duration-500">
+                            <span class="material-symbols-outlined text-[12rem]"
+                                style="font-variation-settings: 'FILL' 1;">hub</span>
+                        </div>
+                        <div class="relative z-10">
+                            <h3 class="text-2xl font-black italic uppercase tracking-tight mb-4">Node Validators</h3>
+                            <p class="text-white/80 mb-8 max-w-sm">
+                                Secure the supply chain network by running a validator node. Earn protocol rewards while
+                                processing autonomous freight manifests.
+                            </p>
+                            <button
+                                class="bg-white text-primary px-6 py-3 rounded-lg font-bold tracking-widest uppercase text-xs active:scale-95 transition-all">
+                                Deploy a Node
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Wallet & Tokenomics Brief -->
+            <section class="px-8 py-20 max-w-7xl mx-auto">
+                <div class="mb-10">
+                    <div class="text-[10px] tracking-[0.4em] uppercase text-primary font-bold mb-2">Enterprise Wallet
+                        Architecture</div>
+                    <h2 class="text-4xl font-black italic tracking-tighter uppercase mb-3">Wallet + Tokenomics <span
+                            class="text-primary">for Teams</span> (EN/ES)</h2>
+                    <p class="text-on-surface-variant max-w-3xl mb-2" data-lang="en">
+                        EN: BeZhas offers a developer-friendly integration layer while preserving institutional security
+                        and verifiable on-chain economics.
+                    </p>
+                    <p class="text-on-surface-variant max-w-3xl" data-lang="es">
+                        ES: BeZhas ofrece una capa de integracion simple para desarrollo enterprise, manteniendo
+                        seguridad institucional y economia on-chain verificable.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="rounded-xl bg-surface-container border border-outline-variant p-6">
+                        <p class="text-[10px] tracking-[0.3em] uppercase text-tertiary font-bold mb-2" data-lang="en">
+                            Investors</p>
+                        <ul class="text-sm text-on-surface-variant space-y-2 mb-4" data-lang="en">
+                            <li>Faster B2B adoption through SaaS-like UX and predictable transaction costs.</li>
+                            <li>BEZ tokenomics linked to sustainable network activity and enterprise usage.</li>
+                        </ul>
+                        <p class="text-[10px] tracking-[0.3em] uppercase text-tertiary font-bold mb-2" data-lang="es">
+                            Inversionistas
+                        </p>
+                        <ul class="text-sm text-on-surface-variant space-y-2" data-lang="es">
+                            <li>Adopcion B2B acelerada por UX tipo SaaS y costos transaccionales previsibles.</li>
+                            <li>Tokenomics BEZ ligada a actividad sostenible y uso enterprise de la red.</li>
+                        </ul>
+                    </div>
+                    <div class="rounded-xl bg-surface-container border border-outline-variant p-6">
+                        <p class="text-[10px] tracking-[0.3em] uppercase text-primary font-bold mb-2" data-lang="en">
+                            Developers</p>
+                        <ul class="text-sm text-on-surface-variant space-y-2 mb-4" data-lang="en">
+                            <li>AA Smart Wallet, MultiSig, and Paymaster for low-friction enterprise operations.</li>
+                            <li>SDK/API access to portfolio, security, and guardians without exposing private keys.</li>
+                        </ul>
+                        <p class="text-[10px] tracking-[0.3em] uppercase text-primary font-bold mb-2" data-lang="es">
+                            Desarrolladores
+                        </p>
+                        <ul class="text-sm text-on-surface-variant space-y-2" data-lang="es">
+                            <li>Smart Wallet AA, MultiSig y Paymaster para operaciones enterprise sin friccion.</li>
+                            <li>SDK/API para portfolio, seguridad y guardianes sin exponer llaves privadas.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            <!-- Data Viz / Technical Spec Section -->
+            <section class="bg-surface-container-low py-24 px-8">
+                <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                    <div>
+                        <h2 class="text-4xl font-black italic tracking-tighter uppercase mb-8">Neural Consensus
+                            Architecture</h2>
+                        <div class="space-y-6">
+                            <div class="flex gap-4">
+                                <div
+                                    class="flex-shrink-0 w-8 h-8 rounded bg-primary flex items-center justify-center font-bold italic">
+                                    01</div>
+                                <div>
+                                    <h4 class="text-lg font-bold uppercase tracking-tight mb-1">Asymmetric Sharding</h4>
+                                    <p class="text-sm text-on-surface-variant">Parallel transaction processing across
+                                        1,024 dynamic shards with cross-chain synchronization.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div
+                                    class="flex-shrink-0 w-8 h-8 rounded bg-primary flex items-center justify-center font-bold italic">
+                                    02</div>
+                                <div>
+                                    <h4 class="text-lg font-bold uppercase tracking-tight mb-1">AI Proof of Intent</h4>
+                                    <p class="text-sm text-on-surface-variant">Validation mechanism that predicts
+                                        network congestion and optimizes routing in real-time.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div
+                                    class="flex-shrink-0 w-8 h-8 rounded bg-primary flex items-center justify-center font-bold italic">
+                                    03</div>
+                                <div>
+                                    <h4 class="text-lg font-bold uppercase tracking-tight mb-1">Holographic Security
+                                    </h4>
+                                    <p class="text-sm text-on-surface-variant">Distributed redundancy layers ensuring
+                                        zero single points of failure across global nodes.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative glass-panel rounded-xl p-6 overflow-hidden">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-2 h-2 rounded-full bg-error"></div>
+                                <span class="text-[10px] tracking-widest uppercase text-white/40">Live Network
+                                    Stream</span>
+                            </div>
+                            <div class="text-[10px] tracking-widest uppercase text-primary">Status: Critical Path OK
+                            </div>
+                        </div>
+                        <div class="h-64 flex items-end gap-1">
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[20%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[35%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[55%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[45%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[75%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[90%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[60%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[40%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[85%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[30%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[50%]"></div>
+                            <div class="flex-1 bg-primary/20 hover:bg-primary transition-colors h-[95%]"></div>
+                        </div>
+                        <div class="absolute inset-0 pointer-events-none border border-white/10 rounded-xl"></div>
+                        <div
+                            class="mt-4 flex justify-between text-[8px] font-mono text-white/20 uppercase tracking-[0.4em]">
+                            <span>Block_0x1A2</span>
+                            <span>Block_0x1B9</span>
+                            <span>Block_0x1CF</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Footer -->
+            <footer class="w-full py-12 px-8 border-t border-white/5 bg-[#080911]">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-7xl mx-auto">
+                    <div class="col-span-1 md:col-span-1">
+                        <div class="text-lg font-black italic text-white font-['Space_Grotesk'] uppercase mb-4">BEZHAS
+                        </div>
+                        <p class="text-[10px] text-white/30 tracking-widest uppercase leading-relaxed">
+                            Powering the next generation of industrial intelligence through decentralized protocols.
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="text-[10px] tracking-[0.3em] font-bold text-primary uppercase mb-4">Resources</div>
+                        <div class="flex flex-col space-y-2">
+                            <a class="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase"
+                                href="#">Whitepaper</a>
+                            <a class="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase"
+                                href="#">GitHub</a>
+                            <a class="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase"
+                                href="#">Documentation</a>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="text-[10px] tracking-[0.3em] font-bold text-primary uppercase mb-4">Community</div>
+                        <div class="flex flex-col space-y-2">
+                            <a class="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase"
+                                href="#">Discord</a>
+                            <a class="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase"
+                                href="#">Twitter</a>
+                            <a class="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase"
+                                href="#">Contact</a>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="text-[10px] tracking-[0.3em] font-bold text-primary uppercase mb-4">Legal</div>
+                        <div class="flex flex-col space-y-2">
+                            <a class="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase"
+                                href="#">Legal</a>
+                            <a class="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase"
+                                href="#">Privacy Policy</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-12 text-center">
+                    <div class="text-white/30 font-['Space_Grotesk'] tracking-widest text-[10px] uppercase">
+                        © 2024 BEZHAS PROTOCOL. ALL RIGHTS RESERVED.
+                    </div>
+                </div>
+            </footer>
+        </main>
+    </div>
+    <script>
+            (function () {
+                const key = 'bezhas_lang';
+                const detected = (navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en';
+                const saved = localStorage.getItem(key);
+                const initialLang = saved === 'en' || saved === 'es' ? saved : detected;
+
+                function applyLang(lang) {
+                    document.querySelectorAll('[data-lang]').forEach((el) => {
+                        el.style.display = el.getAttribute('data-lang') === lang ? '' : 'none';
+                    });
+
+                    document.querySelectorAll('[data-lang-switch]').forEach((btn) => {
+                        const active = btn.getAttribute('data-lang-switch') === lang;
+                        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                        btn.style.backgroundColor = active ? '#0d33f2' : 'transparent';
+                        btn.style.opacity = active ? '1' : '0.65';
+                    });
+
+                    document.documentElement.setAttribute('lang', lang === 'es' ? 'es' : 'en');
+                }
+
+                document.querySelectorAll('[data-lang-switch]').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const lang = btn.getAttribute('data-lang-switch');
+                        localStorage.setItem(key, lang);
+                        applyLang(lang);
+                    });
+                });
+
+                applyLang(initialLang);
+            })();
+    </script>
+</body>
+
+</html>

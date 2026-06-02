@@ -1,0 +1,271 @@
+# BeZhas — Docker Compose Unificado v2.0
+# ─────────────────────────────────────────────────────────────────────────────
+# Servicios P0 (ACTIVOS):    redis, agent-runtime, messaging-mcp
+# Servicios P1 (Planificados): lead-mcp, open-webui
+# Servicios existentes:      api (3001), mcp-core (4001), postgres, ...
+#
+# Uso:
+#   docker compose up -d                    → arranca todo
+#   docker compose up -d redis agent-runtime → solo P0
+#   docker compose logs -f agent-runtime    → ver logs
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── INFRAESTRUCTURA BASE ───────────────────────────────────────────────────
+  redis:
+    image: redis:7.4-alpine
+    container_name: bezhas-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - bezhas-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: bezhas-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       bezhas
+      POSTGRES_USER:     bezhas
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bezhas_secure_2026}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - bezhas-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bezhas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── P0: MESSAGING MCP (Telegram) ──────────────────────────────────────────
+  messaging-mcp:
+    build:
+      context: ./messaging-mcp
+      dockerfile: Dockerfile
+    container_name: bezhas-messaging-mcp
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV:                    ${NODE_ENV:-production}
+      REDIS_URL:                   redis://redis:6379
+      REDIS_PREFIX:                "bezhas:messaging:"
+      TELEGRAM_BOT_TOKEN:          ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ALERT_CHAT_ID:      ${TELEGRAM_ALERT_CHAT_ID}
+      TELEGRAM_LEADS_CHANNEL_ID:   ${TELEGRAM_LEADS_CHANNEL_ID:-}
+      TELEGRAM_AUTHORIZED_USERS:   ${TELEGRAM_AUTHORIZED_USERS}
+      BEZHAS_PUBLIC_URL:           ${BEZHAS_PUBLIC_URL:-https://mcp.bez.digital}
+      MCP_PORT:                    4002
+      RATE_LIMIT_PER_MIN:          20
+    ports:
+      - "4002:4002"
+    networks:
+      - bezhas-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── P0: AGENT RUNTIME (OpenClaw + Orchestrator) ───────────────────────────
+  agent-runtime:
+    build:
+      context: ./agent-runtime
+      dockerfile: Dockerfile
+    container_name: bezhas-agent-runtime
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      messaging-mcp:
+        condition: service_healthy
+      obsidian-mcp:
+        condition: service_healthy
+    environment:
+      NODE_ENV:                  ${NODE_ENV:-production}
+      # Redis
+      REDIS_URL:                 redis://redis:6379
+      REDIS_PREFIX:              "bezhas:mem:"
+      # Telegram
+      TELEGRAM_BOT_TOKEN:        ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ALERT_CHAT_ID:    ${TELEGRAM_ALERT_CHAT_ID}
+      TELEGRAM_AUTHORIZED_USERS: ${TELEGRAM_AUTHORIZED_USERS}
+      BEZHAS_PUBLIC_URL:         ${BEZHAS_PUBLIC_URL:-https://mcp.bez.digital}
+      # LLM Cloud (cascade)
+      ANTHROPIC_API_KEY:         ${ANTHROPIC_API_KEY}
+      GEMINI_API_KEY:            ${GEMINI_API_KEY:-}
+      KIMI_API_KEY:              ${KIMI_API_KEY:-}
+      OPENAI_API_KEY:            ${OPENAI_API_KEY:-}
+      DEEPSEEK_API_KEY:          ${DEEPSEEK_API_KEY:-}
+      # Ollama local (apunta al host)
+      OLLAMA_HOST:               http://host.docker.internal:11434
+      # Human-in-loop
+      HIL_TIMEOUT_SECS:          120
+      # Memory settings
+      MEM_HISTORY_MAX:           100
+      MEM_STM_TTL:               3600
+      MEM_EPISODE_TTL:           604800
+      OBSIDIAN_MCP_URL:          http://obsidian-mcp:4007
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # acceso a Ollama en el host
+    networks:
+      - bezhas-net
+
+  # ── P0: OBSIDIAN MCP (Knowledge Ops + memoria documental) ────────────────
+  obsidian-mcp:
+    build:
+      context: ./obsidian-mcp
+      dockerfile: Dockerfile
+    container_name: bezhas-obsidian-mcp
+    restart: unless-stopped
+    environment:
+      NODE_ENV:                ${NODE_ENV:-production}
+      MCP_PORT:                4007
+      OBSIDIAN_VAULT_PATH:     /vault
+      OBSIDIAN_MAX_NOTE_BYTES: 512000
+    volumes:
+      - ./docs/obsidian-vault:/vault
+    ports:
+      - "4007:4007"
+    networks:
+      - bezhas-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── BEZHAS API (existente) ────────────────────────────────────────────────
+  bezhas-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: bezhas-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV:         ${NODE_ENV:-production}
+      DATABASE_URL:     postgresql://bezhas:${POSTGRES_PASSWORD:-bezhas_secure_2026}@postgres:5432/bezhas
+      REDIS_URL:        redis://redis:6379
+      JWT_SECRET:       ${JWT_SECRET}
+      BEZHAS_API_KEY:   ${BEZHAS_API_KEY}
+      PORT:             3001
+    ports:
+      - "3001:3001"
+    networks:
+      - bezhas-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── BEZHAS CORE MCP (existente) ───────────────────────────────────────────
+  bezhas-core-mcp:
+    build:
+      context: ./ai-engine
+      dockerfile: Dockerfile
+    container_name: bezhas-core-mcp
+    restart: unless-stopped
+    depends_on:
+      bezhas-api:
+        condition: service_healthy
+    environment:
+      PORT:              4001
+      BEZHAS_API_URL:    http://bezhas-api:3001
+      BEZHAS_API_KEY:    ${BEZHAS_API_KEY}
+      REDIS_URL:         redis://redis:6379
+    ports:
+      - "4001:4001"
+    networks:
+      - bezhas-net
+
+  # ── P1: OPEN WEBUI (interface Ollama) ─────────────────────────────────────
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:cuda
+    container_name: bezhas-open-webui
+    restart: unless-stopped
+    profiles:
+      - p1    # Solo arranca con: docker compose --profile p1 up -d
+    depends_on:
+      - redis
+    environment:
+      OLLAMA_BASE_URL:  http://host.docker.internal:11434
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-bezhas_webui_2026}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - open-webui-data:/app/backend/data
+    ports:
+      - "3100:8080"
+    networks:
+      - bezhas-net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ── MONITORING (Grafana + Prometheus) ─────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bezhas-prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - bezhas-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bezhas-grafana
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-bezhas_2026}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3200:3000"
+    networks:
+      - bezhas-net
+
+# ── REDES ──────────────────────────────────────────────────────────────────────
+networks:
+  bezhas-net:
+    driver: bridge
+    name: bezhas-network
+
+# ── VOLÚMENES ──────────────────────────────────────────────────────────────────
+volumes:
+  redis-data:
+  postgres-data:
+  open-webui-data:
+  prometheus-data:
+  grafana-data:

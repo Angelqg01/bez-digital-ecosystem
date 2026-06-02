@@ -1,0 +1,836 @@
+================================================================================
+  BEZHAS PLATFORM — GUIA DE COMANDOS Y ENLACES
+  Actualizado: 2026-04-04
+================================================================================
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  ARQUITECTURA: 3 APPS SEPARADAS + INFRAESTRUCTURA COMPARTIDA              ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                            ║
+║  BeZhas-Blockchain (CORE)  ← Infraestructura L2 + API + AI + Contratos    ║
+║    ├── api/              → Backend Express (:3001)                         ║
+║    ├── aegis/            → AI Engine FastAPI (:8001)                       ║
+║    ├── ai-engine/        → MCP AI Gateway (:3002)                         ║
+║    ├── bezhas-edge-node/ → B2B relay (:4000)                              ║
+║    ├── control-center/   → Admin panel Next.js 16.2.1 (:3000)             ║
+║    ├── smart-contracts/  → Foundry (Solidity, 73+ contratos)              ║
+║    ├── sdk/              → SDK multi-chain (@bezhas/sdk v3)               ║
+║    ├── agent-runtime/    → Agent Runtime v0.4.0 (24+ tools, 8+ commands)  ║
+║    ├── modules/          → Agent UI components (69 agentes)               ║
+║    ├── bezhas-defi/      → DeFi backend+frontend (:3003/:5174)            ║
+║    ├── nginx/            → Reverse proxy + TLS + WAF                      ║
+║    ├── monitoring/       → Prometheus + Grafana + Loki                    ║
+║    ├── openclaw/         → OpenClaw engine + SDK                          ║
+║    ├── openclaw-skills/  → Skills comerciales (SDR, growth, deal)         ║
+║    ├── scripts/          → Deploy, test, bootstrap, security              ║
+║    ├── integrations/     → Sync Payments + Sync OpenClaw                  ║
+║    ├── plans/            → Planes de integracion y roadmap                ║
+║    ├── status/           → Workflow status y validaciones                  ║
+║    ├── SKILL/            → Knowledge base para IA (26 archivos)           ║
+║    └── docs/             → Documentacion tecnica + developer portal       ║
+║                                                                            ║
+║  BeZhas-Hub (APP SOCIAL) ← Red social, marketplace, chat, contenido     ║
+║    └── D:\Bezhas-Hub\  (proyecto separado)               ║
+║                                                                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+================================================================================
+  SECCION 1: ENLACES LOCALES (DESARROLLO)
+================================================================================
+
+ SERVICIO                     URL                            PUERTO
+ ─────────────────────────── ────────────────────────────── ──────
+ Control Center (Admin)       http://localhost:3000           3000
+ Core API                     http://localhost:3001           3001
+ API Gateway (SSO)            http://localhost:3001/api/gateway/v1
+ API Health                   http://localhost:3001/api/health
+ API Docs (Swagger)           http://localhost:3001/api-docs
+ AI Gateway (MCP)             http://localhost:3002           3002
+ MCP Health                   http://localhost:3002/api/mcp/health
+ DeFi Backend                 http://localhost:3003           3003
+ DeFi Frontend                http://localhost:5174           5174
+ Edge Node (B2B)              http://localhost:4000           4000
+ Aegis AI                     http://localhost:8001           8001
+ Aegis Health                 http://localhost:8001/aegis/v1/health
+ Blockchain RPC (HTTP)        http://localhost:8545           8545
+ Blockchain RPC (WebSocket)   ws://localhost:8546             8546
+ OP-Node (Consensus)          http://localhost:5052           5052
+ PostgreSQL                   localhost                       5432
+ Redis                        localhost                       6379
+ Nginx (HTTPS)                https://bezhas.local            443
+
+ GATEWAY API ENDPOINTS:
+   POST /api/gateway/v1/sso/token      → Generar token SSO cross-app
+   GET  /api/gateway/v1/sso/verify     → Verificar token SSO
+   GET  /api/gateway/v1/wallet/balance  → Balance multi-chain
+   POST /api/gateway/v1/wallet/send     → Enviar transaccion
+   GET  /api/gateway/v1/staking/pools   → Pools de staking
+   POST /api/gateway/v1/staking/stake   → Stakear BEZ
+   GET  /api/gateway/v1/farming/pools   → Pools de farming
+   GET  /api/gateway/v1/governance/proposals → Propuestas DAO
+   POST /api/gateway/v1/governance/vote  → Votar en propuesta
+   GET  /api/gateway/v1/bridge/status    → Estado del bridge
+   POST /api/gateway/v1/bridge/initiate  → Iniciar bridge L2↔Polygon
+   GET  /api/gateway/v1/treasury/overview → Resumen tesoreria
+   GET  /api/gateway/v1/token/price      → Precio BEZ
+   GET  /api/gateway/v1/contracts/:name  → Info de contrato
+
+ ADMIN AUTH ENDPOINTS (api/routes/admin-auth.js):
+   GET  /api/admin-auth/nonce          → Generar nonce SIWE (anti-replay)
+   POST /api/admin-auth/login          → Login con credenciales (bcrypt server-side)
+   POST /api/admin-auth/wallet-login   → Login con firma wallet (SIWE + nonce)
+   POST /api/admin-auth/verify         → Verificar sesion admin activa
+   POST /api/admin-auth/logout         → Cerrar sesion admin (limpiar cookie)
+
+ ADMIN FRONTEND ROUTES (control-center/frontend):
+   /admin/login                        → Pagina login admin (Credentials + Wallet)
+   /admin/profile                      → Panel admin (Hybrid Control Center)
+
+ SEGURIDAD DEL LOGIN ADMIN:
+   - Credenciales: verificadas SERVER-SIDE con bcrypt (hash $2a 12 rounds)
+   - Wallet: firma SIWE verificada server-side con ethers.verifyMessage()
+   - Nonce anti-replay: generado por servidor, uso unico, expira 5 min
+   - Rate limit: 5 intentos / 15 min por IP (Redis)
+   - JWT: almacenado en cookie HttpOnly (no accesible por JS client-side)
+   - JWT expira en 2h, emisor validado (bezhas-admin-auth)
+   - Audit trail: cada intento de login se registra en ai_logs (IP, UA, resultado)
+   - Timing-safe comparison para username (previene timing attacks)
+   - Env vars: ADMIN_USERNAME, ADMIN_PASSWORD_HASH, ADMIN_WALLET (nunca en frontend)
+
+
+================================================================================
+  SECCION 2: INICIAR SERVIDORES
+================================================================================
+
+--- OPCION A: Docker Compose DEV (Recomendado — sin OP Stack pesado) ---
+
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain"
+
+  # Iniciar toda la plataforma en modo desarrollo (sin L2 OP Stack)
+  # Usa docker-compose.dev.yml para eliminar dependencia de bezhas-geth
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis
+  # Esperar que postgres y redis esten healthy, luego:
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d aegis
+  # Esperar que aegis este healthy, luego:
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d ai-gateway api
+  # Esperar que api este healthy, luego:
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d bezhas-edge-node defi-backend
+
+  # TODO en un solo comando (tarda mas, builds secuenciales):
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+  # Frontends (requieren build, ejecutar aparte si se necesitan):
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d control-center defi-frontend
+
+  # NOTA: Dockerfiles actualizados a node:20-alpine (antes node:18-alpine)
+  # Se crearon .dockerignore para: control-center/frontend, bezhas-defi/backend, bezhas-defi/frontend
+  # IMPORTANTE: Healthchecks Docker DEBEN usar 127.0.0.1, NO localhost (IPv6 falla en Alpine)
+
+  # Alias corto para dev (PowerShell):
+  $dcDev = "docker compose -f docker-compose.yml -f docker-compose.dev.yml"
+  Invoke-Expression "$dcDev up -d"
+
+--- OPCION B: Docker Compose PRODUCCION (Incluye L2 OP Stack completo) ---
+
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain"
+
+  # Iniciar TODA la plataforma con blockchain L2 (12 servicios)
+  docker compose up -d
+
+  # Solo servicios especificos
+  docker compose up -d postgres redis            # Solo BD + cache
+  docker compose up -d postgres redis api aegis  # Core minimo
+  docker compose up -d defi-backend defi-frontend # Solo DeFi
+  docker compose up -d control-center             # Solo Admin panel
+
+  # Ver logs en tiempo real (funciona igual con o sin -f docker-compose.dev.yml)
+  docker compose logs -f                # Todos los servicios
+  docker compose logs -f api            # Solo API
+  docker compose logs -f defi-backend   # Solo DeFi backend
+  docker compose logs -f aegis          # Solo Aegis AI
+
+  # Ver estado de todos los contenedores
+  docker compose ps
+  docker ps --format "table {{.Names}}\t{{.Status}}"    # Vista rapida
+
+--- OPCION C: Bootstrap local completo (Desarrollo sin Docker completo) ---
+
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain"
+  .\scripts\bootstrap-local.ps1
+
+  # Opciones:
+  .\scripts\bootstrap-local.ps1 -SkipDeploy   # No redesplegar contratos
+  .\scripts\bootstrap-local.ps1 -SkipDocker   # Usar PostgreSQL local
+
+--- OPCION C2: Start-Dev Optimizado (Modo hibrido Docker+Local — RECOMENDADO) ---
+
+  # Inicia Docker (Postgres, Redis, Aegis, AI Gateway) + Node local (API, Edge, DeFi, Frontends)
+  # Maneja automaticamente: Node.js v24 + Next.js 16 wrapper, health checks, puertos
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain"
+  .\scripts\start-dev.ps1
+
+  # O via npm:
+  npm start
+
+  # Opciones:
+  .\scripts\start-dev.ps1 -SkipDocker                  # Solo servicios Node (si Docker ya corre)
+  .\scripts\start-dev.ps1 -Only api,frontend            # Solo servicios especificos
+
+  # Parar todo:
+  .\scripts\stop-dev.ps1
+  # O: npm stop
+  .\scripts\stop-dev.ps1 -KeepDocker                    # Solo parar Node, mantener Docker
+
+--- OPCION D: Servicios individuales (Desarrollo rapido) ---
+
+  # Terminal 1 — PostgreSQL + Redis (Docker)
+  docker compose up -d postgres redis
+
+  # Terminal 2 — Core API
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\api"
+  $env:DATABASE_URL="postgresql://admin:TuPasswordSeguro@localhost:5432/bezhas_control"
+  $env:REDIS_URL="redis://localhost:6379"
+  $env:JWT_SECRET="dev-secret-key"
+  $env:BEZHAS_L2_RPC_URL="http://localhost:8545"
+  npm run dev
+
+  # Terminal 3 — Aegis AI
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\aegis"
+  python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+  # Terminal 4 — AI Gateway
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\ai-engine"
+  node server.js
+
+  # Terminal 5 — DeFi Backend
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\bezhas-defi\backend"
+  $env:CORE_API_URL="http://localhost:3001"
+  $env:CORE_API_KEY="defi-dev-key"
+  npm run dev
+
+  # Terminal 6 — DeFi Frontend
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\bezhas-defi\frontend"
+  # IMPORTANTE: Misma situacion que Control Center — usar wrapper _diag.js
+  node _diag.js
+  # Logs en _diag.log + stdout. Primera compilacion tarda 1-3 min en FS lento.
+
+  # Terminal 7 — Control Center (Next.js 16.2.1)
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\control-center\frontend"
+  # IMPORTANTE: 'npm run dev' / 'next dev' NO produce salida en terminal con Node.js v24 + Windows
+  # Usar SIEMPRE el wrapper _diag.js que captura stdout/stderr via IPC:
+  node _diag.js
+  # El wrapper no tiene timeout — se mantiene hasta Ctrl+C o SIGTERM
+  # Logs se escriben en _diag.log + stdout simultaneamente
+
+  # Terminal 8 — Edge Node
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\bezhas-edge-node"
+  $env:RPC_URL="http://localhost:8545"
+  node server.js
+
+  # Terminal 9 — Anvil (Blockchain local)
+  $env:USERPROFILE\.foundry\bin\anvil.exe --chain-id 31337 --port 8545 --block-time 2
+
+
+================================================================================
+  SECCION 3: APAGAR SERVIDORES
+================================================================================
+
+  # Apagar TODO Docker Compose
+  docker compose down
+
+  # Apagar y BORRAR volumenes (⚠ borra la BD y datos de geth)
+  docker compose down -v
+
+  # Apagar un servicio especifico
+  docker compose stop api
+  docker compose stop defi-backend
+  docker compose stop defi-frontend
+
+  # Si usaste bootstrap local — matar procesos Node
+  Get-Process -Name "node" | Stop-Process -Force
+  Get-Process -Name "anvil" | Stop-Process -Force
+  Get-Process -Name "python" | Stop-Process -Force
+
+  # Verificar que nada siga corriendo
+  Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue  # API
+  Get-NetTCPConnection -LocalPort 3003 -ErrorAction SilentlyContinue  # DeFi
+  Get-NetTCPConnection -LocalPort 8545 -ErrorAction SilentlyContinue  # RPC
+
+
+================================================================================
+  SECCION 4: BASE DE DATOS
+================================================================================
+
+  # Conectar a PostgreSQL
+  docker compose exec postgres psql -U admin -d bezhas_control
+
+  # Ejecutar migraciones
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\api"
+  npm run db:migrate
+
+  # Reset completo de BD (⚠ borra todos los datos)
+  npm run db:migrate:reset
+
+  # Seed (datos iniciales + contratos)
+  npm run db:seed
+  npm run db:setup          # migrate + seed juntos
+
+  # Seed de contratos desplegados
+  node db/seed-contracts.js 31337
+
+  # Ver tablas existentes
+  docker compose exec postgres psql -U admin -d bezhas_control -c "\dt"
+
+  # Ver registros de apps (gateway)
+  docker compose exec postgres psql -U admin -d bezhas_control -c "SELECT * FROM app_registry;"
+
+  # Backup de BD
+  docker compose exec postgres pg_dump -U admin bezhas_control > backup_$(Get-Date -Format "yyyyMMdd").sql
+
+  # Restaurar backup
+  Get-Content backup.sql | docker compose exec -T postgres psql -U admin bezhas_control
+
+
+================================================================================
+  SECCION 5: TESTS
+================================================================================
+
+  --- Core API Tests ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\api"
+  npm test                            # Todos los tests
+  npx jest __tests__/routes/gateway.test.js  # Solo gateway
+  npx jest --verbose                  # Con detalle
+  npx jest --coverage                 # Con cobertura
+
+  --- AI Engine Tests ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\ai-engine"
+  npm test
+
+  --- Aegis AI Tests ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\aegis"
+  pytest                              # Todos
+  pytest tests/ -v                    # Con detalle
+  pytest test_control_api.py          # Solo control API
+
+  --- DeFi Backend Tests ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\bezhas-defi\backend"
+  npm test
+
+  --- Smart Contracts Tests (Foundry) ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\smart-contracts"
+  forge test                          # Todos los tests
+  forge test -vvv                     # Con trazas completas
+  forge test --match-test testBridge  # Solo tests de bridge
+  forge test --match-contract WrappedBEZTest     # Solo WrappedBEZ
+  forge test --match-contract BEZPolygonBridgeTest  # Solo bridge
+  forge test --gas-report             # Con reporte de gas
+
+  --- DeFi Frontend ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\bezhas-defi\frontend"
+  npm run lint                        # Lint
+  npm run build                       # Build (verifica TypeScript)
+
+  --- Control Center Frontend (Next.js 16.2.1) ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\control-center\frontend"
+  npm run lint
+  npm run build
+  # NOTA: Build requiere $env:NODE_ENV = "production" en Windows
+
+  --- Test ecosistema completo ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain"
+  node scripts/test-ecosystem.js
+
+  --- Agent Runtime Tests (207 tests, 19 suites) ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\agent-runtime"
+  npm test                            # Todos los tests
+  npm test -- --verbose               # Con detalle
+
+  --- Playwright E2E Tests ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\control-center\e2e-tests"
+  npx playwright test                 # Todos (9 runtime + 12 frontend)
+  npx playwright test --headed        # Con navegador visible
+
+  --- Load test (k6) ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\scripts"
+  k6 run k6-load-test.js
+
+
+================================================================================
+  SECCION 6: SMART CONTRACTS (Foundry)
+================================================================================
+
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\smart-contracts"
+
+  # Compilar todos los contratos
+  forge build
+
+  # Compilar con optimizaciones
+  forge build --optimize --optimizer-runs 200
+
+  # Desplegar en Anvil local
+  forge script script/DeployAll.s.sol --rpc-url http://localhost:8545 --broadcast
+
+  # Desplegar solo Core (BEZCoin + Bridge + Staking)
+  forge script script/DeployCore.s.sol --rpc-url http://localhost:8545 --broadcast
+
+  # Parsear direcciones desplegadas
+  node script/parse-deployment.js 31337
+
+  # Verificar contrato en explorer
+  forge verify-contract <ADDRESS> src/tokens/BEZCoinV2.sol:BEZCoinV2 --chain-id <CHAIN_ID>
+
+  # Interactuar con contrato (cast)
+  cast call <BEZCoinV2_ADDRESS> "totalSupply()" --rpc-url http://localhost:8545
+  cast call <BEZCoinV2_ADDRESS> "balanceOf(address)" <WALLET> --rpc-url http://localhost:8545
+  cast send <BEZCoinV2_ADDRESS> "transfer(address,uint256)" <TO> <AMOUNT> --rpc-url http://localhost:8545 --private-key <KEY>
+
+  # Gas snapshot
+  forge snapshot
+
+  # Generar ABI
+  forge inspect src/tokens/BEZCoinV2.sol:BEZCoinV2 abi > abi/BEZCoinV2.json
+
+  # Tamaño de contratos
+  forge build --sizes
+
+
+================================================================================
+  SECCION 7: AUDITORIA Y SEGURIDAD
+================================================================================
+
+  --- Auditoria de Smart Contracts ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\smart-contracts"
+
+  # Slither (analisis estatico Solidity)
+  slither src/core/WrappedBEZ.sol
+  slither src/core/BEZPolygonBridge.sol
+  slither src/tokens/BEZCoinV2.sol
+  slither .                               # Todo el proyecto
+
+  # Mythril (analisis simbolico)
+  myth analyze src/core/BEZPolygonBridge.sol --solc-json mythril.config.json
+
+  --- Auditoria de seguridad del backend ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain"
+  bash scripts/security-audit.sh          # Script de auditoria propio
+
+  # Auditoria de dependencias npm
+  cd api && npm audit
+  cd ../bezhas-defi/backend && npm audit
+  cd ../bezhas-defi/frontend && npm audit
+  cd ../ai-engine && npm audit
+  cd ../control-center/frontend && npm audit
+
+  # Fix automatico de vulnerabilidades
+  npm audit fix
+
+  # Python dependencies audit
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\aegis"
+  pip-audit                              # Requiere: pip install pip-audit
+  safety check                           # Requiere: pip install safety
+
+  --- Health checks manuales ---
+  # Core API
+  Invoke-WebRequest -Uri http://localhost:3001/api/health -UseBasicParsing | Select-Object StatusCode,Content
+
+  # Aegis AI
+  Invoke-WebRequest -Uri http://localhost:8001/aegis/v1/health -UseBasicParsing | Select-Object StatusCode,Content
+
+  # AI Gateway
+  Invoke-WebRequest -Uri http://localhost:3002/api/mcp/health -UseBasicParsing | Select-Object StatusCode,Content
+
+  # DeFi Backend
+  Invoke-WebRequest -Uri http://localhost:3003/health -UseBasicParsing | Select-Object StatusCode,Content
+
+  # Edge Node
+  Invoke-WebRequest -Uri http://localhost:4000/health -UseBasicParsing | Select-Object StatusCode,Content
+
+  # Blockchain RPC
+  Invoke-WebRequest -Uri http://localhost:8545 -Method POST -ContentType "application/json" -Body '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -UseBasicParsing
+
+  --- Script rapido: verificar TODOS los servicios ---
+  $services = @(
+    @{Name="Core API";      URL="http://localhost:3001/api/health"},
+    @{Name="Aegis AI";      URL="http://localhost:8001/aegis/v1/health"},
+    @{Name="AI Gateway";    URL="http://localhost:3002/api/mcp/health"},
+    @{Name="DeFi Backend";  URL="http://localhost:3003/health"},
+    @{Name="Edge Node";     URL="http://localhost:4000/health"},
+    @{Name="Control Center";URL="http://localhost:3000"},
+    @{Name="DeFi Frontend"; URL="http://localhost:5174"}
+  )
+  foreach ($svc in $services) {
+    try {
+      $r = Invoke-WebRequest -Uri $svc.URL -UseBasicParsing -TimeoutSec 3
+      Write-Host "  OK  $($svc.Name) ($($r.StatusCode))" -ForegroundColor Green
+    } catch {
+      Write-Host "  FAIL $($svc.Name)" -ForegroundColor Red
+    }
+  }
+
+
+================================================================================
+  SECCION 8: CONFIGURACION
+================================================================================
+
+  --- Variables de entorno (.env) ---
+  # Crear archivo .env en la raiz del proyecto:
+
+  # Base de datos
+  POSTGRES_USER=admin
+  POSTGRES_PASSWORD=TuPasswordSeguro
+  POSTGRES_DB=bezhas_control
+  DATABASE_URL=postgresql://admin:TuPasswordSeguro@localhost:5432/bezhas_control
+
+  # Redis
+  REDIS_URL=redis://localhost:6379
+
+  # JWT (CAMBIAR EN PRODUCCION)
+  JWT_SECRET=tu-clave-secreta-larga-y-aleatoria
+
+  # Blockchain
+  BEZHAS_L2_RPC_URL=http://localhost:8545
+  BEZHAS_CHAIN_ID=31337
+
+  # AI Keys
+  DEEPSEEK_API_KEY=tu-api-key
+  GEMINI_API_KEY=tu-api-key
+
+  # DeFi App
+  DEFI_API_KEY=defi-dev-key
+
+  # Edge Node
+  EDGE_NODE_PRIVATE_KEY=0x...
+  EDGE_NODE_API_KEY=tu-api-key
+  ESCROW_CONTRACT_ADDRESS=0x...
+
+  # Batcher (L1 submissions)
+  BATCHER_PRIVATE_KEY=0x...
+
+  --- deploy-config.json ---
+  # Configuracion genesis de la blockchain:
+  cat deploy-config.json
+
+  --- Nginx SSL (desarrollo local) ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\nginx"
+  openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ssl/privkey.pem -out ssl/fullchain.pem -subj "/CN=bezhas.local"
+
+  --- Registrar nueva app en Gateway ---
+  # Via SQL:
+  docker compose exec postgres psql -U admin -d bezhas_control -c "
+    INSERT INTO app_registry (app_name, api_key, permissions, active)
+    VALUES ('bezhas-hub', 'web3-api-key-here', '{\"scopes\":[\"wallet\",\"token\",\"staking\"]}', true);
+  "
+
+  --- Foundry config ---
+  cat smart-contracts/foundry.toml
+
+
+================================================================================
+  SECCION 9: INSTALACION DE DEPENDENCIAS
+================================================================================
+
+  --- Node.js (v20+ requerido, v24 instalado localmente) ---
+  # Core API
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\api"
+  npm install
+
+  # AI Engine
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\ai-engine"
+  npm install
+
+  # Edge Node
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\bezhas-edge-node"
+  npm install
+
+  # DeFi Backend
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\bezhas-defi\backend"
+  npm install
+
+  # DeFi Frontend
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\bezhas-defi\frontend"
+  npm install
+
+  # Control Center (Next.js 16.2.1 — MIGRADO de pnpm a npm)
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\control-center\frontend"
+  npm install --legacy-peer-deps
+  # NOTA: pnpm 10.28.2 esta ROTO en este sistema (se cuelga en ~10 paquetes).
+  # Se usa npm con --legacy-peer-deps por incompatibilidades @types/react@19 vs react@18.
+  # Si node_modules tiene junctions rotos de pnpm, borrar e instalar desde cero:
+  #   Remove-Item -Recurse node_modules -Force; npm install --legacy-peer-deps
+
+  --- Instalar TODOS los node_modules de una vez ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain"
+  Get-ChildItem -Recurse -Filter "package.json" -Depth 3 | Where-Object { $_.DirectoryName -notmatch "node_modules" } | ForEach-Object { Write-Host "Installing $($_.DirectoryName)..."; Push-Location $_.DirectoryName; npm install; Pop-Location }
+  # NOTA: Para control-center/frontend usar: npm install --legacy-peer-deps
+  # NOTA: NO usar pnpm (se cuelga en este sistema)
+
+  --- Python (Aegis) ---
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\aegis"
+  pip install -r requirements.txt
+
+  --- Foundry ---
+  # Instalar Foundry (forge, cast, anvil, chisel)
+  curl -L https://foundry.paradigm.xyz | bash
+  foundryup
+
+  # Instalar dependencias Solidity
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\smart-contracts"
+  forge install
+
+
+================================================================================
+  SECCION 10: SCRIPTS UTILES
+================================================================================
+
+  --- Generar credenciales para sub-apps ---
+  node scripts/generate_subapp_credentials.js
+
+  --- Verificar despliegue de contratos ---
+  node scripts/verify-deployment.js 31337
+
+  --- Validar entorno antes de deploy ---
+  bash scripts/validate-env.sh
+
+  --- Registrar validador ---
+  node scripts/register-validator.js
+
+  --- Ver estado de validadores ---
+  node scripts/validator-status.js
+
+  --- Pre-flight de seguridad de BD ---
+  node scripts/db-security-preflight.js
+
+  --- Health check seguro ---
+  node scripts/secure-health-check.js
+
+  --- Wire agents (conectar microservicios) ---
+  node scripts/wire-agents.js
+
+  --- Deploy produccion ---
+  bash scripts/deploy-prod.sh
+
+  --- Redeploy local con validacion ---
+  node scripts/redeploy-local-validation.js
+
+  --- Deploy SOLO sistema de validacion (incremental, sin redesplegar todo) ---
+  .\scripts\deploy-validation.ps1
+  .\scripts\deploy-validation.ps1 -SeedDb                 # + poblar DB
+  .\scripts\deploy-validation.ps1 -ChainId 2708 -SeedDb   # BeZhas L2
+
+  --- Deploy testnet con validacion ---
+  node scripts/deploy-testnet-validation.js
+
+  --- Registrar validador (CLI) ---
+  node scripts/register-validator.js --privateKey <PK> --companyName "MiEmpresa" --stakeAmountEth 50000 --heartbeat --registerNode
+
+  --- Estado de validador (CLI) ---
+  node scripts/validator-status.js --address 0x...
+
+
+================================================================================
+  SECCION 11: DOCKER AVANZADO
+================================================================================
+
+  # Reconstruir imagen especifica (despues de cambios)
+  # NOTA: Dockerfiles usan node:20-alpine (actualizado desde node:18-alpine)
+  docker compose build api
+  docker compose build defi-backend
+  docker compose build defi-frontend
+  docker compose build aegis
+
+  # Reconstruir todo sin cache
+  docker compose build --no-cache
+
+  # Ver logs de un contenedor especifico
+  docker compose logs -f --tail=100 api
+  docker compose logs -f --tail=100 defi-backend
+
+  # Entrar al shell de un contenedor
+  docker compose exec api sh
+  docker compose exec aegis bash
+
+  # Reiniciar un servicio sin apagar los demas
+  docker compose restart api
+  docker compose restart defi-backend
+
+  # Ver uso de recursos
+  docker stats
+
+  # Limpiar todo (⚠ DESTRUCTIVO)
+  docker compose down -v --rmi all --remove-orphans
+  docker system prune -af
+
+  # Produccion con archivo separado
+  docker compose -f docker-compose.prod.yml up -d
+
+
+================================================================================
+  SECCION 12: INFORMACION RAPIDA / HELP
+================================================================================
+
+  TOKENS:
+    BEZCoinV2  → Token nativo L2 (gas + utilidad), 100M supply, no desplegado aun
+    wBEZ       → Wrapped BEZ en Polygon (1:1 via bridge), contrato creado
+    BezhasToken→ Token actual en Web3 (se deprecara, migrara a wBEZ)
+
+  CONTRATOS CLAVE (smart-contracts/src/):
+    tokens/BEZCoinV2.sol              → Token ERC20 principal
+    core/WrappedBEZ.sol               → wBEZ para Polygon
+    core/BEZPolygonBridge.sol         → Bridge L2↔Polygon
+    core/BeZhasBridgeL2.sol           → Bridge base L2
+    bridges/BeZhasL1Bridge.sol        → Bridge L1
+    governance/BezhasGovernor.sol     → DAO governance
+    defi/BezhasStaking.sol            → Staking pools
+    defi/BezhasYieldFarm.sol          → Farming
+    escrow/BeZhasEscrow.sol           → Escrow comercial
+    depin/EdgeNodeRewards.sol         → Recompensas B2B
+    validation/ValidatorRegistry.sol  → Registro de validadores
+    validation/SlashingManager.sol    → Sistema de penalizacion
+    wallet/SmartWallet.sol            → Smart wallet + factory
+    # Total: 78+ contratos, 1,147 tests (todos passing)
+
+  PUERTOS:
+    3000 → Control Center (Admin)
+    3001 → Core API
+    3002 → AI Gateway (MCP)
+    3003 → DeFi Backend
+    4000 → Edge Node
+    5052 → OP-Node (Consensus)
+    5174 → DeFi Frontend
+    8001 → Aegis AI
+    8545 → Blockchain RPC HTTP
+    8546 → Blockchain RPC WebSocket
+    5432 → PostgreSQL
+    6379 → Redis
+
+  ARCHIVOS DE CONFIGURACION:
+    .env                    → Variables de entorno
+    deploy-config.json      → Configuracion genesis blockchain
+    docker-compose.yml      → Servicios base (12 servicios)
+    docker-compose.dev.yml  → Override dev (sin OP Stack pesado)
+    docker-compose.prod.yml → Servicios de produccion
+    nginx/nginx.conf        → Reverse proxy + WAF + TLS
+    smart-contracts/foundry.toml → Config de Foundry
+    control-center/frontend/_diag.js      → Wrapper Next.js (Node v24 fix)
+    control-center/frontend/package-lock.json → Lockfile npm (generado 2026-04-04)
+
+  DOCUMENTOS DE PLAN:
+    plans/PLAN_UNIFICACION_BLOCKCHAIN_WEB3.md  → Plan maestro de unificacion
+    plans/PLAN_FUNCIONAL_BEZHAS_2026.md        → Plan funcional general
+    plans/PLAN_AUTOMATIZACIONES_BEZHAS.md      → Automatizaciones
+    plans/PLAN_HARDWARE_PUERTOS_ESPANA.md      → Hardware requerido para puertos de España
+    DEVELOPMENT_PLAN.md                        → Plan de desarrollo tecnico
+    AI_CONTEXT.md                              → Contexto para AI
+    PROJECT_STRUCTURE.md                       → Estructura del proyecto
+
+  DIRECTORIOS CLAVE:
+    api/routes/gateway.js       → Rutas del API Gateway (SSO + servicios)
+    api/middleware/gateway-auth.js → Autenticacion cross-app
+    api/services/ssoService.js  → Servicio de SSO
+    sdk/gateway-client.js       → SDK client para apps
+    agent-runtime/              → Agent Runtime v0.4.0 (tools, commands, plugins)
+    bezhas-defi/                → App DeFi completa
+    scripts/                    → Scripts de utilidad
+    plans/                      → Planes de integracion y roadmap (9 archivos)
+    status/                     → Workflow status y validaciones
+
+
+================================================================================
+  SECCION 12.5: AGENT RUNTIME
+================================================================================
+
+  cd "D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockchain\agent-runtime"
+
+  # Iniciar runtime (requiere API en :3001)
+  node index.js
+
+  # Componentes:
+  #   core/         → ToolRegistry, PermissionEngine, CommandRouter, SessionManager
+  #                    PluginLoader, ParityChecker, CircuitBreaker, RuntimeEventBus
+  #   tools/        → bridge-health, validator-status, gas-analytics, deploy-check,
+  #                    incident-report, sector-query + 12 MCP proxied tools
+  #   commands/     → /bridge-health, /validator-status, /parity-audit, /deploy-check,
+  #                    /incident + 3 plugin commands
+  #   plugins/      → logistics, defi, governance (auto-discovered)
+  #   permissions/  → RBAC config per tool/command
+
+  # API Endpoints (v0.4.0):
+  #   GET  /health          → Health check
+  #   GET  /tools           → Listar tools disponibles
+  #   GET  /commands         → Listar commands disponibles
+  #   GET  /plugins          → Listar plugins cargados
+  #   GET  /parity           → Audit parity (SDK ↔ contracts ↔ deployments)
+  #   GET  /circuits         → Estado de circuit breakers
+  #   GET  /stream           → SSE (Server-Sent Events) en tiempo real
+  #   POST /invoke           → Invocar un tool (body: {tool, args, sessionId})
+  #   POST /command          → Ejecutar command (body: {command, args, sessionId})
+  #   GET  /session/:id      → Ver session
+  #   DELETE /session/:id    → Borrar session
+
+  # Frontend pages:
+  #   /dashboard/runtime     → RuntimeDashboard (monitoreo en vivo)
+  #   /dashboard/parity      → ParityReport (auditoría SDK ↔ contratos)
+
+
+================================================================================
+  SECCION 13: TROUBLESHOOTING
+================================================================================
+
+  # Puerto ocupado
+  Get-NetTCPConnection -LocalPort 3001 | Select-Object OwningProcess
+  Get-Process -Id <PID> | Stop-Process
+
+  # Docker no arranca
+  docker compose down; docker compose up -d
+
+  # BD corrupta
+  docker compose down -v  # ⚠ borra datos
+  docker compose up -d postgres
+  cd api && npm run db:setup
+
+  # Node modules rotos (generico)
+  Remove-Item -Recurse node_modules; npm install
+
+  # Node modules rotos en Control Center (pnpm junctions rotos)
+  # Si pnpm dejo junctions/symlinks rotos que impiden npm install:
+  #   1. Instalar en directorio temporal limpio:
+  #      $tmp = "C:\temp\bezhas-fe-deps"
+  #      New-Item $tmp -ItemType Directory -Force
+  #      Copy-Item control-center\frontend\package.json $tmp\
+  #      cd $tmp; npm install --legacy-peer-deps
+  #   2. Copiar node_modules de vuelta con robocopy (soporta locks):
+  #      robocopy "$tmp\node_modules" "control-center\frontend\node_modules" /E /MT:8 /R:2 /W:5
+  #   3. Si robocopy falla en junctions, eliminarlos primero:
+  #      cd control-center\frontend\node_modules
+  #      Get-ChildItem . -Force -Recurse -Depth 1 | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint } | ForEach-Object { cmd /c "rmdir `"$($_.FullName)`"" }
+  #      Luego repetir robocopy.
+
+  # next dev no muestra output en Node.js v24 + Windows
+  # Usar siempre: node _diag.js (wrapper con captura IPC)
+
+  # Anvil no responde
+  Get-Process anvil | Stop-Process -Force
+  & "$env:USERPROFILE\.foundry\bin\anvil.exe" --chain-id 31337 --port 8545
+
+  # Forge test falla con "missing lib"
+  cd smart-contracts
+  forge install
+  forge build
+
+  # Permisos SSL nginx
+  # Regenerar certificados:
+  cd nginx
+  openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ssl/privkey.pem -out ssl/fullchain.pem -subj "/CN=bezhas.local"
+
+  # Redis no conecta
+  docker compose restart redis
+  redis-cli ping
+
+  # Ver errores de TypeScript en DeFi frontend
+  cd bezhas-defi/frontend
+  npx tsc --noEmit
+
+================================================================================
+  FIN DEL DOCUMENTO
+================================================================================

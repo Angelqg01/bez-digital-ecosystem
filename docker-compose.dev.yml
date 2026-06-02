@@ -1,0 +1,46 @@
+# docker-compose.dev.yml — Development override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Removes OP Stack dependencies (bezhas-geth, bezhas-node, bezhas-batcher)
+# Uses Anvil or external RPC for blockchain instead.
+
+services:
+  # Override API to remove bezhas-geth dependency
+  api:
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-key}
+      - AEGIS_API_URL=http://aegis:8001/api/aegis
+      - BEZHAS_L2_RPC_URL=${BEZHAS_L2_RPC_URL:-http://host.docker.internal:8545}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-TuPasswordSeguro}@postgres:5432/${POSTGRES_DB:-bezhas_control}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      aegis:
+        condition: service_healthy
+
+  # Override edge node to remove bezhas-geth dependency
+  bezhas-edge-node:
+    environment:
+      - PORT=4000
+      - RPC_URL=${BEZHAS_L2_RPC_URL:-http://host.docker.internal:8545}
+      - MCP_URL=http://ai-gateway:3002
+      - ESCROW_CONTRACT_ADDRESS=${ESCROW_CONTRACT_ADDRESS}
+      - PRIVATE_KEY=${EDGE_NODE_PRIVATE_KEY}
+      - API_KEY=${EDGE_NODE_API_KEY}
+    volumes:
+      - ./sdk:/sdk
+      - ./smart-contracts:/smart-contracts
+    depends_on:
+      ai-gateway:
+        condition: service_healthy
+
+  # Override control-center to not depend on API healthcheck for faster startup
+  # (Note: control-center is usually started locally via _diag.js in dev)
+  # control-center:
+  #   environment:
+  #     - NEXT_PUBLIC_API_URL=http://host.docker.internal:3001
+  #     - NEXT_PUBLIC_RPC_URL=${BEZHAS_L2_RPC_URL:-http://host.docker.internal:8545}

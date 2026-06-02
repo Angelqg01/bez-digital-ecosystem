@@ -1,0 +1,78 @@
+# Prometheus configuration for BeZhas platform
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alert-rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  # ── API (Node.js / Express) ─────────────────
+  - job_name: bezhas-api
+    metrics_path: /api/metrics
+    static_configs:
+      - targets: ['api:3001']
+        labels:
+          service: api
+
+  # ── Aegis AI (FastAPI / Python) ─────────────
+  - job_name: bezhas-aegis
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['aegis:8001']
+        labels:
+          service: aegis
+
+  # ── Edge Node (BeZhas DePIN) ────────────────
+  - job_name: bezhas-edge-node
+    metrics_path: /health
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['bezhas-edge-node:4000']
+        labels:
+          service: edge-node
+
+  # ── Blockchain RPC (geth/op-geth) ──────────
+  - job_name: bezhas-geth
+    metrics_path: /debug/metrics/prometheus
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['geth:6060']
+        labels:
+          service: geth
+          chain: bezhas-l2
+
+  # ── op-node (L2 consensus) ─────────────────
+  - job_name: bezhas-op-node
+    metrics_path: /metrics
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['op-node:7300']
+        labels:
+          service: op-node
+          chain: bezhas-l2
+
+  # ── Prometheus self-monitoring ──────────────
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ── Node Exporter (host metrics) ───────────
+  - job_name: node-exporter
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # ── Redis Exporter ─────────────────────────
+  - job_name: redis
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # ── PostgreSQL Exporter ────────────────────
+  - job_name: postgres
+    static_configs:
+      - targets: ['postgres-exporter:9187']

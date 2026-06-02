@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Bio-Agent Monitor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(37, 175, 244, 0.1) 50%);
+            background-size: 100% 4px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header Section -->
+<header class="border-b border-primary/20 bg-background-light dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center p-4 justify-between max-w-5xl mx-auto w-full">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-2xl">biotech</span>
+</div>
+<div class="flex-1 px-4">
+<h1 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">BeZhas Bio-Agent</h1>
+<p class="text-xs text-primary font-medium uppercase tracking-widest">Cold Chain Monitor v4.2</p>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex flex-col items-end mr-2">
+<span class="text-[10px] text-slate-500 uppercase">System Status</span>
+<span class="text-xs font-bold text-emerald-500 flex items-center gap-1">
+<span class="size-1.5 bg-emerald-500 rounded-full"></span> NOMINAL
+                    </span>
+</div>
+<button class="flex size-10 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined">settings_heart</span>
+</button>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<div class="max-w-5xl mx-auto w-full px-4">
+<div class="flex gap-6 overflow-x-auto no-scrollbar">
+<a class="flex flex-col items-center justify-center border-b-2 border-primary text-primary pb-3 pt-4 shrink-0" href="#">
+<p class="text-sm font-bold tracking-wide">Live Feed</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 pb-3 pt-4 shrink-0" href="#">
+<p class="text-sm font-medium tracking-wide">Optical Metrics</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 pb-3 pt-4 shrink-0" href="#">
+<p class="text-sm font-medium tracking-wide">Incidence Log</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 pb-3 pt-4 shrink-0" href="#">
+<p class="text-sm font-medium tracking-wide">Escrow</p>
+</a>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-5xl mx-auto w-full p-4 space-y-6">
+<!-- Main Visualization Card -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">visibility</span>
+                    Biological Spoiler Detection
+                </h3>
+<span class="bg-red-500/10 text-red-500 text-[10px] font-bold px-2 py-1 rounded border border-red-500/20 animate-pulse">LIVE ANALYSIS</span>
+</div>
+<div class="relative group">
+<div class="relative aspect-video rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-black">
+<img alt="Microscopic cell culture analysis" class="w-full h-full object-cover opacity-80 mix-blend-screen" data-alt="Microscopic view of biological cell cultures" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4Y0sruh5FVkO0WvUYu7XCYsQbPKVs4uQphZmsWQ6m6bmdFQ65aQQEvPiAc3eCn-Mn-wZ9bSRxZ-iTTlPeieXeZnT2i3LIElasfxGwCOtfkbpO_CxU3UPRFE0tH5h8sI-jJQ9ZIfOuMKmVnYZDre-hxj9i1b_5_GV6ZYSQxGPuTClwPo9r8Vh17UZ0gO-Dsbh1d4KGSNlUPNSUJntgoxngnPAuiKL6U6d_ZYEYpsavzdGdoXyRbmQQYGTd0javGIzWgCNT84DicPo"/>
+<div class="absolute inset-0 scanline pointer-events-none opacity-20"></div>
+<!-- Overlay Grid & Markers -->
+<div class="absolute inset-0 grid grid-cols-4 grid-rows-3 pointer-events-none">
+<div class="border-[0.5px] border-primary/10"></div><div class="border-[0.5px] border-primary/10"></div><div class="border-[0.5px] border-primary/10"></div><div class="border-[0.5px] border-primary/10"></div>
+<div class="border-[0.5px] border-primary/10"></div><div class="border-[0.5px] border-primary/10"></div><div class="border-[0.5px] border-primary/10"></div><div class="border-[0.5px] border-primary/10"></div>
+<div class="border-[0.5px] border-primary/10"></div><div class="border-[0.5px] border-primary/10"></div><div class="border-[0.5px] border-primary/10"></div><div class="border-[0.5px] border-primary/10"></div>
+</div>
+<!-- Target Reticle -->
+<div class="absolute top-1/3 left-1/4 size-32 border-2 border-red-500 rounded-lg flex flex-col justify-between p-1 backdrop-blur-[2px] bg-red-500/5">
+<div class="flex justify-between">
+<span class="text-[8px] font-bold text-red-500">SPOILER_DETECTED</span>
+<span class="text-[8px] font-bold text-red-500">98.2%</span>
+</div>
+<div class="flex justify-center italic text-[10px] text-red-500 font-bold">CRYSTAL_GROWTH_ERR</div>
+</div>
+<!-- HUD Overlay -->
+<div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+<div class="bg-black/60 backdrop-blur-md p-3 rounded-lg border border-white/10 space-y-1">
+<div class="flex items-center gap-2">
+<div class="size-2 bg-primary rounded-full animate-ping"></div>
+<p class="text-white text-[10px] font-bold tracking-widest uppercase">Optical Fingerprinting</p>
+</div>
+<p class="text-slate-400 text-[10px]">ID: BZ-9920-XLR | STORAGE: CRYOVAC-4</p>
+</div>
+<div class="flex flex-col gap-2">
+<button class="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">center_focus_strong</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Metrics Section -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-slate-500 text-xs font-medium mb-1 uppercase tracking-tighter">Degradation PSNR</p>
+<p class="text-2xl font-bold text-red-500">18.4 <span class="text-sm font-normal text-slate-400">dB</span></p>
+<div class="mt-2 w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full overflow-hidden">
+<div class="bg-red-500 h-full w-[82%]"></div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-slate-500 text-xs font-medium mb-1 uppercase tracking-tighter">MSE Variance</p>
+<p class="text-2xl font-bold text-primary">0.042</p>
+<div class="mt-2 w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[15%]"></div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-slate-500 text-xs font-medium mb-1 uppercase tracking-tighter">Integrity Index</p>
+<p class="text-2xl font-bold text-slate-900 dark:text-slate-100">0.998</p>
+<div class="mt-2 w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full overflow-hidden">
+<div class="bg-emerald-500 h-full w-[95%]"></div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-slate-500 text-xs font-medium mb-1 uppercase tracking-tighter">Structural Similarity</p>
+<p class="text-2xl font-bold text-slate-900 dark:text-slate-100">94.1%</p>
+<div class="mt-2 w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[94%]"></div>
+</div>
+</div>
+</section>
+<!-- Autonomous Actions Log -->
+<section class="space-y-3">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">terminal</span>
+                Autonomous Action Log
+            </h3>
+<div class="space-y-2">
+<div class="flex items-center gap-4 bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+<div class="size-8 rounded bg-red-500 text-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl">block</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold text-red-500">Escrow Payment Blocked</p>
+<p class="text-[10px] text-slate-400">Trigger: Visual Fingerprint Mismatch (Threshold Exceeded)</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] font-mono text-slate-400">14:22:05</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-orange-500/10 border border-orange-500/20 p-3 rounded-lg">
+<div class="size-8 rounded bg-orange-500 text-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl">notification_important</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold text-orange-500">Sanitary Alert Issued</p>
+<p class="text-[10px] text-slate-400">Notice sent to local health authorities &amp; logistics hub</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] font-mono text-slate-400">14:21:40</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-primary/10 border border-primary/20 p-3 rounded-lg">
+<div class="size-8 rounded bg-primary text-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl">history_edu</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold text-primary">Smart Contract Incident Logged</p>
+<p class="text-[10px] text-slate-400">Hash: 0x24a...f912 immutable evidence recorded</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] font-mono text-slate-400">14:21:38</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Comparison Scans -->
+<section class="space-y-3 pb-24">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-widest">Baseline vs Current Scan</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<div class="aspect-square rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 overflow-hidden relative">
+<img alt="Baseline biological scan" class="w-full h-full object-cover grayscale opacity-50" data-alt="Scientific microscopic image of healthy cell structure" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAneYYSIkGPP0NVcbQ7EyF79nTo2fb5QQkKeQS-nogIy19028QTYkotOP3lk-NYets_1yMYB4rLL8UgOZLQx0ZP4Kmm4wBbwcOU0v715qeN6h5jVex-kpEHioFr9dgw2tIPlRMD-dD9CdNUsoiiiwtRaR-K-6SOfoWmwu_LGzswNn8NHJmI5sJ2XIwzNDEX95AvWuJ4bOZGo5oUwyt0jXMpDkZ5Vr2uclfX0lRcbQTSW-6tEDeE9_twwu0LpATTqQnLaMlWTbBGb-A"/>
+<div class="absolute top-2 left-2 bg-slate-900/80 text-white text-[8px] px-1.5 py-0.5 rounded">BASELINE T-0</div>
+</div>
+<p class="text-[10px] text-center text-slate-500">Original Cell Culture Signature</p>
+</div>
+<div class="space-y-2">
+<div class="aspect-square rounded-lg border border-red-500/50 bg-slate-100 dark:bg-slate-950 overflow-hidden relative">
+<img alt="Current degradation scan" class="w-full h-full object-cover" data-alt="Microscopic scan showing signs of biological degradation" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsWgerVTsiJ9wN3HZ_U9bD1Cf3iO5oT9kAxmdrhGo0Awosaer5W0L-dZRhFYrwCCYxvYmGgMCh3qEjCmUqtMMyMjMdR9uYAPmXSYQT8Ts-Ir8Xmmji30z0S5fqHGRxWp2WCEanDOaAQsOIw5_FTkYitXBm0TBqAz-cKdC5OOLUQsItuGTffl0j_zwgO9bUITxOSMQHycWZqTWyq4ILqsO5DFJwrXx-NGSufO_0GIdfMd6oSNlMRntx5wp2kJDHfJYqaLx6jA8gQ08"/>
+<div class="absolute top-2 left-2 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded">CURRENT T+48h</div>
+<div class="absolute inset-0 bg-red-500/10 mix-blend-overlay"></div>
+</div>
+<p class="text-[10px] text-center text-red-500 font-bold">Anomalous Morphological Shift</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 border-t border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl z-50">
+<div class="max-w-5xl mx-auto flex gap-2 px-4 pb-6 pt-2">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined text-[24px] fill-1">monitoring</span>
+<p class="text-[10px] font-bold tracking-tight">Monitor</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined text-[24px]">biotech</span>
+<p class="text-[10px] font-medium tracking-tight">Scans</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 relative" href="#">
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+<span class="absolute top-0 right-1/3 size-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
+<p class="text-[10px] font-medium tracking-tight">Alerts</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined text-[24px]">account_balance_wallet</span>
+<p class="text-[10px] font-medium tracking-tight">Escrow</p>
+</a>
+</div>
+</nav>
+</body></html>

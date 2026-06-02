@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Node Configuration | Oracle Logistics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary": "#003258",
+                        "outline-variant": "#404752",
+                        "on-primary-container": "#002c4f",
+                        "primary-fixed-dim": "#9ecaff",
+                        "tertiary-container": "#db7900",
+                        "background": "#0c1420",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-highest": "#2d3542",
+                        "secondary": "#40e56c",
+                        "inverse-primary": "#0061a4",
+                        "surface-bright": "#323947",
+                        "on-background": "#dbe3f4",
+                        "on-tertiary-container": "#452200",
+                        "on-secondary-fixed": "#002108",
+                        "tertiary-fixed": "#ffdcc2",
+                        "primary": "#9ecaff",
+                        "inverse-surface": "#dbe3f4",
+                        "tertiary": "#ffb77b",
+                        "surface-container-low": "#141c28",
+                        "secondary-fixed-dim": "#3ce36a",
+                        "on-primary-fixed-variant": "#00497d",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#ffb77b",
+                        "surface-tint": "#9ecaff",
+                        "on-tertiary": "#4d2700",
+                        "on-surface": "#dbe3f4",
+                        "on-secondary-fixed-variant": "#00531e",
+                        "surface-container-high": "#232a37",
+                        "on-tertiary-fixed": "#2e1500",
+                        "error-container": "#93000a",
+                        "primary-fixed": "#d1e4ff",
+                        "on-secondary-container": "#004d1b",
+                        "surface": "#0c1420",
+                        "surface-variant": "#2d3542",
+                        "inverse-on-surface": "#29313e",
+                        "surface-container": "#18202c",
+                        "secondary-fixed": "#69ff87",
+                        "outline": "#89919d",
+                        "on-secondary": "#003912",
+                        "surface-container-lowest": "#070e1a",
+                        "surface-dim": "#0c1420",
+                        "on-surface-variant": "#bfc7d4",
+                        "error": "#ffb4ab",
+                        "secondary-container": "#02c953",
+                        "primary-container": "#2196f3",
+                        "on-tertiary-fixed-variant": "#6d3900",
+                        "on-primary-fixed": "#001d36"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c1420;
+            color: #dbe3f4;
+        }
+        .font-space-grotesk { font-family: 'Space Grotesk', sans-serif; }
+        .glass-module {
+            background: rgba(45, 53, 66, 0.4);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary/30 min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-8 py-4 bg-slate-900/50 backdrop-blur-xl no-line tonal-shift max-w-full">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-bold tracking-tighter text-blue-400 dark:text-blue-400 font-space-grotesk">Oracle Logistics</span>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="font-space-grotesk tracking-tight text-slate-400 hover:text-slate-200 transition-colors" href="#">Dashboard</a>
+<a class="font-space-grotesk tracking-tight text-blue-400 border-b-2 border-blue-400 pb-1" href="#">Nodes</a>
+<a class="font-space-grotesk tracking-tight text-slate-400 hover:text-slate-200 transition-colors" href="#">Analytics</a>
+<a class="font-space-grotesk tracking-tight text-slate-400 hover:text-slate-200 transition-colors" href="#">Security</a>
+<a class="font-space-grotesk tracking-tight text-slate-400 hover:text-slate-200 transition-colors" href="#">API</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-white/5 transition-all duration-200 rounded-full active:opacity-80 scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-white/5 transition-all duration-200 rounded-full active:opacity-80 scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30">
+<img alt="Administrator Profile" data-alt="professional portrait of a tech administrator with subtle blue lighting and a high-tech studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_1IzFbOG1kLMml8xsCq-dA5YZDHAiyh-YcWJEW3iM1F23yTFjcGnt_HhI_nS16PSB-V9pVqeNNMUS7IRQeC3P0PCfCZSjJ9wVEFmx89C0EzxbY0kfNuk2oeD0SmJYk273NlS73fdJlg6nI1Y2aA6iBDDe7L84wTNx610tTHP5-CxSE6sEiLfpst9FZeaMJq6OoBHLyQjPAmvah0rYwzTuTY92clhltmkMOWC-ZvGxJh9IjL1_gUpZqe20GYNCgJuArIqifZQt8Ww"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full flex flex-col pt-24 pb-8 px-4 z-40 bg-[#0c1420] w-64 tonal-shift bg-slate-900/30 transition-all duration-300 ease-in-out">
+<div class="mb-8 px-4">
+<h3 class="font-space-grotesk uppercase tracking-widest text-[10px] text-slate-500 mb-1">Admin Console</h3>
+<p class="text-[10px] text-slate-600 font-mono">V2.0.4-Stable</p>
+</div>
+<nav class="flex-grow space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-300 transition-all duration-300 ease-in-out group" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="monitor_heart">monitor_heart</span>
+<span class="font-space-grotesk uppercase tracking-widest text-[10px]">Network Health</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-blue-500/10 text-blue-400 border-r-4 border-blue-500 transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="settings_input_component">settings_input_component</span>
+<span class="font-space-grotesk uppercase tracking-widest text-[10px]">Node Config</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-300 transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="account_balance">account_balance</span>
+<span class="font-space-grotesk uppercase tracking-widest text-[10px]">Yield Oracle</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-300 transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="shield_person">shield_person</span>
+<span class="font-space-grotesk uppercase tracking-widest text-[10px]">Security Ops</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-300 transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="terminal">terminal</span>
+<span class="font-space-grotesk uppercase tracking-widest text-[10px]">System Logs</span>
+</a>
+</nav>
+<div class="mt-auto px-4 space-y-4">
+<button class="w-full py-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold rounded-md text-xs uppercase tracking-widest shadow-lg shadow-primary/10 transition-transform active:scale-95">
+                Connect Node
+            </button>
+<div class="pt-4 border-t border-outline-variant/10 space-y-2">
+<a class="flex items-center gap-3 text-slate-500 hover:text-slate-300 text-[10px] uppercase tracking-widest font-space-grotesk" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="help">help</span> Support
+                </a>
+<a class="flex items-center gap-3 text-slate-500 hover:text-slate-300 text-[10px] uppercase tracking-widest font-space-grotesk" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="description">description</span> Documentation
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 pt-24 px-12 pb-20">
+<!-- Header Section -->
+<header class="mb-16">
+<span class="text-secondary font-mono text-xs tracking-[0.2em] uppercase mb-4 block">System Core / v2.0.4</span>
+<h1 class="font-headline text-6xl font-extrabold tracking-tighter text-on-surface mb-4">Node Configuration</h1>
+<p class="text-on-surface-variant max-w-2xl text-lg leading-relaxed">
+                Calibrate the BeZhas autonomous logistics engine. Manage decentralized identifiers, biometric security layers, and threshold triggers for the Botrytis oracle network.
+            </p>
+</header>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-8">
+<!-- 1. Node Identity (Large Section) -->
+<section class="col-span-12 lg:col-span-8 bg-surface-container rounded-xl p-8 border border-outline-variant/10">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="fingerprint">fingerprint</span>
+<h2 class="font-headline text-2xl font-bold">Node Identity &amp; SSI</h2>
+</div>
+<span class="px-3 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full tracking-widest uppercase">Verified</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="space-y-6">
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Decentralized Identifier (DID)</label>
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between group">
+<code class="text-xs text-primary font-mono truncate mr-4">did:bezhas:eth:0x71C765...6E92</code>
+<button class="text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="content_copy">content_copy</span>
+</button>
+</div>
+</div>
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Hardware Key Status</label>
+<div class="flex items-center gap-4 bg-surface-container-lowest p-4 rounded-lg">
+<span class="material-symbols-outlined text-secondary" data-icon="key">key</span>
+<div>
+<p class="text-sm font-medium">Titan M2 Secure Element</p>
+<p class="text-[10px] text-slate-500">Last rotation: 12 days ago</p>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-6">
+<div class="bg-surface-container-low p-6 rounded-lg border border-primary/10">
+<h4 class="text-xs font-bold uppercase tracking-widest mb-4">Identity Attributes</h4>
+<div class="space-y-3">
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/5">
+<span class="text-xs text-on-surface-variant">Protocol Version</span>
+<span class="text-xs font-mono text-primary">v4.2-α</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/5">
+<span class="text-xs text-on-surface-variant">Signature Scheme</span>
+<span class="text-xs font-mono text-primary">Ed25519</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="text-xs text-on-surface-variant">Multi-Sig Required</span>
+<span class="text-xs font-mono text-secondary">ENABLED</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. Security & Compliance (Right Sidebar Style) -->
+<section class="col-span-12 lg:col-span-4 glass-module rounded-xl p-8 border border-outline-variant/15">
+<div class="flex items-center gap-4 mb-8">
+<span class="material-symbols-outlined text-error text-3xl" data-icon="security">security</span>
+<h2 class="font-headline text-2xl font-bold">Security Layer</h2>
+</div>
+<div class="space-y-8">
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400" data-icon="face">face</span>
+<span class="text-sm font-medium">Biometric Auth</span>
+</div>
+<div class="w-12 h-6 bg-secondary/20 rounded-full relative p-1 cursor-pointer">
+<div class="absolute right-1 top-1 w-4 h-4 bg-secondary rounded-full"></div>
+</div>
+</div>
+<div class="space-y-4">
+<label class="block text-[10px] font-bold uppercase tracking-widest text-slate-500">API Access Tokens</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border-none rounded-lg text-sm p-4 focus:ring-1 focus:ring-primary transition-all" readonly="" type="password" value="************************"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-on-surface">
+<span class="material-symbols-outlined text-lg" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<div class="p-4 bg-surface-container-lowest rounded-lg">
+<label class="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">Encryption Strength</label>
+<div class="flex gap-2">
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary/20 rounded-full"></div>
+</div>
+<p class="text-[10px] mt-2 text-primary font-mono">AES-256-GCM / 384-bit ECC</p>
+</div>
+</div>
+</section>
+<!-- 3. Oracle Thresholds (Asymmetric Layout) -->
+<section class="col-span-12 lg:col-span-5 bg-surface-container rounded-xl p-8 border border-outline-variant/10">
+<div class="flex items-center gap-4 mb-8">
+<span class="material-symbols-outlined text-tertiary text-3xl" data-icon="psychology">psychology</span>
+<h2 class="font-headline text-2xl font-bold">Oracle Thresholds</h2>
+</div>
+<div class="space-y-8">
+<div>
+<div class="flex justify-between mb-4">
+<label class="text-sm font-medium">Botrytis Sensitivity</label>
+<span class="text-xs font-mono text-tertiary">78% Confidence</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container-lowest rounded-lg appearance-none cursor-pointer accent-tertiary" type="range"/>
+<div class="flex justify-between mt-2 text-[10px] text-slate-500 uppercase tracking-widest">
+<span>Permissive</span>
+<span>Strict</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg">
+<h4 class="text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-xs" data-icon="smart_toy">smart_toy</span>
+                            Automated Escrow Triggers
+                        </h4>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<input checked="" class="rounded border-outline-variant bg-surface text-primary focus:ring-0" type="checkbox"/>
+<span class="text-xs text-on-surface-variant">Release on Port Arrival (ASYCUDA)</span>
+</div>
+<div class="flex items-center gap-3">
+<input checked="" class="rounded border-outline-variant bg-surface text-primary focus:ring-0" type="checkbox"/>
+<span class="text-xs text-on-surface-variant">Slash Stake on Temp Violation</span>
+</div>
+<div class="flex items-center gap-3">
+<input class="rounded border-outline-variant bg-surface text-primary focus:ring-0" type="checkbox"/>
+<span class="text-xs text-on-surface-variant">Force Multi-Sig for &gt;$50k USDV</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. Network Connections (Full Width Detailed) -->
+<section class="col-span-12 lg:col-span-7 bg-surface-container rounded-xl p-8 border border-outline-variant/10">
+<div class="flex items-center gap-4 mb-8">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="hub">hub</span>
+<h2 class="font-headline text-2xl font-bold">Network Gateways</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-4">
+<div class="p-4 bg-surface-container-lowest rounded-lg border-l-4 border-primary">
+<label class="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Polygon RPC Endpoint</label>
+<input class="w-full bg-transparent border-none p-0 text-xs font-mono text-primary focus:ring-0" type="text" value="https://polygon-mainnet.g.alchemy.com/v2/..."/>
+</div>
+<div class="p-4 bg-surface-container-lowest rounded-lg border-l-4 border-outline-variant">
+<label class="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">IPFS Pinning Service</label>
+<input class="w-full bg-transparent border-none p-0 text-xs font-mono text-on-surface-variant focus:ring-0" type="text" value="https://ipfs.infura.io:5001"/>
+</div>
+</div>
+<div class="space-y-4">
+<div class="p-4 bg-surface-container-lowest rounded-lg border-l-4 border-secondary">
+<label class="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">ASYCUDA World API</label>
+<input class="w-full bg-transparent border-none p-0 text-xs font-mono text-secondary focus:ring-0" type="password" value="key_live_928374928374928374"/>
+</div>
+<div class="p-4 bg-surface-container-lowest rounded-lg border-l-4 border-outline-variant">
+<label class="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">SIMPLE Customs API</label>
+<input class="w-full bg-transparent border-none p-0 text-xs font-mono text-on-surface-variant focus:ring-0" type="password" value="key_prod_823749238"/>
+</div>
+</div>
+</div>
+<div class="mt-8 flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="lan">lan</span>
+<p class="text-xs text-on-surface-variant">Global Mesh Status: <span class="text-secondary font-bold">Active</span> (142 Nodes Connected)</p>
+</div>
+<button class="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline">Re-Sync Node</button>
+</div>
+</section>
+<!-- 5. User Roles & Permissions -->
+<section class="col-span-12 bg-surface-container rounded-xl p-8 border border-outline-variant/10 overflow-hidden">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="group">group</span>
+<h2 class="font-headline text-2xl font-bold">Access Control List</h2>
+</div>
+<button class="px-6 py-2 bg-surface-container-highest hover:bg-surface-bright text-xs font-bold uppercase tracking-widest rounded-md transition-colors border border-outline-variant/30">
+                        Add Entity
+                    </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/10">
+<th class="pb-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Identity / Role</th>
+<th class="pb-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Permissions</th>
+<th class="pb-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Last Action</th>
+<th class="pb-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="group">
+<td class="py-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">SA</div>
+<div>
+<p class="text-sm font-medium">System Admin</p>
+<p class="text-[10px] text-slate-500">DID:0x92...F21</p>
+</div>
+</div>
+</td>
+<td class="py-6">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 bg-surface-container-lowest text-[9px] font-bold uppercase tracking-tighter text-slate-400 rounded">Full_Access</span>
+<span class="px-2 py-0.5 bg-surface-container-lowest text-[9px] font-bold uppercase tracking-tighter text-slate-400 rounded">Root_Key</span>
+</div>
+</td>
+<td class="py-6 text-[10px] font-mono text-slate-500 uppercase tracking-widest">Rotated Keys / 2h ago</td>
+<td class="py-6 text-right">
+<button class="text-slate-500 hover:text-on-surface"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<tr class="group">
+<td class="py-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-bold text-xs">LO</div>
+<div>
+<p class="text-sm font-medium">Logistics Operator</p>
+<p class="text-[10px] text-slate-500">DID:0x41...A90</p>
+</div>
+</div>
+</td>
+<td class="py-6">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 bg-surface-container-lowest text-[9px] font-bold uppercase tracking-tighter text-slate-400 rounded">View_Only</span>
+<span class="px-2 py-0.5 bg-surface-container-lowest text-[9px] font-bold uppercase tracking-tighter text-slate-400 rounded">Oracle_Sign</span>
+</div>
+</td>
+<td class="py-6 text-[10px] font-mono text-slate-500 uppercase tracking-widest">Escrow Approved / 12h ago</td>
+<td class="py-6 text-right">
+<button class="text-slate-500 hover:text-on-surface"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Footer Actions -->
+<footer class="mt-16 pt-8 border-t border-outline-variant/10 flex items-center justify-between">
+<div class="flex items-center gap-4 text-xs text-slate-500 italic">
+<span class="material-symbols-outlined text-sm" data-icon="info">info</span>
+                Settings auto-save is enabled. Changes propagate across mesh in ~4s.
+            </div>
+<div class="flex gap-4">
+<button class="px-8 py-3 bg-surface-container-highest text-on-surface font-bold rounded-md text-xs uppercase tracking-widest hover:bg-surface-bright transition-all">
+                    Reset to Default
+                </button>
+<button class="px-8 py-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold rounded-md text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+                    Apply Global Config
+                </button>
+</div>
+</footer>
+</main>
+<!-- Visual Decoration Elements -->
+<div class="fixed top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[150px] -z-10 rounded-full"></div>
+<div class="fixed bottom-0 left-0 w-[400px] h-[400px] bg-secondary/5 blur-[120px] -z-10 rounded-full"></div>
+</body></html>

@@ -1,0 +1,19 @@
+{
+  "id": "skill_1777480291699_abad40",
+  "created_at": "2026-04-29T16:31:31.699Z",
+  "channel": "telegram",
+  "provider": "intent",
+  "intent": "general_conversation",
+  "tags": [
+    "bridge",
+    "blockchain"
+  ],
+  "turn": {
+    "user": "Instala todas las herramientas para que puedas hacer esa orden, además de : FASE 3: Monitorización de Respuestas y Gestión de Rebotes Monitorea constantemente la bandeja de entrada (IMAP) y las RRSS:\nRebote (Hard Bounce): Si recibes un error 5xx, ELIMINA el contacto de la base de datos inmediatamente y purga el CRM.\nRespuesta Positiva/Duda: Si el cliente responde, analiza su intención (NLP). Redacta una respuesta consultando el Whitepaper de BeZhas para resolver objeciones técnicas o financieras y responde en menos de 5 minutos.\nRespuesta Negativa: Etiqueta como \"No interesado\" y pausa el outreach a esa empresa durante 6 meses.\nFASE 4: Sincronización On-Chain (Escasez Real)\nLee constantemente el Smart Contract en Polygon.\nAjusta el copywriting en tiempo real basándote en los créditos restantes. Ejemplo: \"Acabamos de superar los 5 millones de créditos asignados, su empresa aún está a tiempo de asegurar la tarifa de 0,00075€...\"\n[RESTRICCIONES Y TONO]\nNUNCA prometas retornos financieros ",
+    "agent": "Error al ejecutar mcp:audit_contract: MCP call failed: "
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

@@ -1,0 +1,4 @@
+// En BeZhas_Blockchain/app.js Y en bezhas-web3/src/server.js — idéntico en ambos
+const openclaw = require('@bezhas/openclaw-unified');
+await openclaw.init({ watchConfig: true });        // hot-reload del json
+app.use('/api', openclaw.middleware.inject);        // JWT automático en cada request

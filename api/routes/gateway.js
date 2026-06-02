@@ -1,0 +1,1597 @@
+/**
+ * routes/gateway.js — BeZhas Unified Gateway
+ * 
+ * Central entry point for all cross-app API calls.
+ * External apps (DeFi, App, Web3) authenticate via API key + optional JWT,
+ * then access Core services through scoped endpoints.
+ * 
+ * Route groups:
+ *   /api/gateway/v1/sso/*        — SSO login, refresh, logout
+ *   /api/gateway/v1/wallet/*     — Wallet balances, transfers
+ *   /api/gateway/v1/staking/*    — Staking positions, stake/unstake
+ *   /api/gateway/v1/farming/*    — LP farming positions
+ *   /api/gateway/v1/governance/* — Proposals, voting
+ *   /api/gateway/v1/bridge/*     — Cross-chain bridge operations
+ *   /api/gateway/v1/treasury/*   — DAO treasury data
+ *   /api/gateway/v1/token/*      — Token info, balances, distribution
+ *   /api/gateway/v1/contracts/*  — Contract ABIs, addresses, calls
+ */
+const { Router } = require('express');
+const { body, param, validationResult } = require('express-validator');
+const { authenticateGateway, requireScope, authenticateSSOToken } = require('../middleware/gateway-auth');
+const ssoService = require('../services/ssoService');
+const walletService = require('../services/walletService');
+const contractService = require('../services/contractService');
+const { query } = require('../db/pool');
+const bcrypt = require('bcryptjs');
+const { STRIPE_PAYMENT_LINKS, getStripePaymentLink } = require('../config/stripe-payment-links');
+const { BANK_TRANSFER_DETAILS, buildBankTransferInstructions } = require('../config/bank-transfer-details');
+const { TOKENOMICS_FEE, calculateFeeBreakdown } = require('../config/tokenomics');
+const logger = require('pino')({ level: 'info', name: 'gateway' });
+
+const router = Router();
+
+// BEZ Token resolution: v1 (LIVE on BSC) vs v2 (not deployed)
+const BEZ_COIN_V1_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
+const PRODUCTION_CHAINS = [56, 97];
+const PLATFORM_FEE_BPS = TOKENOMICS_FEE.platformFeeBps;
+function resolveBEZToken(chainId) {
+    return PRODUCTION_CHAINS.includes(chainId) ? 'BEZCoin' : 'BEZCoinV2';
+}
+
+async function resolvePrimaryWallet(req, explicitAddress) {
+    if (explicitAddress) return explicitAddress;
+    if (!req.user?.userId) return null;
+    const safeWallet = await walletService.ensureFiatSafeWalletForUser(req.user.userId);
+    return safeWallet.smartWalletAddress || safeWallet.ownerAddress;
+}
+
+const requirePaymentSettlementKey = (req, res, next) => {
+    const key = req.headers['authorization']?.replace('Bearer ', '') || req.headers['x-internal-key'];
+    const expected = process.env.INTERNAL_API_KEY || (process.env.NODE_ENV !== 'production' ? 'dev-internal-key' : null);
+    if (!expected || !key || key !== expected) {
+        return res.status(401).json({ error: 'Internal settlement auth required' });
+    }
+    next();
+};
+
+// Validation helper
+const validate = (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        res.status(400).json({ errors: errors.array() });
+        return false;
+    }
+    return true;
+};
+
+async function buildUnsignedContractTx(contractName, method, args = [], value = '0', chainId) {
+    const { ethers } = require('ethers');
+    const address = await contractService.getContractAddress(contractName, chainId);
+    if (!address) return null;
+    const abi = contractService.loadABI(contractName);
+    const iface = new ethers.Interface(abi);
+    return {
+        to: address,
+        data: iface.encodeFunctionData(method, args),
+        value,
+        chainId: chainId || parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+        contract: contractName,
+        method,
+    };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SSO — Single Sign-On (no API key required, only wallet signature)
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * POST /sso/login — Wallet-based login that returns cross-app JWT.
+ */
+router.post('/sso/login', [
+    body('walletAddress').isEthereumAddress(),
+    body('signature').isLength({ min: 1 }),
+    body('message').isLength({ min: 1 }),
+    body('appOrigin').isIn(['core', 'defi', 'app', 'web3']),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { ethers } = require('ethers');
+        const { walletAddress, signature, message, appOrigin } = req.body;
+
+        // Verify wallet signature
+        const recovered = ethers.verifyMessage(message, signature);
+        if (recovered.toLowerCase() !== walletAddress.toLowerCase()) {
+            return res.status(401).json({ error: 'Invalid wallet signature' });
+        }
+
+        // Issue SSO tokens
+        const result = await ssoService.issueToken({ walletAddress, appOrigin });
+        logger.info({ walletAddress, appOrigin }, 'SSO login successful');
+        res.json({ success: true, ...result });
+    } catch (error) {
+        logger.error({ error: error.message }, 'SSO login failed');
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+router.post('/sso/fiat/register', [
+    body('email').isEmail(),
+    body('password').isLength({ min: 8 }),
+    body('username').optional().isLength({ min: 3, max: 40 }),
+    body('appOrigin').isIn(['core', 'defi', 'app', 'web3']),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const crypto = require('crypto');
+        const email = String(req.body.email).trim().toLowerCase();
+        const provisionalAddress = `0x${crypto.createHash('sha256').update(`fiat:${email}:${Date.now()}`).digest('hex').slice(0, 40)}`;
+        const passwordHash = await bcrypt.hash(req.body.password, 12);
+
+        const { rows } = await query(
+            `INSERT INTO users (wallet_address, primary_wallet_address, username, email, password_hash,
+                                auth_type, custody_mode, last_login)
+             VALUES ($1, $1, $2, $3, $4, 'fiat', 'managed', NOW())
+             RETURNING id`,
+            [provisionalAddress.toLowerCase(), req.body.username || null, email, passwordHash]
+        );
+
+        const safeWallet = await walletService.ensureFiatSafeWalletForUser(rows[0].id);
+        const result = await ssoService.issueToken({
+            walletAddress: safeWallet.ownerAddress,
+            appOrigin: req.body.appOrigin,
+        });
+
+        res.status(201).json({ success: true, ...result, safeWallet });
+    } catch (error) {
+        if (error.code === '23505') return res.status(409).json({ error: 'Email already registered' });
+        logger.error({ error: error.message }, 'FIAT SSO registration failed');
+        res.status(500).json({ error: 'FIAT registration failed' });
+    }
+});
+
+router.post('/sso/fiat/login', [
+    body('email').isEmail(),
+    body('password').isLength({ min: 1 }),
+    body('appOrigin').isIn(['core', 'defi', 'app', 'web3']),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const email = String(req.body.email).trim().toLowerCase();
+        const { rows } = await query(
+            `SELECT id, password_hash
+             FROM users
+             WHERE LOWER(email) = $1 AND auth_type IN ('fiat', 'hybrid')
+             LIMIT 1`,
+            [email]
+        );
+        if (rows.length === 0 || !rows[0].password_hash) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const ok = await bcrypt.compare(req.body.password, rows[0].password_hash);
+        if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+
+        const safeWallet = await walletService.ensureFiatSafeWalletForUser(rows[0].id);
+        const result = await ssoService.issueToken({
+            walletAddress: safeWallet.ownerAddress,
+            appOrigin: req.body.appOrigin,
+        });
+
+        res.json({ success: true, ...result, safeWallet });
+    } catch (error) {
+        logger.error({ error: error.message }, 'FIAT SSO login failed');
+        res.status(500).json({ error: 'FIAT login failed' });
+    }
+});
+
+/**
+ * POST /sso/refresh — Refresh SSO token (supports cross-app navigation).
+ */
+router.post('/sso/refresh', [
+    body('refreshToken').isLength({ min: 1 }),
+    body('appOrigin').optional().isIn(['core', 'defi', 'app', 'web3']),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const result = await ssoService.refreshToken(req.body.refreshToken, req.body.appOrigin);
+        res.json({ success: true, ...result });
+    } catch (error) {
+        res.status(401).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /sso/logout — Revoke all sessions for the user.
+ */
+router.post('/sso/logout', authenticateSSOToken, async (req, res) => {
+    try {
+        await ssoService.revokeAllSessions(req.user.userId);
+        res.json({ success: true, message: 'All sessions revoked' });
+    } catch (error) {
+        res.status(500).json({ error: 'Logout failed' });
+    }
+});
+
+/**
+ * GET /sso/me — Get current user info from SSO token.
+ */
+router.get('/sso/me', authenticateSSOToken, async (req, res) => {
+    try {
+        const { rows } = await query(
+            `SELECT id, wallet_address, username, email, role, avatar_url, created_at, last_login
+             FROM users WHERE id = $1`,
+            [req.user.userId]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        res.json({ success: true, user: rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch user' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  WALLET — Balance, transfers, history
+// ═══════════════════════════════════════════════════════════
+
+router.get('/wallet/balance/:address', authenticateGateway, requireScope('wallet'), async (req, res) => {
+    try {
+        const balance = await walletService.getBalance(req.params.address);
+        res.json({ success: true, ...balance });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get balance' });
+    }
+});
+
+router.get('/wallet/me', authenticateGateway, requireScope('wallet'), async (req, res) => {
+    try {
+        if (!req.user?.userId) {
+            return res.status(400).json({ error: 'User JWT required for /wallet/me' });
+        }
+        const safeWallet = await walletService.ensureFiatSafeWalletForUser(req.user.userId);
+        const address = safeWallet.smartWalletAddress || safeWallet.ownerAddress;
+        const balance = await walletService.getBalance(address);
+        res.json({ success: true, safeWallet, balance });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get user wallet', message: error.message });
+    }
+});
+
+router.get('/wallet/history/:address', authenticateGateway, requireScope('wallet'), async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const offset = parseInt(req.query.offset) || 0;
+        const { rows } = await query(
+            `SELECT tx_hash, from_address, to_address, value_wei, status, created_at
+             FROM transactions
+             WHERE from_address = $1 OR to_address = $1
+             ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+            [req.params.address.toLowerCase(), limit, offset]
+        );
+        res.json({ success: true, transactions: rows, limit, offset });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get transaction history' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  STAKING — Positions, stake, unstake, rewards
+// ═══════════════════════════════════════════════════════════
+
+router.get('/staking/positions/:address', authenticateGateway, requireScope('staking'), async (req, res) => {
+    try {
+        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        try {
+            const info = await contractService.getStakingInfo(req.params.address);
+            const hasPosition = parseFloat(info.stakedAmount || '0') > 0 || parseFloat(info.rewards || '0') > 0;
+            return res.json({
+                success: true,
+                source: 'onchain',
+                chainId,
+                positions: hasPosition ? [{
+                    positionId: `${chainId}:${req.params.address.toLowerCase()}:staking`,
+                    amount: info.stakedAmount,
+                    rewards: info.rewards,
+                    baseEarned: info.baseEarned,
+                    boostBps: info.boostBps,
+                    validatorTier: info.validatorTier,
+                    isValidator: info.isValidator,
+                    startDate: null,
+                    status: 'active',
+                }] : [],
+                totalStaked: info.stakedAmount,
+                totalRewards: info.rewards,
+            });
+        } catch (onchainError) {
+            logger.warn({ error: onchainError.message }, 'Staking on-chain read unavailable, falling back to DB');
+        }
+
+        const { rows } = await query(
+            `SELECT sp.*, u.username FROM staking_positions sp
+             LEFT JOIN users u ON sp.user_id = u.id
+             WHERE sp.wallet_address = $1 AND sp.is_active = TRUE
+             ORDER BY sp.staked_at DESC`,
+            [req.params.address.toLowerCase()]
+        );
+        const totalStaked = rows.reduce((sum, r) => sum + parseFloat(r.amount_staked || 0), 0);
+        const totalRewards = rows.reduce((sum, r) => sum + parseFloat(r.rewards_earned || 0), 0);
+        res.json({ success: true, positions: rows, totalStaked, totalRewards });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get staking positions' });
+    }
+});
+
+router.post('/staking/stake', authenticateGateway, requireScope('staking'), [
+    body('walletAddress').isEthereumAddress(),
+    body('amount').isFloat({ min: 0.001 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { walletAddress, amount } = req.body;
+        const { ethers } = require('ethers');
+        const txRequest = await buildUnsignedContractTx('StakingPool', 'stake', [ethers.parseEther(String(amount))], '0', parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337'));
+
+        if (txRequest) {
+            return res.json({
+                success: true,
+                mode: 'onchain',
+                walletAddress,
+                amount,
+                txRequest,
+                requiredApproval: {
+                    contract: resolveBEZToken(parseInt(process.env.BEZHAS_CHAIN_ID || '31337')),
+                    spender: txRequest.to,
+                    amount,
+                },
+                nextAction: 'wallet_sign_and_send',
+            });
+        }
+
+        const { rows: userRows } = await query(
+            'SELECT id FROM users WHERE wallet_address = $1', [walletAddress.toLowerCase()]
+        );
+        const userId = userRows.length > 0 ? userRows[0].id : null;
+
+        const { rows } = await query(
+            `INSERT INTO staking_positions (user_id, wallet_address, amount_staked)
+             VALUES ($1, $2, $3)
+             RETURNING *`,
+            [userId, walletAddress.toLowerCase(), amount]
+        );
+
+        logger.info({ walletAddress, amount }, 'Staking position created via gateway');
+        res.json({ success: true, position: rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Staking failed' });
+    }
+});
+
+router.post('/staking/unstake', authenticateGateway, requireScope('staking'), [
+    body('positionId').optional().isString(),
+    body('amount').optional().isFloat({ min: 0.001 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { ethers } = require('ethers');
+        if (req.body.amount) {
+            const txRequest = await buildUnsignedContractTx('StakingPool', 'withdraw', [ethers.parseEther(String(req.body.amount))], '0', parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337'));
+            if (txRequest) {
+                return res.json({ success: true, mode: 'onchain', txRequest, nextAction: 'wallet_sign_and_send' });
+            }
+        }
+
+        const { rows } = await query(
+            `UPDATE staking_positions 
+             SET is_active = FALSE, unstaked_at = NOW()
+             WHERE id = $1 AND is_active = TRUE
+             RETURNING *`,
+            [req.body.positionId]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Position not found or already unstaked' });
+        res.json({ success: true, position: rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Unstaking failed' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  FARMING — LP positions
+// ═══════════════════════════════════════════════════════════
+
+router.get('/farming/positions/:address', authenticateGateway, requireScope('farming'), async (req, res) => {
+    try {
+        const poolId = Number.isFinite(parseInt(req.query.poolId)) ? parseInt(req.query.poolId) : 0;
+        try {
+            const [position, pool] = await Promise.all([
+                contractService.getFarmingInfo(req.params.address, poolId),
+                contractService.getFarmingPool(poolId).catch(() => null),
+            ]);
+            const hasPosition = parseFloat(position.lpAmount || '0') > 0 || parseFloat(position.pendingRewards || '0') > 0;
+            return res.json({
+                success: true,
+                source: 'onchain',
+                positions: hasPosition ? [{
+                    poolId: String(poolId),
+                    poolName: pool?.isLP ? `LP Pool #${poolId}` : `BEZ Pool #${poolId}`,
+                    deposited: position.lpAmount,
+                    rewards: position.pendingRewards,
+                    apy: null,
+                    multiplier: position.multiplier,
+                    lockEndTimestamp: position.lockEndTimestamp,
+                    lpToken: pool?.lpToken,
+                }] : [],
+            });
+        } catch (onchainError) {
+            logger.warn({ error: onchainError.message }, 'Farming on-chain read unavailable, falling back to DB');
+        }
+
+        const { rows } = await query(
+            `SELECT * FROM farming_positions
+             WHERE wallet_address = $1 AND is_active = TRUE
+             ORDER BY deposited_at DESC`,
+            [req.params.address.toLowerCase()]
+        );
+        res.json({ success: true, positions: rows });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get farming positions' });
+    }
+});
+
+router.post('/farming/deposit', authenticateGateway, requireScope('farming'), [
+    body('walletAddress').isEthereumAddress(),
+    body('poolId').isInt({ min: 0 }),
+    body('amount').isFloat({ min: 0.001 }),
+    body('lockDays').optional().isInt({ min: 0 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { walletAddress, poolId, amount } = req.body;
+        const { ethers } = require('ethers');
+        const txRequest = await buildUnsignedContractTx(
+            'LiquidityFarming',
+            'deposit',
+            [poolId, ethers.parseEther(String(amount)), parseInt(req.body.lockDays || 0)],
+            '0',
+            parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337')
+        );
+        if (txRequest) {
+            return res.json({
+                success: true,
+                mode: 'onchain',
+                walletAddress,
+                poolId,
+                amount,
+                txRequest,
+                nextAction: 'wallet_sign_and_send',
+            });
+        }
+
+        const { rows: userRows } = await query(
+            'SELECT id FROM users WHERE wallet_address = $1', [walletAddress.toLowerCase()]
+        );
+
+        const { rows } = await query(
+            `INSERT INTO farming_positions (user_id, wallet_address, pool_id, lp_amount)
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
+            [userRows[0]?.id || null, walletAddress.toLowerCase(), poolId, amount]
+        );
+        res.json({ success: true, position: rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Farming deposit failed' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  GOVERNANCE — Proposals, voting
+// ═══════════════════════════════════════════════════════════
+
+router.get('/governance/proposals', authenticateGateway, requireScope('governance'), async (req, res) => {
+    try {
+        const status = req.query.status || 'active';
+        const { rows } = await query(
+            `SELECT * FROM governance_proposals 
+             WHERE status = $1 
+             ORDER BY created_at DESC 
+             LIMIT $2 OFFSET $3`,
+            [status, Math.min(parseInt(req.query.limit) || 20, 50), parseInt(req.query.offset) || 0]
+        );
+        res.json({ success: true, proposals: rows });
+    } catch (error) {
+        // Table may not exist yet — return empty
+        res.json({ success: true, proposals: [], note: 'Governance module pending deployment' });
+    }
+});
+
+router.post('/governance/vote', authenticateGateway, requireScope('governance'), [
+    body('proposalId').isString().notEmpty(),
+    body('walletAddress').isEthereumAddress(),
+    body('vote').isIn(['for', 'against', 'abstain']),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { proposalId, walletAddress, vote } = req.body;
+        const support = vote === 'for' ? 1 : vote === 'against' ? 0 : 2;
+        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        if (/^\d+$/.test(String(proposalId))) {
+            const txRequest = await buildUnsignedContractTx(
+                'GovernanceSystem',
+                'castVote',
+                [BigInt(proposalId), support],
+                '0',
+                chainId
+            );
+            if (txRequest) {
+                return res.json({
+                    success: true,
+                    mode: 'onchain',
+                    txRequest,
+                    nextAction: 'wallet_sign_and_send',
+                });
+            }
+        }
+
+        const { rows } = await query(
+            `INSERT INTO governance_votes (proposal_id, voter_address, vote)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (proposal_id, voter_address) DO UPDATE SET vote = $3, updated_at = NOW()
+             RETURNING *`,
+            [proposalId, walletAddress.toLowerCase(), vote]
+        );
+        res.json({ success: true, vote: rows[0] });
+    } catch (error) {
+        res.json({ success: false, note: 'Governance voting module pending deployment' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  BRIDGE — Cross-chain transfers
+// ═══════════════════════════════════════════════════════════
+
+router.get('/bridge/transfers/:address', authenticateGateway, requireScope('bridge'), async (req, res) => {
+    try {
+        const { rows } = await query(
+            `SELECT * FROM bridge_transfers
+             WHERE sender = $1 OR recipient = $1
+             ORDER BY created_at DESC
+             LIMIT $2`,
+            [req.params.address.toLowerCase(), Math.min(parseInt(req.query.limit) || 20, 50)]
+        );
+        res.json({ success: true, transfers: rows });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get bridge transfers' });
+    }
+});
+
+router.post('/bridge/initiate', authenticateGateway, requireScope('bridge'), [
+    body('sender').isEthereumAddress(),
+    body('recipient').isEthereumAddress(),
+    body('fromChainId').isInt(),
+    body('toChainId').isInt(),
+    body('tokenAddress').isEthereumAddress(),
+    body('amount').isFloat({ min: 0.0001 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { sender, recipient, fromChainId, toChainId, tokenAddress, amount } = req.body;
+        const { rows } = await query(
+            `INSERT INTO bridge_transfers (from_chain_id, to_chain_id, sender, recipient, token_address, amount, status)
+             VALUES ($1, $2, $3, $4, $5, $6, 'initiated')
+             RETURNING *`,
+            [fromChainId, toChainId, sender.toLowerCase(), recipient.toLowerCase(), tokenAddress.toLowerCase(), amount]
+        );
+
+        logger.info({ sender, fromChainId, toChainId, amount }, 'Bridge transfer initiated via gateway');
+        res.json({ success: true, transfer: rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Bridge initiation failed' });
+    }
+});
+
+router.get('/bridge/status/:transferId', authenticateGateway, requireScope('bridge'), async (req, res) => {
+    try {
+        const { rows } = await query(
+            'SELECT * FROM bridge_transfers WHERE id = $1',
+            [req.params.transferId]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Transfer not found' });
+        res.json({ success: true, transfer: rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get bridge status' });
+    }
+});
+
+/**
+ * GET /bridge/fees — Estimate bridge fees for a given transfer.
+ */
+router.get('/bridge/fees', authenticateGateway, requireScope('bridge'), async (req, res) => {
+    try {
+        const fromChainId = parseInt(req.query.from || req.query.fromChainId) || 0;
+        const toChainId = parseInt(req.query.to || req.query.toChainId) || 0;
+        const amount = parseFloat(req.query.amount) || 0;
+
+        if (!fromChainId || !toChainId || amount <= 0) {
+            return res.status(400).json({ error: 'Missing from, to, or amount query params' });
+        }
+
+        // Fee model: 0.1% bridge fee + gas estimates per chain
+        const bridgeFeePct = 0.001;
+        const bridgeFee = (amount * bridgeFeePct).toFixed(6);
+
+        // Estimated gas costs (USD) per chain — will be replaced by live oracle data
+        const gasEstimates = {
+            1: 14.50, 11155111: 0.02, 2708: 0.05, 137: 0.08, 42161: 0.12, 43114: 0.15,
+        };
+        const gasFeeOrigin = gasEstimates[fromChainId] || 0.10;
+        const gasFeeDestination = gasEstimates[toChainId] || 0.10;
+        const totalFeeUSD = (parseFloat(bridgeFee) * 0.10 + gasFeeOrigin + gasFeeDestination).toFixed(2);
+
+        // Time estimates (minutes) per route
+        const isL2toL2 = fromChainId !== 1 && toChainId !== 1;
+        const estimatedTimeMinutes = isL2toL2 ? 3 : fromChainId === 1 ? 12 : 7;
+
+        const chainNames = {
+            1: 'Ethereum', 11155111: 'Sepolia', 2708: 'BeZhas', 137: 'Polygon', 42161: 'Arbitrum', 43114: 'Avalanche',
+        };
+        const route = `${chainNames[fromChainId] || 'Unknown'} → ${chainNames[toChainId] || 'Unknown'}`;
+
+        res.json({
+            success: true,
+            fees: { bridgeFee, gasFeeOrigin: gasFeeOrigin.toFixed(2), gasFeeDestination: gasFeeDestination.toFixed(2), totalFeeUSD, estimatedTimeMinutes, route },
+        });
+    } catch (error) {
+        logger.error({ error: error.message }, 'Bridge fee estimation failed');
+        res.status(500).json({ error: 'Failed to estimate bridge fees' });
+    }
+});
+
+/**
+ * GET /bridge/stats — Aggregated bridge statistics (public).
+ */
+router.get('/bridge/stats', authenticateGateway, requireScope('bridge'), async (req, res) => {
+    try {
+        const [totals, chainBreakdown, recentCount] = await Promise.all([
+            query(`SELECT COALESCE(SUM(amount), 0) as total_bridged, COUNT(*) as total_transfers
+                   FROM bridge_transfers WHERE status != 'failed'`),
+            query(`SELECT to_chain_id as chain_id, COALESCE(SUM(amount), 0) as volume, COUNT(*) as count
+                   FROM bridge_transfers WHERE status != 'failed'
+                   GROUP BY to_chain_id ORDER BY volume DESC`),
+            query(`SELECT COUNT(*) as cnt FROM bridge_transfers
+                   WHERE status = 'finalized' AND finalized_at > NOW() - INTERVAL '24 hours'`),
+        ]);
+
+        res.json({
+            success: true,
+            stats: {
+                totalBridged: totals.rows[0].total_bridged,
+                totalTransfers: parseInt(totals.rows[0].total_transfers),
+                chainBreakdown: chainBreakdown.rows,
+                recentFinalized: parseInt(recentCount.rows[0].cnt),
+            },
+        });
+    } catch (error) {
+        logger.error({ error: error.message }, 'Bridge stats failed');
+        res.status(500).json({ error: 'Failed to get bridge stats' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  TREASURY — DAO funds overview
+// ═══════════════════════════════════════════════════════════
+
+router.get('/treasury/overview', authenticateGateway, requireScope('treasury'), async (req, res) => {
+    try {
+        // Aggregate treasury data
+        const stakingTotal = await query('SELECT COALESCE(SUM(amount_staked), 0) as total FROM staking_positions WHERE is_active = TRUE');
+        const farmingTotal = await query('SELECT COALESCE(SUM(lp_amount), 0) as total FROM farming_positions WHERE is_active = TRUE');
+        const bridgeVolume = await query('SELECT COALESCE(SUM(amount), 0) as total FROM bridge_transfers WHERE status = \'finalized\'');
+        const userCount = await query('SELECT COUNT(*) as total FROM users');
+
+        res.json({
+            success: true,
+            treasury: {
+                totalStaked: stakingTotal.rows[0].total,
+                totalFarming: farmingTotal.rows[0].total,
+                bridgeVolume: bridgeVolume.rows[0].total,
+                totalUsers: parseInt(userCount.rows[0].total),
+                updatedAt: new Date().toISOString(),
+            },
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get treasury overview' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  TOKEN — Info, supply, balances
+// ═══════════════════════════════════════════════════════════
+
+router.get('/token/info', authenticateGateway, requireScope('token'), async (req, res) => {
+    try {
+        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const bezTokenName = resolveBEZToken(chainId);
+        const token = await contractService.getTokenInfo(bezTokenName, chainId);
+        res.json({
+            success: true,
+            source: 'onchain',
+            token: {
+                ...token,
+                circulatingSupply: token.totalSupply,
+                wrappedVersion: {
+                    name: 'Wrapped BeZhas Coin',
+                    symbol: 'wBEZ',
+                    chains: [137, 42161],
+                },
+            },
+        });
+    } catch (error) {
+        res.json({
+            success: true,
+            source: 'fallback',
+            token: {
+                name: 'BeZhas Coin V2',
+                symbol: 'BEZ',
+                decimals: 18,
+                totalSupply: '100000000',
+                totalSupplyWei: '100000000000000000000000000',
+                chainId: 2708,
+                wrappedVersion: {
+                    name: 'Wrapped BeZhas Coin',
+                    symbol: 'wBEZ',
+                    chains: [137, 42161],
+                },
+            },
+        });
+    }
+});
+
+router.post('/governance/propose', authenticateGateway, requireScope('governance'), [
+    body('target').isEthereumAddress(),
+    body('value').optional().isString(),
+    body('calldata').optional().isString(),
+    body('description').isString().notEmpty(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { ethers } = require('ethers');
+        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const txRequest = await buildUnsignedContractTx(
+            'GovernanceSystem',
+            'propose',
+            [
+                [req.body.target],
+                [ethers.parseEther(String(req.body.value || '0'))],
+                [req.body.calldata || '0x'],
+                req.body.description,
+            ],
+            '0',
+            chainId
+        );
+        if (!txRequest) return res.status(404).json({ error: 'GovernanceSystem contract not deployed' });
+        res.json({ success: true, mode: 'onchain', txRequest, nextAction: 'wallet_sign_and_send' });
+    } catch (error) {
+        res.status(500).json({ error: 'Governance proposal tx failed', details: error.message });
+    }
+});
+
+router.post('/governance/queue', authenticateGateway, requireScope('governance'), [
+    body('target').isEthereumAddress(),
+    body('value').optional().isString(),
+    body('calldata').optional().isString(),
+    body('description').isString().notEmpty(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { ethers } = require('ethers');
+        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const descriptionHash = ethers.id(req.body.description);
+        const txRequest = await buildUnsignedContractTx(
+            'GovernanceSystem',
+            'queue',
+            [
+                [req.body.target],
+                [ethers.parseEther(String(req.body.value || '0'))],
+                [req.body.calldata || '0x'],
+                descriptionHash,
+            ],
+            '0',
+            chainId
+        );
+        if (!txRequest) return res.status(404).json({ error: 'GovernanceSystem contract not deployed' });
+        res.json({ success: true, mode: 'onchain', txRequest, descriptionHash, nextAction: 'wallet_sign_and_send' });
+    } catch (error) {
+        res.status(500).json({ error: 'Governance queue tx failed', details: error.message });
+    }
+});
+
+router.post('/governance/execute', authenticateGateway, requireScope('governance'), [
+    body('target').isEthereumAddress(),
+    body('value').optional().isString(),
+    body('calldata').optional().isString(),
+    body('description').isString().notEmpty(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { ethers } = require('ethers');
+        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const descriptionHash = ethers.id(req.body.description);
+        const txRequest = await buildUnsignedContractTx(
+            'GovernanceSystem',
+            'execute',
+            [
+                [req.body.target],
+                [ethers.parseEther(String(req.body.value || '0'))],
+                [req.body.calldata || '0x'],
+                descriptionHash,
+            ],
+            '0',
+            chainId
+        );
+        if (!txRequest) return res.status(404).json({ error: 'GovernanceSystem contract not deployed' });
+        res.json({ success: true, mode: 'onchain', txRequest, descriptionHash, nextAction: 'wallet_sign_and_send' });
+    } catch (error) {
+        res.status(500).json({ error: 'Governance execute tx failed', details: error.message });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  CONTRACTS — ABIs, addresses, read calls
+// ═══════════════════════════════════════════════════════════
+
+router.get('/contracts/list', authenticateGateway, requireScope('contracts'), async (req, res) => {
+    try {
+        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const { rows } = await query(
+            'SELECT name, category, address, deployed_at FROM contract_addresses WHERE chain_id = $1 ORDER BY category, name',
+            [chainId]
+        );
+        if (rows.length > 0) return res.json({ success: true, source: 'db', contracts: rows });
+
+        const grouped = await contractService.getAllAddresses(chainId);
+        const contracts = Object.entries(grouped).flatMap(([category, items]) =>
+            Object.entries(items).map(([name, address]) => ({ name, category, address }))
+        );
+        res.json({ success: true, source: 'deployments', contracts });
+    } catch (error) {
+        try {
+            const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+            const grouped = await contractService.getAllAddresses(chainId);
+            const contracts = Object.entries(grouped).flatMap(([category, items]) =>
+                Object.entries(items).map(([name, address]) => ({ name, category, address }))
+            );
+            return res.json({ success: true, source: 'deployments', contracts });
+        } catch (_) {
+            res.status(500).json({ error: 'Failed to list contracts' });
+        }
+    }
+});
+
+router.get('/contracts/:name', authenticateGateway, requireScope('contracts'), async (req, res) => {
+    try {
+        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const { rows } = await query(
+            'SELECT * FROM contract_addresses WHERE name = $1 AND chain_id = $2',
+            [req.params.name, chainId]
+        );
+        const address = rows[0]?.address || await contractService.getContractAddress(req.params.name, chainId);
+        if (!address) return res.status(404).json({ error: 'Contract not found' });
+        const includeAbi = req.query.includeAbi === 'true';
+        const abi = includeAbi ? contractService.loadABI(req.params.name) : undefined;
+        res.json({ success: true, contract: { ...(rows[0] || {}), name: req.params.name, address, chain_id: chainId, abi } });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get contract', message: error.message });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  DEX / TRADING — BEZ pairs, quotes, tx requests
+// ═══════════════════════════════════════════════════════════
+
+router.get('/dex/pool', authenticateGateway, requireScope('contracts'), [
+    body().custom(() => true),
+], async (req, res) => {
+    const { tokenA, tokenB } = req.query;
+    if (!tokenA || !tokenB) return res.status(400).json({ error: 'tokenA and tokenB are required' });
+
+    try {
+        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const pool = await contractService.getDEXPool(tokenA, tokenB, chainId);
+        res.json({ success: true, pool });
+    } catch (error) {
+        res.status(404).json({ error: 'DEX pool not found', message: error.message });
+    }
+});
+
+router.get('/dex/quote', authenticateGateway, requireScope('contracts'), async (req, res) => {
+    const { tokenIn, tokenOut, amountIn } = req.query;
+    if (!tokenIn || !tokenOut || !amountIn) {
+        return res.status(400).json({ error: 'tokenIn, tokenOut and amountIn are required' });
+    }
+
+    try {
+        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const quote = await contractService.quoteDEXSwap(tokenIn, tokenOut, amountIn, chainId);
+        res.json({ success: true, quote });
+    } catch (error) {
+        res.status(404).json({ error: 'DEX quote unavailable', message: error.message });
+    }
+});
+
+router.post('/dex/swap', authenticateGateway, requireScope('contracts'), [
+    body('tokenIn').isEthereumAddress(),
+    body('tokenOut').isEthereumAddress(),
+    body('amountIn').isFloat({ min: 0.000001 }),
+    body('minAmountOut').optional().isFloat({ min: 0 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { ethers } = require('ethers');
+        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const txRequest = await buildUnsignedContractTx('BeZhasDEX', 'swap', [
+            req.body.tokenIn,
+            req.body.tokenOut,
+            ethers.parseEther(String(req.body.amountIn)),
+            ethers.parseEther(String(req.body.minAmountOut || '0')),
+        ], '0', chainId);
+        if (!txRequest) return res.status(404).json({ error: 'BeZhasDEX not deployed' });
+        res.json({ success: true, mode: 'onchain', txRequest, nextAction: 'wallet_sign_and_send' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to build swap transaction', message: error.message });
+    }
+});
+
+router.post('/dex/add-liquidity', authenticateGateway, requireScope('contracts'), [
+    body('tokenA').isEthereumAddress(),
+    body('tokenB').isEthereumAddress(),
+    body('amountA').isFloat({ min: 0.000001 }),
+    body('amountB').isFloat({ min: 0.000001 }),
+    body('minLiquidity').optional().isFloat({ min: 0 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const { ethers } = require('ethers');
+        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const txRequest = await buildUnsignedContractTx('BeZhasDEX', 'addLiquidity', [
+            req.body.tokenA,
+            req.body.tokenB,
+            ethers.parseEther(String(req.body.amountA)),
+            ethers.parseEther(String(req.body.amountB)),
+            ethers.parseEther(String(req.body.minLiquidity || '0')),
+        ], '0', chainId);
+        if (!txRequest) return res.status(404).json({ error: 'BeZhasDEX not deployed' });
+        res.json({ success: true, mode: 'onchain', txRequest, nextAction: 'wallet_sign_and_send' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to build add-liquidity transaction', message: error.message });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  APP MANAGEMENT — Registry (admin only)
+// ═══════════════════════════════════════════════════════════
+
+router.post('/apps/register', authenticateGateway, requireScope('admin'), [
+    body('appName').isLength({ min: 3, max: 100 }),
+    body('scopes').isArray({ min: 1 }),
+    body('tier').optional().isIn(['free', 'standard', 'premium', 'internal']),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    try {
+        const result = await ssoService.registerApp(req.body);
+        logger.info({ appName: req.body.appName }, 'New app registered in gateway');
+        res.json({ success: true, ...result });
+    } catch (error) {
+        if (error.code === '23505') {
+            return res.status(409).json({ error: 'App name already registered' });
+        }
+        res.status(500).json({ error: 'Failed to register app' });
+    }
+});
+
+router.get('/apps/list', authenticateGateway, requireScope('admin'), async (req, res) => {
+    try {
+        const { rows } = await query(
+            'SELECT id, app_name, scopes, tier, rate_limit, is_active, created_at FROM app_registry ORDER BY app_name'
+        );
+        res.json({ success: true, apps: rows });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to list apps' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  PAYMENTS — Buy BEZ, send BezPay, history
+// ═══════════════════════════════════════════════════════════
+
+router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
+    body('walletAddress').optional().isEthereumAddress(),
+    body('amountUSD').isFloat({ min: 1 }),
+    body('paymentMethod').isIn(['card', 'crypto', 'qr', 'bank']),
+    body('stripeUseCase').optional().isString().isLength({ min: 2, max: 80 }),
+    body('email').optional().isEmail(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    const { amountUSD, paymentMethod, stripeUseCase, email } = req.body;
+    try {
+        const walletAddress = await resolvePrimaryWallet(req, req.body.walletAddress);
+        if (!walletAddress) {
+            return res.status(400).json({ error: 'walletAddress is required unless a user JWT is provided' });
+        }
+        const feeBreakdown = calculateFeeBreakdown(amountUSD);
+        const platformFeeUSD = feeBreakdown.platformFeeUSD;
+        const grossAmountUSD = feeBreakdown.grossAmountUSD;
+        const stripeLink = paymentMethod === 'card'
+            ? getStripePaymentLink(stripeUseCase || 'token_purchase')
+            : null;
+        const bankTransfer = paymentMethod === 'bank';
+        const note = stripeLink || bankTransfer
+            ? JSON.stringify(stripeLink ? {
+                provider: 'stripe_payment_link',
+                stripeUseCase: stripeLink.id,
+                stripeLabel: stripeLink.label,
+                email: email || null,
+                platformFeeBps: PLATFORM_FEE_BPS,
+                platformFeeUSD,
+                grossAmountUSD,
+                tokenomics: feeBreakdown.allocations,
+            } : {
+                provider: 'bank_transfer',
+                paymentRail: BANK_TRANSFER_DETAILS.paymentRail,
+                beneficiaryAlias: BANK_TRANSFER_DETAILS.beneficiaryAlias,
+                iban: BANK_TRANSFER_DETAILS.iban,
+                bic: BANK_TRANSFER_DETAILS.bic,
+                platformFeeBps: PLATFORM_FEE_BPS,
+                platformFeeUSD,
+                grossAmountUSD,
+                tokenomics: feeBreakdown.allocations,
+            })
+            : null;
+        const result = await query(
+            `INSERT INTO payment_transactions (wallet_address, primary_wallet_address, amount_usd,
+                                               platform_fee_usd, payment_method, type, status, note)
+             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5)
+             RETURNING id, status, created_at`,
+            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note]
+        );
+        logger.info({
+            walletAddress,
+            amountUSD,
+            paymentMethod,
+            stripeUseCase: stripeLink?.id,
+        }, 'BEZ purchase initiated');
+
+        const bankTransferInstructions = bankTransfer
+            ? buildBankTransferInstructions(`BEZ-${result.rows[0].id}`)
+            : undefined;
+
+        res.json({
+            success: true,
+            paymentId: result.rows[0].id,
+            status: 'pending',
+            provider: stripeLink ? 'stripe_payment_link' : bankTransfer ? 'bank_transfer' : paymentMethod,
+            checkoutUrl: stripeLink?.url,
+            bankTransfer: bankTransferInstructions,
+            walletAddress,
+            amountUSD: grossAmountUSD,
+            netAmountUSD: parseFloat(amountUSD),
+            platformFeeUSD,
+            platformFeeBps: PLATFORM_FEE_BPS,
+            tokenomics: feeBreakdown.allocations,
+            stripeUseCase: stripeLink?.id,
+            stripeLabel: stripeLink?.label,
+            nextAction: stripeLink
+                ? 'redirect_to_checkout'
+                : bankTransfer
+                    ? 'display_bank_transfer_instructions'
+                    : 'await_payment_confirmation',
+        });
+    } catch (error) {
+        logger.error(error, 'Payment buy failed');
+        res.status(500).json({ error: 'Payment processing failed' });
+    }
+});
+
+router.get('/payments/stripe-links', authenticateGateway, requireScope('wallet'), (_req, res) => {
+    res.json({
+        success: true,
+        provider: 'stripe_payment_link',
+        links: STRIPE_PAYMENT_LINKS,
+    });
+});
+
+router.get('/payments/bank-transfer-details', authenticateGateway, requireScope('wallet'), (_req, res) => {
+    res.json({
+        success: true,
+        provider: 'bank_transfer',
+        bankTransfer: BANK_TRANSFER_DETAILS,
+    });
+});
+
+router.get('/payments/tokenomics', authenticateGateway, requireScope('wallet'), (req, res) => {
+    const amountUSD = req.query.amountUSD ? parseFloat(req.query.amountUSD) : 100;
+    const priceUSD = req.query.priceUSD ? parseFloat(req.query.priceUSD) : 0.10;
+    res.json({
+        success: true,
+        model: 'rwa-real-yield-fiat-to-fiat',
+        fee: calculateFeeBreakdown(amountUSD, priceUSD),
+        notes: [
+            'Burn improves scarcity but must not starve liquidity for high-frequency RWA flows.',
+            'Staking rewards are funded by real transaction volume, not emissions.',
+            'Microtransactions should be batched or netted before settlement when fee > economic value.',
+        ],
+    });
+});
+
+router.post('/payments/sell', authenticateGateway, requireScope('wallet'), [
+    body('walletAddress').isEthereumAddress(),
+    body('amountBEZ').isFloat({ min: 0.1 }),
+    body('receiveMethod').isIn(['card', 'bank', 'crypto']),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    const { walletAddress, amountBEZ, receiveMethod } = req.body;
+    try {
+        const result = await query(
+            `INSERT INTO payment_transactions (wallet_address, amount_bez, payment_method, type, status)
+             VALUES ($1, $2, $3, 'sell', 'pending') RETURNING id, status, created_at`,
+            [walletAddress, amountBEZ, receiveMethod]
+        );
+        logger.info({ walletAddress, amountBEZ, receiveMethod }, 'BEZ sell initiated');
+        res.json({ success: true, paymentId: result.rows[0].id, status: 'pending' });
+    } catch (error) {
+        logger.error(error, 'Payment sell failed');
+        res.status(500).json({ error: 'Payment processing failed' });
+    }
+});
+
+router.post('/payments/send', authenticateGateway, requireScope('wallet'), [
+    body('sender').isEthereumAddress(),
+    body('recipient').isLength({ min: 3 }),
+    body('amount').isFloat({ min: 0.001 }),
+    body('note').optional().isLength({ max: 500 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    const { sender, recipient, amount, note } = req.body;
+    try {
+        const result = await query(
+            `INSERT INTO payment_transactions (wallet_address, recipient, amount_bez, type, status, note)
+             VALUES ($1, $2, $3, 'payment', 'pending', $4) RETURNING id, status, created_at`,
+            [sender, recipient, amount, note || null]
+        );
+        logger.info({ sender, recipient, amount }, 'BezPay payment initiated');
+        res.json({ success: true, paymentId: result.rows[0].id, status: 'pending' });
+    } catch (error) {
+        logger.error(error, 'BezPay send failed');
+        res.status(500).json({ error: 'Payment send failed' });
+    }
+});
+
+router.get('/payments/history/:address', authenticateGateway, requireScope('wallet'), [
+    param('address').isEthereumAddress(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    try {
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+        const { rows } = await query(
+            `SELECT id, type, COALESCE(amount_bez::text || ' BEZ', amount_usd::text || ' USD') as amount,
+                    payment_method as method, recipient, status, note, tx_hash as "txHash",
+                    created_at as date
+             FROM payment_transactions
+             WHERE wallet_address = $1
+             ORDER BY created_at DESC LIMIT $2`,
+            [req.params.address, limit]
+        );
+        res.json({ success: true, payments: rows });
+    } catch (error) {
+        logger.error(error, 'Payment history fetch failed');
+        res.status(500).json({ error: 'Failed to fetch payment history' });
+    }
+});
+
+/**
+ * POST /payments/settle — Internal settlement hook for FIAT/bank/crypto orders.
+ *
+ * This is intentionally internal-only. Stripe/PSP webhooks or a backoffice worker
+ * should call it after payment confirmation and, when available, after the BEZ
+ * mint/transfer transaction is submitted.
+ */
+router.post('/payments/settle', requirePaymentSettlementKey, [
+    body('paymentId').isInt({ min: 1 }),
+    body('status').optional().isIn(['completed', 'failed']),
+    body('providerReference').optional().isString().isLength({ min: 1, max: 160 }),
+    body('txHash').optional().matches(/^0x[a-fA-F0-9]{64}$/),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+
+    const paymentId = parseInt(req.body.paymentId, 10);
+    const status = req.body.status || 'completed';
+    const providerReference = req.body.providerReference || null;
+    const txHash = req.body.txHash || null;
+
+    try {
+        const { rows } = await query(
+            `SELECT id, wallet_address, amount_usd, platform_fee_usd, payment_method, type, status, note
+             FROM payment_transactions
+             WHERE id = $1 AND type = 'buy'
+             LIMIT 1`,
+            [paymentId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Payment buy order not found' });
+        }
+
+        const payment = rows[0];
+        if (payment.status === 'completed') {
+            return res.status(409).json({ error: 'Payment already completed' });
+        }
+
+        const price = await query(
+            "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
+        ).catch(() => ({ rows: [] }));
+        const priceUSD = parseFloat(price.rows[0]?.price_usd || '0.10');
+        const amountUSD = parseFloat(payment.amount_usd || '0');
+        const platformFeeUSD = parseFloat(payment.platform_fee_usd || '0');
+        const netAmountUSD = Math.max(amountUSD - platformFeeUSD, 0);
+        const amountBEZ = status === 'completed' && priceUSD > 0
+            ? (netAmountUSD / priceUSD).toFixed(18)
+            : null;
+        const platformFeeBEZ = status === 'completed' && priceUSD > 0
+            ? (platformFeeUSD / priceUSD).toFixed(18)
+            : null;
+        const feeBreakdown = calculateFeeBreakdown(netAmountUSD, priceUSD);
+
+        let note = {};
+        try { note = payment.note ? JSON.parse(payment.note) : {}; } catch { note = {}; }
+        note.settlement = {
+            status,
+            providerReference,
+            txHash,
+            priceUSD,
+            amountBEZ,
+            platformFeeUSD,
+            platformFeeBEZ,
+            tokenomics: feeBreakdown.allocations,
+            settledAt: new Date().toISOString(),
+        };
+
+        const update = await query(
+            `UPDATE payment_transactions
+             SET status = $1,
+                 amount_bez = COALESCE($2, amount_bez),
+                 tx_hash = COALESCE($3, tx_hash),
+                 platform_fee_bez = COALESCE($4, platform_fee_bez),
+                 note = $5,
+                 updated_at = NOW()
+             WHERE id = $6
+             RETURNING id, wallet_address, amount_usd, amount_bez, payment_method, status, tx_hash, updated_at`,
+            [status, amountBEZ, txHash, platformFeeBEZ, JSON.stringify(note), paymentId]
+        );
+
+        logger.info({ paymentId, status, amountBEZ, txHash }, 'Payment settled');
+        res.json({
+            success: true,
+            payment: update.rows[0],
+            nextAction: status === 'completed' && !txHash
+                ? 'submit_or_attach_bez_transfer_tx'
+                : 'settlement_recorded',
+        });
+    } catch (error) {
+        logger.error(error, 'Payment settlement failed');
+        res.status(500).json({ error: 'Payment settlement failed' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  TOKEN PRICE — Live or cached BEZ price
+// ═══════════════════════════════════════════════════════════
+
+router.get('/token/price', authenticateGateway, requireScope('token'), async (req, res) => {
+    try {
+        // Check cached price first
+        const cached = await query(
+            "SELECT price_usd, change_24h, updated_at FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
+        ).catch(() => ({ rows: [] }));
+
+        if (cached.rows.length > 0) {
+            return res.json({
+                success: true,
+                priceUSD: parseFloat(cached.rows[0].price_usd),
+                change24h: parseFloat(cached.rows[0].change_24h || 0),
+                updatedAt: cached.rows[0].updated_at,
+            });
+        }
+
+        // Fallback: initial price from config
+        res.json({
+            success: true,
+            priceUSD: 0.10,
+            change24h: 0,
+            updatedAt: new Date().toISOString(),
+        });
+    } catch (error) {
+        logger.error(error, 'Token price fetch failed');
+        res.status(500).json({ error: 'Failed to fetch token price' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  NETWORK STATS — Public (used by landing pages)
+// ═══════════════════════════════════════════════════════════
+
+router.get('/network/stats', async (req, res) => {
+    try {
+        const [validators, bridgeVol, txCount, stakingAgg, farmingAgg, tokenPrice, nftCount, latestAnalytics] = await Promise.all([
+            query('SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE is_active = true) as active FROM validators').catch(() => ({ rows: [{ total: 0, active: 0 }] })),
+            query("SELECT COALESCE(SUM(amount), 0) as total FROM bridge_transfers WHERE status = 'finalized'").catch(() => ({ rows: [{ total: 0 }] })),
+            query('SELECT COUNT(*) as total FROM transactions').catch(() => ({ rows: [{ total: 0 }] })),
+            query("SELECT COALESCE(SUM(amount_staked), 0) as total_staked, COUNT(*) FILTER (WHERE is_active = true) as active_positions FROM staking_positions").catch(() => ({ rows: [{ total_staked: 0, active_positions: 0 }] })),
+            query("SELECT COALESCE(SUM(lp_amount), 0) as tvl, COUNT(*) FILTER (WHERE is_active = true) as active_farms FROM farming_positions").catch(() => ({ rows: [{ tvl: 0, active_farms: 0 }] })),
+            query("SELECT price_usd, change_24h FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1").catch(() => ({ rows: [] })),
+            query('SELECT COUNT(*) as total FROM nfts').catch(() => ({ rows: [{ total: 0 }] })),
+            query('SELECT * FROM daily_analytics ORDER BY date DESC LIMIT 1').catch(() => ({ rows: [] })),
+        ]);
+
+        const priceUSD = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].price_usd) : 0.10;
+        const change24h = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].change_24h || 0) : 0;
+        const totalSupply = 100_000_000; // 100M BEZ from deploy-config
+        const totalStaked = parseFloat(stakingAgg.rows[0].total_staked);
+        const circulatingSupply = totalSupply * 0.428; // 42.8% circulating as per tokenomics
+        const marketCap = priceUSD * circulatingSupply;
+        const tvl = parseFloat(farmingAgg.rows[0].tvl);
+        const analytics = latestAnalytics.rows[0] || {};
+
+        res.json({
+            success: true,
+            network: {
+                validatorsTotal: parseInt(validators.rows[0].total),
+                validatorsActive: parseInt(validators.rows[0].active),
+                bridgeVolume: bridgeVol.rows[0].total,
+                totalTransactions: parseInt(txCount.rows[0].total),
+                chainId: 2708,
+                status: 'operational',
+                uptime: 99.99,
+            },
+            token: {
+                priceUSD,
+                change24h,
+                totalSupply,
+                circulatingSupply,
+                marketCap,
+                symbol: 'BEZ',
+            },
+            staking: {
+                totalStaked,
+                activePositions: parseInt(stakingAgg.rows[0].active_positions),
+                apr: 12.4, // base APR from staking contract config
+            },
+            defi: {
+                tvl: tvl * priceUSD, // TVL in USD
+                tvlBEZ: tvl,
+                activeFarms: parseInt(farmingAgg.rows[0].active_farms),
+            },
+            commerce: {
+                totalNFTs: parseInt(nftCount.rows[0].total),
+                newMints24h: parseInt(analytics.new_nfts_minted || 0),
+                dailyTransactions: parseInt(analytics.total_transactions || 0),
+                dailyVolume: parseFloat(analytics.total_volume_bez || 0),
+                activeUsers: parseInt(analytics.active_users || 0),
+            },
+        });
+    } catch (error) {
+        logger.error(error, 'Network stats failed');
+        res.status(500).json({ error: 'Failed to fetch network stats' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  CHAT / LLM GATEWAY — Internal AI proxy for UnifiedAgent
+//  Called by UnifiedAgent._callLLM via AI_GATEWAY_URL
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Internal auth for agent-to-gateway calls.
+ * Uses INTERNAL_API_KEY (shared secret, NOT the gateway API key).
+ */
+const requireInternalKey = (req, res, next) => {
+    const key = req.headers['authorization']?.replace('Bearer ', '') || req.headers['x-internal-key'];
+    const expected = process.env.INTERNAL_API_KEY || 'dev-internal-key';
+    if (!key || key !== expected) {
+        return res.status(401).json({ error: 'Internal auth required' });
+    }
+    next();
+};
+
+/**
+ * Build a provider-agnostic chat request.
+ * Priority: DeepSeek → Gemini → fallback
+ */
+async function callLLMProvider(messages) {
+    const axios = require('axios');
+
+    // ── DeepSeek ──────────────────────────────────────────
+    if (process.env.DEEPSEEK_API_KEY) {
+        try {
+            const res = await axios.post(
+                'https://api.deepseek.com/v1/chat/completions',
+                { model: 'deepseek-chat', messages, max_tokens: 1024, temperature: 0.7 },
+                {
+                    headers: {
+                        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+                        'Content-Type': 'application/json',
+                    },
+                    timeout: 30000,
+                }
+            );
+            return res.data?.choices?.[0]?.message?.content || null;
+        } catch (e) {
+            logger.warn({ err: e.message }, 'DeepSeek failed, trying Gemini');
+        }
+    }
+
+    // ── Gemini ────────────────────────────────────────────
+    if (process.env.GEMINI_API_KEY) {
+        try {
+            // Convert messages to Gemini format (contents array)
+            const contents = messages
+                .filter(m => m.role !== 'system')
+                .map(m => ({
+                    role: m.role === 'assistant' ? 'model' : 'user',
+                    parts: [{ text: m.content }],
+                }));
+
+            const systemInstruction = messages.find(m => m.role === 'system')?.content || '';
+
+            const res = await axios.post(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+                {
+                    contents,
+                    systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
+                    generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+                },
+                { timeout: 30000 }
+            );
+            return res.data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        } catch (e) {
+            logger.warn({ err: e.message }, 'Gemini failed, using fallback');
+        }
+    }
+
+    return null; // No LLM available
+}
+
+/**
+ * POST /chat — Sync LLM call from UnifiedAgent (non-streaming).
+ */
+router.post('/chat', requireInternalKey, async (req, res) => {
+    const { messages } = req.body || {};
+    if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ error: 'messages array required' });
+    }
+
+    try {
+        const text = await callLLMProvider(messages);
+        if (text) {
+            return res.json({
+                choices: [{ message: { role: 'assistant', content: text } }],
+                provider: process.env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini',
+            });
+        }
+        // Graceful fallback when no LLM is configured
+        return res.json({ text: null, fallback: true });
+    } catch (err) {
+        logger.error({ err: err.message }, 'Gateway /chat error');
+        res.status(500).json({ error: 'LLM call failed', message: err.message });
+    }
+});
+
+/**
+ * POST /chat/stream — Streaming LLM call (SSE) from UnifiedAgent.
+ * Emits OpenAI-compatible SSE: "data: {choices:[{delta:{content:'...'}}]}\n\n"
+ */
+router.post('/chat/stream', requireInternalKey, async (req, res) => {
+    const { messages } = req.body || {};
+    if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ error: 'messages array required' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    const sendChunk = (content) => {
+        const data = JSON.stringify({ choices: [{ delta: { content } }] });
+        res.write(`data: ${data}\n\n`);
+        if (typeof res.flush === 'function') res.flush();
+    };
+
+    try {
+        const axios = require('axios');
+
+        // ── DeepSeek streaming ──────────────────────────────
+        if (process.env.DEEPSEEK_API_KEY) {
+            try {
+                const response = await axios.post(
+                    'https://api.deepseek.com/v1/chat/completions',
+                    { model: 'deepseek-chat', messages, max_tokens: 1024, temperature: 0.7, stream: true },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+                            'Content-Type': 'application/json',
+                            Accept: 'text/event-stream',
+                        },
+                        responseType: 'stream',
+                        timeout: 60000,
+                    }
+                );
+
+                let buffer = '';
+                response.data.on('data', (chunk) => {
+                    buffer += chunk.toString();
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line in buffer
+
+                    for (const line of lines) {
+                        if (line.startsWith('data:')) {
+                            const json = line.slice(5).trim();
+                            if (json === '[DONE]') return;
+                            try {
+                                const parsed = JSON.parse(json);
+                                const token = parsed.choices?.[0]?.delta?.content || '';
+                                if (token) sendChunk(token);
+                            } catch { /* malformed — skip */ }
+                        }
+                    }
+                });
+
+                await new Promise((resolve, reject) => {
+                    response.data.on('end', resolve);
+                    response.data.on('error', reject);
+                });
+
+                res.write('data: [DONE]\n\n');
+                return res.end();
+            } catch (e) {
+                logger.warn({ err: e.message }, 'DeepSeek stream failed, falling back to Gemini');
+            }
+        }
+
+        // ── Gemini fallback (non-streaming, but chunked for UX) ──────────
+        const text = await callLLMProvider(messages);
+        if (text) {
+            // Emit word-by-word to simulate streaming
+            const words = text.split(' ');
+            for (let i = 0; i < words.length; i += 4) {
+                sendChunk(words.slice(i, i + 4).join(' ') + (i + 4 < words.length ? ' ' : ''));
+                await new Promise(r => setTimeout(r, 20));
+            }
+        } else {
+            sendChunk('Sin LLM configurado. Añade DEEPSEEK_API_KEY o GEMINI_API_KEY al .env.');
+        }
+
+        res.write('data: [DONE]\n\n');
+        res.end();
+
+    } catch (err) {
+        logger.error({ err: err.message }, 'Gateway /chat/stream error');
+        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+        res.end();
+    }
+});
+
+module.exports = router;

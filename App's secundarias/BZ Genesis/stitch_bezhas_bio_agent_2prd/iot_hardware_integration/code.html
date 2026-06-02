@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Bio-Agent | Hardware &amp; IoT Integration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #101c22;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #25aff444;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header Navigation -->
+<header class="border-b border-primary/20 bg-background-light dark:bg-background-dark/80 sticky top-0 z-50 backdrop-blur-md">
+<div class="flex items-center justify-between px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="bg-primary p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-background-dark font-bold">biotech</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">BeZhas Bio-Agent</h1>
+<p class="text-xs text-primary font-medium uppercase tracking-widest">Hardware Interface v2.4.0</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex flex-col items-end px-4 border-r border-primary/20">
+<span class="text-[10px] uppercase text-slate-500 dark:text-slate-400">System Status</span>
+<span class="text-sm font-bold text-emerald-500 flex items-center gap-1">
+<span class="size-2 bg-emerald-500 rounded-full animate-pulse"></span> OPERATIONAL
+                    </span>
+</div>
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
+<!-- Summary Stats Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-slate-200/50 dark:bg-primary/5 border border-primary/10">
+<div class="flex justify-between items-start">
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium">Active Nodes</p>
+<span class="material-symbols-outlined text-primary text-sm">hub</span>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-3xl font-bold tracking-tight">12</p>
+<div class="text-[10px] text-emerald-500 font-bold">+2 New Devices Discovered</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-slate-200/50 dark:bg-primary/5 border border-primary/10">
+<div class="flex justify-between items-start">
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium">Fusion Throughput</p>
+<span class="material-symbols-outlined text-primary text-sm">dynamic_feed</span>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-3xl font-bold tracking-tight">4.8 <span class="text-lg font-medium opacity-60">GB/s</span></p>
+<div class="text-[10px] text-primary font-bold">98.2% Efficiency</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-slate-200/50 dark:bg-primary/5 border border-primary/10">
+<div class="flex justify-between items-start">
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium">VCs Minted (24h)</p>
+<span class="material-symbols-outlined text-primary text-sm">verified_user</span>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-3xl font-bold tracking-tight">1,248</p>
+<div class="text-[10px] text-slate-500 dark:text-slate-400">Total verified data blocks</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-slate-200/50 dark:bg-primary/5 border border-primary/10">
+<div class="flex justify-between items-start">
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium">Latency</p>
+<span class="material-symbols-outlined text-primary text-sm">timer</span>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-3xl font-bold tracking-tight">14 <span class="text-lg font-medium opacity-60">ms</span></p>
+<div class="text-[10px] text-emerald-500 font-bold">Stable Connection</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Active Hardware Streams -->
+<div class="lg:col-span-2 space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">router</span>
+                        Active Hardware Streams
+                    </h3>
+<button class="text-xs font-bold text-primary hover:underline uppercase tracking-tighter">Manage All</button>
+</div>
+<div class="space-y-3">
+<!-- Device 1: DNA Sequencer -->
+<div class="flex items-center gap-4 bg-slate-200/30 dark:bg-slate-800/40 p-4 rounded-xl border border-primary/5 hover:border-primary/30 transition-all">
+<div class="flex items-center justify-center rounded-lg bg-primary/20 dark:bg-primary/10 text-primary shrink-0 size-14">
+<span class="material-symbols-outlined text-3xl">genetics</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<p class="text-slate-900 dark:text-slate-100 font-bold truncate">Oxford Nanopore Sequencer</p>
+<span class="px-2 py-0.5 rounded text-[10px] bg-primary/20 text-primary font-bold">FLOW_CELL_8291</span>
+</div>
+<div class="w-full bg-slate-300 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary h-full w-[65%] rounded-full"></div>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Basecalling in progress... 65% complete</p>
+</div>
+<div class="flex flex-col items-end gap-1 shrink-0">
+<div class="size-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+<span class="text-[10px] font-mono text-slate-500">2.1 GB/s</span>
+</div>
+</div>
+<!-- Device 2: Biosensor -->
+<div class="flex items-center gap-4 bg-slate-200/30 dark:bg-slate-800/40 p-4 rounded-xl border border-primary/5 hover:border-primary/30 transition-all">
+<div class="flex items-center justify-center rounded-lg bg-primary/20 dark:bg-primary/10 text-primary shrink-0 size-14">
+<span class="material-symbols-outlined text-3xl">microbiology</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<p class="text-slate-900 dark:text-slate-100 font-bold truncate">Surface Plasmon Resonance Sensor</p>
+<span class="px-2 py-0.5 rounded text-[10px] bg-slate-700 text-slate-300 font-bold">SPR_UNIT_A</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-1 line-clamp-1">Monitoring binding kinetics for protein complex B-12...</p>
+</div>
+<div class="flex flex-col items-end gap-1 shrink-0">
+<div class="size-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+<span class="text-[10px] font-mono text-slate-500">450 MB/s</span>
+</div>
+</div>
+<!-- Device 3: Temperature Probe -->
+<div class="flex items-center gap-4 bg-slate-200/30 dark:bg-slate-800/40 p-4 rounded-xl border border-primary/5 hover:border-primary/30 transition-all">
+<div class="flex items-center justify-center rounded-lg bg-primary/20 dark:bg-primary/10 text-primary shrink-0 size-14">
+<span class="material-symbols-outlined text-3xl">thermostat</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<p class="text-slate-900 dark:text-slate-100 font-bold truncate">Cryo-Storage Temperature Probes</p>
+<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-500 font-bold">STABLE</span>
+</div>
+<div class="flex gap-4 mt-1">
+<span class="text-xs font-mono text-slate-500">Probe 1: <span class="text-primary">-78.4°C</span></span>
+<span class="text-xs font-mono text-slate-500">Probe 2: <span class="text-primary">-78.5°C</span></span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1 shrink-0">
+<div class="size-3 rounded-full bg-emerald-500"></div>
+<span class="text-[10px] font-mono text-slate-500">12 KB/s</span>
+</div>
+</div>
+</div>
+<!-- Structured JSON Output Snippet -->
+<div class="mt-8 space-y-4">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">code</span>
+                        Real-time JSON Telemetry
+                    </h3>
+<div class="bg-background-dark border border-slate-700 rounded-xl p-4 font-mono text-sm overflow-hidden">
+<div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
+<span class="text-slate-400 text-xs">fusion_packet_stream.json</span>
+<span class="text-primary text-[10px] uppercase font-bold">Live Stream</span>
+</div>
+<pre class="text-emerald-500/90 custom-scrollbar overflow-x-auto">{
+  "timestamp": "2023-11-24T14:22:01.442Z",
+  "source_id": "OX-FLOW-8291",
+  "data_payload": {
+    "read_length": 14202,
+    "quality_score": 18.4,
+    "base_sequence": "ATGC...GCTA",
+    "vc_status": "PENDING_MINT"
+  },
+  "sensor_fusion": {
+    "temp_ref": -78.42,
+    "humidity": 12.1,
+    "vibration_delta": 0.002
+  },
+  "checksum": "0x8f2a...3e92"
+}</pre>
+</div>
+</div>
+</div>
+<!-- VC Minting & Logs Sidebar -->
+<div class="space-y-6">
+<!-- Verifiable Credentials Minting -->
+<div class="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-4">
+<h3 class="text-md font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">security</span>
+                        VC Minting Engine
+                    </h3>
+<div class="space-y-3">
+<div class="bg-slate-800/50 p-3 rounded-lg border-l-2 border-primary">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-mono text-primary font-bold">#VC-88219</span>
+<span class="text-[10px] bg-emerald-500/20 text-emerald-500 px-1 rounded">MINTED</span>
+</div>
+<p class="text-xs font-medium text-slate-300">Biometric Authenticity Proof</p>
+<p class="text-[9px] text-slate-500 font-mono mt-1 truncate">Hash: f3a2...b912c</p>
+</div>
+<div class="bg-slate-800/50 p-3 rounded-lg border-l-2 border-primary/40">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-mono text-primary/60 font-bold">#VC-88220</span>
+<div class="flex items-center gap-1">
+<span class="size-1.5 bg-primary rounded-full animate-ping"></span>
+<span class="text-[10px] text-primary px-1 rounded">SIGNING</span>
+</div>
+</div>
+<p class="text-xs font-medium text-slate-300">Genomic Integrity Cert</p>
+<p class="text-[9px] text-slate-500 font-mono mt-1 truncate">Origin: OX-FLOW-8291</p>
+</div>
+</div>
+<button class="w-full py-2 bg-primary text-background-dark font-bold rounded-lg text-sm hover:brightness-110 transition-all">
+                        VIEW CREDENTIALS VAULT
+                    </button>
+</div>
+<!-- Recent System Logs -->
+<div class="space-y-4">
+<h3 class="text-md font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">terminal</span>
+                        Integration Logs
+                    </h3>
+<div class="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+<div class="text-[11px] font-mono py-1.5 border-b border-slate-800">
+<span class="text-slate-500">[14:21:44]</span> <span class="text-emerald-500">INFO:</span> Device SPR_UNIT_A handshake successful.
+                        </div>
+<div class="text-[11px] font-mono py-1.5 border-b border-slate-800">
+<span class="text-slate-500">[14:21:50]</span> <span class="text-primary">DATA:</span> Packet fusion started for sequence stream 8291.
+                        </div>
+<div class="text-[11px] font-mono py-1.5 border-b border-slate-800">
+<span class="text-slate-500">[14:22:01]</span> <span class="text-amber-500">WARN:</span> Temp probe 2 fluctuating +0.02°C above baseline.
+                        </div>
+<div class="text-[11px] font-mono py-1.5 border-b border-slate-800">
+<span class="text-slate-500">[14:22:05]</span> <span class="text-emerald-500">MINT:</span> VC-88219 broadcast to decentralized registry.
+                        </div>
+<div class="text-[11px] font-mono py-1.5 border-b border-slate-800">
+<span class="text-slate-500">[14:22:12]</span> <span class="text-slate-400">DEBUG:</span> Garbage collection cleared 4.2MB of temp buffers.
+                        </div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<footer class="border-t border-primary/20 bg-background-light dark:bg-background-dark/95 backdrop-blur-md">
+<div class="flex gap-2 px-4 pb-4 pt-2 max-w-lg mx-auto">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl text-primary" href="#">
+<span class="material-symbols-outlined text-2xl font-fill">hard_drive</span>
+<p class="text-[10px] font-bold leading-normal uppercase">Nodes</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined text-2xl">insights</span>
+<p class="text-[10px] font-medium leading-normal uppercase">Fusion</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined text-2xl">shield</span>
+<p class="text-[10px] font-medium leading-normal uppercase">Certs</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined text-2xl">terminal</span>
+<p class="text-[10px] font-medium leading-normal uppercase">Logs</p>
+</a>
+</div>
+</footer>
+</body></html>

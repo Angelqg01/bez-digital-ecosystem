@@ -1,0 +1,11 @@
+# 1. Copiar sync-daemon.js a BeZhas Blockchain/sync/
+# 2. Instalar dependencias
+cd "BeZhas Blockchain/sync" && npm install
+
+# 3. Abrir workspace en VSCode
+code bezhas.code-workspace
+
+# 4. Activar sync en modo desarrollo
+node sync/sync-daemon.js --watch
+
+# 5. En bezhas_web3 copiar los hooks y componentes a src/

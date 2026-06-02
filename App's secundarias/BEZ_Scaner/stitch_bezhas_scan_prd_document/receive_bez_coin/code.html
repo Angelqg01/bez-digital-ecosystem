@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Receive BEZ-Coin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#1a0f0a",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .glow-accent { box-shadow: 0 0 15px rgba(236, 91, 19, 0.3); }
+        .qr-container { background: linear-gradient(145deg, #2a1a14, #1a0f0a); border: 1px solid rgba(236, 91, 19, 0.2); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto border-x border-primary/10 bg-background-light dark:bg-background-dark">
+<!-- Header -->
+<div class="flex items-center p-4 justify-between sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-primary/10">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">arrow_back</span>
+</button>
+<h2 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">Receive BEZ-Coin</h2>
+</div>
+<div class="flex-1 overflow-y-auto px-6 pb-24">
+<!-- Merchant Info -->
+<div class="flex flex-col items-center mt-4 mb-8">
+<div class="relative mb-4">
+<div class="bg-primary/20 p-1 rounded-full border-2 border-primary glow-accent">
+<div class="size-20 rounded-full bg-cover bg-center" data-alt="Merchant profile picture avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDl0kbRgSuu8n8NoF_3uIi7rwZ9nOSfMiz3p2wmmtJRuIzQG25SmAfuOoShq3Kc51n4eLnFES5o2yMTSSghuAOR6d4A_Fm54K3WcEjqpVvaLDZB9zDjo9D4HT63KRgsM0Rr2hNqA_QZeOqIMhNcrOjZZ5w9PvHfyBrxC2Oe_yTHjN2J01S1aTlgljiNJCWjIbocm_4-A6GfksFx64CypEaqn612SDTWOJWSPQn-pU8Mm55wchFhjaF-PPOX0wbyi8FJMmgBJ6Sw6Zcf");'></div>
+</div>
+<div class="absolute bottom-0 right-0 bg-primary text-white p-1 rounded-full flex items-center justify-center border-2 border-background-dark">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-xl font-bold tracking-tight">BeZhas ID: BEZ-992834</p>
+<p class="text-primary text-sm font-medium">Verified Merchant Account</p>
+</div>
+</div>
+<!-- QR Code Section -->
+<div class="qr-container rounded-3xl p-6 mb-6 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden group">
+<div class="absolute inset-0 bg-primary/5 opacity-20 pointer-events-none"></div>
+<div class="bg-white p-4 rounded-xl shadow-inner relative z-10">
+<!-- Placeholder for high-contrast QR -->
+<div class="size-56 bg-white flex items-center justify-center" data-alt="High contrast QR code for payment">
+<img alt="QR Code" class="size-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMzgWUcfVHEEH8YBxxVzTgD1ETyKM_bmpRjEi5Tu4kwmm9v1lpOkkvQzxIEbm1qK3xJ_87yVfhXrXxMIDflK_xQqpaOwK2dWJsfgv5Jv1qd4J6lRDbSALegaqgl78FW0ayB89EjJ-uY7GUOfYLA6nJqQ9Fv83lV9Ln5fpJZeuQXjQ1f5MqDZpaLo8JJtJzYRG-0APJBdJA7POPmdVA3ks9YsGnXyaeL0gZsUzPu4RPlFT8WkAl8b5K2RHd9icYRhQG9ywBQ6BYRpGN"/>
+</div>
+</div>
+<div class="mt-6 flex flex-col items-center gap-2">
+<span class="text-xs uppercase tracking-[0.2em] text-primary/70 font-bold">Wallet Address</span>
+<p class="text-sm font-mono bg-primary/10 px-3 py-1 rounded-lg border border-primary/20">0x71C...8e42</p>
+</div>
+</div>
+<!-- Actions -->
+<div class="grid grid-cols-2 gap-3 mb-8">
+<button class="flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+<span>Copy Address</span>
+</button>
+<button class="flex items-center justify-center gap-2 py-3 rounded-xl bg-primary/20 text-primary font-bold border border-primary/30 hover:bg-primary/30 transition-all">
+<span class="material-symbols-outlined text-sm">settings</span>
+<span>Set Amount</span>
+</button>
+</div>
+<!-- Share Options -->
+<div class="mb-8">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4 px-1">Share payment request</h3>
+<div class="flex justify-between items-center bg-primary/5 p-4 rounded-2xl border border-primary/10">
+<div class="flex flex-col items-center gap-1 group">
+<div class="size-12 rounded-full bg-[#25D366]/20 flex items-center justify-center text-[#25D366] group-hover:bg-[#25D366] group-hover:text-white transition-all cursor-pointer">
+<span class="material-symbols-outlined">chat_bubble</span>
+</div>
+<span class="text-[10px] font-medium">WhatsApp</span>
+</div>
+<div class="flex flex-col items-center gap-1 group">
+<div class="size-12 rounded-full bg-[#0088cc]/20 flex items-center justify-center text-[#0088cc] group-hover:bg-[#0088cc] group-hover:text-white transition-all cursor-pointer">
+<span class="material-symbols-outlined">send</span>
+</div>
+<span class="text-[10px] font-medium">Telegram</span>
+</div>
+<div class="flex flex-col items-center gap-1 group">
+<div class="size-12 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all cursor-pointer">
+<span class="material-symbols-outlined">mail</span>
+</div>
+<span class="text-[10px] font-medium">Email</span>
+</div>
+<div class="flex flex-col items-center gap-1 group">
+<div class="size-12 rounded-full bg-slate-500/20 flex items-center justify-center text-slate-400 group-hover:bg-slate-400 group-hover:text-white transition-all cursor-pointer">
+<span class="material-symbols-outlined">more_horiz</span>
+</div>
+<span class="text-[10px] font-medium">Others</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation -->
+<div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto border-t border-primary/10 bg-background-light dark:bg-background-dark px-4 pb-6 pt-2 z-20">
+<div class="flex justify-around items-center">
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">home</span>
+<p class="text-[10px] font-medium">Home</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<p class="text-[10px] font-medium">Scan</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<div class="size-12 rounded-full bg-primary flex items-center justify-center text-white -mt-8 shadow-lg shadow-primary/30 border-4 border-background-dark">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<p class="text-[10px] font-bold mt-1">Wallet</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">history</span>
+<p class="text-[10px] font-medium">History</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">person</span>
+<p class="text-[10px] font-medium">Profile</p>
+</a>
+</div>
+</div>
+</div>
+</body></html>

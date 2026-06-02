@@ -1,0 +1,30 @@
+{
+  "name": "@bezhas/ui-components",
+  "version": "1.0.0",
+  "description": "BeZhas Design System — Tokens, CSS variables, and shared UI components",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.6.0"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

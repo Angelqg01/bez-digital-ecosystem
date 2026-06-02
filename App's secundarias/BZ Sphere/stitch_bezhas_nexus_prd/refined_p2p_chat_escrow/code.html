@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nexus Chat &amp; Microtransactions</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary-container": "#00626e",
+                        "outline-variant": "#3b494c",
+                        "surface-variant": "#31353c",
+                        "on-tertiary-fixed": "#221b00",
+                        "tertiary-fixed-dim": "#e9c400",
+                        "on-primary-fixed": "#001f24",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#006875",
+                        "secondary-fixed": "#dce1ff",
+                        "surface-container": "#1c2026",
+                        "tertiary-fixed": "#ffe16d",
+                        "on-tertiary": "#3a3000",
+                        "surface-container-high": "#262a31",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#001550",
+                        "tertiary": "#ffecad",
+                        "on-secondary-fixed-variant": "#003ab3",
+                        "on-surface-variant": "#bac9cc",
+                        "surface-dim": "#10141a",
+                        "primary": "#c3f5ff",
+                        "on-error": "#690005",
+                        "surface-tint": "#00daf3",
+                        "inverse-on-surface": "#2d3137",
+                        "surface-bright": "#353940",
+                        "primary-fixed-dim": "#00daf3",
+                        "on-primary": "#00363d",
+                        "secondary-fixed-dim": "#b6c4ff",
+                        "inverse-surface": "#dfe2eb",
+                        "secondary": "#b6c4ff",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#9cf0ff",
+                        "primary-container": "#00e5ff",
+                        "on-primary-fixed-variant": "#004f58",
+                        "on-background": "#dfe2eb",
+                        "on-tertiary-fixed-variant": "#544600",
+                        "on-secondary-container": "#d4dbff",
+                        "surface-container-lowest": "#0a0e14",
+                        "surface-container-highest": "#31353c",
+                        "surface-container-low": "#181c22",
+                        "on-secondary": "#002780",
+                        "secondary-container": "#0050ee",
+                        "on-tertiary-container": "#695800",
+                        "surface": "#10141a",
+                        "outline": "#849396",
+                        "tertiary-container": "#f4ce00",
+                        "on-surface": "#dfe2eb",
+                        "background": "#10141a"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(38, 42, 49, 0.6);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0, 218, 243, 0.08);
+        }
+        .ghost-border {
+            outline: 1px solid rgba(132, 147, 150, 0.15);
+        }
+        .glow-sm {
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    
+        @keyframes glow-pulse {
+            0% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(0, 229, 255, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.4); }
+        }
+        .animate-glow-pulse {
+            animation: glow-pulse 2s infinite ease-in-out;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  
+        @keyframes glow-pulse {
+            0% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(0, 229, 255, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.4); }
+        }
+        .animate-glow-pulse {
+            animation: glow-pulse 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#181c22]/60 backdrop-blur-xl border-b border-[#00e5ff]/15 shadow-[0_4px_30px_rgba(0,0,0,0.1)] flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border border-primary/20">
+<img alt="User Profile BeZhas ID" class="w-8 h-8 rounded-full" data-alt="Cyberpunk stylized user profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoenKbmlLCJrjOwwgvc9N5gZex8P11uvUxBx7-fKIOZkQlWcmy4_YnWxLxibx-w2j-w0n9jNkg2kIatQelGjSVd0AVwoeTU9ayFYsAJFDIGJQa2QGlfb11ahbJMy-rjYB5lLWQZB6Lj_6DJ4zAcsdojicRXhkR45qLXZGcI3BbBoM35hE2144NPY-X9ypT-bC_VtVbiLLNMV3VmZk5ObgJhkbYzsrYQ6MHdSwqbf47LQ0dYSHxJSqKE8quhZQure14ZCVmsudDYB0"/>
+</div>
+<div class="flex flex-col">
+<span class="text-xl font-bold text-[#00e5ff] drop-shadow-[0_0_8px_rgba(0,229,255,0.4)] font-headline tracking-tight">@BeZhas_Nexus</span>
+<span class="text-[10px] uppercase tracking-widest text-primary/60 font-label">Global Nexus Channel</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="bg-surface-container-low px-4 py-1.5 rounded-full border border-primary/10 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-tertiary" data-icon="token">token</span>
+<span class="text-sm font-medium font-headline text-white">1,250 $BEZ</span>
+</div>
+</div>
+</header>
+<!-- NavigationDrawer (Sidebar) -->
+<aside class="hidden md:flex flex-col fixed left-0 top-0 h-screen z-40 bg-[#10141a] h-full w-20 flex flex-col items-center py-4 border-r border-[#00e5ff]/10 pt-20">
+<div class="flex flex-col gap-6 w-full items-center">
+<div class="bg-[#00e5ff]/20 rounded-xl p-3 border-l-2 border-[#00e5ff] text-[#00e5ff] transition-all duration-300">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+</div>
+<div class="text-[#353940] p-3 hover:text-[#c3f5ff] transition-colors cursor-pointer hover:bg-[#181c22]">
+<span class="material-symbols-outlined" data-icon="token">token</span>
+</div>
+<div class="text-[#353940] p-3 hover:text-[#c3f5ff] transition-colors cursor-pointer hover:bg-[#181c22]">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+</div>
+<div class="text-[#353940] p-3 hover:text-[#c3f5ff] transition-colors cursor-pointer hover:bg-[#181c22]">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div class="text-[#353940] p-3 hover:text-[#c3f5ff] transition-colors cursor-pointer hover:bg-[#181c22]">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="pt-20 pb-24 md:pb-8 md:pl-20 min-h-screen flex flex-col">
+<div class="max-w-4xl mx-auto w-full px-6 flex-grow flex flex-col">
+<!-- Chat Feed -->
+<div class="flex-grow space-y-8 py-8">
+<!-- System Timestamp -->
+<div class="flex justify-center">
+<span class="text-[10px] font-label uppercase tracking-[0.2em] text-outline opacity-50">Today 14:22 UTC</span>
+</div>
+<!-- Message: User Execution -->
+<div class="flex items-start gap-4">
+<div class="glass-panel ghost-border rounded-tr-xl rounded-br-xl rounded-bl-xl p-4 text-sm relative"><button class="absolute -top-2 -right-2 w-6 h-6 bg-tertiary/20 backdrop-blur-md border border-tertiary/40 rounded-full flex items-center justify-center text-tertiary hover:scale-110 transition-transform"><span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">paid</span></button>
+<img alt="User" class="w-6 h-6 opacity-80" data-alt="User avatar icon neon blue" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARdqH_rDhNRyGXvDZGTXf64giPH4e6GSPeaNvLLRd1mKAiakdvtgax1NpR74NsdaHxpff2aifAFUmDxhfQiley-3R15OFb2wxBj-DgfCBvj_jOBBxETFuW4LAyYtGHRL2458QLTDFlBqkbmpkYXPuGxHLGMGlgq5DODrk9oRnvELaDPs0gp3A0yXwC57_MH6ae4wBeF697iL6h4DiP00_cy1Qwn697qaQm8NA5IuaffMxkKyJKE_JwBGRF_SjgCv7X9tNzzzMb33c"/>
+</div>
+<div class="flex flex-col gap-1 max-w-[80%]">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-primary">V0rt3x_Dev</span>
+<span class="text-[10px] text-outline">14:22</span>
+</div>
+<div class="glass-panel ghost-border rounded-tr-xl rounded-br-xl rounded-bl-xl p-4 text-sm relative"><button class="absolute -top-2 -right-2 w-6 h-6 bg-tertiary/20 backdrop-blur-md border border-tertiary/40 rounded-full flex items-center justify-center text-tertiary hover:scale-110 transition-transform"><span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">paid</span></button>
+<span class="text-primary-container font-mono">/vender</span> consulting_services --price 100 --token BEZ
+                        </div>
+</div>
+</div>
+<!-- Escrow Card Generation -->
+<div class="ml-12">
+<div class="glass-panel ghost-border rounded-xl p-6 relative overflow-hidden max-w-md">
+<!-- Background Glow Accent -->
+<div class="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 blur-3xl rounded-full"></div>
+<div class="flex items-center gap-3 mb-6">
+<div class="p-2 bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user">verified_user</span>
+</div>
+<h3 class="font-headline font-semibold text-white tracking-tight">Smart Escrow Generated</h3>
+</div>
+<div class="space-y-4 mb-8">
+<div class="flex justify-between items-center bg-surface-container-lowest/50 p-3 rounded-lg">
+<span class="text-xs text-on-surface-variant font-medium">Product</span>
+<span class="text-sm text-white font-medium">Consulting Services</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-lowest/50 p-3 rounded-lg">
+<span class="text-xs text-on-surface-variant font-medium">Price</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs text-tertiary" data-icon="token">token</span>
+<span class="text-sm font-bold text-tertiary-fixed">100 $BEZ</span>
+</div>
+</div>
+<div class="flex justify-between items-center bg-surface-container-lowest/50 p-3 rounded-lg">
+<span class="text-xs text-on-surface-variant font-medium">Status</span>
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></div>
+<span class="text-xs text-tertiary/80 uppercase font-bold tracking-wider">Pending Buyer</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<button class="bg-primary-container hover:brightness-110 text-on-primary-container font-headline font-bold py-3 px-4 rounded-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,229,255,0.3)] animate-glow-pulse">
+<span class="material-symbols-outlined text-sm" data-icon="shopping_cart">shopping_cart</span>
+                                Buy Now
+                            </button>
+<button class="bg-surface-container-highest hover:bg-surface-bright border border-primary/20 text-primary font-headline font-bold py-3 px-4 rounded-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+                                Approve
+                            </button>
+</div><div class="mt-6 flex justify-center items-center gap-2 py-2 border-t border-white/5">
+<span class="material-symbols-outlined text-[14px] text-primary/60">verified</span>
+<span class="text-[10px] uppercase tracking-widest text-primary/60 font-label font-bold">Verified by BeZhas AI</span>
+</div>
+</div>
+</div>
+<!-- Message with Reaction -->
+<div class="flex items-start gap-4">
+<div class="glass-panel ghost-border rounded-tr-xl rounded-br-xl rounded-bl-xl p-4 text-sm relative"><button class="absolute -top-2 -right-2 w-6 h-6 bg-tertiary/20 backdrop-blur-md border border-tertiary/40 rounded-full flex items-center justify-center text-tertiary hover:scale-110 transition-transform"><span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">paid</span></button>
+<img alt="User" class="w-6 h-6 opacity-80" data-alt="Gold themed avatar for premium user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMWd_vqGU4w3xPhJO3q66ooYLaAdfzgnxjpqRLHbrTqD-lRxmiaqfieoE17FhTky9-BeFd1Tp_-TMSwtQ0yliSpkdvx5cD9atwupJQUjTFbwPc8ZzFo_GMyRp-opEIcvyDE5g9-ZPNmlMDXglMdZTGQhwTEbqDkwBw8XbJpZ_a5CKMuAh0UGooS1a0M3slWdY4sD1ggnPhJDSqYmNbmKB9Ba3haYre2qHsTSx4yCy4g5UeTCzN_QGkV7FdBKmWlUAxgj9Ms99XJTk"/>
+</div>
+<div class="flex flex-col gap-1 max-w-[80%]">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-tertiary">Nexus_Admin</span>
+<span class="text-[10px] text-outline">14:25</span>
+</div>
+<div class="glass-panel ghost-border rounded-tr-xl rounded-br-xl rounded-bl-xl p-4 text-sm relative"><button class="absolute -top-2 -right-2 w-6 h-6 bg-tertiary/20 backdrop-blur-md border border-tertiary/40 rounded-full flex items-center justify-center text-tertiary hover:scale-110 transition-transform"><span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">paid</span></button>
+                            Contract deployed to Nexus-Mainnet. Audited by BeZhas-AI.
+                            
+                            <!-- Reaction Chip -->
+<div class="absolute -bottom-4 right-0 flex items-center gap-1 bg-surface-container-highest border border-tertiary/30 px-2 py-1 rounded-full shadow-lg cursor-pointer hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-[14px] text-tertiary" data-icon="volunteer_activism" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
+<span class="text-[10px] font-bold text-tertiary">Tip 1 $BEZ</span>
+<span class="text-[10px] text-outline px-1">2</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky Input Area -->
+<div class="fixed bottom-20 md:bottom-8 left-0 right-0 px-6 md:pl-28 md:pr-12 pointer-events-none">
+<div class="max-w-4xl mx-auto w-full pointer-events-auto">
+<div class="glass-panel ghost-border rounded-full flex items-center px-4 py-2 gap-3 focus-within:outline-primary/50 transition-all duration-300">
+<button class="p-2 text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+</button>
+<input class="flex-grow bg-transparent border-none focus:ring-0 text-sm placeholder:text-outline/40 py-2" placeholder="Send a message or execute /command..." type="text"/>
+<div class="flex items-center gap-2">
+<button class="p-2 text-outline hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined" data-icon="attach_money">attach_money</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-lg hover:shadow-primary/20 transition-all active:scale-90 animate-glow-pulse">
+<span class="material-symbols-outlined" data-icon="send" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#181c22]/80 backdrop-blur-2xl md:hidden flex justify-around items-center px-4 pb-6 pt-3 rounded-t-3xl border-t border-[#00e5ff]/20 shadow-[0_-10px_40px_rgba(0,229,255,0.05)]">
+<div class="flex flex-col items-center justify-center text-[#00e5ff] scale-110 drop-shadow-[0_0_5px_#00e5ff]">
+<span class="material-symbols-outlined" data-icon="dynamic_feed">dynamic_feed</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Feed</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Wallet</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Search</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Profile</span>
+</div>
+</nav>
+</body></html>

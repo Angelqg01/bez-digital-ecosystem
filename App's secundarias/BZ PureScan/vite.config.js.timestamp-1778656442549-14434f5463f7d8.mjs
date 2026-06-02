@@ -1,0 +1,13 @@
+// vite.config.js
+import { defineConfig } from "file:///D:/BeZhas-Blockchain/App's%20secundarias/node_modules/.pnpm/vite@5.4.21_@types+node@25.6.0_lightningcss@1.32.0_terser@5.46.2/node_modules/vite/dist/node/index.js";
+import react from "file:///D:/BeZhas-Blockchain/App's%20secundarias/node_modules/.pnpm/@vitejs+plugin-react@4.7.0_vite@5.4.21_@types+node@25.6.0_lightningcss@1.32.0_terser@5.46.2_/node_modules/@vitejs/plugin-react/dist/index.js";
+var vite_config_default = defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3018
+  }
+});
+export {
+  vite_config_default as default
+};
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAic291cmNlcyI6IFsidml0ZS5jb25maWcuanMiXSwKICAic291cmNlc0NvbnRlbnQiOiBbImNvbnN0IF9fdml0ZV9pbmplY3RlZF9vcmlnaW5hbF9kaXJuYW1lID0gXCJEOlxcXFxCZVpoYXMtQmxvY2tjaGFpblxcXFxBcHAncyBzZWN1bmRhcmlhc1xcXFxCWiBQdXJlU2NhblwiO2NvbnN0IF9fdml0ZV9pbmplY3RlZF9vcmlnaW5hbF9maWxlbmFtZSA9IFwiRDpcXFxcQmVaaGFzLUJsb2NrY2hhaW5cXFxcQXBwJ3Mgc2VjdW5kYXJpYXNcXFxcQlogUHVyZVNjYW5cXFxcdml0ZS5jb25maWcuanNcIjtjb25zdCBfX3ZpdGVfaW5qZWN0ZWRfb3JpZ2luYWxfaW1wb3J0X21ldGFfdXJsID0gXCJmaWxlOi8vL0Q6L0JlWmhhcy1CbG9ja2NoYWluL0FwcCdzJTIwc2VjdW5kYXJpYXMvQlolMjBQdXJlU2Nhbi92aXRlLmNvbmZpZy5qc1wiO2ltcG9ydCB7IGRlZmluZUNvbmZpZyB9IGZyb20gJ3ZpdGUnXG5pbXBvcnQgcmVhY3QgZnJvbSAnQHZpdGVqcy9wbHVnaW4tcmVhY3QnXG5cbmV4cG9ydCBkZWZhdWx0IGRlZmluZUNvbmZpZyh7XG4gIHBsdWdpbnM6IFtyZWFjdCgpXSxcbiAgc2VydmVyOiB7XG4gICAgcG9ydDogMzAxOFxuICB9XG59KVxuIl0sCiAgIm1hcHBpbmdzIjogIjtBQUFvVixTQUFTLG9CQUFvQjtBQUNqWCxPQUFPLFdBQVc7QUFFbEIsSUFBTyxzQkFBUSxhQUFhO0FBQUEsRUFDMUIsU0FBUyxDQUFDLE1BQU0sQ0FBQztBQUFBLEVBQ2pCLFFBQVE7QUFBQSxJQUNOLE1BQU07QUFBQSxFQUNSO0FBQ0YsQ0FBQzsiLAogICJuYW1lcyI6IFtdCn0K

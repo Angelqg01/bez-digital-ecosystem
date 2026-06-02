@@ -1,0 +1,362 @@
+{
+  "$schema": "https://bezhas.local/schemas/orchestration-manifest.v1.json",
+  "version": "1.0.0",
+  "updatedAt": "2026-05-06",
+  "mission": "Coordinate BeZhas autonomous departments around tokenomics health, platform reliability, commercial expansion, SDK/API adoption, and SKILL feedback improvement.",
+  "eventStreams": {
+    "tokenomics": "bezhas:events:tokenomics",
+    "growth": "bezhas:events:growth",
+    "blockchain": "bezhas:events:blockchain",
+    "sdk": "bezhas:events:sdk",
+    "skills": "bezhas:events:skills",
+    "risk": "bezhas:events:risk",
+    "approvals": "bezhas:events:approvals"
+  },
+  "mcps": {
+    "bezhas-core": {
+      "url": "http://localhost:4001",
+      "health": "http://localhost:4001/api/mcp/health",
+      "tools": [
+        "analyze_gas_strategy",
+        "verify_regulatory_compliance",
+        "analyze_sentiment",
+        "system_health",
+        "audit_contract",
+        "predict_demand",
+        "score_supplier",
+        "calculate_smart_swap",
+        "monitor_edge_node",
+        "assess_fraud_risk",
+        "monitor_validator",
+        "slash_check"
+      ]
+    },
+    "agent-runtime": {
+      "url": "http://localhost:3003",
+      "tools": [
+        "dispatch_task",
+        "get_task_status",
+        "list_agents",
+        "request_human_approval"
+      ]
+    },
+    "messaging": {
+      "url": "http://localhost:4002",
+      "tools": [
+        "send_telegram_message",
+        "send_system_alert",
+        "send_lead_notification",
+        "request_human_confirmation",
+        "send_telegram_document"
+      ]
+    },
+    "lead-generation": {
+      "url": "http://localhost:4005",
+      "planned": true,
+      "tools": [
+        "search_company",
+        "enrich_lead",
+        "score_prospect",
+        "send_outreach",
+        "track_engagement",
+        "update_crm",
+        "get_pipeline",
+        "schedule_followup"
+      ]
+    },
+    "blockchain": {
+      "url": "http://localhost:4003",
+      "planned": true,
+      "tools": [
+        "deploy_contract",
+        "call_contract",
+        "get_tx_status",
+        "get_gas_price",
+        "bridge_tokens",
+        "check_wallet_balance",
+        "get_token_balance",
+        "approve_token"
+      ]
+    },
+    "compliance": {
+      "url": "http://localhost:4008",
+      "planned": true,
+      "tools": [
+        "check_mica_compliance",
+        "gdpr_request",
+        "kyc_verify",
+        "aml_check",
+        "check_sanctions"
+      ]
+    }
+  },
+  "departments": {
+    "director": {
+      "agentId": "director-agent",
+      "runtimeAgentId": "workflow-agent",
+      "mandate": "Coordinate platform-wide OKRs, prioritize departments, and produce executive decisions without executing destructive actions directly.",
+      "priority": "critical",
+      "canOrchestrate": [
+        "tokenomics",
+        "growth",
+        "solutions",
+        "blockchain",
+        "devops",
+        "legal",
+        "finance",
+        "skills"
+      ],
+      "kpis": [
+        "weekly_okr_completion",
+        "critical_risk_resolution_time",
+        "platform_health_score"
+      ]
+    },
+    "tokenomics": {
+      "agentId": "tokenomics-agent",
+      "runtimeAgentId": "tokenomics-agent",
+      "mandate": "Optimize BEZ economic health across staking, supply, liquidity, gas, validators, bridge flows, and sector demand.",
+      "eventTypes": [
+        "tokenomics:monitor",
+        "tokenomics:analyze",
+        "tokenomics:analysis",
+        "tokenomics:report",
+        "bridge:monitor",
+        "staking:alert",
+        "bridge:alert"
+      ],
+      "kpis": [
+        "staking_ratio",
+        "apy_stability",
+        "bridge_netflow",
+        "validator_health",
+        "gas_cost_per_user_action",
+        "bez_velocity_by_sector"
+      ]
+    },
+    "growth": {
+      "agentId": "marketing-agent",
+      "runtimeAgentId": "workflow-agent",
+      "mandate": "Generate and qualify enterprise pipeline, coordinate outreach drafts, and move prospects toward paid pilots.",
+      "skills": [
+        "bezhas-growth-operator",
+        "bezhas-sdr",
+        "bezhas-ecosystem-matchmaker"
+      ],
+      "eventTypes": [
+        "growth:research",
+        "growth:score-lead",
+        "growth:draft-outreach",
+        "growth:qualify",
+        "growth:pipeline-report"
+      ],
+      "approvalRequired": [
+        "send_outreach",
+        "send_bulk_email",
+        "pricing_commitment",
+        "partner_claim"
+      ],
+      "kpis": [
+        "accounts_researched",
+        "reply_rate",
+        "meetings_booked",
+        "qualified_opportunities",
+        "pilot_conversion_rate",
+        "pipeline_value"
+      ]
+    },
+    "solutions": {
+      "agentId": "solutions-engineer-agent",
+      "runtimeAgentId": "workflow-agent",
+      "mandate": "Map qualified prospects to BeZhas contracts, SDK modules, API endpoints, integration effort, and pilot KPIs.",
+      "skills": [
+        "bezhas-solutions-engineer"
+      ],
+      "eventTypes": [
+        "solutions:scope",
+        "solutions:pilot-plan",
+        "solutions:integration-risk",
+        "sdk:integration-plan"
+      ],
+      "kpis": [
+        "time_to_scope",
+        "pilot_acceptance_rate",
+        "integration_days_estimated_vs_actual"
+      ]
+    },
+    "blockchain": {
+      "agentId": "blockchain-agent",
+      "runtimeAgentId": "workflow-agent",
+      "mandate": "Expand BeZhas contracts, bridges, SDK/API surfaces, and on-chain workflows while preserving security gates.",
+      "eventTypes": [
+        "blockchain:task",
+        "blockchain:audit",
+        "sdk:expand",
+        "api:expand",
+        "bridge:expand",
+        "contracts:test"
+      ],
+      "approvalRequired": [
+        "deploy_contract",
+        "upgrade_contract",
+        "pause_contract",
+        "bridge_tokens",
+        "treasury_transfer"
+      ],
+      "kpis": [
+        "test_pass_rate",
+        "contract_coverage",
+        "sdk_methods_available",
+        "api_uptime",
+        "audit_findings_open"
+      ]
+    },
+    "devops": {
+      "agentId": "devops-agent",
+      "runtimeAgentId": "workflow-agent",
+      "mandate": "Keep Docker, APIs, MCPs, monitoring, Redis, Postgres, and channels healthy.",
+      "eventTypes": [
+        "devops:health-check",
+        "devops:incident",
+        "devops:deploy-check",
+        "devops:dependency-audit"
+      ],
+      "kpis": [
+        "service_uptime",
+        "mean_time_to_recover",
+        "critical_alerts_open",
+        "dependency_vulnerabilities"
+      ]
+    },
+    "legal": {
+      "agentId": "legal-agent",
+      "runtimeAgentId": "compliance-agent",
+      "mandate": "Guard MiCA, GDPR, KYC/AML, tax, contractual, and external-claim risk.",
+      "eventTypes": [
+        "compliance:check",
+        "legal:review",
+        "risk:regulatory"
+      ],
+      "approvalRequired": [
+        "legal_commitment",
+        "regulatory_filing",
+        "gdpr_request",
+        "kyc_decision"
+      ],
+      "kpis": [
+        "compliance_checks_completed",
+        "legal_risks_open",
+        "approval_sla"
+      ]
+    },
+    "finance": {
+      "agentId": "finance-agent",
+      "runtimeAgentId": "workflow-agent",
+      "mandate": "Manage treasury visibility, pricing, runway, ARR, pilot economics, staking rewards, and payment risk.",
+      "eventTypes": [
+        "finance:treasury-report",
+        "finance:pricing-review",
+        "finance:pilot-economics",
+        "payment:review"
+      ],
+      "approvalRequired": [
+        "create_payment",
+        "refund_payment",
+        "withdraw_treasury",
+        "pricing_exception"
+      ],
+      "kpis": [
+        "arr_pipeline",
+        "pilot_margin",
+        "runway_months",
+        "treasury_risk_score"
+      ]
+    },
+    "skills": {
+      "agentId": "skill-optimizer-agent",
+      "runtimeAgentId": "workflow-agent",
+      "mandate": "Evaluate agent outcomes, improve SKILL instructions through feedback loops, and version changes with human review.",
+      "eventTypes": [
+        "skill:interaction-recorded",
+        "skill:evaluate",
+        "skill:propose-improvement",
+        "skill:publish-approved"
+      ],
+      "approvalRequired": [
+        "publish_skill_change",
+        "delete_skill",
+        "change_compliance_skill",
+        "change_finance_skill"
+      ],
+      "kpis": [
+        "skill_success_rate",
+        "failed_interactions_reviewed",
+        "approved_improvements",
+        "regression_count"
+      ]
+    }
+  },
+  "routing": {
+    "aegis:alert": "security-agent",
+    "blockchain:task": "workflow-agent",
+    "workflow:execute": "workflow-agent",
+    "trade:execute": "trading-agent",
+    "trade:analyze": "trading-agent",
+    "tokenomics:monitor": "tokenomics-agent",
+    "tokenomics:analyze": "tokenomics-agent",
+    "tokenomics:analysis": "tokenomics-agent",
+    "tokenomics:report": "tokenomics-agent",
+    "staking:alert": "tokenomics-agent",
+    "bridge:alert": "tokenomics-agent",
+    "bridge:monitor": "tokenomics-agent",
+    "compliance:check": "compliance-agent",
+    "growth:research": "workflow-agent",
+    "growth:score-lead": "workflow-agent",
+    "growth:draft-outreach": "workflow-agent",
+    "growth:qualify": "workflow-agent",
+    "growth:pipeline-report": "workflow-agent",
+    "solutions:scope": "workflow-agent",
+    "solutions:pilot-plan": "workflow-agent",
+    "sdk:integration-plan": "workflow-agent",
+    "sdk:expand": "workflow-agent",
+    "api:expand": "workflow-agent",
+    "devops:health-check": "workflow-agent",
+    "devops:incident": "workflow-agent",
+    "devops:deploy-check": "workflow-agent",
+    "devops:dependency-audit": "workflow-agent",
+    "finance:treasury-report": "workflow-agent",
+    "finance:pricing-review": "workflow-agent",
+    "finance:pilot-economics": "workflow-agent",
+    "skill:evaluate": "workflow-agent",
+    "skill:propose-improvement": "workflow-agent",
+    "skill:publish-approved": "workflow-agent",
+    "ecosystem:expand": "workflow-agent"
+  },
+  "approvalPolicy": {
+    "default": "allow_read_only",
+    "requireHumanApproval": [
+      "deploy_contract",
+      "upgrade_contract",
+      "pause_contract",
+      "bridge_tokens",
+      "transfer_tokens",
+      "stake_tokens",
+      "unstake_tokens",
+      "treasury_transfer",
+      "create_payment",
+      "refund_payment",
+      "send_outreach",
+      "send_bulk_email",
+      "legal_commitment",
+      "pricing_commitment",
+      "publish_skill_change"
+    ]
+  },
+  "feedbackLoop": {
+    "interactionLog": "D:/BeZhas-Blockchain/SKILL/interactions/index.jsonl",
+    "metricsFile": "D:/BeZhas-Blockchain/SKILL/feedback/metrics.md",
+    "improvementsFile": "D:/BeZhas-Blockchain/SKILL/feedback/improvements.md",
+    "reviewCadence": "weekly",
+    "promotionRule": "A SKILL improvement can be published only after an evaluation episode, regression check, and human approval when it affects external commitments or critical operations."
+  }
+}

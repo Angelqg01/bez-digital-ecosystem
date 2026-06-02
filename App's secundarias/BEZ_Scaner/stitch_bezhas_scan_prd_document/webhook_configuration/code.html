@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<title>BeZhas Scan Developer Portal - Webhook Configuration</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 border-b border-primary/20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+<div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div>
+<h1 class="text-lg font-bold leading-tight">Webhook Configuration</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">BeZhas Scan Developer Portal</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+<span class="size-2 rounded-full bg-green-500 animate-pulse"></span>
+<span class="text-xs font-bold text-green-500 uppercase tracking-wider">Active</span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg font-bold text-sm transition-all shadow-lg shadow-primary/20">
+                    Save Changes
+                </button>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Configuration -->
+<div class="lg:col-span-7 space-y-8">
+<!-- Endpoint Setup Section -->
+<section class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 rounded-xl p-6 shadow-sm">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">lan</span>
+<h2 class="text-xl font-bold">Endpoint Setup</h2>
+</div>
+<div class="space-y-5">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Payload URL (HTTPS)</label>
+<input class="w-full bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" placeholder="https://your-api.com/webhooks/bezhas-handler" type="text" value="https://api.example-service.io/v1/webhooks/receiver"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Secret (Optional)</label>
+<div class="relative group">
+<input class="w-full bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-lg px-4 py-3 pr-12 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" placeholder="••••••••••••••••" type="password" value="whsec_bezhasscan_9a2b8c7d"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">info</span>
+                            Used to sign the payload via HMAC-SHA256. 
+                            <a class="text-primary hover:underline font-medium" href="#">View Webhook Signature Guide</a>
+</p>
+</div>
+</div>
+</section>
+<!-- Event Selection -->
+<section class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">notifications_active</span>
+<h2 class="text-xl font-bold">Event Selection</h2>
+</div>
+<button class="text-sm text-primary font-bold hover:underline">Select All</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Event Item -->
+<div class="flex items-start justify-between p-4 rounded-lg bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/5">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">scan.completed</span>
+<span class="text-xs text-slate-500">Triggered when a scan finishes.</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-start justify-between p-4 rounded-lg bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/5">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">rwa.tokenized</span>
+<span class="text-xs text-slate-500">Asset successfully tokenized.</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-start justify-between p-4 rounded-lg bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/5 opacity-60">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">audit.damage_detected</span>
+<span class="text-xs text-slate-500">AI detected structural damage.</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-start justify-between p-4 rounded-lg bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/5">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">proposal.created</span>
+<span class="text-xs text-slate-500">New DAO proposal created.</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Delivery Logs & Advanced -->
+<div class="lg:col-span-5 space-y-8">
+<!-- Delivery Logs Section -->
+<section class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 rounded-xl overflow-hidden shadow-sm">
+<div class="p-6 border-b border-slate-200 dark:border-primary/10 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">list_alt</span>
+<h2 class="text-xl font-bold">Recent Deliveries</h2>
+</div>
+<button class="text-xs font-bold text-slate-500 hover:text-primary flex items-center gap-1 uppercase tracking-widest">
+                        Refresh <span class="material-symbols-outlined text-[14px]">refresh</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50 dark:bg-background-dark/80 text-xs font-bold uppercase tracking-wider text-slate-500">
+<tr>
+<th class="px-6 py-3">Status</th>
+<th class="px-6 py-3">Event</th>
+<th class="px-6 py-3">Time</th>
+<th class="px-6 py-3 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-primary/5">
+<tr class="hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors">
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-bold">200 OK</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs font-mono">scan.completed</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs text-slate-500">2m ago</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-primary/80">
+<span class="material-symbols-outlined text-[20px]">replay</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors">
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded-md bg-red-500/10 text-red-500 text-xs font-bold">500 ERR</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs font-mono">rwa.tokenized</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs text-slate-500">14m ago</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-primary/80">
+<span class="material-symbols-outlined text-[20px]">replay</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors">
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-bold">200 OK</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs font-mono">proposal.created</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs text-slate-500">1h ago</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-primary/80">
+<span class="material-symbols-outlined text-[20px]">replay</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 bg-slate-50 dark:bg-background-dark/50 text-center">
+<button class="text-sm font-bold text-primary hover:underline">View All Logs</button>
+</div>
+</section>
+<!-- Advanced Settings -->
+<section class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 rounded-xl p-6 shadow-sm">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">settings</span>
+<h2 class="text-xl font-bold">Advanced Settings</h2>
+</div>
+<div class="space-y-6">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Content Type</label>
+<select class="w-full bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/50 outline-none transition-all appearance-none cursor-pointer">
+<option value="json">application/json</option>
+<option value="form">application/x-www-form-urlencoded</option>
+<option value="xml">application/xml</option>
+</select>
+</div>
+<div class="flex items-center justify-between py-2">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">SSL Verification</span>
+<span class="text-xs text-slate-500">Recommended for production environments.</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="pt-4 border-t border-slate-100 dark:border-primary/10">
+<div class="p-4 rounded-lg bg-red-500/5 border border-red-500/10">
+<p class="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Danger Zone</p>
+<button class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-bold transition-all">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+                                Delete Webhook
+                            </button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer Documentation Card -->
+<div class="max-w-7xl mx-auto px-4 pb-12">
+<div class="bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex items-center gap-5">
+<div class="size-16 rounded-xl bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-4xl">auto_stories</span>
+</div>
+<div>
+<h3 class="text-xl font-bold">Need help with implementation?</h3>
+<p class="text-slate-500 dark:text-slate-400">Our comprehensive guide covers retries, verification, and common pitfalls.</p>
+</div>
+</div>
+<a class="px-8 py-3 bg-white dark:bg-primary text-slate-900 dark:text-white rounded-lg font-bold shadow-xl transition-transform hover:-translate-y-1" href="#">
+                Read Documentation
+            </a>
+</div>
+</div>
+</body></html>

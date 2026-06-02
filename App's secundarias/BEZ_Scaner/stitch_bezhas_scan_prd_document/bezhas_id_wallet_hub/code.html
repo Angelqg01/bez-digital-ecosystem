@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                        "neutral-dark": "#2d1f18",
+                        "neutral-border": "#3d2a20",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .glass-panel {
+            background: rgba(45, 31, 24, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(236, 91, 19, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header -->
+<header class="sticky top-0 z-50 flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 border-b border-primary/20 justify-between">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined">grid_view</span>
+</div>
+<h1 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 text-center font-display uppercase tracking-widest">
+            BeZhas Hub
+        </h1>
+<div class="flex w-10 items-center justify-end">
+<button class="flex items-center justify-center rounded-lg size-10 bg-primary/10 text-primary">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto pb-24">
+<!-- Profile Header -->
+<section class="p-6 flex flex-col items-center gap-4">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-28 border-4 border-primary ring-4 ring-primary/20 shadow-xl shadow-primary/10" data-alt="Futuristic cyborg character profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB2n0foOVU028tzelWy8B_GbLgDFmN4iSGpMn-5e-beTaAUN_-0U6kJsrPRJ60JtH5mLGHW51c_YGv2ago1glvNLsu0Fk3OW164x_h26CtOcKvZjc54QLanVrPpBlXrX9zD27de31egCB6bhmHBGj_B9fWAoJjP9nYcFNyoLGyGhiTIqr0X9kzTVGZ7wtVyZsGhaxIInpSUB87owjagp71BzlGDIIL6rl90QcSRPzzKXQfYGzACePl97GFLEszFtBQX_p33khi33cao");'>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-white size-8 rounded-full flex items-center justify-center border-4 border-background-dark">
+<span class="material-symbols-outlined text-sm">verified</span>
+</div>
+</div>
+<div class="text-center">
+<h2 class="text-primary text-2xl font-black font-display tracking-tighter">BZH-9921-X</h2>
+<div class="flex items-center justify-center gap-2 mt-1">
+<span class="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-widest">Verified Citizen</span>
+<span class="size-1 rounded-full bg-primary/40"></span>
+<span class="text-primary text-sm font-bold">Trust 98%</span>
+</div>
+</div>
+<button class="mt-2 flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-white font-bold transition-transform active:scale-95 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-lg">fingerprint</span>
+                VERIFY BIOMETRIC ID
+            </button>
+</section>
+<!-- Status Indicator -->
+<section class="px-4 py-2">
+<div class="glass-panel p-4 rounded-xl flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+</span>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-wider">Core Link Active</p>
+</div>
+<p class="text-primary text-xs font-mono">LATENCY: 12ms</p>
+</div>
+<div class="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 100%;"></div>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-tighter text-right">Blockchain Synchronized • Protocol V4.2</p>
+</div>
+</section>
+<!-- Wallet Overview -->
+<section class="px-4 py-6">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">account_balance_wallet</span>
+                Wallet Assets
+            </h3>
+<div class="grid grid-cols-1 gap-3">
+<!-- Asset Card -->
+<div class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-neutral-dark border border-neutral-border shadow-sm">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">token</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold">BEZ-Coin</p>
+<p class="text-slate-500 text-xs">Primary Utility</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-slate-900 dark:text-slate-100 font-bold">4,250.00</p>
+<p class="text-primary text-xs font-medium">≈ $1,245.20</p>
+</div>
+</div>
+<!-- Asset Card -->
+<div class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-neutral-dark border border-neutral-border shadow-sm">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+<span class="material-symbols-outlined">deployed_code</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold">MATIC</p>
+<p class="text-slate-500 text-xs">Gas &amp; Network</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-slate-900 dark:text-slate-100 font-bold">142.85</p>
+<p class="text-blue-500 text-xs font-medium">≈ $112.44</p>
+</div>
+</div>
+<!-- Asset Card -->
+<div class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-neutral-dark border border-neutral-border shadow-sm">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+<span class="material-symbols-outlined">3d_rotation</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold">Scan Credits</p>
+<p class="text-slate-500 text-xs">Tokenized Usage</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-slate-900 dark:text-slate-100 font-bold">12</p>
+<p class="text-emerald-500 text-xs font-medium">Valid Forever</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Buy BEZ Section -->
+<section class="px-4 py-6 bg-primary/5 border-y border-primary/10">
+<div class="flex items-end justify-between mb-4">
+<div>
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-black uppercase tracking-[0.2em] mb-1">Buy BEZ-Coin</h3>
+<p class="text-primary text-2xl font-black font-display">$0.292 <span class="text-green-500 text-sm font-bold">+4.2%</span></p>
+</div>
+<div class="h-12 w-32 flex items-end gap-1">
+<div class="flex-1 bg-primary/20 h-4 rounded-t-sm"></div>
+<div class="flex-1 bg-primary/30 h-8 rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-6 rounded-t-sm"></div>
+<div class="flex-1 bg-primary/50 h-10 rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-12 rounded-t-sm"></div>
+</div>
+</div>
+<div class="flex gap-2 mb-4">
+<button class="flex-1 py-3 rounded-lg border-2 border-primary/20 bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-bold hover:border-primary transition-colors">
+                    50 BEZ
+                </button>
+<button class="flex-1 py-3 rounded-lg border-2 border-primary/20 bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-bold hover:border-primary transition-colors">
+                    100 BEZ
+                </button>
+<button class="flex-1 py-3 rounded-lg border-2 border-primary bg-primary/10 text-primary font-bold">
+                    500 BEZ
+                </button>
+</div>
+<button class="w-full bg-primary text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">shopping_cart</span>
+                Purchase BEZ Now
+            </button>
+</section>
+<!-- Scan History Preview -->
+<section class="px-4 py-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-black uppercase tracking-[0.2em]">Asset Preview</h3>
+<a class="text-primary text-xs font-bold uppercase tracking-wider" href="#">View All</a>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 snap-x">
+<div class="min-w-[140px] snap-start">
+<div class="aspect-square rounded-xl bg-neutral-dark border border-neutral-border mb-2 relative overflow-hidden">
+<div class="absolute inset-0 bg-center bg-cover" data-alt="3D model render of a cybernetic arm component" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBoIRMJaNfpTLbZvRaKm8MYZj_iHH_oJF1jz9npjakr0iHP2fl1MX9EGYsR_Tj6WQItQtSNl9e71URo2eiCALQ2hphhBhS5f12MqgM0zpSqDxICHT_qxeKu5jukC-41Oiej9ld7n2fl-N1kGct3rZYLTtvfrfBZY0XPYtVONXOfjGSrcoc2-ibR81ExnpskOjbmCPaa2YkZ6TGM4r0SkJqnTtKOCNUzxPYOwi78x10AfiZTfYAx1e39C3HoijyeoxMd7xb6C5gHobcz");'></div>
+<div class="absolute bottom-1 right-1 bg-primary/80 backdrop-blur-sm text-[8px] px-2 py-0.5 rounded text-white font-bold">#491</div>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-xs font-bold truncate">Tactical Bracer V1</p>
+<p class="text-slate-500 text-[10px]">2 hours ago</p>
+</div>
+<div class="min-w-[140px] snap-start">
+<div class="aspect-square rounded-xl bg-neutral-dark border border-neutral-border mb-2 relative overflow-hidden">
+<div class="absolute inset-0 bg-center bg-cover" data-alt="3D wireframe render of a futuristic helmet" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBkA8hEKJ1oOMQWJN5H6YnQqQsxWJ4gYvcwiLlsR-q0eqg7DLAqbIFpyEFE8unc3EmL6FcpEo0Q9bg3OYpjVXzGSFI38yoP3LfbjdRH84gYMMhAdHLp2HRF18a6f66MqoRywq88Mjanlf6gMw05o61V1fZEkHTjz-38mOc8NPcnj6QmPlQ6tY8CpHhgdR0zy_m1H-6Exoj4lbdTK4M7YesWfJ73f5jvmanQlGRjBcZl_i2hr8LJFK46YE6R02lJ6qjQ2zi3NO7uqmZu");'></div>
+<div class="absolute bottom-1 right-1 bg-primary/80 backdrop-blur-sm text-[8px] px-2 py-0.5 rounded text-white font-bold">#490</div>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-xs font-bold truncate">Core Core V2</p>
+<p class="text-slate-500 text-[10px]">Yesterday</p>
+</div>
+<div class="min-w-[140px] snap-start">
+<div class="aspect-square rounded-xl bg-neutral-dark border border-neutral-border mb-2 relative overflow-hidden">
+<div class="absolute inset-0 bg-center bg-cover" data-alt="3D point cloud of a metallic artifact" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBrNgMG-8qfAU1I0Df0vJTDcYqdy6xGFtKNWhoZC3aYrUBe66jik6DeIchZjEpyybjwSBY4iyl3a887e2VOWi_OF3iFHtYXlhlb5rlII-e7YmhOlIAfQKzsuiI1qTo6OwAib7jMOlYqvHkLrV0teya3GsgkJ4lrVLuF0cF_EyQCmvJLY77Iz22oefo9p5MAPVcwJwIE1BBKz80e3P6t5fUtiXZ4V6cnHFunJoAwTZrpqzHiWS6xfxVQxSgdiuF-zMpyPri25udOSxTf");'></div>
+<div class="absolute bottom-1 right-1 bg-primary/80 backdrop-blur-sm text-[8px] px-2 py-0.5 rounded text-white font-bold">#489</div>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-xs font-bold truncate">Artifact-09</p>
+<p class="text-slate-500 text-[10px]">Oct 22</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-dark/90 backdrop-blur-lg border-t border-neutral-border px-4 py-2 safe-bottom">
+<div class="flex items-center justify-between max-w-lg mx-auto">
+<a class="flex flex-col items-center gap-1 text-slate-400 p-2" href="#">
+<span class="material-symbols-outlined text-2xl">dashboard</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 p-2" href="#">
+<span class="material-symbols-outlined text-2xl">view_in_ar</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Scan</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 p-2" href="#">
+<span class="material-symbols-outlined text-2xl">shopping_bag</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Market</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary p-2" href="#">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1">account_circle</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

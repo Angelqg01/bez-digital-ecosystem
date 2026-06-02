@@ -1,0 +1,181 @@
+# ─────────────────────────────────────────────────────────
+#  BeZhas Enterprise Node — Docker Compose
+#
+#  Paquete distribuible para que cualquier empresa conecte
+#  su infraestructura a la red BeZhas L2 (Chain ID 2708).
+#
+#  Servicios:
+#    1. bezhas-geth    — Cliente L2 (op-geth) sincronizado con la red
+#    2. enterprise-api  — API REST + indexador de eventos on-chain
+#    3. postgres        — Base de datos local para eventos indexados
+#
+#  Uso:
+#    cp .env.example .env        # Configurar credenciales
+#    docker compose up -d        # Levantar los 3 contenedores
+#    curl http://localhost:4100/health
+# ─────────────────────────────────────────────────────────
+
+services:
+
+  # ── 1. Nodo Blockchain L2 (op-geth) ────────────────────
+  # Cliente de ejecución OP Stack configurado para sincronizar
+  # con la red BeZhas L2. Expone RPC HTTP/WS en puertos 8545/8546.
+  bezhas-geth:
+    image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-geth:latest
+    container_name: bezhas-enterprise-geth
+    restart: unless-stopped
+    ports:
+      - "${RPC_HTTP_BIND:-127.0.0.1}:8545:8545"  # RPC HTTP (override bind only when protected by firewall/proxy)
+      - "${RPC_WS_BIND:-127.0.0.1}:8546:8546"    # RPC WebSocket
+    volumes:
+      - geth-data:/db
+    command: [
+      "--datadir=/db",
+      "--http",
+      "--http.addr=0.0.0.0",
+      "--http.port=8545",
+      "--http.corsdomain=${RPC_CORS_ORIGINS:-http://localhost:3000,http://localhost:4100}",
+      "--http.vhosts=${RPC_VHOSTS:-localhost,127.0.0.1,bezhas-geth}",
+      "--http.api=eth,net,web3,txpool",
+      "--ws",
+      "--ws.addr=0.0.0.0",
+      "--ws.port=8546",
+      "--ws.origins=${RPC_WS_ORIGINS:-http://localhost:3000,http://localhost:4100}",
+      "--metrics",
+      "--metrics.addr=0.0.0.0",
+      "--metrics.port=6060",
+      "--syncmode=full",
+      "--networkid=2708",
+      "--rollup.sequencerhttp=${SEQUENCER_URL:-https://sequencer.bezhas.io}"
+    ]
+    expose:
+      - "6060"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --post-data='{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' --header='Content-Type:application/json' http://127.0.0.1:8545 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ── 2. Base de Datos (PostgreSQL) ──────────────────────
+  # Almacena eventos indexados de la blockchain, ABIs de contratos
+  # y estado de sincronización del indexador.
+  postgres:
+    image: postgres:15-alpine
+    container_name: bezhas-enterprise-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bezhas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME_enterprise_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-bezhas_enterprise}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bezhas} -d ${POSTGRES_DB:-bezhas_enterprise}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── 3. Enterprise API (Node.js/Express) ────────────────
+  # Backend que:
+  #   a) Expone API REST para consultar eventos y contratos
+  #   b) Sincroniza ABIs desde la plataforma BeZhas (o usa ABIs empaquetados)
+  #   c) Indexa eventos on-chain (Transfer, Staked, etc.) en PostgreSQL
+  #   d) Recibe webhooks de ERPs para integración B2B
+  enterprise-api:
+    build: .
+    container_name: bezhas-enterprise-api
+    restart: unless-stopped
+    environment:
+      - PORT=${PORT:-4100}
+      - NODE_ENV=production
+      - API_KEY=${API_KEY}
+      - CHAIN_ID=${CHAIN_ID:-2708}
+      - BEZHAS_L2_RPC_URL=http://bezhas-geth:8545
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-bezhas}:${POSTGRES_PASSWORD:-CHANGE_ME_enterprise_2024}@postgres:5432/${POSTGRES_DB:-bezhas_enterprise}
+      - BEZHAS_PLATFORM_API=${BEZHAS_PLATFORM_API:-}
+      - BEZHAS_PLATFORM_API_KEY=${BEZHAS_PLATFORM_API_KEY:-}
+      - BEZHAS_SDK_PATH=${BEZHAS_SDK_PATH:-/bezhas-sdk}
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:4100}
+      - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-http://localhost:8545}
+      - PUBLIC_EXPLORER_URL=${PUBLIC_EXPLORER_URL:-http://localhost:4000}
+      - PUBLIC_CHAIN_NAME=${PUBLIC_CHAIN_NAME:-BeZhas L2}
+      - BEZCOINV2_ADDRESS=${BEZCOINV2_ADDRESS:-}
+      - STAKING_POOL_ADDRESS=${STAKING_POOL_ADDRESS:-}
+      - LIQUIDITY_FARMING_ADDRESS=${LIQUIDITY_FARMING_ADDRESS:-}
+      - GOVERNANCE_SYSTEM_ADDRESS=${GOVERNANCE_SYSTEM_ADDRESS:-}
+      - QUALITY_ESCROW_ADDRESS=${QUALITY_ESCROW_ADDRESS:-}
+      - BEZHAS_QUALITY_ESCROW_ADDRESS=${BEZHAS_QUALITY_ESCROW_ADDRESS:-}
+      - VALIDATOR_REGISTRY_ADDRESS=${VALIDATOR_REGISTRY_ADDRESS:-}
+      - EDGE_NODE_REWARDS_ADDRESS=${EDGE_NODE_REWARDS_ADDRESS:-}
+      - VALIDATOR_PRIVATE_KEY=${VALIDATOR_PRIVATE_KEY:-}
+      - VALIDATOR_ADDRESS=${VALIDATOR_ADDRESS:-}
+      - VALIDATOR_COMPANY_NAME=${VALIDATOR_COMPANY_NAME:-BeZhas Enterprise Node}
+      - VALIDATOR_STAKE_AMOUNT_BEZ=${VALIDATOR_STAKE_AMOUNT_BEZ:-0}
+      - REVENUE_MONTHLY_NODE_FEE_EUR=${REVENUE_MONTHLY_NODE_FEE_EUR:-199}
+      - REVENUE_SETUP_FEE_EUR=${REVENUE_SETUP_FEE_EUR:-999}
+      - REVENUE_WEBHOOK_FEE_EUR=${REVENUE_WEBHOOK_FEE_EUR:-0.01}
+      - REVENUE_INDEXED_EVENT_FEE_EUR=${REVENUE_INDEXED_EVENT_FEE_EUR:-0.001}
+      - REVENUE_VALIDATOR_REWARD_BEZ_MONTHLY=${REVENUE_VALIDATOR_REWARD_BEZ_MONTHLY:-0}
+      - BEZ_PRICE_EUR=${BEZ_PRICE_EUR:-0.05}
+      - INFRA_COST_EUR_MONTHLY=${INFRA_COST_EUR_MONTHLY:-60}
+      - EST_INDEXED_EVENTS_MONTHLY=${EST_INDEXED_EVENTS_MONTHLY:-50000}
+      - EST_WEBHOOKS_MONTHLY=${EST_WEBHOOKS_MONTHLY:-10000}
+      - EST_ENTERPRISE_CLIENTS=${EST_ENTERPRISE_CLIENTS:-1}
+      - HOOK_TIMEOUT_MS=${HOOK_TIMEOUT_MS:-8000}
+      - CONTROL_API_URL=${CONTROL_API_URL:-http://localhost:3001}
+      - CONTROL_JWT=${CONTROL_JWT:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bezhas-geth:
+        condition: service_healthy
+    ports:
+      - "${PORT:-4100}:${PORT:-4100}"
+    volumes:
+      - ../sdk:/bezhas-sdk:ro
+      - ../smart-contracts:/smart-contracts:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:${PORT:-4100}/health',r=>{if(r.statusCode!==200)process.exit(1)}).on('error',()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  geth-data:
+    driver: local
+  pg-data:
+    driver: local

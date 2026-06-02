@@ -1,0 +1,4 @@
+Nota: useCustomGasToken: true es la directiva crítica que le dice a la red L1 que el gas de esta L2 se paga con el token BEZ que ya tienes.
+3. El Código de Innovación: "Precompile" de IA en la Blockchain
+Esta es la magia. Vas a modificar el cliente de ejecución (op-geth) para que la IA sea nativa. Ve a bezhas-l2/op-geth/core/vm/contracts.go y añade un nuevo Smart Contract Precompilado.
+Este código intercepta llamadas a una dirección específica (ej. 0x0...09) y ejecuta lógica externa (LLM), cobrando gas de la red:

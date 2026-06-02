@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>BeZhas Bio-Agent Dashboard</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<!-- Top Header -->
+<header class="flex items-center bg-background-light dark:bg-background-dark border-b border-primary/10 p-4 sticky top-0 z-50">
+<div class="flex size-10 shrink-0 items-center justify-center bg-primary/20 rounded-lg mr-3">
+<span class="material-symbols-outlined text-primary">biotech</span>
+</div>
+<div class="flex-1">
+<h1 class="text-xl font-bold leading-tight tracking-tight text-slate-900 dark:text-slate-100">BeZhas Bio-Agent</h1>
+<p class="text-xs text-primary font-medium uppercase tracking-widest">Central Intelligence Hub</p>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-primary"></span>
+</button>
+<div class="h-10 w-10 rounded-full border-2 border-primary/30 overflow-hidden" data-alt="User profile avatar portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB0A8TdygnVzIYCsp_rwVclqxSn_ZPVekV7MzGI_a-H42bj-ibpYNq1fh0E7TywMknDbHy2ulvNJjgPvNQdFsW8FXupdWEayOFZB03Y5bDga1Y5I_PVrlRGVxHyEhc_fW0HJ2fZncJ0d0Lod3XYbJTPnTDFJhYkDj3_k_W8l3t3rOD0R-hnSiQdcutOA2mN0g2Uvweh6xUaj0BTX2_mA4Y2fgwoQBqygnPiuQixFiAhrmJjgcDy9AzJyJjXElkVyFEzpZ79ZZm0Vc4"); background-size: cover;'></div>
+</div>
+</header>
+<main class="p-4 space-y-6 max-w-7xl mx-auto pb-24">
+<!-- Key Metrics Row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-primary/10 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">PII Masked</p>
+<span class="material-symbols-outlined text-primary text-lg">shield_person</span>
+</div>
+<p class="text-2xl font-bold leading-tight">1.2M</p>
+<div class="flex items-center gap-1 text-emerald-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+12.4%</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-primary/10 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Contracts</p>
+<span class="material-symbols-outlined text-primary text-lg">gavel</span>
+</div>
+<p class="text-2xl font-bold leading-tight">842</p>
+<div class="flex items-center gap-1 text-emerald-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+5.2%</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-primary/10 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Active Nodes</p>
+<span class="material-symbols-outlined text-primary text-lg">hub</span>
+</div>
+<p class="text-2xl font-bold leading-tight">156</p>
+<div class="flex items-center gap-1 text-rose-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm">trending_down</span>
+<span>-2.1%</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-primary/10 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">IoT Uptime</p>
+<span class="material-symbols-outlined text-primary text-lg">sensors</span>
+</div>
+<p class="text-2xl font-bold leading-tight">99.9%</p>
+<div class="flex items-center gap-1 text-slate-400 text-xs font-bold">
+<span class="material-symbols-outlined text-sm">horizontal_rule</span>
+<span>Stable</span>
+</div>
+</div>
+</div>
+<!-- Section Title -->
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-bold leading-tight tracking-tight">Autonomous Bio-Agents</h2>
+<button class="text-primary text-sm font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">add_circle</span> Deploy New
+            </button>
+</div>
+<!-- Agents Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Agent Card: De-identification -->
+<div class="flex flex-col gap-4 rounded-xl bg-white dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-primary/20 shadow-lg relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 group-hover:bg-primary/10 transition-colors"></div>
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+<span class="material-symbols-outlined">visibility_off</span>
+</div>
+<div>
+<p class="text-xs font-bold text-primary uppercase tracking-wider">Privacy Layer</p>
+<h3 class="text-lg font-bold">De-identification Agent</h3>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Running
+                    </div>
+</div>
+<div class="space-y-3">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-lg h-32 flex items-center justify-center relative overflow-hidden" data-alt="Digital encryption patterns and green code flow" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDhPIH-A-aPJLSZ0ZCYyij-qRupm-XnPbfZHSSUP-BGEOJQWQbnAdSGvvYFA9XfgJ-LrDox0zWXsgD23AgQB1sO7kJlfQBlPscA5ebdZjUmnV-ybr7Zxkqm0uX8aHSVGant7mbE0zGcsNRw8rEIlDkSuxAQ3neCjnJSsDXpAjUqmb2S75L8-SHriVWKWjZ6g0imXiZB-l2N4gaRhnwFq6yG6eMtRrcsh9UQAS_-xl82ibBNQv2ZcW1qmomf6ZiYVrk_NI1mdNY8nFo"); background-size: cover; background-position: center;'>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+<div class="absolute bottom-2 left-3 flex gap-4">
+<div class="text-[10px] text-white/70">Throughput: <span class="text-white font-mono">14.2 GB/s</span></div>
+<div class="text-[10px] text-white/70">Latency: <span class="text-white font-mono">0.4ms</span></div>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-xs text-slate-500 dark:text-slate-400 max-w-[70%]">Active anonymization of biometric data streams from 14 global research labs.</p>
+<button class="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Agent Card: Broker -->
+<div class="flex flex-col gap-4 rounded-xl bg-white dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-primary/20 shadow-lg relative overflow-hidden group">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">handshake</span>
+</div>
+<div>
+<p class="text-xs font-bold text-primary uppercase tracking-wider">Market Dynamics</p>
+<h3 class="text-lg font-bold">Smart Broker Agent</h3>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold uppercase tracking-widest border border-amber-500/20">
+<span class="size-1.5 rounded-full bg-amber-500"></span>
+                        Standby
+                    </div>
+</div>
+<div class="space-y-3">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-lg h-32 flex items-center justify-center relative overflow-hidden" data-alt="Digital stock market charts and blue glowing graphs" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAL5AUgT5jaTFj2eHD_7SJ6islVa-49JJlklTGtvuI5aoAmdV3f8mobpg3SGyYBkIggb4SMF4a0_knRZl3OEKVy4F84x_u-rGBGWUIYHFfVfUiQh4uPU7R4fLtKIHSSPeDQlWRU7_Far6k9U4nJeCwo_195aYd0qnpwmY0c06WadrEGqxwsD-DWjV8vU3IKmWjcrPtsxmWDHSfkZwS8Ik9G79QpCryUdQRI3PzrYCZ32MflzCTRi6c_UraX_7pWXjuJ5DRt0I9XDgo"); background-size: cover; background-position: center;'>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+<div class="absolute bottom-2 left-3 flex gap-4">
+<div class="text-[10px] text-white/70">Efficiency: <span class="text-white font-mono">98.2%</span></div>
+<div class="text-[10px] text-white/70">Bids: <span class="text-white font-mono">42 Pending</span></div>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-xs text-slate-500 dark:text-slate-400 max-w-[70%]">Negotiating data-sharing agreements between bio-banks and researchers.</p>
+<button class="flex items-center justify-center size-8 rounded-lg bg-primary text-white hover:bg-primary/80 transition-all">
+<span class="material-symbols-outlined text-sm">play_arrow</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Agent Card: Traceability -->
+<div class="flex flex-col gap-4 rounded-xl bg-white dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-primary/20 shadow-lg relative overflow-hidden group">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">account_tree</span>
+</div>
+<div>
+<p class="text-xs font-bold text-primary uppercase tracking-wider">Data Lineage</p>
+<h3 class="text-lg font-bold">Traceability Agent</h3>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Running
+                    </div>
+</div>
+<div class="space-y-3">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-lg h-32 flex items-center justify-center relative overflow-hidden" data-alt="Futuristic server room with blue neon fiber optics" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB7uzvpbnpR7TbIlzMXlkcIbZ9pYgjDeUYoFEYVxZvQAcRkz8KEybGeVRW3hugxz1n7KrTF-O4RXtB1OhLrUyETSE981HmySjNbx-89NqZw4WCgnSHFIfGJ85kD_Q7d-UgueUc75Qgc-_I9QJrG26BAY6nLSZFv9I7zsB6m0yRQTUCJUb0Z0OcuROLz7hoebNUcqCED4l7ktUzkYLlAWjPRxnJe6PEk4nbPzPrkjs6Wnx5wC51KlZX9I6Ovl0NsahqX9gn9qDvA8wU"); background-size: cover; background-position: center;'>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+<div class="absolute bottom-2 left-3 flex gap-4">
+<div class="text-[10px] text-white/70">Chain Height: <span class="text-white font-mono">4.1M</span></div>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-xs text-slate-500 dark:text-slate-400 max-w-[70%]">Verifying biological data origin and ensuring ethical usage compliance across the node network.</p>
+<button class="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Agent Card: IoT Fusion -->
+<div class="flex flex-col gap-4 rounded-xl bg-white dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-primary/20 shadow-lg relative overflow-hidden group">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-500">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div>
+<p class="text-xs font-bold text-primary uppercase tracking-wider">Sensor Integration</p>
+<h3 class="text-lg font-bold">IoT Fusion Agent</h3>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2 py-1 rounded-full bg-rose-500/10 text-rose-500 text-[10px] font-bold uppercase tracking-widest border border-rose-500/20">
+<span class="size-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                        Alerts
+                    </div>
+</div>
+<div class="space-y-3">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-lg h-32 flex items-center justify-center relative overflow-hidden" data-alt="Computer circuit board with red glowing nodes" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCMx1Ixw8UjlVL7cyvzt-YSDAXIP0kySj54ojpwhReajd3U2XckI9uV3u5W9g0xU2gahv6oDtmcKKRcsatMxVVL85a5_3-J31C5EpTyR4a1DQqiDIJ0wc9YqxDWvU_UxoVB6QgHNaNBscIaDvHABp80UEoQsF4fLwDl-sx6yxHvcvY2MsH7668nkw9v05ZVYGJuo-po76DL5xTI3aLiGnVZONc5UFL63-G5hvBkx83TWqn51RPYRGaIfw4VfabhsDW8UCCkTGcaPn4"); background-size: cover; background-position: center;'>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-rose-500/20 backdrop-blur-md border border-rose-500/40 p-2 rounded text-[10px] text-rose-100 font-mono">
+                                CRITICAL: Node #142 Integrity Failure
+                            </div>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-xs text-slate-500 dark:text-slate-400 max-w-[70%]">Real-time fusion of clinical sensor data with agent-led diagnosis protocols.</p>
+<button class="flex items-center justify-center size-8 rounded-lg bg-rose-500 text-white hover:bg-rose-600 transition-all shadow-[0_0_10px_rgba(244,63,94,0.4)]">
+<span class="material-symbols-outlined text-sm">rule</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Logs Section -->
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-primary/10 overflow-hidden shadow-sm">
+<div class="p-4 border-b border-slate-200 dark:border-primary/10 flex items-center justify-between">
+<h3 class="font-bold">System Operations Log</h3>
+<span class="text-[10px] font-mono text-primary animate-pulse">LIVE STREAMING</span>
+</div>
+<div class="p-4 font-mono text-[11px] space-y-2 text-slate-600 dark:text-slate-300">
+<div class="flex gap-4">
+<span class="text-slate-400">14:22:01.04</span>
+<span class="text-emerald-500">[INFO]</span>
+<span>Privacy Agent: 4,021 PII records scrubbed in Batch 42A.</span>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-400">14:21:55.28</span>
+<span class="text-primary">[EXEC]</span>
+<span>Broker Agent: Negotiating bid ID-9981 with LabX. Settlement found.</span>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-400">14:21:42.12</span>
+<span class="text-rose-500">[WARN]</span>
+<span>IoT Fusion: High packet loss detected at Node #142. Investigation triggered.</span>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-400">14:21:30.91</span>
+<span class="text-emerald-500">[INFO]</span>
+<span>Traceability: Merkle tree updated for Block 1,228,941.</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-background-dark/80 backdrop-blur-lg border-t border-slate-200 dark:border-primary/10 z-50">
+<div class="flex justify-around items-center px-4 py-3">
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="text-[10px] font-bold text-primary">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary transition-colors">memory</span>
+<span class="text-[10px] font-medium text-slate-500 group-hover:text-primary transition-colors">Agents</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary transition-colors">analytics</span>
+<span class="text-[10px] font-medium text-slate-500 group-hover:text-primary transition-colors">Analytics</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary transition-colors">settings</span>
+<span class="text-[10px] font-medium text-slate-500 group-hover:text-primary transition-colors">Settings</span>
+</a>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Bio-Agent | Account Recovery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                        "slate-card": "#16252d",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Header -->
+<header class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10 border-b border-primary/10">
+<div class="text-primary flex size-12 shrink-0 items-center justify-start cursor-pointer">
+<span class="material-symbols-outlined text-3xl">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-12 uppercase tracking-widest">System Recovery</h2>
+</header>
+<!-- Identity Section -->
+<main class="max-w-2xl mx-auto w-full px-4 py-8">
+<div class="flex justify-center mb-6">
+<div class="bg-primary/10 p-4 rounded-full border border-primary/20">
+<span class="material-symbols-outlined text-primary text-5xl">fingerprint</span>
+</div>
+</div>
+<h3 class="text-slate-900 dark:text-slate-100 tracking-tight text-3xl font-bold leading-tight text-center pb-2">Identity Verification</h3>
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-relaxed pb-8 text-center max-w-md mx-auto">
+                Security protocol initiated. Select a secure method to restore access to your BeZhas Bio-Agent profile and encrypted genetic data.
+            </p>
+<!-- Recovery Options -->
+<div class="space-y-4">
+<!-- Seed Phrase Option -->
+<div class="flex flex-col md:flex-row items-stretch justify-between gap-6 rounded-xl bg-white dark:bg-slate-card p-6 shadow-xl border border-primary/5 hover:border-primary/30 transition-colors group">
+<div class="flex flex-[2_2_0px] flex-col justify-between gap-6">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary">key</span>
+<p class="text-slate-900 dark:text-slate-100 text-xl font-bold leading-tight">24-word Seed Phrase</p>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm font-normal leading-relaxed">
+                                Manually input your offline recovery phrase. This bypasses network-based verification for maximum security and immediate access.
+                            </p>
+</div>
+<button class="flex min-w-[140px] max-w-fit cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary text-white gap-2 text-sm font-bold uppercase tracking-wider hover:bg-primary/90 transition-all">
+<span>Use Phrase</span>
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</div>
+<div class="w-full md:w-48 bg-center bg-no-repeat aspect-video md:aspect-square bg-cover rounded-lg flex-1 bg-primary/5 border border-primary/10 flex items-center justify-center overflow-hidden" data-alt="Digital encryption key pattern blue aesthetic" style='background-image: linear-gradient(45deg, rgba(37, 175, 244, 0.1) 0%, rgba(37, 175, 244, 0) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuA9YDOwmJONazFh4UXIujkKyM9_Jl2eKYm9juopqjAv_2NswKXhPovV_5ETh2VuCyTFKSPVeMM7smcA7J4z_L8VuVEbfomgWGBK-q6_anBY3Vk9ljsUplqsfeahT6jbh_rYUGZ-7SaylExEHq-T9oSvU6VnMC9bB5za-hvENoNwBJqi3Cssntjcj1R-3WEWIgOSHAoziZTh3l1jaFkfH-UZpAKWfF0XTTVt1OblWKsZ014bIziU-PobXVn9gp_mvhNPTh7Q6EjYyMY");'>
+<span class="material-symbols-outlined text-primary/40 text-6xl group-hover:scale-110 transition-transform">lock_open</span>
+</div>
+</div>
+<!-- Guardian Option -->
+<div class="flex flex-col md:flex-row items-stretch justify-between gap-6 rounded-xl bg-white dark:bg-slate-card p-6 shadow-xl border border-primary/5 hover:border-primary/30 transition-colors group">
+<div class="flex flex-[2_2_0px] flex-col justify-between gap-6">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary">group</span>
+<p class="text-slate-900 dark:text-slate-100 text-xl font-bold leading-tight">Guardian Verification</p>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm font-normal leading-relaxed">
+                                Contact your designated biotech guardians. Access will be restored once 2/3 guardians authorize the signature request.
+                            </p>
+</div>
+<button class="flex min-w-[140px] max-w-fit cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-slate-200 dark:bg-primary/20 text-slate-900 dark:text-primary gap-2 text-sm font-bold uppercase tracking-wider hover:bg-primary/30 transition-all border border-primary/30">
+<span>Request Approval</span>
+<span class="material-symbols-outlined text-lg">verified_user</span>
+</button>
+</div>
+<div class="w-full md:w-48 bg-center bg-no-repeat aspect-video md:aspect-square bg-cover rounded-lg flex-1 bg-primary/5 border border-primary/10 flex items-center justify-center overflow-hidden" data-alt="Microscopic cell structure with blue light" style='background-image: linear-gradient(45deg, rgba(37, 175, 244, 0.1) 0%, rgba(37, 175, 244, 0) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuANndHYyHxTU0F7BXNAEenliOYRAYXvKXNBwziFrY26CTNol3bxFWKJawlynbHFX2k9sMNIrO4OQ34zfxuSoYgAZmzi3ysf44ozTw7uUj-6XyriIp2skuulnB5bR74h0QPdBPv0ro8gemVUpo16-8DK3TKcKcplmQyBN-ErDVjEQ1DCx-8xxawdbKh7EzUvydR5Tp81Jgusq8HR52kthSKOVUtUqzlKuBqoYLH_P9NVnjVuS38Y_I3CkbJwZYGaRBzb9Zdm3F5h210");'>
+<span class="material-symbols-outlined text-primary/40 text-6xl group-hover:scale-110 transition-transform">hub</span>
+</div>
+</div>
+</div>
+<!-- Footer Help -->
+<div class="mt-12 text-center">
+<p class="text-slate-500 dark:text-slate-500 text-sm">
+                    Having trouble? <a class="text-primary hover:underline underline-offset-4 font-medium" href="#">Contact Bio-Agent Lab Support</a>
+</p>
+</div>
+</main>
+<!-- System Status Bar -->
+<footer class="mt-auto p-4 border-t border-primary/10 bg-background-light dark:bg-background-dark/50">
+<div class="flex justify-between items-center text-[10px] uppercase tracking-widest text-slate-500">
+<div class="flex items-center gap-2">
+<span class="size-2 bg-green-500 rounded-full animate-pulse"></span>
+<span>Secure Node Active</span>
+</div>
+<div>v2.4.0-BIO_STABLE</div>
+</div>
+</footer>
+</div>
+</body></html>

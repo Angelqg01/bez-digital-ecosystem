@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&amp;family=JetBrains+Mono:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#9fb0d8",
+                        "surface-container": "#1b2029",
+                        "primary": "#42e5b0",
+                        "secondary-container": "#feb700",
+                        "primary-fixed": "#60fcc6",
+                        "on-error": "#690005",
+                        "on-background": "#dfe2ef",
+                        "secondary-fixed": "#ffdea8",
+                        "outline-variant": "#3c4a43",
+                        "on-tertiary-fixed-variant": "#364769",
+                        "on-primary-fixed": "#002116",
+                        "background": "#0f131c",
+                        "tertiary": "#bacbf4",
+                        "surface-container-highest": "#30353f",
+                        "inverse-on-surface": "#2c303a",
+                        "on-primary": "#003828",
+                        "error-container": "#93000a",
+                        "surface-bright": "#353943",
+                        "primary-container": "#00c896",
+                        "secondary": "#ffdb9d",
+                        "on-surface-variant": "#bbcac1",
+                        "tertiary-fixed": "#d8e2ff",
+                        "surface-container-low": "#171c25",
+                        "secondary-fixed-dim": "#ffba20",
+                        "on-surface": "#dfe2ef",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#b5c6ef",
+                        "surface-variant": "#30353f",
+                        "on-tertiary-container": "#324365",
+                        "surface-container-lowest": "#0a0e17",
+                        "surface-dim": "#0f131c",
+                        "outline": "#85948c",
+                        "surface-tint": "#3adfab",
+                        "on-tertiary-fixed": "#071b3b",
+                        "on-secondary-container": "#6b4b00",
+                        "on-primary-fixed-variant": "#00513b",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary": "#412d00",
+                        "on-secondary-fixed": "#271900",
+                        "inverse-surface": "#dfe2ef",
+                        "surface-container-high": "#252a34",
+                        "surface": "#0f131c",
+                        "primary-fixed-dim": "#3adfab",
+                        "on-secondary-fixed-variant": "#5e4200",
+                        "inverse-primary": "#006c4f",
+                        "on-tertiary": "#1f3051",
+                        "on-primary-container": "#004d38"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["JetBrains Mono"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .technical-mono { font-family: 'JetBrains Mono', monospace; }
+        .emerald-glow { box-shadow: 0 0 20px rgba(0, 200, 150, 0.1); }
+        .glass-obsidian { background: rgba(15, 19, 28, 0.7); backdrop-filter: blur(12px); }
+        .gradient-emerald { background: linear-gradient(135deg, #42e5b0 0%, #00c896 100%); }
+        .tonal-shift-bg { background-color: #0a0e17; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest text-on-surface font-body selection:bg-primary selection:text-on-primary">
+<header class="fixed top-0 w-full z-50 bg-[#0a0e17]/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 tonal-shift-bg shadow-[0_0_20px_rgba(0,200,150,0.1)]">
+<div class="flex items-center gap-3">
+<span class="text-2xl font-black text-[#00c896] tracking-tighter">BeZhas</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high rounded-full border border-outline-variant/20">
+<span class="technical-mono text-xs font-bold text-primary">0x71C...3E4</span>
+<span class="material-symbols-outlined text-sm text-slate-400 cursor-pointer hover:text-primary transition-colors" data-icon="content_copy">content_copy</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border-2 border-primary/20">
+<img alt="Avatar" class="w-full h-full" data-alt="A sophisticated corporate avatar placeholder featuring abstract geometric patterns in emerald green and deep slate tones, representing a digital identity with a futuristic, high-security feel. The background is a clean, dark obsidian surface with subtle light reflections to match the premium DeFi aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyVtV9L-kiqwdMrRt19nvL-7OrSlG0yCvzFKnw7TlSwv-NoHYtfzhYhijls_G6g00dAaI4nd67l10u0pWv3d9tXlY8irsxLNVBulEOhUu_VaU8YbDPqCRkaIE9s0YnMdp46XloL96yOnCAUXQsn4eHt_Axk-MLg8ikyIknzt5r7_rt6n2W22mD9LVAKIH8La40jPwba6Or59KAVKkfIn7XVmTcanr0ovWuCAOcnzmlRbZUQK1hJW2C6V33sYD-Oee2lj9Ubo9Yt_7r"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8">
+<section class="md:col-span-12 lg:col-span-8 flex flex-col gap-8">
+<div class="relative overflow-hidden rounded-xl gradient-emerald p-8 text-on-primary-container flex flex-col md:flex-row justify-between items-end md:items-center gap-6">
+<div class="z-10">
+<p class="font-label text-xs uppercase tracking-widest opacity-80 mb-2">Vault Balance</p>
+<h1 class="text-5xl font-black tracking-tight technical-mono">142,509.32 <span class="text-2xl font-bold opacity-70">BEZ</span></h1>
+</div>
+<div class="z-10 flex gap-3">
+<button class="bg-on-primary-container text-primary font-bold px-6 py-3 rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="add">add</span> Deposit
+                    </button>
+<button class="bg-on-primary-container/20 text-on-primary-container backdrop-blur-md font-bold px-6 py-3 rounded-xl hover:bg-on-primary-container/30 active:scale-95 transition-all">
+                        Withdraw
+                    </button>
+</div>
+<div class="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-surface-container rounded-xl p-6 border border-outline-variant/10 hover:border-primary/20 transition-all">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="key">key</span>
+</div>
+<div>
+<h3 class="font-bold text-lg">Session Keys</h3>
+<p class="text-xs text-slate-400">One-tap signing active</p>
+</div>
+</div>
+<div class="px-2 py-1 bg-primary/20 text-primary text-[10px] font-bold technical-mono rounded uppercase">Active</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between text-sm">
+<span class="text-slate-400">Expiry</span>
+<span class="technical-mono text-primary">2h 14m remaining</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-2/3"></div>
+</div>
+<button class="w-full py-2 text-sm font-bold text-secondary bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors">Revoke Session</button>
+</div>
+</div>
+<div class="bg-surface-container rounded-xl p-6 border border-outline-variant/10 hover:border-primary/20 transition-all">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="shield">shield</span>
+</div>
+<div>
+<h3 class="font-bold text-lg">Social Recovery</h3>
+<p class="text-xs text-slate-400">Guardian Consensus</p>
+</div>
+</div>
+<div class="px-2 py-1 bg-surface-container-highest text-slate-300 text-[10px] font-bold technical-mono rounded uppercase">3 of 5</div>
+</div>
+<div class="flex gap-2 mb-4">
+<div class="w-8 h-8 rounded-full bg-primary/40 border border-primary/60 flex items-center justify-center text-[10px] technical-mono">G1</div>
+<div class="w-8 h-8 rounded-full bg-primary/40 border border-primary/60 flex items-center justify-center text-[10px] technical-mono">G2</div>
+<div class="w-8 h-8 rounded-full bg-primary/40 border border-primary/60 flex items-center justify-center text-[10px] technical-mono">G3</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center text-[10px] technical-mono opacity-40">G4</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center text-[10px] technical-mono opacity-40">G5</div>
+</div>
+<button class="w-full py-2 text-sm font-bold text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">Manage Guardians</button>
+</div>
+<div class="md:col-span-2 bg-surface-container rounded-xl p-6 border border-outline-variant/10">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="speed">speed</span>
+</div>
+<div>
+<h3 class="font-bold text-lg">Daily Spending Limit</h3>
+<p class="text-xs text-slate-400">Automated threshold protection</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="text-right">
+<span class="technical-mono text-xl font-bold text-white">5,000.00</span>
+<span class="text-xs text-slate-400 block">BEZ / Day</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-14 h-7 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="md:col-span-12 lg:col-span-4 flex flex-col gap-6">
+<div class="bg-surface-container rounded-xl p-6 border border-outline-variant/10 flex flex-col h-full">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-bold text-lg">Security Log</h3>
+<span class="text-xs text-primary font-bold hover:underline cursor-pointer">Export CSV</span>
+</div>
+<div class="space-y-6 overflow-y-auto max-h-[600px] pr-2">
+<div class="flex gap-4 relative">
+<div class="absolute left-4 top-10 bottom-[-24px] w-0.5 bg-outline-variant/20"></div>
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="signature" style="font-variation-settings: 'FILL' 1;">signature</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<span class="text-sm font-bold">Contract Call</span>
+<span class="text-[10px] text-slate-500 technical-mono">14:02 UTC</span>
+</div>
+<p class="text-xs text-slate-400 technical-mono mb-2">0x8a9...f4e2</p>
+<div class="px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/10">
+<span class="text-[10px] text-slate-500 block uppercase mb-1">Status</span>
+<span class="text-xs text-primary font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Valid Signature
+                                </span>
+</div>
+</div>
+</div>
+<div class="flex gap-4 relative">
+<div class="absolute left-4 top-10 bottom-[-24px] w-0.5 bg-outline-variant/20"></div>
+<div class="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<span class="text-sm font-bold">Guardian Sync</span>
+<span class="text-[10px] text-slate-500 technical-mono">11:45 UTC</span>
+</div>
+<p class="text-xs text-slate-400 technical-mono mb-2">Policy update initiated</p>
+<div class="px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/10">
+<span class="text-[10px] text-slate-500 block uppercase mb-1">Note</span>
+<span class="text-xs text-secondary font-bold">Threshold increased to 3/5</span>
+</div>
+</div>
+</div>
+<div class="flex gap-4 relative">
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="swap_horiz" style="font-variation-settings: 'FILL' 1;">swap_horiz</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<span class="text-sm font-bold">BEZ Transfer</span>
+<span class="text-[10px] text-slate-500 technical-mono">Yesterday</span>
+</div>
+<p class="text-xs text-slate-400 technical-mono mb-2">To: 0x3f1...e911</p>
+<div class="px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/10">
+<span class="text-[10px] text-slate-500 block uppercase mb-1">Amount</span>
+<span class="text-xs text-white font-bold">450.00 BEZ</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-6">
+<img class="w-full rounded-lg" data-alt="A macro photography style image of a high-tech security chip with glowing emerald fiber-optic lines running across a dark, matte obsidian surface. Soft golden light highlights the edges of the metallic components, creating a deep sense of security and technological sophistication. The overall atmosphere is premium, modern, and trustworthy, perfectly reflecting a high-fidelity digital vault environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaaxJLBBIXXY41iPb_vFOE1_JBtQJX3TGSGHqon4OX6b4JD0x5xiPy3AfOElosgmElAXY8Q24rTxoWtUNGVQVe80z8XHtHx5FQu67hN_SfKKjWz7jmQHhS75PXigqBzNwZd1Jytxw_MLo8a_4AVqXb2_XYcGxCA6mV1urqBllW6-Fphce1JMCZIxZ5nxZtkdy8IGCpoXZ2IfzSgodDcSwQemHZe_CCN_hEHrWzURh9mCdftjsPeWe7Cp0PDfnYP2CVQ7w8ZD1T7uvW"/>
+</div>
+</div>
+</section>
+</main>
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-8 pt-4 bg-[#0a0e17] z-50">
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60 hover:text-[#42e5b0] transition-colors cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-90 transition-transform" data-icon="dashboard">dashboard</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">Vault</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#252a34] text-[#00c896] rounded-2xl px-6 py-2 ring-1 ring-[#00c896]/20 shadow-[0_0_15px_rgba(0,200,150,0.15)] cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-90 transition-transform" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">Wallet</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60 hover:text-[#42e5b0] transition-colors cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-90 transition-transform" data-icon="local_gas_station">local_gas_station</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">Gas</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60 hover:text-[#42e5b0] transition-colors cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-90 transition-transform" data-icon="gavel">gavel</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">DAO</span>
+</div>
+</nav>
+</body></html>

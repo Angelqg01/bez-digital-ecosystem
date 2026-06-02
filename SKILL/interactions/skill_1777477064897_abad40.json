@@ -1,0 +1,19 @@
+{
+  "id": "skill_1777477064897_abad40",
+  "created_at": "2026-04-29T15:37:44.897Z",
+  "channel": "telegram",
+  "provider": "intent",
+  "intent": "platform_status",
+  "tags": [
+    "blockchain",
+    "help"
+  ],
+  "turn": {
+    "user": "Dime el estado de desarrollo de los contratos?",
+    "agent": "📊 **Estado de la Plataforma BeZhas**\n\n🔧 Runtime: 24 herramientas, 8 comandos\n⚡ Circuit Breakers: 0 abiertos de 0\n🛡️ Aegis: offline\n🤖 AI-Engine: offline\n📡 Canales activos: telegram"
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

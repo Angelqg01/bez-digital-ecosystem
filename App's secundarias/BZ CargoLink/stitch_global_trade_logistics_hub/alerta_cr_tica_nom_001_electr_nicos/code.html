@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Critical Alert - NOM-001</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface": "#051424",
+                      "on-secondary-container": "#00311f",
+                      "on-primary-fixed": "#0d1c32",
+                      "surface-tint": "#b9c7e4",
+                      "secondary-container": "#00a572",
+                      "tertiary": "#ffb95f",
+                      "on-tertiary-fixed": "#2a1700",
+                      "tertiary-fixed": "#ffddb8",
+                      "surface-container-low": "#0d1c2d",
+                      "surface-container-highest": "#273647",
+                      "on-primary-fixed-variant": "#39475f",
+                      "surface-bright": "#2c3a4c",
+                      "on-surface-variant": "#c5c6cd",
+                      "on-secondary": "#003824",
+                      "secondary-fixed": "#6ffbbe",
+                      "secondary": "#4edea3",
+                      "on-secondary-fixed": "#002113",
+                      "error": "#ffb4ab",
+                      "surface-container": "#122131",
+                      "on-primary": "#233148",
+                      "inverse-primary": "#515f78",
+                      "primary-fixed": "#d6e3ff",
+                      "inverse-on-surface": "#233143",
+                      "outline": "#8f9097",
+                      "secondary-fixed-dim": "#4edea3",
+                      "on-tertiary-fixed-variant": "#653e00",
+                      "error-container": "#93000a",
+                      "surface-container-high": "#1c2b3c",
+                      "outline-variant": "#44474d",
+                      "on-tertiary": "#472a00",
+                      "on-error-container": "#ffdad6",
+                      "on-background": "#d4e4fa",
+                      "on-error": "#690005",
+                      "surface-variant": "#273647",
+                      "on-secondary-fixed-variant": "#005236",
+                      "on-primary-container": "#74829d",
+                      "primary": "#b9c7e4",
+                      "on-surface": "#d4e4fa",
+                      "surface-dim": "#051424",
+                      "background": "#051424",
+                      "primary-container": "#0a192f",
+                      "tertiary-container": "#271500",
+                      "tertiary-fixed-dim": "#ffb95f",
+                      "inverse-surface": "#d4e4fa",
+                      "primary-fixed-dim": "#b9c7e4",
+                      "surface-container-lowest": "#010f1f",
+                      "on-tertiary-container": "#b67300"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "unit": "4px",
+                      "margin": "32px",
+                      "container-max": "1440px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-base": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-base": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: #020617; /* Void navy as per guidance */
+            color: #d4e4fa; /* text-on-surface */
+        }
+        .bg-surface-custom {
+             background-color: #0B1120; /* Surface navy as per guidance */
+        }
+        .border-subtle {
+            border-color: #1E293B;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-base text-body-base bg-background text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-6 py-4 sticky top-0 z-40 bg-[#0B1120] border-b border-[#1E293B] shadow-sm dark:shadow-none">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-emerald-400 cursor-pointer hover:bg-slate-800 p-1 rounded-sm transition-opacity" style="font-variation-settings: 'FILL' 0;">menu</span>
+<span class="font-inter text-lg font-black text-slate-100 uppercase tracking-tighter">LOGISTICS OS</span>
+</div>
+<div class="font-inter text-lg font-bold tracking-tight text-slate-100 hidden md:block">Operational Overview</div>
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center border border-subtle overflow-hidden">
+<img alt="User Profile" data-alt="A close-up corporate portrait of a logistics professional against a dark, tech-focused background. The lighting is dramatic and directional, highlighting the face. The overall aesthetic is serious, professional, and aligns with a dark-mode industrial software UI, using deep blues and subtle highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhmi1LjG16gG6CL4xCV27hBQ_D2Td7MenglxseMhotj9EhxHJ9BZo_2DQaOAd4O6G85zPeWUA8yGdQEyI2YAoY1IdLRC6GobHSIol_AZfi21EyQRP58PcbUkfHG2W6yrFZwOiJOfVw6zvf-B8WW7sDWQcPGipAVKjn01Wx5lZeOfTJDzm2dnI1ZJosjJjkpTVzjgw-82S--eBTEHk2CX0aA8Hj4y3G8N19n3WeTBCi02lV17G-dN4Po5_gSUkzwREgX7nzKB7Swy2x"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- NavigationDrawer -->
+<nav class="hidden lg:flex flex-col fixed left-0 top-0 h-full py-8 w-64 border-r border-[#1E293B] bg-[#020617] mt-[73px] z-30">
+<div class="px-6 mb-8 hidden">
+<span class="font-inter tracking-tighter text-xl font-black text-slate-100 uppercase">LOGISTICS OS</span>
+</div>
+<div class="flex flex-col gap-2 px-4">
+<a class="flex items-center gap-3 px-4 py-3 rounded-sm text-slate-400 font-medium hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">hub</span>
+<span class="font-inter tracking-tight text-sm font-semibold uppercase">Network</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-sm text-emerald-400 border-l-2 border-emerald-500 bg-emerald-500/5 font-bold ring-inset ring-1 ring-emerald-500/20" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">gavel</span>
+<span class="font-inter tracking-tight text-sm font-semibold uppercase">Customs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-sm text-slate-400 font-medium hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">local_shipping</span>
+<span class="font-inter tracking-tight text-sm font-semibold uppercase">Logistics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-sm text-slate-400 font-medium hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">qr_code_scanner</span>
+<span class="font-inter tracking-tight text-sm font-semibold uppercase">Terminal</span>
+</a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-1 lg:ml-64 p-margin overflow-y-auto">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-gutter">
+<!-- Critical Alert Banner -->
+<div class="bg-error-container/20 border border-error/50 rounded-DEFAULT p-6 flex items-start gap-4 shadow-[0_0_15px_rgba(255,180,171,0.1)]">
+<span class="material-symbols-outlined text-error text-4xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div class="flex-1">
+<h1 class="font-headline-md text-headline-md text-error mb-2">CRITICAL COMPLIANCE FAILURE</h1>
+<p class="font-body-base text-body-base text-on-surface-variant">Rule ID: <span class="font-data-mono text-data-mono text-on-surface font-bold bg-surface-container px-2 py-1 rounded-DEFAULT border border-subtle">NOM-001-SCFI-2018</span></p>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Incident Summary (Col span 2) -->
+<div class="lg:col-span-2 bg-surface-custom border border-subtle rounded-DEFAULT flex flex-col relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-error"></div>
+<div class="p-6 border-b border-subtle">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant uppercase">Incident Summary</h2>
+</div>
+<div class="p-6 flex-1 flex flex-col gap-4">
+<p class="font-body-base text-body-base text-on-surface">
+                                A mandatory electronic equipment safety certificate is <strong class="text-error">missing or expired</strong> for a high-value shipment of consumer electronics.
+                            </p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                                Under Mexican Official Standard NOM-001-SCFI-2018, all electronic devices operating on AC power must hold a valid safety certification prior to import clearance. Failure to provide this documentation will result in immediate customs hold, potential fines, and storage fees at the port of entry.
+                            </p>
+<div class="mt-auto pt-6 border-t border-subtle grid grid-cols-2 gap-4">
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase">Affected SKUs</span>
+<span class="font-data-mono text-data-mono text-on-surface">14 Items (Mixed Electronics)</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase">Est. Value at Risk</span>
+<span class="font-data-mono text-data-mono text-on-surface">$1.2M USD</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action & Countdown (Col span 1) -->
+<div class="lg:col-span-1 flex flex-col gap-gutter">
+<!-- Countdown Card -->
+<div class="bg-surface-custom border border-error/30 rounded-DEFAULT p-6 flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 bg-error/5 z-0"></div>
+<div class="relative z-10 text-center w-full">
+<h3 class="font-label-caps text-label-caps text-error mb-4 uppercase tracking-widest">Time to Customs Hold</h3>
+<div class="font-display-lg text-display-lg text-on-surface mb-6 flex items-baseline justify-center gap-2">
+<span>2<span class="text-xl text-on-surface-variant ml-1 font-body-base">h</span></span>
+<span>45<span class="text-xl text-on-surface-variant ml-1 font-body-base">m</span></span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full h-2 bg-surface-container rounded-full overflow-hidden border border-subtle">
+<div class="h-full bg-gradient-to-r from-tertiary to-error w-[80%]"></div>
+</div>
+<div class="w-full flex justify-between mt-2 font-data-mono text-data-mono text-xs text-on-surface-variant">
+<span>ETA: 4h</span>
+<span>Hold Imminent</span>
+</div>
+</div>
+</div>
+<!-- Action Card -->
+<div class="bg-surface-custom border border-subtle rounded-DEFAULT p-6 flex flex-col gap-4">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Required Action</h3>
+<button class="w-full bg-secondary hover:bg-secondary-fixed text-on-secondary font-body-sm font-semibold py-3 px-4 rounded-DEFAULT transition-colors flex items-center justify-center gap-2 border border-secondary shadow-[0_2px_10px_rgba(78,222,163,0.1)]">
+<span class="material-symbols-outlined text-sm">upload_file</span>
+                                Upload Safety Certificate
+                            </button>
+<button class="w-full bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm font-semibold py-3 px-4 rounded-DEFAULT transition-colors flex items-center justify-center gap-2 border border-subtle">
+<span class="material-symbols-outlined text-sm">support_agent</span>
+                                Contact Compliance Expert
+                            </button>
+</div>
+</div>
+</div>
+<!-- Contextual Details -->
+<div class="bg-surface-custom border border-subtle rounded-DEFAULT overflow-hidden">
+<div class="p-4 border-b border-subtle bg-surface-container-low flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">route</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Shipment Context</span>
+</div>
+<span class="bg-tertiary/20 text-tertiary px-2 py-1 rounded-DEFAULT font-label-caps text-[10px] border border-tertiary/30">IN TRANSIT</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#1E293B]">
+<div class="p-6">
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-2 uppercase">Tracking ID</span>
+<div class="font-data-mono text-data-mono text-on-surface flex items-center gap-2">
+                                SHP-9921-MX
+                                <span class="material-symbols-outlined text-on-surface-variant text-sm cursor-pointer hover:text-primary">content_copy</span>
+</div>
+</div>
+<div class="p-6">
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-2 uppercase">Route</span>
+<div class="flex items-center gap-3">
+<span class="font-body-base text-body-base font-semibold text-on-surface">Shenzhen</span>
+<div class="flex-1 h-px bg-subtle relative">
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-on-surface-variant bg-surface-custom px-1">
+<span class="material-symbols-outlined text-sm">flight_takeoff</span>
+</div>
+<div class="h-px bg-outline-variant w-full"></div>
+</div>
+<span class="font-body-base text-body-base font-semibold text-on-surface">Manzanillo</span>
+</div>
+</div>
+<div class="p-6">
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-2 uppercase">Carrier / Vessel</span>
+<div class="font-body-base text-body-base text-on-surface">
+                                Pacific Logistics Group
+                                <span class="block text-sm text-on-surface-variant mt-1 font-data-mono">Vessel: OOCL ATLANTA (V.092E)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed lg:hidden bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-[#0B1120] border-t border-[#1E293B] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-widest">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-emerald-400 bg-emerald-900/20 rounded-sm py-1 px-3 scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">description</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-widest">Customs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">route</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-widest">Transport</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">center_focus_strong</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-widest">Scan</span>
+</a>
+</nav>
+</body></html>

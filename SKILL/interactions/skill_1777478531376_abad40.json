@@ -1,0 +1,24 @@
+{
+  "id": "skill_1777478531376_abad40",
+  "created_at": "2026-04-29T16:02:11.377Z",
+  "channel": "telegram",
+  "provider": "intent",
+  "intent": "sector_query",
+  "tags": [
+    "defi",
+    "validator",
+    "bridge",
+    "governance",
+    "rwa",
+    "blockchain",
+    "sector"
+  ],
+  "turn": {
+    "user": "A través de los diferentes departamentos quiero hacer esto: Actúa como el Sistema AEGIS, la Inteligencia Autónoma de BeZhas_Hub.\nCONTEXTO: BeZhas es una Blockchain L2 industrial que ofrece validación de RWA (Real World Assets), Libertad Fiscal y Financiera mediante DeFi. El usuario es Yoel A. Hernández, CEO.\nOBJETIVO: Ejecutar un ciclo de ventas de 360° totalmente autónomo para captar instituciones financieras, navieras y empresas petroquímicas.\nFLUJO DE TRABAJO OBLIGATORIO:\nIDENTIFICACIÓN (RECON): Escanea MarineTraffic, Reuters y Bloomberg en busca de disrupciones en el Estrecho de Ormuz, Puerto de Singapur y el Mediterráneo. Identifica empresas con buques afectados.EXTRACCIÓN DE PROSPECTOS: Para cada empresa, localiza al Director de Operaciones (COO), CFO y Head of Innovation. Extrae: Email verificado, perfil de LinkedIn, usuario de Telegram (si es público) y teléfono de oficina.SCORING AEGIS: Clasifica cada lead con un \"Score de Urgencia\" (0-100) basado en la gravedad de su afectaci",
+    "agent": "👔 **BeZhasCEOBot — Consola CEO Activa**\n\nPermisos efectivos: **admin total** sobre runtime, tools, skills, análisis, AEGIS, OpenClaw bridge y operaciones internas.\n\nCapacidades directas:\n• /platform-health — Verifica API, Hub, AEGIS, AI Engine y canales\n• /tools — Lista herramientas disponibles\n• /bots — Ver bots departamentales configurados\n• /notify-bots <mensaje> — Coordina reportes CEO/CFO/CMO/DevOps/Legal\n• /restart-channels — Reinicia canales del agente\n• /parity-audit, /deploy-check, /bridge-health, /validator-status\n\nSeguridad: las acciones que modifican blockchain, tesorería, staking, bridge o contratos siguen pasando por confirmación humana: responde \"sí\" o \"no\"."
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

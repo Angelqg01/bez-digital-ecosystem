@@ -1,0 +1,138 @@
+{
+  "version": "2026-05-08",
+  "source_docs": [
+    "D:\\BeZhas-Blockchain\\docs\\Presentacion_Workflow_BeZhas_Blockchain_2026.md",
+    "D:\\BeZhas-Blockchain\\docs\\PROMPT_BASE_AUTOMATIZACIONES_BEZHAS_KB.md",
+    "D:\\BeZhas-Blockchain\\docs\\commercial-ops\\CAPTACION_CLIENTES_EMPRESARIALES_V3.md"
+  ],
+  "rules": [
+    {
+      "id": "bounce_hard",
+      "match_any": [
+        "undeliverable",
+        "delivery status notification",
+        "recipient address rejected",
+        "550 5.1.1",
+        "mailbox unavailable",
+        "recipient unknown"
+      ],
+      "classification": "bounce",
+      "lead_state": "bounce",
+      "requires_action": true,
+      "actions": [
+        "archive_thread",
+        "tag_discarded_bounce",
+        "fill_motivo_bounce",
+        "clear_proxima_accion",
+        "suppress_email"
+      ]
+    },
+    {
+      "id": "positive_direct",
+      "match_any": [
+        "happy to",
+        "available",
+        "let's talk",
+        "lets talk",
+        "can discuss",
+        "interested",
+        "works for me",
+        "can we schedule"
+      ],
+      "classification": "positive",
+      "lead_state": "positive",
+      "requires_action": true,
+      "actions": [
+        "create_reply_task",
+        "propose_10min_call",
+        "prepare_internal_brief"
+      ]
+    },
+    {
+      "id": "soft_positive",
+      "match_any": [
+        "send more info",
+        "more information",
+        "who should review this",
+        "please use form",
+        "contact x",
+        "forward this",
+        "share deck"
+      ],
+      "classification": "soft_positive",
+      "lead_state": "objection",
+      "requires_action": true,
+      "actions": [
+        "create_manual_followup",
+        "identify_new_contact_or_channel",
+        "draft_contextual_response"
+      ]
+    },
+    {
+      "id": "objection_tech",
+      "match_any": [
+        "integration",
+        "api",
+        "resources",
+        "security",
+        "implementation",
+        "technical review",
+        "architecture"
+      ],
+      "classification": "objection_tech",
+      "lead_state": "objection",
+      "requires_action": true,
+      "actions": [
+        "draft_technical_response",
+        "include_minimum_integration_scope",
+        "offer_10min_call"
+      ]
+    },
+    {
+      "id": "objection_budget",
+      "match_any": [
+        "budget",
+        "priority",
+        "timing",
+        "not now",
+        "this quarter",
+        "next year"
+      ],
+      "classification": "objection_budget",
+      "lead_state": "objection",
+      "requires_action": true,
+      "actions": [
+        "register_budget_or_timing_objection",
+        "set_reactivation_date",
+        "draft_low_friction_followup"
+      ]
+    },
+    {
+      "id": "lost_explicit",
+      "match_any": [
+        "not interested",
+        "no encaja",
+        "remove me",
+        "unsubscribe",
+        "stop contacting",
+        "do not contact"
+      ],
+      "classification": "lost",
+      "lead_state": "lost",
+      "requires_action": true,
+      "actions": [
+        "register_loss_reason",
+        "stop_sequence",
+        "set_reactivation_optional_180d"
+      ]
+    }
+  ],
+  "fallback": {
+    "classification": "manual_review",
+    "lead_state": "contacted",
+    "requires_action": true,
+    "actions": [
+      "queue_manual_triage"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "skill_1777477635264_c7ee70",
+  "created_at": "2026-04-29T15:47:15.264Z",
+  "channel": "hub-chat",
+  "provider": "intent",
+  "intent": "command",
+  "tags": [
+    "defi",
+    "validator",
+    "bridge",
+    "blockchain",
+    "sector"
+  ],
+  "turn": {
+    "user": "/ceo",
+    "agent": "👔 **BeZhasCEOBot — Consola CEO Activa**\n\nPermisos efectivos: **admin total** sobre runtime, tools, skills, análisis, AEGIS, OpenClaw bridge y operaciones internas.\n\nCapacidades directas:\n• /platform-health — Verifica API, Hub, AEGIS, AI Engine y canales\n• /tools — Lista herramientas disponibles\n• /bots — Ver bots departamentales configurados\n• /notify-bots <mensaje> — Coordina reportes CEO/CFO/CMO/DevOps/Legal\n• /restart-channels — Reinicia canales del agente\n• /parity-audit, /deploy-check, /bridge-health, /validator-status\n\nSeguridad: las acciones que modifican blockchain, tesorería, staking, bridge o contratos siguen pasando por confirmación humana: responde \"sí\" o \"no\"."
+  },
+  "context": {
+    "userId": "web-chat",
+    "role": "admin"
+  }
+}

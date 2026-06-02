@@ -1,0 +1,72 @@
+{
+    "name": "defi-plugin",
+    "version": "1.0.0",
+    "sector": "finance",
+    "description": "DeFi sector tools: staking analytics, farming yields, liquidity pool monitoring",
+    "enabled": true,
+    "tools": [
+        {
+            "name": "staking-info",
+            "description": "Query StakingPool contract state: total staked, APY, user positions",
+            "permissions": [
+                "runtime:read",
+                "sector:finance:read"
+            ],
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "user_address": {
+                        "type": "string"
+                    },
+                    "include_rewards": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                }
+            },
+            "timeoutMs": 10000
+        },
+        {
+            "name": "farming-yields",
+            "description": "Query LiquidityFarming contract for current pool yields and TVL",
+            "permissions": [
+                "runtime:read",
+                "sector:finance:read"
+            ],
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "pool_id": {
+                        "type": "number"
+                    }
+                }
+            },
+            "timeoutMs": 10000
+        }
+    ],
+    "commands": [
+        {
+            "name": "staking-info",
+            "description": "Check staking pool status",
+            "toolName": "finance:staking-info",
+            "aliases": [
+                "si",
+                "stake"
+            ]
+        }
+    ],
+    "contracts": [
+        {
+            "name": "StakingPool",
+            "critical": true
+        },
+        {
+            "name": "LiquidityFarming",
+            "critical": true
+        },
+        {
+            "name": "BEZCoinV2",
+            "critical": true
+        }
+    ]
+}

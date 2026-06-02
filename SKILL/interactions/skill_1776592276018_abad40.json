@@ -1,0 +1,25 @@
+{
+  "id": "skill_1776592276018_abad40",
+  "created_at": "2026-04-19T09:51:16.018Z",
+  "channel": "telegram",
+  "provider": "intent",
+  "intent": "help",
+  "tags": [
+    "gas",
+    "defi",
+    "fraud",
+    "validator",
+    "bridge",
+    "blockchain",
+    "sector",
+    "help"
+  ],
+  "turn": {
+    "user": "Dime qué capacidad tienes para hacer y como puede ayudarme con la gestión de la plataforma?",
+    "agent": "🤖 **BeZhas AI Agent — Comandos**\n\n**Plataforma:**\n/status — Estado completo de la plataforma\n/health — Salud del Runtime\n/tools — Herramientas disponibles\n\n**Blockchain:**\n/bridge-health — Estado del puente L2↔Polygon\n/validator-status — Estado de validadores\n/deploy-check — Verificar despliegue\n/parity-audit — Auditoría SDK/Contratos\n\n**IA & Análisis:**\n\"analiza gas\" — Predicción de costes de gas\n\"detectar fraude\" — Evaluación de riesgo\n\"sentimiento [texto]\" — Análisis de sentimiento\n\"estado validadores\" — Monitoreo de validadores\n\n**Sectores:**\n/incident [desc] — Reportar incidente\n\"sector logística\" — Consultar sector\n\n**DeFi:**\n\"swap 100 BEZ a ETH\" — Cálculo de swap\n\"demanda logística\" — Predicción de demanda\n\n**Memoria:**\n/memory — Estado de tu memoria conversacional\n/history — Ver últimos 10 mensajes\n/clear — Borrar historial de conversación\n"
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "operator"
+  }
+}

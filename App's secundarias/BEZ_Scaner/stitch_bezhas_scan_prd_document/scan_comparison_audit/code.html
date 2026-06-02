@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .fill-icon { font-variation-settings: 'FILL' 1; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden pb-20">
+<!-- Header -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10 border-b border-primary/10">
+<div class="text-slate-900 dark:text-white flex size-12 shrink-0 items-center">
+<span class="material-symbols-outlined cursor-pointer">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Scan Comparison Audit</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="flex cursor-pointer items-center justify-center rounded-xl h-12 bg-transparent text-slate-900 dark:text-white p-0">
+<span class="material-symbols-outlined">share</span>
+</button>
+</div>
+</div>
+<!-- Tabs -->
+<div class="pb-3 px-4">
+<div class="flex border-b border-primary/10 justify-between">
+<a class="flex flex-col items-center justify-center border-b-[3px] border-primary text-primary pb-[13px] pt-4 flex-1" href="#">
+<p class="text-sm font-bold leading-normal tracking-[0.015em]">Split View</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-[13px] pt-4 flex-1" href="#">
+<p class="text-sm font-bold leading-normal tracking-[0.015em]">Overlay Mode</p>
+</a>
+</div>
+</div>
+<!-- 3D Viewers -->
+<div class="grid grid-cols-2 gap-3 p-4">
+<div class="relative group">
+<div class="bg-slate-200 dark:bg-slate-800 flex flex-col gap-3 rounded-xl justify-end p-4 aspect-[3/4] overflow-hidden border border-primary/20 bg-cover bg-center" data-alt="3D model scan of a mechanical part from December 12" style="background-image: linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%), url('https://lh3.googleusercontent.com/aida-public/AB6AXuDFpT-VOVftpdhVQJputSvWCK9Cs6HMPyF8lTw6P7aOMdntpoqzdL2N8e1OQRnk0LXogWcaYNDM2pNCTcku59ieqltr2nDc8WqCKLXPXAYmRkY0L01kgFgqNh3HM19ymHddnHRpctCZjuXcnbwZrKX1cl7rTxBi7SKrLa5Za_eYwVYtuiuSqVlz2Rfm9jDEpqVtgyrjVum5DP9pMXYxvmUaGu9rW_vo7mnig9nPmgiz79JfgZvyi1Gp8WUDGfXghwRiRSR2aPDqeGIM')">
+<div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
+<p class="text-white text-[10px] font-bold uppercase tracking-wider">Origin</p>
+</div>
+<p class="text-white text-xs font-bold leading-tight">Dec 12, 2023</p>
+</div>
+</div>
+<div class="relative group">
+<div class="bg-slate-200 dark:bg-slate-800 flex flex-col gap-3 rounded-xl justify-end p-4 aspect-[3/4] overflow-hidden border border-primary/20 bg-cover bg-center" data-alt="3D model scan of the same mechanical part from December 28 showing minor wear" style="background-image: linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%), url('https://lh3.googleusercontent.com/aida-public/AB6AXuBHAH5erA88O-nRFtJ12bp-L_OgfEfMgApyTAa7V_UmKH9qKP1PEcSWafDz91tJY8l3eC8xKiljFDeP7aiMwaFuy4D-wUmrEwpuRA3NK6S-pXUwQ0VRHn7XL8bVNk6Knhc9E9qxwQvKu8kOIteEELIcCTrz6O2rEO09DD1GgqdtUopdizM_AvHbFFJ-Mh96XShtRetj5DvqONAJs1njm_02vfg3SbyRhxW-Q_JVVVW4lzV__adv0tU4x3O52NUnRJggWsNPrIE2XCPH')">
+<div class="absolute top-2 left-2 bg-primary px-2 py-1 rounded-md">
+<p class="text-white text-[10px] font-bold uppercase tracking-wider">Destination</p>
+</div>
+<p class="text-white text-xs font-bold leading-tight">Dec 28, 2023</p>
+</div>
+</div>
+</div>
+<!-- Sync Controls -->
+<div class="flex justify-center gap-6 px-4 py-2 mb-4">
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-3 rounded-full bg-primary/10 text-primary group-active:bg-primary group-active:text-white transition-colors">
+<span class="material-symbols-outlined">sync_lock</span>
+</div>
+<span class="text-[10px] font-bold uppercase text-slate-500">Lock Rotation</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-3 rounded-full bg-primary/10 text-primary group-active:bg-primary group-active:text-white transition-colors">
+<span class="material-symbols-outlined">layers</span>
+</div>
+<span class="text-[10px] font-bold uppercase text-slate-500">Diff Overlay</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-3 rounded-full bg-primary/10 text-primary group-active:bg-primary group-active:text-white transition-colors">
+<span class="material-symbols-outlined">view_in_ar</span>
+</div>
+<span class="text-[10px] font-bold uppercase text-slate-500">3D Ruler</span>
+</button>
+</div>
+<!-- AI Analysis Section -->
+<div class="px-4 space-y-4">
+<div class="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-primary/10">
+<div class="flex items-center justify-between mb-3">
+<h3 class="font-bold text-sm uppercase tracking-wider text-slate-400">AI Analysis Delta</h3>
+<span class="px-2 py-1 bg-red-500/10 text-red-500 text-[10px] font-bold rounded">ATTENTION REQUIRED</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-2 rounded-lg bg-primary/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">texture</span>
+<span class="text-sm font-medium">Surface Scratches</span>
+</div>
+<span class="text-sm font-bold text-red-500">+12% detected</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-primary/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">precision_manufacturing</span>
+<span class="text-sm font-medium">Structural Deformation</span>
+</div>
+<span class="text-sm font-bold text-primary">0.02mm variance</span>
+</div>
+</div>
+</div>
+<!-- Blockchain Verification -->
+<div class="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-primary/10">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-green-500 text-sm fill-icon">verified</span>
+<h3 class="font-bold text-sm uppercase tracking-wider text-slate-400">Blockchain Integrity</h3>
+</div>
+<span class="text-[10px] font-mono text-slate-500">Polygon Mainnet</span>
+</div>
+<div class="space-y-3 font-mono text-[10px]">
+<div class="flex flex-col gap-1 p-2 bg-slate-100 dark:bg-slate-800 rounded">
+<span class="text-slate-500">ORIGIN CID:</span>
+<span class="truncate text-primary">QmXoyp...7VfWbV1jG7VfWbV1jG7VfWbV1jG</span>
+</div>
+<div class="flex flex-col gap-1 p-2 bg-slate-100 dark:bg-slate-800 rounded">
+<span class="text-slate-500">DESTINATION CID:</span>
+<span class="truncate text-primary">z6MkhS...2Lp7VfWbV1jG7VfWbV1jG7Vf</span>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between border-t border-primary/10 pt-4">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-500 uppercase font-bold">Audit Status</span>
+<span class="text-sm font-bold text-orange-500">CLAIM REQUIRED</span>
+</div>
+<button class="bg-primary text-white px-6 py-2 rounded-lg font-bold text-sm">Initiate Report</button>
+</div>
+</div>
+</div>
+<!-- Navigation Bar -->
+<div class="fixed bottom-0 left-0 right-0 z-20 flex border-t border-primary/10 bg-background-light dark:bg-background-dark px-4 pb-6 pt-2">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">document_scanner</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Scans</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-icon">compare_arrows</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Compare</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Vault</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">person</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Profile</p>
+</a>
+</div>
+</div>
+<script>
+        // Toggle dark mode based on preference or system settings if needed
+        // document.documentElement.classList.add('dark');
+    </script>
+</body></html>

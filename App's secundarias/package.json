@@ -1,0 +1,44 @@
+{
+  "name": "bezhas-ecosystem",
+  "private": true,
+  "version": "3.0.0",
+  "description": "BeZhas Industrial Blockchain Ecosystem — Monorepo",
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:wallet": "turbo dev --filter=bez-wallet",
+    "dev:gas": "turbo dev --filter=gas-tank-manager",
+    "dev:nodes": "turbo dev --filter=edge-node-manager",
+    "dev:vision": "turbo dev --filter=bez-vision-scan",
+    "dev:capital": "turbo dev --filter=bezhas-defi-frontend",
+    "dev:prestige": "turbo dev --filter=bz-prestige",
+    "dev:cargo": "turbo dev --filter=bz-cargolink",
+    "dev:hub": "turbo dev --filter=bezhas-hub",
+    "dev:all": "turbo dev --parallel",
+    "build": "turbo build",
+    "build:sdk": "turbo build --filter=@bezhas/platform-sdk --filter=@bezhas/ui-components --filter=@bezhas/contracts",
+    "build:apps": "turbo build --filter=bez-wallet --filter=gas-tank-manager --filter=edge-node-manager --filter=bez-vision-scan --filter=bezhas-defi-frontend --filter=bz-prestige --filter=bz-cargolink",
+    "lint": "turbo lint",
+    "type-check": "turbo type-check",
+    "clean": "turbo clean && rimraf node_modules",
+    "gateway:dev": "node packages/api-gateway/src/server.js",
+    "gateway:start": "node packages/api-gateway/src/server.js",
+    "docker:up": "docker compose -f docker-compose.dev.yml up -d",
+    "docker:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f",
+    "setup": "pnpm install && pnpm build:sdk",
+    "hub:migration:check": "node hub-control-plane-migration/scripts/check-connections.mjs",
+    "hub:migration:summary": "node hub-control-plane-migration/scripts/print-summary.mjs",
+    "hub:migration:smoke": "node hub-control-plane-migration/scripts/smoke-ecosystem-connections.mjs",
+    "postinstall": "echo '✅ BeZhas Ecosystem ready — run pnpm dev:all to start'"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.0",
+    "turbo": "^2.5.0",
+    "typescript": "5.6.3"
+  }
+}

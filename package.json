@@ -1,0 +1,37 @@
+{
+  "type": "module",
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=11"
+  },
+  "scripts": {
+    "preinstall": "pnpm dlx only-allow pnpm",
+    "linkedin:oauth:url": "node scripts/linkedin-oauth-url.js",
+    "linkedin:oauth:exchange": "node scripts/linkedin-exchange-token.js",
+    "linkedin:oauth:exchange:write": "node scripts/linkedin-exchange-token.js --write-env",
+    "linkedin:prospecting": "node scripts/linkedin-prospecting-runner.js --mode prospecting",
+    "linkedin:messages": "node scripts/linkedin-prospecting-runner.js --mode messages",
+    "generate:subapp-credentials": "node scripts/generate_subapp_credentials.js",
+    "security:scan-secrets": "node scripts/security/scan-secrets.cjs",
+    "audit:production": "node scripts/production-readiness-audit.cjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "axios": "^1.15.2",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.1",
+    "node-fetch": "^3.3.2",
+    "node-telegram-bot-api": "^0.67.0",
+    "redis": "^5.12.1",
+    "ws": "^8.20.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.98.0"
+  }
+}

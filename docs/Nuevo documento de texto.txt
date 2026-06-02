@@ -1,0 +1,3 @@
+2. El Sistema DePIN (Minería B2B): EdgeNodeRewards.sol
+Este es el contrato que hace que tu modelo de negocio sea viral. Cuando una empresa instala tu software (el BeZhas Edge Node), este contrato rastrea su trabajo y les paga en BEZ-Coin.
+Crea este archivo en smart-contracts/src/depin/EdgeNodeRewards.sol:

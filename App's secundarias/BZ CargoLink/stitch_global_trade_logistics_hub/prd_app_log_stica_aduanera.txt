@@ -1,0 +1,31 @@
+# Especificaciones de la App Logística y Aduanera Global (SaaS)
+
+## Resumen del Proyecto
+Plataforma digital basada en la nube diseñada para integrar, automatizar y digitalizar el flujo internacional de mercancías, conectando a todos los actores logísticos en tiempo real.
+
+## Actores del Ecosistema
+1. **Empresas (Importadores/Exportadores):** Inician órdenes y rastrean mercancía.
+2. **Agentes de Aduana:** Clasificación arancelaria y gestión de trámites fiscales.
+3. **Transitarios (Freight Forwarders):** Coordinación multimodal y reserva de espacios.
+4. **Transportistas:** Ejecución de ruta y captura de pruebas de entrega (ePOD).
+5. **Autoridades Aduaneras:** Recepción de declaraciones electrónicas.
+6. **Almacenes:** Gestión de inventarios y cross-docking.
+
+## Funcionalidades Clave
+- **Panel de Control Centralizado:** Integración de datos de navieras, aerolíneas y aduanas.
+- **Gestión Aduanera:** Automatización de aranceles y declaraciones.
+- **TMS (Transport Management System):** Optimización de rutas y gestión de Bill of Lading.
+- **Visibilidad Real-Time:** Rastreo mediante GPS e IoT.
+- **Cumplimiento Normativo:** Actualización automática de regulaciones comerciales.
+- **Gestión Documental:** Almacenamiento seguro de facturas y certificados.
+
+## Proceso Operativo
+1. **Recogida:** Escaneo QR/barras y actualización de estado.
+2. **Envío:** Trazabilidad GPS y gestión de aduanas digital.
+3. **Entrega (Last Mile):** Prueba de entrega digital (firma/foto).
+
+## Modelo de Negocio
+- Comisión por envío.
+- Suscripción SaaS para comercios.
+- Monetización de datos agregados.
+- Honorarios por despacho aduanal.

@@ -1,0 +1,27 @@
+{
+  "l1StartingBlockTag": "latest",
+  "l1ChainID": 1, 
+  "l2ChainID": 2708, 
+  "l2BlockTime": 2, 
+  "maxSequencerDrift": 600,
+  "sequencerWindowSize": 3600,
+  "channelTimeout": 300,
+  
+  "gasPriceOracleOverhead": 2100,
+  "gasPriceOracleScalar": 1000000,
+  
+  "fundDevAccounts": true,
+  "l2OutputOracleSubmissionInterval": 120,
+  "l2OutputOracleStartingTimestamp": 0,
+  
+  "systemConfigStartBlock": 0,
+  "batchInboxAddress": "0xff00000000000000000000000000000000002708",
+  "batchSenderAddress": "TU_WALLET_BATCHER_AMERICA",
+  "p2pSequencerAddress": "TU_WALLET_SECUENCIADOR_EUROPA",
+  "proposerAddress": "TU_WALLET_PROPOSER_AMERICA",
+  
+  "proxyAdminOwner": "0x3EfC42095E8503d41Ad8001328FC23388E00e8a3", 
+  
+  "useCustomGasToken": true,
+  "customGasTokenAddress": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8" 
+}

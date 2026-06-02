@@ -1,0 +1,194 @@
+# ─────────────────────────────────────────────────────
+#  BeZhas Production Compose
+#  Extends base docker-compose.yml with:
+#    - Nginx reverse proxy (TLS)
+#    - Resource limits
+#    - Restart policies
+#    - Log rotation
+#    - No exposed internal ports
+#
+#  Usage:
+#    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#    docker compose -f monitoring/docker-compose.monitoring.yml up -d
+# ─────────────────────────────────────────────────────
+
+services:
+
+  # ── Nginx (public edge) ────────────────────────────
+  nginx:
+    build: ./nginx
+    container_name: bezhas-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      control-center:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Overrides for base services ────────────────────
+
+  postgres:
+    ports: !override []
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    ports: !override []
+    restart: always
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    ports: !override []
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET}
+      - AEGIS_API_URL=http://aegis:8001/api/aegis
+      - BEZHAS_L2_RPC_URL=http://bezhas-geth:8545
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  aegis:
+    ports: !override []
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  ai-gateway:
+    ports: !override []
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  bezhas-edge-node:
+    ports: !override []
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  control-center:
+    ports: !override []
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=/api
+      - NEXT_PUBLIC_RPC_URL=http://bezhas-geth:8545
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  bezhas-geth:
+    ports: !override []
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  bezhas-node:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2G
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  bezhas-batcher:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

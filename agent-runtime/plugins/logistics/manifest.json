@@ -1,0 +1,73 @@
+{
+    "name": "logistics-plugin",
+    "version": "1.0.0",
+    "sector": "logistics",
+    "description": "Logistics sector tools: cargo tracking, quality escrow monitoring, NFT supply chain queries",
+    "enabled": true,
+    "tools": [
+        {
+            "name": "cargo-track",
+            "description": "Track cargo container status via logistics contracts and NFT metadata",
+            "permissions": [
+                "runtime:read",
+                "sector:logistics:read"
+            ],
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "container_id": {
+                        "type": "string"
+                    },
+                    "include_history": {
+                        "type": "boolean",
+                        "default": false
+                    }
+                },
+                "required": [
+                    "container_id"
+                ]
+            },
+            "timeoutMs": 10000
+        },
+        {
+            "name": "escrow-status",
+            "description": "Check QualityEscrow state for a given escrow ID",
+            "permissions": [
+                "runtime:read",
+                "sector:logistics:read"
+            ],
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "escrow_id": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "escrow_id"
+                ]
+            },
+            "timeoutMs": 8000
+        }
+    ],
+    "commands": [
+        {
+            "name": "cargo-track",
+            "description": "Track a cargo container",
+            "toolName": "logistics:cargo-track",
+            "aliases": [
+                "ct"
+            ]
+        }
+    ],
+    "contracts": [
+        {
+            "name": "BeZhasLogisticsNFT",
+            "critical": true
+        },
+        {
+            "name": "QualityEscrow",
+            "critical": true
+        }
+    ]
+}

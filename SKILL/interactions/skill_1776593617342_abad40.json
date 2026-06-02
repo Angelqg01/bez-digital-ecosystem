@@ -1,0 +1,19 @@
+{
+  "id": "skill_1776593617342_abad40",
+  "created_at": "2026-04-19T10:13:37.342Z",
+  "channel": "telegram",
+  "provider": "intent",
+  "intent": "gas_analysis",
+  "tags": [
+    "gas",
+    "nft"
+  ],
+  "turn": {
+    "user": "Calcula el costo de vender tokens BEZ-Coin al precio que está ahora en la plataforma BeZhas y cuanto ganaría por la venta del 50% del Token y la comisión que ganaría",
+    "agent": "Error al ejecutar mcp:analyze_gas_strategy: MCP call failed: "
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "operator"
+  }
+}

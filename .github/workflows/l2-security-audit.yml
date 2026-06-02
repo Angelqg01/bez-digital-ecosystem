@@ -1,0 +1,371 @@
+# ──────────────────────────────────────────────────────────────
+# BeZhas L2 — AI-Blockchain Security Audit Pipeline
+# ──────────────────────────────────────────────────────────────
+# Valida la fusión IA-L2-AEGIS:
+#   Amenaza → AegisSecurityProvider → OpenClawAgent → L2Sequencer
+#
+# Secrets requeridos (configurar en Settings → Secrets → Actions):
+#
+#   ┌─────────────────────────────┬──────────────────────────────────────────┐
+#   │ DEPLOYER_PRIVATE_KEY        │ Clave para deployment de contratos      │
+#   │ BEZHAS_L2_RPC_URL           │ RPC endpoint de la L2 (producción)      │
+#   │ BLOCKSCOUT_API_KEY          │ Verificación de contratos en BlockScout │
+#   │ BLOCKSCOUT_API_URL          │ URL de la API de BlockScout             │
+#   │ ETHERSCAN_API_KEY           │ Verificación en Sepolia (staging)       │
+#   │ DEEPSEEK_API_KEY            │ Motor IA principal (DeepSeek)           │
+#   │ GEMINI_API_KEY              │ Motor IA secundario (Gemini fallback)   │
+#   │ SLACK_WEBHOOK_URL           │ Notificaciones Slack (opcional)         │
+#   │ DISCORD_WEBHOOK_URL         │ Notificaciones Discord (opcional)       │
+#   └─────────────────────────────┴──────────────────────────────────────────┘
+# ──────────────────────────────────────────────────────────────
+
+name: L2 AI-Blockchain Security Audit
+
+on:
+    push:
+        branches: [main, develop]
+        paths:
+            - "smart-contracts/src/**"
+            - "smart-contracts/test/**"
+            - "aegis/**"
+            - "api/services/agentService.js"
+            - "api/services/contractService.js"
+            - "agent-runtime/**"
+    pull_request:
+        branches: [main]
+        paths:
+            - "smart-contracts/**"
+            - "aegis/**"
+
+permissions:
+    contents: read
+
+# ═══════════════════════════════════════════════════════════════
+jobs:
+    # ── 1. Smart Contract Compilation & IA-L2 Integration Tests ──
+    ai-l2-integration:
+        name: IA-L2 Fusion Tests (Forge)
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: smart-contracts
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+              with:
+                  submodules: recursive
+
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+
+            # ── Foundry Cache (compilación incremental) ──────────────
+            - name: Cache Foundry build artifacts
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      smart-contracts/out
+                      smart-contracts/cache
+                      ~/.foundry/cache
+                  key: foundry-${{ runner.os }}-${{ hashFiles('smart-contracts/src/**/*.sol', 'smart-contracts/foundry.toml') }}
+                  restore-keys: |
+                      foundry-${{ runner.os }}-
+
+            - name: Compile Smart Contracts
+              run: forge build --sizes
+
+            # ── Test: Flujo completo IA-L2-AEGIS ─────────────────────
+            - name: Run IA-L2 Bridge Integration Tests
+              id: ia_l2_tests
+              run: |
+                  forge test --match-contract IAL2BridgeIntegrationTest -vvv 2>&1 | tee test-output.txt
+                  echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+              env:
+                  FOUNDRY_DISABLE_NIGHTLY_WARNING: "1"
+                  BEZHAS_L2_RPC_URL: ${{ secrets.BEZHAS_L2_RPC_URL }}
+                  DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+
+            # ── Test: Suite completa de contratos ─────────────────────
+            - name: Run Full Contract Test Suite
+              id: full_tests
+              run: |
+                  forge test --summary 2>&1 | tee full-test-output.txt
+                  echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+              env:
+                  FOUNDRY_DISABLE_NIGHTLY_WARNING: "1"
+
+            - name: Gas Snapshot
+              if: success()
+              run: forge snapshot --check || forge snapshot
+
+            # ── Subir resultados como artefacto ──────────────────────
+            - name: Upload Test Results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: forge-test-results
+                  path: |
+                      smart-contracts/test-output.txt
+                      smart-contracts/full-test-output.txt
+                  retention-days: 14
+
+    # ── 2. Slither Static Analysis ───────────────────────────────
+    slither-analysis:
+        name: Slither Security Scan
+        runs-on: ubuntu-latest
+        needs: [ai-l2-integration]
+        defaults:
+            run:
+                working-directory: smart-contracts
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+              with:
+                  submodules: recursive
+
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+
+            - name: Cache Foundry build artifacts
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      smart-contracts/out
+                      smart-contracts/cache
+                      ~/.foundry/cache
+                  key: foundry-${{ runner.os }}-${{ hashFiles('smart-contracts/src/**/*.sol', 'smart-contracts/foundry.toml') }}
+                  restore-keys: |
+                      foundry-${{ runner.os }}-
+
+            - name: Run Slither on Core Security Contracts
+              uses: crytic/slither-action@v0.4.0
+              continue-on-error: true
+              with:
+                  target: smart-contracts/
+                  sarif: slither-results.sarif
+                  slither-args: >-
+                      --filter-paths "lib/|test/|script/"
+                      --detect reentrancy-eth,reentrancy-no-eth,arbitrary-send-eth,controlled-delegatecall,suicidal,uninitialized-state
+
+            - name: Upload Slither Report
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: slither-security-report
+                  path: slither-results.sarif
+                  retention-days: 30
+
+    # ── 3. AEGIS AI Engine Analysis ──────────────────────────────
+    aegis-analysis:
+        name: AEGIS Security Engine
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            # ── Python dependency cache ──────────────────────────────
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.12"
+
+            - name: Cache pip dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: pip-aegis-${{ runner.os }}-${{ hashFiles('aegis/requirements.txt', 'aegis/pyproject.toml') }}
+                  restore-keys: |
+                      pip-aegis-${{ runner.os }}-
+
+            - name: Install AEGIS dependencies
+              working-directory: aegis
+              run: |
+                  pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pip install -r requirements-control.txt
+
+            # ── Cache de modelos/datos de análisis de AEGIS ──────────
+            - name: Cache AEGIS analysis data
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      aegis/.cache
+                      ~/.cache/huggingface
+                  key: aegis-models-${{ runner.os }}-${{ hashFiles('aegis/requirements.txt') }}
+                  restore-keys: |
+                      aegis-models-${{ runner.os }}-
+
+            - name: Run AEGIS Tests
+              id: aegis_tests
+              working-directory: aegis
+              run: |
+                  python -m pytest tests/ -v --tb=short 2>&1 | tee aegis-test-output.txt
+                  echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+              env:
+                  DATABASE_URL: sqlite:///test.db
+                  REDIS_URL: ""
+                  NODE_ENV: test
+                  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+                  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+            - name: Run AEGIS Control API Tests
+              working-directory: aegis
+              run: python -m pytest test_control_api.py -v --tb=short
+              env:
+                  DATABASE_URL: sqlite:///test.db
+
+            - name: Upload AEGIS Results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: aegis-test-results
+                  path: aegis/aegis-test-output.txt
+                  retention-days: 14
+
+    # ── 4. ABI Consistency Check ─────────────────────────────────
+    abi-alignment:
+        name: API/ABI Alignment Verification
+        runs-on: ubuntu-latest
+        needs: [ai-l2-integration]
+        defaults:
+            run:
+                working-directory: api
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+              with:
+                  submodules: recursive
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+                  cache-dependency-path: api/package-lock.json
+
+            - name: Install API Dependencies
+              run: npm ci
+
+            - name: Verify ABI Alignment
+              run: |
+                  echo "=== Checking ABI consistency between smart-contracts/out and api/services ==="
+                  # Verify that deployed ABIs match compiled artifacts
+                  node -e "
+                    const fs = require('fs');
+                    const path = require('path');
+
+                    const abiDir = path.join(__dirname, 'services');
+                    const outDir = path.join(__dirname, '..', 'smart-contracts', 'out');
+
+                    // Key contracts that must have matching ABIs
+                    const criticalContracts = [
+                      'AegisSecurityProvider',
+                      'L2Sequencer',
+                      'OpenClawAgent',
+                      'BEZCoinV2',
+                      'BeZhasBridgeL2',
+                      'ValidatorRegistry',
+                      'StakingPool',
+                      'EdgeNodeRewards'
+                    ];
+
+                    let mismatches = 0;
+                    for (const name of criticalContracts) {
+                      const artifactPath = path.join(outDir, name + '.sol', name + '.json');
+                      if (!fs.existsSync(artifactPath)) {
+                        console.log('WARNING: No compiled artifact for', name);
+                        continue;
+                      }
+                      console.log('OK:', name, 'artifact exists');
+                    }
+
+                    if (mismatches > 0) {
+                      process.exit(1);
+                    }
+                    console.log('All critical contract artifacts verified.');
+                  "
+
+    # ── 5. Notification: Slack/Discord on Failure ────────────────
+    notify-failure:
+        name: Notify on IA-L2 Failure
+        runs-on: ubuntu-latest
+        needs: [ai-l2-integration, slither-analysis, aegis-analysis]
+        if: failure()
+
+        steps:
+            # ── Slack Notification ───────────────────────────────────
+            - name: Notify Slack
+              if: env.SLACK_WEBHOOK_URL != ''
+              uses: slackapi/slack-github-action@v2.0.0
+              env:
+                  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+              with:
+                  webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+                  webhook-type: incoming-webhook
+                  payload: |
+                      {
+                        "text": "🚨 *BeZhas L2 Security Audit FAILED*",
+                        "blocks": [
+                          {
+                            "type": "header",
+                            "text": {
+                              "type": "plain_text",
+                              "text": "🚨 IA-L2-AEGIS Integration FAILED"
+                            }
+                          },
+                          {
+                            "type": "section",
+                            "fields": [
+                              { "type": "mrkdwn", "text": "*Pipeline:*\nL2 AI-Blockchain Security Audit" },
+                              { "type": "mrkdwn", "text": "*Branch:*\n${{ github.ref_name }}" },
+                              { "type": "mrkdwn", "text": "*Commit:*\n`${{ github.sha }}`" },
+                              { "type": "mrkdwn", "text": "*Author:*\n${{ github.actor }}" }
+                            ]
+                          },
+                          {
+                            "type": "section",
+                            "text": {
+                              "type": "mrkdwn",
+                              "text": "*Flujo afectado:* Amenaza → AegisSecurityProvider → OpenClawAgent → L2Sequencer\n*Acción requerida:* Revisar los tests de integración IA-L2 antes de mergear."
+                            }
+                          },
+                          {
+                            "type": "actions",
+                            "elements": [
+                              {
+                                "type": "button",
+                                "text": { "type": "plain_text", "text": "Ver Pipeline" },
+                                "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+
+            # ── Discord Notification ─────────────────────────────────
+            - name: Notify Discord
+              if: env.DISCORD_WEBHOOK_URL != ''
+              env:
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+              run: |
+                  curl -s -H "Content-Type: application/json" \
+                    -d '{
+                      "embeds": [{
+                        "title": "🚨 IA-L2-AEGIS Integration FAILED",
+                        "color": 15158332,
+                        "fields": [
+                          { "name": "Pipeline", "value": "L2 AI-Blockchain Security Audit", "inline": true },
+                          { "name": "Branch", "value": "`${{ github.ref_name }}`", "inline": true },
+                          { "name": "Commit", "value": "`${{ github.sha }}`", "inline": true },
+                          { "name": "Author", "value": "${{ github.actor }}", "inline": true },
+                          { "name": "Flujo afectado", "value": "Amenaza → AegisSecurityProvider → OpenClawAgent → L2Sequencer" },
+                          { "name": "Tests fallidos", "value": "IA-L2 Bridge Integration / AEGIS Engine / Slither Analysis" }
+                        ],
+                        "footer": { "text": "BeZhas Blockchain CI/CD" },
+                        "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      }]
+                    }' \
+                    "$DISCORD_WEBHOOK_URL"

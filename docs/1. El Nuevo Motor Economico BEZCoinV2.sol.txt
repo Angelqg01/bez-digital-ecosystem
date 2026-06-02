@@ -1,0 +1,3 @@
+1. El Nuevo Motor Económico: BEZCoinV2.sol
+Este no es un token cualquiera. Le hemos inyectado ERC20Permit. Esta es la pieza clave para el mundo B2B: permite a las empresas firmar transacciones ("Permits") y usar Account Abstraction para que no tengan que pagar gas por aprobar tokens, eliminando la fricción de la Web3.
+Crea este archivo en tu monorepo en smart-contracts/src/tokens/BEZCoinV2.sol:

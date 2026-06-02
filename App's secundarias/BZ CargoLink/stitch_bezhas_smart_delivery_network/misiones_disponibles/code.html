@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#00363a",
+                    "primary": "#dbfcff",
+                    "outline": "#849495",
+                    "tertiary-fixed": "#ffdad3",
+                    "on-surface": "#e5e2e1",
+                    "surface-variant": "#353534",
+                    "error-container": "#93000a",
+                    "surface-container-highest": "#353534",
+                    "inverse-on-surface": "#313030",
+                    "surface-container": "#201f1f",
+                    "tertiary": "#fff3f1",
+                    "tertiary-fixed-dim": "#ffb4a5",
+                    "outline-variant": "#3b494b",
+                    "error": "#ffb4ab",
+                    "surface-dim": "#131313",
+                    "on-background": "#e5e2e1",
+                    "primary-fixed-dim": "#00dbe9",
+                    "surface-container-low": "#1c1b1b",
+                    "on-secondary-fixed-variant": "#095300",
+                    "on-surface-variant": "#b9cacb",
+                    "surface": "#131313",
+                    "background": "#131313",
+                    "on-tertiary-fixed": "#3e0400",
+                    "secondary": "#d7ffc5",
+                    "on-primary-fixed-variant": "#004f54",
+                    "surface-container-lowest": "#0e0e0e",
+                    "on-secondary-fixed": "#022100",
+                    "secondary-fixed": "#79ff5b",
+                    "secondary-container": "#2ff801",
+                    "surface-container-high": "#2a2a2a",
+                    "on-secondary": "#053900",
+                    "on-primary-container": "#006970",
+                    "tertiary-container": "#ffcec4",
+                    "on-error-container": "#ffdad6",
+                    "on-primary-fixed": "#002022",
+                    "surface-tint": "#00dbe9",
+                    "on-secondary-container": "#0f6d00",
+                    "inverse-surface": "#e5e2e1",
+                    "on-error": "#690005",
+                    "secondary-fixed-dim": "#2ae500"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin": "20px",
+                    "stack-lg": "32px",
+                    "stack-sm": "8px",
+                    "stack-md": "16px",
+                    "gutter": "16px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Space Grotesk"],
+                    "data-display": ["Space Grotesk"],
+                    "headline-lg": ["Space Grotesk"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-mono": ["Space Grotesk"],
+                    "headline-sm": ["Space Grotesk"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "data-display": ["20px", {"lineHeight": "1", "letterSpacing": "0px", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "label-mono": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-sm": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scanline-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        .cyan-glow {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+        .map-gradient {
+            background: radial-gradient(circle at center, transparent 0%, #0C0C0C 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-5 h-16 bg-[#0C0C0C] dark:bg-[#0C0C0C] border-b border-[#2D2D2D] flat no-shadows">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#00F0FF]">terminal</span>
+<h1 class="font-['Space_Grotesk'] uppercase tracking-widest text-lg font-black text-[#00F0FF]">VALIDATOR_TERMINAL</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="font-label-mono text-[10px] text-outline uppercase">Network Balance</p>
+<p class="font-data-display text-primary-container text-sm">412.50 SOL</p>
+</div>
+<div class="w-10 h-10 rounded-full border border-[#00F0FF] p-0.5 overflow-hidden active:ring-1 active:ring-[#00F0FF] transition-all">
+<img alt="Validator Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpw3uuzfzxRLMOEkCav7srJs0b6XHymiSXpTl6AFLxQoDV01jbRdPv2zZbMxAsoOZewf9iADIMsKTQzzfLD85UEaM4IJuIGM0B-F3caioYSaxki3RsmBhYnK39c6XHxlu_ept4liNP3OZMKwgoFf2nz0iuCqE849ky9R41bFN9I1QG3mWocXtQEcItd6BiPuFmEmxJnA32OloXTgU5Cp_vDRA3-bIve_HARXkUmhJWUAMGpFJeeCyGS_vW_Fk3phtgBDWO5LJDtbA"/>
+</div>
+</div>
+</header>
+<!-- Main Map Canvas -->
+<main class="flex-grow relative pt-16 overflow-hidden">
+<!-- Technical Map Background -->
+<div class="absolute inset-0 z-0 bg-[#0C0C0C]">
+<img class="w-full h-full object-cover opacity-40 grayscale contrast-125 mix-blend-screen" data-alt="A dark, high-contrast satellite view of a city grid at night with illuminated digital pathways and cybernetic data overlays. The style is industrial and technical, utilizing deep blacks, charcoal greys, and electric cyan lines representing active delivery routes. Soft neon glows highlight specific urban nodes against a minimal, brutalist architectural background." data-location="Berlin" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDL26eFB2-_0ntLpx_ORGMR7W-Lwh7bO-JjO8LFrjDU43Z43CwkXuekTRNv8SXD3WnUvNphqL-TPO2mJiwSH1I0zpiFoU2KWEhJQoboIQFc8QXpNmLpVqi_Du2a_uNB9pusMusUoRfKhY32dRCeFuE8PC3WPOQOPXShI_R8iMn4VNmFip9YJ9gI8dHJBClnoa_RFm0iJ6HNn-iFy9pI0m0S8h78K9lVg_lDjgMrBxHWZ9Pqgwzr2wVICHgr20s638_S9jLak66Amv0"/>
+<div class="absolute inset-0 map-gradient"></div>
+<div class="absolute inset-0 scanline-overlay opacity-20"></div>
+</div>
+<!-- Interface Overlays -->
+<div class="absolute top-4 left-5 z-10">
+<div class="bg-[#1E1E1E]/90 backdrop-blur-md border border-[#2D2D2D] p-3 rounded-lg">
+<h2 class="font-headline-sm text-primary-container flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">radar</span>
+                    AVAILABLE MISSIONS
+                </h2>
+<div class="mt-1 font-label-mono text-[10px] text-outline flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_5px_rgba(47,248,1,0.5)]"></span>
+                    SCANNING LOCAL PROTOCOLS...
+                </div>
+</div>
+</div>
+<!-- Map Markers -->
+<div class="absolute top-1/3 left-1/4 z-20 group">
+<div class="relative cursor-pointer">
+<div class="bg-[#1E1E1E] border border-[#00F0FF] px-2 py-1 rounded-sm cyan-glow flex items-center gap-1 hover:scale-110 transition-transform">
+<span class="font-label-mono text-primary-container text-xs font-bold">3.50 €</span>
+</div>
+<div class="w-1 h-8 bg-gradient-to-b from-[#00F0FF] to-transparent mx-auto"></div>
+</div>
+</div>
+<div class="absolute top-1/2 right-1/3 z-20 group">
+<div class="relative cursor-pointer">
+<div class="bg-[#1E1E1E] border border-outline-variant px-2 py-1 rounded-sm flex items-center gap-1 hover:border-[#00F0FF] transition-colors">
+<span class="font-label-mono text-on-surface-variant text-xs font-bold">5.20 €</span>
+</div>
+<div class="w-1 h-8 bg-gradient-to-b from-outline-variant to-transparent mx-auto"></div>
+</div>
+</div>
+<div class="absolute bottom-1/3 left-1/2 z-20 group">
+<div class="relative cursor-pointer">
+<div class="bg-[#1E1E1E] border border-outline-variant px-2 py-1 rounded-sm flex items-center gap-1 hover:border-[#00F0FF] transition-colors">
+<span class="font-label-mono text-on-surface-variant text-xs font-bold">2.80 €</span>
+</div>
+<div class="w-1 h-8 bg-gradient-to-b from-outline-variant to-transparent mx-auto"></div>
+</div>
+</div>
+<!-- Sliding Mission Detail Card -->
+<div class="absolute bottom-24 inset-x-5 z-40">
+<div class="bg-[#1E1E1E] border border-[#2D2D2D] rounded-xl overflow-hidden shadow-2xl">
+<!-- Tech Header -->
+<div class="flex justify-between items-center px-4 py-2 border-b border-[#2D2D2D] bg-[#0C0C0C]/50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-outline">fingerprint</span>
+<span class="font-label-mono text-[10px] text-outline">TXID: 0x8842...F91E</span>
+</div>
+<span class="font-label-mono text-[10px] text-secondary">STATUS: RELAYED</span>
+</div>
+<div class="p-4 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-md text-primary tracking-tight">SYNTH_KITCHEN BXL</h3>
+<p class="font-body-md text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">location_on</span>
+                                1.2 KM FROM CURRENT COORDS
+                            </p>
+</div>
+<div class="text-right">
+<p class="font-label-mono text-[10px] text-outline uppercase">Protocol Reward</p>
+<p class="font-headline-lg text-[#00F0FF] leading-none">3.50 €</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 border-y border-[#2D2D2D] py-4">
+<div class="flex flex-col gap-1">
+<span class="font-label-mono text-[10px] text-outline uppercase">Est. Completion</span>
+<span class="font-data-display text-on-surface">18 MIN</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-mono text-[10px] text-outline uppercase">Cargo Mass</span>
+<span class="font-data-display text-on-surface">1.2 KG</span>
+</div>
+</div>
+<button class="w-full bg-primary-container text-on-primary-container h-14 font-headline-sm uppercase tracking-widest cyan-glow hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                        Accept Mission
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 pb-4 px-2 bg-[#0C0C0C]/95 backdrop-blur-md dark:bg-[#0C0C0C]/95 border-t border-[#2D2D2D] shadow-[0_-4px_15px_rgba(0,240,255,0.1)]">
+<a class="flex flex-col items-center justify-center text-[#00F0FF] drop-shadow-[0_0_8px_rgba(0,240,255,0.6)] border-t-2 border-[#00F0FF] pt-2 active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest mt-1">MISSIONS</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="route">route</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest mt-1">ACTIVE</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest mt-1">WALLET</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="fingerprint">fingerprint</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest mt-1">ID</span>
+</a>
+</nav>
+</body></html>

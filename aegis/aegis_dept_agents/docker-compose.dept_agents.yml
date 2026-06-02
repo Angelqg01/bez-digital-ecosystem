@@ -1,0 +1,99 @@
+# BeZhas — docker-compose añadido para dept_agents
+# Añadir en bezhas-blockchain/docker-compose.yml
+#
+# Los agentes departamentales corren DENTRO del contenedor de Aegis
+# (no son un servicio separado). Solo hay que añadir:
+#   1. Las variables de entorno nuevas al servicio aegis
+#   2. El volumen de código
+#
+# ============================================================
+# OPCIÓN A — Integrado en el contenedor aegis existente (RECOMENDADO)
+# ============================================================
+#
+# En la sección services.aegis de tu docker-compose.yml:
+
+services:
+  aegis:
+    # ... tu configuración existente ...
+    environment:
+      # ... tus variables existentes ...
+
+      # ▶ AÑADIR — Dept Agents config
+      DEPT_AGENTS_ENABLED: "true"
+      DEPT_AGENTS_LOG_LEVEL: "INFO"
+      DEPT_AGENTS_REDIS_URL: "redis://redis:6379"
+      DEPT_AGENTS_AEGIS_URL: "http://localhost:8001"
+      DEPT_AGENTS_API_URL: "http://api:3001/api"
+      DEPT_AGENTS_RUNTIME_URL: "http://agent-runtime:3002"
+      # Intervalos (segundos)
+      DEPT_AGENTS_SECURITY_INTERVAL: "45"
+      DEPT_AGENTS_ENG_INTERVAL: "60"
+      DEPT_AGENTS_DEVOPS_INTERVAL: "30"
+      DEPT_AGENTS_DEFI_INTERVAL: "300"
+      DEPT_AGENTS_FINANCE_INTERVAL: "1800"
+      DEPT_AGENTS_CS_INTERVAL: "900"
+      DEPT_AGENTS_AI_INTERVAL: "120"
+      DEPT_AGENTS_BD_INTERVAL: "3600"
+      DEPT_AGENTS_MKTG_INTERVAL: "7200"
+      DEPT_AGENTS_LEGAL_INTERVAL: "86400"
+      # Thresholds
+      DEPT_AGENTS_BATCHER_CRITICAL_ETH: "0.1"
+      DEPT_AGENTS_GAS_CRITICAL_USD: "20.0"
+      DEPT_AGENTS_DISK_WARNING_PCT: "85.0"
+      # Notificaciones opcionales
+      # DEPT_AGENTS_SLACK_WEBHOOK: "https://hooks.slack.com/services/..."
+
+    # ▶ AÑADIR — Bind mount del paquete dept_agents
+    volumes:
+      # ... tus volúmenes existentes ...
+      - ./dept_agents:/app/dept_agents:ro   # lectura del código
+
+    # Los healthchecks existentes siguen igual — los agentes
+    # solo añaden endpoints bajo /dept-agents/*
+
+# ============================================================
+# OPCIÓN B — Servicio independiente (si prefieres separación)
+# Solo usar si aegis y dept_agents deben escalar por separado
+# ============================================================
+
+  # dept-agents:
+  #   build:
+  #     context: ./aegis
+  #     dockerfile: Dockerfile.dept_agents
+  #   container_name: bezhas-dept-agents
+  #   restart: unless-stopped
+  #   depends_on:
+  #     redis:    { condition: service_healthy }
+  #     api:      { condition: service_started }
+  #     aegis:    { condition: service_started }
+  #   environment:
+  #     DEPT_AGENTS_REDIS_URL: "redis://redis:6379"
+  #     DEPT_AGENTS_AEGIS_URL: "http://aegis:8001"
+  #     DEPT_AGENTS_API_URL:   "http://api:3001/api"
+  #   ports:
+  #     - "8002:8002"    # solo si se expone como servicio separado
+  #   networks:
+  #     - bezhas-network
+  #   mem_limit: 512m    # Los 10 agentes usan ~200-300 MB total
+
+# ============================================================
+# Dockerfile.dept_agents (para Opción B)
+# ============================================================
+#
+# FROM python:3.11-slim
+# WORKDIR /app
+# COPY requirements.txt .
+# RUN pip install --no-cache-dir -r requirements.txt --break-system-packages
+# COPY . .
+# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
+
+# ============================================================
+# Nota sobre recursos:
+#   Los 10 agentes departamentales juntos consumen aprox:
+#   - CPU: < 5% promedio (ciclos async, no blocking)
+#   - RAM: ~150-250 MB adicionales en el contenedor aegis
+#   - Redis: ~2-5 MB de datos de estado y alertas
+#
+#   No requieren GPU — la GTX 1080 sigue siendo usada
+#   exclusivamente por los modelos ML de Aegis.
+# ============================================================

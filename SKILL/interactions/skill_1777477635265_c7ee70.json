@@ -1,0 +1,22 @@
+{
+  "id": "skill_1777477635265_c7ee70",
+  "created_at": "2026-04-29T15:47:15.266Z",
+  "channel": "hub-chat",
+  "provider": "intent",
+  "intent": "command",
+  "tags": [
+    "defi",
+    "nft",
+    "validator",
+    "bridge",
+    "blockchain"
+  ],
+  "turn": {
+    "user": "/bot-permissions",
+    "agent": "🔐 **Permisos BeZhasCEOBot**\n\nRol: **admin**\nCanal: **hub-chat**\nUser ID: `web-chat`\n\nPuede ejecutar:\n• Lectura y diagnóstico de plataforma\n• Todas las herramientas MCP/AEGIS registradas\n• Auditorías de paridad, deploy y validadores\n• Orquestación de bots departamentales\n• Creación de incidentes y reportes operativos\n\nRequieren confirmación humana antes de ejecutar:\n• mcp:bridge_tokens\n• mcp:deploy_contract\n• mcp:execute_depin_reward\n• mcp:execute_swap\n• mcp:process_payment\n• mcp:register_validator\n• mcp:slash_validator\n• mcp:stake_tokens\n• mcp:transfer_tokens\n• mcp:unstake_tokens\n• mcp:update_contract\n• onchain:execute\n• onchain:send\n• onchain:sign\n• treasury:transfer\n• treasury:withdraw"
+  },
+  "context": {
+    "userId": "web-chat",
+    "role": "admin"
+  }
+}

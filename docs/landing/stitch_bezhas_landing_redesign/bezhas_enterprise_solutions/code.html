@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BEZHAS | Enterprise Solutions</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline": "#444657",
+                        "background": "#080911",
+                        "tertiary-fixed": "#97f0ff",
+                        "on-secondary-fixed": "#2d0050",
+                        "surface-dim": "#080911",
+                        "surface-container-highest": "#282934",
+                        "inverse-surface": "#e2e1ef",
+                        "on-surface": "#f5f6f8",
+                        "on-secondary-fixed-variant": "#7022b4",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "on-tertiary-fixed": "#001f24",
+                        "surface-container": "#12131c",
+                        "primary-fixed": "#dfe0ff",
+                        "primary-container": "#001998",
+                        "error": "#ffb4ab",
+                        "inverse-primary": "#bcc2ff",
+                        "surface": "#080911",
+                        "tertiary-container": "#004f58",
+                        "secondary-container": "#323e92",
+                        "on-tertiary-container": "#97f0ff",
+                        "on-surface-variant": "#c5c5da",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#1a1b25",
+                        "surface-container-low": "#0c0d17",
+                        "surface-variant": "#1a1b25",
+                        "surface-tint": "#0d33f2",
+                        "secondary-fixed-dim": "#e0b6ff",
+                        "secondary-fixed": "#f3daff",
+                        "on-tertiary": "#000000",
+                        "on-primary-fixed-variant": "#0027d4",
+                        "on-error": "#690005",
+                        "tertiary": "#22d3ee",
+                        "on-secondary-container": "#a6b0ff",
+                        "tertiary-fixed-dim": "#22d3ee",
+                        "on-background": "#f5f6f8",
+                        "on-error-container": "#ffdad6",
+                        "inverse-on-surface": "#080911",
+                        "outline-variant": "rgba(255, 255, 255, 0.1)",
+                        "on-primary-fixed": "#000c61",
+                        "on-tertiary-fixed-variant": "#004f58",
+                        "error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "secondary": "#a855f7",
+                        "surface-container-lowest": "#05060a",
+                        "surface-container-high": "#1e1f29",
+                        "on-primary-container": "#dfe0ff",
+                        "primary": "#0d33f2"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Space Grotesk"],
+                        "label": ["Space Grotesk"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+    <style>
+        .clip-path-polygon {
+            clip-path: polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+        }
+
+        .hero-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(13, 51, 242, 0.15) 0%, transparent 70%);
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface font-body overflow-x-hidden">
+    <!-- TopAppBar Shell -->
+    <header
+        class="fixed top-0 w-full z-50 bg-[#080911]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_20px_rgba(13,51,242,0.15)] flex justify-between items-center px-6 h-16 w-full">
+        <div class="flex items-center gap-4">
+            <span
+                class="text-2xl font-black italic tracking-tighter text-white font-['Space_Grotesk'] uppercase">BEZHAS</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-8">
+            <nav class="flex gap-6 font-['Space_Grotesk'] italic tracking-tighter uppercase text-sm">
+                <a class="text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 duration-150"
+                    href="#">Supply Chain</a>
+                <a class="text-[#0d33f2] border-b-2 border-[#0d33f2] active:scale-95 duration-150"
+                    href="#">Enterprise</a>
+                <a class="text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 duration-150"
+                    href="#">Compliance</a>
+            </nav>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center border border-white/10 rounded-lg overflow-hidden"
+                aria-label="Language selector">
+                <button data-lang-switch="en"
+                    class="px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-white/80 hover:bg-white/10 transition-colors">EN</button>
+                <button data-lang-switch="es"
+                    class="px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-white/80 hover:bg-white/10 transition-colors">ES</button>
+            </div>
+            <span class="material-symbols-outlined text-on-surface-variant cursor-pointer">menu</span>
+            <span class="material-symbols-outlined text-on-surface-variant cursor-pointer">account_circle</span>
+        </div>
+    </header>
+    <!-- SideNavBar Shell -->
+    <aside
+        class="fixed left-0 top-0 flex flex-col pt-20 pb-8 z-40 h-screen w-72 border-r border-white/5 bg-[#080911] shadow-2xl shadow-blue-900/20 hidden lg:flex">
+        <div class="px-6 mb-8">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-primary flex items-center justify-center rounded-none italic font-black text-white">
+                    K</div>
+                <div>
+                    <h2 class="text-white font-bold italic font-['Space_Grotesk'] text-sm uppercase tracking-widest">
+                        KINETIC HUB</h2>
+                    <p class="text-[10px] text-primary tracking-[0.3em] font-bold uppercase">V2.0.4-BETA</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 space-y-1 px-3">
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">code</span> Developers
+            </a>
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">settings_input_component</span> Solutions
+            </a>
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">school</span> Learn
+            </a>
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">sensors</span> Network Status
+            </a>
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">security</span> Validators
+            </a>
+            <a class="flex items-center gap-4 bg-[#0d33f2] text-white italic font-bold p-3 rounded-none clip-path-polygon font-['Space_Grotesk'] text-sm tracking-widest uppercase hover:shadow-[0_0_15px_rgba(13,51,242,0.3)]"
+                href="#">
+                <span class="material-symbols-outlined">business</span> Enterprise
+            </a>
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">payments</span> Payments
+            </a>
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">account_balance</span> Financial
+            </a>
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">alt_route</span> Bridges
+            </a>
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">shopping_cart</span> Commerce
+            </a>
+            <a class="flex items-center gap-4 text-gray-500 p-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform font-['Space_Grotesk'] text-sm tracking-widest uppercase"
+                href="#">
+                <span class="material-symbols-outlined">lan</span> RPC
+            </a>
+        </nav>
+        <div class="px-6 mt-auto">
+            <button
+                class="w-full bg-primary text-white py-4 font-black italic tracking-tighter uppercase text-xs hover:bg-blue-700 transition-colors">
+                LAUNCH CONSOLE
+            </button>
+        </div>
+    </aside>
+    <!-- Main Content Canvas -->
+    <main class="lg:ml-72 pt-16 min-h-screen">
+        <!-- Hero Section -->
+        <section class="relative min-h-[819px] flex items-center justify-center px-6 hero-gradient overflow-hidden">
+            <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+                <div class="space-y-8">
+                    <div
+                        class="inline-flex items-center gap-2 glass-panel px-4 py-1 rounded-full border border-white/10">
+                        <span class="w-2 h-2 bg-tertiary rounded-full animate-pulse"></span>
+                        <span class="text-[10px] uppercase tracking-[0.3em] font-bold text-tertiary">Industrial Protocol
+                            v4.0</span>
+                    </div>
+                    <h1 class="text-6xl md:text-8xl font-black italic tracking-tighter uppercase leading-none">
+                        GLOBAL <br /> <span class="text-primary">KINETICS</span>
+                    </h1>
+                    <p class="text-on-surface-variant text-xl max-w-lg font-light leading-relaxed">
+                        The definitive L2 protocol for industrial supply chains. Deploy AI Oracles and RWA Tokenization
+                        at the speed of light.
+                    </p>
+                    <div class="flex flex-wrap gap-4 pt-4">
+                        <button
+                            class="bg-primary text-white px-10 py-4 font-bold uppercase tracking-widest text-sm hover:translate-y-[-2px] transition-transform">
+                            GET THE WHITE PAPER
+                        </button>
+                        <button
+                            class="glass-panel border border-white/10 text-white px-10 py-4 font-bold uppercase tracking-widest text-sm hover:bg-white/10 transition-colors">
+                            VIEW CASE STUDIES
+                        </button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="absolute -inset-10 bg-primary/20 blur-[100px] rounded-full"></div>
+                    <div
+                        class="relative glass-panel border border-white/10 p-4 rounded-xl rotate-3 hover:rotate-0 transition-transform duration-500">
+                        <img alt="Logistics terminal"
+                            class="rounded-lg grayscale hover:grayscale-0 transition-all duration-700 aspect-video object-cover"
+                            data-alt="Futuristic cargo port at night with glowing blue interface overlays and automated shipping containers under dramatic neon lighting"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuB941UyrGVkEO10Lxx6j5tqQnQ6dXcBdPFb64ETyL7JvEYAJ2nPCqmO2oeTguTV1NIlDeWQNbwsS0DR0T7oj1ddyjRA88OEN-9XY-JBnGnNWlzBUMkJNWDfRbCKL-fXnjjXz9DjPARqwDIkRwhZgSigKo8vkaZCMtpkf4-J_iidUmQySOTvqMzAL-21GXZXPlX4evyKxx-1xFivMzjCwCwX5c_GmsFVsyyrUCdzz2U5vvwk5mEKkLWUjp4nD8ROspMMj8-iaxzcx5c" />
+                        <div
+                            class="mt-4 flex justify-between items-center text-[10px] font-mono text-primary tracking-widest uppercase">
+                            <span>TRANSIT_ID: BZ-9920</span>
+                            <span class="flex items-center gap-1"><span
+                                    class="w-1.5 h-1.5 bg-primary rounded-full"></span> ENCRYPTED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Technical Data Watermark -->
+            <div class="absolute bottom-10 right-10 opacity-10 pointer-events-none hidden lg:block">
+                <pre class="font-mono text-[10px] leading-tight">                    RUNNING SYNC...
+                    [SYSTEM_OK]
+                    LATENCY: 4.2ms
+                    NODES: 12,401
+                    SECURITY: LEVEL_A
+                    PROTO: BEZHAS_X_9
+                </pre>
+            </div>
+        </section>
+        <!-- Solutions Bento Grid -->
+        <section class="py-24 px-6 max-w-7xl mx-auto">
+            <div class="mb-16">
+                <h2 class="text-4xl font-black italic tracking-tighter uppercase mb-4">Core <span
+                        class="text-primary">Capabilities</span></h2>
+                <div class="h-1 w-24 bg-primary"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- AI Oracles Card -->
+                <div
+                    class="md:col-span-2 group relative glass-panel border border-white/5 p-8 rounded-xl overflow-hidden hover:border-primary/50 transition-colors">
+                    <div class="relative z-10 h-full flex flex-col">
+                        <span class="material-symbols-outlined text-4xl text-primary mb-6">psychology</span>
+                        <h3 class="text-3xl font-bold italic uppercase tracking-tighter mb-4">Industrial-Grade AI
+                            Oracles</h3>
+                        <p class="text-on-surface-variant max-w-md mb-8 leading-relaxed">
+                            Connect your physical assets to the ledger via hyper-local AI processing. Zero-latency
+                            verification for temperature, tilt, and transit velocity.
+                        </p>
+                        <div
+                            class="mt-auto flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-primary">
+                            LEARN MORE <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </div>
+                    </div>
+                    <div
+                        class="absolute top-0 right-0 w-1/3 h-full opacity-20 grayscale group-hover:grayscale-0 group-hover:opacity-40 transition-all">
+                        <img alt="Data visualization" class="h-full object-cover"
+                            data-alt="Close-up of a complex digital dashboard showing real-time global shipping metrics with neon blue and cyan line graphs"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUqA9F6o6Z6PqtQfU_gf7mBJ_eptoXBJwbheBKEr2hyrJq2avxl5hv-H0DSc-bPKB0wNJuLIv1z7MKvLD1hdWy6tjasqu8Rw7evYASV4BeVBZeRv46NRAEfy-beK0BskWvEf3VMA3rx8fjpmSrI5o-_vLWcgGUUAReCNtbBq-WSt87v-Owh04r_89voHnr1U6pZ533Z9-toCETVVcS3NoaArkdWTrpyhdXqp7LMZHbvIvdotXkel3vMUHAVNK01IYu7XJyQCSSGMc" />
+                    </div>
+                </div>
+                <!-- RWA Tokenization -->
+                <div
+                    class="group relative glass-panel border border-white/5 p-8 rounded-xl hover:border-primary/50 transition-colors">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-6">token</span>
+                    <h3 class="text-2xl font-bold italic uppercase tracking-tighter mb-4">RWA HUB Tokenization</h3>
+                    <p class="text-on-surface-variant text-sm mb-8">
+                        Fractionalize logistics infrastructure into liquid assets. Real-world asset (RWA) liquidity for
+                        regional hubs.
+                    </p>
+                    <div
+                        class="mt-auto flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-primary">
+                        HUB SPECS <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    </div>
+                </div>
+                <!-- Automated Compliance -->
+                <div
+                    class="group relative glass-panel border border-white/5 p-8 rounded-xl hover:border-primary/50 transition-colors">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-6">fact_check</span>
+                    <h3 class="text-2xl font-bold italic uppercase tracking-tighter mb-4">Freight Compliance</h3>
+                    <p class="text-on-surface-variant text-sm mb-8">
+                        Automated customs filing and automated bill of lading (BoL) verification using zero-knowledge
+                        proofs.
+                    </p>
+                    <div
+                        class="mt-auto flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-primary">
+                        ZKP DOCS <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    </div>
+                </div>
+                <!-- Global Sync -->
+                <div
+                    class="md:col-span-2 group relative bg-primary p-8 rounded-xl overflow-hidden hover:shadow-[0_0_30px_rgba(13,51,242,0.4)] transition-all">
+                    <div class="relative z-10 flex flex-col h-full">
+                        <h3 class="text-4xl font-black italic uppercase tracking-tighter mb-4 text-white">24/7 Global
+                            <br /> Ledger Sync
+                        </h3>
+                        <p class="text-white/80 max-w-lg mb-8 leading-relaxed">
+                            Synchronize your entire enterprise fleet across 40+ maritime zones with sub-second finality.
+                            No more reconciliation delays.
+                        </p>
+                        <button
+                            class="w-fit bg-white text-primary px-8 py-3 font-bold uppercase tracking-widest text-xs">
+                            EXPLORE NETWORK
+                        </button>
+                    </div>
+                    <!-- Abstract Background Element -->
+                    <div class="absolute -right-10 -bottom-10 opacity-20">
+                        <span class="material-symbols-outlined text-[200px] text-white">public</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Wallet & Tokenomics Brief -->
+        <section class="py-20 px-6 max-w-7xl mx-auto">
+            <div class="mb-10">
+                <h2 class="text-4xl font-black italic tracking-tighter uppercase mb-3">Wallet &amp; <span
+                        class="text-primary">Tokenomics</span> (EN/ES)</h2>
+                <p class="text-on-surface-variant max-w-3xl mb-2" data-lang="en">
+                    EN: BeZhas connects an enterprise fiat experience with real L2 cryptographic execution, enabling
+                    predictable costs, risk control, and institutional traceability.
+                </p>
+                <p class="text-on-surface-variant max-w-3xl" data-lang="es">
+                    ES: BeZhas conecta una experiencia empresarial en fiat con ejecucion criptografica real en L2,
+                    habilitando costos previsibles, control de riesgo y trazabilidad institucional.
+                </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-panel border border-white/10 rounded-xl p-6">
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-primary font-bold mb-2" data-lang="en">
+                        Investors</p>
+                    <ul class="text-sm text-on-surface-variant space-y-2 mb-4" data-lang="en">
+                        <li>Enterprise transaction revenue and premium operational services.</li>
+                        <li>BEZ tokenomics tied to real network usage and scalable demand.</li>
+                    </ul>
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-primary font-bold mb-2" data-lang="es">
+                        Inversionistas</p>
+                    <ul class="text-sm text-on-surface-variant space-y-2" data-lang="es">
+                        <li>Ingresos por operaciones enterprise y servicios premium de operacion.</li>
+                        <li>Tokenomics BEZ conectada a uso real de red y demanda escalable.</li>
+                    </ul>
+                </div>
+                <div class="glass-panel border border-white/10 rounded-xl p-6">
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-tertiary font-bold mb-2" data-lang="en">
+                        Developers</p>
+                    <ul class="text-sm text-on-surface-variant space-y-2 mb-4" data-lang="en">
+                        <li>AA Smart Wallet, MultiSig, and Paymaster for enterprise-grade flows.</li>
+                        <li>API/SDK integration with built-in security controls and auditability.</li>
+                    </ul>
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-tertiary font-bold mb-2" data-lang="es">
+                        Desarrolladores</p>
+                    <ul class="text-sm text-on-surface-variant space-y-2" data-lang="es">
+                        <li>Smart Wallet AA, MultiSig y Paymaster para flujos enterprise.</li>
+                        <li>Integracion API/SDK con controles de seguridad y auditoria integrados.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <!-- Budget & Regional Rollout -->
+        <section class="py-20 px-6 max-w-7xl mx-auto">
+            <div class="mb-10">
+                <h2 class="text-4xl font-black italic tracking-tighter uppercase mb-3">Budget &amp; Rollout <span
+                        class="text-primary">Plan</span> (EN/ES)</h2>
+                <p class="text-on-surface-variant max-w-3xl mb-2" data-lang="en">
+                    EN: BeZhas includes a complete investment model covering platform build-out, sector apps, and
+                    blockchain deployment from Europe to global regions.
+                </p>
+                <p class="text-on-surface-variant max-w-3xl" data-lang="es">
+                    ES: BeZhas incluye un modelo de inversion integral que cubre desarrollo de plataforma, apps por
+                    sector y despliegue blockchain desde Europa hacia regiones globales.
+                </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="glass-panel border border-white/10 rounded-xl p-6">
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-primary font-bold mb-2" data-lang="en">
+                        Platform Build</p>
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-primary font-bold mb-2" data-lang="es">
+                        Construccion Plataforma</p>
+                    <p class="text-3xl font-black italic">4.8M - 9.1M EUR</p>
+                    <p class="text-xs text-on-surface-variant mt-2" data-lang="en">Core apps, AI, wallet, DeFi, sector
+                        modules and QA/security hardening.</p>
+                    <p class="text-xs text-on-surface-variant mt-2" data-lang="es">Apps core, IA, wallet, DeFi, modulos
+                        sectoriales y hardening QA/seguridad.</p>
+                </div>
+                <div class="glass-panel border border-white/10 rounded-xl p-6">
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-tertiary font-bold mb-2" data-lang="en">EU
+                        Regional Deployment</p>
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-tertiary font-bold mb-2" data-lang="es">
+                        Despliegue Regional UE</p>
+                    <p class="text-3xl font-black italic">1.5M - 3.1M EUR</p>
+                    <p class="text-xs text-on-surface-variant mt-2" data-lang="en">12-month estimate including L2 nodes,
+                        observability, security and SRE operations.</p>
+                    <p class="text-xs text-on-surface-variant mt-2" data-lang="es">Estimacion 12 meses con nodos L2,
+                        observabilidad, seguridad y operacion SRE.</p>
+                </div>
+                <div class="glass-panel border border-white/10 rounded-xl p-6">
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-secondary font-bold mb-2" data-lang="en">
+                        Global Scale</p>
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-secondary font-bold mb-2" data-lang="es">
+                        Escalado Global</p>
+                    <p class="text-3xl font-black italic">3.9M - 7.9M EUR</p>
+                    <p class="text-xs text-on-surface-variant mt-2" data-lang="en">Multi-region expansion (Americas,
+                        APAC, MENA) with compliance and SecOps.</p>
+                    <p class="text-xs text-on-surface-variant mt-2" data-lang="es">Expansion multi-region (Americas,
+                        APAC, MENA) con cumplimiento y SecOps.</p>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <a href="../../../Presupuesto_Despliegue_Plataforma_BeZhas.md"
+                    class="bg-primary text-white px-10 py-4 font-bold uppercase tracking-widest text-sm hover:translate-y-[-2px] transition-transform inline-flex items-center justify-center">
+                    FULL BUDGET DOSSIER
+                </a>
+                <a href="../../../Presupuesto_Despliegue_Plataforma_BeZhas.md"
+                    class="glass-panel border border-white/10 text-white px-10 py-4 font-bold uppercase tracking-widest text-sm hover:bg-white/10 transition-colors inline-flex items-center justify-center">
+                    VERSION COMPLETA (ES)
+                </a>
+            </div>
+        </section>
+        <!-- Partnership Section -->
+        <section class="py-24 bg-surface-container-low border-y border-white/5">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="text-center mb-16">
+                    <p class="text-primary font-bold uppercase tracking-[0.4em] text-[10px] mb-4">INSTITUTIONAL PARTNERS
+                    </p>
+                    <h2 class="text-5xl font-black italic tracking-tighter uppercase">TRUSTED BY <span
+                            class="text-primary">TIER 1</span> TITANS</h2>
+                </div>
+                <div
+                    class="flex flex-wrap justify-center gap-12 md:gap-24 opacity-40 grayscale transition-all duration-500 hover:grayscale-0">
+                    <!-- Faux Logos -->
+                    <div class="flex items-center gap-2 font-black italic text-2xl tracking-tighter uppercase">
+                        <span class="material-symbols-outlined text-primary">rocket</span> NOVA LOGISTICS
+                    </div>
+                    <div class="flex items-center gap-2 font-black italic text-2xl tracking-tighter uppercase">
+                        <span class="material-symbols-outlined text-primary">anchor</span> MAERSK_X
+                    </div>
+                    <div class="flex items-center gap-2 font-black italic text-2xl tracking-tighter uppercase">
+                        <span class="material-symbols-outlined text-primary">flight_takeoff</span> AIRTRANS GLOBAL
+                    </div>
+                    <div class="flex items-center gap-2 font-black italic text-2xl tracking-tighter uppercase">
+                        <span class="material-symbols-outlined text-primary">rainy_snow</span> HYDRO_HUB
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Case Study Highlight -->
+        <section class="py-24 px-6 max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div class="order-2 lg:order-1">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="glass-panel p-6 border border-white/5 rounded-xl">
+                            <p class="text-3xl font-black text-primary italic mb-1">32%</p>
+                            <p class="text-[10px] uppercase tracking-widest text-on-surface-variant">Efficiency Gain</p>
+                        </div>
+                        <div class="glass-panel p-6 border border-white/5 rounded-xl">
+                            <p class="text-3xl font-black text-tertiary italic mb-1">$40M</p>
+                            <p class="text-[10px] uppercase tracking-widest text-on-surface-variant">OPEX SAVED</p>
+                        </div>
+                        <div class="glass-panel p-6 border border-white/5 rounded-xl">
+                            <p class="text-3xl font-black text-white italic mb-1">0.0s</p>
+                            <p class="text-[10px] uppercase tracking-widest text-on-surface-variant">AUDIT DELAY</p>
+                        </div>
+                        <div class="glass-panel p-6 border border-white/5 rounded-xl">
+                            <p class="text-3xl font-black text-secondary italic mb-1">100%</p>
+                            <p class="text-[10px] uppercase tracking-widest text-on-surface-variant">ESG COMPLIANCE</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-6 order-1 lg:order-2">
+                    <p class="text-primary font-bold uppercase tracking-[0.4em] text-[10px]">CASE STUDY: ROTTERDAM HUB
+                    </p>
+                    <h2 class="text-5xl font-black italic tracking-tighter uppercase leading-tight">THE FUTURE OF THE
+                        <span class="text-primary">SMART PORT</span>
+                    </h2>
+                    <p class="text-on-surface-variant text-lg leading-relaxed">
+                        Discover how the Port of Rotterdam leveraged BeZhas AI Oracles to automate berth scheduling and
+                        real-time cargo tokenization, reducing dwell time by 32% in the first quarter of deployment.
+                    </p>
+                    <button
+                        class="border-b-2 border-primary text-white font-bold uppercase tracking-widest py-2 text-sm hover:text-primary transition-colors inline-flex items-center gap-2">
+                        READ FULL CASE STUDY <span class="material-symbols-outlined text-sm">open_in_new</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+        <!-- CTA Section -->
+        <section class="py-32 px-6">
+            <div
+                class="max-w-4xl mx-auto glass-panel border border-primary/20 p-12 text-center rounded-xl relative overflow-hidden">
+                <div class="absolute inset-0 bg-primary/5 -z-10"></div>
+                <h2 class="text-5xl font-black italic tracking-tighter uppercase mb-6">Ready to <span
+                        class="text-primary">Evolve?</span></h2>
+                <p class="text-on-surface-variant text-xl mb-10 max-w-2xl mx-auto">
+                    Speak with our industrial solutions team to design a bespoke deployment architecture for your global
+                    operations.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button
+                        class="bg-primary text-white px-12 py-5 font-bold uppercase tracking-widest text-sm hover:scale-105 transition-transform">
+                        REQUEST A DEMO
+                    </button>
+                    <button
+                        class="glass-panel border border-white/10 text-white px-12 py-5 font-bold uppercase tracking-widest text-sm hover:bg-white/10 transition-colors">
+                        CONTACT SALES
+                    </button>
+                </div>
+            </div>
+        </section>
+        <!-- Footer -->
+        <footer class="py-12 border-t border-white/5 bg-surface-container-lowest">
+            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+                <div class="flex flex-col items-center md:items-start">
+                    <span
+                        class="text-2xl font-black italic tracking-tighter text-white font-['Space_Grotesk'] uppercase">BEZHAS</span>
+                    <p class="text-[10px] text-gray-600 tracking-[0.2em] mt-2">© 2024 BEZHAS KINETIC PROTOCOL. ALL
+                        RIGHTS RESERVED.</p>
+                </div>
+                <div class="flex gap-8 text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400">
+                    <a class="hover:text-primary transition-colors" href="#">System Status</a>
+                    <a class="hover:text-primary transition-colors" href="#">Privacy Lex</a>
+                    <a class="hover:text-primary transition-colors" href="#">Governance</a>
+                    <a class="hover:text-primary transition-colors" href="#">Developer Portal</a>
+                </div>
+            </div>
+        </footer>
+    </main>
+    <script>
+            (function () {
+                const key = 'bezhas_lang';
+                const detected = (navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en';
+                const saved = localStorage.getItem(key);
+                const initialLang = saved === 'en' || saved === 'es' ? saved : detected;
+
+                function applyLang(lang) {
+                    document.querySelectorAll('[data-lang]').forEach((el) => {
+                        el.style.display = el.getAttribute('data-lang') === lang ? '' : 'none';
+                    });
+
+                    document.querySelectorAll('[data-lang-switch]').forEach((btn) => {
+                        const active = btn.getAttribute('data-lang-switch') === lang;
+                        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                        btn.style.backgroundColor = active ? '#0d33f2' : 'transparent';
+                        btn.style.opacity = active ? '1' : '0.65';
+                    });
+
+                    document.documentElement.setAttribute('lang', lang === 'es' ? 'es' : 'en');
+                }
+
+                document.querySelectorAll('[data-lang-switch]').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const lang = btn.getAttribute('data-lang-switch');
+                        localStorage.setItem(key, lang);
+                        applyLang(lang);
+                    });
+                });
+
+                applyLang(initialLang);
+            })();
+    </script>
+</body>
+
+</html>

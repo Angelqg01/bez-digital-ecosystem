@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Manage Guardians - BeZhas Bio-Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #25aff433;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+<!-- Header -->
+<header class="flex items-center bg-background-light dark:bg-background-dark p-4 border-b border-primary/10 sticky top-0 z-10 backdrop-blur-md">
+<div class="flex-none p-2 cursor-pointer hover:bg-primary/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">arrow_back</span>
+</div>
+<div class="flex-1 text-center">
+<h1 class="text-xl font-bold tracking-tight">Manage Guardians</h1>
+</div>
+<div class="flex-none p-2 cursor-pointer hover:bg-primary/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-primary">info</span>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Quorum Status Card -->
+<div class="p-4">
+<div class="bg-primary/5 border border-primary/20 rounded-xl p-6 flex flex-col gap-1 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">Current Security Quorum</p>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-bold text-primary">2/3</span>
+<span class="text-slate-500 dark:text-slate-400 font-medium">Verified Guardians</span>
+</div>
+<p class="text-primary/80 text-sm mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+                    Active Protocol: Biometric Multi-Sig
+                </p>
+</div>
+</div>
+<!-- Add New Section -->
+<div class="px-4 py-2">
+<button class="w-full flex items-center justify-center gap-2 bg-primary/10 border-2 border-dashed border-primary/30 text-primary p-4 rounded-xl hover:bg-primary/20 transition-all group">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">person_add</span>
+<span class="font-bold">Add New Guardian</span>
+</button>
+</div>
+<!-- Guardian List -->
+<div class="px-4 pt-6 pb-2">
+<h3 class="text-lg font-bold flex items-center gap-2 mb-4">
+                Current Guardians 
+                <span class="bg-slate-200 dark:bg-slate-800 text-xs px-2 py-0.5 rounded-full font-medium">3 Total</span>
+</h3>
+<div class="flex flex-col gap-3">
+<!-- Guardian 1 -->
+<div class="flex items-center gap-4 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-xl border border-transparent hover:border-primary/20 transition-colors">
+<div class="relative">
+<div class="size-14 rounded-full bg-cover bg-center border-2 border-primary" data-alt="Professional portrait of a male biotech scientist" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDps8-0MDWRrY5cX7ZRkIznLf418EWGr9dMpdUlD0A2EZB5_e9-l9pYOXymetkljXgZMJ8rB8Pz24Dxik3JiYmYmfKBUL283F4PJTn9hqwV6yaxS38GRp0_DKKZMKhWnlaxB75iCwT6KAkcjpgrmmq3t9Rgc9uOsL6P1RaN5nRdR8twQvWH0wsfRKhY3vN5Lp0oVXtjQZH8Bx9mZi-KEXI9f18Jbb4VBavkPVePvvUY7VKCp-PBU-c7rop4JAblcZ6u-aWqaMkCGP4');"></div>
+<div class="absolute bottom-0 right-0 size-4 bg-green-500 border-2 border-background-dark rounded-full"></div>
+</div>
+<div class="flex-1">
+<p class="font-bold text-slate-900 dark:text-slate-100">Dr. Aris Thorne</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Clearance: Level 5 • Primary</p>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Guardian 2 -->
+<div class="flex items-center gap-4 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-xl border border-transparent hover:border-primary/20 transition-colors">
+<div class="relative">
+<div class="size-14 rounded-full bg-cover bg-center border-2 border-primary/40" data-alt="Professional portrait of a female security specialist" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB9cBwp1EDaxlVweaxg-hL05C1YhhBlDRDoiIM8YRiIGu89WWd5pQYEDZ1XDxFQI-Gb5E_y-TypJ8roaOJ2qf0USwWfvsOBata26vvI_y2SO-tMyKo2xrffA5-oqF6MB3_KXhErmQW05MCD4ktS7DFL87WaYk60nF-DULCvcWebuadoZDrA9XDeyouGZZVnlKJ1Mqo_0sGUCQhNqz9X4lWzRcSbOJ3ZsmoV3AssLiXSvg7z7nMaflCyf68Onz6se4BSBdZTdh78OvI');"></div>
+<div class="absolute bottom-0 right-0 size-4 bg-slate-500 border-2 border-background-dark rounded-full"></div>
+</div>
+<div class="flex-1">
+<p class="font-bold text-slate-900 dark:text-slate-100">Elena Vance</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Clearance: Level 4 • Secondary</p>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Guardian 3 -->
+<div class="flex items-center gap-4 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-xl border border-transparent hover:border-primary/20 transition-colors">
+<div class="relative">
+<div class="size-14 rounded-full bg-cover bg-center border-2 border-primary/40" data-alt="Professional portrait of a senior bio-analyst" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDeNF1Gr_0bMn9x609h-wb4DFkz9i9y7WaMQkB48wgbWYjW2eI82VjJ1nxkqonuZ0YksgS9NUiSPL-z8SVfhOkJ-KK6GU2fCfskMuWpWK8e7s-G6J6q2gSyvOvIvgbo5NFFZl9mDbXm9vQqhfMeg52_uFBIGNZrEo5Vz1Zv_c7exFV5gy04qLIu1eTApV-QFyk8HPv5KfIcR_PLxKYlL6sw5rkCREN6wzr3SHgr2isNGcSGwGlqwdvXat3az14WXzJIL_tYxHjoFSM');"></div>
+<div class="absolute bottom-0 right-0 size-4 bg-green-500 border-2 border-background-dark rounded-full"></div>
+</div>
+<div class="flex-1">
+<p class="font-bold text-slate-900 dark:text-slate-100">Marcus Wright</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Clearance: Level 4 • Secondary</p>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Security Message -->
+<div class="p-4 mt-4">
+<div class="flex gap-3 bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+<span class="material-symbols-outlined text-primary">security</span>
+<p class="text-xs text-slate-400 leading-relaxed">
+                    Changes to the guardian list require a 24-hour propagation delay. Any removals will notify the affected party immediately.
+                </p>
+</div>
+</div>
+</main>
+<!-- Bottom Action Area -->
+<div class="p-4 bg-background-light dark:bg-background-dark border-t border-primary/10">
+<button class="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98]">
+            Update Protocol
+        </button>
+</div>
+<!-- Navigation Bar -->
+<nav class="flex border-t border-primary/10 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-md px-2 pb-6 pt-2">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">home</span>
+<p class="text-[10px] font-medium uppercase tracking-widest">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">lock</span>
+<p class="text-[10px] font-medium uppercase tracking-widest">Vault</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">group</span>
+<p class="text-[10px] font-medium uppercase tracking-widest">Guardians</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<p class="text-[10px] font-medium uppercase tracking-widest">Logs</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-medium uppercase tracking-widest">Setup</p>
+</a>
+</nav>
+</body></html>

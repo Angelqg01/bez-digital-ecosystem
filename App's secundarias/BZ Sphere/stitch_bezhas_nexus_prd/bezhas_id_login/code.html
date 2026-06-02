@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas ID - Authenticating</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary-container": "#00626e",
+                        "outline-variant": "#3b494c",
+                        "surface-variant": "#31353c",
+                        "on-tertiary-fixed": "#221b00",
+                        "tertiary-fixed-dim": "#e9c400",
+                        "on-primary-fixed": "#001f24",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#006875",
+                        "secondary-fixed": "#dce1ff",
+                        "surface-container": "#1c2026",
+                        "tertiary-fixed": "#ffe16d",
+                        "on-tertiary": "#3a3000",
+                        "surface-container-high": "#262a31",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#001550",
+                        "tertiary": "#ffecad",
+                        "on-secondary-fixed-variant": "#003ab3",
+                        "on-surface-variant": "#bac9cc",
+                        "surface-dim": "#10141a",
+                        "primary": "#c3f5ff",
+                        "on-error": "#690005",
+                        "surface-tint": "#00daf3",
+                        "inverse-on-surface": "#2d3137",
+                        "surface-bright": "#353940",
+                        "primary-fixed-dim": "#00daf3",
+                        "on-primary": "#00363d",
+                        "secondary-fixed-dim": "#b6c4ff",
+                        "inverse-surface": "#dfe2eb",
+                        "secondary": "#b6c4ff",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#9cf0ff",
+                        "primary-container": "#00e5ff",
+                        "on-primary-fixed-variant": "#004f58",
+                        "on-background": "#dfe2eb",
+                        "on-tertiary-fixed-variant": "#544600",
+                        "on-secondary-container": "#d4dbff",
+                        "surface-container-lowest": "#0a0e14",
+                        "surface-container-highest": "#31353c",
+                        "surface-container-low": "#181c22",
+                        "on-secondary": "#002780",
+                        "secondary-container": "#0050ee",
+                        "on-tertiary-container": "#695800",
+                        "surface": "#10141a",
+                        "outline": "#849396",
+                        "tertiary-container": "#f4ce00",
+                        "on-surface": "#dfe2eb",
+                        "background": "#10141a"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(24, 28, 34, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .circuit-lines {
+            background-image: radial-gradient(circle at 2px 2px, rgba(0, 229, 255, 0.05) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+        .glow-pulse {
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+        }
+        .cyber-grid {
+            mask-image: linear-gradient(to bottom, transparent, black, transparent);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen flex items-center justify-center overflow-hidden">
+<!-- Ambient Background Elements -->
+<div class="fixed inset-0 z-0">
+<div class="absolute inset-0 circuit-lines opacity-40"></div>
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary-container/10 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary-container/5 rounded-full blur-[150px]"></div>
+<!-- Animated-style Decorative Circuit Lines -->
+<svg class="absolute inset-0 w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 100 Q 250 100 250 350 T 500 600 T 1000 600" fill="none" stroke="#00e5ff" stroke-width="0.5"></path>
+<path d="M1200 0 Q 1000 300 800 300 T 500 700" fill="none" stroke="#00e5ff" stroke-width="0.5"></path>
+</svg>
+</div>
+<!-- Main Splash Canvas -->
+<main class="relative z-10 w-full max-w-lg px-6 flex flex-col items-center">
+<!-- BeZhas Nexus Identification Header (Subtle) -->
+<div class="mb-12 flex flex-col items-center space-y-2">
+<div class="flex items-center space-x-2 text-primary opacity-80">
+<span class="material-symbols-outlined text-sm" data-icon="verified_user">verified_user</span>
+<span class="font-headline tracking-widest text-[10px] uppercase">Nexus Protocol Secure Access</span>
+</div>
+</div>
+<!-- Central Identity Core -->
+<div class="relative group cursor-pointer">
+<!-- Glow Effect Layers -->
+<div class="absolute inset-0 bg-primary-container/20 rounded-full blur-2xl transition-all group-hover:bg-primary-container/40"></div>
+<!-- Main Login Button -->
+<button class="relative w-64 h-64 glass-panel rounded-full border border-primary/20 flex flex-col items-center justify-center space-y-4 shadow-2xl transition-transform active:scale-95 group-hover:border-primary/50">
+<!-- Abstract ID Icon -->
+<div class="relative w-24 h-24 flex items-center justify-center">
+<div class="absolute inset-0 border-2 border-primary/30 rounded-full animate-ping opacity-20"></div>
+<div class="absolute inset-2 border border-primary/40 rounded-full"></div>
+<span class="material-symbols-outlined text-6xl text-primary" data-icon="fingerprint">fingerprint</span>
+</div>
+<div class="text-center">
+<span class="block font-headline font-bold text-2xl tracking-tight text-white drop-shadow-[0_0_8px_rgba(0,229,255,0.4)]">BeZhas ID</span>
+<span class="text-[10px] text-primary/60 font-medium uppercase tracking-[0.2em] mt-1 block">Initialize Node</span>
+</div>
+</button>
+<!-- Decorative Orbitals -->
+<div class="absolute -top-4 -right-4 w-12 h-12 glass-panel rounded-xl border border-primary/10 flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-primary/40 text-lg" data-icon="lan">lan</span>
+</div>
+<div class="absolute -bottom-2 -left-6 w-10 h-10 glass-panel rounded-lg border border-primary/10 flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-primary/40 text-md" data-icon="security">security</span>
+</div>
+</div>
+<!-- Status Message -->
+<div class="mt-16 text-center space-y-4">
+<div class="flex items-center justify-center space-x-3">
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse shadow-[0_0_8px_#00e5ff]"></div>
+<p class="text-on-surface-variant font-body text-sm tracking-wide">
+                    Authenticating with On-Chain Reputation...
+                </p>
+</div>
+<!-- Reputation Progress Bar -->
+<div class="w-48 h-1 bg-surface-container-high rounded-full mx-auto overflow-hidden">
+<div class="h-full bg-primary-container w-2/3 shadow-[0_0_10px_rgba(0,229,255,0.5)]"></div>
+</div>
+</div>
+<!-- Alternative Connection -->
+<div class="mt-20 w-full flex flex-col items-center space-y-6">
+<div class="flex items-center w-full max-w-xs">
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+<span class="px-4 text-[10px] text-outline uppercase tracking-widest font-medium">Or</span>
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+</div>
+<button class="flex items-center space-x-3 px-8 py-3 rounded-xl border border-outline-variant/20 hover:border-primary/40 transition-all hover:bg-surface-container-high active:scale-95">
+<span class="material-symbols-outlined text-primary" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label text-sm text-on-surface-variant">Connect Wallet</span>
+</button>
+</div>
+</main>
+<!-- Background Decorative Text/Metadata -->
+<div class="fixed bottom-8 left-8 hidden lg:block opacity-20">
+<div class="font-headline text-xs space-y-1 text-primary">
+<p>NETWORK_STATUS: ENCRYPTED</p>
+<p>LATENCY: 14MS</p>
+<p>REPUTATION_TIER: ALPHA_NODE</p>
+</div>
+</div>
+<div class="fixed top-8 right-8 hidden lg:block opacity-20">
+<div class="text-right font-headline text-xs space-y-1 text-primary">
+<p>SECURE_AUTH_V4.0.2</p>
+<p>BEZHAS_NEXUS_CORE</p>
+</div>
+</div>
+<!-- UI Overlay for depth -->
+<div class="fixed inset-0 pointer-events-none border-[32px] border-surface-container-lowest/10 cyber-grid"></div>
+<!-- Background Images for context -->
+<div class="sr-only">
+<img alt="" data-alt="Abstract blue glowing digital circuit patterns on dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO_yssVfTEirDObw56gr089-GwFfxNlxSJ3u4RF_Qs7K7whcgr5jJQbEWNrSKJBByFzO8vNzSwJpAL7mvHaIdRIaQUNeDFh0WCRQIwcaUnxmlOsGjXTEEQgwGL3Sl9Z3FR_kMSceNqiOdc0xnoYUf5U4HFkz5graH08TChqsxAms8Vpf5L05XE9kwyVxa2aoZh0OFeTzIqF42-VkTz-e0c8vrssHwVE-o5hzi464_c2V24Gd1mvPr9N9UyJ1vku7TFxw4pR2ArSdQ"/>
+<img alt="" data-alt="Futuristic safe or vault door with neon blue lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhnqsC8e9WQY4QX6aqGTxKOQNHE0Q-GsUUElfuFA9D9vVU-mEMJF77suOY8-JlL6hqFM_NQLt2WItw1Evow5xajVT93jxdD0I5mx3dZ-pdxrUHvz2ELq8Qd7FJKL6dRCpGn1SRaExyZFi3FUSJYjDlfXAgz1k2dtFlCyxAeLMgWwK7qO3I6a3Ny50NPqHNrBDSezz2zLb3DLn5FH40U4Dmaw5kkQJZcAGLEk-o6YcZb8tc6y-1bH429pii3pHnr5zraDkaV_REDFU"/>
+</div>
+</body></html>

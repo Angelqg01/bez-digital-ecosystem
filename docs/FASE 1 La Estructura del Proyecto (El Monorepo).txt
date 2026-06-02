@@ -1,0 +1,28 @@
+bezhas-network/
+│
+├── 📦 l2-core/                 # El código fuente de tu Blockchain (Fork de OP Stack)
+│   ├── op-geth/                # Motor de ejecución (Aquí va el código de la IA nativa)
+│   ├── op-node/                # Motor de consenso (El Secuenciador)
+│   └── op-batcher/             # Empaqueta y envía datos a Ethereum
+│
+├── 📦 smart-contracts/         # Tus contratos en Solidity (usando Foundry)
+│   ├── src/
+│   │   ├── tokens/BeZCoin.sol          # Tu token nativo
+│   │   ├── core/BeZhasRWAFactory.sol   # Tokenización de activos
+│   │   ├── core/QualityEscrow.sol      # Validaciones con IA
+│   │   ├── depin/EdgeNodeRewards.sol   # Sistema de "Minería" para empresas
+│   │   └── aa/EnterprisePaymaster.sol  # Account Abstraction (Paga el gas por los clientes)
+│   └── scripts/deploy.s.sol            # Scripts de despliegue automatizado
+│
+├── 📦 bezhas-edge-node/        # El software que instalan las empresas (Docker)
+│   ├── server.js               # Escucha Webhooks del ERP del cliente (SAP, Shopify)
+│   ├── auto-signer.js          # Firma transacciones sin fricción humana
+│   └── reward-claimer.js       # Reclama el BEZ-Coin minado automáticamente
+│
+├── 📦 ai-gateway/              # El cerebro de la IA (Python o Node.js)
+│   ├── process-mapper.py       # Analiza bases de datos del cliente y sugiere qué tokenizar
+│   └── oracle-responder.py     # Responde a las peticiones del L2 (Calidad de carga, etc)
+│
+└── 📦 control-center/          # Tu panel de administración de la red (React/Next.js)
+    ├── /frontend               # Dashboard UI
+    └── /backend                # API para reiniciar nodos, inyectar gas, ver métricas

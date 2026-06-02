@@ -1,0 +1,196 @@
+{
+  "main": {
+    "id": "a1111050de5f3fac",
+    "type": "split",
+    "children": [
+      {
+        "id": "0ac9e6bf3d45442d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d4a4aaf1397c2656",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Vista gráfica"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "a68ea7b9f8459593",
+    "type": "split",
+    "children": [
+      {
+        "id": "2ca01e71e64514aa",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "42fb16c3bb117ed2",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de archivos"
+            }
+          },
+          {
+            "id": "7cb2d91a2693ed70",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Buscar"
+            }
+          },
+          {
+            "id": "edd1bdee31069f01",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "a75be9b0b395deaf",
+    "type": "split",
+    "children": [
+      {
+        "id": "43958822a0fde1d9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "66f9e037be883cdf",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Enlaces entrantes"
+            }
+          },
+          {
+            "id": "49ee220c9cd0b256",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Enlaces salientes"
+            }
+          },
+          {
+            "id": "9798ac66855e3f06",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "b04aa4a016609b0e",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas las propiedades"
+            }
+          },
+          {
+            "id": "1824b3b5342c9dd6",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Esquema"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false
+    }
+  },
+  "active": "d4a4aaf1397c2656",
+  "lastOpenFiles": [
+    "VALIDATION_SYSTEM.md",
+    "Red DePIN (Decentralized Physical Infrastructure Network) B2B.md",
+    "developer-portal/api-reference.md",
+    "Sin título.canvas",
+    "developer-portal/index.md",
+    "MultiChain_Bridges_Architecture.md",
+    "CTO_CISO_Architecture_BeZhas.md",
+    "Blockscout_Explorer_Setup.md",
+    "Arquitectura de la Aplicación (El Stack Técnico).md",
+    "developer-portal/sectores/automotriz.md",
+    "developer-portal/sectores/agricultura.md",
+    "GUIA_PLATAFORMA_BEZHAS.md",
+    "El Problema Tecnico ¿Por que no sirve el contrato actual de Polygon.md",
+    "Investor_OnePager_BeZhas.md"
+  ]
+}

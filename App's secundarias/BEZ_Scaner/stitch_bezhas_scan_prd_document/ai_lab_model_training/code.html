@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas AI Lab - Model Training</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#1a0f0a",
+                        "surface-dark": "#2d1b14",
+                        "accent-green": "#5de619",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .glass { background: rgba(236, 91, 19, 0.05); backdrop-filter: blur(10px); }
+        .glow-primary { box-shadow: 0 0 15px rgba(236, 91, 19, 0.3); }
+        .glow-green { box-shadow: 0 0 10px rgba(93, 230, 25, 0.4); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header -->
+<header class="sticky top-0 z-10 flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 border-b border-primary/20 justify-between">
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">psychology</span>
+</div>
+<div>
+<h1 class="text-xl font-bold leading-tight tracking-tight">AI Lab</h1>
+<p class="text-xs text-primary font-medium uppercase tracking-widest">Neural Network V4.2</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-green opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-accent-green"></span>
+</span>
+<span class="text-[10px] font-bold text-accent-green">ACTIVE</span>
+</div>
+<p class="text-[10px] text-slate-500 dark:text-slate-400">Syncing to BeZhas Mainnet</p>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto pb-24">
+<!-- Training Progress Section -->
+<section class="p-4">
+<div class="bg-surface-dark/40 border border-primary/20 rounded-xl p-5 relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="text-lg font-bold">Training Progress</h2>
+<p class="text-sm text-slate-400">Scan-to-Refinement Loop</p>
+</div>
+<span class="text-2xl font-black text-primary">78.4%</span>
+</div>
+<div class="relative h-4 w-full bg-primary/10 rounded-full overflow-hidden mb-4">
+<div class="absolute top-0 left-0 h-full bg-gradient-to-r from-primary/60 to-primary glow-primary rounded-full" style="width: 78.4%;"></div>
+</div>
+<div class="grid grid-cols-3 gap-2 text-center">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-500 uppercase">Input Scans</span>
+<span class="text-sm font-semibold">12.4k</span>
+</div>
+<div class="flex flex-col border-x border-primary/10">
+<span class="text-[10px] text-slate-500 uppercase">Validation</span>
+<span class="text-sm font-semibold text-accent-green">Passed</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-500 uppercase">Epochs</span>
+<span class="text-sm font-semibold">1,024</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Accuracy Metrics Cards -->
+<section class="px-4 py-2">
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary mb-3">Accuracy Metrics</h3>
+<div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+<div class="min-w-[160px] flex-1 bg-surface-dark border border-primary/10 p-4 rounded-xl">
+<span class="material-symbols-outlined text-primary mb-2">analytics</span>
+<p class="text-[10px] text-slate-400 leading-tight mb-1">Damage Precision</p>
+<p class="text-xl font-bold">99.2%</p>
+<div class="mt-2 h-8 w-full bg-primary/5 flex items-end gap-1">
+<div class="w-full bg-primary/40 h-1/2 rounded-t-sm"></div>
+<div class="w-full bg-primary/60 h-2/3 rounded-t-sm"></div>
+<div class="w-full bg-primary/80 h-3/4 rounded-t-sm"></div>
+<div class="w-full bg-primary h-full rounded-t-sm"></div>
+</div>
+</div>
+<div class="min-w-[160px] flex-1 bg-surface-dark border border-primary/10 p-4 rounded-xl">
+<span class="material-symbols-outlined text-accent-green mb-2">payments</span>
+<p class="text-[10px] text-slate-400 leading-tight mb-1">Market Confidence</p>
+<p class="text-xl font-bold">97.8%</p>
+<div class="mt-2 h-8 w-full bg-accent-green/5 flex items-end gap-1">
+<div class="w-full bg-accent-green/40 h-3/4 rounded-t-sm"></div>
+<div class="w-full bg-accent-green/60 h-1/2 rounded-t-sm"></div>
+<div class="w-full bg-accent-green/80 h-2/3 rounded-t-sm"></div>
+<div class="w-full bg-accent-green h-4/5 rounded-t-sm"></div>
+</div>
+</div>
+<div class="min-w-[160px] flex-1 bg-surface-dark border border-primary/10 p-4 rounded-xl">
+<span class="material-symbols-outlined text-blue-400 mb-2">medical_services</span>
+<p class="text-[10px] text-slate-400 leading-tight mb-1">Diagnostic Consistency</p>
+<p class="text-xl font-bold">94.5%</p>
+<div class="mt-2 h-8 w-full bg-blue-400/5 flex items-end gap-1">
+<div class="w-full bg-blue-400/40 h-2/3 rounded-t-sm"></div>
+<div class="w-full bg-blue-400/60 h-3/4 rounded-t-sm"></div>
+<div class="w-full bg-blue-400/80 h-full rounded-t-sm"></div>
+<div class="w-full bg-blue-400 h-4/5 rounded-t-sm"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- MCP Status -->
+<section class="p-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary mb-3">Model Context Protocol (MCP)</h3>
+<div class="grid grid-cols-1 gap-3">
+<div class="flex items-center justify-between p-4 bg-surface-dark/60 rounded-xl border border-primary/5">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">integration_instructions</span>
+</div>
+<div>
+<p class="font-bold">BeZhas SDK</p>
+<p class="text-xs text-slate-500">v2.4.1 Production</p>
+</div>
+</div>
+<span class="px-3 py-1 bg-accent-green/10 text-accent-green text-[10px] font-bold rounded-full border border-accent-green/20">CONNECTED</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-dark/60 rounded-xl border border-primary/5">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">link</span>
+</div>
+<div>
+<p class="font-bold">Blockchain Ledger</p>
+<p class="text-xs text-slate-500">Block height: 2,481,092</p>
+</div>
+</div>
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">SYNCING</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-dark/60 rounded-xl border border-primary/5">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">database</span>
+</div>
+<div>
+<p class="font-bold">Decentralized Databases</p>
+<p class="text-xs text-slate-500">Encrypted Sharding Active</p>
+</div>
+</div>
+<span class="px-3 py-1 bg-accent-green/10 text-accent-green text-[10px] font-bold rounded-full border border-accent-green/20">SECURED</span>
+</div>
+</div>
+</section>
+<!-- Autonomous Workflows Toggle List -->
+<section class="p-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary mb-3">Autonomous Workflows</h3>
+<div class="bg-surface-dark rounded-xl overflow-hidden divide-y divide-primary/5">
+<div class="flex items-center justify-between p-4">
+<div class="flex flex-col">
+<span class="font-medium">Logistics Routing</span>
+<span class="text-[10px] text-slate-500">AI optimizes pathing based on scan data</span>
+</div>
+<button class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-primary focus:outline-none">
+<span class="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+<div class="flex items-center justify-between p-4">
+<div class="flex flex-col">
+<span class="font-medium">Quality Escrow Trigger</span>
+<span class="text-[10px] text-slate-500">Automatic release on defect-free scan</span>
+</div>
+<button class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-primary focus:outline-none">
+<span class="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+<div class="flex items-center justify-between p-4">
+<div class="flex flex-col">
+<span class="font-medium">Automatic Fee Adjustment</span>
+<span class="text-[10px] text-slate-500">Dynamic network fees via model load</span>
+</div>
+<button class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-slate-700 focus:outline-none">
+<span class="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+</div>
+</section>
+<!-- Data Contribution Card -->
+<section class="p-4">
+<div class="bg-gradient-to-br from-primary to-orange-700 rounded-xl p-5 text-white shadow-xl glow-primary">
+<div class="flex justify-between items-center mb-4">
+<span class="material-symbols-outlined text-3xl">share_reviews</span>
+<span class="bg-white/20 text-[10px] px-2 py-1 rounded font-bold">COMMUNITY POWERED</span>
+</div>
+<h4 class="text-lg font-bold mb-1">Data Contribution</h4>
+<p class="text-sm opacity-90 mb-4">Your anonymous scans are re-training Model V4.2. Current impact score: 4.8/5.0</p>
+<div class="flex items-center justify-between bg-black/20 p-3 rounded-lg">
+<div class="flex flex-col">
+<span class="text-[10px] opacity-70">REWARDS EARNED</span>
+<span class="text-base font-bold">142.50 BZSC</span>
+</div>
+<button class="bg-white text-primary px-4 py-1.5 rounded-lg text-sm font-bold">Claim</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-lg border-t border-primary/20 px-6 pb-6 pt-3">
+<div class="flex justify-between items-center">
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="text-[10px] font-medium">Wallet</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<span class="text-[10px] font-medium">Scan</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary group" href="#">
+<div class="bg-primary/20 p-2 rounded-full mb-[-4px] glow-primary border border-primary/30">
+<span class="material-symbols-outlined fill-1">psychology</span>
+</div>
+<span class="text-[10px] font-bold">AI Lab</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px] font-medium">DAO</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

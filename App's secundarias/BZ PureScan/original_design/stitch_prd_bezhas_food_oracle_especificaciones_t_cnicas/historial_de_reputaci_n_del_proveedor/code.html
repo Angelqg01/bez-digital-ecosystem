@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b8cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden">
+<!-- Header -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800">
+<div class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center justify-start cursor-pointer">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 text-center">Perfil y Reputación del Proveedor</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-lg bg-transparent text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined">share</span>
+</button>
+</div>
+</div>
+<!-- Profile Hero Section -->
+<div class="flex p-6 flex-col items-center gap-4">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 border-4 border-primary/20" data-alt="Modern farm worker or agricultural setting profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD1_5-6pQTTVp72BVcANH_jrD-aY3vrHxahoQ08mUGtwEz4ZQATWVqghhgCZXE0KUvkZ7lBJ33CEuQaX3GBErQFMctd1ro6BObCzG5sH_g6jmdguH-8-pUksFjvsReahsrr4OwZZLqXlAAw2DTZwemMjiFHQkfWsps9aYW6rN0HiAcpu-xXwThcxDoS4i7TRI1yh98raZ0p7vw-mNCvuynInA3q9LAyrEg8vEbMSnkfEHxgPbgdGoo39F6CO9C45DqEf2usrJtuQpU");'>
+</div>
+<div class="absolute bottom-1 right-1 bg-primary text-white rounded-full p-1 flex items-center justify-center border-2 border-background-dark">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1">verified</span>
+</div>
+</div>
+<div class="flex flex-col items-center justify-center">
+<div class="flex items-center gap-2">
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-bold leading-tight tracking-tight">Fincas del Sol</p>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal">Verified Agricultural Provider</p>
+<div class="mt-2 px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 border border-amber-500/50 flex items-center gap-1">
+<span class="material-symbols-outlined text-amber-500 text-sm">workspace_premium</span>
+<span class="text-amber-500 text-sm font-bold uppercase tracking-wider">Tier Silver (En Observación)</span>
+</div>
+</div>
+</div>
+<!-- PoR Score Dashboard -->
+<div class="grid grid-cols-2 gap-4 p-4">
+<div class="flex flex-col gap-2 rounded-xl p-5 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">PoR Score</p>
+<div class="flex items-baseline gap-2">
+<p class="text-slate-900 dark:text-slate-100 text-3xl font-bold">680<span class="text-base text-slate-400 font-normal">/1000</span></p>
+</div>
+<div class="flex items-center gap-1 text-red-500">
+<span class="material-symbols-outlined text-sm">trending_down</span>
+<p class="text-sm font-bold">-12%</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Trend (30d)</p>
+<p class="text-red-500 text-3xl font-bold tracking-tight">-120 pts</p>
+<p class="text-slate-400 text-xs">Botrytis Dispute Impact</p>
+</div>
+</div>
+<!-- Progress/Gauge Representation -->
+<div class="flex flex-col gap-3 p-4">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold">Proof-of-Reputation (PoR)</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs">Industry Avg: 740 pts</p>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">68%</p>
+</div>
+<div class="h-3 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 68%;"></div>
+</div>
+<p class="text-red-400 text-xs font-normal italic">* Botrytis dispute impact included in current calculation</p>
+</div>
+<!-- Performance Stats -->
+<div class="p-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-widest mb-4">Métricas de Rendimiento</h3>
+<div class="grid grid-cols-3 gap-3">
+<div class="flex flex-col items-center p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+<span class="text-2xl font-bold text-primary">85</span>
+<span class="text-[10px] text-slate-500 text-center uppercase font-bold mt-1 leading-tight">Lotes Entregados</span>
+</div>
+<div class="flex flex-col items-center p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+<span class="text-2xl font-bold text-emerald-500">92%</span>
+<span class="text-[10px] text-slate-500 text-center uppercase font-bold mt-1 leading-tight">Tasa de Éxito</span>
+</div>
+<div class="flex flex-col items-center p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+<span class="text-2xl font-bold text-red-400">2</span>
+<span class="text-[10px] text-slate-500 text-center uppercase font-bold mt-1 leading-tight">Incidencias Fúngicas</span>
+</div>
+</div>
+</div>
+<!-- Reputation History -->
+<div class="p-4 pb-20">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-widest">Historial de Reputación</h3>
+<button class="text-primary text-xs font-bold">Ver Todo</button>
+</div>
+<div class="space-y-3">
+<!-- Event 1 -->
+<div class="flex gap-4 p-4 rounded-xl border border-red-500/20 bg-red-500/5 items-start">
+<div class="bg-red-500/20 p-2 rounded-lg text-red-500">
+<span class="material-symbols-outlined">report_problem</span>
+</div>
+<div class="flex-1">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">Disputa #4019-Z: Fallo Crítico (Botrytis)</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Hoy</p>
+</div>
+<p class="text-red-500 font-bold text-sm">-150 PoR</p>
+</div>
+<!-- Event 2 -->
+<div class="flex gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 items-start">
+<div class="bg-primary/20 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<div class="flex-1">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">Lote #8210: Calidad Premium</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Hace 2 semanas</p>
+</div>
+<p class="text-emerald-500 font-bold text-sm">+15 PoR</p>
+</div>
+<!-- Event 3 -->
+<div class="flex gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 items-start">
+<div class="bg-primary/20 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">thermostat</span>
+</div>
+<div class="flex-1">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">Contrato #3880: Cumplimiento Térmico</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Hace 1 mes</p>
+</div>
+<p class="text-emerald-500 font-bold text-sm">+10 PoR</p>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation -->
+<div class="fixed bottom-0 left-0 right-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pb-4 pt-2 flex gap-2 z-50">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Dashboard</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">history</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">History</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">person</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Profile</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Settings</p>
+</a>
+</div>
+</div>
+</body></html>

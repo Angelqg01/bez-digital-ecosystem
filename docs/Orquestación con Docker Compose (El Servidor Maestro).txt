@@ -1,0 +1,52 @@
+version: '3.8'
+services:
+  # 1. Base de datos para el Panel de Control
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: TuPasswordSeguro
+      POSTGRES_DB: bezhas_control
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  # 2. Redis para colas de IA (BullMQ)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  # 3. AI Gateway (Conecta la blockchain con LLMs externos)
+  ai-gateway:
+    build: ./ai-engine
+    environment:
+      - DEEPSEEK_API_KEY=sk-tu-clave
+      - GEMINI_API_KEY=AIza-tu-clave
+    depends_on:
+      - redis
+
+  # 4. El Nodo Execution (Tu Blockchain)
+  bezhas-geth:
+    image: bezhas/op-geth:latest # La imagen que compilaste en el Paso 4
+    ports:
+      - "8545:8545" # RPC para MetaMask/SDK
+    volumes:
+      - ./geth-data:/db
+    command:[ "--datadir=/db", "--http", "--http.addr=0.0.0.0", "--syncmode=full" ]
+
+  # 5. El Nodo Consensus (Secuenciador)
+  bezhas-node:
+    image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:latest
+    depends_on:
+      - bezhas-geth
+    command:[ "op-node", "--sequencer.enabled=true" ]
+
+  # 6. Publicador de Bloques a Ethereum (Paga el gas L1)
+  bezhas-batcher:
+    image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-batcher:latest
+    environment:
+      - BATCHER_PRIVATE_KEY=TU_CLAVE_PRIVADA_DEL_BATCHER
+
+volumes:
+  pg-data:
+  geth-data:

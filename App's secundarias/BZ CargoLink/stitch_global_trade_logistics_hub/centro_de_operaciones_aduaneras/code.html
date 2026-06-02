@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Operaciones Aduaneras - Logistics OS</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#74829d",
+                        "tertiary-container": "#271500",
+                        "inverse-primary": "#515f78",
+                        "error": "#ffb4ab",
+                        "primary": "#b9c7e4",
+                        "secondary-container": "#00a572",
+                        "on-secondary": "#003824",
+                        "primary-fixed-dim": "#b9c7e4",
+                        "outline-variant": "#44474d",
+                        "on-primary-fixed": "#0d1c32",
+                        "on-tertiary": "#472a00",
+                        "on-surface": "#d4e4fa",
+                        "on-secondary-container": "#00311f",
+                        "outline": "#8f9097",
+                        "on-error-container": "#ffdad6",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#233143",
+                        "surface-variant": "#273647",
+                        "surface-tint": "#b9c7e4",
+                        "secondary-fixed": "#6ffbbe",
+                        "primary-fixed": "#d6e3ff",
+                        "surface-dim": "#051424",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "surface-container-low": "#0d1c2d",
+                        "inverse-surface": "#d4e4fa",
+                        "on-secondary-fixed": "#002113",
+                        "on-error": "#690005",
+                        "secondary": "#4edea3",
+                        "tertiary": "#ffb95f",
+                        "surface-container": "#122131",
+                        "background": "#051424",
+                        "surface-bright": "#2c3a4c",
+                        "secondary-fixed-dim": "#4edea3",
+                        "surface": "#051424",
+                        "surface-container-lowest": "#010f1f",
+                        "on-background": "#d4e4fa",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-primary-fixed-variant": "#39475f",
+                        "on-secondary-fixed-variant": "#005236",
+                        "surface-container-highest": "#273647",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "surface-container-high": "#1c2b3c",
+                        "on-primary": "#233148",
+                        "primary-container": "#0a192f",
+                        "on-surface-variant": "#c5c6cd",
+                        "on-tertiary-container": "#b67300"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "unit": "4px",
+                        "margin": "32px",
+                        "container-max": "1440px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-base": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "body-base": ["16px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-base text-body-base overflow-x-hidden selection:bg-primary selection:text-on-primary">
+<!-- NavigationDrawer (Shared Component) -->
+<aside class="hidden lg:flex flex-col fixed left-0 top-0 h-full py-8 w-64 border-r border-[#1E293B] bg-[#020617] dark:bg-[#020617] z-50 shadow-none">
+<div class="px-6 mb-12">
+<h2 class="text-xl font-black tracking-tighter text-slate-100 uppercase">LOGISTICS OS</h2>
+</div>
+<nav class="flex-1 flex flex-col space-y-2 px-4">
+<!-- Network (Inactive) -->
+<a class="flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-400 font-medium hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150 font-inter tracking-tight text-sm uppercase" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">hub</span>
+<span>Network</span>
+</a>
+<!-- Customs (Active) -->
+<a class="flex items-center space-x-4 px-4 py-3 rounded-lg text-emerald-400 border-l-2 border-emerald-500 bg-emerald-500/5 font-bold font-inter tracking-tight text-sm uppercase ring-inset ring-1 ring-emerald-500/20" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">gavel</span>
+<span>Customs</span>
+</a>
+<!-- Logistics (Inactive) -->
+<a class="flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-400 font-medium hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150 font-inter tracking-tight text-sm uppercase" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">local_shipping</span>
+<span>Logistics</span>
+</a>
+<!-- Terminal (Inactive) -->
+<a class="flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-400 font-medium hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150 font-inter tracking-tight text-sm uppercase" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">qr_code_scanner</span>
+<span>Terminal</span>
+</a>
+</nav>
+</aside>
+<!-- Content Canvas -->
+<div class="lg:ml-64 flex flex-col min-h-screen">
+<!-- TopAppBar (Shared Component) -->
+<header class="flex justify-between items-center w-full px-6 py-4 sticky top-0 z-40 bg-[#0B1120] dark:bg-[#0B1120] border-b border-[#1E293B] shadow-sm dark:shadow-none">
+<div class="flex items-center space-x-4">
+<button class="lg:hidden text-emerald-500 dark:text-emerald-400 hover:bg-slate-800 cursor-pointer p-2 rounded-md">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-inter text-lg font-bold tracking-tight text-slate-100">Operational Overview</h1>
+</div>
+<div class="flex items-center">
+<div class="w-8 h-8 rounded-full bg-surface-bright border border-outline-variant flex items-center justify-center text-on-surface hover:bg-slate-800 cursor-pointer opacity-80 transition-opacity" title="User Profile">
+<span class="material-symbols-outlined text-sm">person</span>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 p-margin space-y-margin pb-24 lg:pb-margin max-w-container-max mx-auto w-full">
+<!-- Context Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-outline-variant pb-6">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface">Operaciones Aduaneras</h2>
+<p class="font-body-base text-body-base text-on-surface-variant mt-2">Control y seguimiento de pedimentos activos</p>
+</div>
+<div class="flex space-x-3">
+<button class="bg-surface-container border border-outline-variant text-on-surface font-data-mono text-data-mono px-4 py-2 rounded flex items-center space-x-2 hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+<span>Filtrar</span>
+</button>
+<button class="bg-gradient-to-b from-surface-bright to-surface-container border border-outline-variant text-primary font-data-mono text-data-mono px-4 py-2 rounded flex items-center space-x-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Nuevo Pedimento</span>
+</button>
+</div>
+</div>
+<!-- Dashboard Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Active Pedimentos Column -->
+<div class="md:col-span-8 space-y-gutter">
+<!-- Card 1: Cleared (Green) -->
+<article class="bg-surface-container border border-outline-variant rounded-DEFAULT shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)] overflow-hidden relative">
+<!-- Card Header -->
+<div class="flex justify-between items-center px-6 py-4 border-b border-outline-variant bg-surface-container-high/50">
+<div class="flex items-center space-x-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">ID DE RASTREO</span>
+<h3 class="font-data-mono text-data-mono text-on-surface tracking-wider">PED-2409-A8812</h3>
+</div>
+<div class="bg-secondary text-on-secondary font-label-caps text-label-caps px-3 py-1 rounded-lg flex items-center space-x-1.5 shadow-[0_0_12px_rgba(78,222,163,0.2)]">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>DESADUANADO</span>
+</div>
+</div>
+<!-- Card Body -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Details -->
+<div class="space-y-4">
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-1">IMPORTADOR</span>
+<span class="font-body-sm text-body-sm text-on-surface">TechLogistics S.A. de C.V.</span>
+</div>
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-1">VALOR EN ADUANA (MXN)</span>
+<span class="font-data-mono text-data-mono text-on-surface">$1,450,000.00</span>
+</div>
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-1">CÁLCULO DE IMPUESTOS</span>
+<div class="grid grid-cols-2 gap-2 mt-2 bg-surface-container-low p-3 border border-outline-variant rounded-DEFAULT">
+<span class="font-body-sm text-body-sm text-on-surface-variant">IGI:</span>
+<span class="font-data-mono text-data-mono text-on-surface text-right">$45,000.00</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">DTA:</span>
+<span class="font-data-mono text-data-mono text-on-surface text-right">$11,600.00</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">IVA:</span>
+<span class="font-data-mono text-data-mono text-on-surface text-right">$241,056.00</span>
+<div class="col-span-2 border-t border-outline-variant my-1"></div>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">TOTAL:</span>
+<span class="font-data-mono text-data-mono text-secondary text-right">$297,656.00</span>
+</div>
+</div>
+</div>
+<!-- Semaphore & Actions -->
+<div class="space-y-6 flex flex-col justify-between">
+<!-- Fiscal Semaphore Timeline -->
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-4">SEMÁFORO FISCAL</span>
+<div class="flex items-center w-full">
+<div class="flex flex-col items-center">
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary"><span class="material-symbols-outlined text-[14px]">done</span></div>
+<span class="font-label-caps text-[10px] text-on-surface mt-2">PAGO</span>
+</div>
+<div class="flex-1 h-px bg-primary mx-2"></div>
+<div class="flex flex-col items-center relative">
+<div class="absolute -top-8 bg-secondary/10 border border-secondary text-secondary font-label-caps text-[10px] px-2 py-0.5 rounded shadow-[0_0_8px_rgba(78,222,163,0.3)]">VERDE</div>
+<div class="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-on-secondary shadow-[0_0_12px_rgba(78,222,163,0.5)]"><span class="material-symbols-outlined text-[14px]">traffic</span></div>
+<span class="font-label-caps text-[10px] text-on-surface mt-2">MÓDULO</span>
+</div>
+<div class="flex-1 h-px bg-primary mx-2"></div>
+<div class="flex flex-col items-center">
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary"><span class="material-symbols-outlined text-[14px]">local_shipping</span></div>
+<span class="font-label-caps text-[10px] text-on-surface mt-2">SALIDA</span>
+</div>
+</div>
+</div>
+<!-- Document Actions -->
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-2">DOCUMENTACIÓN ANEJA</span>
+<div class="flex space-x-3">
+<button class="flex-1 bg-surface border border-outline-variant text-on-surface font-data-mono text-data-mono py-2 px-3 rounded flex items-center justify-center space-x-2 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">upload_file</span>
+<span>Factura</span>
+</button>
+<button class="flex-1 bg-surface border border-outline-variant text-on-surface font-data-mono text-data-mono py-2 px-3 rounded flex items-center justify-center space-x-2 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">upload_file</span>
+<span>Cert. Origen</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2: Red Channel -->
+<article class="bg-surface-container border border-outline-variant rounded-DEFAULT shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)] overflow-hidden relative">
+<!-- Active Border Indicator -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<!-- Card Header -->
+<div class="flex justify-between items-center px-6 py-4 border-b border-outline-variant bg-surface-container-high/50">
+<div class="flex items-center space-x-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">ID DE RASTREO</span>
+<h3 class="font-data-mono text-data-mono text-on-surface tracking-wider">PED-2409-C1045</h3>
+</div>
+<div class="bg-error text-on-error font-label-caps text-label-caps px-3 py-1 rounded-lg flex items-center space-x-1.5 shadow-[0_0_12px_rgba(255,180,171,0.1)]">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span>RECONOCIMIENTO ADUANERO</span>
+</div>
+</div>
+<!-- Card Body -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Details -->
+<div class="space-y-4">
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-1">IMPORTADOR</span>
+<span class="font-body-sm text-body-sm text-on-surface">Global Parts Mfg LLC.</span>
+</div>
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-1">VALOR EN ADUANA (MXN)</span>
+<span class="font-data-mono text-data-mono text-on-surface">$8,200,500.00</span>
+</div>
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-1">ESTADO DE INCIDENCIA</span>
+<div class="bg-error-container/20 border border-error/30 p-3 rounded-DEFAULT mt-1">
+<p class="font-body-sm text-body-sm text-error">Revisión física en andén asignada. Se requiere documentación técnica adicional de las partidas 4 y 5.</p>
+</div>
+</div>
+</div>
+<!-- Semaphore & Actions -->
+<div class="space-y-6 flex flex-col justify-between">
+<!-- Fiscal Semaphore Timeline -->
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-4">SEMÁFORO FISCAL</span>
+<div class="flex items-center w-full">
+<div class="flex flex-col items-center">
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary"><span class="material-symbols-outlined text-[14px]">done</span></div>
+<span class="font-label-caps text-[10px] text-on-surface mt-2">PAGO</span>
+</div>
+<div class="flex-1 h-px bg-primary mx-2"></div>
+<div class="flex flex-col items-center relative">
+<div class="absolute -top-8 bg-error/10 border border-error text-error font-label-caps text-[10px] px-2 py-0.5 rounded shadow-[0_0_8px_rgba(255,180,171,0.2)] animate-pulse">ROJO</div>
+<div class="w-6 h-6 rounded-full bg-error flex items-center justify-center text-on-error shadow-[0_0_12px_rgba(255,180,171,0.4)]"><span class="material-symbols-outlined text-[14px]">front_hand</span></div>
+<span class="font-label-caps text-[10px] text-on-surface mt-2">MÓDULO</span>
+</div>
+<div class="flex-1 h-px bg-outline-variant mx-2 border-dashed border-t"></div>
+<div class="flex flex-col items-center opacity-50">
+<div class="w-6 h-6 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant"><span class="material-symbols-outlined text-[14px]">local_shipping</span></div>
+<span class="font-label-caps text-[10px] text-on-surface-variant mt-2">SALIDA</span>
+</div>
+</div>
+</div>
+<!-- Document Actions -->
+<div>
+<span class="font-label-caps text-label-caps text-error block mb-2">ACCIÓN REQUERIDA</span>
+<div class="flex space-x-3">
+<button class="flex-1 bg-surface border border-error text-error font-data-mono text-data-mono py-2 px-3 rounded flex items-center justify-center space-x-2 hover:bg-error/10 transition-colors shadow-[0_0_8px_rgba(255,180,171,0.1)]">
+<span class="material-symbols-outlined text-[16px]">upload_file</span>
+<span>Fichas Téc.</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</article>
+</div>
+<!-- Side Panel: Stats / Operational Queue -->
+<div class="md:col-span-4 space-y-gutter">
+<!-- KPI Bento -->
+<div class="bg-surface-container border border-outline-variant rounded-DEFAULT p-6 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)]">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-6">Métricas de Turno</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low border border-outline-variant p-4 rounded-DEFAULT">
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-1">TOTAL ACTIVOS</span>
+<span class="font-display-lg text-display-lg text-on-surface">42</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-4 rounded-DEFAULT">
+<span class="font-label-caps text-label-caps text-on-surface-variant block mb-1">DESADUANADOS</span>
+<span class="font-display-lg text-display-lg text-secondary">28</span>
+</div>
+<div class="bg-surface-container-low border border-error/50 p-4 rounded-DEFAULT col-span-2 relative overflow-hidden">
+<div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-error/10 to-transparent pointer-events-none"></div>
+<div class="flex justify-between items-center">
+<div>
+<span class="font-label-caps text-label-caps text-error block mb-1">EN RECONOCIMIENTO (ROJO)</span>
+<span class="font-display-lg text-display-lg text-error">3</span>
+</div>
+<span class="material-symbols-outlined text-display-lg text-error/50">warning</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Tools / Glossary -->
+<div class="bg-surface-container border border-outline-variant rounded-DEFAULT p-6">
+<h3 class="font-body-base text-body-base font-semibold text-on-surface mb-4 border-b border-outline-variant pb-2">Accesos Rápidos</h3>
+<ul class="space-y-3">
+<li>
+<a class="flex items-center space-x-3 text-primary hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">calculate</span>
+<span class="font-data-mono text-data-mono">Calculadora de Contribuciones</span>
+</a>
+</li>
+<li>
+<a class="flex items-center space-x-3 text-primary hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">policy</span>
+<span class="font-data-mono text-data-mono">Consulta TIGIE</span>
+</a>
+</li>
+<li>
+<a class="flex items-center space-x-3 text-primary hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">article</span>
+<span class="font-data-mono text-data-mono">Anexo 22 - Instructivo</span>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Shared Component) -->
+<nav class="fixed lg:hidden bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-[#0B1120] dark:bg-[#0B1120] border-t border-[#1E293B] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+<!-- Home (Inactive) -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-200 font-inter text-[10px] font-bold uppercase tracking-widest w-full py-1" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span>Home</span>
+</a>
+<!-- Customs (Active) -->
+<a class="flex flex-col items-center justify-center text-emerald-400 bg-emerald-900/20 rounded-sm py-1 px-3 font-inter text-[10px] font-bold uppercase tracking-widest scale-95 transition-transform w-full" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]" style="font-variation-settings: 'FILL' 1;">description</span>
+<span>Customs</span>
+</a>
+<!-- Transport (Inactive) -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-200 font-inter text-[10px] font-bold uppercase tracking-widest w-full py-1" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]" style="font-variation-settings: 'FILL' 0;">route</span>
+<span>Transport</span>
+</a>
+<!-- Scan (Inactive) -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-200 font-inter text-[10px] font-bold uppercase tracking-widest w-full py-1" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]" style="font-variation-settings: 'FILL' 0;">center_focus_strong</span>
+<span>Scan</span>
+</a>
+</nav>
+</body></html>

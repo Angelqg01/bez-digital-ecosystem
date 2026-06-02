@@ -1,0 +1,11 @@
+domain,route,method,current_owner,target_owner,action,priority,notes
+auth,/api/auth/*,ALL,Bezhas-Hub,Bezhas-Hub,KEEP,P0,Control plane core
+developer,/api/developer/*,ALL,Bezhas-Hub,Bezhas-Hub,KEEP,P0,Developer console core
+billing,/api/billing/*,ALL,Bezhas-Hub,Bezhas-Hub,KEEP,P0,Billing and plans
+wallet,/api/wallet/*,ALL,Bezhas-Hub,bez-wallet,MIGRATE,P0,Move runtime operations
+gas,/api/gas/*,ALL,Bezhas-Hub,gas-tank-manager,MIGRATE,P0,Move runtime operations
+nodes,/api/nodes/*,ALL,Bezhas-Hub,edge-node-manager,MIGRATE,P1,Move runtime operations
+vision,/api/vision/*,ALL,Bezhas-Hub,bez-vision-scan,MIGRATE,P1,Move runtime operations
+defi,/api/farming/*,ALL,Bezhas-Hub,BZ Capital,MIGRATE,P1,Move DeFi runtime
+legacy,multiple,ALL,Bezhas-Hub,n/a,DELETE,P2,Remove duplicates/mocks
+

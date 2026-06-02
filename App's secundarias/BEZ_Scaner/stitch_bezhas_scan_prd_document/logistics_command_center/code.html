@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Logistics Command Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#1a120e",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header / Navigation Bar -->
+<header class="border-b border-primary/10 bg-background-light dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center p-4 justify-between max-w-7xl mx-auto w-full">
+<div class="flex items-center gap-3">
+<div class="bg-primary rounded-lg p-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-white">hub</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">Logistics Command Center</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-slate-600 dark:text-slate-400 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-primary"></span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-primary text-sm">person</span>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-6 space-y-6">
+<!-- Live Transit Map Section -->
+<section class="relative">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">explore</span> Active Transit Routes
+                </h3>
+<span class="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full uppercase tracking-wider">Live Tracking</span>
+</div>
+<div class="w-full bg-slate-200 dark:bg-slate-800 aspect-[21/9] rounded-xl overflow-hidden border border-primary/10 relative shadow-2xl">
+<div class="absolute inset-0 bg-center bg-no-repeat bg-cover grayscale-[0.5] contrast-[1.2] opacity-80" data-alt="Global map showing active shipping routes with orange lines" data-location="Global Ocean Routes" style='background-image: url("https://placeholder.pics/svg/300");'>
+</div>
+<!-- UI Overlays for Map -->
+<div class="absolute top-4 left-4 bg-background-dark/80 backdrop-blur p-3 rounded-lg border border-primary/20 text-xs space-y-2">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-slate-300">Vessel A1-492: North Atlantic</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-slate-300">Port RTM: Clearance OK</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Metrics Cards -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-background-light dark:bg-primary/5 border border-primary/10 shadow-sm">
+<div class="flex items-center justify-between">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Overall Fleet Stability</p>
+<span class="material-symbols-outlined text-primary text-xl">balance</span>
+</div>
+<p class="text-slate-900 dark:text-white text-3xl font-bold">98.4%</p>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-green-500 text-sm">trending_up</span>
+<p class="text-green-500 text-xs font-bold leading-normal">+1.2% vs last week</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-background-light dark:bg-primary/5 border border-primary/10 shadow-sm">
+<div class="flex items-center justify-between">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Claims Prevented</p>
+<span class="material-symbols-outlined text-primary text-xl">shield</span>
+</div>
+<p class="text-slate-900 dark:text-white text-3xl font-bold">1,240</p>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-green-500 text-sm">trending_up</span>
+<p class="text-green-500 text-xs font-bold leading-normal">+15% automated stowing</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-background-light dark:bg-primary/5 border border-primary/10 shadow-sm">
+<div class="flex items-center justify-between">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Active Scan Fingerprints</p>
+<span class="material-symbols-outlined text-primary text-xl">fingerprint</span>
+</div>
+<p class="text-slate-900 dark:text-white text-3xl font-bold">45.2k</p>
+<p class="text-slate-500 text-xs">Real-time verification</p>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-primary/10 border border-primary/30 shadow-sm">
+<div class="flex items-center justify-between">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Customs Latency</p>
+<span class="material-symbols-outlined text-primary text-xl">timer</span>
+</div>
+<p class="text-slate-900 dark:text-white text-3xl font-bold">14m</p>
+<p class="text-green-500 text-xs font-bold">-4m average</p>
+</div>
+</section>
+<!-- Recent Scans & App Updates -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="lg:col-span-2 space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">data_exploration</span> Recent Scan Activity
+                    </h3>
+<button class="text-primary text-sm font-medium hover:underline">View History</button>
+</div>
+<div class="space-y-3">
+<!-- Scan Item 1 -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-background-light dark:bg-slate-800/40 border border-slate-200 dark:border-primary/10 hover:border-primary/30 transition-all group">
+<div class="h-12 w-12 rounded-lg bg-green-500/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-green-500">verified</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-slate-900 dark:text-slate-100">Verified Golden Image</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 italic">Cargo Fingerprint App • Container #HD-9921</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold text-slate-400 uppercase">12:45 PM</span>
+<p class="text-xs text-green-500 font-medium">Integrity Confirmed</p>
+</div>
+</div>
+<!-- Scan Item 2 -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-background-light dark:bg-slate-800/40 border border-slate-200 dark:border-primary/10 hover:border-primary/30 transition-all group">
+<div class="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">warning</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-slate-900 dark:text-slate-100">Stability Warning: Ship A1</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 italic">Smart Stowage • Shift Detected in Bay 4</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold text-slate-400 uppercase">11:30 AM</span>
+<p class="text-xs text-primary font-medium">Action Required</p>
+</div>
+</div>
+<!-- Scan Item 3 -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-background-light dark:bg-slate-800/40 border border-slate-200 dark:border-primary/10 hover:border-primary/30 transition-all group">
+<div class="h-12 w-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-500">sync_alt</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-slate-900 dark:text-slate-100">Customs Synced: Port RTM</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 italic">Digital Manifest • Batch 482A-1</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold text-slate-400 uppercase">10:15 AM</span>
+<p class="text-xs text-blue-500 font-medium">Sync Complete</p>
+</div>
+</div>
+<!-- Scan Item 4 -->
+<div class="flex items-center gap-4 p-4 rounded-xl bg-background-light dark:bg-slate-800/40 border border-slate-200 dark:border-primary/10 hover:border-primary/30 transition-all group">
+<div class="h-12 w-12 rounded-lg bg-slate-500/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">conveyor_belt</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-slate-900 dark:text-slate-100">Auto-Stowage Optimization</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 italic">Smart Stowage • Plan V.4.2 Generated</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold text-slate-400 uppercase">09:50 AM</span>
+<p class="text-xs text-slate-500 font-medium">Optimized</p>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">apps</span> Integrated Apps
+                </h3>
+<div class="grid grid-cols-1 gap-4">
+<div class="p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">package_2</span>
+<span class="font-bold">Cargo Fingerprint</span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">AI-driven cargo integrity monitoring and verification.</p>
+</div>
+<div class="p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">inventory_2</span>
+<span class="font-bold">Smart Stowage</span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Predictive balance and weight distribution for cargo hulls.</p>
+</div>
+<div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-900 hover:border-primary/50 transition-all cursor-pointer">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-slate-400">add_circle</span>
+<span class="font-bold">Add Integration</span>
+</div>
+<p class="text-xs text-slate-500">Connect third-party logistics API endpoints.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="sticky bottom-0 border-t border-slate-200 dark:border-primary/20 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-lg px-4 pb-6 pt-2 lg:hidden">
+<div class="flex gap-2 max-w-md mx-auto">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">dashboard</span>
+<p class="text-[10px] font-bold leading-normal uppercase">Dashboard</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">directions_boat</span>
+<p class="text-[10px] font-medium leading-normal uppercase">Fleet</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<p class="text-[10px] font-medium leading-normal uppercase">Scans</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<p class="text-[10px] font-medium leading-normal uppercase">Alerts</p>
+</a>
+</div>
+</nav>
+<!-- Desktop Sidebar-style floating nav indicator -->
+<div class="hidden lg:flex fixed left-6 top-1/2 -translate-y-1/2 flex-col gap-6 p-4 rounded-2xl bg-background-light/50 dark:bg-background-dark/50 border border-primary/20 backdrop-blur-xl shadow-xl">
+<a class="p-2 bg-primary text-white rounded-lg" href="#"><span class="material-symbols-outlined">dashboard</span></a>
+<a class="p-2 text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">directions_boat</span></a>
+<a class="p-2 text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">qr_code_scanner</span></a>
+<a class="p-2 text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">report_problem</span></a>
+<hr class="border-primary/10"/>
+<a class="p-2 text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">settings</span></a>
+</div>
+</body></html>

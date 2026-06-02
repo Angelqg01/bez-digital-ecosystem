@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Transaction Detail - BeZhas Bio-Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(37, 175, 244, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full max-w-md mx-auto flex-col bg-background-light dark:bg-background-dark overflow-x-hidden border-x border-slate-200 dark:border-slate-800">
+<!-- Header -->
+<div class="flex items-center p-4 pb-2 justify-between">
+<button class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Transaction Detail</h2>
+<div class="size-12"></div> <!-- Spacer for alignment -->
+</div>
+<!-- Status Indicator -->
+<div class="flex flex-col items-center pt-8 pb-4">
+<div class="size-16 bg-primary/20 rounded-full flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-primary text-4xl font-bold">check_circle</span>
+</div>
+<h1 class="text-slate-900 dark:text-slate-100 tracking-tight text-[32px] font-bold leading-tight px-4 text-center">Completed</h1>
+</div>
+<!-- Amount -->
+<div class="flex flex-col items-center pb-8 border-b border-slate-200 dark:border-slate-800 mx-4">
+<h1 class="text-primary text-[28px] font-bold leading-tight tracking-[-0.015em] px-4 text-center">500.00 $BEZ</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal leading-normal pt-1 px-4 text-center">≈ $1,250.00 USD</p>
+</div>
+<!-- Deal Summary -->
+<div class="px-4 py-6">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] pb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">description</span> Deal Summary
+            </h3>
+<div class="bg-slate-100 dark:bg-slate-900/50 rounded-xl p-4 space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Pharma Partner</span>
+<span class="text-slate-900 dark:text-slate-100 font-medium">Pfizer Global</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Data Type</span>
+<span class="text-slate-900 dark:text-slate-100 font-medium">Oncology Dataset v4</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400 text-sm">License Duration</span>
+<span class="text-slate-900 dark:text-slate-100 font-medium">Perpetual (Research)</span>
+</div>
+</div>
+</div>
+<!-- Agent Activity Log -->
+<div class="px-4 py-2">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] pb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">smart_toy</span> Agent Activity
+            </h3>
+<div class="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-slate-800">
+<div class="relative">
+<div class="absolute -left-[20px] top-1 size-[10px] bg-primary rounded-full ring-4 ring-background-light dark:ring-background-dark"></div>
+<p class="text-sm font-medium text-slate-900 dark:text-slate-100">Negotiation Started</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Agent initiated contact with Pfizer hub</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[20px] top-1 size-[10px] bg-primary rounded-full ring-4 ring-background-light dark:ring-background-dark"></div>
+<p class="text-sm font-medium text-slate-900 dark:text-slate-100">Terms Optimized</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Price adjusted based on real-time market data</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[20px] top-1 size-[10px] bg-primary rounded-full ring-4 ring-background-light dark:ring-background-dark"></div>
+<p class="text-sm font-medium text-slate-900 dark:text-slate-100">Data De-identified</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Zero-knowledge proof masking applied</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[20px] top-1 size-[10px] bg-primary rounded-full ring-4 ring-background-light dark:ring-background-dark"></div>
+<p class="text-sm font-medium text-slate-900 dark:text-slate-100">Settlement Confirmed</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Funds locked in escrow and released</p>
+</div>
+</div>
+</div>
+<!-- Technical Details -->
+<div class="px-4 py-8">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] pb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">terminal</span> Technical Details
+            </h3>
+<div class="space-y-4">
+<div>
+<span class="text-slate-500 dark:text-slate-400 text-xs block mb-1 uppercase tracking-wider">Transaction Hash</span>
+<div class="flex items-center justify-between bg-slate-100 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+<code class="text-xs text-slate-600 dark:text-slate-300 truncate mr-2">0x7a25...4f9b2d8c3e1a7b6f</code>
+<button class="text-primary hover:text-primary/80 transition-colors">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<span class="text-slate-500 dark:text-slate-400 text-xs block mb-1 uppercase tracking-wider">Network</span>
+<div class="flex items-center gap-2">
+<div class="size-2 bg-green-500 rounded-full"></div>
+<span class="text-sm text-slate-900 dark:text-slate-100 font-medium">BeZhas Mainnet</span>
+</div>
+</div>
+<div>
+<span class="text-slate-500 dark:text-slate-400 text-xs block mb-1 uppercase tracking-wider">Timestamp</span>
+<span class="text-sm text-slate-900 dark:text-slate-100 font-medium">Oct 24, 2023 · 14:32</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="p-4 pb-10">
+<button class="w-full bg-primary hover:bg-primary/90 text-slate-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                View on Explorer
+                <span class="material-symbols-outlined text-[20px]">open_in_new</span>
+</button>
+</div>
+</div>
+</body></html>

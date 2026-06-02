@@ -1,0 +1,42 @@
+{
+  "status": "success",
+  "timestamp": "2026-05-30T05:54:46.057Z",
+  "scanSummary": {
+    "totalWorkspacesScanned": 3,
+    "totalIssuesFound": 4
+  },
+  "advisories": [
+    {
+      "workspace": "Root Project",
+      "package": "express",
+      "installedVersion": "^5.2.1",
+      "severity": "moderate",
+      "description": "Ensure Express is updated to >= 4.19.2 or >= 5.0.0-beta.3 to avoid open redirect and regex DoS issues (CVE-2024-43796, CVE-2024-43799).",
+      "remediation": "Verify that express is updated to the latest secure version in Root Project."
+    },
+    {
+      "workspace": "Root Project",
+      "package": "node-fetch",
+      "installedVersion": "^3.3.2",
+      "severity": "moderate",
+      "description": "Consider using native global fetch if running on Node.js >= 18.",
+      "remediation": "Verify that node-fetch is updated to the latest secure version in Root Project."
+    },
+    {
+      "workspace": "Root Project",
+      "package": "ws",
+      "installedVersion": "^8.20.0",
+      "severity": "moderate",
+      "description": "Ensure ws is updated to >= 7.5.10 or >= 8.17.1 to avoid DoS vulnerabilities (CVE-2024-37890).",
+      "remediation": "Verify that ws is updated to the latest secure version in Root Project."
+    },
+    {
+      "workspace": "Backend API",
+      "package": "express",
+      "installedVersion": "^4.18.2",
+      "severity": "moderate",
+      "description": "Ensure Express is updated to >= 4.19.2 or >= 5.0.0-beta.3 to avoid open redirect and regex DoS issues (CVE-2024-43796, CVE-2024-43799).",
+      "remediation": "Verify that express is updated to the latest secure version in Backend API."
+    }
+  ]
+}

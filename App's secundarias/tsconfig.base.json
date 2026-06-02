@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@bezhas/platform-sdk": ["packages/platform-sdk/src/index.ts"],
+      "@bezhas/platform-sdk/*": ["packages/platform-sdk/src/*"],
+      "@bezhas/ui-components": ["packages/ui-components/src/index.ts"],
+      "@bezhas/ui-components/*": ["packages/ui-components/src/*"],
+      "@bezhas/contracts": ["packages/bez-contracts/src/index.ts"],
+      "@bezhas/contracts/*": ["packages/bez-contracts/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".next"]
+}

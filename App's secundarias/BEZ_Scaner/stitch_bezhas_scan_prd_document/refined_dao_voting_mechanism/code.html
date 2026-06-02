@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Scan - Governance Proposal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen pb-24">
+<!-- Header Navigation -->
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+<div class="flex items-center p-4 justify-between max-w-3xl mx-auto">
+<div class="flex items-center gap-3">
+<a class="p-2 hover:bg-primary/10 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</a>
+<h2 class="text-lg font-bold leading-tight tracking-tight">Proposal Detail</h2>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-primary/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-primary">share</span>
+</button>
+<button class="p-2 hover:bg-primary/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-primary">info</span>
+</button>
+</div>
+</div>
+</header>
+<main class="max-w-3xl mx-auto px-4 py-6 space-y-6">
+<!-- Proposal Title Section -->
+<section class="space-y-4">
+<div class="flex items-center gap-2">
+<span class="bg-primary/20 text-primary text-xs font-bold px-2 py-1 rounded border border-primary/30 uppercase tracking-wider">#BIP-042</span>
+<span class="flex items-center gap-1 bg-emerald-500/20 text-emerald-500 text-xs font-bold px-2 py-1 rounded border border-emerald-500/30">
+<span class="material-symbols-outlined text-[14px] fill-1">fiber_manual_record</span>
+                    ACTIVE
+                </span>
+</div>
+<h1 class="text-2xl sm:text-3xl font-bold leading-tight">Update Tokenization Fee to 120 BEZ</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Proposed by <span class="text-primary font-mono">0x7a...d2e9</span> • Ending in 2 days</p>
+</section>
+<!-- Timer Grid -->
+<div class="grid grid-cols-3 gap-3">
+<div class="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-4 flex flex-col items-center">
+<span class="text-2xl font-bold text-primary">48</span>
+<span class="text-[10px] uppercase tracking-widest text-slate-500">Hours</span>
+</div>
+<div class="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-4 flex flex-col items-center">
+<span class="text-2xl font-bold text-primary">12</span>
+<span class="text-[10px] uppercase tracking-widest text-slate-500">Minutes</span>
+</div>
+<div class="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-4 flex flex-col items-center">
+<span class="text-2xl font-bold text-primary">05</span>
+<span class="text-[10px] uppercase tracking-widest text-slate-500">Seconds</span>
+</div>
+</div>
+<!-- Voting Power Card -->
+<div class="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-5 shadow-sm">
+<div class="flex justify-between items-center mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+<h3 class="font-bold">Your Voting Power</h3>
+</div>
+<button class="text-xs text-primary font-bold hover:underline">Snapshot Detail</button>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold">12,450.00</span>
+<span class="text-slate-500 font-medium">BEZ</span>
+</div>
+<p class="text-xs text-slate-500 mt-1">Calculated at block #18,452,109</p>
+</div>
+<!-- Dynamic Progress -->
+<div class="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-5 shadow-sm space-y-6">
+<div class="flex justify-between items-center">
+<h3 class="font-bold">Current Status</h3>
+<span class="text-xs text-slate-500 font-medium">Quorum: 40% (Reachable)</span>
+</div>
+<div class="space-y-4">
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span class="font-medium">Yes</span>
+<span class="font-bold text-emerald-500">68.2% (2.4M BEZ)</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+<div class="bg-emerald-500 h-full w-[68.2%]"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span class="font-medium">No</span>
+<span class="font-bold text-rose-500">24.5% (860K BEZ)</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+<div class="bg-rose-500 h-full w-[24.5%]"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span class="font-medium">Abstain</span>
+<span class="font-bold text-slate-400">7.3% (256K BEZ)</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+<div class="bg-slate-400 h-full w-[7.3%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- On-Chain Impact -->
+<div class="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-5 shadow-sm">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">terminal</span>
+<h3 class="font-bold">On-Chain Executable</h3>
+</div>
+<div class="bg-slate-900 rounded-lg p-4 font-mono text-xs overflow-x-auto text-emerald-400 space-y-2">
+<p><span class="text-slate-500">// Governance call via FeeManager SDK</span></p>
+<p>Contract: <span class="text-primary">0xBeZ...FeeManager</span></p>
+<p>Function: <span class="text-blue-400">updateTokenizationFee</span>(uint256 _newFee)</p>
+<p>Params: { <span class="text-orange-300">_newFee</span>: <span class="text-white">120000000000000000000</span> }</p>
+</div>
+<div class="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
+<p class="text-xs text-slate-600 dark:text-slate-300">This call will be automatically queued in the <span class="font-bold">GovernanceSystem</span> timelock for 24 hours if the proposal reaches a successful majority.</p>
+</div>
+</div>
+<!-- Recent Voter Activity -->
+<div class="space-y-4">
+<h3 class="font-bold text-lg px-1">Top Voter Activity</h3>
+<div class="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/50 overflow-hidden shadow-sm">
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xs">V</div>
+<div>
+<p class="text-sm font-bold">VentureDAO.eth</p>
+<p class="text-[10px] text-slate-500">2 mins ago</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-xs font-bold text-emerald-500">YES</span>
+<span class="text-[10px] text-slate-400">450K BEZ</span>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-slate-300 dark:bg-slate-600 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 font-bold text-xs">0x</div>
+<div>
+<p class="text-sm font-bold">0x4c2...f33a</p>
+<p class="text-[10px] text-slate-500">14 mins ago</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-xs font-bold text-rose-500">NO</span>
+<span class="text-[10px] text-slate-400">120K BEZ</span>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xs">B</div>
+<div>
+<p class="text-sm font-bold">BeZ_Whale.eth</p>
+<p class="text-[10px] text-slate-500">1 hour ago</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-xs font-bold text-emerald-500">YES</span>
+<span class="text-[10px] text-slate-400">890K BEZ</span>
+</div>
+</div>
+</div>
+<button class="w-full py-2 text-sm text-primary font-bold hover:bg-primary/5 rounded-lg transition-colors">View All Votes</button>
+</div>
+</main>
+<!-- Floating Action Buttons / Bottom Nav -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 z-50">
+<div class="max-w-3xl mx-auto flex gap-3">
+<button class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                Vote Yes
+            </button>
+<button class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-rose-600/20 active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">cancel</span>
+                Vote No
+            </button>
+<button class="px-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold py-3 rounded-xl transition-all active:scale-95">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Bottom Navigation Component (modified for App feel) -->
+<div class="fixed bottom-24 left-1/2 -translate-x-1/2 w-[90%] max-w-sm hidden">
+<div class="flex gap-2 border border-primary/20 bg-background-light dark:bg-slate-800 px-4 pb-3 pt-2 rounded-full shadow-2xl">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">explore</span>
+<p class="text-xs font-medium">Explorer</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<p class="text-xs font-medium">Gov</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">payments</span>
+<p class="text-xs font-medium">Staking</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<p class="text-xs font-medium">Wallet</p>
+</a>
+</div>
+</div>
+</body></html>

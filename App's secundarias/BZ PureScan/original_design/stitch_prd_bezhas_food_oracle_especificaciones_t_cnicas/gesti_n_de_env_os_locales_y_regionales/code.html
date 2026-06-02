@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Oracle Cipher | Local &amp; Regional Shipments</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-tint": "#9ecaff",
+                        "primary": "#9ecaff",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#d1e4ff",
+                        "on-secondary-fixed": "#002108",
+                        "on-primary-fixed": "#001d36",
+                        "on-surface-variant": "#bfc7d4",
+                        "tertiary-fixed-dim": "#ffb77b",
+                        "secondary-fixed": "#69ff87",
+                        "error-container": "#93000a",
+                        "surface-dim": "#0c1420",
+                        "surface-container-low": "#141c28",
+                        "primary-container": "#2196f3",
+                        "tertiary-fixed": "#ffdcc2",
+                        "tertiary-container": "#db7900",
+                        "surface-container-high": "#232a37",
+                        "on-primary-container": "#002c4f",
+                        "on-secondary-container": "#004d1b",
+                        "on-tertiary-container": "#452200",
+                        "secondary-container": "#02c953",
+                        "on-error": "#690005",
+                        "surface-bright": "#323947",
+                        "on-secondary": "#003912",
+                        "on-primary-fixed-variant": "#00497d",
+                        "primary-fixed-dim": "#9ecaff",
+                        "outline": "#89919d",
+                        "secondary": "#40e56c",
+                        "on-tertiary-fixed": "#2e1500",
+                        "on-surface": "#dbe3f4",
+                        "tertiary": "#ffb77b",
+                        "inverse-primary": "#0061a4",
+                        "error": "#ffb4ab",
+                        "surface-container": "#18202c",
+                        "surface-container-lowest": "#070e1a",
+                        "surface": "#0c1420",
+                        "inverse-surface": "#dbe3f4",
+                        "inverse-on-surface": "#29313e",
+                        "on-background": "#dbe3f4",
+                        "on-tertiary": "#4d2700",
+                        "on-secondary-fixed-variant": "#00531e",
+                        "on-primary": "#003258",
+                        "background": "#0c1420",
+                        "on-tertiary-fixed-variant": "#6d3900",
+                        "outline-variant": "#404752",
+                        "surface-variant": "#2d3542",
+                        "secondary-fixed-dim": "#3ce36a",
+                        "surface-container-highest": "#2d3542"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-panel {
+            background: rgba(45, 53, 66, 0.4);
+            backdrop-filter: blur(20px);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#0c1420] border-b border-white/5 flex justify-between items-center px-6 h-16 w-full shadow-2xl shadow-black/50">
+<div class="flex items-center gap-4">
+<span class="font-headline text-xl font-bold text-blue-400 tracking-tighter">Oracle Cipher</span>
+<div class="h-6 w-px bg-white/10 mx-2"></div>
+<nav class="hidden md:flex gap-6">
+<a class="text-slate-400 font-headline hover:text-blue-300 transition-colors duration-200" href="#">Global Hub</a>
+<a class="text-blue-400 font-bold font-headline hover:text-blue-300 transition-colors duration-200" href="#">Regional Feed</a>
+<a class="text-slate-400 font-headline hover:text-blue-300 transition-colors duration-200" href="#">Oracle Nodes</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="bg-surface-container-lowest px-4 py-1.5 rounded-full border border-outline-variant/15 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-blue-400">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48 font-label placeholder:text-slate-500" placeholder="Search Shipment ID..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 text-slate-400 hover:text-blue-300 active:scale-95 duration-200">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-blue-300 active:scale-95 duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-blue-300 active:scale-95 duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<img alt="User Profile" class="w-8 h-8 rounded-full border border-blue-400/30" data-alt="close-up portrait of a professional man with modern digital lighting reflecting on his glasses, futuristic corporate style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVvztGsiKrzbjznpuUCblIVRor8F_sjorLJHQLHapsOg_XR84RmrP6LVpmxoLg3NOCJXgZ7znGa1dVN_O4vHF3fa73RTqu1QSTv5VxozKWw8vpRNfH2DMS6PBmn-2mwX52eouiwPyjA4hSeUHSSKIqVS_o75wdwa0SbPufwJ2pkAwzRXueh7OXgdzenfaCNsVTmiyYm5VFJgh3eusoalmk-WZruwlUWHtVNFsWy1_P8eociIhQ6Fpf696dvIKO_tdKGnScBasKUVM"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-[#0c1420] border-r border-white/5 flex flex-col p-4 space-y-2 hidden md:flex">
+<div class="mb-6 px-2">
+<h2 class="font-headline font-bold text-blue-400 text-lg">Fleet Command</h2>
+<p class="text-xs text-slate-500 font-label">Regional Hub 04</p>
+</div>
+<nav class="space-y-1 flex-1">
+<a class="flex items-center gap-3 p-3 text-blue-400 bg-blue-400/10 rounded-lg font-headline font-medium text-sm transition-all active:translate-x-1 duration-150" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span>Logistics</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg font-headline font-medium text-sm transition-all active:translate-x-1 duration-150" href="#">
+<span class="material-symbols-outlined">map</span>
+<span>Route Map</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg font-headline font-medium text-sm transition-all active:translate-x-1 duration-150" href="#">
+<span class="material-symbols-outlined">sensors</span>
+<span>Sensors</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg font-headline font-medium text-sm transition-all active:translate-x-1 duration-150" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span>Settlements</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg font-headline font-medium text-sm transition-all active:translate-x-1 duration-150" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Reports</span>
+</a>
+</nav>
+<button class="mt-4 w-full bg-gradient-to-br from-primary to-primary-container text-on-primary py-3 rounded-lg font-headline font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 duration-200">
+            New Dispatch
+        </button>
+<div class="pt-6 border-t border-white/5 space-y-1">
+<a class="flex items-center gap-3 p-3 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg font-headline font-medium text-sm" href="#">
+<span class="material-symbols-outlined">help</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg font-headline font-medium text-sm" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="md:ml-64 mt-16 p-8 min-h-screen">
+<header class="mb-10">
+<h1 class="font-headline text-4xl font-bold tracking-tight text-on-surface mb-2">Regional Hub: <span class="text-primary">Metro-Sector 7</span></h1>
+<p class="font-body text-slate-400 max-w-2xl">Hyper-local food oracle synchronization. Monitoring short-haul transit metrics, decentralized settlement vaults, and geofenced node health.</p>
+</header>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Map View: Hyper-local Routes -->
+<div class="lg:col-span-8 h-[500px] relative rounded-xl overflow-hidden bg-surface-container border border-outline-variant/10 group">
+<div class="absolute inset-0 z-0 bg-cover bg-center grayscale opacity-60 group-hover:scale-105 transition-transform duration-700" data-alt="abstract dark architectural map view with glowing blue lines representing delivery routes and illuminated nodes in a dense urban grid" data-location="Tokyo" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAQWou9ClnKqK0nFuav_f7LArJRoq8r1ETRF1eBNmY5vWY96LjAalw31kx47D6QyQTUyuIxZVDyKC08aYmMD03rAYd4kWaakILRRcrmEH7TfdORPjOXIrSgS94WFkguUHiXMmsxIHHZv3cOkPbXSQ0mHPHBn-1BUoJk5sDF4R_fqpzvL_O9ULbsEaNwru4bnG0sXfpdAsUP9lUgVnEI5EsD46KyglN_aDFZcpl7iIBq0zzSudfzUQviTRZg_AK4Yk5kgtKoNGfghEg')">
+</div>
+<!-- UI Overlays for Map -->
+<div class="absolute top-4 left-4 glass-panel p-4 rounded-xl border border-white/5 z-10">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-secondary">share_location</span>
+<span class="font-headline font-bold text-sm tracking-wide">Live Geofencing</span>
+</div>
+<div class="flex gap-4">
+<div class="text-xs">
+<p class="text-slate-500 font-label uppercase tracking-widest">Active Nodes</p>
+<p class="text-on-surface font-headline font-bold">142</p>
+</div>
+<div class="text-xs">
+<p class="text-slate-500 font-label uppercase tracking-widest">Efficiency</p>
+<p class="text-secondary font-headline font-bold">98.4%</p>
+</div>
+</div>
+</div>
+<div class="absolute bottom-4 right-4 flex gap-2 z-10">
+<button class="glass-panel p-2 rounded-lg border border-white/5 text-primary hover:bg-primary/10">
+<span class="material-symbols-outlined">zoom_in</span>
+</button>
+<button class="glass-panel p-2 rounded-lg border border-white/5 text-primary hover:bg-primary/10">
+<span class="material-symbols-outlined">zoom_out</span>
+</button>
+</div>
+<!-- Floating Node Marker Example -->
+<div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 group cursor-pointer">
+<div class="relative">
+<div class="absolute -inset-4 bg-primary/20 blur-xl rounded-full"></div>
+<div class="relative bg-primary w-4 h-4 rounded-full border-2 border-surface animate-pulse"></div>
+</div>
+<div class="hidden group-hover:block absolute top-6 left-1/2 -translate-x-1/2 glass-panel p-2 rounded border border-primary/30 whitespace-nowrap">
+<p class="text-[10px] font-headline font-bold text-primary">NODE_AF_249</p>
+<p class="text-[9px] text-on-surface">Last Mile: Deliverable</p>
+</div>
+</div>
+</div>
+<!-- Active Local Deliveries List -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<section class="bg-surface-container rounded-xl p-6 border border-outline-variant/10 flex-1 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline font-bold text-lg">Active Local</h3>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded uppercase tracking-tighter">Live Feed</span>
+</div>
+<div class="space-y-4 overflow-y-auto no-scrollbar max-h-[380px]">
+<!-- Delivery Item -->
+<div class="bg-surface-container-low p-4 rounded-lg border-l-2 border-secondary hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-2">
+<p class="text-xs font-headline font-bold text-primary">#SH-9920</p>
+<span class="text-[10px] bg-secondary/10 text-secondary px-2 py-0.5 rounded-full font-bold">Last Mile</span>
+</div>
+<p class="text-sm font-medium mb-1">Artisan Sourdough Batch B</p>
+<div class="flex items-center gap-2 text-xs text-slate-500">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span>ETA: 12 mins</span>
+</div>
+</div>
+<!-- Delivery Item -->
+<div class="bg-surface-container-low p-4 rounded-lg border-l-2 border-primary hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-2">
+<p class="text-xs font-headline font-bold text-primary">#SH-9945</p>
+<span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Sorting</span>
+</div>
+<p class="text-sm font-medium mb-1">Vertical Farm Greens (Organic)</p>
+<div class="flex items-center gap-2 text-xs text-slate-500">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span>Hub-04 Sorting Wing</span>
+</div>
+</div>
+<!-- Delivery Item -->
+<div class="bg-surface-container-low p-4 rounded-lg border-l-2 border-slate-700 hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-2">
+<p class="text-xs font-headline font-bold text-primary">#SH-8812</p>
+<span class="text-[10px] bg-slate-500/10 text-slate-400 px-2 py-0.5 rounded-full font-bold">In-Transit</span>
+</div>
+<p class="text-sm font-medium mb-1">Cold-Pressed Juice Selection</p>
+<div class="flex items-center gap-2 text-xs text-slate-500">
+<span class="material-symbols-outlined text-sm">local_shipping</span>
+<span>Route 12 - Truck 09</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Per-Mile Quality Index (Metric) -->
+<div class="lg:col-span-4 bg-surface-container rounded-xl p-6 border border-outline-variant/10">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="font-headline font-bold text-lg">Per-Mile Quality</h3>
+<p class="text-xs text-slate-500 font-label">Real-time degradation monitoring</p>
+</div>
+<span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<div class="flex flex-col items-center justify-center">
+<div class="relative w-32 h-32 flex items-center justify-center mb-6">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-white/5" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-secondary" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-dasharray="364" stroke-dashoffset="36" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-3xl font-headline font-bold">94</span>
+<span class="text-[10px] font-label text-slate-500 uppercase tracking-widest">Index</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 w-full">
+<div class="bg-surface-container-lowest p-3 rounded-lg border border-white/5">
+<p class="text-[10px] text-slate-500 font-label uppercase">Micro-Vibration</p>
+<p class="text-sm font-headline font-bold text-secondary">Optimal</p>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded-lg border border-white/5">
+<p class="text-[10px] text-slate-500 font-label uppercase">Oxidation</p>
+<p class="text-sm font-headline font-bold text-primary">Negligible</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Local Settlement Vault (DeFi) -->
+<div class="lg:col-span-4 bg-surface-container rounded-xl p-6 border border-outline-variant/10">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline font-bold text-lg">Settlement Vault</h3>
+<div class="flex -space-x-2">
+<img class="w-6 h-6 rounded-full border border-surface" data-alt="portrait of a delivery courier" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASvasfcgUgkXstWwEtYlzGfn9OnTIfpslXiFe7qc1jfEgO9t_ukxe9LVAY9PBHl-MRfMyH51cBQfIyeCirY3DPDOl7e0P48z4Tko_7GqfY5ozHl5NDqBnkF5mrPOJVHO0n3ZwQehx2vfVZWDTlZbbX5FXZ16wyfk0iqGyf7sQJekRj9f4hCYW34pQ5BPGwbqNxT5ybppOKrl7dHVakUA9v9QK7P_P11nqrUbGc9vlIHFzg1T9ExpWHZHPb3bBOkgUOzOXX-mbSybc"/>
+<img class="w-6 h-6 rounded-full border border-surface" data-alt="portrait of a warehouse manager" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4Y25tg7Wv4AdTMqywIa1g_h90bDVE7II_qDXUf-skJUuXt1OcJqiyEflwc_ak7UTV8rvxe0kRGp4hBmi79XTccA3vPAwP6vsAofXsId-MBZ6VbffE_NzLZLEAW67k6qhk24Ry9aKDiVmEd9fnyygVtr-sPtSpQoUfoqMwWOTfLv8DbLzb32_8OcqXL2_i84yxlRV3rXXKn_psPynwNvUO5mMnVmgrRYG3ohJC2FH1Xx6W02FMcjrhGrsS6wFEkXimAipDv83rrNo"/>
+</div>
+</div>
+<div class="mb-6">
+<p class="text-xs text-slate-500 font-label uppercase tracking-widest mb-1">Available for Release</p>
+<p class="text-4xl font-headline font-bold text-primary">12,840.00 <span class="text-xl">$BEZ</span></p>
+</div>
+<div class="space-y-3 mb-6">
+<div class="flex justify-between items-center text-xs">
+<span class="text-slate-400">Locked Staking</span>
+<span class="font-headline font-bold">4,200 BEZ</span>
+</div>
+<div class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-2/3"></div>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-slate-400">Flash Settlement (Instant)</span>
+<span class="text-secondary font-headline font-bold">Active</span>
+</div>
+</div>
+<button class="w-full py-3 bg-white/5 border border-primary/20 text-primary rounded-lg font-headline font-bold text-sm hover:bg-primary hover:text-on-primary transition-all active:scale-95 duration-200">
+                    Process Daily Payouts
+                </button>
+</div>
+<!-- Sensor Telemetry (Charts) -->
+<div class="lg:col-span-4 bg-surface-container rounded-xl p-6 border border-outline-variant/10">
+<h3 class="font-headline font-bold text-lg mb-6">Sensor Telemetry</h3>
+<div class="space-y-6">
+<!-- Humidity Chart Mockup -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="text-[10px] text-slate-500 font-label uppercase tracking-widest">Relative Humidity (RH)</span>
+<span class="text-xs font-bold text-primary">64.2%</span>
+</div>
+<div class="h-16 flex items-end gap-1">
+<div class="flex-1 bg-primary/20 h-[40%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[55%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[45%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/40 h-[70%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[50%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/60 h-[85%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/40 h-[65%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-full rounded-t-sm"></div>
+</div>
+</div>
+<!-- Vibration Chart Mockup -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="text-[10px] text-slate-500 font-label uppercase tracking-widest">Impact / Vibration (G)</span>
+<span class="text-xs font-bold text-secondary">0.02g</span>
+</div>
+<div class="h-16 relative flex items-center">
+<svg class="w-full h-full stroke-secondary fill-none stroke-2" viewbox="0 0 200 60">
+<path d="M0,30 Q10,10 20,30 T40,30 T60,30 T80,30 T100,20 T120,40 T140,30 T160,30 T180,30 T200,30"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Visual Hint -->
+<footer class="mt-16 flex justify-between items-center text-slate-600 border-t border-white/5 pt-8 mb-20 md:mb-8">
+<p class="text-xs font-label">© 2024 BEZHAS FOOD ORACLE ECOSYSTEM • ENCRYPTED NODE 04</p>
+<div class="flex gap-4">
+<span class="text-[10px] font-bold tracking-[0.2em] uppercase">Status: Syncing Mainnet</span>
+<div class="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+</div>
+</footer>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 w-full md:hidden z-50 bg-[#0c1420]/80 backdrop-blur-xl border-t border-white/10 flex justify-around items-center h-16 px-4 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center text-slate-500 tap-highlight-none" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-headline text-[10px] uppercase tracking-widest">Map</span>
+</a>
+<a class="flex flex-col items-center text-blue-400 tap-highlight-none" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-headline text-[10px] uppercase tracking-widest">Active</span>
+</a>
+<a class="flex flex-col items-center text-slate-500 tap-highlight-none" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-headline text-[10px] uppercase tracking-widest">Wallet</span>
+</a>
+<a class="flex flex-col items-center text-slate-500 tap-highlight-none" href="#">
+<span class="material-symbols-outlined">emergency_home</span>
+<span class="font-headline text-[10px] uppercase tracking-widest">Alerts</span>
+</a>
+</nav>
+</body></html>

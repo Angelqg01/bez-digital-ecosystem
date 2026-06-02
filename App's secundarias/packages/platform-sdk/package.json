@@ -1,0 +1,45 @@
+{
+  "name": "@bezhas/platform-sdk",
+  "version": "3.0.0",
+  "description": "BeZhas Platform SDK — Auth, Gas, Vision, MCP, Blockchain hooks for all sub-apps",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./auth": "./dist/auth/index.js",
+    "./identity": "./dist/identity/index.js",
+    "./gas": "./dist/gas/index.js",
+    "./wallet": "./dist/wallet/index.js",
+    "./billing": "./dist/billing/index.js",
+    "./vision": "./dist/vision/index.js",
+    "./mcp": "./dist/mcp/index.js",
+    "./blockchain": "./dist/blockchain/index.js",
+    "./navigation": "./dist/navigation/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "peerDependencies": {
+    "ethers": "^6.10.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.0",
+    "zustand": "^5.0.9"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "typescript": "^5.6.0"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

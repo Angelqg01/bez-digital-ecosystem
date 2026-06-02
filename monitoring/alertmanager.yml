@@ -1,0 +1,115 @@
+# ─────────────────────────────────────────────────────
+#  BeZhas Platform — Alertmanager Configuration
+#  Routes alerts to appropriate channels
+# ─────────────────────────────────────────────────────
+global:
+  resolve_timeout: 5m
+  # SMTP for email alerts (configure before deploying)
+  # smtp_smarthost: 'smtp.example.com:587'
+  # smtp_from: 'alerts@bez.digital'
+  # smtp_auth_username: 'alerts@bez.digital'
+  # smtp_auth_password: '<password>'
+
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+route:
+  receiver: default
+  group_by: ['alertname', 'team']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    # Critical blockchain alerts → immediate
+    - match:
+        severity: critical
+        team: blockchain
+      receiver: blockchain-critical
+      group_wait: 10s
+      repeat_interval: 30m
+
+    # Critical infra alerts
+    - match:
+        severity: critical
+        team: infra
+      receiver: infra-critical
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Slashing events → dedicated channel
+    - match:
+        alertname: SlashingExecuted
+      receiver: slashing-alerts
+      group_wait: 0s
+      repeat_interval: 15m
+
+    # Warning level
+    - match:
+        severity: warning
+      receiver: warnings
+      repeat_interval: 4h
+
+    # Info level
+    - match:
+        severity: info
+      receiver: default
+      repeat_interval: 12h
+
+receivers:
+  - name: default
+    # Webhook to Edge Node status endpoint (always available)
+    webhook_configs:
+      - url: 'http://api:3001/api/internal/alerts'
+        send_resolved: true
+
+  - name: blockchain-critical
+    webhook_configs:
+      - url: 'http://api:3001/api/internal/alerts'
+        send_resolved: true
+    # Uncomment for Slack integration:
+    # slack_configs:
+    #   - api_url: '${SLACK_WEBHOOK_URL}'
+    #     channel: '#bezhas-alerts-critical'
+    #     title: '🚨 {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    #     send_resolved: true
+    # Uncomment for email:
+    # email_configs:
+    #   - to: 'ops@bez.digital'
+    #     send_resolved: true
+
+  - name: infra-critical
+    webhook_configs:
+      - url: 'http://api:3001/api/internal/alerts'
+        send_resolved: true
+
+  - name: slashing-alerts
+    webhook_configs:
+      - url: 'http://api:3001/api/internal/alerts'
+        send_resolved: true
+    # Uncomment for dedicated Slack channel:
+    # slack_configs:
+    #   - api_url: '${SLACK_WEBHOOK_URL}'
+    #     channel: '#bezhas-slashing'
+    #     title: '⚡ Slash: {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+  - name: warnings
+    webhook_configs:
+      - url: 'http://api:3001/api/internal/alerts'
+        send_resolved: true
+
+inhibit_rules:
+  # If geth is down, suppress all blockchain-level alerts
+  - source_match:
+      alertname: GethNodeDown
+    target_match:
+      team: blockchain
+    equal: []
+
+  # If API is down, suppress high latency alert
+  - source_match:
+      alertname: APIDown
+    target_match:
+      alertname: APIHighLatency
+    equal: []

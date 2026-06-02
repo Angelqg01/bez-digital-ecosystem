@@ -1,0 +1,351 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "panels": [
+        {
+            "title": "API — Request Rate (req/s)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(bezhas_api_requests_total[1m]))",
+                    "legendFormat": "total req/s"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "title": "API — p95 Latency",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(bezhas_api_http_duration_seconds_bucket[5m])) by (le))",
+                    "legendFormat": "p95"
+                },
+                {
+                    "expr": "histogram_quantile(0.50, sum(rate(bezhas_api_http_duration_seconds_bucket[5m])) by (le))",
+                    "legendFormat": "p50"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "title": "API — Active Requests",
+            "type": "gauge",
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 0,
+                "y": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "bezhas_api_active_requests",
+                    "legendFormat": "active"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 50
+                            },
+                            {
+                                "color": "red",
+                                "value": 100
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            }
+        },
+        {
+            "title": "API — Error Rate by Route",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 6,
+                "y": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(bezhas_api_requests_total{status=~\"5..\"}[5m])) by (route)",
+                    "legendFormat": "{{route}}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "title": "Aegis — Request Rate",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 12,
+                "y": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(bezhas_aegis_http_requests_total[1m]))",
+                    "legendFormat": "aegis req/s"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "title": "Aegis — Latency p95",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 18,
+                "y": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(bezhas_aegis_http_request_duration_seconds_bucket[5m])) by (le))",
+                    "legendFormat": "p95"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "title": "PostgreSQL — Active Connections",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 16
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "pg_stat_activity_count",
+                    "legendFormat": "{{datname}} ({{state}})"
+                }
+            ]
+        },
+        {
+            "title": "Redis — Connected Clients",
+            "type": "stat",
+            "gridPos": {
+                "h": 8,
+                "w": 4,
+                "x": 8,
+                "y": 16
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "redis_connected_clients",
+                    "legendFormat": "clients"
+                }
+            ]
+        },
+        {
+            "title": "Redis — Memory Usage",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 12,
+                "y": 16
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "redis_memory_used_bytes",
+                    "legendFormat": "used"
+                },
+                {
+                    "expr": "redis_memory_max_bytes",
+                    "legendFormat": "max"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "bytes"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "title": "Host — CPU Usage",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 18,
+                "y": 16
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                    "legendFormat": "CPU %"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "max": 100
+                },
+                "overrides": []
+            }
+        },
+        {
+            "title": "Host — Memory Usage",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 24
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+                    "legendFormat": "used"
+                },
+                {
+                    "expr": "node_memory_MemTotal_bytes",
+                    "legendFormat": "total"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "bytes"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "title": "Container Logs (Loki)",
+            "type": "logs",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 32
+            },
+            "datasource": {
+                "type": "loki",
+                "uid": "loki"
+            },
+            "targets": [
+                {
+                    "expr": "{service=~\".+\"} |= ``",
+                    "legendFormat": ""
+                }
+            ]
+        }
+    ],
+    "schemaVersion": 39,
+    "tags": [
+        "bezhas",
+        "overview"
+    ],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-1h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "BeZhas Platform Overview",
+    "uid": "bezhas-overview",
+    "version": 1
+}

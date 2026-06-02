@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Scan - High-Fidelity 3D Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#ec5b13",
+                "background-light": "#f8f6f6",
+                "background-dark": "#221610",
+              },
+              fontFamily: {
+                "display": ["Public Sans"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Public Sans', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display dark">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Header -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 border-b border-primary/10 justify-between sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">Scan Details</h2>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-primary/10">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-primary/10">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- 3D Preview Hero Section -->
+<div class="p-4 @container">
+<div class="relative group rounded-xl overflow-hidden bg-slate-200 dark:bg-primary/5 border border-primary/20 aspect-square @[480px]:aspect-video flex items-center justify-center">
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark/80 via-transparent to-transparent z-10"></div>
+<div class="w-full h-full bg-cover bg-center" data-alt="High fidelity 3D scan of a luxury engine part in a dark studio" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCb892q82mh1ndszzjT7pW7Ms6dtmbT_rPb04YMIUt1R-lESNjVP_YLVnNV36Ve7Vn4tk_Eir_YFQLAmMZEr5ADIybtmMoavEkPWtzVRtU_F3y6TveqVGPxftBIWThiL9_EDUtZtGEgfSpSqpMntVmopjNfPAxE4__aioihB5GFxsnFmN_ikrdqYr8OhwZLXrAQvWHKuVe8Nn5BCsAZz1dZOasCf1lFHK7VK4kvRQZTfh5BxWL3_MPGs8oKbA8AV8Y41qjIuvem2Hfm'); filter: contrast(1.1) brightness(0.9);"></div>
+<!-- Interaction Overlay -->
+<div class="absolute bottom-4 left-4 right-4 z-20 flex flex-col gap-3">
+<div class="flex justify-between items-end">
+<div>
+<span class="px-2 py-1 bg-primary text-white text-[10px] font-bold uppercase rounded tracking-wider">High Fidelity</span>
+<h1 class="text-white text-2xl font-bold mt-1">BeZhas V12 Engine Component</h1>
+</div>
+<button class="flex items-center justify-center rounded-full size-12 bg-white/10 backdrop-blur-md text-white border border-white/20">
+<span class="material-symbols-outlined">view_in_ar</span>
+</button>
+</div>
+</div>
+<!-- 3D Badge -->
+<div class="absolute top-4 right-4 z-20 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-2">
+<span class="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+<span class="text-white text-xs font-medium">Interactive Preview Ready</span>
+</div>
+</div>
+</div>
+<!-- Action Buttons Quick Bar -->
+<div class="flex px-4 py-2 gap-3 overflow-x-auto no-scrollbar"><button class="flex-1 flex h-12 items-center justify-center gap-2 px-4 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:brightness-110 transition-all"><span class="material-symbols-outlined text-[20px]">view_in_ar</span>Quick AR View</button><button class="flex-1 flex h-12 items-center justify-center gap-2 px-4 rounded-xl bg-white/10 text-slate-100 font-bold text-sm border border-white/20 hover:bg-white/20 transition-all"><span class="material-symbols-outlined text-[20px]">folder_zip</span>Export Assets</button></div>
+<!-- Metadata Content -->
+<div class="flex flex-col gap-6 p-4 pb-24">
+<!-- Asset Identity -->
+<section>
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">fingerprint</span>
+                    Asset Identity
+                </h3>
+<div class="grid grid-cols-1 gap-3">
+<div class="p-4 rounded-xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10">
+<div class="flex flex-col gap-4">
+<div class="flex justify-between border-b border-slate-100 dark:border-primary/5 pb-3">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Name</span>
+<span class="text-slate-900 dark:text-slate-100 font-semibold text-sm">V12-Cylinder-Block-001</span>
+</div>
+<div class="flex justify-between border-b border-slate-100 dark:border-primary/5 pb-3">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Category</span>
+<span class="text-slate-900 dark:text-slate-100 font-semibold text-sm">Industrial / Automotive</span>
+</div>
+<div class="flex justify-between">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Creator</span>
+<span class="text-primary font-semibold text-sm">BeZhas_Lab_04</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Tokenization Info (Highlight Section) -->
+<section class="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-primary text-[10px] font-bold uppercase tracking-widest mb-1">RWA Economics</h3>
+<p class="text-slate-100 text-lg font-bold">BeZhasRWAFactory</p>
+<p class="text-slate-400 text-[10px] mt-1">Contract: 0x9847...7aac</p>
+</div>
+<div class="text-right">
+<p class="text-slate-500 text-[10px] uppercase font-bold">Valuation</p>
+<p class="text-primary text-xl font-bold italic">4,250 BEZ</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 p-3 bg-black/40 rounded-lg border border-white/5">
+<div class="flex justify-between items-center">
+<span class="text-slate-400 text-xs">Monthly Yield (Vault)</span>
+<span class="text-green-400 text-sm font-bold tracking-tight">+8.5% APY</span>
+</div>
+<div class="w-full h-8 flex items-end gap-0.5 pt-2">
+<div class="flex-1 bg-primary/20 h-2 rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-3 rounded-t-sm"></div>
+<div class="flex-1 bg-primary/40 h-5 rounded-t-sm"></div>
+<div class="flex-1 bg-primary/30 h-4 rounded-t-sm"></div>
+<div class="flex-1 bg-primary/50 h-6 rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-8 rounded-t-sm"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="flex flex-col p-2 bg-white/5 rounded border border-white/5">
+<span class="text-[9px] text-slate-500 uppercase">Tokenization Fee</span>
+<span class="text-xs text-slate-200 font-medium">100 BEZ (~$1)</span>
+</div>
+<div class="flex flex-col p-2 bg-white/5 rounded border border-white/5">
+<span class="text-[9px] text-slate-500 uppercase">Asset Category</span>
+<span class="text-xs text-slate-200 font-medium">Industrial (RWA)</span>
+</div>
+</div>
+</section>
+<!-- Blockchain Status -->
+<section>
+<h3 class="text-slate-100 text-lg font-bold mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">hub</span>
+        On-Chain Identity
+    </h3>
+<div class="space-y-3">
+<div class="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-4">
+<div class="flex justify-between items-center group cursor-pointer">
+<div class="flex flex-col">
+<span class="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Polygon Tx Hash</span>
+<span class="text-primary font-mono text-xs">0x52Df82...044E</span>
+</div>
+<span class="material-symbols-outlined text-slate-500 text-sm group-hover:text-primary transition-colors">open_in_new</span>
+</div>
+<div class="flex justify-between items-center group cursor-pointer">
+<div class="flex flex-col">
+<span class="text-slate-500 text-[10px] uppercase font-bold tracking-wider">IPFS Content ID</span>
+<span class="text-slate-300 font-mono text-[10px] break-all">QmXoyp...38vLp6Kz7f</span>
+</div>
+<span class="material-symbols-outlined text-slate-500 text-sm group-hover:text-primary transition-colors">file_download</span>
+</div>
+<div class="flex items-center gap-2 bg-green-500/10 p-2.5 rounded border border-green-500/20">
+<span class="material-symbols-outlined text-green-500 text-sm">verified</span>
+<span class="text-green-400 text-[10px] font-bold uppercase tracking-widest">Mainnet Deployment Verified</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Technical Specs -->
+<section>
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">precision_manufacturing</span>
+                    Technical Specs
+                </h3>
+<div class="grid grid-cols-3 gap-3">
+<div class="flex flex-col items-center justify-center p-3 rounded-xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10">
+<span class="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold">Polygon Count</span>
+<span class="text-slate-900 dark:text-slate-100 font-bold text-sm">2.4M</span>
+</div>
+<div class="flex flex-col items-center justify-center p-3 rounded-xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10">
+<span class="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold">File Size</span>
+<span class="text-slate-900 dark:text-slate-100 font-bold text-sm">184 MB</span>
+</div>
+<div class="flex flex-col items-center justify-center p-3 rounded-xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10">
+<span class="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold">Quality</span>
+<span class="text-slate-900 dark:text-slate-100 font-bold text-sm">8K Tex</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Bottom Navigation/Action Bar -->
+<div class="fixed bottom-0 left-0 right-0 z-50 flex flex-col border-t border-slate-200 dark:border-primary/20 bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl pb-6 pt-3 px-4 gap-3">
+<div class="grid grid-cols-2 gap-3 mb-1">
+<button class="flex h-11 items-center justify-center rounded-xl bg-white/10 text-slate-100 font-bold text-sm border border-white/10">Manage Fractions</button>
+<button class="flex h-11 items-center justify-center rounded-xl bg-primary/20 text-primary font-bold text-sm border border-primary/20">Market Data</button>
+</div><button class="w-full flex h-14 items-center justify-center rounded-xl bg-primary text-white font-black uppercase tracking-tighter text-lg shadow-xl shadow-primary/40 active:scale-95 transition-transform">List on Marketplace</button>
+<div class="flex gap-2">
+<div class="flex-1 flex gap-2 border-t border-slate-200 dark:border-primary/10 pt-2">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">center_focus_strong</span>
+<p class="text-[10px] font-bold uppercase">Scans</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<p class="text-[10px] font-bold uppercase">Market</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<p class="text-[10px] font-bold uppercase">Wallet</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-bold uppercase">Settings</p>
+</a>
+</div>
+</div>
+</div>
+</div>
+</body></html>

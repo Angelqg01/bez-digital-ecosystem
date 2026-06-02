@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Métricas Biológicas Detalladas | BeZhas Food Oracle</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(24, 32, 44, 0.6);
+            backdrop-filter: blur(20px);
+        }
+        .ghost-border {
+            outline: 1px solid rgba(64, 71, 82, 0.15);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "on-error": "#690005",
+                "on-primary-container": "#002c4f",
+                "on-error-container": "#ffdad6",
+                "surface-bright": "#323947",
+                "secondary-fixed-dim": "#3ce36a",
+                "secondary-container": "#02c953",
+                "on-secondary-fixed": "#002108",
+                "tertiary-container": "#db7900",
+                "inverse-on-surface": "#29313e",
+                "on-surface": "#dbe3f4",
+                "surface-container": "#18202c",
+                "on-primary": "#003258",
+                "tertiary-fixed": "#ffdcc2",
+                "surface-container-high": "#232a37",
+                "outline": "#89919d",
+                "on-tertiary-fixed": "#2e1500",
+                "on-secondary-container": "#004d1b",
+                "primary-container": "#2196f3",
+                "on-background": "#dbe3f4",
+                "surface-container-low": "#141c28",
+                "surface-dim": "#0c1420",
+                "on-tertiary-container": "#452200",
+                "primary-fixed-dim": "#9ecaff",
+                "surface-tint": "#9ecaff",
+                "surface-container-lowest": "#070e1a",
+                "outline-variant": "#404752",
+                "on-secondary-fixed-variant": "#00531e",
+                "error-container": "#93000a",
+                "on-surface-variant": "#bfc7d4",
+                "inverse-primary": "#0061a4",
+                "on-secondary": "#003912",
+                "on-primary-fixed-variant": "#00497d",
+                "inverse-surface": "#dbe3f4",
+                "background": "#0c1420",
+                "on-tertiary-fixed-variant": "#6d3900",
+                "error": "#ffb4ab",
+                "secondary": "#40e56c",
+                "on-primary-fixed": "#001d36",
+                "surface": "#0c1420",
+                "tertiary": "#ffb77b",
+                "secondary-fixed": "#69ff87",
+                "tertiary-fixed-dim": "#ffb77b",
+                "surface-variant": "#2d3542",
+                "primary": "#9ecaff",
+                "on-tertiary": "#4d2700",
+                "primary-fixed": "#d1e4ff",
+                "surface-container-highest": "#2d3542"
+              },
+              fontFamily: {
+                "headline": ["Space Grotesk"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary/30">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-[#0c1420] border-b border-slate-800/50 flex justify-between items-center px-8 h-16 w-full">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black text-blue-400 tracking-tighter font-headline">BeZhas Food Oracle</span>
+<nav class="hidden md:flex gap-6 font-headline font-bold tracking-tight">
+<a class="text-slate-400 hover:text-slate-200 transition-colors" href="#">Dashboard</a>
+<a class="text-slate-400 hover:text-slate-200 transition-colors" href="#">Insurance</a>
+<a class="text-slate-400 hover:text-slate-200 transition-colors" href="#">Market</a>
+<a class="text-slate-400 hover:text-slate-200 transition-colors" href="#">Network</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative flex items-center bg-slate-800/40 rounded-full px-3 py-1.5 ghost-border">
+<span class="material-symbols-outlined text-slate-400 text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-xs w-32 placeholder:text-slate-500" placeholder="Search parameters..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-slate-400 hover:bg-slate-800/40 p-2 rounded-full transition-all">notifications</button>
+<button class="material-symbols-outlined text-slate-400 hover:bg-slate-800/40 p-2 rounded-full transition-all">account_balance_wallet</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-high overflow-hidden border border-primary/20">
+<img alt="User profile" data-alt="professional headshot of a data scientist in a modern office with soft cinematic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7dojFz4T8tWOarC0jTbl90kcjZTP0vtHgtiTOoHl4YSHwwgL2VYh6LSq-KkvsOGQb5F58IB8lFQZDvuiua8-wW9JVxNEv8BK1jcoH2W2VwfwP7XiD_XbQJVTJUCRtZ2fO6s8yQ9Ng1aKiIGG5v530n7Ug7jxKa1Zwz5wp8qDnWpuXwN2otE4sBBBJWGd6542J3wUtJpwrUV6NKsSLWSZpj6A-FW19CnYU1xogrQaBkwvA634yzLX4zh0KaZsfhJb4Jql0N6hR5X0"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-[#0c1420]/80 backdrop-blur-xl border-r border-slate-800/50 flex flex-col py-6 px-4 space-y-2 z-40">
+<div class="px-2 mb-6">
+<div class="flex items-center gap-3 mb-1">
+<div class="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+<span class="font-headline font-bold text-blue-400 tracking-tight">Precision Engine</span>
+</div>
+<span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">v4.0.2 Active</span>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 bg-blue-500/10 text-blue-400 border-r-2 border-blue-500 transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">terrain</span> Soil Analytics
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/30 hover:text-slate-200 transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">eco</span> Crop Health
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/30 hover:text-slate-200 transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">query_stats</span> Yield Forecast
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/30 hover:text-slate-200 transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">security</span> Risk Assessment
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/30 hover:text-slate-200 transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">description</span> Policy Manager
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/30 hover:text-slate-200 transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">history</span> Claims History
+            </a>
+</nav>
+<div class="pt-6 border-t border-slate-800/50 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:bg-slate-800/30 transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">settings</span> Settings
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:bg-slate-800/30 transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined">help</span> Support
+            </a>
+<button class="mt-4 w-full py-2 bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-bold rounded-md text-sm">
+                Connect Wallet
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 p-8 min-h-screen">
+<!-- Lot Selection Header -->
+<section class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="space-y-2">
+<div class="flex items-center gap-3">
+<span class="label-sm uppercase tracking-[0.1em] text-primary/70 font-bold">Current Batch Inspection</span>
+<span class="px-2 py-0.5 bg-surface-container-highest rounded text-[10px] font-mono text-outline-variant">ID BATCH-2024-XP-992</span>
+</div>
+<h1 class="text-5xl font-headline font-bold tracking-tighter text-on-surface">Blueberries</h1>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 bg-secondary/10 px-3 py-1 rounded-full border border-secondary/20">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="text-secondary text-sm font-bold">Optimal Health Status</span>
+</div>
+<span class="text-on-surface-variant/60 text-sm italic">Last updated: 14 mins ago via Satellite Uplink</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl ghost-border flex items-center gap-6">
+<div class="text-right">
+<p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Quality Score</p>
+<p class="text-3xl font-headline font-black text-secondary">98.4<span class="text-sm font-normal text-slate-400">/100</span></p>
+</div>
+<div class="w-12 h-12 rounded-full border-4 border-secondary/20 border-t-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-xl">verified</span>
+</div>
+</div>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- 1. Advanced Volumetric Analysis (3D Voxel Placeholder) -->
+<div class="col-span-12 lg:col-span-7 bg-surface-container rounded-xl overflow-hidden relative group h-[400px]">
+<div class="absolute top-6 left-6 z-10">
+<h3 class="title-sm text-on-surface font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">view_in_ar</span>
+                        Volumetric Voxel Mapping
+                    </h3>
+<p class="text-xs text-on-surface-variant mt-1">High-Precision 3D Surface Calculation</p>
+</div>
+<!-- 3D Visualization Simulation -->
+<div class="absolute inset-0 bg-gradient-to-br from-surface-container-highest/20 to-transparent"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="relative w-2/3 h-2/3">
+<!-- Abstract Voxel Grid Representation -->
+<div class="absolute inset-0 grid grid-cols-8 grid-rows-8 gap-1 opacity-20">
+<div class="bg-primary/20 rounded-sm"></div><div class="bg-primary/40 rounded-sm"></div><div class="bg-primary/10 rounded-sm"></div><div class="bg-primary/30 rounded-sm"></div>
+<div class="bg-primary/50 rounded-sm"></div><div class="bg-primary/20 rounded-sm"></div><div class="bg-primary/10 rounded-sm"></div><div class="bg-primary/40 rounded-sm"></div>
+<!-- Repeat visual markers -->
+<div class="col-span-8 row-span-8 border border-primary/10 border-dashed"></div>
+</div>
+<img alt="3D voxel visualization" class="w-full h-full object-cover mix-blend-screen opacity-60 grayscale hover:grayscale-0 transition-all duration-700" data-alt="abstract digital 3D model of organic blueberry clusters with blue glowing voxel wireframe overlay and data points" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAF4Rruy0vk0lSGY0ld5WnxfM9n8uq1ePkPYNMyChgltuBiiFyxORoqU69O5seo2aCD4V89PJw2rPu2kds3SyzH9VO2ea-5Be60VPYTaD9ykc12Jn-5i6PIPeGuLXCvsZMkcCpCc3PAN8JnZbS3sDS0ZwBU6xsmQjj_XcU7CUTrIoRlBNihCbgfRUTPjIoCP5hIhV998JS1MrPkzdjsHsgB7RuF2BQLTGL2giw1sk35rUTDl5HYqdEIGn-_EYevRD3eLfjo5e64qLQ"/>
+</div>
+</div>
+<div class="absolute bottom-6 right-6 flex gap-4">
+<div class="bg-surface-container-lowest/80 backdrop-blur px-4 py-2 rounded ghost-border">
+<span class="text-[10px] block text-slate-500 font-bold uppercase">Standard BB</span>
+<span class="text-sm font-mono">1.24 m³</span>
+</div>
+<div class="bg-primary/10 backdrop-blur px-4 py-2 rounded border border-primary/30">
+<span class="text-[10px] block text-primary font-bold uppercase">Oracle Voxel</span>
+<span class="text-sm font-mono font-bold">1.092 m³</span>
+</div>
+</div>
+</div>
+<!-- 2. Bromatological Profile (Gemini Panel) -->
+<div class="col-span-12 lg:col-span-5 bg-surface-container rounded-xl p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-6">
+<h3 class="title-sm text-on-surface font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">biotech</span>
+                            Bromatological Profile
+                        </h3>
+<span class="bg-tertiary/10 text-tertiary text-[10px] font-bold px-2 py-1 rounded">AI PREDICTION</span>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between mb-2">
+<span class="text-xs text-on-surface-variant font-medium">Brix Degree (Sugars)</span>
+<span class="text-xs font-mono font-bold text-tertiary">14.2° Bx</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-[82%] h-full bg-tertiary shadow-[0_0_10px_rgba(255,183,123,0.3)]"></div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4">
+<div class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/10 text-center">
+<span class="text-[10px] text-slate-500 font-bold block mb-1">CARBS</span>
+<span class="text-lg font-headline font-bold">14.5g</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/10 text-center">
+<span class="text-[10px] text-slate-500 font-bold block mb-1">LIPIDS</span>
+<span class="text-lg font-headline font-bold">0.3g</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/10 text-center">
+<span class="text-[10px] text-slate-500 font-bold block mb-1">PROTEIN</span>
+<span class="text-lg font-headline font-bold">0.7g</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant/10">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="text-xs font-bold text-primary uppercase tracking-tighter">Gemini 1.5 Pro Insight</span>
+</div>
+<p class="text-xs leading-relaxed text-on-surface-variant italic">
+                        "Anthocyanin levels are peaking at 165mg/100g, indicating optimal antioxidant density. Harvest window is projected to close in 72h based on current thermal accumulation."
+                    </p>
+</div>
+</div>
+<!-- 3. Spectral Signature Charts (48h Window) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container rounded-xl p-6">
+<div class="flex justify-between items-center mb-8">
+<h3 class="title-sm text-on-surface font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">insights</span>
+                        Spectral Signature Dynamics (48h)
+                    </h3>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-1 bg-primary rounded"></div>
+<span class="text-[10px] text-slate-400 font-bold">CHLOROPHYLL</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-1 bg-secondary rounded"></div>
+<span class="text-[10px] text-slate-400 font-bold">HYDRATION</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-1 bg-error rounded"></div>
+<span class="text-[10px] text-slate-400 font-bold">OXIDATION</span>
+</div>
+</div>
+</div>
+<div class="h-64 relative">
+<!-- Custom SVG Line Chart Representation -->
+<svg class="w-full h-full" viewbox="0 0 800 200">
+<!-- Grid Lines -->
+<line stroke="rgba(255,255,255,0.05)" x1="0" x2="800" y1="0" y2="0"></line>
+<line stroke="rgba(255,255,255,0.05)" x1="0" x2="800" y1="50" y2="50"></line>
+<line stroke="rgba(255,255,255,0.05)" x1="0" x2="800" y1="100" y2="100"></line>
+<line stroke="rgba(255,255,255,0.05)" x1="0" x2="800" y1="150" y2="150"></line>
+<!-- Data Path: Chlorophyll -->
+<path d="M0 120 Q 100 80, 200 110 T 400 60 T 600 90 T 800 40" fill="none" stroke="#9ecaff" stroke-width="2"></path>
+<path d="M0 120 Q 100 80, 200 110 T 400 60 T 600 90 T 800 40 L 800 200 L 0 200 Z" fill="url(#grad-primary)" opacity="0.1"></path>
+<!-- Data Path: Hydration -->
+<path d="M0 150 Q 150 140, 300 160 T 500 130 T 800 145" fill="none" stroke="#40e56c" stroke-width="2"></path>
+<!-- Data Path: Oxidation -->
+<path d="M0 180 C 200 175, 400 185, 800 170" fill="none" stroke="#ffb4ab" stroke-dasharray="4" stroke-width="2"></path>
+<defs>
+<lineargradient id="grad-primary" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#9ecaff"></stop>
+<stop offset="100%" stop-color="transparent"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="flex justify-between mt-4">
+<span class="text-[9px] text-slate-500 font-mono">-48h</span>
+<span class="text-[9px] text-slate-500 font-mono">-36h</span>
+<span class="text-[9px] text-slate-500 font-mono">-24h</span>
+<span class="text-[9px] text-slate-500 font-mono">-12h</span>
+<span class="text-[9px] text-primary font-mono font-bold">NOW</span>
+</div>
+</div>
+</div>
+<!-- 4. Anomaly Map (Heatmap Grid) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container rounded-xl p-6">
+<h3 class="title-sm text-on-surface font-bold flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-error">grid_view</span>
+                    Fúngico Risk Heatmap
+                </h3>
+<div class="grid grid-cols-6 gap-2 aspect-square mb-6">
+<!-- Generating a fake heatmap grid -->
+<div class="bg-secondary/10 rounded-sm ghost-border"></div>
+<div class="bg-secondary/20 rounded-sm ghost-border"></div>
+<div class="bg-secondary/5 rounded-sm ghost-border"></div>
+<div class="bg-error/30 rounded-sm border border-error/50"></div>
+<div class="bg-secondary/10 rounded-sm ghost-border"></div>
+<div class="bg-secondary/20 rounded-sm ghost-border"></div>
+<div class="bg-secondary/5 rounded-sm ghost-border"></div>
+<div class="bg-secondary/10 rounded-sm ghost-border"></div>
+<div class="bg-error/10 rounded-sm border border-error/20"></div>
+<div class="bg-error/60 rounded-sm border border-error shadow-[0_0_15px_rgba(255,180,171,0.4)]"></div>
+<div class="bg-error/20 rounded-sm border border-error/30"></div>
+<div class="bg-secondary/5 rounded-sm ghost-border"></div>
+<!-- More grid items for density -->
+<script>
+                        for(let i=0; i<24; i++) {
+                            const opacity = Math.random() > 0.8 ? '20' : '5';
+                            document.write(`<div class="bg-secondary/${opacity} rounded-sm ghost-border"></div>`);
+                        }
+                    </script>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="text-xs text-on-surface-variant font-medium">Botrytis Risk</span>
+</div>
+<span class="text-xs font-mono text-error font-bold">12.4% localized</span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-xs text-on-surface-variant font-medium">Penicillium</span>
+</div>
+<span class="text-xs font-mono text-secondary font-bold">0.02% Trace</span>
+</div>
+</div>
+</div>
+<!-- 5. AI Rationale Panel -->
+<div class="col-span-12 bg-surface-container-low rounded-xl p-8 border-l-4 border-primary/40">
+<div class="flex flex-col md:flex-row gap-8 items-start">
+<div class="shrink-0">
+<div class="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+</div>
+<div class="flex-1 space-y-4">
+<h4 class="font-headline font-bold text-xl text-primary">Digital Agronomist Rationale</h4>
+<div class="text-on-surface-variant text-sm leading-relaxed max-w-4xl space-y-3">
+<p>
+                                The current quality score of <span class="text-secondary font-bold">98.4/100</span> is derived from the convergence of multispectral data and hyper-local atmospheric conditions. Voxel analysis indicates a 0.8% higher density than typical seasonal averages, suggesting exceptional structural integrity and transport resilience.
+                            </p>
+<p>
+                                While the fúngico heatmap shows a minor <span class="text-error font-bold">Botrytis flare-up</span> in Zone D-12, the spectral signature of the surrounding lot demonstrates high oxidative resistance. Predictive models suggest that immediate cooling to 1.2°C will neutralize the localized risk without compromising the bromatological profile. 
+                            </p>
+</div>
+<div class="flex gap-4 pt-4">
+<button class="px-6 py-2 bg-primary/10 border border-primary/30 text-primary rounded font-bold text-xs uppercase tracking-widest hover:bg-primary/20 transition-all">Download Full Report</button>
+<button class="px-6 py-2 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-200 transition-all">Audit Raw Data</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Contextual FAB (Only for Home/Dashboard context - relevant here as 'Action' interface) -->
+<div class="fixed bottom-8 right-8 flex flex-col items-end gap-3 z-50">
+<button class="flex items-center gap-3 bg-secondary px-6 py-4 rounded-full text-on-secondary font-headline font-black shadow-2xl hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shutter_speed</span>
+            INITIATE SMART HARVEST
+        </button>
+</div>
+</body></html>

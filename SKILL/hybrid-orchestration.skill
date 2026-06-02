@@ -1,0 +1,35 @@
+{
+  "skill_id": "hybrid-orchestration-v1",
+  "name": "Hybrid Cloud-Local Routing Logic",
+  "description": "Rules for routing tasks between high-capacity Cloud LLMs and fast Local LLMs based on complexity and security requirements.",
+  "version": "1.0.0",
+  "routing_policy": {
+    "high_complexity": {
+      "priority": "cloud",
+      "models": ["gemini-2.0-flash", "claude-sonnet-4-20250514"],
+      "triggers": [
+        "smart contract audit",
+        "complex blockchain deployment",
+        "cross-chain bridge health analysis",
+        "fraud risk assessment with high amount",
+        "regulatory compliance verification"
+      ]
+    },
+    "medium_low_complexity": {
+      "priority": "local",
+      "models": ["gemma:7b", "qwen2.5:7b", "mistral:v0.3"],
+      "triggers": [
+        "general query",
+        "status check",
+        "sentiment analysis",
+        "gas strategy prediction",
+        "system health report"
+      ]
+    }
+  },
+  "execution_patterns": {
+    "local_first": "If task contains < 500 tokens and no 'high_complexity' triggers, try Local (Ollama) first. If failed, fallback to Cloud.",
+    "cloud_first": "If task involves 'critical_operations' (transfers, deployments, security), use Cloud immediately to ensure maximum accuracy."
+  },
+  "knowledge_injection": "All local models must be prompted with this SKILL context to understand their role as fast, efficient executors for non-critical tasks."
+}

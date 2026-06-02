@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Smart Stowage - AR Container Optimization</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .ar-grid {
+            background-image: linear-gradient(to right, rgba(236, 91, 19, 0.1) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(236, 91, 19, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .scan-line {
+            background: linear-gradient(to bottom, transparent, #ec5b13, transparent);
+            height: 2px;
+            width: 100%;
+            position: absolute;
+            top: 50%;
+            box-shadow: 0 0 15px #ec5b13;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between px-6 py-4 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-primary/20 z-10">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary rounded-lg text-white">
+<span class="material-symbols-outlined">view_in_ar</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-tight tracking-tight">BeZhas Smart Stowage</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400 font-medium">HMM Algeciras • Bay 24 • Row 02</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">settings_overscan</span>
+</button>
+<div class="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="text-xs font-bold text-primary">LIVE SCAN</span>
+</div>
+</div>
+</header>
+<!-- Main Viewport (AR HUD) -->
+<main class="relative flex-1 bg-slate-200 dark:bg-black overflow-hidden flex items-center justify-center">
+<!-- AR Background Placeholder -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-cover bg-center opacity-60 grayscale dark:grayscale-0" data-alt="Interior of a large industrial shipping container with metallic walls" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB7RgfZkfnfH_nhQzAHLBZgy5Yhbb3sMRp6DTFfcGLB0U0Z2m0tIdTAspxRZCGgxrjF1aEcdLAnhl1Djs5STrFkOK6EmLHwQnaleBiIuD_xu-uynvMDsfDUpcgDvvDl6-hp8RVuqEfDL3QO8DTuGOEQd6qcY2-qSqXewYglp5vNMwlyT8Okl1jIZyNftrrNBw4x2yHZDnbade62u4DJpBhnv0ZpDHnyijyHKEZD_YT5vfw_ZzI_DzzdXZeeCEmc8mxWJ2W1C1pBLoUc')"></div>
+<div class="absolute inset-0 ar-grid"></div>
+</div>
+<!-- AR Overlay Elements -->
+<div class="relative z-10 w-full h-full p-6 flex flex-col justify-between pointer-events-none">
+<!-- Top HUD: Warnings -->
+<div class="flex justify-center">
+<div class="bg-red-500/90 dark:bg-red-600/90 backdrop-blur text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-red-400 pointer-events-auto">
+<span class="material-symbols-outlined text-2xl font-bold">warning</span>
+<div>
+<p class="font-bold text-sm uppercase tracking-widest">Instability Detected</p>
+<p class="text-xs opacity-90">Upper-right quadrant exceeds lateral load limit (65%).</p>
+</div>
+</div>
+</div>
+<!-- Central Target / COG Indicator -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="relative flex items-center justify-center w-64 h-64">
+<!-- Scanning Circles -->
+<div class="absolute w-full h-full border-2 border-primary/30 rounded-full border-dashed animate-spin" style="animation-duration: 10s;"></div>
+<div class="absolute w-48 h-48 border border-white/20 rounded-full"></div>
+<!-- Center of Gravity Marker -->
+<div class="relative z-20 flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-primary shadow-[0_0_20px_rgba(236,91,19,0.8)] border-2 border-white flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm">center_focus_strong</span>
+</div>
+<div class="mt-2 bg-black/60 backdrop-blur px-2 py-1 rounded text-[10px] text-white font-bold tracking-tighter uppercase border border-white/20">
+                            COG: OFFSET +0.42m
+                        </div>
+</div>
+<!-- 3D Volumetric Box Guide -->
+<div class="absolute w-80 h-48 border-2 border-primary/60 rounded-lg transform -rotate-x-12 perspective-1000 flex items-center justify-center">
+<div class="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-white"></div>
+<div class="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-white"></div>
+<div class="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-white"></div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-white"></div>
+<p class="text-primary text-[10px] font-black tracking-widest bg-black/40 px-2 py-1 uppercase backdrop-blur-sm">Optimal Load Zone</p>
+</div>
+</div>
+</div>
+<!-- Bottom HUD: Data Readouts -->
+<div class="flex justify-between items-end gap-4 pointer-events-auto">
+<!-- Left: Volumetric Info -->
+<div class="flex flex-col gap-3 max-w-xs">
+<div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-white">
+<div class="flex justify-between items-center mb-2">
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Volumetric Data</span>
+<span class="material-symbols-outlined text-sm text-primary">data_usage</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-2xl font-black italic">42.5<span class="text-xs font-normal ml-1">m³</span></p>
+<p class="text-[9px] text-slate-400 uppercase">Total Volume</p>
+</div>
+<div>
+<p class="text-2xl font-black italic">18.2<span class="text-xs font-normal ml-1">T</span></p>
+<p class="text-[9px] text-slate-400 uppercase">Gross Weight</p>
+</div>
+</div>
+<div class="mt-4 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[72%]"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="text-[9px] text-slate-400">72% Capacity Reached</span>
+<span class="text-[9px] text-primary">+2.1% from prev.</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary text-white py-3 rounded-lg font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
+                            Confirm Load
+                        </button>
+<button class="px-4 bg-white/10 backdrop-blur border border-white/20 text-white rounded-lg">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+</div>
+</div>
+<!-- Right: Distribution Map -->
+<div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-white w-48">
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-300 block mb-2">Weight Dist.</span>
+<div class="aspect-square w-full bg-slate-900/50 rounded flex flex-col gap-1 p-1">
+<!-- Simulated Weight Heatmap -->
+<div class="flex-1 flex gap-1">
+<div class="flex-1 rounded-sm bg-primary/20"></div>
+<div class="flex-1 rounded-sm bg-primary/80"></div>
+</div>
+<div class="flex-1 flex gap-1">
+<div class="flex-1 rounded-sm bg-primary/40"></div>
+<div class="flex-1 rounded-sm bg-primary/10"></div>
+</div>
+<div class="flex-1 flex gap-1">
+<div class="flex-1 rounded-sm bg-red-500/90 border border-white/50"></div>
+<div class="flex-1 rounded-sm bg-primary/60"></div>
+</div>
+</div>
+<div class="mt-2 flex justify-between text-[10px]">
+<span class="text-slate-400">Front: 45%</span>
+<span class="text-slate-400">Rear: 55%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Search/Command Bar Floating -->
+<div class="absolute top-24 right-6 z-20 flex flex-col gap-2 pointer-events-auto">
+<button class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 dark:bg-background-dark/90 text-slate-700 dark:text-slate-200 shadow-xl border border-slate-200 dark:border-primary/20">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 dark:bg-background-dark/90 text-slate-700 dark:text-slate-200 shadow-xl border border-slate-200 dark:border-primary/20">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<div class="h-4"></div>
+<button class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-xl">
+<span class="material-symbols-outlined">explore</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="flex items-center justify-around px-4 pb-6 pt-3 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-primary/20">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">visibility</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">HUD</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Inventory</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">balance</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Stability</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">history</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Logs</p>
+</a>
+</nav>
+</div>
+</body></html>

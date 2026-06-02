@@ -1,0 +1,120 @@
+# ═══════════════════════════════════════════════════════════════
+# BeZhas OpenClaw — Docker Compose
+# Servicios: openclaw-engine | redis | nginx
+# GPU: NVIDIA (RTX 4090 / cualquier CUDA compatible)
+# ═══════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+services:
+
+  # ── Motor principal OpenClaw ─────────────────────────────────
+  openclaw-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bezhas-openclaw
+    restart: unless-stopped
+    
+    # Acceso a GPU NVIDIA (para bitsandbytes + llama.cpp CUDA)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all          # usa todas las GPUs disponibles
+              capabilities: [gpu]
+    
+    environment:
+      # API Keys — cargadas desde .env (nunca en este archivo)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # BeZhas config
+      - BEZHAS_ENV=production
+      - LOG_LEVEL=INFO
+      - REDIS_URL=redis://redis:6379/0
+      # Contratos BeZhas
+      - BEZ_CONTRACT_POLYGON=0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8
+      - BEZ_CONTRACT_BNB=0x8a1e3930fde1f151471c368fdbb39f3f63a65b55
+      - TREASURY_DAO=0x89c23890c742d710265dD61be789C71dC8999b12
+      # RPC endpoints
+      - RPC_BNB=https://bsc-dataseed.binance.org
+      - RPC_POLYGON=https://polygon-rpc.com
+    
+    volumes:
+      # Modelos GGUF locales (llama 70B Q3_K_M etc.)
+      - D:/Documentos D/Documentos Yoe/BeZhas/models:/app/models:ro
+      # Logs persistentes
+      - bezhas-logs:/app/logs
+      # Cache de modelos HuggingFace
+      - bezhas-hf-cache:/root/.cache/huggingface
+      # Proyecto BeZhas Blockchain (ABIs, contratos)
+      - "D:/Documentos D/Documentos Yoe/BeZhas/BeZhas Blockchain:/app/bezhas-blockchain:ro"
+    
+    ports:
+      - "8000:8000"    # API REST OpenClaw
+    
+    depends_on:
+      redis:
+        condition: service_healthy
+    
+    networks:
+      - bezhas-net
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── Redis — Cache de contextos y circuit breaker state ───────
+  redis:
+    image: redis:7.2-alpine
+    container_name: bezhas-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru
+    
+    volumes:
+      - bezhas-redis-data:/data
+    
+    networks:
+      - bezhas-net
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Nginx — Proxy inverso con rate limiting ──────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: bezhas-nginx
+    restart: unless-stopped
+    
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    depends_on:
+      - openclaw-engine
+    
+    networks:
+      - bezhas-net
+
+# ── Volúmenes persistentes ────────────────────────────────────
+volumes:
+  bezhas-logs:
+  bezhas-redis-data:
+  bezhas-hf-cache:
+
+# ── Red interna ───────────────────────────────────────────────
+networks:
+  bezhas-net:
+    driver: bridge

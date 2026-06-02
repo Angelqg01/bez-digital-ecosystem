@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas - Storage Inventory Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-fixed": "#001d36",
+              "secondary-container": "#02c953",
+              "primary-container": "#2196f3",
+              "on-tertiary-fixed-variant": "#6d3900",
+              "surface-dim": "#0c1420",
+              "error": "#ffb4ab",
+              "on-surface-variant": "#bfc7d4",
+              "on-secondary": "#003912",
+              "surface-container-lowest": "#070e1a",
+              "outline": "#89919d",
+              "secondary-fixed": "#69ff87",
+              "surface-container": "#18202c",
+              "surface": "#0c1420",
+              "surface-variant": "#2d3542",
+              "inverse-on-surface": "#29313e",
+              "on-tertiary-fixed": "#2e1500",
+              "error-container": "#93000a",
+              "primary-fixed": "#d1e4ff",
+              "on-secondary-container": "#004d1b",
+              "on-secondary-fixed-variant": "#00531e",
+              "on-surface": "#dbe3f4",
+              "surface-container-high": "#232a37",
+              "on-tertiary": "#4d2700",
+              "surface-tint": "#9ecaff",
+              "tertiary-fixed-dim": "#ffb77b",
+              "on-error": "#690005",
+              "surface-container-low": "#141c28",
+              "on-primary-fixed-variant": "#00497d",
+              "secondary-fixed-dim": "#3ce36a",
+              "tertiary": "#ffb77b",
+              "primary": "#9ecaff",
+              "inverse-surface": "#dbe3f4",
+              "tertiary-fixed": "#ffdcc2",
+              "on-tertiary-container": "#452200",
+              "on-secondary-fixed": "#002108",
+              "surface-bright": "#323947",
+              "on-background": "#dbe3f4",
+              "inverse-primary": "#0061a4",
+              "secondary": "#40e56c",
+              "surface-container-highest": "#2d3542",
+              "background": "#0c1420",
+              "on-error-container": "#ffdad6",
+              "tertiary-container": "#db7900",
+              "on-primary-container": "#002c4f",
+              "outline-variant": "#404752",
+              "primary-fixed-dim": "#9ecaff",
+              "on-primary": "#003258"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: #0c1420; }
+      ::-webkit-scrollbar-thumb { background: #2d3542; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30">
+<!-- TopNavBar Implementation -->
+<header class="bg-[#0c1420] fixed top-0 w-full z-50 flex justify-between items-center px-6 py-4 h-16">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black text-blue-400 tracking-tighter font-headline">BeZhas</span>
+<div class="hidden md:flex items-center bg-surface-container-low px-4 py-1.5 rounded-full border border-outline-variant/15">
+<span class="material-symbols-outlined text-outline text-sm mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 text-on-surface-variant placeholder:text-outline/50" placeholder="Search inventory..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-[#dbe3f4] hover:bg-white/10 transition-colors rounded-full relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-outline-variant/20">
+<div class="text-right hidden sm:block">
+<p class="text-xs font-bold text-on-surface leading-none">Admin Oracle</p>
+<p class="text-[10px] text-primary leading-none mt-1 uppercase tracking-widest">Level 4 Auth</p>
+</div>
+<span class="material-symbols-outlined text-blue-400 text-3xl" data-icon="account_circle">account_circle</span>
+</div>
+</div>
+</header>
+<!-- SideNavBar Implementation -->
+<aside class="hidden lg:flex flex-col h-screen fixed left-0 top-0 pt-20 pb-8 px-4 bg-[#0c1420] border-r border-white/5 w-64 z-40">
+<div class="mb-8 px-2">
+<h2 class="text-xl font-bold text-blue-400 font-headline">BeZhas</h2>
+<p class="text-xs text-[#dbe3f4]/40 font-medium">Editorial Logistics</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 ease-in-out font-['Inter'] font-medium text-sm group" href="#">
+<span class="material-symbols-outlined group-hover:text-blue-400" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 ease-in-out font-['Inter'] font-medium text-sm group" href="#">
+<span class="material-symbols-outlined group-hover:text-blue-400" data-icon="qr_code_scanner">qr_code_scanner</span>
+<span>Scan</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-blue-400 bg-blue-400/10 border-r-2 border-blue-400 transition-all duration-300 ease-in-out font-['Inter'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Storage</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 ease-in-out font-['Inter'] font-medium text-sm group" href="#">
+<span class="material-symbols-outlined group-hover:text-blue-400" data-icon="local_shipping">local_shipping</span>
+<span>Shipments</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 ease-in-out font-['Inter'] font-medium text-sm group" href="#">
+<span class="material-symbols-outlined group-hover:text-blue-400" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span>Wallet</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 ease-in-out font-['Inter'] font-medium text-sm group" href="#">
+<span class="material-symbols-outlined group-hover:text-blue-400" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-2">
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/10">
+<p class="text-[10px] text-outline uppercase tracking-tighter mb-2">Oracle Sync Status</p>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="text-xs font-bold text-on-surface">Live Node Active</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="lg:pl-64 pt-24 pb-20 lg:pb-8 px-6 min-h-screen">
+<div class="max-w-7xl mx-auto space-y-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-4xl font-headline font-bold tracking-tight text-on-surface">Storage Inventory</h1>
+<p class="text-on-surface-variant mt-1">Real-time agricultural asset monitoring &amp; cold chain integrity.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container-high rounded-lg text-sm font-medium hover:bg-surface-variant transition-colors border border-outline-variant/10">
+<span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span>
+                        Filtros
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold rounded-lg shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                        New Batch
+                    </button>
+</div>
+</div>
+<!-- Summary Cards Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Capacity Card -->
+<div class="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-primary p-2 bg-primary/10 rounded-lg" data-icon="database">database</span>
+<span class="text-[10px] font-bold text-outline uppercase tracking-widest">Global Utility</span>
+</div>
+<h3 class="text-sm font-medium text-on-surface-variant">Capacidad de Almacenamiento</h3>
+<div class="flex items-baseline gap-2 mt-2">
+<span class="text-4xl font-headline font-bold text-on-surface">85%</span>
+<span class="text-xs text-secondary font-medium">Near Limit</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 rounded-full mt-4 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<!-- Stock Card -->
+<div class="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-secondary p-2 bg-secondary/10 rounded-lg" data-icon="inventory">inventory</span>
+<span class="text-[10px] font-bold text-outline uppercase tracking-widest">Active Units</span>
+</div>
+<h3 class="text-sm font-medium text-on-surface-variant">Lotes en Stock</h3>
+<div class="flex items-baseline gap-2 mt-2">
+<span class="text-4xl font-headline font-bold text-on-surface">420</span>
+<span class="text-xs text-outline font-medium">Across 12 Chambers</span>
+</div>
+<p class="text-[10px] text-on-surface-variant mt-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="trending_up">trending_up</span>
+                        +12 units since last shift
+                    </p>
+</div>
+<!-- Alert Card -->
+<div class="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-error p-2 bg-error/10 rounded-lg" data-icon="ac_unit">ac_unit</span>
+<span class="text-[10px] font-bold text-outline uppercase tracking-widest">Critical Monitor</span>
+</div>
+<h3 class="text-sm font-medium text-on-surface-variant">Alerta de Cadena de Frío</h3>
+<div class="flex items-baseline gap-2 mt-2">
+<span class="text-4xl font-headline font-bold text-error">2</span>
+<span class="text-xs text-error font-medium">Critical Issues</span>
+</div>
+<div class="mt-4 flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-error-container border-2 border-surface-container flex items-center justify-center text-[10px] font-bold">C4</div>
+<div class="w-6 h-6 rounded-full bg-error-container border-2 border-surface-container flex items-center justify-center text-[10px] font-bold">C9</div>
+</div>
+</div>
+</div>
+<!-- Heatmap and Filters Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- 2D Heatmap Section -->
+<div class="lg:col-span-8 space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-lg font-headline font-bold flex items-center gap-2">
+<span class="w-1.5 h-6 bg-primary rounded-full"></span>
+                            Cámaras Frigoríficas - Thermal Map
+                        </h2>
+<div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-outline">
+<div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm bg-secondary"></span> Optimal</div>
+<div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm bg-primary"></span> Low</div>
+<div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm bg-error"></span> Critical</div>
+</div>
+</div>
+<div class="bg-surface-container rounded-2xl p-8 border border-outline-variant/5 aspect-[16/9] flex items-center justify-center relative overflow-hidden">
+<!-- Heatmap Grid Simulation -->
+<div class="grid grid-cols-4 grid-rows-3 gap-4 w-full h-full">
+<!-- Chamber 1-12 -->
+<div class="bg-secondary/10 border border-secondary/30 rounded-xl flex flex-col items-center justify-center relative group hover:bg-secondary/20 transition-all cursor-pointer">
+<span class="text-[10px] text-secondary font-bold absolute top-3 left-3">C-01</span>
+<span class="text-lg font-headline font-bold text-on-surface">-18.2°C</span>
+<span class="text-[10px] text-secondary/60 uppercase">Normal</span>
+</div>
+<div class="bg-secondary/10 border border-secondary/30 rounded-xl flex flex-col items-center justify-center relative group">
+<span class="text-[10px] text-secondary font-bold absolute top-3 left-3">C-02</span>
+<span class="text-lg font-headline font-bold text-on-surface">-18.0°C</span>
+</div>
+<div class="bg-primary/10 border border-primary/30 rounded-xl flex flex-col items-center justify-center relative">
+<span class="text-[10px] text-primary font-bold absolute top-3 left-3">C-03</span>
+<span class="text-lg font-headline font-bold text-on-surface">-22.5°C</span>
+<span class="text-[10px] text-primary/60 uppercase">Overcool</span>
+</div>
+<div class="bg-error/10 border border-error/30 rounded-xl flex flex-col items-center justify-center relative animate-pulse">
+<span class="text-[10px] text-error font-bold absolute top-3 left-3">C-04</span>
+<span class="text-lg font-headline font-bold text-error">-4.2°C</span>
+<span class="text-[10px] text-error uppercase">Alert</span>
+</div>
+<!-- More chambers... -->
+<div class="bg-secondary/10 border border-secondary/30 rounded-xl flex flex-col items-center justify-center relative">
+<span class="text-[10px] text-secondary font-bold absolute top-3 left-3">C-05</span>
+<span class="text-lg font-headline font-bold text-on-surface">-18.5°C</span>
+</div>
+<div class="bg-secondary/10 border border-secondary/30 rounded-xl flex flex-col items-center justify-center relative">
+<span class="text-[10px] text-secondary font-bold absolute top-3 left-3">C-06</span>
+<span class="text-lg font-headline font-bold text-on-surface">-18.1°C</span>
+</div>
+<div class="bg-secondary/10 border border-secondary/30 rounded-xl flex flex-col items-center justify-center relative">
+<span class="text-[10px] text-secondary font-bold absolute top-3 left-3">C-07</span>
+<span class="text-lg font-headline font-bold text-on-surface">-17.9°C</span>
+</div>
+<div class="bg-secondary/10 border border-secondary/30 rounded-xl flex flex-col items-center justify-center relative">
+<span class="text-[10px] text-secondary font-bold absolute top-3 left-3">C-08</span>
+<span class="text-lg font-headline font-bold text-on-surface">-18.3°C</span>
+</div>
+<div class="bg-error/10 border border-error/30 rounded-xl flex flex-col items-center justify-center relative">
+<span class="text-[10px] text-error font-bold absolute top-3 left-3">C-09</span>
+<span class="text-lg font-headline font-bold text-error">-2.1°C</span>
+</div>
+<div class="bg-secondary/10 border border-secondary/30 rounded-xl flex flex-col items-center justify-center relative">
+<span class="text-[10px] text-secondary font-bold absolute top-3 left-3">C-10</span>
+<span class="text-lg font-headline font-bold text-on-surface">-18.0°C</span>
+</div>
+<div class="bg-secondary/10 border border-secondary/30 rounded-xl flex flex-col items-center justify-center relative">
+<span class="text-[10px] text-secondary font-bold absolute top-3 left-3">C-11</span>
+<span class="text-lg font-headline font-bold text-on-surface">-18.1°C</span>
+</div>
+<div class="bg-secondary/10 border border-secondary/30 rounded-xl flex flex-col items-center justify-center relative">
+<span class="text-[10px] text-secondary font-bold absolute top-3 left-3">C-12</span>
+<span class="text-lg font-headline font-bold text-on-surface">-18.4°C</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Filters & Mini Insights -->
+<div class="lg:col-span-4 space-y-6">
+<h2 class="text-lg font-headline font-bold flex items-center gap-2">
+<span class="w-1.5 h-6 bg-secondary rounded-full"></span>
+                        Segmentación
+                    </h2>
+<div class="bg-surface-container rounded-2xl p-6 border border-outline-variant/5 space-y-6">
+<div>
+<label class="text-[10px] font-bold text-outline uppercase tracking-widest block mb-3">Por Producto</label>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-xs font-bold">Todos</button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 text-on-surface-variant text-xs hover:border-primary/50 transition-colors">Arándanos</button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 text-on-surface-variant text-xs hover:border-primary/50 transition-colors">Uvas</button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 text-on-surface-variant text-xs hover:border-primary/50 transition-colors">Paltas</button>
+</div>
+</div>
+<div>
+<label class="text-[10px] font-bold text-outline uppercase tracking-widest block mb-3">Por Cámara</label>
+<select class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg text-sm text-on-surface-variant focus:ring-primary focus:border-primary p-2.5">
+<option>Todas las Cámaras (12)</option>
+<option>Zona A (C1-C4)</option>
+<option>Zona B (C5-C8)</option>
+<option>Zona C (C9-C12)</option>
+</select>
+</div>
+<div>
+<label class="text-[10px] font-bold text-outline uppercase tracking-widest block mb-3">Por Estado</label>
+<div class="space-y-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="rounded bg-surface-container-lowest border-outline-variant/30 text-primary focus:ring-primary/20" type="checkbox"/>
+<span class="text-sm text-on-surface-variant group-hover:text-on-surface">Salud Óptima</span>
+<span class="ml-auto text-xs text-outline">382</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="rounded bg-surface-container-lowest border-outline-variant/30 text-primary focus:ring-primary/20" type="checkbox"/>
+<span class="text-sm text-on-surface-variant group-hover:text-on-surface">Advertencia</span>
+<span class="ml-auto text-xs text-outline">32</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="rounded bg-surface-container-lowest border-outline-variant/30 text-primary focus:ring-primary/20" type="checkbox"/>
+<span class="text-sm text-on-surface-variant group-hover:text-on-surface">Crítico</span>
+<span class="ml-auto text-xs text-outline">6</span>
+</label>
+</div>
+</div>
+</div>
+<div class="bg-gradient-to-br from-primary/10 to-transparent rounded-2xl p-6 border border-primary/20">
+<h4 class="text-sm font-bold text-primary flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-sm" data-icon="auto_awesome">auto_awesome</span>
+                            Oracle Prediction
+                        </h4>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                            Cámara C-04 alcanzará umbral de riesgo en <span class="text-on-surface font-bold">45 min</span>. Se recomienda reubicación de lote #BATCH-774 a Zona B.
+                        </p>
+</div>
+</div>
+</div>
+<!-- Recent Batches Table -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-lg font-headline font-bold flex items-center gap-2">
+<span class="w-1.5 h-6 bg-outline rounded-full"></span>
+                        Lotes Recientes
+                    </h2>
+<button class="text-xs font-bold text-primary uppercase tracking-widest hover:underline">Ver Historial Completo</button>
+</div>
+<div class="bg-surface-container rounded-2xl border border-outline-variant/5 overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high/50 border-b border-outline-variant/10">
+<th class="px-6 py-4 text-[10px] font-bold text-outline uppercase tracking-widest">ID Lote</th>
+<th class="px-6 py-4 text-[10px] font-bold text-outline uppercase tracking-widest">Producto</th>
+<th class="px-6 py-4 text-[10px] font-bold text-outline uppercase tracking-widest">Ingreso</th>
+<th class="px-6 py-4 text-[10px] font-bold text-outline uppercase tracking-widest">Cámara</th>
+<th class="px-6 py-4 text-[10px] font-bold text-outline uppercase tracking-widest">Salud Biológica</th>
+<th class="px-6 py-4 text-[10px] font-bold text-outline uppercase tracking-widest">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<span class="text-sm font-mono font-bold text-primary">#BZ-8821-X</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-lowest overflow-hidden">
+<img alt="Arándanos" class="w-full h-full object-cover opacity-70" data-alt="close-up of fresh blue blueberries with water droplets, cinematic macro lighting, dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYD60g6Xj4i1_idKDp5wD2Cf3Ke_1-xWjBc0zxERhMxqC-3ttDYnEsJ66uytvX6mx89xBG7qbu9vnQT65Jhe-fqii4xnByFnVfE1xRgytpORDfQ0JTDXPgpB_yLn3iy30C5KQ_iWEGO0i2JW436YjO7DFKNkivY0sPgglq1pmPRtGfGLkDoJQsZTu5Hs6i09ttQ3LLNEpYGSgodyA28oBORbQdQ1K2Y9dk89N2CeXmeKDQqWYdGBgOxACWBI6O1aIrQb7rMhuQ4ZI"/>
+</div>
+<span class="text-sm font-medium">Arándanos Premium</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">Hoy, 08:45 AM</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded bg-surface-container-lowest border border-outline-variant/10 text-xs text-on-surface">C-02</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="flex-1 bg-surface-container-lowest h-1.5 rounded-full overflow-hidden w-24">
+<div class="bg-secondary h-full" style="width: 98%"></div>
+</div>
+<span class="text-xs font-bold text-secondary">98.4%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<button class="material-symbols-outlined text-outline hover:text-primary transition-colors" data-icon="more_horiz">more_horiz</button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<span class="text-sm font-mono font-bold text-primary">#BZ-7742-A</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-lowest overflow-hidden">
+<img alt="Uvas" class="w-full h-full object-cover opacity-70" data-alt="cluster of dark purple grapes on a wooden surface, moody lighting with deep shadows, high contrast editorial style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsfRnB4Y5bvT6mMB8KgYUprouL1xJ2EPMHkxnOxe1zAfEojGmrKPfTSOP71t7rvXoaabp5TQ8vokOTOquy6cOQRqTMQ0NEY0EZiYLyzsbWoQeLQacUna6p57Eju9sMWNUn4e3cqOnvEUBMpH3tA1tFFCjTI2-tJAXoB_PZoI1pEtF44UMO-5I5KHN18psvo249DDvGYg233ya2uyGS7cmJLDFZ-Xyxj5CSoPRc6F5GqVXlKOL-AtyyQWmM43-HFuvVyxbIVtRYHZQ"/>
+</div>
+<span class="text-sm font-medium">Uva Red Globe</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">Ayer, 14:20 PM</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded bg-error/10 border border-error/20 text-xs text-error">C-04</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="flex-1 bg-surface-container-lowest h-1.5 rounded-full overflow-hidden w-24">
+<div class="bg-error h-full" style="width: 72%"></div>
+</div>
+<span class="text-xs font-bold text-error">72.1%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<button class="material-symbols-outlined text-outline hover:text-primary transition-colors" data-icon="more_horiz">more_horiz</button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<span class="text-sm font-mono font-bold text-primary">#BZ-6631-B</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-lowest overflow-hidden">
+<img alt="Paltas" class="w-full h-full object-cover opacity-70" data-alt="half of a ripe avocado with pit on a dark stone surface, moody low-key lighting, professional food photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyiDuYz6jARVFNnW06o_WNBXE0ITWvqCZFznaoOS6RyPvybZ5ixB0yMnyx7BGeuCNDHfFH_Q8fiJLMYHtf96Filu-8IqxRVU_agFKa6vPnBVnmwO4DeDi2OSSSl5myuYU2Sn7c7CDbbHt57DeO7PTO4mAKKzjPwf3uhNDb2dGEUTQxQInrmEoiiLTqAYfsNjQJg0vJaCXzwgo133ZVQJkOaBq1gqovFDj0Bb3L1mv2NYyTL1aAlWRLINmdY3z2fs1fFCkdG1N_3zE"/>
+</div>
+<span class="text-sm font-medium">Palta Hass Exp</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">12 May, 09:15 AM</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded bg-surface-container-lowest border border-outline-variant/10 text-xs text-on-surface">C-08</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="flex-1 bg-surface-container-lowest h-1.5 rounded-full overflow-hidden w-24">
+<div class="bg-secondary h-full" style="width: 95%"></div>
+</div>
+<span class="text-xs font-bold text-secondary">95.0%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<button class="material-symbols-outlined text-outline hover:text-primary transition-colors" data-icon="more_horiz">more_horiz</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar Implementation for Mobile -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#0c1420]/80 backdrop-blur-xl border-t border-white/10 shadow-2xl shadow-black">
+<a class="flex flex-col items-center justify-center text-[#dbe3f4]/50 p-2 active:bg-blue-400/20 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-blue-400 bg-blue-400/10 rounded-xl p-2 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="inventory_2">inventory_2</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#dbe3f4]/50 p-2 active:bg-blue-400/20 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="history">history</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#dbe3f4]/50 p-2 active:bg-blue-400/20 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="settings">settings</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">Settings</span>
+</a>
+</nav>
+</body></html>

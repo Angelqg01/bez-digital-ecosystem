@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;family=Space+Grotesk:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-container": "#004d38",
+              "tertiary": "#bacbf4",
+              "tertiary-container": "#9fb0d8",
+              "background": "#0f131c",
+              "surface-container-low": "#171c25",
+              "primary-fixed-dim": "#3adfab",
+              "outline": "#85948c",
+              "primary-container": "#00c896",
+              "on-secondary-fixed": "#271900",
+              "on-tertiary-container": "#324365",
+              "secondary-container": "#feb700",
+              "on-error": "#690005",
+              "primary": "#42e5b0",
+              "inverse-on-surface": "#2c303a",
+              "outline-variant": "#3c4a43",
+              "secondary": "#ffdb9d",
+              "error": "#ffb4ab",
+              "surface-variant": "#30353f",
+              "secondary-fixed-dim": "#ffba20",
+              "on-background": "#dfe2ef",
+              "surface-container-high": "#252a34",
+              "on-secondary": "#412d00",
+              "on-secondary-container": "#6b4b00",
+              "surface-container": "#1b2029",
+              "primary-fixed": "#60fcc6",
+              "surface-bright": "#353943",
+              "on-surface-variant": "#bbcac1",
+              "error-container": "#93000a",
+              "on-tertiary-fixed-variant": "#364769",
+              "surface-container-lowest": "#0a0e17",
+              "on-primary-fixed-variant": "#00513b",
+              "inverse-primary": "#006c4f",
+              "secondary-fixed": "#ffdea8",
+              "tertiary-fixed-dim": "#b5c6ef",
+              "on-tertiary": "#1f3051",
+              "on-primary": "#003828",
+              "on-error-container": "#ffdad6",
+              "on-primary-fixed": "#002116",
+              "on-tertiary-fixed": "#071b3b",
+              "tertiary-fixed": "#d8e2ff",
+              "surface-tint": "#3adfab",
+              "surface": "#0f131c",
+              "on-secondary-fixed-variant": "#5e4200",
+              "surface-dim": "#0f131c",
+              "on-surface": "#dfe2ef",
+              "inverse-surface": "#dfe2ef",
+              "surface-container-highest": "#30353f"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Space Grotesk"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .emerald-glow {
+            box-shadow: 0 0 20px rgba(66, 229, 176, 0.1);
+        }
+        .obsidian-glass {
+            backdrop-filter: blur(12px);
+            background: linear-gradient(135deg, rgba(15, 19, 28, 0.95) 0%, rgba(10, 14, 23, 0.98) 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest text-on-background font-body min-h-screen flex items-center justify-center p-4">
+<!-- Payment Sheet Container -->
+<div class="w-full max-w-md bg-surface rounded-[2rem] overflow-hidden shadow-2xl relative border border-outline-variant/10">
+<!-- Header - Style mapped from TopAppBar Shared Component logic -->
+<header class="flex justify-between items-center px-6 h-16 w-full border-b border-outline-variant/20 bg-surface-container-lowest">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-sans font-bold tracking-tight text-lg text-primary">BeZhas Pay</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant font-label text-[10px] uppercase tracking-wider bg-surface-container-high px-2 py-1 rounded">Pay to Merchant</span>
+<button class="hover:bg-surface-container-high transition-colors p-1 rounded-lg">
+<span class="material-symbols-outlined text-slate-400" data-icon="close">close</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<div class="px-6 pt-10 pb-8 flex flex-col items-center">
+<!-- Amount Display -->
+<div class="text-center mb-10">
+<p class="font-label text-slate-500 text-xs uppercase tracking-widest mb-2">Transaction Amount</p>
+<h1 class="font-headline font-extrabold text-5xl tracking-tighter text-primary flex items-center justify-center gap-1">
+<span class="text-2xl font-bold opacity-80 mt-1">$</span>
+<span>124.00</span>
+<span class="text-xs font-mono text-primary/60 ml-2 tracking-normal">USD</span>
+</h1>
+</div>
+<!-- Token Selector Bento Grid Style -->
+<div class="w-full mb-8">
+<div class="flex justify-between items-end mb-4 px-1">
+<p class="font-label text-xs text-on-surface-variant uppercase tracking-widest">Select Asset</p>
+<p class="font-mono text-[10px] text-primary/60">Multi-chain Enabled</p>
+</div>
+<div class="grid grid-cols-3 gap-3">
+<!-- Active Chip -->
+<button class="flex flex-col items-center justify-center bg-primary/10 border border-primary/30 rounded-xl p-3 emerald-glow transition-all active:scale-95">
+<span class="font-label text-primary font-bold text-sm mb-1">BEZ</span>
+<span class="font-mono text-[10px] text-primary-fixed-dim">1.24</span>
+</button>
+<!-- Inactive Chip -->
+<button class="flex flex-col items-center justify-center bg-surface-container-high/50 border border-outline-variant/10 rounded-xl p-3 hover:bg-surface-container-high transition-all active:scale-95">
+<span class="font-label text-on-surface font-bold text-sm mb-1">USDT</span>
+<span class="font-mono text-[10px] text-slate-500">1.00</span>
+</button>
+<!-- Inactive Chip -->
+<button class="flex flex-col items-center justify-center bg-surface-container-high/50 border border-outline-variant/10 rounded-xl p-3 hover:bg-surface-container-high transition-all active:scale-95">
+<span class="font-label text-on-surface font-bold text-sm mb-1">USDC</span>
+<span class="font-mono text-[10px] text-slate-500">1.00</span>
+</button>
+</div>
+</div>
+<!-- Quote Box - Tonal Depth Architecture -->
+<div class="w-full bg-surface-container-lowest rounded-2xl p-5 mb-8 border border-outline-variant/10">
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-slate-500 text-sm">You Pay</span>
+<span class="font-mono text-on-surface text-sm">124.00 USD</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-slate-500 text-sm">Network Fee <span class="text-[10px] bg-primary/5 text-primary-fixed-dim px-1.5 py-0.5 rounded ml-1">0.5% in BEZ</span></span>
+<span class="font-mono text-on-surface text-sm">0.62 BEZ</span>
+</div>
+<!-- Divider - As background shift not line -->
+<div class="h-px bg-outline-variant/10 w-full"></div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface font-semibold text-sm">Estimated BEZ</span>
+<div class="text-right">
+<span class="font-mono text-primary font-bold text-lg">153.76 BEZ</span>
+<p class="text-[10px] text-slate-500 font-mono">Rate: 1 BEZ = $0.806</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Trigger -->
+<button class="w-full bg-primary-container hover:bg-primary transition-all duration-300 text-on-primary-container font-headline font-extrabold py-5 rounded-xl flex items-center justify-center gap-3 shadow-[0_8px_30px_rgba(0,200,150,0.2)] active:scale-95">
+<span>Confirm &amp; Pay</span>
+<span class="material-symbols-outlined text-xl" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<!-- Trust Footer - Mapped from Footer Shared Component logic -->
+<footer class="flex flex-col items-center gap-3 py-6 bg-surface-container-lowest border-t border-outline-variant/10">
+<div class="flex items-center gap-4 opacity-40">
+<div class="flex items-center gap-1.5 grayscale">
+<span class="material-symbols-outlined text-sm" data-icon="security">security</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Polygon Secured</span>
+</div>
+<div class="h-1 w-1 bg-slate-600 rounded-full"></div>
+<div class="flex items-center gap-1.5 grayscale">
+<span class="material-symbols-outlined text-sm" data-icon="token">token</span>
+<span class="font-label text-[10px] uppercase tracking-widest">BNB Chain</span>
+</div>
+</div>
+<p class="font-mono text-[10px] text-slate-600 antialiased">Secured by BeZhas | api.bezhas.com</p>
+</footer>
+</div>
+<!-- Background Decorative Elements -->
+<div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+<div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full"></div>
+<div class="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full"></div>
+</div>
+</body></html>

@@ -1,0 +1,136 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "BeZhas Agent Runtime Plugin Manifest",
+    "description": "Schema for sector plugin manifests that extend the runtime with custom tools, commands, and hooks.",
+    "type": "object",
+    "required": [
+        "name",
+        "version",
+        "sector",
+        "description"
+    ],
+    "properties": {
+        "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Unique plugin identifier (kebab-case)"
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "description": "Semver version"
+        },
+        "sector": {
+            "type": "string",
+            "description": "Sector this plugin belongs to (e.g. logistics, finance, government)"
+        },
+        "description": {
+            "type": "string",
+            "maxLength": 200
+        },
+        "enabled": {
+            "type": "boolean",
+            "default": true
+        },
+        "tools": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "description",
+                    "permissions"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Tool name (will be prefixed with sector: automatically)"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "inputSchema": {
+                        "type": "object"
+                    },
+                    "timeoutMs": {
+                        "type": "number",
+                        "default": 15000
+                    }
+                }
+            },
+            "default": []
+        },
+        "commands": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "toolName"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "toolName": {
+                        "type": "string"
+                    },
+                    "aliases": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "default": []
+                    }
+                }
+            },
+            "default": []
+        },
+        "contracts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Contract name in deployment JSON"
+                    },
+                    "critical": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether parity check failures are critical"
+                    }
+                }
+            },
+            "default": [],
+            "description": "Contracts this sector depends on — used by ParityChecker"
+        },
+        "hooks": {
+            "type": "object",
+            "properties": {
+                "onLoad": {
+                    "type": "string",
+                    "description": "JS module path to run on plugin load"
+                },
+                "onUnload": {
+                    "type": "string",
+                    "description": "JS module path to run on plugin unload"
+                }
+            },
+            "default": {}
+        }
+    },
+    "additionalProperties": false
+}

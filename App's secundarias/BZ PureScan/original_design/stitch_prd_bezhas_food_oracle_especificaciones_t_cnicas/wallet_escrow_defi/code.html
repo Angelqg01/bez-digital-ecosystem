@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BEZ DeFi Escrow &amp; Wallet</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b8cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2b8cee33;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header / Nav -->
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center p-4 justify-between max-w-2xl mx-auto w-full">
+<div class="flex items-center gap-3">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">$BEZ Wallet</h2>
+<p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Mainnet Node: 0x82...E921</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex size-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex size-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-2xl mx-auto w-full pb-24">
+<!-- Balance Card -->
+<div class="p-4">
+<div class="relative overflow-hidden rounded-xl bg-slate-900 p-6 shadow-xl border border-slate-800">
+<!-- Background Pattern -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full -mr-16 -mt-16"></div>
+<div class="relative z-10 flex flex-col gap-4">
+<div>
+<p class="text-slate-400 text-sm font-medium mb-1 uppercase tracking-widest">Total Portfolio Value</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-slate-100 text-3xl font-bold tracking-tight">45,280.50</h3>
+<span class="text-primary text-lg font-bold">BEZ</span>
+</div>
+<p class="text-[#0bda5b] text-sm font-medium flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                            +$1,142.20 (2.4%)
+                        </p>
+</div>
+<div class="grid grid-cols-2 gap-3 mt-2">
+<button class="flex items-center justify-center gap-2 rounded-lg h-12 bg-primary text-white text-sm font-bold transition-opacity hover:opacity-90">
+<span class="material-symbols-outlined text-lg">south_west</span>
+                            Deposit
+                        </button>
+<button class="flex items-center justify-center gap-2 rounded-lg h-12 bg-slate-800 text-slate-100 text-sm font-bold border border-slate-700 hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-lg">north_east</span>
+                            Withdraw
+                        </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Escrow Stats Quick Bar -->
+<div class="px-4 mb-6">
+<div class="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+<div class="flex flex-col min-w-[120px] bg-background-light dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-3 rounded-lg">
+<span class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Locked</span>
+<span class="text-lg font-bold text-slate-900 dark:text-slate-100">12,400 <span class="text-xs font-normal opacity-60">BEZ</span></span>
+</div>
+<div class="flex flex-col min-w-[120px] bg-background-light dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-3 rounded-lg">
+<span class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">In Transit</span>
+<span class="text-lg font-bold text-slate-900 dark:text-slate-100">8,150 <span class="text-xs font-normal opacity-60">BEZ</span></span>
+</div>
+<div class="flex flex-col min-w-[120px] bg-background-light dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-3 rounded-lg">
+<span class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Released</span>
+<span class="text-lg font-bold text-slate-900 dark:text-slate-100">24,730 <span class="text-xs font-normal opacity-60">BEZ</span></span>
+</div>
+</div>
+</div>
+<!-- Active Smart Contracts Section -->
+<section class="px-4">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">description</span>
+                    Escrow Activity
+                </h3>
+<button class="text-primary text-sm font-bold">View History</button>
+</div>
+<!-- Escrow List -->
+<div class="space-y-3">
+<!-- Locked Item -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
+<span class="material-symbols-outlined">lock</span>
+</div>
+<div>
+<h4 class="font-bold text-sm text-slate-900 dark:text-slate-100">Logistics Contract #2940</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">Shipment: Hamburg Port (A7)</p>
+</div>
+</div>
+<span class="px-2 py-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase border border-amber-500/20">Locked</span>
+</div>
+<div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 mt-3">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-500 uppercase">Amount</span>
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">4,500.00 BEZ</span>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300">Details</button>
+</div>
+</div>
+</div>
+<!-- Processing Item -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined">sync</span>
+</div>
+<div>
+<h4 class="font-bold text-sm text-slate-900 dark:text-slate-100">Supply Batch: Delta-9</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">Verification: Proof of Origin Required</p>
+</div>
+</div>
+<span class="px-2 py-1 rounded bg-primary/10 text-primary text-[10px] font-bold uppercase border border-primary/20">Processing</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-3">
+<div class="bg-primary h-1.5 rounded-full w-2/3"></div>
+</div>
+<div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-500 uppercase">Amount</span>
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">1,280.00 BEZ</span>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold">Approve</button>
+</div>
+</div>
+</div>
+<!-- Flagged / Dispute Item -->
+<div class="bg-red-500/5 dark:bg-red-500/5 border border-red-200 dark:border-red-900/30 rounded-xl p-4 shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 p-2">
+<span class="material-symbols-outlined text-red-500 opacity-20 text-4xl leading-none">warning</span>
+</div>
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center border border-red-500/20">
+<span class="material-symbols-outlined">report</span>
+</div>
+<div>
+<h4 class="font-bold text-sm text-slate-900 dark:text-slate-100">Contract #4019-Z</h4>
+<p class="text-xs text-red-600 dark:text-red-400 font-medium">Dispute: Quantity Mismatch</p>
+</div>
+</div>
+<span class="px-2 py-1 rounded bg-red-500/10 text-red-500 text-[10px] font-bold uppercase border border-red-500/20">Flagged</span>
+</div>
+<div class="flex items-center justify-between border-t border-red-100 dark:border-red-900/20 pt-3 mt-3">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-500 uppercase">Held Balance</span>
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">7,200.00 BEZ</span>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold shadow-lg shadow-red-500/20">Resolve Dispute</button>
+</div>
+</div>
+</div>
+<!-- Released Item -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm opacity-70">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-green-500/10 text-green-500 flex items-center justify-center border border-green-500/20">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<h4 class="font-bold text-sm text-slate-900 dark:text-slate-100">Inbound Freight #1102</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">Completed: 2h ago</p>
+</div>
+</div>
+<span class="px-2 py-1 rounded bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold uppercase border border-green-500/20">Released</span>
+</div>
+<div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 mt-3">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-500 uppercase">Released Amount</span>
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">15,000.00 BEZ</span>
+</div>
+<span class="text-xs text-slate-400">Tx: 0xb7...44f</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#1c2127] border-t border-slate-200 dark:border-slate-800 safe-area-bottom">
+<div class="flex max-w-2xl mx-auto px-4 pb-4 pt-2">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Wallet</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-[#9dabb9]" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Escrow</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-[#9dabb9]" href="#">
+<span class="material-symbols-outlined">history</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">History</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-[#9dabb9]" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Settings</p>
+</a>
+</div>
+</nav>
+</body></html>

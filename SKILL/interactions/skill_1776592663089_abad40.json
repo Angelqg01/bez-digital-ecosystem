@@ -1,0 +1,16 @@
+{
+  "id": "skill_1776592663089_abad40",
+  "created_at": "2026-04-19T09:57:43.089Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [],
+  "turn": {
+    "user": "Me gustaría poder comunicarme contigo por audio, activar esa función",
+    "agent": "Entiendo tu interés en la comunicación por audio. Como Agente IA en este canal de Telegram, mi interacción es actualmente a través de texto. La función de audio no está disponible en este momento."
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "operator"
+  }
+}

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Food Oracle | Smart Escrow Engine</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-dim": "#0c1420",
+                        "surface-container-low": "#141c28",
+                        "primary-fixed-dim": "#9ecaff",
+                        "on-tertiary-fixed": "#2e1500",
+                        "inverse-surface": "#dbe3f4",
+                        "surface-bright": "#323947",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#02c953",
+                        "surface": "#0c1420",
+                        "on-surface": "#dbe3f4",
+                        "surface-container-lowest": "#070e1a",
+                        "surface-container-high": "#232a37",
+                        "on-error": "#690005",
+                        "primary-container": "#2196f3",
+                        "tertiary-fixed": "#ffdcc2",
+                        "tertiary": "#ffb77b",
+                        "on-background": "#dbe3f4",
+                        "on-tertiary": "#4d2700",
+                        "on-primary": "#003258",
+                        "surface-tint": "#9ecaff",
+                        "on-primary-container": "#002c4f",
+                        "surface-variant": "#2d3542",
+                        "secondary-fixed-dim": "#3ce36a",
+                        "outline-variant": "#404752",
+                        "tertiary-container": "#db7900",
+                        "tertiary-fixed-dim": "#ffb77b",
+                        "on-secondary-fixed": "#002108",
+                        "background": "#0c1420",
+                        "secondary-fixed": "#69ff87",
+                        "on-secondary": "#003912",
+                        "secondary": "#40e56c",
+                        "on-surface-variant": "#bfc7d4",
+                        "on-primary-fixed": "#001d36",
+                        "error": "#ffb4ab",
+                        "primary-fixed": "#d1e4ff",
+                        "on-tertiary-container": "#452200",
+                        "outline": "#89919d",
+                        "on-tertiary-fixed-variant": "#6d3900",
+                        "surface-container": "#18202c",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#00531e",
+                        "on-primary-fixed-variant": "#00497d",
+                        "surface-container-highest": "#2d3542",
+                        "inverse-primary": "#0061a4",
+                        "primary": "#9ecaff",
+                        "inverse-on-surface": "#29313e",
+                        "on-secondary-container": "#004d1b"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-panel {
+            background: rgba(45, 53, 66, 0.4);
+            backdrop-filter: blur(20px);
+        }
+        .cyber-grid {
+            background-image: linear-gradient(to right, rgba(158, 202, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(158, 202, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30 antialiased overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-16 w-full border-b border-white/5 backdrop-blur-xl bg-[#0c1420] dark:bg-[#0c1420]">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-bold tracking-tighter text-blue-400 font-['Space_Grotesk']">Food Oracle</span>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-blue-400 font-bold border-b-2 border-blue-400 font-['Space_Grotesk'] tracking-tight transition-all" href="#">Escrow Status</a>
+<a class="text-slate-400 hover:text-slate-200 font-['Space_Grotesk'] tracking-tight transition-all" href="#">Precision Engine</a>
+<a class="text-slate-400 hover:text-slate-200 font-['Space_Grotesk'] tracking-tight transition-all" href="#">Staking Pools</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-400 hover:bg-white/5 transition-colors rounded-lg">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-white/5 transition-colors rounded-lg">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center border border-primary/20 overflow-hidden">
+<img alt="User profile avatar" data-alt="minimalist user avatar icon with neon blue circular background and stylized human silhouette" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjj9ym175f_0qpyWs4zTDf6CrTButcLPza3tfog-PcScAzZ6f3BiWf1sz15loigzmyjeHS-cU3fsMjCcOzYEFPz9mulX-0Gg_qRNpOaTUqwaYB1pLAkUQZv1YQkFSEN2F--Y9PdGG8AkO4ERwC7b_ATliazzhpDVKF2JxM8EZ3iKAZsRGvHgLtiGwqnMeS-5snt-kmY08fJK0A6EiJDU-LET_p4E-qDLWykXgMlZFXBbaUtCrxkxjWaBIvWTmdSqSji2S_f_2_sdM"/>
+</div>
+</div>
+</header>
+<!-- Side Navigation Bar -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 flex flex-col h-full border-r border-white/5 py-8 bg-[#0c1420] dark:bg-[#0c1420] pt-24 hidden lg:flex">
+<div class="px-6 mb-10">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-blue-400" data-icon="precision_manufacturing">precision_manufacturing</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-on-surface leading-tight text-blue-400">Logistics 4.0</h3>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest">Nodes: 1,204</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="text-slate-500 flex items-center gap-3 px-6 py-3 hover:bg-white/5 hover:text-slate-200 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span>Precision Engine</span>
+</a>
+<a class="bg-blue-500/10 text-blue-400 border-r-2 border-blue-400 flex items-center gap-3 px-6 py-3 transition-transform translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span>Escrow Status</span>
+</a>
+<a class="text-slate-500 flex items-center gap-3 px-6 py-3 hover:bg-white/5 hover:text-slate-200 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span>Staking Pools</span>
+</a>
+<a class="text-slate-500 flex items-center gap-3 px-6 py-3 hover:bg-white/5 hover:text-slate-200 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span>AI Oracles</span>
+</a>
+<a class="text-slate-500 flex items-center gap-3 px-6 py-3 hover:bg-white/5 hover:text-slate-200 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span>Yield Analytics</span>
+</a>
+</nav>
+<div class="mt-auto px-6 space-y-4">
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-3 rounded-md transition-all active:scale-95 shadow-lg shadow-primary/20">
+                Connect Wallet
+            </button>
+<div class="pt-6 border-t border-white/5 space-y-1">
+<a class="text-slate-500 flex items-center gap-3 py-2 hover:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="description">description</span>
+<span class="text-sm">Documentation</span>
+</a>
+<a class="text-slate-500 flex items-center gap-3 py-2 hover:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="help">help</span>
+<span class="text-sm">Support</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="lg:ml-64 pt-24 pb-12 px-8 min-h-screen cyber-grid relative">
+<!-- Dashboard Header -->
+<section class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="space-y-2">
+<span class="text-secondary font-headline text-xs tracking-[0.2em] uppercase font-bold px-3 py-1 bg-secondary/10 border border-secondary/20 rounded-full inline-flex items-center gap-2">
+<span class="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                    AI-Oracle Sync: Active
+                </span>
+<h1 class="text-4xl md:text-5xl font-headline font-bold text-on-surface tracking-tighter">
+                    Engine de Fideicomiso Inteligente <span class="text-primary/50 text-2xl font-light">(Smart Escrow Engine)</span>
+</h1>
+</div>
+<div class="flex gap-4">
+<div class="glass-panel border border-white/5 px-4 py-2 rounded-xl flex flex-col items-end">
+<span class="text-[10px] text-slate-500 uppercase tracking-widest">Network Load</span>
+<span class="text-primary font-headline font-bold">4.2 ms latency</span>
+</div>
+</div>
+</section>
+<!-- Bento Grid Dashboard -->
+<div class="grid grid-cols-12 gap-6 items-start">
+<!-- Central Escrow Vault (Main Column) -->
+<div class="col-span-12 xl:col-span-8 space-y-6">
+<div class="bg-surface-container rounded-xl overflow-hidden relative group border border-white/5">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
+<div class="p-8 relative">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h2 class="text-slate-500 font-headline font-bold text-sm tracking-widest uppercase mb-1">Active Escrow Vault</h2>
+<h3 class="text-3xl font-headline font-bold text-on-surface tracking-tight">Batch Identifier: #BZ-774</h3>
+</div>
+<div class="text-right">
+<div class="text-4xl font-headline font-bold text-primary tracking-tighter">740,200 $BEZ</div>
+<div class="text-xs text-slate-500 font-medium">$42,911.60 USD Equiv.</div>
+</div>
+</div>
+<!-- Progress Section -->
+<div class="space-y-4 mb-10">
+<div class="flex justify-between text-xs font-headline font-bold tracking-widest uppercase">
+<span class="text-secondary">Release Path (82%)</span>
+<span class="text-error">Halt Threshold (18%)</span>
+</div>
+<div class="h-3 w-full bg-surface-container-lowest rounded-full overflow-hidden flex p-[2px] border border-white/5">
+<div class="h-full bg-gradient-to-r from-secondary-container to-secondary rounded-full" style="width: 82%"></div>
+<div class="h-full bg-surface-container-high rounded-full ml-1 flex-1"></div>
+</div>
+</div>
+<!-- Verification Conditions -->
+<div class="grid md:grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-4 rounded-lg border border-white/5 group-hover:border-primary/20 transition-all">
+<div class="flex items-center gap-3 mb-3">
+<span class="material-symbols-outlined text-secondary" data-icon="verified_user">verified_user</span>
+<span class="font-headline font-bold text-sm">Quality Verification</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs text-slate-500">Gemini 1.5 Pro Analysis</span>
+<span class="text-xs font-bold text-secondary px-2 py-0.5 bg-secondary/10 rounded">PASS</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg border border-white/5 group-hover:border-primary/20 transition-all">
+<div class="flex items-center gap-3 mb-3">
+<span class="material-symbols-outlined text-primary" data-icon="ac_unit">ac_unit</span>
+<span class="font-headline font-bold text-sm">Cold Chain Integrity</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs text-slate-500">Constant: 3.2°C (±0.1)</span>
+<span class="text-xs font-bold text-primary px-2 py-0.5 bg-primary/10 rounded">OPTIMAL</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Oracle Integration Section -->
+<div class="grid md:grid-cols-2 gap-6">
+<div class="bg-surface-container rounded-xl p-6 border border-white/5">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="psychology">psychology</span>
+                                Biological Oracle
+                            </h3>
+<span class="text-[10px] text-slate-500 font-mono">SERVER: MCP-NODE-09</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-lg font-mono text-[11px] text-primary/70 mb-4 overflow-hidden border border-white/5">
+<pre class="whitespace-pre-wrap">{
+  "sensor_id": "BZ-BIO-99",
+  "substrate_moisture": 68.2,
+  "fungal_signature": "null",
+  "ai_confidence": 0.9984,
+  "mcp_validation": true
+}
+</pre>
+</div>
+<div class="flex items-center justify-between py-2 border-t border-white/5">
+<span class="text-xs text-slate-500">Fungal Risk Index</span>
+<span class="text-xs font-bold text-secondary">0.12% (Negligible)</span>
+</div>
+</div>
+<!-- Smart Contract Logic Visualizer -->
+<div class="bg-surface-container-high rounded-xl p-6 border border-white/5 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-2">
+<span class="material-symbols-outlined text-white/5 text-6xl" data-icon="code">code</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="terminal">terminal</span>
+                            Active Code Logic
+                        </h3>
+<div class="space-y-4 font-mono text-xs">
+<div class="p-3 bg-surface-container-lowest border-l-2 border-primary rounded-r">
+<span class="text-blue-400">IF</span> botrytis_risk &gt; 5% <span class="text-blue-400">THEN</span>
+<div class="pl-4 text-error">HALT_PAYMENT;</div>
+</div>
+<div class="p-3 bg-surface-container-lowest border-l-2 border-secondary rounded-r">
+<span class="text-blue-400">IF</span> quality_score == 'A' <span class="text-blue-400">THEN</span>
+<div class="pl-4 text-secondary">BOOST_YIELD(1.05);</div>
+</div>
+<div class="p-3 bg-surface-container-lowest border-l-2 border-slate-500 rounded-r opacity-50">
+<span class="text-blue-400">ELSE</span>
+<div class="pl-4">EXECUTE_SETTLEMENT;</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Staking & Sidebar Info -->
+<div class="col-span-12 xl:col-span-4 space-y-6">
+<!-- Staking Reserve -->
+<div class="bg-surface-container rounded-xl p-6 border border-white/5">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline font-bold text-on-surface">Staking Reserve</h3>
+<span class="material-symbols-outlined text-secondary" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+</div>
+<div class="space-y-6">
+<div class="text-center py-4 bg-surface-container-low rounded-xl border border-white/5">
+<div class="text-slate-500 text-xs font-headline font-bold uppercase tracking-widest mb-1">Total Staked Collateral</div>
+<div class="text-4xl font-headline font-bold text-on-surface">1.2M <span class="text-primary">$BEZ</span></div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-surface-container-low rounded-xl border border-white/5">
+<div class="text-slate-500 text-[10px] uppercase font-bold mb-1">PoR Multiplier</div>
+<div class="text-xl font-headline font-bold text-secondary">x2.44</div>
+</div>
+<div class="p-4 bg-surface-container-low rounded-xl border border-white/5">
+<div class="text-slate-500 text-[10px] uppercase font-bold mb-1">Est. APY</div>
+<div class="text-xl font-headline font-bold text-primary">14.2%</div>
+</div>
+</div>
+<button class="w-full py-3 bg-white/5 hover:bg-white/10 text-primary border border-primary/20 rounded-md font-headline font-bold transition-all">
+                            Manage Staking Position
+                        </button>
+</div>
+</div>
+<!-- Event Log -->
+<div class="bg-surface-container rounded-xl p-6 border border-white/5">
+<h3 class="font-headline font-bold text-on-surface mb-6 flex items-center justify-between">
+                        Real-time Event Log
+                        <span class="text-[10px] text-slate-500 px-2 py-0.5 bg-surface-container-highest rounded">LIVE</span>
+</h3>
+<div class="space-y-4">
+<div class="flex gap-4 items-start group">
+<div class="w-2 h-2 mt-1.5 rounded-full bg-secondary group-hover:scale-125 transition-transform"></div>
+<div class="flex-1 border-b border-white/5 pb-3">
+<div class="flex justify-between items-start mb-0.5">
+<span class="text-xs font-bold text-on-surface">Staking Verified</span>
+<span class="text-[10px] text-slate-500 font-mono">14:02:11</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">Node-77 collateral confirmation received. Tx: 0x4f...a2</p>
+</div>
+</div>
+<div class="flex gap-4 items-start group">
+<div class="w-2 h-2 mt-1.5 rounded-full bg-primary group-hover:scale-125 transition-transform"></div>
+<div class="flex-1 border-b border-white/5 pb-3">
+<div class="flex justify-between items-start mb-0.5">
+<span class="text-xs font-bold text-on-surface">Oracle Data Injected</span>
+<span class="text-[10px] text-slate-500 font-mono">13:58:44</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">MCP payload validated by 4/5 consensus nodes.</p>
+</div>
+</div>
+<div class="flex gap-4 items-start group">
+<div class="w-2 h-2 mt-1.5 rounded-full bg-blue-500 group-hover:scale-125 transition-transform"></div>
+<div class="flex-1 border-b border-white/5 pb-3">
+<div class="flex justify-between items-start mb-0.5">
+<span class="text-xs font-bold text-on-surface">Escrow Created</span>
+<span class="text-[10px] text-slate-500 font-mono">13:42:01</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">Batch #BZ-774 vault initialized on BeZhas Mainnet.</p>
+</div>
+</div>
+<div class="flex gap-4 items-start group opacity-50">
+<div class="w-2 h-2 mt-1.5 rounded-full bg-slate-600 group-hover:scale-125 transition-transform"></div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-0.5">
+<span class="text-xs font-bold text-on-surface">Node Handshake</span>
+<span class="text-[10px] text-slate-500 font-mono">13:30:12</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">P2P connection established with validator-03.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Technical Footer Metadata -->
+<div class="px-2">
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-white/5">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary/30 text-3xl" data-icon="dna">genetics</span>
+</div>
+<div class="flex-1">
+<div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Protocol Version</div>
+<div class="text-xs font-mono text-on-surface">BEZHAS-V4-ORACLE-CIPHER</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Background Decoration -->
+<div class="fixed top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+<div class="fixed bottom-0 left-0 w-[300px] h-[300px] bg-secondary/5 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+</body></html>

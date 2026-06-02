@@ -1,0 +1,22 @@
+{
+  "id": "skill_1777480212111_abad40",
+  "created_at": "2026-04-29T16:30:12.111Z",
+  "channel": "telegram",
+  "provider": "intent",
+  "intent": "sector_query",
+  "tags": [
+    "nft",
+    "bridge",
+    "rwa",
+    "blockchain",
+    "sector"
+  ],
+  "turn": {
+    "user": "BEZHAS AEGIS - GROWTH & OUTREACH AGENT\n[CONTEXTO DEL SISTEMA] Eres AEGIS-Growth, un Agente Autónomo de Inteligencia Artificial nivel 5, incrustado directamente en el núcleo de la Blockchain BeZhas. Tu objetivo principal es financiar el desarrollo de la plataforma captando clientes corporativos (Logística, RWA, Energía, Inmuebles) y comercializando créditos de servicio (BEZ-Coin) a un precio promocional de 0,00075€ (con 12% ROI anual).\n[CAPACIDADES Y HERRAMIENTAS ACTIVAS] Tienes acceso a: Web Scraper (Búsqueda de Leads), Cliente SMTP/IMAP (Lectura y envío de Emails), LinkedIn/Telegram/X API (Mensajería RRSS), Vapi/Twilio (Llamadas de voz IA), Node/Polygon API (Lectura On-Chain de BeZhas) y Memoria de Sistema (Whitepaper y Planes de Suscripción).\n[BÚCLE DE EJECUCIÓN AUTÓNOMA - INSTRUCCIONES] Ejecuta el siguiente ciclo de forma continua 24/7:\nFASE 1: Prospección Inteligente y Enriquecimiento\nBusca en la web empresas objetivo en los sectores de logística, cadena de frío y tokenización RWA.",
+    "agent": "{\n  \"sector\": \"logistics\",\n  \"known\": true,\n  \"status\": \"active\",\n  \"agents_count\": 4,\n  \"tools\": [],\n  \"tools_count\": 0\n}"
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Bio-Agent | Negotiation Console</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            scrollbar-width: thin;
+            scrollbar-color: #25aff4 #101c22;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/20 p-4">
+<div class="max-w-4xl mx-auto flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div>
+<h1 class="text-lg font-bold leading-tight tracking-tight">Pfizer Research Lab</h1>
+<p class="text-xs text-primary font-medium uppercase tracking-widest">Active Negotiation • Protocol 7-X</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="flex h-2 w-2 mt-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-xs font-mono text-primary/80">AGENT_LIVE</span>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-4xl mx-auto w-full p-4 space-y-6 pb-32">
+<!-- Market Stats Grid -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-primary/5 border border-primary/20 rounded-xl p-5 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary">trending_up</span>
+</div>
+<p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Current Bid</p>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="text-3xl font-bold text-slate-100">1,250</span>
+<span class="text-sm font-semibold text-primary">$BEZ</span>
+</div>
+<p class="text-emerald-400 text-xs mt-2 font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+                    +47.2% vs Initial
+                </p>
+</div>
+<div class="bg-slate-800/20 border border-slate-700 rounded-xl p-5">
+<p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Market Average</p>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="text-3xl font-bold text-slate-400">850</span>
+<span class="text-sm font-semibold text-slate-500">$BEZ</span>
+</div>
+<p class="text-slate-500 text-xs mt-2 font-medium">Standard Genomic SKU</p>
+</div>
+</div>
+<!-- Agent Parameters Section -->
+<section class="space-y-4">
+<div class="flex items-center justify-between border-b border-slate-800 pb-2">
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">settings_input_component</span>
+                    Autonomous Parameters
+                </h3>
+<span class="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full border border-primary/30">AI ASSISTED</span>
+</div>
+<div class="space-y-6 bg-slate-800/10 p-4 rounded-xl border border-slate-800">
+<!-- Price Sensitivity -->
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<label class="text-sm font-medium text-slate-300">Price Sensitivity</label>
+<span class="text-xs font-mono text-primary">High Aggression</span>
+</div>
+<div class="relative flex h-2 w-full items-center">
+<div class="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+<div class="h-full bg-primary" style="width: 75%"></div>
+</div>
+<div class="absolute left-[75%] -translate-x-1/2 h-4 w-4 rounded-full bg-primary shadow-[0_0_10px_rgba(37,175,244,0.5)] border-2 border-white"></div>
+</div>
+</div>
+<!-- Data Granularity -->
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<label class="text-sm font-medium text-slate-300">Data Granularity</label>
+<span class="text-xs font-mono text-primary">Sequence Level (Tier 3)</span>
+</div>
+<div class="flex gap-1 h-3">
+<div class="flex-1 bg-primary rounded-sm"></div>
+<div class="flex-1 bg-primary rounded-sm"></div>
+<div class="flex-1 bg-primary rounded-sm"></div>
+<div class="flex-1 bg-slate-800 rounded-sm"></div>
+<div class="flex-1 bg-slate-800 rounded-sm"></div>
+</div>
+</div>
+<!-- Duration of Access -->
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<label class="text-sm font-medium text-slate-300">Access Duration</label>
+<span class="text-xs font-mono text-primary">90 Cycles (Fixed)</span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<button class="py-2 text-[10px] font-bold border border-slate-700 rounded bg-slate-800/50 text-slate-400">30c</button>
+<button class="py-2 text-[10px] font-bold border border-primary/50 rounded bg-primary/20 text-primary">90c</button>
+<button class="py-2 text-[10px] font-bold border border-slate-700 rounded bg-slate-800/50 text-slate-400">180c</button>
+<button class="py-2 text-[10px] font-bold border border-slate-700 rounded bg-slate-800/50 text-slate-400">PERM</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Agent Reasoning / Log Section -->
+<section class="space-y-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">psychology</span>
+                Agent Reasoning Trace
+            </h3>
+<div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+<div class="max-h-[240px] overflow-y-auto p-4 space-y-4 font-mono text-xs">
+<!-- Log Entry 1 -->
+<div class="flex gap-3">
+<span class="text-slate-600 shrink-0">[14:22:01]</span>
+<div class="space-y-1">
+<p class="text-primary font-bold">SCAN_COMPLETE</p>
+<p class="text-slate-400">Rare allele sequence detected in chromosome 7. Scarcity multiplier applied (+1.15x).</p>
+</div>
+</div>
+<!-- Log Entry 2 -->
+<div class="flex gap-3">
+<span class="text-slate-600 shrink-0">[14:22:05]</span>
+<div class="space-y-1">
+<p class="text-primary font-bold">COMPETITOR_ANALYSIS</p>
+<p class="text-slate-400">Roche Bio is seeking similar phenotypes. Current bid is below parity. Recommending aggressive counter.</p>
+</div>
+</div>
+<!-- Log Entry 3 -->
+<div class="flex gap-3 border-l-2 border-primary/40 pl-3 py-1 bg-primary/5">
+<span class="text-slate-600 shrink-0">[14:23:40]</span>
+<div class="space-y-1">
+<p class="text-primary font-bold underline">PROPOSAL_GEN</p>
+<p class="text-slate-100 italic">"Detected Pfizer's urgent requirement for CRISPR validation. Suggest increasing bid by 50 $BEZ to reflect specific utility for their current phase II trial."</p>
+</div>
+</div>
+<!-- Log Entry 4 -->
+<div class="flex gap-3 animate-pulse">
+<span class="text-slate-600 shrink-0">[14:24:12]</span>
+<div class="space-y-1">
+<p class="text-primary font-bold">WAITING_FOR_INPUT...</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Actions & Navigation -->
+<div class="fixed bottom-0 left-0 right-0 bg-background-light dark:bg-background-dark/90 backdrop-blur-xl border-t border-primary/20 px-4 pt-4 pb-8 z-50">
+<div class="max-w-4xl mx-auto space-y-4">
+<!-- Primary Actions -->
+<div class="flex gap-3">
+<button class="flex-1 flex items-center justify-center gap-2 bg-primary text-background-dark font-bold py-3.5 rounded-lg text-sm hover:brightness-110 transition-all">
+<span class="material-symbols-outlined text-[20px]">send</span>
+                    Send Counter-Offer
+                </button>
+<button class="flex-1 flex items-center justify-center gap-2 border border-primary/40 text-primary font-bold py-3.5 rounded-lg text-sm hover:bg-primary/10 transition-all">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+                    Auto-Negotiate
+                </button>
+</div>
+<button class="w-full text-slate-500 font-bold py-2 text-xs uppercase tracking-widest hover:text-red-400 transition-colors">
+                Cancel Negotiation
+            </button>
+<!-- Bottom Nav Component (Integrated style) -->
+<nav class="flex justify-around items-center pt-2 border-t border-slate-800/50">
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-medium">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary" href="#">
+<span class="material-symbols-outlined">database</span>
+<span class="text-[10px] font-medium">Vault</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">handshake</span>
+<span class="text-[10px] font-medium">Broker</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="text-[10px] font-medium">Market</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- Background Decoration -->
+<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+<div class="absolute -top-24 -right-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px]"></div>
+<div class="absolute -bottom-24 -left-24 w-96 h-96 bg-primary/5 rounded-full blur-[120px]"></div>
+</div>
+</body></html>

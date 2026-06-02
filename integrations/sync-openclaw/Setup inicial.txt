@@ -1,0 +1,8 @@
+# Configuración interactiva (primera vez)
+node scripts/setup.js
+
+# No-interactivo (CI/CD, Docker)
+OPENCLAW_API_URL=http://mi-backend:3001 node scripts/setup.js --token eyJhbGci...
+
+# Verificar estado en cualquier momento
+node scripts/setup.js --check

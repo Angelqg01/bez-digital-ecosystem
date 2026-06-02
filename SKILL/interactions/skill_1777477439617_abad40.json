@@ -1,0 +1,24 @@
+{
+  "id": "skill_1777477439617_abad40",
+  "created_at": "2026-04-29T15:43:59.617Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "gas",
+    "fraud",
+    "validator",
+    "bridge",
+    "blockchain",
+    "sector",
+    "help"
+  ],
+  "turn": {
+    "user": "Dime qué es esta plataforma BeZhas y que capacidades blockchain tiene?",
+    "agent": "BeZhas es una plataforma blockchain avanzada diseñada para ofrecer un ecosistema robusto y gestionado. Integra capacidades de inteligencia artificial y un conjunto de herramientas para la operación y monitoreo de la red.\n\nSus capacidades blockchain incluyen:\n\n*   **Runtime Extenso:** Dispone de un tiempo de ejecución con 24 herramientas y 8 comandos para la interacción y gestión de la plataforma.\n*   **Integración de IA:** Incorpora módulos como Aegis (para seguridad y análisis) y AI-Engine (para procesamiento inteligente), aunque actualmente estén offline, son parte fundamental de su diseño.\n*   **Gestión y Monitoreo Avanzado:** Permite el análisis de gas, detección de anomalías, consulta de sectores, verificación de validadores y gestión de puentes (bridges) entre cadenas, asegurando una operación eficiente y segura.\n*   **Mecanismos de Seguridad:** Utiliza Circuit Breakers para proteger la plataforma ante situaciones anómalas, aunque actualmente no hay ninguno activo.\n\nEn resumen, BeZhas busca ser una blockchain inteligente y autogestionada, con un fuerte enfoque en la IA para la seguridad y la eficiencia operativa."
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

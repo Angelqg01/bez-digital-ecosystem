@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # El Cliente de Ejecución modificado (Tu op-geth con IA)
+  bezhas-geth:
+    image: tu-registro-docker/bezhas-geth:latest
+    ports:
+      - "8545:8545" # RPC HTTP
+      - "8546:8546" # RPC WS
+      - "30303:30303" # P2P
+    command:[
+      "--datadir=/db",
+      "--http",
+      "--http.corsdomain=*",
+      "--http.vhosts=*",
+      "--http.addr=0.0.0.0",
+      "--http.api=web3,debug,eth,txpool,net,engine",
+      "--networkid=2708",
+      "--authrpc.addr=0.0.0.0",
+      "--authrpc.vhosts=*",
+      "--authrpc.jwtsecret=/config/jwt.txt",
+      "--nodiscover",
+      "--syncmode=full"
+    ]
+    volumes:
+      - ./geth-data:/db
+      - ./config:/config
+
+  # El Nodo OP (Motor de Consenso L2)
+  bezhas-node:
+    image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:latest
+    depends_on:
+      - bezhas-geth
+    ports:
+      - "9003:9003"
+    command:[
+      "op-node",
+      "--l2=http://bezhas-geth:8551",
+      "--l2.jwt-secret=/config/jwt.txt",
+      "--sequencer.enabled=true", # ACTIVA EL SECUENCIADOR SOLO EN EUROPA
+      "--sequencer.l1-confs=3",
+      "--verifier.l1-confs=3",
+      "--rollup.config=/config/rollup.json",
+      "--rpc.addr=0.0.0.0",
+      "--rpc.port=9003",
+      "--p2p.listen.ip=0.0.0.0",
+      "--p2p.listen.tcp=9003",
+      "--p2p.priv.path=/config/p2p-node-key.txt"
+    ]
+    volumes:
+      - ./config:/config

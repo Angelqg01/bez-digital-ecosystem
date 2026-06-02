@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Food Oracle | Global Administration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary": "#003258",
+              "outline-variant": "#404752",
+              "on-primary-container": "#002c4f",
+              "primary-fixed-dim": "#9ecaff",
+              "tertiary-container": "#db7900",
+              "background": "#0c1420",
+              "on-error-container": "#ffdad6",
+              "surface-container-highest": "#2d3542",
+              "secondary": "#40e56c",
+              "inverse-primary": "#0061a4",
+              "surface-bright": "#323947",
+              "on-background": "#dbe3f4",
+              "on-tertiary-container": "#452200",
+              "on-secondary-fixed": "#002108",
+              "tertiary-fixed": "#ffdcc2",
+              "primary": "#9ecaff",
+              "inverse-surface": "#dbe3f4",
+              "tertiary": "#ffb77b",
+              "surface-container-low": "#141c28",
+              "secondary-fixed-dim": "#3ce36a",
+              "on-primary-fixed-variant": "#00497d",
+              "on-error": "#690005",
+              "tertiary-fixed-dim": "#ffb77b",
+              "surface-tint": "#9ecaff",
+              "on-tertiary": "#4d2700",
+              "on-surface": "#dbe3f4",
+              "on-secondary-fixed-variant": "#00531e",
+              "surface-container-high": "#232a37",
+              "on-tertiary-fixed": "#2e1500",
+              "error-container": "#93000a",
+              "primary-fixed": "#d1e4ff",
+              "on-secondary-container": "#004d1b",
+              "surface": "#0c1420",
+              "surface-variant": "#2d3542",
+              "inverse-on-surface": "#29313e",
+              "surface-container": "#18202c",
+              "secondary-fixed": "#69ff87",
+              "outline": "#89919d",
+              "on-secondary": "#003912",
+              "surface-container-lowest": "#070e1a",
+              "surface-dim": "#0c1420",
+              "on-surface-variant": "#bfc7d4",
+              "error": "#ffb4ab",
+              "secondary-container": "#02c953",
+              "primary-container": "#2196f3",
+              "on-tertiary-fixed-variant": "#6d3900",
+              "on-primary-fixed": "#001d36"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .font-headline { font-family: 'Space Grotesk', sans-serif; }
+        .glass-module {
+            background: rgba(45, 53, 66, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .ghost-border {
+            outline: 1px solid rgba(137, 145, 157, 0.15);
+        }
+        .emerald-glow {
+            box-shadow: 0 0 15px rgba(64, 229, 108, 0.2);
+        }
+        .primary-glow {
+            box-shadow: 0 0 15px rgba(158, 202, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-8 py-4 bg-slate-900/50 backdrop-blur-xl no-line tonal-shift">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-bold tracking-tighter text-blue-400 font-headline">Oracle Logistics</span>
+<nav class="hidden md:flex items-center gap-6 font-headline tracking-tight">
+<a class="text-blue-400 border-b-2 border-blue-400 pb-1" href="#">Dashboard</a>
+<a class="text-slate-400 hover:text-slate-200 transition-colors" href="#">Nodes</a>
+<a class="text-slate-400 hover:text-slate-200 transition-colors" href="#">Analytics</a>
+<a class="text-slate-400 hover:text-slate-200 transition-colors" href="#">Security</a>
+<a class="text-slate-400 hover:text-slate-200 transition-colors" href="#">API</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-lowest px-4 py-1.5 rounded-full ghost-border">
+<span class="material-symbols-outlined text-outline text-sm mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48 placeholder:text-outline" placeholder="Search node or hash..." type="text"/>
+</div>
+<button class="material-symbols-outlined p-2 text-slate-400 hover:bg-white/5 rounded-full transition-all">notifications</button>
+<button class="material-symbols-outlined p-2 text-slate-400 hover:bg-white/5 rounded-full transition-all">account_balance_wallet</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img alt="Administrator Profile" class="w-full h-full object-cover" data-alt="professional portrait of a system administrator in a dark minimalist office environment with blue ambient lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZsn2N8pqyUjx7abjqSORU85ODGeSmTRZ_ANI2tp6oIqvAT5ocfNHhIUV8DkJZKY9p2ROlnaQylX0rFKt4lYRuhIQbqUefoRyJqDlrt7teYAEf4CALlDxxHANZ_B_8gwGbjZjuD3OOX4gxOKDBwmLA-yW35Bs5Y4lqs5sPygYIc4Wo-9zHnR1w65npVAogs7y8eHQ3szPYH5YqyjyvWHwoOrRrmYqMCJG2TJ_WRCI0brMQCv5zEVUFzF7mKXWygOMET9gZrfaSS3U"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-64 flex flex-col pt-24 pb-8 px-4 z-40 bg-[#0c1420] tonal-shift bg-slate-900/30">
+<div class="mb-8 px-4">
+<p class="font-headline uppercase tracking-widest text-[10px] text-slate-500">Admin Console</p>
+<p class="text-[10px] text-primary/60 font-mono">V2.0.4-Stable</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-500/10 text-blue-400 border-r-4 border-blue-500 transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-[20px]">monitor_heart</span>
+<span class="font-headline uppercase tracking-widest text-[10px]">Network Health</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-[20px]">settings_input_component</span>
+<span class="font-headline uppercase tracking-widest text-[10px]">Node Config</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-[20px]">account_balance</span>
+<span class="font-headline uppercase tracking-widest text-[10px]">Yield Oracle</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-[20px]">shield_person</span>
+<span class="font-headline uppercase tracking-widest text-[10px]">Security Ops</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+<span class="font-headline uppercase tracking-widest text-[10px]">System Logs</span>
+</a>
+</nav>
+<div class="mt-auto space-y-4">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold py-3 rounded-md text-xs uppercase tracking-widest transition-transform active:scale-95">
+                Connect Node
+            </button>
+<div class="pt-4 border-t border-outline-variant/10">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span>
+<span class="font-headline uppercase tracking-widest text-[10px]">Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">description</span>
+<span class="font-headline uppercase tracking-widest text-[10px]">Documentation</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 p-8 min-h-screen">
+<!-- Hero Header -->
+<header class="mb-12 flex justify-between items-end">
+<div>
+<h1 class="text-5xl font-bold tracking-tighter text-on-surface mb-2">BeZhas Mission Control</h1>
+<p class="text-outline max-w-lg text-sm leading-relaxed">Global administrative overview of the Food Oracle network. Monitoring real-time telemetry, DeFi liquidity, and fungal detection precision.</p>
+</div>
+<div class="text-right">
+<p class="label-sm uppercase tracking-[0.2em] text-secondary font-bold mb-1 flex items-center justify-end gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse emerald-glow"></span>
+                    Live Network Stream
+                </p>
+<p class="text-2xl font-mono text-primary">02:44:12 <span class="text-xs text-outline">UTC</span></p>
+</div>
+</header>
+<!-- Bento Grid Dashboard -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Network Health Gauge -->
+<div class="col-span-12 md:col-span-4 glass-module rounded-xl p-6 ghost-border">
+<div class="flex justify-between items-start mb-8">
+<h3 class="font-headline font-bold text-lg uppercase tracking-wider">Network Status</h3>
+<span class="material-symbols-outlined text-primary">sensors</span>
+</div>
+<div class="flex flex-col items-center justify-center py-4">
+<div class="relative w-48 h-24 overflow-hidden">
+<div class="absolute top-0 left-0 w-48 h-48 border-[12px] border-surface-container-highest rounded-full"></div>
+<div class="absolute top-0 left-0 w-48 h-48 border-[12px] border-primary rounded-full" style="clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); transform: rotate(140deg);"></div>
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
+<span class="text-3xl font-bold font-headline">94.2</span>
+<span class="text-xs text-outline block uppercase tracking-widest">Health Score</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-2 mt-6">
+<div class="text-center p-2 bg-surface-container-lowest rounded-lg">
+<p class="text-[10px] text-outline uppercase">TPS</p>
+<p class="text-sm font-bold">12.4k</p>
+</div>
+<div class="text-center p-2 bg-surface-container-lowest rounded-lg">
+<p class="text-[10px] text-outline uppercase">Latency</p>
+<p class="text-sm font-bold text-secondary">24ms</p>
+</div>
+<div class="text-center p-2 bg-surface-container-lowest rounded-lg">
+<p class="text-[10px] text-outline uppercase">Nodes</p>
+<p class="text-sm font-bold">8,102</p>
+</div>
+</div>
+</div>
+<!-- Financial Ecosystem Summary -->
+<div class="col-span-12 md:col-span-8 glass-module rounded-xl p-6 ghost-border relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline font-bold text-lg uppercase tracking-wider">Financial Ecosystem ($BEZ)</h3>
+<button class="text-xs text-primary font-headline font-bold flex items-center gap-1 uppercase tracking-widest">
+                        Expand Ledger <span class="material-symbols-outlined text-xs">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="space-y-1">
+<p class="text-[10px] text-outline uppercase tracking-widest">Market Cap</p>
+<p class="text-3xl font-headline font-bold">$142.8M</p>
+<p class="text-xs text-secondary flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-xs">trending_up</span> +4.2%
+                        </p>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] text-outline uppercase tracking-widest">TVL in Escrow</p>
+<p class="text-3xl font-headline font-bold">$89.1M</p>
+<div class="w-full h-1 bg-surface-container-highest rounded-full mt-2">
+<div class="w-3/4 h-full bg-primary rounded-full primary-glow"></div>
+</div>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] text-outline uppercase tracking-widest">Staking Volume</p>
+<p class="text-3xl font-headline font-bold">68.4%</p>
+<p class="text-xs text-outline font-medium">Active Participation</p>
+</div>
+</div>
+<div class="mt-8 h-32 w-full relative">
+<div class="absolute inset-0 flex items-end justify-between px-1">
+<!-- Simplified bar chart visual -->
+<div class="w-4 bg-primary/20 rounded-t-sm h-[40%]"></div>
+<div class="w-4 bg-primary/20 rounded-t-sm h-[60%]"></div>
+<div class="w-4 bg-primary/20 rounded-t-sm h-[55%]"></div>
+<div class="w-4 bg-primary/20 rounded-t-sm h-[80%]"></div>
+<div class="w-4 bg-primary/30 rounded-t-sm h-[70%]"></div>
+<div class="w-4 bg-primary/40 rounded-t-sm h-[90%]"></div>
+<div class="w-4 bg-primary rounded-t-sm h-full primary-glow"></div>
+<div class="w-4 bg-primary/40 rounded-t-sm h-[85%]"></div>
+<div class="w-4 bg-primary/30 rounded-t-sm h-[75%]"></div>
+<div class="w-4 bg-primary/20 rounded-t-sm h-[60%]"></div>
+<div class="w-4 bg-primary/10 rounded-t-sm h-[40%]"></div>
+<div class="w-4 bg-primary/20 rounded-t-sm h-[30%]"></div>
+</div>
+</div>
+</div>
+<!-- Oracle Performance -->
+<div class="col-span-12 md:col-span-3 glass-module rounded-xl p-6 ghost-border flex flex-col">
+<h3 class="font-headline font-bold text-lg uppercase tracking-wider mb-6">Oracle Intel</h3>
+<div class="flex-1 space-y-6">
+<div class="flex justify-between items-center">
+<div class="space-y-0.5">
+<p class="text-[10px] text-outline uppercase">AI Precision</p>
+<p class="text-xl font-headline font-bold">99.82%</p>
+</div>
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="flex justify-between items-center">
+<div class="space-y-0.5">
+<p class="text-[10px] text-outline uppercase">Fungal Detection</p>
+<p class="text-xl font-headline font-bold">0.03s</p>
+</div>
+<span class="material-symbols-outlined text-primary">magnification_small</span>
+</div>
+<div class="mt-4 p-4 rounded-lg bg-surface-container-lowest border-l-4 border-secondary">
+<p class="text-[10px] text-secondary font-bold uppercase mb-1">Status Update</p>
+<p class="text-xs text-on-surface-variant italic leading-relaxed">System successfully quarantined 42kg of Grade-B grain in Rotterdam hub.</p>
+</div>
+</div>
+</div>
+<!-- System Health Heatmap (Visual Representation) -->
+<div class="col-span-12 md:col-span-6 glass-module rounded-xl p-6 ghost-border">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline font-bold text-lg uppercase tracking-wider">Global System Health</h3>
+<div class="flex gap-1">
+<div class="w-2 h-2 rounded-sm bg-surface-container-highest"></div>
+<div class="w-2 h-2 rounded-sm bg-primary/40"></div>
+<div class="w-2 h-2 rounded-sm bg-primary/80"></div>
+<div class="w-2 h-2 rounded-sm bg-secondary"></div>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-1.5 h-48">
+<!-- Iterative Heatmap Blocks -->
+<script>
+                        for(let i=0; i<72; i++) {
+                            const opacity = Math.random();
+                            const color = opacity > 0.9 ? 'bg-secondary' : opacity > 0.5 ? 'bg-primary/60' : 'bg-surface-container-highest';
+                            document.write(`<div class="rounded-sm ${color} ${opacity > 0.9 ? 'emerald-glow' : ''}"></div>`);
+                        }
+                    </script>
+</div>
+<div class="mt-6 flex justify-between items-center">
+<div class="flex gap-4">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-[10px] text-outline uppercase">Optimal</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-surface-container-highest"></span>
+<span class="text-[10px] text-outline uppercase">Idle</span>
+</div>
+</div>
+<p class="text-[10px] text-outline uppercase">Last scan: 34 seconds ago</p>
+</div>
+</div>
+<!-- Active Operations -->
+<div class="col-span-12 md:col-span-3 glass-module rounded-xl p-6 ghost-border">
+<h3 class="font-headline font-bold text-lg uppercase tracking-wider mb-6">Operations</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-lg">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">local_shipping</span>
+</div>
+<div>
+<p class="text-xs font-bold">Transit</p>
+<p class="text-[10px] text-outline">1,204 Units</p>
+</div>
+</div>
+<span class="text-xs font-mono text-secondary">+12</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-lg">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-sm">gavel</span>
+</div>
+<div>
+<p class="text-xs font-bold">Disputes</p>
+<p class="text-[10px] text-outline">3 Active</p>
+</div>
+</div>
+<span class="text-xs font-mono text-tertiary">High</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-lg">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-sm">check_circle</span>
+</div>
+<div>
+<p class="text-xs font-bold">Settled</p>
+<p class="text-[10px] text-outline">892 Today</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary text-sm">done_all</span>
+</div>
+</div>
+<button class="w-full mt-6 py-2 border border-outline-variant/20 rounded-md text-[10px] uppercase font-headline font-bold tracking-widest hover:bg-white/5 transition-all">
+                    View Logistics Map
+                </button>
+</div>
+<!-- Node Distribution Map (Placeholder for location data) -->
+<div class="col-span-12 glass-module rounded-xl p-8 ghost-border relative min-h-[400px]">
+<div class="absolute inset-0 z-0 opacity-40">
+<img alt="Network topology map" class="w-full h-full object-cover rounded-xl" data-alt="stylized global map with digital grid overlays and glowing cyan nodes connected by thin light filaments against a deep navy background" data-location="Global" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAvVluRb4cj1FCs_iL-9rNZTpHWguH0coaW9vqJBbML2bNrmVClhkkSvV_2uihhdzvuXzW2BteVFUPmkZhSNHMO8jne58prcpLjRXJdhLlnoWhs02wn7Un2C-_H56jes--qjvbbOhCp3_n32mD4Ng9ZTpUhCU0O_V095utd3ykbBGW8EapjAssj6upONr_4pynhUknFjs2O1ufPJB0u0-bq0h-G7h5Ov2vANUT_KVV_9-mjILWbpdrpr37vsA7lk185lkg86Do5-c"/>
+</div>
+<div class="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-12">
+<div class="md:col-span-1 space-y-6">
+<h3 class="font-headline font-bold text-2xl tracking-tighter">Topology Analysis</h3>
+<p class="text-xs text-outline leading-relaxed">Regional node concentration is shifting toward APAC corridors. Increasing hardware demands in Singapore hub noticed.</p>
+<div class="space-y-4">
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] uppercase tracking-widest font-bold">
+<span>Europe</span>
+<span>42%</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full">
+<div class="w-[42%] h-full bg-primary rounded-full"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] uppercase tracking-widest font-bold">
+<span>Americas</span>
+<span>28%</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full">
+<div class="w-[28%] h-full bg-primary rounded-full"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] uppercase tracking-widest font-bold">
+<span>APAC</span>
+<span>30%</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full">
+<div class="w-[30%] h-full bg-secondary rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="md:col-span-3 flex items-center justify-end">
+<div class="glass-module p-6 rounded-xl ghost-border max-w-sm space-y-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-3xl">hub</span>
+<div>
+<h4 class="font-headline font-bold text-lg">Mainnet Node Alpha-7</h4>
+<p class="text-[10px] text-outline font-mono">ID: 0x9f...8a22</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-3 bg-surface-container-lowest rounded-lg border-l-2 border-primary">
+<p class="text-[10px] text-outline uppercase">CPU LOAD</p>
+<p class="text-sm font-bold">14.2%</p>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded-lg border-l-2 border-primary">
+<p class="text-[10px] text-outline uppercase">Uptime</p>
+<p class="text-sm font-bold">99.9%</p>
+</div>
+</div>
+<button class="w-full py-3 bg-primary text-on-primary rounded-md font-headline font-bold text-xs uppercase tracking-widest shadow-xl shadow-primary/20">
+                                Access Node Console
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="mt-16 pt-8 border-t border-outline-variant/10 flex justify-between items-center text-[10px] text-outline uppercase tracking-widest font-medium">
+<p>© 2024 BeZhas Food Oracle. All Systems Nominal.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Security Protocol</a>
+<a class="hover:text-primary transition-colors" href="#">Privacy Ledger</a>
+<a class="hover:text-primary transition-colors" href="#">API Keys</a>
+</div>
+</footer>
+</main>
+</body></html>

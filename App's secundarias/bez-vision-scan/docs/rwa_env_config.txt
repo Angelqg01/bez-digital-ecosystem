@@ -1,0 +1,22 @@
+# ======================================================
+# RWA SYSTEM CONFIGURATION - ADD TO frontend/.env
+# ======================================================
+
+# Real World Assets - Polygon Mainnet Deployment
+VITE_RWA_FACTORY_ADDRESS=0x9847BcF0a8e6cC0664d2D44Cecb366577F267aac
+VITE_RWA_VAULT_ADDRESS=0x9520dDcB37B0a60aEf0601fc34c198930B2d0b10
+
+# IPFS Configuration via Pinata
+# Sign up at: https://pinata.cloud
+# Get your API keys from: https://app.pinata.cloud/keys
+VITE_PINATA_API_KEY=
+VITE_PINATA_SECRET_KEY=
+VITE_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs/
+
+# ======================================================
+# INSTRUCTIONS:
+# 1. Copy the above variables
+# 2. Paste them at the end of frontend/.env
+# 3. Fill in your Pinata API keys
+# 4. Restart the frontend development server
+# ======================================================

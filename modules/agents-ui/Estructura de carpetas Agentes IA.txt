@@ -1,0 +1,7 @@
+/src/agents/
+  ├── bezhas-agents-constants.js   ← ARCHIVO 1 (datos, no toca React)
+  ├── bezhas-agents-ui.jsx          ← ARCHIVO 2 (Box, Tag, Btn, StatCard)
+  ├── bezhas-tab-agents.jsx         ← ARCHIVO 3 (Tab AI Agents)
+  ├── bezhas-tab-mcp-bez.jsx        ← ARCHIVO 4 (Tab MCP + BEZ Flows)
+  ├── bezhas-tab-bridge-merge.jsx   ← ARCHIVO 5 (Tab Bridge + Merge Guide)
+  └── bezhas-agent-master.jsx       ← ARCHIVO 6 (Shell principal — entra aquí)

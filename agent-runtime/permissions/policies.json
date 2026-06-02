@@ -1,0 +1,72 @@
+{
+    "version": 1,
+    "roles": {
+        "viewer": {
+            "allow": [
+                "runtime:read"
+            ],
+            "deny": []
+        },
+        "operator": {
+            "allow": [
+                "runtime:read",
+                "runtime:write",
+                "mcp:*:invoke",
+                "bridge:status",
+                "validator:read"
+            ],
+            "deny": [
+                "deploy:*",
+                "parity:*"
+            ]
+        },
+        "sector-admin": {
+            "allow": [
+                "runtime:read",
+                "runtime:write"
+            ],
+            "deny": [],
+            "sectorScoped": true,
+            "sectorPermissions": [
+                "sector:{sector}:read",
+                "sector:{sector}:write",
+                "sector:{sector}:tools"
+            ]
+        },
+        "deployer": {
+            "allow": [
+                "runtime:read",
+                "runtime:admin",
+                "deploy:verify",
+                "deploy:execute",
+                "parity:audit"
+            ],
+            "deny": [
+                "sector:*:write"
+            ]
+        },
+        "admin": {
+            "allow": [
+                "*"
+            ],
+            "deny": []
+        }
+    },
+    "toolOverrides": {
+        "incident-report": {
+            "minRole": "operator",
+            "requireAuditLog": true,
+            "maxRatePerMinute": 5
+        },
+        "deploy-check": {
+            "minRole": "deployer",
+            "requireAuditLog": true,
+            "maxRatePerMinute": 2
+        },
+        "parity-audit": {
+            "minRole": "deployer",
+            "requireAuditLog": true,
+            "maxRatePerMinute": 1
+        }
+    }
+}

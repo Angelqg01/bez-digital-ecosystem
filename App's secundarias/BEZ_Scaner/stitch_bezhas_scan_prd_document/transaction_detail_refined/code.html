@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Scan - Transaction Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-background-light dark:bg-background-dark">
+<!-- Top Bar -->
+<header class="flex items-center p-4 sticky top-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md z-10 border-b border-primary/10">
+<button class="text-slate-900 dark:text-slate-100 p-2 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-lg font-bold flex-1 text-center pr-10">Transaction Detail</h2>
+</header>
+<!-- Status & Main Info -->
+<main class="flex-1 p-6 space-y-6">
+<div class="flex flex-col items-center text-center space-y-4 pt-4">
+<div class="px-3 py-1 bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 rounded-full text-xs font-bold tracking-widest uppercase">
+                    SUCCESS
+                </div>
+<div class="space-y-1">
+<h1 class="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">+ 5,000 BEZ-Coin</h1>
+<h2 class="text-primary font-medium text-lg uppercase tracking-wide">Purchase BEZ-Coin</h2>
+</div>
+</div>
+<!-- Technical Breakdown Section -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 pb-2 border-b border-primary/10">
+<span class="material-symbols-outlined text-primary text-xl">database</span>
+<h3 class="font-bold text-sm tracking-wider uppercase text-slate-500 dark:text-slate-400">Technical Breakdown</h3>
+</div>
+<div class="bg-primary/5 rounded-xl p-4 space-y-4">
+<div class="flex justify-between items-start">
+<span class="text-sm text-slate-500 dark:text-slate-400">Transaction Hash</span>
+<div class="flex items-center gap-2 group">
+<span class="text-xs font-mono text-primary truncate max-w-[150px]">0x71c...a3e9</span>
+<button class="material-symbols-outlined text-sm text-slate-400 hover:text-primary transition-colors">content_copy</button>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm text-slate-500 dark:text-slate-400">Block Height</span>
+<span class="text-sm font-semibold">15,482,903</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm text-slate-500 dark:text-slate-400">Gas Fee</span>
+<span class="text-sm font-semibold text-slate-900 dark:text-slate-100">0.0245 MATIC</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm text-slate-500 dark:text-slate-400">Timestamp</span>
+<span class="text-sm font-semibold">Oct 24, 2023 | 14:22:45 UTC</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm text-slate-500 dark:text-slate-400">Network</span>
+<div class="flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-sm font-semibold">Polygon Mainnet</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Contract Interaction Section -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 pb-2 border-b border-primary/10">
+<span class="material-symbols-outlined text-primary text-xl">smart_button</span>
+<h3 class="font-bold text-sm tracking-wider uppercase text-slate-500 dark:text-slate-400">Contract Interaction</h3>
+</div>
+<div class="bg-primary/5 rounded-xl p-4 space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-sm text-slate-500 dark:text-slate-400">Interacted With</span>
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold text-primary">BeZhasVault</span>
+<span class="text-xs px-2 py-0.5 bg-primary/20 rounded border border-primary/30 text-primary">RWA</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm text-slate-500 dark:text-slate-400">Method Code</span>
+<span class="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">0xa9059cbb</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm text-slate-500 dark:text-slate-400">Function</span>
+<span class="text-sm font-mono text-slate-900 dark:text-slate-100">mintAsset(uint256, address)</span>
+</div>
+</div>
+</section>
+<!-- Metadata Card -->
+<div class="rounded-xl border border-primary/20 overflow-hidden relative">
+<div class="h-24 bg-gradient-to-r from-primary/20 to-primary/5 flex items-center justify-center">
+<img alt="Abstract digital blockchain network visualization" class="w-full h-full object-cover opacity-40 mix-blend-overlay" data-alt="Digital abstract pattern representing blockchain network nodes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8BtaNaDKPzkP_F0DZB4AmZg1jypq_Gmj2fsB7AdZm-_6_Gl6vfl7tFRNtlu5gMIV-3KLx9KU2dznTQASX7_p8SVzKI-avtmZMhf3xFc2p3Gz6Re44Ou8fJyQvltIo8-3wn7KJV-1Rlsc_7aSJf7-vSbZILVSsgtKPkr1AgPo5VB8w-1z7KkWRJalpmJN1OobSg6j3j5fRyQb26n1__5zSnJAtnzZ_5eDvvZfrWo3IXAM0rGKSrO1Ppy8EtXLIvwcArixvV_k0yg7t"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="text-primary text-xs font-bold uppercase tracking-[0.2em] bg-background-dark/80 px-4 py-2 rounded-lg backdrop-blur-sm">RWA Asset Proof Generated</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Actions -->
+<footer class="p-6 bg-background-light dark:bg-background-dark border-t border-primary/10">
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span>View on PolygonScan</span>
+<span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+<p class="text-center text-[10px] text-slate-500 dark:text-slate-400 mt-4 uppercase tracking-tighter">
+                Secured by BeZhas Ledger Technology © 2024
+            </p>
+</footer>
+</div>
+</body></html>

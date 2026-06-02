@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --bez-primary: #6366f1;
+    --bez-secondary: #8b5cf6;
+    --bez-accent: #06b6d4;
+}
+
+body {
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+.card {
+    @apply bg-bez-card border border-bez-border rounded-xl p-6;
+}
+
+.btn-primary {
+    @apply bg-bez-primary hover:bg-bez-secondary text-white font-semibold py-2 px-4 rounded-lg transition-colors;
+}
+
+.btn-secondary {
+    @apply border border-bez-border hover:border-bez-primary text-slate-300 font-semibold py-2 px-4 rounded-lg transition-colors;
+}

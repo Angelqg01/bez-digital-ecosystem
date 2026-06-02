@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Medical Broker Agent - BeZhas Bio-Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(37, 175, 244, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center p-4 justify-between max-w-2xl mx-auto w-full">
+<div class="flex items-center gap-3">
+<button class="text-slate-900 dark:text-slate-100 p-1">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight">Medical Broker Agent</h1>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center bg-primary/10 px-2 py-1 rounded-full border border-primary/20">
+<span class="material-symbols-outlined text-primary text-sm mr-1">shield</span>
+<span class="text-xs font-bold text-primary">SECURE</span>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-2xl mx-auto w-full pb-24">
+<!-- Dashboard Stats -->
+<div class="grid grid-cols-2 gap-4 p-4">
+<div class="flex flex-col gap-1 rounded-xl p-5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">Total $BEZ Earned</p>
+<p class="text-primary text-2xl font-bold">1,250 <span class="text-sm font-normal">BEZ</span></p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl p-5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">Broker Trust Score</p>
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-bold">98%</p>
+</div>
+</div>
+<!-- Active Negotiations -->
+<section class="px-4 py-2">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-xl font-bold tracking-tight">Active Negotiations</h2>
+<span class="bg-primary text-background-dark text-[10px] font-bold px-2 py-0.5 rounded-full">2 NEW</span>
+</div>
+<!-- Negotiation Card 1 -->
+<div class="mb-4 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="relative h-24 w-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent"></div>
+<div class="absolute inset-0 flex items-center px-4">
+<div class="size-12 rounded-lg bg-white p-2 flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-slate-900">science</span>
+</div>
+<div class="ml-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Hiring Agent #402</p>
+<h3 class="text-lg font-bold leading-tight">Pfizer Research Lab</h3>
+</div>
+</div>
+</div>
+<div class="p-4 space-y-4">
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Data Requested</p>
+<p class="text-sm font-medium">De-identified Genomic Data</p>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Proposed Compensation</p>
+<p class="text-sm font-bold text-primary">450 $BEZ</p>
+</div>
+</div>
+<!-- Agent Reasoning -->
+<div class="p-3 bg-primary/5 rounded-lg border border-primary/10">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm">robot_2</span>
+<span class="text-xs font-bold text-primary uppercase">Agent Recommendation</span>
+</div>
+<p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed italic">
+                            "The request matches your privacy tier 3. Encryption protocols verified. I've countered for 50 additional $BEZ due to the rare allele sequence requested."
+                        </p>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary hover:bg-primary/90 text-background-dark py-2 rounded-lg text-sm font-bold transition-colors">Approve</button>
+<button class="flex-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 py-2 rounded-lg text-sm font-bold transition-colors">Negotiate</button>
+<button class="px-3 border border-red-500/50 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-sm">block</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Negotiation Card 2 -->
+<div class="mb-4 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm opacity-90">
+<div class="relative h-24 w-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-slate-400/10 to-transparent"></div>
+<div class="absolute inset-0 flex items-center px-4">
+<div class="size-12 rounded-lg bg-white p-2 flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-slate-900">medical_services</span>
+</div>
+<div class="ml-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Discovery Unit #91</p>
+<h3 class="text-lg font-bold leading-tight">Novartis Pharma</h3>
+</div>
+</div>
+</div>
+<div class="p-4 space-y-4">
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Data Requested</p>
+<p class="text-sm font-medium">Metabolic Lab Results</p>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Proposed Compensation</p>
+<p class="text-sm font-bold text-primary">120 $BEZ</p>
+</div>
+</div>
+<div class="p-3 bg-red-500/5 rounded-lg border border-red-500/20">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-red-500 text-sm">warning</span>
+<span class="text-xs font-bold text-red-500 uppercase">Agent Flag</span>
+</div>
+<p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed italic">
+                            "Compensation is 15% below market average for this data type. Suggesting automated negotiation for 145 $BEZ."
+                        </p>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary hover:bg-primary/90 text-background-dark py-2 rounded-lg text-sm font-bold transition-colors">Approve</button>
+<button class="flex-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 py-2 rounded-lg text-sm font-bold transition-colors">Negotiate</button>
+<button class="px-3 border border-red-500/50 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-sm">block</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Transaction History -->
+<section class="px-4 py-6">
+<h2 class="text-xl font-bold tracking-tight mb-4">Transaction History</h2>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-4 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-green-500/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-bold">Moderna Genomics</p>
+<p class="text-[10px] text-slate-500 uppercase">Oct 24, 2023 • Microbiome Data</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-primary">+320 $BEZ</p>
+<p class="text-[10px] text-slate-500">COMPLETE</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-green-500/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-bold">AstraZeneca AI</p>
+<p class="text-[10px] text-slate-500 uppercase">Oct 18, 2023 • Sleep Biometrics</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-primary">+180 $BEZ</p>
+<p class="text-[10px] text-slate-500">COMPLETE</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-green-500/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-bold">Stanford Medicine</p>
+<p class="text-[10px] text-slate-500 uppercase">Oct 12, 2023 • Exercise Vitals</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-primary">+95 $BEZ</p>
+<p class="text-[10px] text-slate-500">COMPLETE</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 pb-6 pt-2">
+<div class="flex gap-2 max-w-2xl mx-auto">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">pulse_alert</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Health</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">robot_2</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Agent</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Wallet</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Settings</p>
+</a>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,18 @@
+{
+  "id": "skill_1777478766149_abad40",
+  "created_at": "2026-04-29T16:06:06.149Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "blockchain"
+  ],
+  "turn": {
+    "user": "Si",
+    "agent": "Entendido. Estoy listo para proceder con la ejecución del ciclo de ventas de 360° a través del Sistema AEGIS, tal como lo has detallado.\n\nHe absorbido el flujo de trabajo obligatorio, las restricciones, el tono y la integración con BeZhas para la validación de liquidez y el onboarding vía Smart Contract.\n\n¿Deseas que inicie el proceso de **IDENTIFICACIÓN (RECON)** ahora mismo?"
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

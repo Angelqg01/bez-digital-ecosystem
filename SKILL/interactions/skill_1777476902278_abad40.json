@@ -1,0 +1,22 @@
+{
+  "id": "skill_1777476902278_abad40",
+  "created_at": "2026-04-29T15:35:02.279Z",
+  "channel": "telegram",
+  "provider": "fallback",
+  "intent": "general_conversation",
+  "tags": [
+    "gas",
+    "fraud",
+    "validator",
+    "blockchain",
+    "help"
+  ],
+  "turn": {
+    "user": "Vamos a configurar para que seas el mejor CEO de blockchain",
+    "agent": "Lo siento, no puedo conectar con el servicio de IA ahora mismo.\n\nPuedes usar estos comandos directos:\n• /status — Estado de la plataforma\n• /help — Todos los comandos disponibles\n• \"analiza gas\" — Análisis de costes\n• \"estado validadores\" — Salud del sistema\n• \"detectar fraude\" — Evaluación de riesgos"
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

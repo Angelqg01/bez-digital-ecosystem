@@ -1,0 +1,19 @@
+{
+  "id": "skill_1777475217904_11355e",
+  "created_at": "2026-04-29T15:06:57.904Z",
+  "channel": "smoke-test",
+  "provider": "intent",
+  "intent": "command",
+  "tags": [
+    "sector",
+    "help"
+  ],
+  "turn": {
+    "user": "/health",
+    "agent": "✅ Runtime v0.5.0 — Operativo\n🔧 24 herramientas\n📋 8 comandos\n🧠 Memoria: activa\n📡 Agente: activo"
+  },
+  "context": {
+    "userId": "smoke:openclaw",
+    "role": "admin"
+  }
+}

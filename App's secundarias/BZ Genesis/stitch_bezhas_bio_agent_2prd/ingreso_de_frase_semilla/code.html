@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Recover Wallet - Biotech Security</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden">
+<!-- Header -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-50 border-b border-primary/10">
+<div class="text-primary flex size-12 shrink-0 items-center justify-center cursor-pointer hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Recover Account</h2>
+</div>
+<!-- Progress Section -->
+<div class="flex flex-col gap-3 p-4">
+<div class="flex gap-6 justify-between">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-medium leading-normal">Verification Progress</p>
+<p class="text-primary text-sm font-bold leading-normal">Step 4 of 5</p>
+</div>
+<div class="rounded-full bg-primary/10 h-2 overflow-hidden">
+<div class="h-2 rounded-full bg-primary" style="width: 80%;"></div>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-normal leading-normal uppercase tracking-widest">Seed Phrase Entry</p>
+</div>
+<!-- Security Warning Component -->
+<div class="p-4 @container">
+<div class="flex flex-1 flex-col items-start justify-between gap-4 rounded-xl border border-primary/20 bg-primary/5 p-5 @[480px]:flex-row @[480px]:items-center">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">gpp_maybe</span>
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold leading-tight">Biometric &amp; Cryptographic Security</p>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm font-normal leading-normal mt-1">
+                        Never share your recovery phrase. If lost, your digital assets and biotech data cannot be recovered.
+                    </p>
+</div>
+<a class="text-sm font-bold leading-normal tracking-[0.015em] flex items-center gap-2 text-primary hover:underline" href="#">
+                    Security Protocol
+                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Title & Description -->
+<div class="px-4 pt-4">
+<h3 class="text-slate-900 dark:text-slate-100 tracking-tight text-2xl font-bold leading-tight text-left">Input Secret Recovery Phrase</h3>
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-normal mt-2">
+                Enter the 24 words in the exact sequence they were originally generated. Sequence integrity is mandatory for vault decryption.
+            </p>
+</div>
+<!-- Word Entry Grid -->
+<div class="p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+<!-- Row generation for 24 inputs -->
+<!-- We'll simulate 24 inputs here -->
+<script>
+                // This is just a helper for the static generation, in a real template this would be a loop
+            </script>
+<!-- Loop replacement (Manual for static output) -->
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">01</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-500/50" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">02</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">03</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">04</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">05</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">06</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">07</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">08</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<!-- ... continuing for 24 -->
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">09</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">10</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">11</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">12</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<!-- Repeated blocks to reach 24 -->
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">13</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">14</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">15</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">16</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">17</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">18</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">19</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">20</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">21</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">22</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">23</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] uppercase text-slate-500 font-bold ml-2">24</label>
+<input class="w-full bg-primary/5 border border-primary/20 rounded-lg p-3 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Word" type="password"/>
+</div>
+</div>
+<!-- Action Section -->
+<div class="p-4 mt-auto">
+<div class="flex items-start gap-3 p-4 bg-primary/10 rounded-xl mb-6 border border-primary/20">
+<span class="material-symbols-outlined text-primary text-xl">verified_user</span>
+<p class="text-xs text-slate-600 dark:text-slate-400">
+                    Entering your recovery phrase here is safe. Our biometric enclave ensures that your phrase is never transmitted to our servers or stored in plaintext on this device.
+                </p>
+</div>
+<button class="w-full bg-primary hover:bg-primary/90 text-slate-900 font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                Initiate Sequence Recovery
+                <span class="material-symbols-outlined">restart_alt</span>
+</button>
+<button class="w-full mt-3 bg-transparent hover:bg-primary/5 text-slate-500 font-medium py-3 px-6 rounded-xl transition-all border border-transparent">
+                Cancel and Return
+            </button>
+</div>
+<!-- Biotech Decorative Element -->
+<div class="fixed -bottom-24 -right-24 w-64 h-64 bg-primary/5 blur-[100px] rounded-full pointer-events-none"></div>
+<div class="fixed -top-24 -left-24 w-64 h-64 bg-primary/5 blur-[100px] rounded-full pointer-events-none"></div>
+</div>
+</body></html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Shipments Management | Oracle Cipher</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container": "#18202c",
+              "surface-container-highest": "#2d3542",
+              "tertiary-fixed-dim": "#ffb77b",
+              "on-secondary": "#003912",
+              "inverse-primary": "#0061a4",
+              "surface-dim": "#0c1420",
+              "primary-container": "#2196f3",
+              "on-tertiary-container": "#452200",
+              "on-primary": "#003258",
+              "outline-variant": "#404752",
+              "inverse-on-surface": "#29313e",
+              "on-tertiary-fixed-variant": "#6d3900",
+              "on-background": "#dbe3f4",
+              "on-secondary-container": "#004d1b",
+              "on-primary-container": "#002c4f",
+              "surface": "#0c1420",
+              "surface-container-low": "#141c28",
+              "error": "#ffb4ab",
+              "background": "#0c1420",
+              "inverse-surface": "#dbe3f4",
+              "surface-container-lowest": "#070e1a",
+              "tertiary-container": "#db7900",
+              "primary-fixed": "#d1e4ff",
+              "primary": "#9ecaff",
+              "on-error-container": "#ffdad6",
+              "surface-tint": "#9ecaff",
+              "on-secondary-fixed": "#002108",
+              "primary-fixed-dim": "#9ecaff",
+              "on-tertiary": "#4d2700",
+              "secondary-fixed-dim": "#3ce36a",
+              "on-tertiary-fixed": "#2e1500",
+              "error-container": "#93000a",
+              "on-surface-variant": "#bfc7d4",
+              "tertiary-fixed": "#ffdcc2",
+              "on-surface": "#dbe3f4",
+              "on-error": "#690005",
+              "outline": "#89919d",
+              "on-secondary-fixed-variant": "#00531e",
+              "surface-container-high": "#232a37",
+              "surface-bright": "#323947",
+              "surface-variant": "#2d3542",
+              "secondary-fixed": "#69ff87",
+              "on-primary-fixed-variant": "#00497d",
+              "on-primary-fixed": "#001d36",
+              "tertiary": "#ffb77b",
+              "secondary-container": "#02c953",
+              "secondary": "#40e56c"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #0c1420;
+        color: #dbe3f4;
+      }
+      .font-headline { font-family: 'Space Grotesk', sans-serif; }
+      .glass-module {
+        background: rgba(45, 53, 66, 0.4);
+        backdrop-filter: blur(20px);
+      }
+    </style>
+</head>
+<body class="min-h-screen">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r border-[#404752]/15 bg-[#0c1420] flex flex-col py-8 px-4 z-50 font-['Space_Grotesk'] tracking-tight">
+<div class="mb-10 px-2">
+<h1 class="text-xl font-bold text-[#9ecaff] tracking-tighter">Oracle Cipher</h1>
+<p class="text-[10px] text-[#dbe3f4]/40 uppercase tracking-[0.2em] mt-1">Digital Agronomist</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#dbe3f4]/60 hover:text-[#dbe3f4] hover:bg-[#dbe3f4]/5 transition-all duration-200 rounded-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<!-- Active Tab: Shipments -->
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#9ecaff] bg-[#9ecaff]/10 font-bold border-r-2 border-[#9ecaff] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="text-sm">Shipments</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#dbe3f4]/60 hover:text-[#dbe3f4] hover:bg-[#dbe3f4]/5 transition-all duration-200 rounded-md" href="#">
+<span class="material-symbols-outlined" data-icon="Timeline">timeline</span>
+<span class="text-sm font-medium">Oracle Feeds</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#dbe3f4]/60 hover:text-[#dbe3f4] hover:bg-[#dbe3f4]/5 transition-all duration-200 rounded-md" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="text-sm font-medium">Yield Vaults</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#dbe3f4]/60 hover:text-[#dbe3f4] hover:bg-[#dbe3f4]/5 transition-all duration-200 rounded-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+<div class="pt-6 border-t border-[#404752]/15 space-y-1">
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-[#dbe3f4]/60 hover:text-[#dbe3f4] hover:bg-[#dbe3f4]/5 transition-all duration-200 rounded-md">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="text-sm font-medium">Support</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-[#dbe3f4]/60 hover:text-[#dbe3f4] hover:bg-[#dbe3f4]/5 transition-all duration-200 rounded-md">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="text-sm font-medium">Logout</span>
+</button>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 border-b border-[#404752]/15 bg-[#0c1420]/80 backdrop-blur-xl flex justify-between items-center px-8 z-40">
+<div class="flex items-center gap-8">
+<span class="text-lg font-black text-[#dbe3f4] font-headline">Logistics Oracle</span>
+<div class="flex items-center gap-6">
+<a class="font-headline uppercase text-xs tracking-widest text-[#dbe3f4]/50 hover:text-[#dbe3f4]" href="#">Global View</a>
+<a class="font-headline uppercase text-xs tracking-widest text-[#9ecaff] border-b-2 border-[#9ecaff] pb-1" href="#">Analytics</a>
+<a class="font-headline uppercase text-xs tracking-widest text-[#dbe3f4]/50 hover:text-[#dbe3f4]" href="#">History</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-4 py-2 bg-gradient-to-br from-primary to-primary-container text-on-primary text-xs font-bold rounded-md active:scale-95 transition-transform uppercase tracking-wider">New Shipment</button>
+<button class="px-4 py-2 border border-outline-variant/30 text-primary text-xs font-bold rounded-md hover:bg-white/5 transition-colors uppercase tracking-wider">Export Data</button>
+<div class="flex items-center gap-2 ml-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors" data-icon="grid_view">grid_view</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20 ml-2">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="close-up portrait of a professional male executive with sharp lighting and clean corporate background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVF-79S3qqBkGlrrYUEyIMWYLOHqP8jhcL60wJy3cabLiYoanVSevY6mSr2NR36Y103ACrQOutDh03lCDaaBCnfNief6iPpgG4H1rkh4xQs42-NBxIs8WNEvjZXQACeNBBsq96OUN3aRndrQICrrcPUr6Dh-ugDkewGjuB0MzMUnLF6DWb3hpJz6vrBqKqXJzMaaxnQtrGaTUEltY59KovCy3g0VuayAkYtrGJPvp7TPE438W1786wkvIwNyG_-Wpj57_6v1gLL7g"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 pt-24 p-8 min-h-screen bg-surface">
+<!-- Hero Section: Global Map Visualization -->
+<section class="relative h-[400px] w-full rounded-xl overflow-hidden mb-8 border border-outline-variant/10">
+<div class="absolute inset-0 bg-surface-container-lowest">
+<!-- Mock Map Visual -->
+<div class="absolute inset-0 opacity-40 mix-blend-screen" data-alt="abstract dark world map with neon blue and green glowing data lines representing global trade routes and logistics flow" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA8aFKIsimjrQ54_DNRrp0gMiJR2WiHVxvPQgG0xPugsQTWA1Lfhnj3EGe6H3QCnHdfXIqOQi6XdnYMp43NlNSAGsVdP-1-dpq23DeQ9bQ1sDTkCYz009qJ15kE8NkjCM1X_gpM22GqraCIzhavG1ZtgzhWDJNcXrodEAnRd6juEK4FYsBJTC9a2DmfhgAUpONPjdn8gOerqrRX4cVwUmdXOufBRR9l6Ob8KbyE5XkZPR0uFMAumIYVXybMPlBpMkrKwlQyan41ehY'); background-size: cover; background-position: center;">
+</div>
+<!-- Map Overlay Content -->
+<div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"></div>
+<!-- Status Markers (Faked) -->
+<div class="absolute top-1/4 left-1/3 flex flex-col items-center">
+<div class="w-3 h-3 bg-secondary rounded-full shadow-[0_0_15px_rgba(64,229,108,0.6)] animate-pulse"></div>
+<div class="mt-2 px-2 py-1 glass-module rounded-lg border border-secondary/20">
+<p class="text-[10px] font-headline font-bold text-secondary">#SH-992-AZ</p>
+</div>
+</div>
+<div class="absolute top-1/2 left-2/3 flex flex-col items-center">
+<div class="w-3 h-3 bg-primary rounded-full shadow-[0_0_15px_rgba(158,202,255,0.6)]"></div>
+<div class="mt-2 px-2 py-1 glass-module rounded-lg border border-primary/20">
+<p class="text-[10px] font-headline font-bold text-primary">#SH-104-BR</p>
+</div>
+</div>
+<div class="absolute bottom-1/3 left-1/4 flex flex-col items-center">
+<div class="w-3 h-3 bg-tertiary rounded-full shadow-[0_0_15px_rgba(255,183,123,0.6)]"></div>
+<div class="mt-2 px-2 py-1 glass-module rounded-lg border border-tertiary/20">
+<p class="text-[10px] font-headline font-bold text-tertiary">#SH-887-PL</p>
+</div>
+</div>
+</div>
+<!-- Legend / Stats Overlay -->
+<div class="absolute bottom-6 left-6 flex gap-4">
+<div class="glass-module p-4 rounded-xl border border-outline-variant/15">
+<p class="text-[10px] text-on-surface-variant font-headline uppercase tracking-widest mb-1">In Transit</p>
+<p class="text-2xl font-headline font-bold text-primary">42</p>
+</div>
+<div class="glass-module p-4 rounded-xl border border-outline-variant/15">
+<p class="text-[10px] text-on-surface-variant font-headline uppercase tracking-widest mb-1">Delivered</p>
+<p class="text-2xl font-headline font-bold text-secondary">189</p>
+</div>
+<div class="glass-module p-4 rounded-xl border border-outline-variant/15">
+<p class="text-[10px] text-on-surface-variant font-headline uppercase tracking-widest mb-1">Held by Oracle</p>
+<p class="text-2xl font-headline font-bold text-tertiary">03</p>
+</div>
+</div>
+<!-- Top Action Bar for Hero -->
+<div class="absolute top-6 right-6 flex items-center gap-3">
+<button class="bg-surface-container-highest/60 backdrop-blur text-xs font-bold px-4 py-2 rounded-md border border-outline-variant/20 hover:bg-surface-container-highest transition-colors font-headline uppercase tracking-tighter">Sync with SIMPLE Platform</button>
+</div>
+</section>
+<div class="grid grid-cols-12 gap-8">
+<!-- Active Shipments Table -->
+<div class="col-span-12 lg:col-span-8 space-y-6">
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-headline font-bold text-on-surface">Active Global Shipments</h2>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-headline uppercase tracking-widest text-on-surface-variant">Filter by:</span>
+<select class="bg-surface-container-low border-none text-xs rounded-md focus:ring-primary text-on-surface py-1 pr-8">
+<option>All Status</option>
+<option>Transit</option>
+<option>Held</option>
+</select>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/10">
+<th class="pb-4 text-[10px] font-headline uppercase tracking-widest text-on-surface-variant">Shipment ID</th>
+<th class="pb-4 text-[10px] font-headline uppercase tracking-widest text-on-surface-variant">Route</th>
+<th class="pb-4 text-[10px] font-headline uppercase tracking-widest text-on-surface-variant">Mode</th>
+<th class="pb-4 text-[10px] font-headline uppercase tracking-widest text-on-surface-variant">Oracle Index</th>
+<th class="pb-4 text-[10px] font-headline uppercase tracking-widest text-on-surface-variant">e-SPS/ASYCUDA</th>
+<th class="pb-4 text-[10px] font-headline uppercase tracking-widest text-on-surface-variant">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<!-- Shipment Row 1 -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="py-4 font-headline font-bold text-primary">#SH-992-AZ</td>
+<td class="py-4">
+<div class="flex flex-col">
+<span class="text-sm font-medium">Valparaíso → Rotterdam</span>
+<span class="text-[10px] text-on-surface-variant">ETA: Oct 24, 2023</span>
+</div>
+</td>
+<td class="py-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="directions_boat">directions_boat</span>
+<span class="text-xs">Sea</span>
+</div>
+</td>
+<td class="py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-4/5 h-full bg-secondary"></div>
+</div>
+<span class="text-[10px] font-bold text-secondary">92%</span>
+</div>
+</td>
+<td class="py-4">
+<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter bg-secondary/10 text-secondary border border-secondary/20">Cleared</span>
+</td>
+<td class="py-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+<!-- Shipment Row 2 -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="py-4 font-headline font-bold text-primary">#SH-104-BR</td>
+<td class="py-4">
+<div class="flex flex-col">
+<span class="text-sm font-medium">Santos → Shanghai</span>
+<span class="text-[10px] text-on-surface-variant">ETA: Nov 02, 2023</span>
+</div>
+</td>
+<td class="py-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="directions_boat">directions_boat</span>
+<span class="text-xs">Sea</span>
+</div>
+</td>
+<td class="py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-2/3 h-full bg-primary"></div>
+</div>
+<span class="text-[10px] font-bold text-primary">74%</span>
+</div>
+</td>
+<td class="py-4">
+<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter bg-primary/10 text-primary border border-primary/20">In Progress</span>
+</td>
+<td class="py-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+<!-- Shipment Row 3 -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="py-4 font-headline font-bold text-primary">#SH-887-PL</td>
+<td class="py-4">
+<div class="flex flex-col">
+<span class="text-sm font-medium">Gdansk → Chicago</span>
+<span class="text-[10px] text-on-surface-variant">ETA: Oct 29, 2023</span>
+</div>
+</td>
+<td class="py-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="train">train</span>
+<span class="text-xs">Rail</span>
+</div>
+</td>
+<td class="py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-1/3 h-full bg-tertiary"></div>
+</div>
+<span class="text-[10px] font-bold text-tertiary">31%</span>
+</div>
+</td>
+<td class="py-4">
+<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter bg-tertiary/10 text-tertiary border border-tertiary/20">Awaiting Auth</span>
+</td>
+<td class="py-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Side Panel: Oracle Intelligence & Smart Contracts -->
+<aside class="col-span-12 lg:col-span-4 space-y-6">
+<!-- Oracle Intelligence Widget -->
+<div class="surface-container p-6 rounded-xl border border-outline-variant/10 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="neurology">neurology</span>
+</div>
+<div class="flex items-center gap-2 mb-6">
+<span class="w-2 h-2 bg-secondary rounded-full"></span>
+<h3 class="text-sm font-headline font-bold uppercase tracking-wider text-on-surface">Oracle Intelligence</h3>
+</div>
+<div class="space-y-4">
+<div class="p-4 bg-surface-container-low rounded-lg border-l-2 border-primary">
+<div class="flex justify-between items-start mb-2">
+<p class="text-[10px] font-bold text-primary uppercase">ETA Adjustment</p>
+<span class="text-[10px] text-on-surface-variant font-medium">+18h</span>
+</div>
+<p class="text-xs leading-relaxed text-on-surface-variant">Congestion alert at <span class="text-on-surface">Port of Rotterdam</span>. Oracle node 412 recommends alternative berthing sequence.</p>
+</div>
+<div class="p-4 bg-surface-container-low rounded-lg border-l-2 border-secondary">
+<div class="flex justify-between items-start mb-2">
+<p class="text-[10px] font-bold text-secondary uppercase">Condition Alert</p>
+<span class="text-[10px] text-on-surface-variant font-medium">99.2% Conf</span>
+</div>
+<p class="text-xs leading-relaxed text-on-surface-variant">Humidity sensor deviation in Container 12A-Z. Smart contract "Quality Clause" triggered.</p>
+</div>
+</div>
+<button class="w-full mt-6 py-2 bg-surface-container-highest text-xs font-headline font-bold text-primary rounded border border-primary/20 hover:bg-primary/10 transition-colors uppercase tracking-widest">
+            View Analytics Detail
+          </button>
+</div>
+<!-- Smart Contract Link Widget -->
+<div class="surface-container p-6 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="token">token</span>
+<h3 class="text-sm font-headline font-bold uppercase tracking-wider text-on-surface">Escrow Intelligence</h3>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/5">
+<span class="text-[11px] font-medium text-on-surface-variant">#SH-992-AZ Locked</span>
+<span class="text-xs font-bold font-headline">$1.24M <span class="text-primary">USDC</span></span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/5">
+<span class="text-[11px] font-medium text-on-surface-variant">#SH-104-BR Locked</span>
+<span class="text-xs font-bold font-headline">$842K <span class="text-primary">USDC</span></span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="text-[11px] font-medium text-on-surface-variant">Global Active Escrow</span>
+<span class="text-xs font-bold font-headline text-secondary">$12.8M <span class="text-primary">USDC</span></span>
+</div>
+</div>
+<div class="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<p class="text-[10px] font-bold text-primary uppercase">Vault Health</p>
+<p class="text-sm font-headline font-bold">Stable &amp; Verified</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer-like action bar (Small screens fallback or specific actions) -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-high h-16 flex items-center justify-around px-4 border-t border-outline-variant/10 z-50">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[9px] uppercase font-bold">Dash</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="text-[9px] uppercase font-bold">Ship</span>
+</button>
+<button class="w-12 h-12 -mt-10 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/40">
+<span class="material-symbols-outlined text-on-primary" data-icon="add">add</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="text-[9px] uppercase font-bold">Feed</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[9px] uppercase font-bold">User</span>
+</button>
+</div>
+</body></html>

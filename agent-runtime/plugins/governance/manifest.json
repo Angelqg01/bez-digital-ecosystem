@@ -1,0 +1,75 @@
+{
+    "name": "governance-plugin",
+    "version": "1.0.0",
+    "sector": "government",
+    "description": "Governance sector tools: proposal tracking, voting status, timelock monitoring",
+    "enabled": true,
+    "tools": [
+        {
+            "name": "proposal-status",
+            "description": "Query GovernanceSystem for active proposals, vote counts, and quorum status",
+            "permissions": [
+                "runtime:read",
+                "sector:government:read"
+            ],
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "proposal_id": {
+                        "type": "number"
+                    },
+                    "include_votes": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                }
+            },
+            "timeoutMs": 10000
+        },
+        {
+            "name": "timelock-queue",
+            "description": "Query TimelockController for pending and executed operations",
+            "permissions": [
+                "runtime:read",
+                "sector:government:read"
+            ],
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "status_filter": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "ready",
+                            "executed",
+                            "all"
+                        ],
+                        "default": "all"
+                    }
+                }
+            },
+            "timeoutMs": 8000
+        }
+    ],
+    "commands": [
+        {
+            "name": "proposal-status",
+            "description": "Check governance proposal status",
+            "toolName": "government:proposal-status",
+            "aliases": [
+                "ps",
+                "proposal"
+            ]
+        }
+    ],
+    "contracts": [
+        {
+            "name": "GovernanceSystem",
+            "critical": true
+        },
+        {
+            "name": "TimelockController",
+            "critical": true
+        }
+    ]
+}

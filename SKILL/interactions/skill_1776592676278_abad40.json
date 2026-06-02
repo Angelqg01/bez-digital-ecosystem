@@ -1,0 +1,23 @@
+{
+  "id": "skill_1776592676278_abad40",
+  "created_at": "2026-04-19T09:57:56.278Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "gas",
+    "fraud",
+    "validator",
+    "bridge",
+    "blockchain",
+    "help"
+  ],
+  "turn": {
+    "user": "Ok",
+    "agent": "¡Excelente! Estoy aquí para ayudarte como el Agente IA de la plataforma BeZhas Blockchain.\n\nComo operador, puedo asistirte con diversas tareas: consultar el estado de la plataforma, ejecutar herramientas Aegis, invocar comandos del Runtime, analizar el consumo de gas, detectar anomalías, verificar validadores, gestionar bridges y mucho más.\n\n¿Hay algo específico en lo que te gustaría que te ayude hoy?"
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "operator"
+  }
+}

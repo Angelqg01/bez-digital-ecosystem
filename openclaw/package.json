@@ -1,0 +1,16 @@
+{
+  "name": "bezhas-openclaw-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "openclaw": "openclaw",
+    "start": "openclaw gateway start"
+  },
+  "dependencies": {
+    "openclaw": "^2026.3.24"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

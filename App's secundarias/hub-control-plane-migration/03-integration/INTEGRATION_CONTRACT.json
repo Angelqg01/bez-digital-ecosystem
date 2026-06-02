@@ -1,0 +1,55 @@
+{
+  "version": "1.0.0",
+  "scope": "hub-control-plane",
+  "contracts": {
+    "identity": {
+      "provider": "hub",
+      "flows": [
+        "siwe_nonce",
+        "siwe_verify",
+        "jwt_refresh",
+        "role_resolution"
+      ]
+    },
+    "navigation": {
+      "provider": "hub",
+      "flows": [
+        "app_switcher",
+        "deep_links",
+        "return_to_origin"
+      ]
+    },
+    "observability": {
+      "provider": "hub",
+      "flows": [
+        "health_rollup",
+        "alert_aggregation",
+        "service_status"
+      ]
+    },
+    "billing": {
+      "provider": "hub",
+      "flows": [
+        "plan_read",
+        "plan_upgrade",
+        "entitlement_check"
+      ]
+    },
+    "subapp_runtime": {
+      "provider": "subapps",
+      "flows": [
+        "wallet_runtime",
+        "gas_runtime",
+        "edge_runtime",
+        "vision_runtime",
+        "defi_runtime"
+      ]
+    }
+  },
+  "routingPolicy": {
+    "preferGateway": true,
+    "preferPlatformSdk": true,
+    "allowDirectBlockchainFromHub": false
+  }
+}
+

@@ -1,0 +1,6 @@
+Creas un Dashboard (protegido por usuario/contraseña) con las siguientes secciones:
+Dashboard General: Muestra Estado del Secuenciador, Último bloque (llamando a eth_blockNumber), y balance de gas restante en la L1.
+Tokenomics Center: Interfaz para llamar a los endpoints /api/token/mint y burn.
+Gas & IA Controls: Un deslizador para subir/bajar el costo de gas en BEZ, y gráficas de cuánto han usado las empresas el Precompile de IA.
+Network Config: Botones rojos/verdes para Start/Stop el Batcher (si el gas en Ethereum está muy caro, apagas el Batcher desde este botón para pausar el guardado y ahorrar dinero, la L2 sigue funcionando localmente).
+(Desplegarás esta app usando pm2 start server.js y la expondrás a través de NGINX con certificados SSL, restringiendo el acceso solo a tu IP personal o VPN).

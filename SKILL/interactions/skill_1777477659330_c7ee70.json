@@ -1,0 +1,20 @@
+{
+  "id": "skill_1777477659330_c7ee70",
+  "created_at": "2026-04-29T15:47:39.330Z",
+  "channel": "hub-chat",
+  "provider": "intent",
+  "intent": "command",
+  "tags": [
+    "blockchain",
+    "sector",
+    "help"
+  ],
+  "turn": {
+    "user": "/platform-health",
+    "agent": "🏥 **Health Ejecutivo BeZhas**\n\n✅ Blockchain API: OK\n✅ UnifiedAgent: ok | telegram=running | tools=24\n⚠️ AEGIS: \n⚠️ AI Engine MCP: \n\nRuntime local: 24 herramientas, 8 comandos."
+  },
+  "context": {
+    "userId": "web-chat",
+    "role": "admin"
+  }
+}

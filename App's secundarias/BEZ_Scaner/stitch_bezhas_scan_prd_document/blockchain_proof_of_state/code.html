@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden max-w-md mx-auto border-x border-primary/10">
+<!-- Top Header Navigation -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10 border-b border-primary/10">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-primary/10 cursor-pointer">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<div class="flex flex-col items-center">
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">Proof of State #7721</h2>
+<div class="flex items-center gap-1.5">
+<span class="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<p class="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-widest">On-Chain Verified</p>
+</div>
+</div>
+<div class="flex w-10 items-center justify-end text-primary">
+<span class="material-symbols-outlined">share</span>
+</div>
+</div>
+<!-- Asset Summary Card -->
+<div class="p-4">
+<div class="flex items-stretch justify-between gap-4 rounded-xl bg-white dark:bg-primary/5 p-4 shadow-sm border border-primary/10">
+<div class="flex flex-col gap-1 flex-[2_2_0px]">
+<p class="text-slate-500 dark:text-primary/60 text-xs font-medium uppercase">Timestamp</p>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-semibold">Oct 24, 2023, 14:22 UTC</p>
+<div class="mt-2">
+<p class="text-slate-500 dark:text-primary/60 text-xs font-medium uppercase">Asset Class</p>
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold leading-tight">Logistics Box 3D Scan</p>
+<p class="text-primary text-xs font-mono mt-1">ID: #BEZ-88219</p>
+</div>
+</div>
+<div class="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg border-2 border-primary/20" data-alt="3D logistics box scan thumbnail" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDTNJighvLN5nuZq4hYta4fVwC03j3Vv8bvzwJcww_PHPny1-x6TLnCb8uRetHvkBYu4v2zg81K--zSulZV0yAZ3SicPvLSzWEL227PTfpz_DvDVWmIUORhmYnJpso2YoSxQLPwJqkCceg_tFelPBCdKPpkerIZ1nxjFI3_NiRalqxJjGDrNVFjkm6FdXq7bcwcz_HsN_20hg7UmDMoKz8oGkC_uRfvLA7YnOyXLtb8LGR9SyBusnvhE8GE_pBMN9VQBGDVjZEkF2Wv");'>
+</div>
+</div>
+</div>
+<!-- Network Stats -->
+<div class="px-4 py-2">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">hub</span> Network Stats
+        </h3>
+<div class="grid grid-cols-2 gap-3">
+<div class="flex flex-col gap-1 rounded-xl p-4 bg-slate-100 dark:bg-background-dark border border-primary/10">
+<p class="text-slate-500 dark:text-primary/60 text-[10px] font-bold uppercase">Mainnet</p>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">Polygon (137)</p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl p-4 bg-slate-100 dark:bg-background-dark border border-primary/10">
+<p class="text-slate-500 dark:text-primary/60 text-[10px] font-bold uppercase">Gas Used</p>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">214,532 units</p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl p-4 bg-slate-100 dark:bg-background-dark border border-primary/10 col-span-2">
+<p class="text-slate-500 dark:text-primary/60 text-[10px] font-bold uppercase">Block Number</p>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">48,921,034</p>
+</div>
+</div>
+</div>
+<!-- Smart Contracts -->
+<div class="px-4 py-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">contract</span> Protocol Architecture
+        </h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-primary/5 border border-primary/10">
+<div>
+<p class="text-slate-500 dark:text-primary/60 text-[10px] font-bold uppercase">RWA Factory</p>
+<p class="text-slate-900 dark:text-slate-100 text-xs font-mono truncate w-48">0x9847BcF0a8e6cC0664d2D44Cecb366577F267aac</p>
+</div>
+<span class="material-symbols-outlined text-primary text-sm cursor-pointer">content_copy</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-primary/5 border border-primary/10">
+<div>
+<p class="text-slate-500 dark:text-primary/60 text-[10px] font-bold uppercase">Asset Vault</p>
+<p class="text-slate-900 dark:text-slate-100 text-xs font-mono truncate w-48">0x9520dDcB37B0a60aEf0601fc34c198930B2d0b10</p>
+</div>
+<span class="material-symbols-outlined text-primary text-sm cursor-pointer">content_copy</span>
+</div>
+</div>
+</div>
+<!-- Immutable Documentation (IPFS) -->
+<div class="px-4 py-2">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">database</span> IPFS Documentation
+        </h3>
+<div class="bg-primary/5 rounded-xl p-4 border border-primary/20">
+<div class="space-y-3 mb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">description</span>
+<div class="flex-1 overflow-hidden">
+<p class="text-slate-900 dark:text-slate-100 text-xs font-bold">Legal_Framework.pdf</p>
+<p class="text-slate-500 dark:text-primary/60 text-[10px] font-mono truncate">QmXoyp...3V6A</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">image</span>
+<div class="flex-1 overflow-hidden">
+<p class="text-slate-900 dark:text-slate-100 text-xs font-bold">Spatial_Cloud_Data.obj</p>
+<p class="text-slate-500 dark:text-primary/60 text-[10px] font-mono truncate">QmZ4tk...9Yp2</p>
+</div>
+</div>
+</div>
+<button class="w-full bg-primary text-white py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">visibility</span>
+                View on Pinata
+            </button>
+</div>
+</div>
+<!-- Ownership & KYC -->
+<div class="px-4 py-4">
+<div class="flex items-center justify-between p-4 rounded-xl bg-slate-900 text-white shadow-lg">
+<div class="flex flex-col gap-1">
+<p class="text-primary/80 text-[10px] font-bold uppercase">Current Holder</p>
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-orange-300"></div>
+<p class="text-sm font-mono">0x4b7...a19e</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] fill-1">verified_user</span> KYC Verified
+                </span>
+<p class="text-slate-400 text-[10px]">Level 2 Verified</p>
+</div>
+</div>
+</div>
+<!-- Event Log -->
+<div class="px-4 pb-24">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-wider mb-3">Blockchain Event Log</h3>
+<div class="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[1px] before:bg-primary/20">
+<!-- Event 1 -->
+<div class="relative">
+<span class="absolute -left-6 top-1.5 size-2.5 rounded-full bg-primary ring-4 ring-primary/20"></span>
+<div class="flex flex-col">
+<p class="text-xs font-bold text-slate-900 dark:text-slate-100">MetadataPinned</p>
+<p class="text-[10px] text-slate-500 dark:text-primary/60">CID registered to decentralized storage</p>
+<p class="text-[9px] text-primary/40 font-mono mt-1">Tx: 0x82...f9a1 • 2 mins ago</p>
+</div>
+</div>
+<!-- Event 2 -->
+<div class="relative">
+<span class="absolute -left-6 top-1.5 size-2.5 rounded-full bg-primary/40"></span>
+<div class="flex flex-col">
+<p class="text-xs font-bold text-slate-900 dark:text-slate-100">VaultActivated</p>
+<p class="text-[10px] text-slate-500 dark:text-primary/60">Asset locked in smart contract escrow</p>
+<p class="text-[9px] text-primary/40 font-mono mt-1">Tx: 0xa4...e3d2 • 5 mins ago</p>
+</div>
+</div>
+<!-- Event 3 -->
+<div class="relative">
+<span class="absolute -left-6 top-1.5 size-2.5 rounded-full bg-primary/40"></span>
+<div class="flex flex-col">
+<p class="text-xs font-bold text-slate-900 dark:text-slate-100">AssetTokenized</p>
+<p class="text-[10px] text-slate-500 dark:text-primary/60">ERC-721 mint complete on Polygon</p>
+<p class="text-[9px] text-primary/40 font-mono mt-1">Tx: 0x1c...72b5 • 12 mins ago</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<div class="fixed bottom-0 left-0 right-0 mx-auto max-w-md bg-white dark:bg-background-dark border-t border-primary/10 px-4 pb-6 pt-2 flex justify-around items-center z-20">
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-primary/40" href="#">
+<span class="material-symbols-outlined">explore</span>
+<p class="text-[10px] font-bold uppercase tracking-tighter">Explorer</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">crop_free</span>
+<p class="text-[10px] font-bold uppercase tracking-tighter">Scans</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-primary/40" href="#">
+<span class="material-symbols-outlined">token</span>
+<p class="text-[10px] font-bold uppercase tracking-tighter">Assets</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-primary/40" href="#">
+<span class="material-symbols-outlined">person</span>
+<p class="text-[10px] font-bold uppercase tracking-tighter">Profile</p>
+</a>
+</div>
+</div>
+</body></html>

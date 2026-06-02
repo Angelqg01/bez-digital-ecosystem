@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 240, 255, 0.05) 50%);
+            background-size: 100% 4px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#ffcec4",
+                        "outline-variant": "#3b494b",
+                        "on-tertiary-fixed": "#3e0400",
+                        "surface-tint": "#00dbe9",
+                        "on-secondary-container": "#0f6d00",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-highest": "#353534",
+                        "primary": "#dbfcff",
+                        "on-surface": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#095300",
+                        "surface-container-high": "#2a2a2a",
+                        "on-tertiary-container": "#b91e00",
+                        "inverse-on-surface": "#313030",
+                        "outline": "#849495",
+                        "on-primary": "#00363a",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#006970",
+                        "on-tertiary-fixed-variant": "#8e1400",
+                        "surface-bright": "#393939",
+                        "error": "#ffb4ab",
+                        "background": "#131313",
+                        "surface-variant": "#353534",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-secondary-fixed": "#022100",
+                        "inverse-surface": "#e5e2e1",
+                        "on-tertiary": "#650b00",
+                        "on-secondary": "#053900",
+                        "secondary-container": "#2ff801",
+                        "primary-container": "#00f0ff",
+                        "surface": "#131313",
+                        "on-surface-variant": "#b9cacb",
+                        "secondary-fixed-dim": "#2ae500",
+                        "on-primary-fixed-variant": "#004f54",
+                        "secondary": "#d7ffc5",
+                        "on-error": "#690005",
+                        "surface-dim": "#131313",
+                        "tertiary-fixed-dim": "#ffb4a5",
+                        "tertiary": "#fff3f1",
+                        "surface-container": "#201f1f",
+                        "on-primary-fixed": "#002022",
+                        "tertiary-fixed": "#ffdad3",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-background": "#e5e2e1",
+                        "secondary-fixed": "#79ff5b",
+                        "primary-fixed": "#7df4ff",
+                        "on-primary-container": "#006970",
+                        "error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "stack-sm": "8px",
+                        "margin": "20px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Space Grotesk"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Space Grotesk"],
+                        "body-md": ["Inter"],
+                        "data-display": ["Space Grotesk"],
+                        "label-mono": ["Space Grotesk"],
+                        "headline-md": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "data-display": ["20px", {"lineHeight": "1", "letterSpacing": "0px", "fontWeight": "700"}],
+                        "label-mono": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-5 h-16 bg-[#0C0C0C] border-b border-[#2D2D2D] flat no-shadows">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#00F0FF]">terminal</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm font-bold text-[#00F0FF]">VALIDATOR_TERMINAL</span>
+</div>
+<div class="w-8 h-8 rounded-full border border-[#00F0FF] overflow-hidden">
+<img alt="Validator Profile" class="w-full h-full object-cover" data-alt="A close-up portrait of a professional technology auditor with a neutral expression, wearing a sleek black high-collared technical jacket. The background is a dark, industrial server room with faint blue status lights. The lighting is sharp and cinematic, emphasizing clean lines and a high-contrast tech-industrial aesthetic with subtle cyan highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjXA0lnQq9gYAhgrPYKyXfcezmw0qHTJqBP1uCC4sJjw0FnougaQ_4hpWfNve3FQqtcMtDahPWlfL1xapgz1raBxBE6O_vAtjq9oZQY7w9KFMDS7cuCtkO7_M_lKTh8eFI9h52_Vowb1dn-bWvneReNUoAetQyjIT0ilcEUsX60-47tR60DiW7Joy0200v9guyAQ6NZCdSlPWUlvtIToyLGqVfnTay-OisgQkjAaQArI0itBH9jUohn_cdZW-miJ_JqRoyS64ShJA"/>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 mt-16 pb-24 px-margin overflow-y-auto">
+<div class="max-w-md mx-auto py-stack-lg">
+<!-- Success Status Header -->
+<div class="flex flex-col items-center text-center mb-stack-lg">
+<div class="relative w-24 h-24 mb-6 flex items-center justify-center">
+<div class="absolute inset-0 bg-primary-container/10 rounded-full blur-xl"></div>
+<div class="relative w-20 h-20 border-2 border-primary-container rounded-full flex items-center justify-center bg-background shadow-[0_0_15px_rgba(0,240,255,0.3)]">
+<span class="material-symbols-outlined text-primary-container text-5xl" style="font-variation-settings: 'wght' 600;">check_circle</span>
+</div>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary-container uppercase tracking-tight">MISIÓN COMPLETADA</h1>
+<p class="font-label-mono text-label-mono text-outline-variant mt-2 tracking-widest">TRANSACTION_ID: 0x8F2A...DE41</p>
+</div>
+<!-- Contract Execution Details -->
+<div class="space-y-stack-md">
+<!-- Smart Contract Breakdown Card -->
+<div class="bg-surface-container-lowest border border-[#2D2D2D] p-5 relative overflow-hidden">
+<div class="scanline absolute inset-0 pointer-events-none opacity-20"></div>
+<div class="flex justify-between items-start mb-6 border-b border-[#2D2D2D] pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-sm">description</span>
+<span class="font-label-mono text-label-mono text-on-surface uppercase tracking-widest">DESGLOSE DE CONTRATO</span>
+</div>
+<span class="font-label-mono text-[10px] text-secondary-fixed-dim bg-secondary-fixed-dim/10 px-2 py-0.5 border border-secondary-fixed-dim/20">EXECUTED</span>
+</div>
+<div class="space-y-4">
+<!-- Restaurant Payment -->
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-body-md text-on-surface">Pago a Restaurante</span>
+<span class="font-label-mono text-[10px] text-outline-variant">ADR: 0x41B2...9921</span>
+</div>
+<span class="font-data-display text-data-display text-on-surface">32.40 USDC</span>
+</div>
+<!-- Courier Payment -->
+<div class="flex justify-between items-center bg-primary-container/5 -mx-5 px-5 py-3 border-y border-primary-container/10">
+<div class="flex flex-col">
+<span class="font-body-md text-primary-container font-semibold">Tus Ganancias</span>
+<span class="font-label-mono text-[10px] text-primary-container/60">FEE + DISTANCE_BONUS</span>
+</div>
+<span class="font-data-display text-data-display text-primary-container">8.50 USDC</span>
+</div>
+<!-- Commission -->
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-body-md text-on-surface">Comisión de Red</span>
+<span class="font-label-mono text-[10px] text-outline-variant">PROTOCOL_FEE (1.5%)</span>
+</div>
+<span class="font-body-md text-on-surface">0.60 USDC</span>
+</div>
+<div class="pt-4 border-t border-[#2D2D2D] flex justify-between items-end">
+<span class="font-headline-sm text-headline-sm text-on-surface uppercase">Total Transacción</span>
+<div class="text-right">
+<span class="font-data-display text-3xl text-on-surface">41.50</span>
+<span class="font-label-mono text-sm text-outline-variant ml-1">USDC</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Technical Manifest -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest border border-[#2D2D2D] p-3">
+<p class="font-label-mono text-[10px] text-outline-variant uppercase mb-1">Bloque Confirmación</p>
+<p class="font-data-display text-lg text-on-surface">#18,492,021</p>
+</div>
+<div class="bg-surface-container-lowest border border-[#2D2D2D] p-3">
+<p class="font-label-mono text-[10px] text-outline-variant uppercase mb-1">Tiempo de Entrega</p>
+<p class="font-data-display text-lg text-on-surface">22:14 MIN</p>
+</div>
+</div>
+<!-- Visual Confirmation Imagery -->
+<div class="relative h-32 w-full overflow-hidden border border-[#2D2D2D]">
+<img alt="Tech Logistics Graphic" class="w-full h-full object-cover grayscale opacity-40" data-alt="A futuristic digital data visualization representing a successful logistics network. Luminous cyan lines connect nodes on a dark, technical map grid. The image features a high-contrast industrial feel with faint scanlines and particle effects, echoing the professional validator terminal aesthetic and cold, technological efficiency." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8-huNA_4wkWIMRGPsTc9EXX9749jh6d8X89vX69GkGmQaGDOkRtKisc15mgxyxcdG3HUxlajMXmKagP3buQmQdsBy4glyaGYHfkg8LYb1B3A5dgls3Iej68Qjl3aIW-2S1Et1R7ceILhOYRLE6X3oYoQkDarD-b7kV_p4xCCSPyC0qj0n2zrBxMhfxfPLa2cWahbzUUhTdC3HvTG5yI0Q9be8zG4jUoztwTj0ROBus2sMB5WY9d2XadlD1CbkvwzWI6cEIyudNLc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+<div class="absolute bottom-3 left-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-[#00F0FF] text-xs">radar</span>
+<span class="font-label-mono text-[10px] text-[#00F0FF] uppercase tracking-widest">NETWORK_RELAY_STABLE</span>
+</div>
+</div>
+<!-- Action CTA -->
+<button class="w-full bg-primary-container text-on-primary-container font-headline-sm text-headline-sm uppercase py-4 flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+<span class="material-symbols-outlined">dashboard</span>
+                    VOLVER AL PANEL DE MISIONES
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 pb-4 px-2 bg-[#0C0C0C]/95 backdrop-blur-md border-t border-[#2D2D2D] shadow-[0_-4px_15px_rgba(0,240,255,0.1)]">
+<a class="flex flex-col items-center justify-center text-[#00F0FF] drop-shadow-[0_0_8px_rgba(0,240,255,0.6)] border-t-2 border-[#00F0FF] pt-2 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest">MISSIONS</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="route">route</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest">ACTIVE</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest">WALLET</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="fingerprint">fingerprint</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest">ID</span>
+</a>
+</nav>
+</body></html>

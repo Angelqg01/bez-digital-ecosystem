@@ -1,0 +1,11 @@
+.gcloudignore
+.git
+.gitignore
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.zip
+get-pip.py
+tests/

@@ -1,0 +1,12 @@
+{
+  "l1StartingBlockTag": "latest",
+  "l2ChainID": 2708, 
+  "l2BlockTime": 2, 
+  "useCustomGasToken": true,
+  "customGasTokenAddress": "DIRECCION_DE_TU_TOKEN_BEZ_EN_L1",
+  "gasPriceOracleOverhead": 2100,
+  "gasPriceOracleScalar": 1000000,
+  "batchSenderAddress": "TU_WALLET_BATCHER",
+  "p2pSequencerAddress": "TU_WALLET_SECUENCIADOR",
+  "proposerAddress": "TU_WALLET_PROPOSER"
+}

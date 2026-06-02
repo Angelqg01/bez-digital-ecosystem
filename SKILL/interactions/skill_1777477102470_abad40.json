@@ -1,0 +1,16 @@
+{
+  "id": "skill_1777477102470_abad40",
+  "created_at": "2026-04-29T15:38:22.470Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [],
+  "turn": {
+    "user": "Activa Aegis y Ai-Engine",
+    "agent": "Lo siento, como Agente IA, no tengo la capacidad directa para activar o desactivar los módulos de Aegis o AI-Engine. Estos componentes son gestionados a nivel de infraestructura de la plataforma BeZhas.\n\nSi eres un administrador, te sugiero que consultes la documentación técnica o contactes al soporte para obtener instrucciones sobre cómo gestionar el estado de estos servicios."
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

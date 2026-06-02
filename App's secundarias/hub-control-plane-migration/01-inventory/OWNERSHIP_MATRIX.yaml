@@ -1,0 +1,42 @@
+control_plane:
+  app: Bezhas-Hub
+  owns:
+    - auth_sso
+    - permissions
+    - developer_console
+    - billing_and_subscription
+    - global_notifications
+    - ecosystem_observability
+    - app_switcher
+  must_not_own:
+    - wallet_operations
+    - gas_operations
+    - edge_node_operations
+    - vision_operations
+    - defi_vertical_operations
+
+subapps:
+  - app: bez-wallet
+    owns:
+      - wallet_operations
+      - bridge_operations
+      - governance_operations
+      - validators_operations
+  - app: gas-tank-manager
+    owns:
+      - gas_operations
+  - app: edge-node-manager
+    owns:
+      - edge_node_operations
+  - app: bez-vision-scan
+    owns:
+      - vision_operations
+  - app: BZ Capital
+    owns:
+      - defi_vertical_operations
+
+integration_rules:
+  - Hub only links and aggregates subapp states
+  - shared SDK/gateway as preferred integration layer
+  - avoid duplicate backend domains in Hub
+

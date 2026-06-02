@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .heatmap-overlay {
+            background: radial-gradient(circle at 70% 60%, rgba(236, 91, 19, 0.6) 0%, rgba(236, 91, 19, 0) 50%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+<!-- Header -->
+<header class="flex items-center bg-background-light dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-10 border-b border-primary/10 p-4 justify-between">
+<div class="flex items-center gap-3">
+<div class="text-primary cursor-pointer">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">Asset Audit: #BZ-8829</h2>
+<p class="text-xs text-primary/70 font-medium">Logistics Center - Zone B4</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg p-2 bg-primary/10 text-primary border border-primary/20">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="flex items-center justify-center rounded-lg p-2 bg-primary/10 text-primary border border-primary/20">
+<span class="material-symbols-outlined">save</span>
+</button>
+</div>
+</header>
+<main class="flex-1 pb-24">
+<!-- 3D Scan Comparison Section -->
+<div class="px-4 py-4">
+<div class="flex items-center justify-between mb-3">
+<h4 class="text-primary text-xs font-bold uppercase tracking-widest">3D Scan Comparison</h4>
+<span class="px-2 py-0.5 rounded bg-primary text-[10px] text-white font-bold animate-pulse">LIVE ANALYSIS</span>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="relative aspect-[4/5] rounded-xl overflow-hidden border border-white/10 bg-slate-800">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Original logistics package scan perfectly square" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD2Ufy6u5ZDWvw-vOmwacvN8agKuy07lFViXn_NTV6aoNJcVbibLPuvUHFo3jXUpU3mEsDwobeLL8a9H_PGtxy8wdvroMC9GIt0OkZHeREYDSA71lgew6MVPLa9YtekXz4XuzTzKu8FjR6ggPdHNwwBvfSn6yCFBbErwZea3gE1QuzV4xpsZ2jcVGAFFb1ILHz5Ptdy6dTTEm8s1R3wNJOgYCN4QBP5UoeZlawjJzD143qYBx2cTgHjrpHp3etVRwZkRt1GyvVLonz1')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-3 left-3">
+<p class="text-[10px] font-bold text-primary uppercase">Source</p>
+<p class="text-xs font-medium text-white">Original (T-Minus 48h)</p>
+</div>
+<div class="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-md text-[9px] text-slate-300">
+<span class="material-symbols-outlined text-[12px]">view_in_ar</span> 3D MESH
+                        </div>
+</div>
+<div class="relative aspect-[4/5] rounded-xl overflow-hidden border border-primary/40 bg-slate-800">
+<div class="absolute inset-0 bg-cover bg-center grayscale" data-alt="Damaged logistics package scan showing deformation" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDo9Qsu6bsNV-FRbvpIYnYhpJyfBBv4J7mCzbDD8hl6uiasXxeWNPUCucMJP24qMhlUMGSJ-G8mzUMo_R4A3nBNAkmg8cfUOKoOTSqJlKkpcQPw7eQ08Y3HB3xZWTIlYmdYQhe9GPQOUA56LfeJqFI6ILcUHKpuEybn2D8kl-6oiVMaUfpahkN3ZkbdNKUpIB2km14Akofi1mszK8aqv14qZprq9n_SEUoBM8vN1JyXusNGOmUQvL6vPoi1k9y-Klzh48Kkl7enWJ-F')"></div>
+<!-- Damage Overlay (Heatmap) -->
+<div class="absolute inset-0 heatmap-overlay mix-blend-color-dodge"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-3 left-3">
+<p class="text-[10px] font-bold text-primary uppercase">Destination</p>
+<p class="text-xs font-medium text-white">Current (Detected Damage)</p>
+</div>
+<!-- Damage Indicators -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+<div class="w-12 h-12 rounded-full border-2 border-primary/80 animate-ping"></div>
+</div>
+<div class="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/80 backdrop-blur-md text-[9px] text-white">
+<span class="material-symbols-outlined text-[12px]">warning</span> ANOMALY
+                        </div>
+</div>
+</div>
+</div>
+<!-- Damage Detection Summary -->
+<section class="px-4 py-2">
+<div class="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">analytics</span>
+<h3 class="font-bold text-sm tracking-tight">Damage Detection Summary</h3>
+</div>
+<div class="grid grid-cols-3 gap-4">
+<div class="flex flex-col gap-1">
+<p class="text-[10px] text-slate-500 uppercase font-bold">Surface Def.</p>
+<p class="text-lg font-bold text-primary">12<span class="text-xs ml-0.5 font-medium">mm</span></p>
+</div>
+<div class="flex flex-col gap-1 border-x border-primary/10 px-4">
+<p class="text-[10px] text-slate-500 uppercase font-bold">Structural</p>
+<p class="text-lg font-bold text-slate-100">92<span class="text-xs ml-0.5 font-medium">%</span></p>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-[10px] text-slate-500 uppercase font-bold">AI Loss Est.</p>
+<p class="text-lg font-bold text-primary">$450</p>
+</div>
+</div>
+<div class="pt-3 border-t border-primary/10">
+<div class="flex items-center justify-between">
+<span class="text-xs text-slate-400">Scan Confidence Rating</span>
+<span class="text-xs font-bold text-emerald-500">99.8%</span>
+</div>
+<div class="w-full bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-emerald-500 h-full w-[99.8%]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Blockchain Verification -->
+<section class="px-4 py-4">
+<div class="bg-background-light dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 rounded-xl p-4">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">database</span>
+<h3 class="text-sm font-bold">Blockchain Verification</h3>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+<div class="size-2 rounded-full bg-emerald-500"></div>
+<span class="text-[10px] text-emerald-500 font-bold uppercase">Verified Chain</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<p class="text-xs text-slate-400 font-medium tracking-tight">Hash ID</p>
+<code class="text-[10px] font-mono bg-slate-800 text-slate-400 px-2 py-1 rounded">0x7B9...4F2A</code>
+</div>
+<div class="flex items-center justify-between">
+<p class="text-xs text-slate-400 font-medium tracking-tight">Custody Transfer</p>
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold text-slate-300">Carrier A</span>
+<span class="material-symbols-outlined text-[14px] text-primary">trending_flat</span>
+<span class="text-[11px] font-bold text-slate-300">Hub 04</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Footer Actions -->
+<div class="fixed bottom-16 left-0 right-0 p-4 grid grid-cols-2 gap-3 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-xl border-t border-primary/10">
+<button class="flex items-center justify-center gap-2 py-3 rounded-xl border border-primary text-primary font-bold text-sm bg-primary/5">
+<span class="material-symbols-outlined text-lg">gavel</span>
+                File Claim
+            </button>
+<button class="flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-lg">task_alt</span>
+                Approve &amp; Release
+            </button>
+</div>
+<!-- Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 flex border-t border-primary/10 bg-background-light dark:bg-background-dark/90 backdrop-blur-md px-4 pb-3 pt-2 h-16">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<p class="text-[10px] font-medium leading-none">Scans</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<p class="text-[10px] font-medium leading-none">Assets</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1" style="font-variation-settings: 'FILL' 1">security</span>
+<p class="text-[10px] font-bold leading-none">Audit</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">history</span>
+<p class="text-[10px] font-medium leading-none">History</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<p class="text-[10px] font-medium leading-none">Profile</p>
+</a>
+</nav>
+</div>
+</body></html>

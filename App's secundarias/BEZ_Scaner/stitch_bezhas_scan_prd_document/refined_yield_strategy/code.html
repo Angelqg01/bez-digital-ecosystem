@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Scan - Yield Strategy</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#160d08",
+                        "surface-dark": "#221610",
+                        "border-dark": "#3d261b",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .sparkline-up { stroke: #10b981; fill: none; stroke-width: 2; }
+        .sparkline-down { stroke: #ef4444; fill: none; stroke-width: 2; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header Navigation -->
+<header class="border-b border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark px-4 py-3 sticky top-0 z-50">
+<div class="max-w-7xl mx-auto flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="bg-primary p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-white text-2xl">account_balance_wallet</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-tight tracking-tight">BeZhas Scan</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">Yield Strategy Dashboard</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-background-dark rounded-full border border-slate-200 dark:border-border-dark">
+<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-xs font-medium uppercase tracking-wider">Mainnet Active</span>
+</div>
+<button class="material-symbols-outlined p-2 hover:bg-slate-100 dark:hover:bg-background-dark rounded-full">notifications</button>
+<button class="material-symbols-outlined p-2 hover:bg-slate-100 dark:hover:bg-background-dark rounded-full">settings</button>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-6">
+<!-- Strategy Overview Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-6 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Staked</p>
+<span class="material-symbols-outlined text-primary">token</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h2 class="text-3xl font-bold">$1,240,500.00</h2>
+<span class="text-emerald-500 text-sm font-bold">+2.5%</span>
+</div>
+<p class="text-xs text-slate-400 mt-2">Aggregated across 4 active pools</p>
+</div>
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-6 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Pending Rewards</p>
+<span class="material-symbols-outlined text-primary">redeem</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h2 class="text-3xl font-bold">42.50 BEZ</h2>
+<span class="text-slate-400 text-sm font-bold">≈ $1,215.00</span>
+</div>
+<button class="mt-4 w-full bg-primary/10 hover:bg-primary/20 text-primary font-bold py-2 rounded-lg transition-colors text-sm">
+                    Claim All Rewards
+                </button>
+</div>
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-6 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Average APY</p>
+<span class="material-symbols-outlined text-primary">trending_up</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h2 class="text-3xl font-bold">18.4%</h2>
+<span class="text-emerald-500 text-sm font-bold">+1.1%</span>
+</div>
+<div class="mt-4 h-2 bg-slate-100 dark:bg-background-dark rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[18.4%]"></div>
+</div>
+</div>
+</div>
+<!-- AI Optimization Section -->
+<div class="bg-primary/5 dark:bg-primary/10 border border-primary/20 p-6 rounded-xl">
+<div class="flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex gap-4 items-start">
+<div class="bg-primary p-3 rounded-xl">
+<span class="material-symbols-outlined text-white">psychology</span>
+</div>
+<div>
+<h3 class="text-lg font-bold flex items-center gap-2">
+                            AI Yield Optimizer 
+                            <span class="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest font-bold">Active Logic</span>
+</h3>
+<p class="text-sm text-slate-600 dark:text-slate-400 max-w-2xl mt-1">
+                            Automatically rebalances your assets across pools based on <b>Rol Central de la IA</b> real-time volatility tracking and gas-optimized execution. Currently favoring BEZ/MATIC Farming.
+                        </p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-14 h-7 bg-slate-300 dark:bg-border-dark peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<!-- Active Pools Table -->
+<div class="space-y-4">
+<h3 class="text-xl font-bold px-1">Active Yield Pools</h3>
+<div class="overflow-x-auto">
+<div class="inline-block min-w-full align-middle">
+<div class="overflow-hidden border border-slate-200 dark:border-border-dark rounded-xl bg-white dark:bg-surface-dark">
+<table class="min-w-full divide-y divide-slate-200 dark:divide-border-dark">
+<thead class="bg-slate-50 dark:bg-background-dark/50">
+<tr>
+<th class="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pool &amp; Contract</th>
+<th class="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Stability</th>
+<th class="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">APY</th>
+<th class="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">TVL</th>
+<th class="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-border-dark">
+<!-- Pool 1 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-background-dark/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center">
+<div class="h-10 w-10 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">apartment</span>
+</div>
+<div class="ml-4">
+<div class="text-sm font-bold">BeZhasVault (Real Estate)</div>
+<div class="text-[10px] font-mono text-slate-400 uppercase">Vault v2.0: 0x8f...e342</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<svg class="w-24 h-8" viewbox="0 0 100 30">
+<polyline class="sparkline-up" points="0,20 10,22 20,18 30,15 40,17 50,10 60,12 70,5 80,8 90,4 100,6"></polyline>
+</svg>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="text-sm font-bold text-emerald-500">12.4%</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="text-sm font-medium">$42.8M</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex justify-end gap-2">
+<button class="px-3 py-1.5 rounded bg-primary text-white text-xs font-bold">Stake</button>
+<button class="px-3 py-1.5 rounded border border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-background-dark text-xs font-bold">Unstake</button>
+</div>
+</td>
+</tr>
+<!-- Pool 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-background-dark/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center">
+<div class="h-10 w-10 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">agriculture</span>
+</div>
+<div class="ml-4">
+<div class="text-sm font-bold">Liquidity Farming (BEZ/MATIC)</div>
+<div class="text-[10px] font-mono text-slate-400 uppercase">Farming v1.2: 0x4a...b911</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<svg class="w-24 h-8" viewbox="0 0 100 30">
+<polyline class="sparkline-down" points="0,5 15,10 30,8 45,20 60,18 75,25 90,22 100,28"></polyline>
+</svg>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="text-sm font-bold text-primary">34.2%</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="text-sm font-medium">$8.2M</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex justify-end gap-2">
+<button class="px-3 py-1.5 rounded bg-primary text-white text-xs font-bold">Stake</button>
+<button class="px-3 py-1.5 rounded border border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-background-dark text-xs font-bold">Unstake</button>
+</div>
+</td>
+</tr>
+<!-- Pool 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-background-dark/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center">
+<div class="h-10 w-10 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">verified_user</span>
+</div>
+<div class="ml-4">
+<div class="text-sm font-bold">Logistics Quality Escrow Staking</div>
+<div class="text-[10px] font-mono text-slate-400 uppercase">Vault v1.0: 0x22...cf94</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<svg class="w-24 h-8" viewbox="0 0 100 30">
+<polyline class="sparkline-up" points="0,15 20,15 40,16 60,14 80,15 100,15"></polyline>
+</svg>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="text-sm font-bold text-emerald-500">8.9%</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="text-sm font-medium">$115.4M</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex justify-end gap-2">
+<button class="px-3 py-1.5 rounded bg-primary text-white text-xs font-bold">Stake</button>
+<button class="px-3 py-1.5 rounded border border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-background-dark text-xs font-bold">Unstake</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<!-- System Status Footer Component-like Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+<div class="bg-white dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-border-dark flex gap-4">
+<div class="text-primary">
+<span class="material-symbols-outlined text-3xl">terminal</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Real-time Oracle Status</h4>
+<p class="text-xs text-slate-500 mt-1">Primary Feed: Decentralized Node Cluster 04 (BEZ/USD)</p>
+<div class="flex gap-1 mt-2">
+<div class="h-1 flex-1 bg-emerald-500 rounded-full"></div>
+<div class="h-1 flex-1 bg-emerald-500 rounded-full"></div>
+<div class="h-1 flex-1 bg-emerald-500 rounded-full"></div>
+<div class="h-1 flex-1 bg-emerald-500 rounded-full"></div>
+<div class="h-1 flex-1 bg-slate-200 dark:bg-border-dark rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-border-dark flex gap-4">
+<div class="text-primary">
+<span class="material-symbols-outlined text-3xl">history_edu</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Audited by BeZhasSec</h4>
+<p class="text-xs text-slate-500 mt-1">Vault v2.0 Certificate: 2023-V2-SEC-4512-B (Passed)</p>
+<a class="text-[10px] text-primary underline mt-2 inline-block" href="#">View Security Report</a>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="border-t border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark px-4 pb-6 pt-2 sticky bottom-0 z-50">
+<div class="max-w-md mx-auto flex justify-around">
+<a class="flex flex-col items-center gap-1 text-slate-400 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">grid_view</span>
+<p class="text-[10px] font-medium uppercase tracking-tighter">Dashboard</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">trending_up</span>
+<p class="text-[10px] font-medium uppercase tracking-tighter">Strategy</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">radar</span>
+<p class="text-[10px] font-medium uppercase tracking-tighter">Scanner</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">account_balance_wallet</span>
+<p class="text-[10px] font-medium uppercase tracking-tighter">Wallet</p>
+</a>
+</div>
+</nav>
+</body></html>

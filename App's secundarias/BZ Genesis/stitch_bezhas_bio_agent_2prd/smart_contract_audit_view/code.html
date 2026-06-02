@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Bio-Agent | Smart Contract Audit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                        "neutral-800": "#1a2a33",
+                        "neutral-900": "#0d161a",
+                        "success": "#10b981"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Space Grotesk', sans-serif; }
+        .glass-panel {
+            background: rgba(26, 42, 51, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(37, 175, 244, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen pb-24">
+<!-- Header Section -->
+<header class="sticky top-0 z-50 bg-background-dark/80 backdrop-blur-md border-b border-primary/10 px-4 py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-3xl">shield</span>
+<div>
+<h1 class="text-xl font-bold tracking-tight">Smart Contract Audit</h1>
+<div class="flex items-center gap-1.5">
+<span class="size-2 rounded-full bg-success"></span>
+<span class="text-[10px] uppercase tracking-widest text-success font-bold">Network Verified</span>
+</div>
+</div>
+</div>
+<button class="p-2 rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined">search</span>
+</button>
+</header>
+<main class="p-4 space-y-6 max-w-2xl mx-auto">
+<!-- Contract Info Card -->
+<section class="glass-panel rounded-xl p-5 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl">terminal</span>
+</div>
+<div class="flex flex-col gap-4 relative z-10">
+<div class="flex items-start gap-4">
+<div class="size-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary text-3xl">integration_instructions</span>
+</div>
+<div>
+<h2 class="text-xl font-bold">Escrow &amp; Compliance Protocol v2.4</h2>
+<p class="text-sm text-slate-400 font-mono mt-1">0x71C7656EC7ab88b098defB751B...f6d8976F</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 rounded-full bg-success/20 text-success text-xs font-bold border border-success/30 uppercase tracking-tighter">Status: Active &amp; Verified</span>
+<span class="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold border border-primary/30 uppercase tracking-tighter">Mainnet-Alpha</span>
+</div>
+<button class="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-sm font-bold border border-slate-700">
+                    Copy Contract Address
+                </button>
+</div>
+</section>
+<!-- Code Integrity -->
+<section>
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">Code Integrity</h3>
+<div class="bg-neutral-900 border border-primary/10 rounded-xl p-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">data_object</span>
+</div>
+<div>
+<p class="text-sm font-medium">Verified Source Code</p>
+<p class="text-xs text-slate-500 font-mono">SHA-256: 8f32...a10b</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-success">check_circle</span>
+</div>
+</section>
+<!-- Oracle Verification -->
+<section class="glass-panel rounded-xl p-5 border-l-4 border-l-primary">
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary mb-4">Oracle Verification</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<p class="text-[10px] text-slate-500 uppercase font-bold">IoT Sensor Feed</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">thermostat</span>
+<span class="text-sm font-mono">Temp: -78.4°C</span>
+</div>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] text-slate-500 uppercase font-bold">Image Hash (PSNR)</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">camera</span>
+<span class="text-sm font-mono">34.2 dB</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-primary/10 flex items-center gap-2">
+<span class="material-symbols-outlined text-xs text-slate-400">key</span>
+<p class="text-[10px] text-slate-500 italic">Cryptographically signed by BioSensor-Node-09</p>
+</div>
+</section>
+<!-- Audit Log / Event Stream -->
+<section>
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4 px-1">Live Audit Stream</h3>
+<div class="space-y-4">
+<!-- Log Item 1 -->
+<div class="relative pl-6 border-l border-primary/20">
+<div class="absolute -left-[5px] top-1.5 size-2.5 rounded-full bg-primary shadow-[0_0_8px_#25aff4]"></div>
+<div class="bg-neutral-900/50 p-3 rounded-lg border border-slate-800">
+<p class="text-sm font-medium text-slate-200">Escrow Triggered: Thermal Degradation</p>
+<p class="text-xs text-slate-500 mt-1">Lot VAX-0992 | Block #19,442,102</p>
+</div>
+</div>
+<!-- Log Item 2 -->
+<div class="relative pl-6 border-l border-primary/20">
+<div class="absolute -left-[5px] top-1.5 size-2.5 rounded-full bg-slate-700"></div>
+<div class="bg-neutral-900/50 p-3 rounded-lg border border-slate-800">
+<p class="text-sm font-medium text-slate-200">Payment Released: Data License</p>
+<p class="text-xs text-slate-500 mt-1">Agreement #402 finalized | TxID: 0x9f...a2</p>
+</div>
+</div>
+<!-- Log Item 3 -->
+<div class="relative pl-6 border-l border-primary/20">
+<div class="absolute -left-[5px] top-1.5 size-2.5 rounded-full bg-slate-700"></div>
+<div class="bg-neutral-900/50 p-3 rounded-lg border border-slate-800">
+<p class="text-sm font-medium text-slate-200">Access Revoked: Trial ID Expired</p>
+<p class="text-xs text-slate-500 mt-1">Node 0x821... expired session</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Action Button -->
+<div class="pt-4">
+<button class="w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all">
+<span class="material-symbols-outlined">explore</span>
+                View on Block Explorer
+            </button>
+</div>
+</main>
+<!-- Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-primary/10 px-6 py-3 flex items-center justify-between z-50">
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Dash</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Logs</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">description</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Contracts</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Alerts</span>
+</a>
+</nav>
+</body></html>

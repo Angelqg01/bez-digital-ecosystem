@@ -1,0 +1,41 @@
+environments:
+  dev:
+    gateway_base_url: http://localhost:3001
+    hub_frontend_url: http://localhost:3000
+    subapps:
+      wallet: http://localhost:3010
+      gas: http://localhost:3011
+      nodes: http://localhost:3012
+      vision: http://localhost:3013
+      capital: http://localhost:3014
+  staging:
+    gateway_base_url: https://staging-api.bez.digital
+  production:
+    gateway_base_url: https://api.bez.digital
+
+required_route_groups:
+  - /api/health
+  - /api/auth
+  - /api/wallet
+  - /api/gas
+  - /api/nodes
+  - /api/vision
+  - /api/contracts
+  - /api/mcp
+
+hub_required_modules:
+  - auth_sso
+  - app_switcher
+  - global_notifications
+  - global_settings
+  - developer_console
+  - billing_subscription
+  - observability_dashboard
+
+deprecation_candidates_in_hub:
+  - wallet_runtime_pages
+  - gas_runtime_pages
+  - edge_node_runtime_pages
+  - vision_runtime_pages
+  - defi_runtime_pages
+

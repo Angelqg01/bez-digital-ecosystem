@@ -1,0 +1,144 @@
+# ─────────────────────────────────────────────────────
+#  BeZhas Monitoring Stack
+#  Run:  docker compose -f monitoring/docker-compose.monitoring.yml up -d
+# ─────────────────────────────────────────────────────
+services:
+
+  # ── Prometheus ──────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: bezhas-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - bezhas-net
+
+  # ── Alertmanager ────────────────────────────────────
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: bezhas-alertmanager
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - bezhas-net
+
+  # ── Grafana ─────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: bezhas-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-bezhas2026}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3030:3000"
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - bezhas-net
+
+  # ── Loki (Log aggregation) ─────────────────────────
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: bezhas-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+    networks:
+      - bezhas-net
+
+  # ── Promtail (Log collector) ───────────────────────
+  promtail:
+    image: grafana/promtail:3.1.0
+    container_name: bezhas-promtail
+    restart: unless-stopped
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - bezhas-net
+
+  # ── Node Exporter (host metrics) ───────────────────
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: bezhas-node-exporter
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    ports:
+      - "9100:9100"
+    networks:
+      - bezhas-net
+
+  # ── Redis Exporter ─────────────────────────────────
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.61.0
+    container_name: bezhas-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    ports:
+      - "9121:9121"
+    networks:
+      - bezhas-net
+
+  # ── PostgreSQL Exporter ────────────────────────────
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: bezhas-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-bezhas}:${POSTGRES_PASSWORD:-bezhas_secret}@postgres:5432/${POSTGRES_DB:-bezhas}?sslmode=disable
+    ports:
+      - "9187:9187"
+    networks:
+      - bezhas-net
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  alertmanager-data:
+
+
+networks:
+  bezhas-net:
+    external: true
+    name: bezhas-blockchain_default

@@ -1,0 +1,20 @@
+{
+  "id": "skill_1777477659286_c7ee70",
+  "created_at": "2026-04-29T15:47:39.286Z",
+  "channel": "hub-chat",
+  "provider": "intent",
+  "intent": "command",
+  "tags": [
+    "defi",
+    "nft",
+    "blockchain"
+  ],
+  "turn": {
+    "user": "/bots",
+    "agent": "🤖 **Bots Departamentales BeZhas**\n\n✅ CEO: Dirección estratégica\n✅ CFO: Tesorería, staking, P&L\n✅ CMO: Growth, campañas, SDR\n✅ DevOps: Infraestructura, seguridad, deploy\n✅ Legal: Cumplimiento, contratos, fiscalidad\n\nNota: Telegram no permite que un bot hable como usuario con otros bots. BeZhasCEOBot coordina usando los tokens departamentales para enviarte reportes desde cada identidad al chat autorizado."
+  },
+  "context": {
+    "userId": "web-chat",
+    "role": "admin"
+  }
+}

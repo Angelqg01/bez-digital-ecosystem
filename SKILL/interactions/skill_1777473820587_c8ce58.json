@@ -1,0 +1,19 @@
+{
+  "id": "skill_1777473820587_c8ce58",
+  "created_at": "2026-04-29T14:43:40.587Z",
+  "channel": "codex-test",
+  "provider": "intent",
+  "intent": "command",
+  "tags": [
+    "sector",
+    "help"
+  ],
+  "turn": {
+    "user": "/health",
+    "agent": "✅ Runtime v0.5.0 — Operativo\n🔧 24 herramientas\n📋 8 comandos\n🧠 Memoria: activa\n📡 Agente: activo"
+  },
+  "context": {
+    "userId": "test:codex",
+    "role": "admin"
+  }
+}

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                        "surface-dark": "#2d1f18",
+                        "border-dark": "#453228",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>BeZhas Scan - All Scans Audit List</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-dark px-6 lg:px-10 py-3 bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">star_rate</span>
+<h2 class="text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em]">BeZhas Scan</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-400 hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-slate-100 border-b-2 border-primary pb-1 text-sm font-medium" href="#">All Scans</a>
+<a class="text-slate-400 hover:text-primary text-sm font-medium transition-colors" href="#">Audits</a>
+<a class="text-slate-400 hover:text-primary text-sm font-medium transition-colors" href="#">Reports</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4 lg:gap-8 items-center">
+<label class="hidden sm:flex flex-col min-w-40 h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full overflow-hidden border border-border-dark">
+<div class="text-slate-400 flex bg-surface-dark items-center justify-center pl-4">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none bg-surface-dark text-slate-100 focus:ring-0 placeholder:text-slate-500 px-4 text-sm font-normal" placeholder="Search Assets or Hashes..."/>
+</div>
+</label>
+<div class="flex items-center gap-3">
+<div class="hidden sm:block text-right">
+<p class="text-xs font-bold text-slate-100">BeZhas Admin</p>
+<p class="text-[10px] text-primary uppercase tracking-wider">Audit Mode Active</p>
+</div>
+<div class="bg-primary/20 p-0.5 rounded-full border border-primary/50">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9" data-alt="User profile avatar for admin" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD9YmBGqFYeTHpepW1T0bGXVRQ79d1rVyDhKUb2sa40MI-MkhGZ1SQwJxxbgFxgUG0WZhFz2QxQBMrBYmgbHuBmgnqjH_neSxvTzCezfk96hhx8zdWEUmA3Z2RAa91klJXe6Oi0_oyIiHxVKeJxU6KZgKLaWusb99DPJGY4FktVxtXkZppESNgBZWo-m2jLYO1ovHTKBal64sXrhYU_uKYmQ0NRIh8nAkue3y2Avl8HMxbqxgnnCgE1pwrtdvsy3VnKKR3MTGIQ71Gd");'></div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 flex flex-col lg:flex-row">
+<!-- Sidebar Navigation -->
+<aside class="w-full lg:w-64 border-r border-border-dark bg-background-dark/50 p-4 flex flex-col gap-2">
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-dark text-slate-400 transition-all cursor-pointer">
+<span class="material-symbols-outlined">dashboard</span>
+<p class="text-sm font-medium">Overview</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 transition-all cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">qr_code_scanner</span>
+<p class="text-sm font-bold">Scans</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-dark text-slate-400 transition-all cursor-pointer">
+<span class="material-symbols-outlined">link</span>
+<p class="text-sm font-medium">Blockchain</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-dark text-slate-400 transition-all cursor-pointer">
+<span class="material-symbols-outlined">psychology</span>
+<p class="text-sm font-medium">AI Insights</p>
+</div>
+<div class="mt-auto border-t border-border-dark pt-4">
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-dark text-slate-400 transition-all cursor-pointer">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-sm font-medium">Settings</p>
+</div>
+</div>
+</aside>
+<!-- Content Area -->
+<section class="flex-1 p-4 lg:p-8 flex flex-col gap-6">
+<!-- Header Actions -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
+<h1 class="text-3xl font-black text-slate-100 tracking-tight">Audit Log</h1>
+<p class="text-slate-500 text-sm">Real-time surveillance for Logistics and RWA asset tokenization.</p>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 rounded-xl h-10 px-4 bg-surface-dark text-slate-200 text-sm font-bold border border-border-dark hover:bg-border-dark transition-all">
+<span class="material-symbols-outlined text-lg">download</span>
+<span>Export CSV</span>
+</button>
+<button class="flex items-center gap-2 rounded-xl h-10 px-4 bg-primary text-slate-100 text-sm font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-lg">add</span>
+<span>New Audit Scan</span>
+</button>
+</div>
+</div>
+<!-- Filters -->
+<div class="flex flex-wrap gap-3 items-center">
+<div class="flex items-center gap-2 bg-surface-dark border border-border-dark rounded-xl px-3 py-1.5">
+<span class="text-[10px] uppercase font-bold text-slate-500">Scan Type:</span>
+<button class="flex items-center gap-1 text-slate-200 text-sm font-medium">
+                        All Types
+                        <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+<div class="flex items-center gap-2 bg-surface-dark border border-border-dark rounded-xl px-3 py-1.5">
+<span class="text-[10px] uppercase font-bold text-slate-500">Status:</span>
+<button class="flex items-center gap-1 text-slate-200 text-sm font-medium">
+                        Verified Only
+                        <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+<div class="flex items-center gap-2 bg-surface-dark border border-border-dark rounded-xl px-3 py-1.5">
+<span class="text-[10px] uppercase font-bold text-slate-500">Date Range:</span>
+<button class="flex items-center gap-1 text-slate-200 text-sm font-medium">
+                        Last 24 Hours
+                        <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+<div class="ml-auto flex items-center gap-2 text-slate-500">
+<span class="text-xs">Showing 1-10 of 1,248 results</span>
+</div>
+</div>
+<!-- High-Density Data Table -->
+<div class="w-full overflow-x-auto rounded-xl border border-border-dark bg-surface-dark/30">
+<table class="w-full text-left border-collapse min-w-[1000px]">
+<thead>
+<tr class="border-b border-border-dark bg-surface-dark/50">
+<th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Asset Name</th>
+<th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Type</th>
+<th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Timestamp</th>
+<th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+<th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Blockchain Hash</th>
+<th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center">AI Audit Score</th>
+<th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-dark">
+<!-- Row 1 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-cover bg-center border border-border-dark" data-alt="Industrial cargo container shipping asset" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCRug54Shz2jsLbWDIXQYfSDA6RVA94P9USGwC4-gV4rsIpdbCpAyziOoxR5NkogK88T_BWCHlu6c3Ix8wsOATQMhghgrwIqdU1l55eKqpEc1vYqWZgXrXATLZ3H4xMj-FrJJ1wy5CwrpTEDeYAvNE7gx6HYvgyECasCRZ2t_iFqz-F00rybNRXIhcBpQc3-TvdAfclJms0zTqqfrOA_ex1iXUtOfCwiITjW1XXOJIOAOIrNgvWViKpUckSQzVTXnQahLWoyMo0iQU7');"></div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-100">Cargo Unit #882-LX</span>
+<span class="text-[10px] text-slate-500 font-mono uppercase tracking-tighter">SKU: LOG-RT-4421</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-widest">Logistic</span>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-col">
+<span class="text-xs text-slate-300">Oct 24, 2023</span>
+<span class="text-[10px] text-slate-500">14:22:10 GMT</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-1.5 text-emerald-400">
+<span class="material-symbols-outlined text-sm">verified</span>
+<span class="text-xs font-bold">Verified</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<code class="text-[11px] text-slate-400 font-mono bg-background-dark px-2 py-1 rounded border border-border-dark">0x4a2c...8f12</code>
+</td>
+<td class="px-4 py-3 text-center">
+<div class="inline-flex items-center justify-center size-9 rounded-full border-2 border-emerald-500/50 bg-emerald-500/10">
+<span class="text-xs font-black text-emerald-400">98</span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<button class="px-3 py-1.5 bg-primary/20 text-primary text-[11px] font-bold rounded-lg border border-primary/30 hover:bg-primary hover:text-white transition-all">Compare</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-cover bg-center border border-border-dark" data-alt="Modern commercial office building architectural scan" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBVa_RdaUbSwUARQQaRosFni1Wn47gnGdsWoG19l8wxPEQWePatpCs8x8UrfcbL7zTIZ21II5qznobcRcJ2G8FHlAVByEjjymhyen8NeXUtqOn7z6tppNYbEtEgezYeEDlFyUH2GcYtLvHvT6VxZjnyetqg8TxKxh5TW_i-fDnY_GSc-GU0RHM1p5nusreXLgsnJVjBnSc8VLjqV1uYpVtUCW8LoVWVaeYL4SGbfEEOft0uWN0E6oe0hZL7xScCkHRctrQNTfAoAHfY');"></div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-100">Skyline Plaza B-4</span>
+<span class="text-[10px] text-slate-500 font-mono uppercase tracking-tighter">REF: RWA-RE-009</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase tracking-widest">Real Estate</span>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-col">
+<span class="text-xs text-slate-300">Oct 24, 2023</span>
+<span class="text-[10px] text-slate-500">13:05:45 GMT</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-1.5 text-amber-400">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span class="text-xs font-bold">Warning</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<code class="text-[11px] text-slate-400 font-mono bg-background-dark px-2 py-1 rounded border border-border-dark">0x9e12...b66a</code>
+</td>
+<td class="px-4 py-3 text-center">
+<div class="inline-flex items-center justify-center size-9 rounded-full border-2 border-amber-500/50 bg-amber-500/10">
+<span class="text-xs font-black text-amber-400">72</span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<button class="px-3 py-1.5 bg-primary/20 text-primary text-[11px] font-bold rounded-lg border border-primary/30 hover:bg-primary hover:text-white transition-all">Compare</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-cover bg-center border border-border-dark" data-alt="Advanced medical MRI imaging machine" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuATbN9fFRv5gY2ba8U6yWWVWOCke8n1TVKF7jJUrcav66zZAdNjnaZJ7D6QBcwWy10jVacFUDT4EX46YqRUR6kzInz3XdSaxbnbkqcQ4aS5eF2H6yP55oYxkAPCgSV4x6viHVW-Ryh9fWoYc6eFEWEEBiw2-Z7MtR6jTUR_vj0sbFv7vx9ksMBShqaEJy0RDyuEi1avLVmxFY7xvZeUECyxV0JGmj64fqHH3Hd9WPYy6HuBVekVaQeEFpO7Fvio_VUNw_P4qy2eM4b0');"></div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-100">Quantum MRI-X1</span>
+<span class="text-[10px] text-slate-500 font-mono uppercase tracking-tighter">UID: MED-EQ-9102</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase tracking-widest">Medical</span>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-col">
+<span class="text-xs text-slate-300">Oct 23, 2023</span>
+<span class="text-[10px] text-slate-500">23:59:12 GMT</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-1.5 text-slate-500">
+<span class="material-symbols-outlined text-sm">pending</span>
+<span class="text-xs font-bold">Pending</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<code class="text-[11px] text-slate-400 font-mono bg-background-dark px-2 py-1 rounded border border-border-dark">0xbc3d...7c41</code>
+</td>
+<td class="px-4 py-3 text-center">
+<div class="inline-flex items-center justify-center size-9 rounded-full border-2 border-slate-500/50 bg-slate-500/10">
+<span class="text-xs font-black text-slate-400">--</span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<button class="px-3 py-1.5 bg-primary/20 text-primary text-[11px] font-bold rounded-lg border border-primary/30 hover:bg-primary hover:text-white transition-all">Compare</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-cover bg-center border border-border-dark" data-alt="Global shipping logistics freighter ship" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDeby2zjarxRb9Q4n438D07QSEOfhQOdXQfmI89S9Y7TqTzKoQpQEe0ivkPFGo6J-scLa0ew3s8cunogAzlW98D3aQCVBMAITge2OIu1xrD9UIGk_hYdqdqBoXdseLEEswxDJ_NQYI9WWyrATMi8PBsaOjyB3LIKhnTz_4ZgIjjC3HqmyLsjE7Z5dtymaY9CcI2QlhA853fyjJLFBNYC4iZ_i3YllDgKf1NlW7ay6fD2uvsJVXS_4gA4uMqQACOflVpAFbEbIJyF9ST');"></div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-100">Horizon Freighter 5</span>
+<span class="text-[10px] text-slate-500 font-mono uppercase tracking-tighter">SKU: LOG-SH-8812</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-widest">Logistic</span>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-col">
+<span class="text-xs text-slate-300">Oct 23, 2023</span>
+<span class="text-[10px] text-slate-500">21:15:30 GMT</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-1.5 text-emerald-400">
+<span class="material-symbols-outlined text-sm">verified</span>
+<span class="text-xs font-bold">Verified</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<code class="text-[11px] text-slate-400 font-mono bg-background-dark px-2 py-1 rounded border border-border-dark">0xf3e2...d912</code>
+</td>
+<td class="px-4 py-3 text-center">
+<div class="inline-flex items-center justify-center size-9 rounded-full border-2 border-emerald-500/50 bg-emerald-500/10">
+<span class="text-xs font-black text-emerald-400">92</span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<button class="px-3 py-1.5 bg-primary/20 text-primary text-[11px] font-bold rounded-lg border border-primary/30 hover:bg-primary hover:text-white transition-all">Compare</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-cover bg-center border border-border-dark" data-alt="Commercial retail property storefront" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC591pH4LAUXvF8d5OwqYf_PpG6XfEvQvfDqlab6ofbpF-4syHli33Zg4K5_O3CzLplu8Avf8DCKB6QblamfNhHcf61leOpryGyY9hMZYnVPAwqf5o5wcXplZ_Ibq0jn383ADdr7N-PhGC4KXvSzLq-wyC7zPGhveLm90i5v-VAoGTDHQTa2PxcsxbmKBRoQaylXGrqH4Ebm-OqSj6pdY_RKWnobG47gvRRWTNFqN13A2L8Ku6w_gShYRWbnzo7XnhSYD__gF7jsPE4');"></div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-100">Downtown Retail Hub</span>
+<span class="text-[10px] text-slate-500 font-mono uppercase tracking-tighter">REF: RWA-RE-771</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase tracking-widest">Real Estate</span>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-col">
+<span class="text-xs text-slate-300">Oct 23, 2023</span>
+<span class="text-[10px] text-slate-500">18:44:02 GMT</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-1.5 text-emerald-400">
+<span class="material-symbols-outlined text-sm">verified</span>
+<span class="text-xs font-bold">Verified</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<code class="text-[11px] text-slate-400 font-mono bg-background-dark px-2 py-1 rounded border border-border-dark">0x7a8b...cc33</code>
+</td>
+<td class="px-4 py-3 text-center">
+<div class="inline-flex items-center justify-center size-9 rounded-full border-2 border-emerald-500/50 bg-emerald-500/10">
+<span class="text-xs font-black text-emerald-400">89</span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<button class="px-3 py-1.5 bg-primary/20 text-primary text-[11px] font-bold rounded-lg border border-primary/30 hover:bg-primary hover:text-white transition-all">Compare</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2">
+<div class="flex gap-1">
+<button class="size-8 flex items-center justify-center rounded-lg border border-border-dark bg-surface-dark text-slate-400 hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-primary text-white text-xs font-bold">1</button>
+<button class="size-8 flex items-center justify-center rounded-lg border border-border-dark text-slate-400 text-xs font-bold hover:bg-surface-dark transition-all">2</button>
+<button class="size-8 flex items-center justify-center rounded-lg border border-border-dark text-slate-400 text-xs font-bold hover:bg-surface-dark transition-all">3</button>
+<span class="size-8 flex items-center justify-center text-slate-500 text-xs font-bold">...</span>
+<button class="size-8 flex items-center justify-center rounded-lg border border-border-dark text-slate-400 text-xs font-bold hover:bg-surface-dark transition-all">125</button>
+<button class="size-8 flex items-center justify-center rounded-lg border border-border-dark bg-surface-dark text-slate-400 hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xs text-slate-500">Go to page:</span>
+<input class="w-12 h-8 rounded-lg bg-surface-dark border-border-dark text-center text-xs text-slate-100" type="text" value="1"/>
+<button class="h-8 px-4 bg-surface-dark rounded-lg text-xs font-bold text-slate-300 border border-border-dark">Jump</button>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body></html>

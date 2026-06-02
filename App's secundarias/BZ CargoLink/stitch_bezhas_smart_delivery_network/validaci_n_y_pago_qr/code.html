@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VALIDATOR_TERMINAL - Mission Completion</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary": "#00363a",
+                      "primary": "#dbfcff",
+                      "outline": "#849495",
+                      "tertiary-fixed": "#ffdad3",
+                      "on-surface": "#e5e2e1",
+                      "surface-variant": "#353534",
+                      "error-container": "#93000a",
+                      "surface-container-highest": "#353534",
+                      "inverse-on-surface": "#313030",
+                      "surface-container": "#201f1f",
+                      "tertiary": "#fff3f1",
+                      "tertiary-fixed-dim": "#ffb4a5",
+                      "outline-variant": "#3b494b",
+                      "error": "#ffb4ab",
+                      "surface-dim": "#131313",
+                      "on-background": "#e5e2e1",
+                      "primary-fixed-dim": "#00dbe9",
+                      "surface-container-low": "#1c1b1b",
+                      "on-secondary-fixed-variant": "#095300",
+                      "on-surface-variant": "#b9cacb",
+                      "surface": "#131313",
+                      "background": "#131313",
+                      "on-tertiary-fixed": "#3e0400",
+                      "secondary": "#d7ffc5",
+                      "on-primary-fixed-variant": "#004f54",
+                      "surface-bright": "#393939",
+                      "primary-container": "#00f0ff",
+                      "on-tertiary": "#650b00",
+                      "on-tertiary-container": "#b91e00",
+                      "primary-fixed": "#7df4ff",
+                      "on-tertiary-fixed-variant": "#8e1400",
+                      "inverse-primary": "#006970",
+                      "surface-container-lowest": "#0e0e0e",
+                      "on-secondary-fixed": "#022100",
+                      "secondary-fixed": "#79ff5b",
+                      "secondary-container": "#2ff801",
+                      "surface-container-high": "#2a2a2a",
+                      "on-secondary": "#053900",
+                      "on-primary-container": "#006970",
+                      "tertiary-container": "#ffcec4",
+                      "on-error-container": "#ffdad6",
+                      "on-primary-fixed": "#002022",
+                      "surface-tint": "#00dbe9",
+                      "on-secondary-container": "#0f6d00",
+                      "inverse-surface": "#e5e2e1",
+                      "on-error": "#690005",
+                      "secondary-fixed-dim": "#2ae500"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin": "20px",
+                      "stack-lg": "32px",
+                      "stack-sm": "8px",
+                      "stack-md": "16px",
+                      "gutter": "16px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Space Grotesk"],
+                      "data-display": ["Space Grotesk"],
+                      "headline-lg": ["Space Grotesk"],
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "label-mono": ["Space Grotesk"],
+                      "headline-sm": ["Space Grotesk"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "data-display": ["20px", {"lineHeight": "1", "letterSpacing": "0px", "fontWeight": "700"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "label-mono": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "headline-sm": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 240, 255, 0.05) 50%);
+            background-size: 100% 4px;
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-5 h-16 bg-[#0C0C0C] dark:bg-[#0C0C0C] border-b border-[#2D2D2D]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#00F0FF]" data-icon="terminal">terminal</span>
+<h1 class="text-[#00F0FF] font-black tracking-widest text-lg font-['Space_Grotesk'] uppercase tracking-tighter">VALIDATOR_TERMINAL</h1>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-[#00F0FF] ring-1 ring-[#00F0FF] transition-all">
+<img alt="Validator Profile" data-alt="A close-up portrait of a high-tech logistics operator wearing a sleek, matte black helmet with a digital visor that displays glowing cyan data patterns. The background is a dimly lit, industrial control room with cool blue ambient lighting. The aesthetic is professional, sharp, and futuristic, aligning with a cyberpunk tech-industrial theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCocKwIQ4hKPFmQpQNhdTI20Ly_dxWcmDPGJnSw9VKscQJzEc3PhVLNUa4YD9pu8Mg7ZPJrCqlnJ1_mSSdQYYcw7rdkbeqmyDa9iTrhzC4AXwlNFovxjvQXGN9y17JoA0tHJDX4gTOp6Kmdjs876BwnjEkVmx03gEm0dIYuPr4Mb2qOaGTaCRPKFxXq6EGRWIXVo641ywQvdF4uQXvKcMAmViKlAy2s_Kl6nxzTCV2JYVR-XB-BUnz71DS6YX0Nf6kdtMZiW4KJJ44"/>
+</div>
+</header>
+<main class="pt-20 pb-28 px-margin max-w-md mx-auto min-h-screen scanline">
+<!-- Verification Header -->
+<div class="mb-stack-lg text-center">
+<div class="inline-block px-3 py-1 border border-[#2D2D2D] bg-surface-container-low mb-stack-sm">
+<span class="font-label-mono text-label-mono text-primary-container uppercase">Mission ID: #BX-992-ALPHA</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface uppercase tracking-tight">Proof of Receipt</h2>
+</div>
+<!-- Central QR Code Block -->
+<div class="relative bg-surface-container-high border border-[#2D2D2D] p-gutter mb-stack-lg glow-cyan flex flex-col items-center">
+<!-- Tech Header for Card -->
+<div class="absolute top-0 left-0 w-full flex justify-between px-3 py-1 border-b border-[#2D2D2D]">
+<span class="font-label-mono text-[10px] text-outline uppercase">Auth_Protocol_V4</span>
+<span class="font-label-mono text-[10px] text-primary-container uppercase">Secure_Handshake</span>
+</div>
+<div class="mt-stack-lg p-stack-sm bg-white rounded-lg mb-stack-md">
+<img alt="Transaction QR Code" class="w-48 h-48" data-alt="A large, high-contrast black and white QR code centered on a clean white surface. Surrounding the QR code are faint, glowing electric cyan digital artifacts and circuit-like patterns. The lighting is crisp and surgical, emphasizing the technological and secure nature of the digital transaction. The overall style is minimal yet high-tech." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAI8sbDLAsXwKSJwoxItCVpWmOnmfXCtF-i6b-08DSbhS_-bRptJUFpIrqwt2u8e0lrHaFyO9t04etzsS5UkDCryxrfl2neFUkRR5CzhoUGZzFJpouYBdH7nS7oKfxdzjSlUEtmXkc_w2lbyRRyKcuaAVnVZ4V_fOTuSgj4GDw47OFG-8wlBd5OSg5JEeGEaRdnJKXl_vQfiO-YFoMwjcUzZRPPMTrrWtcuKAZn4SSpatll2QRTIVoH9Nz46vyXk1Oq7pW-Xb2qTDQ"/>
+</div>
+<p class="font-label-mono text-label-mono text-center text-on-surface-variant max-w-[240px]">
+                Present this code to the recipient to release smart contract funds.
+            </p>
+</div>
+<!-- Real-time Status Bar -->
+<div class="mb-stack-lg">
+<div class="flex justify-between items-end mb-2">
+<span class="font-label-mono text-label-mono uppercase text-primary-container">Live Status</span>
+<span class="font-label-mono text-[10px] text-outline">LATENCY: 12ms</span>
+</div>
+<div class="w-full h-10 bg-surface-container-lowest border border-[#2D2D2D] flex items-center px-4 relative overflow-hidden">
+<!-- Progress Pulse Background -->
+<div class="absolute inset-0 bg-primary-container opacity-5 w-1/3 animate-pulse"></div>
+<span class="material-symbols-outlined text-primary-container mr-3 text-sm" data-icon="sync">sync</span>
+<span class="font-label-mono text-label-mono text-primary-container tracking-widest">AWAITING CUSTOMER SCAN...</span>
+</div>
+</div>
+<!-- Payment Split Visualization -->
+<div class="bg-surface-container border border-[#2D2D2D] p-stack-md">
+<div class="flex justify-between items-center mb-stack-md border-b border-[#2D2D2D] pb-2">
+<h3 class="font-headline-sm text-headline-sm uppercase tracking-tighter">On-Chain Split</h3>
+<span class="material-symbols-outlined text-outline" data-icon="account_tree">account_tree</span>
+</div>
+<div class="space-y-stack-sm">
+<!-- Restaurant -->
+<div class="flex justify-between items-center group">
+<div class="flex items-center gap-2">
+<div class="w-1 h-4 bg-outline transition-colors group-hover:bg-primary-container"></div>
+<span class="font-body-md text-on-surface-variant">Merchant (Satoshi Kitchen)</span>
+</div>
+<span class="font-data-display text-data-display">24.50€</span>
+</div>
+<!-- Courier -->
+<div class="flex justify-between items-center group">
+<div class="flex items-center gap-2">
+<div class="w-1 h-4 bg-primary-container"></div>
+<span class="font-body-md text-primary-container font-bold">Courier Reward</span>
+</div>
+<span class="font-data-display text-data-display text-primary-container underline decoration-2 underline-offset-4">3.00€</span>
+</div>
+<!-- Fee -->
+<div class="flex justify-between items-center group">
+<div class="flex items-center gap-2">
+<div class="w-1 h-4 bg-outline transition-colors group-hover:bg-primary-container"></div>
+<span class="font-body-md text-on-surface-variant">BeZhas Platform Fee</span>
+</div>
+<span class="font-data-display text-data-display text-on-surface-variant">2.5%</span>
+</div>
+</div>
+<!-- Total -->
+<div class="mt-stack-md pt-stack-md border-t border-[#2D2D2D] flex justify-between items-center">
+<span class="font-headline-sm text-headline-sm uppercase text-outline">Total Value</span>
+<span class="font-headline-lg text-headline-lg text-primary-container">28.12€</span>
+</div>
+</div>
+<!-- Action Area -->
+<div class="mt-stack-lg space-y-stack-sm">
+<button class="w-full bg-primary-container text-on-primary h-14 font-headline-sm uppercase tracking-widest flex items-center justify-center gap-2 glow-cyan active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined" data-icon="photo_camera">photo_camera</span>
+                Manual Upload
+            </button>
+<button class="w-full border border-primary-container text-primary-container h-12 font-label-mono uppercase tracking-widest active:bg-primary-container active:text-on-primary transition-colors">
+                Support Relay
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 pb-4 px-2 bg-[#0C0C0C]/95 backdrop-blur-md dark:bg-[#0C0C0C]/95 border-t border-[#2D2D2D] shadow-[0_-4px_15px_rgba(0,240,255,0.1)]">
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest">MISSIONS</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#00F0FF] drop-shadow-[0_0_8px_rgba(0,240,255,0.6)] border-t-2 border-[#00F0FF] pt-2 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="route">route</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest">ACTIVE</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest">WALLET</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4A4A4A] pt-2 hover:text-[#00F0FF] duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="fingerprint">fingerprint</span>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold uppercase tracking-widest">ID</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Scan - Transaction History</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-screen w-full max-w-md mx-auto flex-col bg-background-light dark:bg-background-dark overflow-hidden border-x border-slate-200 dark:border-primary/10">
+<!-- Header -->
+<header class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10">
+<div class="flex size-10 items-center justify-center rounded-full bg-slate-200 dark:bg-primary/20 cursor-pointer">
+<span class="material-symbols-outlined text-slate-700 dark:text-primary">arrow_back</span>
+</div>
+<h1 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">Transaction History</h1>
+<div class="flex w-10 items-center justify-end">
+<button class="flex size-10 items-center justify-center rounded-full bg-slate-200 dark:bg-primary/20">
+<span class="material-symbols-outlined text-slate-700 dark:text-primary">tune</span>
+</button>
+</div>
+</header>
+<!-- Search & Filters -->
+<div class="px-4 py-3 space-y-4">
+<label class="flex flex-col w-full">
+<div class="flex w-full items-stretch rounded-xl h-12 bg-slate-100 dark:bg-primary/10 border border-slate-200 dark:border-primary/20">
+<div class="flex items-center justify-center pl-4">
+<span class="material-symbols-outlined text-slate-400 dark:text-primary/60">search</span>
+</div>
+<input class="form-input flex-1 border-none bg-transparent focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-primary/40 px-3 text-sm" placeholder="Search TX Hash or Asset..."/>
+</div>
+</label>
+<div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-primary px-4 text-white text-sm font-semibold">
+<span class="material-symbols-outlined text-sm">all_inclusive</span>
+<span>All</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-slate-200 dark:bg-primary/20 px-4 text-slate-700 dark:text-slate-200 text-sm font-medium border border-transparent hover:border-primary/40">
+<span class="material-symbols-outlined text-sm">account_balance_wallet</span>
+<span>Token</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-slate-200 dark:bg-primary/20 px-4 text-slate-700 dark:text-slate-200 text-sm font-medium border border-transparent hover:border-primary/40">
+<span class="material-symbols-outlined text-sm">qr_code_scanner</span>
+<span>Scan</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-slate-200 dark:bg-primary/20 px-4 text-slate-700 dark:text-slate-200 text-sm font-medium border border-transparent hover:border-primary/40">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>Yield</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-slate-200 dark:bg-primary/20 px-4 text-slate-700 dark:text-slate-200 text-sm font-medium border border-transparent hover:border-primary/40">
+<span class="material-symbols-outlined text-sm">redeem</span>
+<span>Reward</span>
+</button>
+</div>
+</div>
+<!-- Transaction List -->
+<div class="flex-1 overflow-y-auto px-4 pb-24 space-y-3">
+<h3 class="text-slate-500 dark:text-primary/70 text-xs font-bold uppercase tracking-widest pt-2">Recent Transactions</h3>
+<!-- Transaction Item: Yield -->
+<div class="p-4 rounded-xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white text-sm">Dividend: Hotel Alpha</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Oct 24, 2023 • 14:22</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-bold text-green-600 dark:text-green-400 text-sm">+124.50 BEZ</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 uppercase">Confirmed</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-primary/5">
+<p class="text-[10px] font-mono text-slate-400 dark:text-primary/40">TX: 0x71c...3f2a</p>
+<button class="text-[10px] font-bold text-primary flex items-center gap-1">
+                        View Details <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Transaction Item: Tokenization Fee -->
+<div class="p-4 rounded-xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-primary/20 text-slate-600 dark:text-primary">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white text-sm">RWA Fractionalization Fee</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Oct 23, 2023 • 09:15</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-bold text-slate-900 dark:text-white text-sm">-50.00 BEZ</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 uppercase">Confirmed</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-primary/5">
+<p class="text-[10px] font-mono text-slate-400 dark:text-primary/40">TX: 0x9a2...e8d1</p>
+<button class="text-[10px] font-bold text-primary flex items-center gap-1">
+                        View Details <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Transaction Item: Pending Buy -->
+<div class="p-4 rounded-xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined">shopping_cart</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white text-sm">Purchased 5,000 BEZ</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Oct 23, 2023 • 08:02</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-bold text-primary text-sm">+5,000 BEZ</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 dark:bg-primary/20 text-orange-600 dark:text-primary uppercase">Pending</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-primary/5">
+<p class="text-[10px] font-mono text-slate-400 dark:text-primary/40">TX: 0xbc4...f119</p>
+<button class="text-[10px] font-bold text-primary flex items-center gap-1">
+                        View Details <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Transaction Item: Scan Credits -->
+<div class="p-4 rounded-xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-primary/20 text-slate-600 dark:text-primary">
+<span class="material-symbols-outlined">qr_code_2</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white text-sm">Scan Credit Usage (10 Units)</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Oct 22, 2023 • 18:45</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-bold text-slate-900 dark:text-white text-sm">-10.00 BEZ</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 uppercase">Confirmed</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-primary/5">
+<p class="text-[10px] font-mono text-slate-400 dark:text-primary/40">TX: 0xd31...a452</p>
+<button class="text-[10px] font-bold text-primary flex items-center gap-1">
+                        View Details <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Transaction Item: Vault Yield -->
+<div class="p-4 rounded-xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white text-sm">BeZhas Vault Distribution</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Oct 21, 2023 • 00:01</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-bold text-green-600 dark:text-green-400 text-sm">+42.15 BEZ</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 uppercase">Confirmed</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-primary/5">
+<p class="text-[10px] font-mono text-slate-400 dark:text-primary/40">TX: 0x4f8...c311</p>
+<button class="text-[10px] font-bold text-primary flex items-center gap-1">
+                        View Details <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation -->
+<nav class="absolute bottom-0 w-full flex gap-2 border-t border-slate-200 dark:border-primary/20 bg-white/90 dark:bg-background-dark/90 backdrop-blur-md px-4 pb-6 pt-3">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-primary/40 hover:text-primary" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<p class="text-[10px] font-medium leading-normal uppercase tracking-wider">Dashboard</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">history</span>
+<p class="text-[10px] font-bold leading-normal uppercase tracking-wider">History</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-primary/40 hover:text-primary" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<p class="text-[10px] font-medium leading-normal uppercase tracking-wider">Scan</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-primary/40 hover:text-primary" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<p class="text-[10px] font-medium leading-normal uppercase tracking-wider">Market</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-primary/40 hover:text-primary" href="#">
+<span class="material-symbols-outlined">person_outline</span>
+<p class="text-[10px] font-medium leading-normal uppercase tracking-wider">Profile</p>
+</a>
+</nav>
+</div>
+</body></html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cipher Marketplace | Food Oracle</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-error": "#690005",
+                        "on-primary-container": "#002c4f",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#323947",
+                        "secondary-fixed-dim": "#3ce36a",
+                        "secondary-container": "#02c953",
+                        "on-secondary-fixed": "#002108",
+                        "tertiary-container": "#db7900",
+                        "inverse-on-surface": "#29313e",
+                        "on-surface": "#dbe3f4",
+                        "surface-container": "#18202c",
+                        "on-primary": "#003258",
+                        "tertiary-fixed": "#ffdcc2",
+                        "surface-container-high": "#232a37",
+                        "outline": "#89919d",
+                        "on-tertiary-fixed": "#2e1500",
+                        "on-secondary-container": "#004d1b",
+                        "primary-container": "#2196f3",
+                        "on-background": "#dbe3f4",
+                        "surface-container-low": "#141c28",
+                        "surface-dim": "#0c1420",
+                        "on-tertiary-container": "#452200",
+                        "primary-fixed-dim": "#9ecaff",
+                        "surface-tint": "#9ecaff",
+                        "surface-container-lowest": "#070e1a",
+                        "outline-variant": "#404752",
+                        "on-secondary-fixed-variant": "#00531e",
+                        "error-container": "#93000a",
+                        "on-surface-variant": "#bfc7d4",
+                        "inverse-primary": "#0061a4",
+                        "on-secondary": "#003912",
+                        "on-primary-fixed-variant": "#00497d",
+                        "inverse-surface": "#dbe3f4",
+                        "background": "#0c1420",
+                        "on-tertiary-fixed-variant": "#6d3900",
+                        "error": "#ffb4ab",
+                        "secondary": "#40e56c",
+                        "on-primary-fixed": "#001d36",
+                        "surface": "#0c1420",
+                        "tertiary": "#ffb77b",
+                        "secondary-fixed": "#69ff87",
+                        "tertiary-fixed-dim": "#ffb77b",
+                        "surface-variant": "#2d3542",
+                        "primary": "#9ecaff",
+                        "on-tertiary": "#4d2700",
+                        "primary-fixed": "#d1e4ff",
+                        "surface-container-highest": "#2d3542"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #0c1420;
+            color: #dbe3f4;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(24, 32, 44, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .headline-font { font-family: 'Space Grotesk', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface overflow-x-hidden">
+<!-- TopNavBar Implementation -->
+<header class="flex justify-between items-center px-8 py-4 w-full z-50 sticky top-0 bg-[#0c1420] border-none">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-bold tracking-tighter text-blue-400 dark:text-blue-400 headline-font">Food Oracle</span>
+<nav class="hidden md:flex gap-6">
+<a class="text-blue-400 font-bold border-b-2 border-blue-400 pb-1 headline-font" href="#">Marketplace</a>
+<a class="text-slate-400 hover:text-blue-300 transition-colors headline-font" href="#">Oracle Stats</a>
+<a class="text-slate-400 hover:text-blue-300 transition-colors headline-font" href="#">Governance</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex items-center bg-surface-container-lowest px-4 py-2 rounded-full border border-outline-variant/15">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48 text-on-surface" placeholder="Search assets..." type="text"/>
+</div>
+<button class="p-2 hover:bg-white/5 transition-colors rounded-full text-blue-400">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<button class="p-2 hover:bg-white/5 transition-colors rounded-full text-blue-400">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary/20 overflow-hidden border border-primary/30">
+<img alt="User Profile Avatar" data-alt="high-tech stylized avatar profile picture of a tech professional in dark blue and neon green tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1Avv3r0yP3_5cwqOCvYMzVZSWjF84FTd92DtdEuyk_nsONj15OtlManP7t-Y2ftXri-0cUkbzkc_mNSCL-XS1StWS67S0sJ27AkOT83XrIZ9_bADFwaj06UyYUkaylb6wZIuSLt073jDmKKSwOIQIuiAlCf2IUXLJ5s5VGV0SQqnlNMx5JPj8n5E_ckF40WnDXZR5UOvAP6UDytfOYCyt1hCzevCIP9wdJvPx0tSE3CiEhy4h7BSpph7FknS7syGp5zBJOSVII9o"/>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen">
+<!-- SideNavBar Implementation -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-6 z-40 border-r border-white/5 bg-[#0c1420] w-64 pt-24 hidden md:flex">
+<div class="mb-10">
+<h2 class="headline-font text-xl font-bold text-on-surface">Cipher Marketplace</h2>
+<p class="text-[10px] uppercase tracking-widest text-secondary font-bold">Verified by Food Oracle</p>
+</div>
+<nav class="flex flex-col gap-2 flex-grow">
+<a class="text-emerald-400 font-bold flex items-center gap-3 py-3 px-4 bg-emerald-500/10 rounded-lg transition-transform hover:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">eco</span>
+<span class="font-label text-sm uppercase tracking-widest">Fresh Produce</span>
+</a>
+<a class="text-slate-500 flex items-center gap-3 py-3 px-4 hover:bg-blue-500/5 hover:text-blue-300 transition-all" href="#">
+<span class="material-symbols-outlined">agriculture</span>
+<span class="font-label text-sm uppercase tracking-widest">Machinery</span>
+</a>
+<a class="text-slate-500 flex items-center gap-3 py-3 px-4 hover:bg-blue-500/5 hover:text-blue-300 transition-all" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-label text-sm uppercase tracking-widest">Logistics Services</span>
+</a>
+<a class="text-slate-500 flex items-center gap-3 py-3 px-4 hover:bg-blue-500/5 hover:text-blue-300 transition-all" href="#">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="font-label text-sm uppercase tracking-widest">Consultancy</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-white/5 space-y-4">
+<div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/15">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] uppercase text-on-surface-variant tracking-wider">Wallet Balance</span>
+<span class="text-xs text-secondary font-bold">Live</span>
+</div>
+<div class="text-xl headline-font font-bold text-primary">12,450.80 <span class="text-xs">$BEZ</span></div>
+</div>
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary py-3 rounded-md headline-font font-bold text-sm tracking-tight transition-transform active:scale-95">
+                    Connect Wallet
+                </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 p-8">
+<!-- Breadcrumbs & Focus Area -->
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-12">
+<div>
+<h1 class="headline-font text-5xl font-extrabold tracking-tighter text-on-surface mb-2">Marketplace <span class="text-primary">Terminal</span></h1>
+<p class="text-on-surface-variant max-w-xl font-light">Global decentralized logistics and agricultural commodities exchange. Real-time settlement powered by the BeZhas Oracle.</p>
+</div>
+<div class="flex flex-wrap gap-4">
+<div class="bg-surface-container px-4 py-3 rounded-xl border border-outline-variant/15 flex items-center gap-4">
+<div>
+<p class="text-[10px] uppercase text-on-surface-variant font-bold">Oracle Node Status</p>
+<p class="text-sm text-secondary font-medium">99.98% Synchronized</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sensors</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Filters Bar -->
+<div class="flex flex-wrap items-center gap-4 mb-10 pb-6 border-b border-white/5">
+<button class="flex items-center gap-2 bg-surface-container-high px-4 py-2 rounded-lg border border-primary/30 text-primary text-sm font-medium">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+                    Oracle Verified Only
+                </button>
+<div class="h-8 w-[1px] bg-white/10 mx-2"></div>
+<select class="bg-surface-container border border-outline-variant/15 text-on-surface text-sm rounded-lg px-4 py-2 focus:ring-primary focus:border-primary">
+<option>Price Range ($BEZ)</option>
+<option>0 - 1,000</option>
+<option>1,000 - 10,000</option>
+<option>10,000+</option>
+</select>
+<select class="bg-surface-container border border-outline-variant/15 text-on-surface text-sm rounded-lg px-4 py-2 focus:ring-primary focus:border-primary">
+<option>Region: Global</option>
+<option>South America</option>
+<option>Sub-Saharan Africa</option>
+<option>Southeast Asia</option>
+</select>
+<button class="ml-auto flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors text-sm">
+<span class="material-symbols-outlined text-sm">tune</span>
+                    Advanced Filters
+                </button>
+</div>
+<!-- Bento Grid of Listings -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+<!-- Card 1: Produce -->
+<div class="group bg-surface-container rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/40 transition-all duration-300">
+<div class="relative h-48 overflow-hidden">
+<img alt="Organic Blueberries" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Extreme close-up of dark purple organic blueberries with water droplets, dramatic dark background, moody studio lighting with blue rim light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCBcVs5eYTrZPJDCkcQPg4Pel0Q5lES08ktHT1LYUIy0eg3UC2XvOIhbaqCbiVoVDQD0jClnMjLIoCFJO4HK41HfgdJwA1oWJE3APkjJAiggKVNNUm-43LpCxkpCtJf8uj-s8hpPmpBi5O2rpAnOqxdlHm-7ROJuqC4-wUy7a50U1ap4MxxPojmquR36LDEhjVwndGSXhPWLrBiLM0Eoa-x7gg09aqZlZ2Vjidxtu0i_h4-xe4RJMP8l_nNQsILSm3b6unhz7e2Z4"/>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-secondary/20 text-secondary text-[10px] font-bold px-2 py-1 rounded backdrop-blur-md border border-secondary/30 uppercase tracking-tighter">Verified</span>
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-1 rounded backdrop-blur-md border border-primary/30 uppercase tracking-tighter">Escrow Protected</span>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h3 class="headline-font text-lg font-bold text-on-surface leading-tight">Organic Blueberries Lot #77</h3>
+<p class="text-xs text-on-surface-variant">Origin: Patagonia Cluster Alpha</p>
+</div>
+<div class="text-right">
+<p class="text-xs text-on-surface-variant uppercase font-bold tracking-tighter">Quality Score</p>
+<p class="text-secondary font-bold headline-font">98/100</p>
+</div>
+</div>
+<div class="flex items-center gap-3 mb-4 p-3 bg-surface-container-lowest rounded-lg border border-white/5">
+<span class="material-symbols-outlined text-primary text-xl">account_circle</span>
+<div class="flex-1">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold">Vendor Rep (PoR)</p>
+<div class="w-full bg-white/5 h-1 rounded-full mt-1 overflow-hidden">
+<div class="bg-secondary h-full w-[94%]"></div>
+</div>
+</div>
+<span class="text-xs font-bold text-on-surface">9.4</span>
+</div>
+<div class="flex justify-between items-center">
+<div>
+<p class="text-xs text-on-surface-variant">Market Price</p>
+<p class="text-xl headline-font font-bold text-primary">2,450.00 <span class="text-xs">$BEZ</span></p>
+</div>
+<button class="bg-primary/10 hover:bg-primary text-primary hover:text-on-primary p-2 rounded-lg transition-all">
+<span class="material-symbols-outlined">shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2: Logistics -->
+<div class="group bg-surface-container rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/40 transition-all duration-300">
+<div class="relative h-48 overflow-hidden">
+<img alt="Logistics Container" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="High-tech cargo containers at a futuristic port at night, glowing neon highlights on edges, deep blue and teal color palette" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBv2i6owDB_DPVJBV7s8puSjeM2QZMRrCxw49yFqbF_F8Sbachycr8JIrrCiFCN-hjBujnr4--pFnAkFbly3BbRVgQ_IneyBNspZQmp75E_WnAffFWIDWGi4HxsgmCclPBxeWQN9iqLe1wTSbQkQuFlCezI9fLMhusYKvHF3S8aI1xK8Q0zl1Ob1RILI7gyCdXNx3vuujVvUPCzN0_Aii9gcOZYCqsbg_ZPCvYjxC8uyIDXnDhY4GRCjw6XgwnZlNnELIGTGrA25Ys"/>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-secondary/20 text-secondary text-[10px] font-bold px-2 py-1 rounded backdrop-blur-md border border-secondary/30 uppercase tracking-tighter">Verified</span>
+<span class="bg-tertiary/20 text-tertiary text-[10px] font-bold px-2 py-1 rounded backdrop-blur-md border border-tertiary/30 uppercase tracking-tighter">Instant Settlement</span>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h3 class="headline-font text-lg font-bold text-on-surface leading-tight">Refrigerated Transport S-4</h3>
+<p class="text-xs text-on-surface-variant">Route: Mombasa → Dubai Hub</p>
+</div>
+<div class="text-right">
+<p class="text-xs text-on-surface-variant uppercase font-bold tracking-tighter">Efficiency</p>
+<p class="text-secondary font-bold headline-font">99.2%</p>
+</div>
+</div>
+<div class="flex items-center gap-3 mb-4 p-3 bg-surface-container-lowest rounded-lg border border-white/5">
+<span class="material-symbols-outlined text-primary text-xl">workspace_premium</span>
+<div class="flex-1">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold">Reliability Tier</p>
+<div class="flex gap-1 mt-1">
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-white/10 rounded-full"></div>
+</div>
+</div>
+<span class="text-xs font-bold text-on-surface">GOLD</span>
+</div>
+<div class="flex justify-between items-center">
+<div>
+<p class="text-xs text-on-surface-variant">Service Rate</p>
+<p class="text-xl headline-font font-bold text-primary">890.00 <span class="text-xs">$BEZ/T</span></p>
+</div>
+<button class="bg-primary/10 hover:bg-primary text-primary hover:text-on-primary p-2 rounded-lg transition-all">
+<span class="material-symbols-outlined">send_time_extension</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 3: Machinery -->
+<div class="group bg-surface-container rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/40 transition-all duration-300">
+<div class="relative h-48 overflow-hidden">
+<img alt="Autonomous Tractor" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Front view of a sleek autonomous agricultural drone-tractor in a dark field, glowing sensor eyes, futuristic carbon fiber finish" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWRYOzwrdHY_WbSwaaSTPdBBZPTd4-6V0ws3SUi8j62CcZMJvtj5GZ3CGMNjc-tTe1dFLNIRyrb7L4ARPI8NdGpnAvac4718R0z2kcIBhKRvpqZGlOCVG4JOWb9tTuypbidOij8TlBtR3rWCn0mIx1yZi1MVnmGTb0jQ_-yqIvsk7uYn7cEWIiYgg_yuK7CWSfi70iftUfbcYJ7FYxObmGjkvbqZ6IlFRF043zjbXbqxSdaVKLCbrui4S3VMm4bYQr46JGSa_RQno"/>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-1 rounded backdrop-blur-md border border-primary/30 uppercase tracking-tighter">Escrow Protected</span>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h3 class="headline-font text-lg font-bold text-on-surface leading-tight">Neural-Tractor Gen. IV</h3>
+<p class="text-xs text-on-surface-variant">Condition: Certified Refurbished</p>
+</div>
+<div class="text-right">
+<p class="text-xs text-on-surface-variant uppercase font-bold tracking-tighter">Oracle Health</p>
+<p class="text-secondary font-bold headline-font">100/100</p>
+</div>
+</div>
+<div class="flex items-center gap-3 mb-4 p-3 bg-surface-container-lowest rounded-lg border border-white/5">
+<span class="material-symbols-outlined text-primary text-xl">token</span>
+<div class="flex-1">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold">Smart Asset ID</p>
+<p class="text-[10px] font-mono text-on-surface truncate">0x72...49fA</p>
+</div>
+<span class="text-xs font-bold text-on-surface">OWN</span>
+</div>
+<div class="flex justify-between items-center">
+<div>
+<p class="text-xs text-on-surface-variant">Listing Price</p>
+<p class="text-xl headline-font font-bold text-primary">45,800.00 <span class="text-xs">$BEZ</span></p>
+</div>
+<button class="bg-primary/10 hover:bg-primary text-primary hover:text-on-primary px-4 py-2 rounded-lg transition-all headline-font text-sm font-bold">
+                                BID
+                            </button>
+</div>
+</div>
+</div>
+<!-- Active Bids / Sidebar Section for Desktop -->
+<div class="xl:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
+<div class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/5">
+<div class="flex items-center justify-between mb-6">
+<h2 class="headline-font text-xl font-bold">Live Marketplace Feed</h2>
+<div class="flex gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">Real-Time Data Feed</span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between py-3 border-b border-white/5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">swap_horiz</span>
+</div>
+<div>
+<p class="text-sm font-bold">Buy Order Filled: #9822</p>
+<p class="text-[10px] text-on-surface-variant">Logistics Cluster 9 - 4.2 mins ago</p>
+</div>
+</div>
+<p class="font-bold text-secondary">+12,400 $BEZ</p>
+</div>
+<div class="flex items-center justify-between py-3 border-b border-white/5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-tertiary/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">gavel</span>
+</div>
+<div>
+<p class="text-sm font-bold">New Bid: Gen. IV Tractor</p>
+<p class="text-[10px] text-on-surface-variant">User 0x92...11b - Just now</p>
+</div>
+</div>
+<p class="font-bold text-primary">46,000 $BEZ</p>
+</div>
+<div class="flex items-center justify-between py-3">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-on-surface-variant/10 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">sync_alt</span>
+</div>
+<div>
+<p class="text-sm font-bold">Oracle Settlement: Lot #61</p>
+<p class="text-[10px] text-on-surface-variant">Quality Hash Verified - 12 mins ago</p>
+</div>
+</div>
+<p class="font-bold text-on-surface">COMPLETED</p>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-high p-6 rounded-2xl border border-white/5">
+<h2 class="headline-font text-xl font-bold mb-6">Your Positions</h2>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between text-xs mb-2">
+<span class="text-on-surface-variant">Active Bids</span>
+<span class="text-primary font-bold">3 Listings</span>
+</div>
+<div class="flex -space-x-3 overflow-hidden">
+<div class="inline-block h-8 w-8 rounded-full ring-2 ring-surface-container-high bg-primary/40 flex items-center justify-center text-[10px] font-bold">L1</div>
+<div class="inline-block h-8 w-8 rounded-full ring-2 ring-surface-container-high bg-secondary/40 flex items-center justify-center text-[10px] font-bold">S4</div>
+<div class="inline-block h-8 w-8 rounded-full ring-2 ring-surface-container-high bg-tertiary/40 flex items-center justify-center text-[10px] font-bold">M2</div>
+</div>
+</div>
+<div class="p-4 bg-surface-container-lowest rounded-xl">
+<p class="text-[10px] uppercase font-bold text-on-surface-variant mb-1">Staked Reputation</p>
+<div class="flex items-end gap-2">
+<p class="text-2xl headline-font font-bold text-secondary">4.8k</p>
+<p class="text-[10px] text-secondary font-bold mb-1">PoR SCORE</p>
+</div>
+</div>
+<button class="w-full py-4 border border-outline-variant/30 rounded-xl headline-font text-xs uppercase tracking-widest font-bold hover:bg-white/5 transition-all">
+                                Manage Dashboard
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile Nav Anchor -->
+<nav class="md:hidden fixed bottom-0 w-full bg-[#0c1420] border-t border-white/5 flex justify-around items-center py-4 z-50">
+<a class="text-emerald-400 font-bold flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="text-[10px] uppercase">Market</span>
+</a>
+<a class="text-slate-500 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined">agriculture</span>
+<span class="text-[10px] uppercase">Equipment</span>
+</a>
+<a class="text-slate-500 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="text-[10px] uppercase">Logistics</span>
+</a>
+<a class="text-slate-500 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="text-[10px] uppercase">Wallet</span>
+</a>
+</nav>
+</body></html>

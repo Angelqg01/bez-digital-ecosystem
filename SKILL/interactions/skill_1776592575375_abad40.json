@@ -1,0 +1,16 @@
+{
+  "id": "skill_1776592575375_abad40",
+  "created_at": "2026-04-19T09:56:15.375Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [],
+  "turn": {
+    "user": "También puedes usar y generar audios?",
+    "agent": "Soy un Agente IA unificado y mi interacción principal es a través de texto. No tengo la capacidad de usar ni generar audios directamente en este momento."
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "operator"
+  }
+}

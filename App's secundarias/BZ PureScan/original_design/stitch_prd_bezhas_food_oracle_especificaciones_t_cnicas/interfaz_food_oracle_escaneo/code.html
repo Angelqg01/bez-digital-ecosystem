@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Food Oracle AR Scan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b8cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "neon-green": "#39ff14",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .ar-overlay {
+            background-image: radial-gradient(circle at 2px 2px, rgba(57, 255, 20, 0.15) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .scan-line {
+            background: linear-gradient(to bottom, transparent, rgba(57, 255, 20, 0.5), transparent);
+            height: 2px;
+            width: 100%;
+            position: absolute;
+            top: 40%;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header Navigation -->
+<header class="flex items-center justify-between p-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">Food Oracle <span class="text-neon-green">Scan</span></h1>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Main AR Viewport -->
+<main class="flex-1 relative overflow-hidden flex flex-col">
+<!-- Camera View Background -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-cover bg-center" data-alt="A pallet of fresh fruit in a warehouse setting" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD0hIhtwN3MeO5g-WMtVPSOSkc9ztgbV_M1hIUyCAsHykI7fmKn4Oe3TOt41FqdBMnCwPfOvrmHK5VcUZsspq6VOIfz_CGgsN2DiJBANWTbu0q7FSX1h7uOmIqCLuZLAGUQR_BwzupNp0i21tR0g1UxwxvM2riSH7HqlG6Ei25IOajLjhWVFe1HkuYfmoAjH_nxZhLmVBK4OCpPvXPSi3ifiCCY09ikSUvJZYLMzWN1Tpz174hkLhp-su_3JY26q2tAzeTZzJMFmbA')"></div>
+<!-- LiDAR Point Cloud Simulation Overlay -->
+<div class="absolute inset-0 ar-overlay pointer-events-none"></div>
+<div class="scan-line"></div>
+</div>
+<!-- YOLO Detection Boxes -->
+<div class="absolute top-1/4 left-1/4 w-48 h-48 border-2 border-neon-green rounded-lg z-10 pointer-events-none">
+<div class="absolute -top-6 left-0 bg-neon-green text-black px-2 py-0.5 text-xs font-bold rounded-t">
+                PRODUCE_PALLET [CONF: 98.4%]
+            </div>
+<div class="absolute inset-0 bg-neon-green/5 flex items-center justify-center">
+<div class="w-1 h-1 bg-neon-green rounded-full"></div>
+</div>
+</div>
+<div class="absolute top-1/2 left-2/3 w-32 h-32 border-2 border-primary rounded-lg z-10 pointer-events-none">
+<div class="absolute -top-6 left-0 bg-primary text-white px-2 py-0.5 text-xs font-bold rounded-t">
+                SKU: 8829-XP
+            </div>
+</div>
+<!-- Real-time Metrics Panels -->
+<div class="relative z-20 mt-auto p-4 space-y-4">
+<!-- Side Metrics Column (Desktop: Right, Mobile: Bottom) -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<div class="flex flex-col gap-1 rounded-xl p-4 bg-background-dark/80 backdrop-blur-md border border-slate-700 shadow-2xl">
+<div class="flex items-center gap-2 text-slate-400">
+<span class="material-symbols-outlined text-sm">scale</span>
+<p class="text-sm font-medium">Biomass Estimation</p>
+</div>
+<div class="flex items-end justify-between">
+<p class="text-2xl font-bold text-white">142kg</p>
+<p class="text-neon-green text-sm font-bold leading-normal">+5.2%</p>
+</div>
+</div>
+<div class="flex flex-col gap-1 rounded-xl p-4 bg-background-dark/80 backdrop-blur-md border border-slate-700 shadow-2xl">
+<div class="flex items-center gap-2 text-slate-400">
+<span class="material-symbols-outlined text-sm">thermostat</span>
+<p class="text-sm font-medium">Temp Anomaly</p>
+</div>
+<div class="flex items-end justify-between">
+<p class="text-2xl font-bold text-white">Stable</p>
+<p class="text-slate-500 text-sm font-medium">0% Var</p>
+</div>
+</div>
+<div class="flex flex-col gap-1 rounded-xl p-4 bg-background-dark/80 backdrop-blur-md border border-slate-700 shadow-2xl border-l-4 border-l-amber-500">
+<div class="flex items-center gap-2 text-slate-400">
+<span class="material-symbols-outlined text-sm">coronavirus</span>
+<p class="text-sm font-medium">Fungal Risk</p>
+</div>
+<div class="flex items-end justify-between">
+<p class="text-2xl font-bold text-white">2%</p>
+<p class="text-amber-500 text-sm font-bold">-1% Traj</p>
+</div>
+</div>
+</div>
+<!-- Active Status Bar -->
+<div class="flex items-center justify-between gap-4 p-4 bg-primary/20 backdrop-blur-xl rounded-xl border border-primary/30">
+<div class="flex flex-col gap-0.5">
+<p class="text-white text-lg font-bold">Pallet ID: 8829-XP</p>
+<p class="text-primary-foreground/80 text-sm font-medium flex items-center gap-1">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-neon-green"></span>
+</span>
+                        AI Detection Active: YOLOv8
+                    </p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center rounded-full size-12 bg-white/10 text-white hover:bg-white/20">
+<span class="material-symbols-outlined">photo_library</span>
+</button>
+<button class="flex items-center justify-center rounded-full size-16 bg-primary text-white shadow-lg shadow-primary/50">
+<span class="material-symbols-outlined text-3xl">camera</span>
+</button>
+<button class="flex items-center justify-center rounded-full size-12 bg-white/10 text-white hover:bg-white/20">
+<span class="material-symbols-outlined">sync_alt</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-background-dark px-4 pb-4 pt-2 shadow-inner">
+<div class="flex gap-2 max-w-md mx-auto">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">qr_code_scanner</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Scan</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-slate-400" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Storage</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-slate-400" href="#">
+<span class="material-symbols-outlined">pie_chart</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Insights</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-slate-400" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

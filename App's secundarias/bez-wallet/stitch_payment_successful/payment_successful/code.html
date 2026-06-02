@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&amp;family=Space+Grotesk:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-primary-container": "#004d38",
+            "tertiary": "#bacbf4",
+            "tertiary-container": "#9fb0d8",
+            "background": "#0f131c",
+            "surface-container-low": "#171c25",
+            "primary-fixed-dim": "#3adfab",
+            "outline": "#85948c",
+            "primary-container": "#00c896",
+            "on-secondary-fixed": "#271900",
+            "on-tertiary-container": "#324365",
+            "secondary-container": "#feb700",
+            "on-error": "#690005",
+            "primary": "#42e5b0",
+            "inverse-on-surface": "#2c303a",
+            "outline-variant": "#3c4a43",
+            "secondary": "#ffdb9d",
+            "error": "#ffb4ab",
+            "surface-variant": "#30353f",
+            "secondary-fixed-dim": "#ffba20",
+            "on-background": "#dfe2ef",
+            "surface-container-high": "#252a34",
+            "on-secondary": "#412d00",
+            "on-secondary-container": "#6b4b00",
+            "surface-container": "#1b2029",
+            "primary-fixed": "#60fcc6",
+            "surface-bright": "#353943",
+            "on-surface-variant": "#bbcac1",
+            "error-container": "#93000a",
+            "on-tertiary-fixed-variant": "#364769",
+            "surface-container-lowest": "#0a0e17",
+            "on-primary-fixed-variant": "#00513b",
+            "inverse-primary": "#006c4f",
+            "secondary-fixed": "#ffdea8",
+            "tertiary-fixed-dim": "#b5c6ef",
+            "on-tertiary": "#1f3051",
+            "on-primary": "#003828",
+            "on-error-container": "#ffdad6",
+            "on-primary-fixed": "#002116",
+            "on-tertiary-fixed": "#071b3b",
+            "tertiary-fixed": "#d8e2ff",
+            "surface-tint": "#3adfab",
+            "surface": "#0f131c",
+            "on-secondary-fixed-variant": "#5e4200",
+            "surface-dim": "#0f131c",
+            "on-surface": "#dfe2ef",
+            "inverse-surface": "#dfe2ef",
+            "surface-container-highest": "#30353f"
+          },
+          fontFamily: {
+            "headline": ["Inter"],
+            "body": ["Inter"],
+            "label": ["Space Grotesk"],
+            "mono": ["JetBrains Mono"]
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.1rem", "xl": "1.5rem", "2xl": "2rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .emerald-glow {
+      box-shadow: 0 0 50px -12px rgba(66, 229, 176, 0.25);
+    }
+    .particles-bg {
+      background-image: radial-gradient(circle at 2px 2px, rgba(66, 229, 176, 0.05) 1px, transparent 0);
+      background-size: 32px 32px;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest text-on-background font-body selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar Component -->
+<header class="bg-[#0a0e17] dark:bg-[#0a0e17] border-b border-[#3c4a43]/20 flex justify-between items-center px-6 h-16 w-full fixed top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#00c896] dark:text-[#42e5b0]" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="text-[#00c896] font-black tracking-tighter font-sans text-lg">BeZhas Pay</span>
+</div>
+<button class="hover:bg-[#252a34] transition-colors p-2 rounded-full active:scale-95 duration-150">
+<span class="material-symbols-outlined text-slate-400" data-icon="close">close</span>
+</button>
+</header>
+<main class="min-h-screen pt-24 pb-32 px-4 relative overflow-hidden particles-bg">
+<!-- Decorative Gradient -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="max-w-md mx-auto relative z-10 flex flex-col items-center">
+<!-- Hero Section -->
+<div class="mb-10 text-center">
+<div class="w-24 h-24 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 mx-auto emerald-glow">
+<span class="material-symbols-outlined text-primary text-6xl" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h1 class="font-headline font-extrabold text-3xl tracking-tight mb-2">Payment Successful!</h1>
+<p class="font-label text-outline text-sm uppercase tracking-widest">Transaction Confirmed</p>
+</div>
+<!-- Amount Card -->
+<div class="w-full bg-surface border border-outline-variant/20 rounded-2xl p-8 mb-6 text-center shadow-2xl relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+<div class="font-mono text-4xl font-bold text-primary tracking-tighter mb-1">100.00 BEZ</div>
+<div class="font-label text-outline text-xs uppercase tracking-widest opacity-60">Settled Value</div>
+</div>
+<!-- Transaction Details Grid -->
+<div class="w-full space-y-4 mb-10">
+<div class="flex justify-between items-center p-4 bg-surface-container rounded-xl">
+<span class="font-label text-xs text-outline uppercase tracking-wider">Merchant</span>
+<span class="font-headline font-bold text-on-background">Global Store</span>
+</div>
+<div class="flex justify-between items-center p-4 bg-surface-container rounded-xl">
+<span class="font-label text-xs text-outline uppercase tracking-wider">Network</span>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-[#8247e5]"></div>
+<span class="font-headline font-bold text-on-background">Polygon Amoy</span>
+</div>
+</div>
+<div class="flex justify-between items-center p-4 bg-surface-container rounded-xl">
+<span class="font-label text-xs text-outline uppercase tracking-wider">TX Hash</span>
+<a class="flex items-center gap-2 font-mono text-xs text-primary hover:underline" href="#">
+            0x1234...abcd
+            <span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span>
+</a>
+</div>
+<div class="flex justify-between items-center p-4 bg-surface-container rounded-xl">
+<span class="font-label text-xs text-outline uppercase tracking-wider">Block</span>
+<span class="font-mono text-sm text-on-background opacity-80">#12894562</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="w-full flex flex-col gap-4">
+<button class="w-full py-5 bg-primary-container text-on-primary-container font-headline font-extrabold rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-primary/10">
+          Done
+        </button>
+<button class="w-full py-5 border border-outline-variant/30 text-on-background font-headline font-bold rounded-xl hover:bg-surface-container-high active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+          View on Explorer
+          <span class="material-symbols-outlined text-sm" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Footer Component -->
+<footer class="bg-transparent w-full py-4 flex flex-col items-center gap-2 mb-20">
+<div class="flex gap-4 text-slate-600 font-mono text-[10px] antialiased">
+<a class="hover:text-white transition-colors" href="#">Audit Report</a>
+<span class="opacity-30">•</span>
+<a class="hover:text-white transition-colors" href="#">Terms</a>
+<span class="opacity-30">•</span>
+<a class="hover:text-white transition-colors" href="#">Support</a>
+</div>
+<div class="text-slate-500 font-mono text-[10px] antialiased">api.bezhas.com • Polygon Secured</div>
+</footer>
+<!-- BottomNavBar Component - Suppressed for Transactional Intent but shown as template example if needed -->
+<!-- Note: According to the Shell Visibility Rule, this is suppressed for Task-Focused screens. -->
+</body></html>

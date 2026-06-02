@@ -1,0 +1,93 @@
+# BeZhas Aegis — Department Agents: Integration Guide
+# =====================================================
+# Cómo conectar los 10 agentes departamentales en aegis/main.py
+#
+# ESTRUCTURA DE ARCHIVOS — copiar a bezhas-blockchain/aegis/:
+#
+# aegis/
+# ├── main.py                        ← añadir las 4 líneas de abajo
+# ├── dept_agents/
+# │   ├── __init__.py
+# │   ├── manager.py
+# │   ├── core/
+# │   │   ├── __init__.py
+# │   │   └── base_dept_agent.py
+# │   └── agents/
+# │       ├── __init__.py
+# │       ├── agent_01_engineering.py
+# │       ├── agent_02_devops.py
+# │       └── agents_03_to_10.py
+#
+# =====================================================
+# CAMBIOS EN aegis/main.py (4 líneas a añadir):
+# =====================================================
+
+# --- AÑADIR ESTOS IMPORTS al inicio de main.py ---
+from dept_agents import DeptAgentManager, dept_agents_router
+
+# --- AÑADIR ESTE ROUTER en la sección de app.include_router ---
+app.include_router(dept_agents_router)
+
+# --- AÑADIR en el startup event de FastAPI ---
+@app.on_event("startup")
+async def startup_event():
+    # ... tu código de startup existente ...
+    app.state.dept_manager = DeptAgentManager()
+    await app.state.dept_manager.start_all()
+
+# --- AÑADIR en el shutdown event ---
+@app.on_event("shutdown")
+async def shutdown_event():
+    # ... tu código de shutdown existente ...
+    if hasattr(app.state, "dept_manager"):
+        await app.state.dept_manager.stop_all()
+
+# =====================================================
+# ENDPOINTS DISPONIBLES TRAS LA INTEGRACIÓN:
+# =====================================================
+#
+# GET  http://localhost:8001/dept-agents
+#      → Lista los 10 agentes, KPIs y estado
+#
+# GET  http://localhost:8001/dept-agents/alerts
+#      → Todas las alertas activas (añadir ?critical_only=true para filtrar)
+#
+# GET  http://localhost:8001/dept-agents/dept_eng_001
+#      → Info del agente de Engineering (sustituir ID para otros)
+#
+# POST http://localhost:8001/dept-agents/dept_defi_004/pause
+#      → Pausa el agente DeFi
+#
+# POST http://localhost:8001/dept-agents/dept_security_005/run
+#      → Fuerza un ciclo inmediato del agente CISO
+#
+# =====================================================
+# AGENT IDs de referencia:
+# =====================================================
+#
+#   dept_eng_001       → Blockchain Engineering
+#   dept_devops_002    → DevOps & Infraestructura
+#   dept_ai_003        → IA & Data Science
+#   dept_defi_004      → DeFi & Tokenomics
+#   dept_security_005  → Seguridad & Compliance (CISO)
+#   dept_bd_006        → Business Development B2B
+#   dept_mktg_007      → Marketing & Comunidad
+#   dept_finance_008   → Finanzas & Tesorería
+#   dept_cs_009        → Customer Success & Soporte
+#   dept_legal_010     → Legal & Regulatorio
+#
+# =====================================================
+# DEPENDENCIAS a añadir en aegis/requirements.txt:
+# =====================================================
+#
+#   redis[asyncio]>=4.5.0
+#   httpx>=0.25.0
+#
+# =====================================================
+# VARIABLES DE ENTORNO (ya deberían estar en .env):
+# =====================================================
+#
+#   REDIS_URL=redis://localhost:6379
+#   API_BASE_URL=http://localhost:3001/api
+#   AEGIS_BASE_URL=http://localhost:8001
+#   AGENT_RUNTIME_URL=http://localhost:3002

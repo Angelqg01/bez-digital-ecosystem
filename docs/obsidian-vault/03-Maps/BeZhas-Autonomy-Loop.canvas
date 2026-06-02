@@ -1,0 +1,308 @@
+{
+  "nodes": [
+    {
+      "id": "bezhas-core",
+      "type": "text",
+      "text": "# BeZhas Blockchain Core\nDirector Agent + Runtime + Smart Contracts + $BEZ\n\nAutonomia = Memoria + Percepcion + Evaluacion + Accion + Feedback",
+      "x": -220,
+      "y": -120,
+      "width": 440,
+      "height": 240,
+      "color": "1"
+    },
+    {
+      "id": "director",
+      "text": "DIRECTOR AGENT\nEstrategia, priorizacion, metacognicion, reportes y control HITL",
+      "x": -180,
+      "y": -560,
+      "width": 360,
+      "height": 140,
+      "color": "2",
+      "type": "text"
+    },
+    {
+      "id": "critic",
+      "text": "CRITIC / SELF-EVALUATION\nValida planes, detecta fallos, calibra confianza y decide si actualizar auto-modelo",
+      "x": 360,
+      "y": -390,
+      "width": 390,
+      "height": 150,
+      "color": "5",
+      "type": "text"
+    },
+    {
+      "id": "runtime",
+      "text": "AGENT RUNTIME\nToolRegistry + PermissionEngine + Orchestration + MCP proxy",
+      "x": -190,
+      "y": -260,
+      "width": 380,
+      "height": 130,
+      "color": "6",
+      "type": "text"
+    },
+    {
+      "id": "blockchain",
+      "text": "BLOCKCHAIN CORE\nSmart contracts, validators, staking, bridge, payments, wallet guardian, sequencer",
+      "x": -720,
+      "y": 120,
+      "width": 390,
+      "height": 145,
+      "color": "3",
+      "type": "text"
+    },
+    {
+      "id": "aegis",
+      "text": "AEGIS / MONITORING\nGas, fraude, compliance, validators, logs, Prometheus/Grafana",
+      "x": -720,
+      "y": -390,
+      "width": 380,
+      "height": 145,
+      "color": "4",
+      "type": "text"
+    },
+    {
+      "id": "obsidian",
+      "text": "OBSIDIAN MCP\nVault Markdown local: episodios, decisiones, backlinks, Canvas y auto-modelo humano-legible",
+      "x": 360,
+      "y": 160,
+      "width": 400,
+      "height": 150,
+      "color": "6",
+      "type": "text"
+    },
+    {
+      "id": "memory",
+      "text": "MEMORIA PERSISTENTE\nRedis: working memory\nPostgres: estado estructurado\nObsidian: memoria documental\nFuturo: Qdrant + Neo4j",
+      "x": -190,
+      "y": 410,
+      "width": 390,
+      "height": 170,
+      "color": "4",
+      "type": "text"
+    },
+    {
+      "id": "sectors",
+      "text": "SECTORES BEZHAS\nFinanzas, Trading, Legal, DevOps, Marketing, Logistica, Retail, Documentos, Pagos",
+      "x": 700,
+      "y": 500,
+      "width": 390,
+      "height": 140,
+      "color": "3",
+      "type": "text"
+    },
+    {
+      "id": "telegram",
+      "text": "TELEGRAM / HITL\nAlertas, confirmaciones, reportes de salud y decisiones Nivel 1-2",
+      "x": -760,
+      "y": 500,
+      "width": 380,
+      "height": 130,
+      "color": "6",
+      "type": "text"
+    },
+    {
+      "id": "loop",
+      "text": "LOOP REAL\nPercibe -> Planifica -> Actua -> Evalua -> Consolida memoria -> Ajusta auto-modelo",
+      "x": 330,
+      "y": -80,
+      "width": 760,
+      "height": 120,
+      "color": "1",
+      "type": "text"
+    },
+    {
+      "id": "note-d571c22612ea",
+      "type": "text",
+      "text": "# 2026-05-09 director-agent 5542a960\nVerificacion inicial de Obsidian MCP con health, busqueda y registro episodico.\nStatus: verified | Agent: director-agent",
+      "x": -553,
+      "y": -258,
+      "width": 340,
+      "height": 150,
+      "color": "4"
+    },
+    {
+      "id": "note-4193b7d18cff",
+      "type": "text",
+      "text": "# ADR-0001 Obsidian as Agent Knowledge Ops\nObsidian queda como memoria documental viva, auditable por humanos y conectada al runtime.\nStatus: accepted",
+      "x": 155,
+      "y": 476,
+      "width": 360,
+      "height": 170,
+      "color": "5"
+    },
+    {
+      "id": "note-229091bca928",
+      "type": "file",
+      "file": "03-Maps/BeZhas-Blockchain-Map.md",
+      "x": -467,
+      "y": 467,
+      "width": 360,
+      "height": 170,
+      "color": "6"
+    },
+    {
+      "id": "note-8ec9a00bfd09",
+      "type": "text",
+      "text": "# BeZhas Obsidian Vault\nIndice operativo de la memoria documental agentica de BeZhas.\nToken: $BEZ | Status: active",
+      "x": 409,
+      "y": 133,
+      "width": 360,
+      "height": 170,
+      "color": "4"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-90aefdf236de",
+      "fromNode": "director",
+      "fromSide": "right",
+      "toNode": "critic",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-c46e02245436",
+      "fromNode": "critic",
+      "fromSide": "right",
+      "toNode": "runtime",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-d2caa82ae86b",
+      "fromNode": "runtime",
+      "fromSide": "right",
+      "toNode": "blockchain",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-d4414f297e7d",
+      "fromNode": "runtime",
+      "fromSide": "right",
+      "toNode": "aegis",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-3f1c16005fa0",
+      "fromNode": "runtime",
+      "fromSide": "right",
+      "toNode": "sectors",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-829cb4de7669",
+      "fromNode": "runtime",
+      "fromSide": "right",
+      "toNode": "telegram",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-d3d02ce477bf",
+      "fromNode": "aegis",
+      "fromSide": "right",
+      "toNode": "critic",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-9f285d8385b7",
+      "fromNode": "critic",
+      "fromSide": "right",
+      "toNode": "obsidian",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-23c406ea322c",
+      "fromNode": "obsidian",
+      "fromSide": "right",
+      "toNode": "memory",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-bdc59e63755d",
+      "fromNode": "memory",
+      "fromSide": "right",
+      "toNode": "director",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-6ce1f2bbc74d",
+      "fromNode": "blockchain",
+      "fromSide": "right",
+      "toNode": "loop",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-ec2e9502c4f5",
+      "fromNode": "loop",
+      "fromSide": "right",
+      "toNode": "obsidian",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-04a5002f0f50",
+      "fromNode": "telegram",
+      "fromSide": "right",
+      "toNode": "director",
+      "toSide": "left",
+      "color": "6"
+    },
+    {
+      "id": "edge-fe7d52ecfe31",
+      "fromNode": "runtime",
+      "fromSide": "bottom",
+      "toNode": "bezhas-core",
+      "toSide": "top",
+      "color": "1"
+    },
+    {
+      "id": "edge-f26b78d4fc33",
+      "fromNode": "bezhas-core",
+      "fromSide": "left",
+      "toNode": "blockchain",
+      "toSide": "right",
+      "color": "3"
+    },
+    {
+      "id": "edge-d32c399b00a3",
+      "fromNode": "bezhas-core",
+      "fromSide": "bottom",
+      "toNode": "memory",
+      "toSide": "top",
+      "color": "4"
+    },
+    {
+      "id": "edge-ded1749b5f4c",
+      "fromNode": "note-d571c22612ea",
+      "fromSide": "left",
+      "toNode": "loop",
+      "toSide": "right",
+      "color": "4"
+    },
+    {
+      "id": "edge-b2c066bb9eb0",
+      "fromNode": "note-4193b7d18cff",
+      "fromSide": "left",
+      "toNode": "critic",
+      "toSide": "right",
+      "color": "5"
+    },
+    {
+      "id": "edge-c24ec3578c3b",
+      "fromNode": "note-8ec9a00bfd09",
+      "fromSide": "left",
+      "toNode": "memory",
+      "toSide": "right",
+      "color": "4"
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Negotiation Success - BeZhas Bio-Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                        "success": "#10b981",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col">
+<header class="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-10 border-b border-primary/10">
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h2 class="text-lg font-bold tracking-tight">Deal Finalized</h2>
+<div class="w-10"></div>
+</header>
+<main class="flex-1 p-4 max-w-md mx-auto w-full space-y-6">
+<section class="text-center py-8">
+<div class="relative inline-block">
+<div class="absolute inset-0 bg-success/20 blur-3xl rounded-full scale-150"></div>
+<div class="relative bg-background-dark border-2 border-success rounded-full p-6 inline-flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-6xl text-success" style="font-variation-settings: 'FILL' 1">verified</span>
+</div>
+</div>
+<h1 class="text-3xl font-bold tracking-tight mb-2">Negotiation Successful</h1>
+<p class="text-slate-500 dark:text-slate-400">Your Bio-Agent has secured the optimal terms for your medical profile.</p>
+</section>
+<section class="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-5 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-3 opacity-10">
+<span class="material-symbols-outlined text-6xl">receipt_long</span>
+</div>
+<h3 class="text-sm font-semibold uppercase tracking-wider text-primary mb-4">Summary of Terms</h3>
+<div class="space-y-4 relative z-10">
+<div class="flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400">Pharma Partner</span>
+<span class="font-medium text-slate-900 dark:text-slate-100">Pfizer Research Lab</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400">Access Duration</span>
+<span class="font-medium text-slate-900 dark:text-slate-100">90 Cycles</span>
+</div>
+<div class="pt-3 border-t border-primary/10 flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400 font-bold">Compensation</span>
+<div class="flex items-center gap-1.5">
+<span class="text-xl font-bold text-primary">1,250</span>
+<span class="text-xs font-bold bg-primary text-background-dark px-1.5 py-0.5 rounded">BEZ</span>
+</div>
+</div>
+</div>
+</section>
+<section class="grid grid-cols-1 gap-4">
+<div class="bg-background-light dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+<div class="flex items-start gap-3">
+<div class="bg-primary/20 p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary">smart_toy</span>
+</div>
+<div>
+<h4 class="text-sm font-bold mb-1">Agent Summary</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Negotiation concluded <span class="text-success font-bold">47% above</span> initial bid. Data de-identification verified against protocol V2.4. Encrypted transfer scheduled.
+                        </p>
+</div>
+</div>
+</div>
+<div class="bg-background-light dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+<div class="flex justify-between items-center mb-2">
+<h4 class="text-xs font-semibold uppercase tracking-widest text-slate-400">Transaction Hash</h4>
+<span class="material-symbols-outlined text-sm text-primary">content_copy</span>
+</div>
+<p class="text-[10px] font-mono break-all text-slate-500 dark:text-slate-400">
+                    0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D...
+                </p>
+</div>
+</section>
+<div class="flex flex-col gap-3 py-6">
+<button class="bg-primary hover:bg-primary/90 text-background-dark font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+                View in Wallet
+            </button>
+<button class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 font-bold py-4 rounded-xl transition-all">
+                Back to Broker
+            </button>
+</div>
+</main>
+<nav class="sticky bottom-0 bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 px-4 pb-6 pt-3">
+<div class="flex justify-between max-w-md mx-auto">
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">handshake</span>
+<span class="text-[10px] font-medium">Broker</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="text-[10px] font-medium">Wallet</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">database</span>
+<span class="text-[10px] font-medium">Data</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

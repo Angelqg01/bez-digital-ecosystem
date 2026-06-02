@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Select Biotech Guardians</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #25aff433;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased overflow-x-hidden">
+<div class="relative flex h-screen max-w-md mx-auto flex-col bg-background-light dark:bg-background-dark overflow-hidden border-x border-slate-200 dark:border-slate-800">
+<!-- Top App Bar -->
+<header class="flex items-center px-4 py-4 justify-between sticky top-0 z-10 bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800">
+<button class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 ml-2">Select Guardians</h2>
+<div class="w-10"></div> <!-- Spacer for balance -->
+</header>
+<!-- Search Bar -->
+<div class="px-4 py-4">
+<label class="flex flex-col w-full">
+<div class="flex w-full items-stretch rounded-xl h-12 bg-slate-200/50 dark:bg-slate-800/50 border border-transparent focus-within:border-primary transition-all">
+<div class="text-slate-500 dark:text-slate-400 flex items-center justify-center pl-4">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none bg-transparent focus:outline-0 focus:ring-0 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 px-3 text-base font-normal" placeholder="Search by name or Bio-ID" value=""/>
+</div>
+</label>
+</div>
+<!-- Scrollable List Area -->
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<div class="px-4 py-2">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-widest mb-4 opacity-70">Recommended Guardians</h3>
+<div class="space-y-3">
+<!-- Contact Item 1 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 border-2 border-primary/20" data-alt="Portrait of Dr. Aris Varma" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA_hIFiO98Q_TkXOQLBXIx-TH1PRfKDrJzuV3L-NhgqQycsbLNg4XKtbIL9RFkUGVGHMg_pMSQI3p0fP63HUETzSMlq-p96gsDHBWiG0pjtUCSmqQY8_Ad_eXmds90S1w1J_66_WZygsKyhqknbVhrxKXxzIrPv1yyr37Vs_NQebzP6cNRP-YZJwz8Ati76-oce29rb3Ih7TD3_CpSecvXMfmmrWP6ODLFRUYIorpTY_lS0AdQPQKDuqMO0WrGyz255db8mZE50ujk");'></div>
+<div class="flex flex-1 flex-col">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold">Dr. Aris Varma</p>
+<p class="text-primary text-xs font-medium uppercase tracking-wide">Lead Virologist</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Clearance: Level 5 • ID: B-9921</p>
+</div>
+<div class="shrink-0">
+<input checked="" class="h-6 w-6 rounded-lg border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 focus:border-primary transition-all cursor-pointer" type="checkbox"/>
+</div>
+</div>
+<!-- Contact Item 2 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 border-2 border-primary/20" data-alt="Portrait of Sarah Chen" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuChUiwIKekxhxBIbkRh9eJeW2whbaRuFQctKxx3YLhCJzsk_jS15RkcFmD3F2BGeQWDACAlObXl1unnQvmBAEc47L30V1-Xqou9j_oS7PO9RAs5-oaHACQwZ8wfhgM4trJQgEAsRGThLMQJMr0z2qZtDuLJ5HhCM_q2gu8h-USykDMsS2rD1GSblJGTDNXMPisYDAVonziIqGl45nvETMoRTQAQkkSMBwKviDi7T51aFCdYze6AEuansGR9eCk0yzdT4D6tNoJCaeQ");'></div>
+<div class="flex flex-1 flex-col">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold">Sarah Chen</p>
+<p class="text-primary text-xs font-medium uppercase tracking-wide">Chief Safety Officer</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Clearance: Level 5 • ID: B-4402</p>
+</div>
+<div class="shrink-0">
+<input checked="" class="h-6 w-6 rounded-lg border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 focus:border-primary transition-all cursor-pointer" type="checkbox"/>
+</div>
+</div>
+<!-- Contact Item 3 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 border-2 border-slate-700 dark:border-slate-800 opacity-80" data-alt="Portrait of Marcus Thorne" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB7EYuq8x3ICz1WWiIcCFsMYoDGzQ6NQfol0iEICXKNnwFGVFyNC1MlwQ2CtLAc_4hXMj9HJKJypPzYqq2jC7ZY0i_XVtW02xVGURCzymkeVLGsKVomp5NgPbuYKncaG_Gv9uvLfP-LfKg3iC1W-Fk-Dn8-0YoX4edaOOQGp53yPZELEBHndp5_l1EaO2yPeQss85-d0vSiydx0G9uGlHvG5MrHy2fs-tW-TjQcofkWBDO1yEmC_qMldfXMQROfsA9G4dmBRQNy-zY");'></div>
+<div class="flex flex-1 flex-col">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold">Marcus Thorne</p>
+<p class="text-primary text-xs font-medium uppercase tracking-wide">Protocol Specialist</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Clearance: Level 4 • ID: B-1108</p>
+</div>
+<div class="shrink-0">
+<input class="h-6 w-6 rounded-lg border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 focus:border-primary transition-all cursor-pointer" type="checkbox"/>
+</div>
+</div>
+<!-- Contact Item 4 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 border-2 border-slate-700 dark:border-slate-800 opacity-80" data-alt="Portrait of Elena Rossi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBO_hTVkyKuMif9YnqPancE88eL_iWBml7vnxyI2pXIY_EbhLbeaTaKH9QyzjG6IkQtag5YJigmFB1KTsfg9mjehGENmxpjTZGNODGsrATeJ-Ujzssq4IExlpz-dWPQhgRNhf2i0mdBmLAfzNQdDMZ4WSuHxabxCFnzDjgTVbdIbpNbmsS8gVir2kKaTybW0I3gx42rsXC9IcuqbALksOzst6SAk6UtBxA5yrV53h-UVSZLK47unMmsJXMrFWv9_wdW_VBh_O3X8dg");'></div>
+<div class="flex flex-1 flex-col">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold">Elena Rossi</p>
+<p class="text-primary text-xs font-medium uppercase tracking-wide">Bio-Hazard Analyst</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Clearance: Level 5 • ID: B-6671</p>
+</div>
+<div class="shrink-0">
+<input class="h-6 w-6 rounded-lg border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 focus:border-primary transition-all cursor-pointer" type="checkbox"/>
+</div>
+</div>
+</div>
+<div class="h-8"></div>
+</div>
+</div>
+<!-- Sticky Bottom Section -->
+<div class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-[0_-8px_20px_rgba(0,0,0,0.1)]">
+<div class="flex justify-between items-center mb-4">
+<div class="flex flex-col">
+<span class="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold tracking-widest">Selected Status</span>
+<div class="flex items-center gap-2">
+<span class="text-slate-900 dark:text-slate-100 text-lg font-bold">2 of 3</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm font-medium">guardians required</span>
+</div>
+</div>
+<!-- Progress ring-like visual -->
+<div class="relative flex items-center justify-center">
+<svg class="w-12 h-12 rotate-[-90deg]">
+<circle class="text-slate-200 dark:text-slate-800" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" stroke-width="4"></circle>
+<circle class="text-primary" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" stroke-dasharray="125.6" stroke-dashoffset="41.8" stroke-width="4"></circle>
+</svg>
+<span class="absolute text-[10px] font-bold text-primary">66%</span>
+</div>
+</div>
+<button class="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-background-dark font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-[0.98]">
+<span>Confirm Selection</span>
+<span class="material-symbols-outlined">verified_user</span>
+</button>
+<p class="text-center text-[10px] text-slate-500 dark:text-slate-400 mt-3 px-4 leading-tight uppercase tracking-tight">Guardians will receive a secure bi-metric notification to confirm their role.</p>
+</div>
+</div>
+</body></html>

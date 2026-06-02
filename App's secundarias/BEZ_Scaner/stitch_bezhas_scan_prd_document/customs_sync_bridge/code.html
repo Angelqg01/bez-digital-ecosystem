@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Customs Sync - Puente Aduanero</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<!-- Header / Navigation Bar -->
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+<div class="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="bg-primary p-1.5 rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">hub</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-tight tracking-tight">BeZhas <span class="text-primary">Customs Sync</span></h1>
+<p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Puente Aduanero Digital</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="hidden md:flex flex-col items-end mr-4">
+<span class="text-xs font-medium text-slate-500">Polygon Mainnet</span>
+<span class="text-[10px] text-green-600 font-mono flex items-center gap-1">
+<span class="block size-1.5 rounded-full bg-green-500"></span> 0x8829...VX91
+                    </span>
+</div>
+<button class="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors relative">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-primary rounded-full border-2 border-background-light dark:border-background-dark"></span>
+</button>
+<button class="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+<!-- Global Status Widgets -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<p class="text-sm font-medium text-slate-500">Global Bridge</p>
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+</div>
+<p class="text-2xl font-bold tracking-tight">Operational</p>
+<div class="mt-2 flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/20 w-fit px-2 py-0.5 rounded-full">
+<span>UPTIME 100%</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<p class="text-sm font-medium text-slate-500">Polygon Sync</p>
+<span class="material-symbols-outlined text-blue-500">verified</span>
+</div>
+<p class="text-2xl font-bold tracking-tight">Verified</p>
+<div class="mt-2 flex items-center gap-1 text-xs font-medium text-slate-500">
+<span class="font-mono text-[10px]">Block #48,291,003</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<p class="text-sm font-medium text-slate-500">Active Scans</p>
+<span class="material-symbols-outlined text-primary">view_in_ar</span>
+</div>
+<p class="text-2xl font-bold tracking-tight">148 Units</p>
+<div class="mt-2 flex items-center gap-1 text-xs font-medium text-green-600">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+12.4% vs last shift</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<p class="text-sm font-medium text-slate-500">Avg Clear Time</p>
+<span class="material-symbols-outlined text-orange-400">timer</span>
+</div>
+<p class="text-2xl font-bold tracking-tight">1.4s / unit</p>
+<div class="mt-2 flex items-center gap-1 text-xs font-medium text-slate-500">
+<span>Target: &lt;2.0s</span>
+</div>
+</div>
+</section>
+<!-- Transformation & Scanning Interface -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="lg:col-span-2 space-y-6">
+<!-- 3D Volumetric Scan Transformation Card -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+<div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">transform</span>
+<h2 class="font-bold text-lg">3D Volumetric Scan Transformation</h2>
+</div>
+<span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded uppercase">Real-time Stream</span>
+</div>
+<div class="p-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-4">
+<div class="relative group aspect-video rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+<div class="absolute inset-0 bg-gradient-to-br from-slate-900/40 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" data-alt="3D point cloud volumetric cargo scan representation" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAheEWqooCVxF9QjWOSGaBWENBq9qRqZzluLkBrwEuXYeEibHDEG1x5vOlZB6ZmeMZcHvO9Ebw4U67D36dL3F3bpIx9-vlOVvqnGrNgqVi7k7iMuMELezc8PDUA6iucktR0dnwqmvUaZabgZMl9ueXFYqzvnGTvx0WKkiDYGugfhF6uO3tDatJjqYpIgGZ5k3yutGsezy3I1NDu8_b9Jdn_vjJ9Ljd55anoalgHngNPrAi0vf8Y2Vuouk8BM5MUPoDEk8weHSCvlxeS"/>
+<div class="absolute top-2 left-2 z-20 flex flex-col gap-1">
+<span class="text-[10px] bg-black/60 text-white px-2 py-0.5 rounded backdrop-blur">SCAN_ID: #8829-VX</span>
+<span class="text-[10px] bg-green-500/80 text-white px-2 py-0.5 rounded backdrop-blur font-bold">CALIBRATED</span>
+</div>
+<div class="absolute bottom-4 right-4 z-20">
+<button class="bg-white/90 hover:bg-white text-slate-900 p-2 rounded-lg shadow-xl flex items-center gap-2 text-xs font-bold transition-transform active:scale-95">
+<span class="material-symbols-outlined text-sm">fullscreen</span> View Point Cloud
+                                        </button>
+</div>
+</div>
+<div class="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+<h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Automated Filing Actions</h4>
+<div class="flex flex-wrap gap-2">
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">send</span> ASYCUDA World
+                                        </button>
+<button class="bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">account_balance</span> SIMPLE (Spain)
+                                        </button>
+</div>
+</div>
+</div>
+<div class="flex flex-col h-full">
+<h4 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-xs">code</span> Data Transformation Log
+                                </h4>
+<div class="flex-1 bg-slate-950 rounded-lg p-4 font-mono text-[11px] text-green-400 overflow-y-auto max-h-[280px]">
+<div class="mb-1"><span class="text-slate-500">[14:22:01]</span> INITIALIZING_STREAM: VOX_DATA_772</div>
+<div class="mb-1"><span class="text-slate-500">[14:22:02]</span> PARSING_CLOUD: 4.2M points identified</div>
+<div class="mb-1"><span class="text-slate-500">[14:22:03]</span> OBJECT_RECOGNITION: Container_Type_HC40</div>
+<div class="mb-1"><span class="text-slate-500">[14:22:04]</span> VOLUMETRIC_CALC: 67.2 m³ / 24,500kg</div>
+<div class="mb-1"><span class="text-slate-500">[14:22:05]</span> <span class="text-blue-400">CONVERTING: point_cloud -&gt; asycuda_v4.xml</span></div>
+<div class="mb-1 text-slate-300">
+                                        &lt;ItemDetails&gt;<br/>
+                                          &lt;HSCode&gt;8471.30.00&lt;/HSCode&gt;<br/>
+                                          &lt;Weight&gt;24500&lt;/Weight&gt;<br/>
+                                        &lt;/ItemDetails&gt;
+                                    </div>
+<div class="mb-1"><span class="text-slate-500">[14:22:06]</span> HASH_GENERATED: Polygon_Tx_0x...e4f</div>
+<div class="text-yellow-400">READY_FOR_TRANSMISSION</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Logistics Manifest View -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+<div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">inventory_2</span>
+<h2 class="font-bold text-lg">Active Logistics Manifests</h2>
+</div>
+<button class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
+                            View All Scans <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 text-[10px] uppercase font-bold tracking-wider">
+<th class="px-6 py-3 border-b border-slate-200 dark:border-slate-800">Carrier / ID</th>
+<th class="px-6 py-3 border-b border-slate-200 dark:border-slate-800">Origin / Dest</th>
+<th class="px-6 py-3 border-b border-slate-200 dark:border-slate-800">Manifest Sync</th>
+<th class="px-6 py-3 border-b border-slate-200 dark:border-slate-800">Verification</th>
+<th class="px-6 py-3 border-b border-slate-200 dark:border-slate-800">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="font-bold text-slate-900 dark:text-slate-100">Maersk Atlantic</div>
+<div class="text-[10px] text-slate-500">M-2023-99120</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span>RTM</span>
+<span class="material-symbols-outlined text-xs text-slate-400">trending_flat</span>
+<span>ALG</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="size-2 rounded-full bg-green-500"></span>
+<span class="text-xs">ASYCUDA Uploaded</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">POLYGON VALID</span>
+</td>
+<td class="px-6 py-4">
+<button class="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
+<span class="material-symbols-outlined text-slate-500">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="font-bold text-slate-900 dark:text-slate-100">CMA CGM Pegasus</div>
+<div class="text-[10px] text-slate-500">C-2023-88432</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span>BCN</span>
+<span class="material-symbols-outlined text-xs text-slate-400">trending_flat</span>
+<span>CAS</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="size-2 rounded-full bg-orange-500 animate-pulse"></span>
+<span class="text-xs">Processing SIMPLE...</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">PENDING</span>
+</td>
+<td class="px-6 py-4">
+<button class="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
+<span class="material-symbols-outlined text-slate-500">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Side Panels -->
+<div class="space-y-6">
+<!-- Custom Bridge Map/Location -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+<div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+<h3 class="font-bold text-sm">Checkpoint Activity</h3>
+</div>
+<div class="h-48 relative bg-slate-200">
+<img class="w-full h-full object-cover" data-alt="Abstract geographical map for tracking" data-location="Algeciras Port" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKTGDsE7zm3c5rdIzVCsSxi8H4Te1zmIzSeVx0u5vnrawR-6FJJEY0-IqEuwZZTZXsVwSXrZvixB67_m1ERSBltpUhFJp5L7ty3GKWfvGitOVQZj9Izg-65XPZjSe5aCOazej0Wu_XllrRrmgb1cRAor0R9d7OSblXFLWamuitl7ex6DIP5O5RD72H1pgi4qdeNPskW4YHi6u4hfHrUDFgXOZQcqQql0jYc-A9WdnndsnP9CBB4xlaNe5eRhculzzVaHOiDWDR3UHz"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="relative">
+<span class="absolute size-4 bg-primary/40 rounded-full animate-ping"></span>
+<span class="relative block size-4 bg-primary rounded-full border-2 border-white shadow-lg"></span>
+</div>
+</div>
+</div>
+<div class="p-4 space-y-4">
+<div class="flex items-center justify-between">
+<span class="text-xs text-slate-500 font-medium">Primary Hub:</span>
+<span class="text-xs font-bold">Port of Algeciras, Spain</span>
+</div>
+<div class="h-px bg-slate-100 dark:bg-slate-800"></div>
+<div class="space-y-3">
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined text-sm">local_shipping</span>
+</div>
+<div>
+<p class="text-xs font-bold leading-tight">In-Queue Units</p>
+<p class="text-[10px] text-slate-500">12 Containers approaching</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg text-green-600">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+</div>
+<div>
+<p class="text-xs font-bold leading-tight">Inspector Presence</p>
+<p class="text-[10px] text-slate-500">4 Active Sessions</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- On-Chain Proofs -->
+<div class="bg-slate-900 text-slate-100 rounded-xl shadow-xl overflow-hidden p-5 space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="font-bold text-sm text-primary">On-Chain Sync Proofs</h3>
+<span class="material-symbols-outlined text-sm opacity-50">security</span>
+</div>
+<div class="space-y-3">
+<div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+<div class="flex justify-between text-[10px] mb-1">
+<span class="text-slate-400">TRANSIT_HASH</span>
+<span class="text-primary font-mono">0x4a2...9d</span>
+</div>
+<p class="text-xs font-mono truncate">f281985472819854728198547281985472819854</p>
+</div>
+<div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+<div class="flex justify-between text-[10px] mb-1">
+<span class="text-slate-400">PAYLOAD_CID</span>
+<span class="text-primary font-mono">IPFS</span>
+</div>
+<p class="text-xs font-mono truncate">QmXoypizjW3Wkn2ZFST_v2</p>
+</div>
+</div>
+<button class="w-full bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-2 rounded uppercase tracking-widest transition-colors">
+                        Explore Mainnet Ledger
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Mobile Focused) -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 md:hidden">
+<div class="flex items-center justify-around h-16">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">view_in_ar</span>
+<span class="text-[10px] font-medium">Scans</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-[10px] font-medium">Manifests</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Mobile Bottom Padding -->
+<div class="h-16 md:hidden"></div>
+</body></html>

@@ -1,0 +1,262 @@
+{
+  "folders": [
+    {
+      "name": "⬡ BeZhas Blockchain (Contratos)",
+      "path": "D:\\Documentos D\\Documentos Yoe\\BeZhas\\BeZhas Blockchain"
+    },
+    {
+      "name": "⬡ BeZhas Web3 (Frontend)",
+      "path": "D:\\Documentos D\\Documentos Yoe\\BeZhas\\BeZhas Web\\bezhas-web3"
+    },
+    {
+      "name": "⬡ BeZhas Platform (SaaS)",
+      "path": "D:\\Documentos D\\Documentos Yoe\\BeZhas\\BeZhas Platform"
+    }
+  ],
+  "settings": {
+    // ── Editor ───────────────────────────────────────────────────────────────
+    "editor.fontSize":               14,
+    "editor.fontFamily":             "'Fira Code', 'JetBrains Mono', monospace",
+    "editor.fontLigatures":          true,
+    "editor.formatOnSave":           true,
+    "editor.defaultFormatter":       "esbenp.prettier-vscode",
+    "editor.tabSize":                2,
+    "editor.rulers":                 [80, 120],
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs":    "active",
+    "editor.inlineSuggest.enabled":  true,
+    "editor.suggestSelection":       "recentlyUsedByPrefix",
+
+    // ── Solidity ─────────────────────────────────────────────────────────────
+    "solidity.compileUsingRemoteVersion": "v0.8.24",
+    "solidity.formatter":            "prettier",
+    "solidity.linter":               "solhint",
+    "[solidity]": {
+      "editor.defaultFormatter": "JuanBlanco.solidity"
+    },
+
+    // ── TypeScript / JavaScript ───────────────────────────────────────────────
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "javascript.updateImportsOnFileMove.enabled":   "always",
+    "typescript.updateImportsOnFileMove.enabled":   "always",
+    "[javascript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascriptreact]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+
+    // ── Files ────────────────────────────────────────────────────────────────
+    "files.exclude": {
+      "**/node_modules":           true,
+      "**/cache":                  true,
+      "**/.git":                   true,
+      "**/artifacts/build-info":   true
+    },
+    "files.watcherExclude": {
+      "**/node_modules/**":        true,
+      "**/cache/**":               true,
+      "**/artifacts/build-info/**": true
+    },
+    "files.associations": {
+      "*.sol": "solidity",
+      "*.env": "dotenv",
+      "*.env.*": "dotenv"
+    },
+
+    // ── Search ───────────────────────────────────────────────────────────────
+    "search.exclude": {
+      "**/node_modules":   true,
+      "**/cache":          true,
+      "**/artifacts":      false,
+      "**/dist":           true
+    },
+
+    // ── Terminal ─────────────────────────────────────────────────────────────
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.fontSize":              13,
+    "terminal.integrated.env.windows": {
+      "HARDHAT_NETWORK": "localhost"
+    },
+
+    // ── Git ──────────────────────────────────────────────────────────────────
+    "git.enableSmartCommit":       true,
+    "git.confirmSync":             false,
+    "git.autofetch":               true,
+
+    // ── Prettier ──────────────────────────────────────────────────────────────
+    "prettier.semi":               true,
+    "prettier.singleQuote":        true,
+    "prettier.printWidth":         100,
+    "prettier.trailingComma":      "es5",
+
+    // ── Color del workspace ───────────────────────────────────────────────────
+    "workbench.colorCustomizations": {
+      "activityBar.background":      "#060810",
+      "sideBar.background":          "#0a0e18",
+      "statusBar.background":        "#00d4aa",
+      "statusBar.foreground":        "#060810",
+      "titleBar.activeBackground":   "#060810",
+      "titleBar.activeForeground":   "#00d4aa",
+      "tab.activeBackground":        "#0d1117",
+      "tab.activeBorderTop":         "#c9a84c",
+      "editorGroupHeader.tabsBackground": "#060810"
+    },
+
+    // ── Iconos ───────────────────────────────────────────────────────────────
+    "workbench.iconTheme": "material-icon-theme",
+    "material-icon-theme.folders.associations": {
+      "abis":        "api",
+      "contracts":   "components",
+      "hooks":       "hook",
+      "deployments": "deploy",
+      "artifacts":   "archive"
+    }
+  },
+
+  // ── Extensiones recomendadas ────────────────────────────────────────────────
+  "extensions": {
+    "recommendations": [
+      "JuanBlanco.solidity",
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "PKief.material-icon-theme",
+      "usernamehw.errorlens",
+      "wix.vscode-import-cost",
+      "formulahendry.auto-rename-tag",
+      "streetsidesoftware.code-spell-checker",
+      "streetsidesoftware.code-spell-checker-spanish",
+      "eamodio.gitlens",
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss",
+      "Hardhat.hardhat-solidity",
+      "tintinweb.solidity-visual-auditor",
+      "ms-vsliveshare.vsliveshare",
+      "GitHub.copilot",
+      "continue.continue"
+    ]
+  },
+
+  // ── Tareas ──────────────────────────────────────────────────────────────────
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "⬡ Compilar Contratos",
+        "type": "shell",
+        "command": "npx hardhat compile",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}" },
+        "group": "build",
+        "presentation": { "panel": "dedicated", "clear": true }
+      },
+      {
+        "label": "⬡ Sync: Blockchain → Web3",
+        "type": "shell",
+        "command": "node sync/sync-daemon.js --once",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}" },
+        "group": "build",
+        "presentation": { "panel": "dedicated", "clear": false, "reveal": "always" }
+      },
+      {
+        "label": "⬡ Sync Watch (desarrollo)",
+        "type": "shell",
+        "command": "node sync/sync-daemon.js --watch",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}" },
+        "isBackground": true,
+        "presentation": { "panel": "dedicated", "clear": true }
+      },
+      {
+        "label": "⬡ Deploy BSC Testnet",
+        "type": "shell",
+        "command": "npx hardhat run scripts/deploy.js --network bscTestnet && node sync/sync-daemon.js --once",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}" },
+        "group": "build"
+      },
+      {
+        "label": "⬡ Deploy Polygon Mumbai",
+        "type": "shell",
+        "command": "npx hardhat run scripts/deploy.js --network mumbai && node sync/sync-daemon.js --once",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}" },
+        "group": "build"
+      },
+      {
+        "label": "⬡ Dev: Web3 + Sync Watch",
+        "dependsOn": ["⬡ Sync Watch (desarrollo)", "⬡ Iniciar Web3 Dev"],
+        "group": { "kind": "build", "isDefault": true }
+      },
+      {
+        "label": "⬡ Iniciar Web3 Dev",
+        "type": "shell",
+        "command": "npm run dev",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Web3 (Frontend)}" },
+        "presentation": { "panel": "dedicated" }
+      },
+      {
+        "label": "⬡ Tests Contratos",
+        "type": "shell",
+        "command": "npx hardhat test",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}" },
+        "group": "test"
+      },
+      {
+        "label": "⬡ Hardhat Node Local",
+        "type": "shell",
+        "command": "npx hardhat node",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}" },
+        "isBackground": true,
+        "presentation": { "panel": "dedicated" }
+      },
+      {
+        "label": "⬡ Validar Sync",
+        "type": "shell",
+        "command": "node sync/sync-daemon.js --dry-run",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}" }
+      },
+      {
+        "label": "⬡ Estado Sync",
+        "type": "shell",
+        "command": "node sync/sync-daemon.js --status",
+        "options": { "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}" }
+      }
+    ]
+  },
+
+  // ── Launch configurations ────────────────────────────────────────────────────
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "⬡ Debug Hardhat Tests",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}/node_modules/.bin/hardhat",
+        "args": ["test", "--grep", "${input:testPattern}"],
+        "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "⬡ Debug Sync Daemon",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}/sync/sync-daemon.js",
+        "args": ["--dry-run"],
+        "cwd": "${workspaceFolder:⬡ BeZhas Blockchain (Contratos)}",
+        "console": "integratedTerminal"
+      }
+    ],
+    "inputs": [
+      {
+        "id": "testPattern",
+        "type": "promptString",
+        "description": "Patrón de test (regex)",
+        "default": "BeZhasPayment"
+      }
+    ]
+  }
+}

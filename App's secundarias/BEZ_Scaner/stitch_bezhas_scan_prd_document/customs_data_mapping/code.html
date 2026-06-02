@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .code-font { font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased min-h-screen">
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+<div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="bg-primary p-2 rounded-lg text-white">
+<span class="material-symbols-outlined">sync_alt</span>
+</div>
+<div>
+<h1 class="font-display font-bold text-lg leading-tight">BeZhas Customs Sync</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">Data Mapping &amp; Transformation</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">notifications</span>
+</button>
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">settings</span>
+</button>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-4 py-6 mb-24">
+<!-- Top Toolbar -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<div>
+<h2 class="text-2xl font-bold tracking-tight">Active Transformation</h2>
+<p class="text-sm text-slate-500">Mapping 3D Scan ID: #SCAN-99284 to ASYCUDA World Schema</p>
+</div>
+<div class="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 rounded-xl shadow-sm border border-primary/10">
+<button class="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg shadow-sm">Auto-Map</button>
+<button class="px-4 py-2 text-slate-600 dark:text-slate-300 text-sm font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">Manual Edit</button>
+</div>
+</div>
+<!-- Split View Grid -->
+<div class="grid lg:grid-cols-2 gap-6">
+<!-- Left Side: Scanned 3D Attributes -->
+<div class="space-y-4">
+<div class="flex items-center justify-between px-2">
+<h3 class="font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">view_in_ar</span>
+                        Scanned 3D Attributes
+                    </h3>
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Source Data</span>
+</div>
+<!-- Attribute Cards -->
+<div class="space-y-3">
+<!-- Volume Card -->
+<div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-primary/10 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
+<div class="flex items-center gap-4">
+<div class="bg-primary/10 p-3 rounded-lg text-primary">
+<span class="material-symbols-outlined">square_foot</span>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-400 uppercase tracking-tight">Volume</p>
+<p class="text-base font-semibold">0.45 m³</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary/40">arrow_forward</span>
+<label class="relative flex h-[24px] w-[44px] cursor-pointer items-center rounded-full border-none bg-slate-200 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary">
+<div class="h-full w-[20px] rounded-full bg-white shadow-sm"></div>
+<input checked="" class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- Weight Card -->
+<div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-primary/10 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
+<div class="flex items-center gap-4">
+<div class="bg-primary/10 p-3 rounded-lg text-primary">
+<span class="material-symbols-outlined">weight</span>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-400 uppercase tracking-tight">Weight</p>
+<p class="text-base font-semibold">12.80 kg</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary/40">arrow_forward</span>
+<label class="relative flex h-[24px] w-[44px] cursor-pointer items-center rounded-full border-none bg-slate-200 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary">
+<div class="h-full w-[20px] rounded-full bg-white shadow-sm"></div>
+<input checked="" class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- Dimensions Card -->
+<div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-primary/10 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
+<div class="flex items-center gap-4">
+<div class="bg-primary/10 p-3 rounded-lg text-primary">
+<span class="material-symbols-outlined">straighten</span>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-400 uppercase tracking-tight">Dimensions</p>
+<p class="text-base font-semibold">80x60x45 cm</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary/40">arrow_forward</span>
+<label class="relative flex h-[24px] w-[44px] cursor-pointer items-center rounded-full border-none bg-slate-200 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary">
+<div class="h-full w-[20px] rounded-full bg-white shadow-sm"></div>
+<input checked="" class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- HS Code Card -->
+<div class="bg-white dark:bg-slate-800 p-4 rounded-xl border-2 border-primary/30 shadow-sm flex items-center justify-between group hover:border-primary/50 transition-all relative overflow-hidden">
+<div class="absolute top-0 right-0 bg-primary px-2 py-0.5 rounded-bl-lg">
+<span class="text-[9px] font-bold text-white uppercase tracking-tighter">AI Suggested</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="bg-primary p-3 rounded-lg text-white">
+<span class="material-symbols-outlined">category</span>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-400 uppercase tracking-tight">HS Code Suggestion</p>
+<p class="text-base font-semibold">8471.30.00.00</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">arrow_forward</span>
+<label class="relative flex h-[24px] w-[44px] cursor-pointer items-center rounded-full border-none bg-slate-200 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary">
+<div class="h-full w-[20px] rounded-full bg-white shadow-sm"></div>
+<input checked="" class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Side: Customs Field (JSON/XML) -->
+<div class="space-y-4">
+<div class="flex items-center justify-between px-2">
+<h3 class="font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">code</span>
+                        Customs Field (ASYCUDA)
+                    </h3>
+<div class="flex gap-2">
+<button class="text-xs font-bold text-primary px-2 py-1 rounded bg-primary/10">JSON</button>
+<button class="text-xs font-bold text-slate-400 px-2 py-1">XML</button>
+</div>
+</div>
+<div class="bg-slate-900 rounded-xl overflow-hidden shadow-xl border border-slate-800 min-h-[400px] flex flex-col">
+<div class="bg-slate-800/50 px-4 py-2 flex items-center justify-between border-b border-slate-700/50">
+<div class="flex gap-1.5">
+<div class="size-2.5 rounded-full bg-red-500/50"></div>
+<div class="size-2.5 rounded-full bg-amber-500/50"></div>
+<div class="size-2.5 rounded-full bg-emerald-500/50"></div>
+</div>
+<span class="text-[10px] code-font text-slate-400">asycuda_declaration.json</span>
+</div>
+<div class="p-6 code-font text-sm leading-relaxed overflow-auto flex-1">
+<pre class="text-blue-300">{
+  <span class="text-slate-500">"declaration"</span>: {
+    <span class="text-slate-500">"header"</span>: {
+      <span class="text-slate-500">"scan_id"</span>: <span class="text-emerald-400">"SCAN-99284"</span>,
+      <span class="text-slate-500">"sync_date"</span>: <span class="text-emerald-400">"2023-11-24T14:30:00Z"</span>
+    },
+    <span class="text-slate-500">"items"</span>: [
+      {
+        <span class="text-slate-500">"item_number"</span>: 1,
+        <span class="text-slate-500">"hs_code"</span>: <span class="text-amber-400">"8471300000"</span>,
+        <span class="text-slate-500">"gross_weight"</span>: <span class="text-amber-400">12.80</span>,
+        <span class="text-slate-500">"net_weight"</span>: <span class="text-amber-400">11.50</span>,
+        <span class="text-slate-500">"volume"</span>: <span class="text-amber-400">0.45</span>,
+        <span class="text-slate-500">"dimensions"</span>: {
+          <span class="text-slate-500">"length"</span>: <span class="text-amber-400">80</span>,
+          <span class="text-slate-500">"width"</span>: <span class="text-amber-400">60</span>,
+          <span class="text-slate-500">"height"</span>: <span class="text-amber-400">45</span>
+        }
+      }
+    ]
+  }
+}
+</pre>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-primary/10 px-4 pt-4 pb-6 z-50">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4">
+<div class="flex w-full md:w-auto gap-4 flex-1">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<p class="text-xs font-medium">Scan</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">transform</span>
+<p class="text-xs font-medium">Mapping</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<p class="text-xs font-medium">History</p>
+</a>
+</div>
+<div class="w-full md:w-auto">
+<button class="w-full md:min-w-[240px] py-4 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold flex items-center justify-center gap-3 transition-transform active:scale-95 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">cloud_upload</span>
+                    Generate &amp; Sync to ASYCUDA
+                </button>
+</div>
+</div>
+</div>
+<!-- Background Decoration -->
+<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+<div class="absolute -top-24 -right-24 size-96 bg-primary/5 rounded-full blur-3xl"></div>
+<div class="absolute -bottom-24 -left-24 size-96 bg-primary/5 rounded-full blur-3xl"></div>
+</div>
+</body></html>

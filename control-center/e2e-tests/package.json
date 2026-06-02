@@ -1,0 +1,22 @@
+{
+  "name": "e2e-tests",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "pnpm exec playwright test",
+    "test:mocked": "pnpm exec playwright test e2e/dashboard.spec.ts",
+    "test:integration": "pnpm exec playwright test e2e/integration.spec.ts",
+    "test:all": "pnpm exec playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

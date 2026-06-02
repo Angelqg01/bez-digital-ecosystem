@@ -1,0 +1,6 @@
+Arquitectura de IA Engine y Base de Datos
+Antes de arrancar la blockchain, necesitas la infraestructura que dará soporte al "Quality Oracle" y la mensajería.
+PostgreSQL: Para guardar métricas empresariales, usuarios del panel de control y analíticas de gas.
+Redis + BullMQ: Para encolar las peticiones a la IA (si 100 empresas tokenizan al mismo tiempo, Redis organiza las peticiones a Deepseek/Gemini para no saturar la API).
+AI Gateway (API interna): Un pequeño servidor Node.js/Python local que tiene tus API Keys y responde a la blockchain.
+Crearemos esto dentro del orquestador Docker en el Paso 5.

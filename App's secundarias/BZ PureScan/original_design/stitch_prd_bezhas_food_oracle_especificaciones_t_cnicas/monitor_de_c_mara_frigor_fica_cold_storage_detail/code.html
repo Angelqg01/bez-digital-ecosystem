@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas - Cold Storage Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-fixed": "#001d36",
+              "secondary-container": "#02c953",
+              "primary-container": "#2196f3",
+              "on-tertiary-fixed-variant": "#6d3900",
+              "surface-dim": "#0c1420",
+              "error": "#ffb4ab",
+              "on-surface-variant": "#bfc7d4",
+              "on-secondary": "#003912",
+              "surface-container-lowest": "#070e1a",
+              "outline": "#89919d",
+              "secondary-fixed": "#69ff87",
+              "surface-container": "#18202c",
+              "surface": "#0c1420",
+              "surface-variant": "#2d3542",
+              "inverse-on-surface": "#29313e",
+              "on-tertiary-fixed": "#2e1500",
+              "error-container": "#93000a",
+              "primary-fixed": "#d1e4ff",
+              "on-secondary-container": "#004d1b",
+              "on-secondary-fixed-variant": "#00531e",
+              "on-surface": "#dbe3f4",
+              "surface-container-high": "#232a37",
+              "on-tertiary": "#4d2700",
+              "surface-tint": "#9ecaff",
+              "tertiary-fixed-dim": "#ffb77b",
+              "on-error": "#690005",
+              "surface-container-low": "#141c28",
+              "on-primary-fixed-variant": "#00497d",
+              "secondary-fixed-dim": "#3ce36a",
+              "tertiary": "#ffb77b",
+              "primary": "#9ecaff",
+              "inverse-surface": "#dbe3f4",
+              "tertiary-fixed": "#ffdcc2",
+              "on-tertiary-container": "#452200",
+              "on-secondary-fixed": "#002108",
+              "surface-bright": "#323947",
+              "on-background": "#dbe3f4",
+              "inverse-primary": "#0061a4",
+              "secondary": "#40e56c",
+              "surface-container-highest": "#2d3542",
+              "background": "#0c1420",
+              "on-error-container": "#ffdad6",
+              "tertiary-container": "#db7900",
+              "on-primary-container": "#002c4f",
+              "outline-variant": "#404752",
+              "primary-fixed-dim": "#9ecaff",
+              "on-primary": "#003258"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-panel {
+        background: rgba(24, 32, 44, 0.4);
+        backdrop-filter: blur(20px);
+      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30">
+<!-- TopNavBar -->
+<nav class="bg-[#0c1420] flex justify-between items-center w-full px-6 py-4 h-16 fixed top-0 z-[60]">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black text-blue-400 tracking-tighter font-headline">BeZhas</span>
+<div class="hidden md:flex items-center bg-surface-container-low px-4 py-1.5 rounded-full border border-outline-variant/15">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-2">search</span>
+<input class="bg-transparent border-none text-sm focus:ring-0 text-on-surface w-64 p-0" placeholder="Search logistics nodes..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-[#dbe3f4] hover:bg-white/10 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-[#dbe3f4] hover:bg-white/10 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-screen fixed left-0 top-0 pt-20 pb-8 px-4 w-64 bg-[#0c1420] border-r border-white/5 z-50">
+<div class="mb-8 px-4">
+<h2 class="text-xl font-bold text-blue-400 font-headline">BeZhas</h2>
+<p class="text-[10px] uppercase tracking-widest text-[#dbe3f4]/40 font-bold">Editorial Logistics</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-[#dbe3f4]/60 hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Inter'] font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-[#dbe3f4]/60 hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="qr_code_scanner">qr_code_scanner</span>
+<span class="font-['Inter'] font-medium text-sm">Scan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-blue-400 bg-blue-400/10 border-r-2 border-blue-400 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-['Inter'] font-medium text-sm">Storage</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-[#dbe3f4]/60 hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-['Inter'] font-medium text-sm">Shipments</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-[#dbe3f4]/60 hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Inter'] font-medium text-sm">Wallet</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-[#dbe3f4]/60 hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Inter'] font-medium text-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4 pt-4 border-t border-white/5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-[10px] font-bold">JD</div>
+<div class="overflow-hidden">
+<p class="text-xs font-bold truncate">John Doe</p>
+<p class="text-[10px] text-on-surface-variant truncate">Lead Agronomist</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="lg:ml-64 pt-24 pb-32 px-6 lg:px-12">
+<div class="max-w-7xl mx-auto">
+<!-- Header Section -->
+<header class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] font-bold uppercase tracking-tighter rounded border border-secondary/20 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                            Live Telemetry
+                        </span>
+<span class="text-on-surface-variant/40 text-[10px] font-bold uppercase tracking-widest">ID: CS-ORACLE-774</span>
+</div>
+<h1 class="text-4xl md:text-6xl font-black font-headline tracking-tighter leading-none mb-4">FRIGORÍFICO <span class="text-primary">BETA-09</span></h1>
+<p class="text-on-surface-variant max-w-xl">Monitorización avanzada de atmósfera controlada para productos perecederos de exportación. Edge AI activo para prevención de maduración acelerada.</p>
+</div>
+<div class="flex flex-wrap gap-3">
+<button class="px-6 py-2.5 bg-surface-container-low border border-outline-variant/20 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="thermostat">thermostat</span>
+                        Ajustar Termostato
+                    </button>
+<button class="px-6 py-2.5 bg-primary text-on-primary rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm" data-icon="assignment">assignment</span>
+                        Auditoría
+                    </button>
+</div>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Telemetry Grid -->
+<div class="lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Temp Gauge -->
+<div class="surface-container rounded-xl p-6 relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">Temperatura</p>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="text-5xl font-black font-headline">-2.5</span>
+<span class="text-xl font-bold text-on-surface-variant">°C</span>
+</div>
+<div class="flex items-center gap-2 text-secondary text-xs font-bold">
+<span class="material-symbols-outlined text-xs" data-icon="trending_flat">trending_flat</span>
+                                Estable
+                            </div>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-1/2 opacity-20 bg-gradient-to-t from-primary to-transparent"></div>
+</div>
+<!-- Humidity Gauge -->
+<div class="surface-container rounded-xl p-6 relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">Humedad Relativa</p>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="text-5xl font-black font-headline">92</span>
+<span class="text-xl font-bold text-on-surface-variant">%</span>
+</div>
+<div class="flex items-center gap-2 text-secondary text-xs font-bold">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span>
+                                Óptimo
+                            </div>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-1/2 opacity-20 bg-gradient-to-t from-secondary to-transparent"></div>
+</div>
+<!-- Ethylene Gauge -->
+<div class="surface-container rounded-xl p-6 relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">Nivel Etileno</p>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="text-5xl font-black font-headline">0.4</span>
+<span class="text-xl font-bold text-on-surface-variant">ppm</span>
+</div>
+<div class="flex items-center gap-2 text-secondary text-xs font-bold">
+<span class="material-symbols-outlined text-xs" data-icon="arrow_downward">arrow_downward</span>
+                                Bajo
+                            </div>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-1/2 opacity-10 bg-gradient-to-t from-tertiary to-transparent"></div>
+</div>
+<!-- Main Chart Placeholder -->
+<div class="md:col-span-3 surface-container rounded-xl p-8 h-80 relative">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="text-lg font-bold font-headline">Análisis de Series Temporales</h3>
+<p class="text-xs text-on-surface-variant">Historial de 24h - Sensor Oracle Alpha</p>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+<span class="w-3 h-0.5 bg-primary"></span> Temp
+                                </div>
+<div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+<span class="w-3 h-0.5 bg-secondary"></span> Hum
+                                </div>
+</div>
+</div>
+<!-- Visual representation of a chart using SVG -->
+<div class="w-full h-40 mt-12 overflow-hidden">
+<svg class="w-full h-full preserve-3d" viewbox="0 0 1000 200">
+<defs>
+<lineargradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:var(--primary);stop-opacity:0.3"></stop>
+<stop offset="100%" style="stop-color:var(--primary);stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,150 Q50,140 100,145 T200,155 T300,150 T400,148 T500,152 T600,150 T700,149 T800,151 T900,148 T1000,150 V200 H0 Z" fill="url(#grad1)"></path>
+<path d="M0,150 Q50,140 100,145 T200,155 T300,150 T400,148 T500,152 T600,150 T700,149 T800,151 T900,148 T1000,150" fill="none" stroke="#9ecaff" stroke-width="2"></path>
+<path d="M0,100 Q50,110 100,105 T200,95 T300,100 T400,102 T500,98 T600,100 T700,101 T800,99 T900,102 T1000,100" fill="none" stroke="#40e56c" stroke-dasharray="4" stroke-width="2"></path>
+</svg>
+</div>
+<div class="flex justify-between mt-4 text-[10px] font-bold text-on-surface-variant/40 tracking-widest">
+<span>00:00</span>
+<span>04:00</span>
+<span>08:00</span>
+<span>12:00</span>
+<span>16:00</span>
+<span>20:00</span>
+<span>NOW</span>
+</div>
+</div>
+</div>
+<!-- AI Sidebar -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Predictor Card -->
+<div class="bg-primary/10 border border-primary/20 rounded-xl p-8 backdrop-blur-md">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="psychology">psychology</span>
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary">IA Predicciones</h3>
+</div>
+<p class="text-xs text-on-surface-variant mb-2">Ventana de Frescura Estimada</p>
+<div class="text-4xl font-black font-headline text-on-surface mb-6">12 DÍAS <span class="text-sm font-medium text-on-surface-variant">restantes</span></div>
+<div class="space-y-4">
+<div class="p-4 bg-surface/50 rounded-lg border border-outline-variant/10">
+<div class="flex justify-between items-center mb-2">
+<span class="text-[10px] font-bold uppercase tracking-widest">Calidad Actual</span>
+<span class="text-[10px] font-bold text-secondary">98%</span>
+</div>
+<div class="h-1 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[98%]"></div>
+</div>
+</div>
+<p class="text-[11px] leading-relaxed text-on-surface-variant italic">"Se observa una estabilidad térmica excepcional. Los niveles de etileno no muestran picos, lo que sugiere una extensión del ciclo de vida post-cosecha de un 15% sobre la media."</p>
+</div>
+</div>
+<!-- Batch List -->
+<div class="surface-container rounded-xl overflow-hidden">
+<div class="p-6 border-b border-white/5">
+<h3 class="text-sm font-bold uppercase tracking-widest">Lotes en Cámara</h3>
+</div>
+<div class="divide-y divide-white/5">
+<!-- Batch Item -->
+<div class="p-4 hover:bg-white/5 transition-colors group cursor-pointer">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold">Lote #BERRY-2024-X</span>
+<span class="text-[10px] text-primary underline underline-offset-4">Ver DPP</span>
+</div>
+<div class="flex items-center gap-2 text-[10px] text-on-surface-variant/60 font-mono overflow-hidden">
+<span class="material-symbols-outlined text-[12px]" data-icon="link">link</span>
+<span class="truncate">0x88d2...a4e1f</span>
+</div>
+</div>
+<!-- Batch Item -->
+<div class="p-4 hover:bg-white/5 transition-colors group cursor-pointer">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold">Lote #AVO-MX-99</span>
+<span class="text-[10px] text-primary underline underline-offset-4">Ver DPP</span>
+</div>
+<div class="flex items-center gap-2 text-[10px] text-on-surface-variant/60 font-mono overflow-hidden">
+<span class="material-symbols-outlined text-[12px]" data-icon="link">link</span>
+<span class="truncate">0x42f1...b77c2</span>
+</div>
+</div>
+</div>
+<button class="w-full py-4 text-xs font-bold text-primary hover:bg-primary/5 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="swap_horiz">swap_horiz</span>
+                            Transferir Lote
+                        </button>
+</div>
+</div>
+</div>
+<!-- Visual Asset / Ambient Background -->
+<div class="mt-16 rounded-3xl h-[400px] relative overflow-hidden group">
+<img alt="Cold Storage Tech" class="w-full h-full object-cover grayscale opacity-40 group-hover:scale-105 transition-transform duration-700" data-alt="Modern cold storage facility interior with technical sensors, blue led ambient light, and frosty atmosphere in a high-tech logistics center" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBTLcHoQHPopbBNnigXgl7l-z41h8gg4EsPPoHDs7Nj-ye6Wz1tKFkGb0IW7S2rOjd08KiMd9FPO6dEGQxZSX5U8QnrWuOPh9C4E-jGnv_gDnU3dyQSRXYH2QSgQyIXSjNrj6lzfKDL9gB4HAwzs9f_JSM1MBc9hnKC2mEAgKrX8srOOUmz22snyeAF0cwv8qJH323LCdc9sDH_FNmZ8jBf7KcYdX3oiWULV0TzL77s6THxvLmiJggn3bhGdaqE-5fwJcK04ojThQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent"></div>
+<div class="absolute bottom-12 left-12 right-12 flex flex-col md:flex-row items-center justify-between gap-8">
+<div class="max-w-md">
+<h2 class="text-3xl font-black font-headline tracking-tighter mb-4">MANTENIMIENTO PREDICTIVO</h2>
+<p class="text-sm text-on-surface-variant">Próxima revisión técnica programada en 45 días basada en el rendimiento actual de los compresores y sellado hermético.</p>
+</div>
+<div class="flex gap-4">
+<div class="text-center">
+<div class="text-2xl font-black font-headline">99.8%</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Uptime</div>
+</div>
+<div class="w-px h-12 bg-white/10"></div>
+<div class="text-center">
+<div class="text-2xl font-black font-headline">14kW</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Consumo/h</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#0c1420]/80 backdrop-blur-xl border-t border-white/10 shadow-2xl shadow-black">
+<a class="flex flex-col items-center justify-center text-[#dbe3f4]/50 p-2 active:bg-blue-400/20 transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#dbe3f4]/50 p-2 active:bg-blue-400/20 transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="qr_code_scanner">qr_code_scanner</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-blue-400 bg-blue-400/10 rounded-xl p-2 active:bg-blue-400/20 transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#dbe3f4]/50 p-2 active:bg-blue-400/20 transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold">Settings</span>
+</a>
+</nav>
+</body></html>

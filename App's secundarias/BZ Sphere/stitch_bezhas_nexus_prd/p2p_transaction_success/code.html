@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Transaction Complete - BeZhas Nexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline-variant": "#3b494c",
+                        "secondary-container": "#0050ee",
+                        "on-primary": "#00363d",
+                        "on-error-container": "#ffdad6",
+                        "surface-container": "#1c2026",
+                        "surface-bright": "#353940",
+                        "surface-container-high": "#262a31",
+                        "surface": "#10141a",
+                        "on-surface": "#dfe2eb",
+                        "inverse-primary": "#006875",
+                        "secondary-fixed": "#dce1ff",
+                        "primary-fixed": "#9cf0ff",
+                        "on-secondary-fixed": "#001550",
+                        "on-tertiary": "#3a3000",
+                        "surface-variant": "#31353c",
+                        "on-secondary-container": "#d4dbff",
+                        "on-secondary": "#002780",
+                        "tertiary-container": "#f4ce00",
+                        "tertiary": "#ffecad",
+                        "on-surface-variant": "#bac9cc",
+                        "surface-dim": "#10141a",
+                        "surface-container-low": "#181c22",
+                        "on-primary-fixed": "#001f24",
+                        "surface-container-lowest": "#0a0e14",
+                        "secondary": "#b6c4ff",
+                        "primary-container": "#00e5ff",
+                        "on-tertiary-fixed-variant": "#544600",
+                        "surface-tint": "#00daf3",
+                        "background": "#10141a",
+                        "on-error": "#690005",
+                        "primary": "#c3f5ff",
+                        "on-background": "#dfe2eb",
+                        "surface-container-highest": "#31353c",
+                        "on-tertiary-fixed": "#221b00",
+                        "inverse-on-surface": "#2d3137",
+                        "on-tertiary-container": "#695800",
+                        "on-primary-container": "#00626e",
+                        "outline": "#849396",
+                        "on-primary-fixed-variant": "#004f58",
+                        "inverse-surface": "#dfe2eb",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#003ab3",
+                        "tertiary-fixed": "#ffe16d",
+                        "tertiary-fixed-dim": "#e9c400",
+                        "secondary-fixed-dim": "#b6c4ff",
+                        "primary-fixed-dim": "#00daf3",
+                        "error": "#ffb4ab"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glow-sm {
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+        }
+        .glass-panel {
+            background: rgba(38, 42, 49, 0.6);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(195, 245, 255, 0.1);
+            border-left: 1px solid rgba(195, 245, 255, 0.1);
+        }
+        .cyber-gradient {
+            background: linear-gradient(45deg, rgba(195, 245, 255, 0.15), rgba(0, 229, 255, 0.15));
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-container selection:text-on-primary-container overflow-hidden h-screen w-screen">
+<!-- Blurred Background Content (Simulating SCREEN_8 Chat) -->
+<div class="fixed inset-0 z-0 blur-xl opacity-40 scale-105 select-none pointer-events-none">
+<header class="flex justify-between items-center px-6 h-16 border-b border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high"></div>
+<div class="w-24 h-4 bg-surface-container-high rounded"></div>
+</div>
+<div class="w-16 h-8 bg-surface-container-high rounded-full"></div>
+</header>
+<main class="p-6 flex flex-col gap-6">
+<div class="self-end bg-primary-container/20 w-2/3 h-24 rounded-xl"></div>
+<div class="self-start bg-surface-container-high w-3/4 h-32 rounded-xl"></div>
+<div class="self-end bg-primary-container/20 w-1/2 h-16 rounded-xl"></div>
+<div class="self-start bg-surface-container-high w-2/3 h-20 rounded-xl"></div>
+</main>
+</div>
+<!-- Dark Overlay Backdrop -->
+<div class="fixed inset-0 z-10 bg-black/60 backdrop-blur-sm"></div>
+<!-- Success Modal -->
+<div class="fixed inset-0 z-20 flex items-center justify-center p-4">
+<div class="glass-panel w-full max-w-md rounded-full p-8 flex flex-col items-center text-center shadow-[0_20px_40px_rgba(0,229,255,0.08)]">
+<!-- Success Icon Animation Replacement -->
+<div class="relative mb-6">
+<div class="absolute inset-0 bg-primary-container/20 blur-2xl rounded-full scale-150"></div>
+<div class="w-20 h-20 rounded-full border-2 border-primary-container flex items-center justify-center bg-surface-container-lowest relative z-10">
+<span class="material-symbols-outlined text-4xl text-primary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<h1 class="font-headline text-2xl font-bold tracking-tight text-white mb-2 glow-sm">Payment Released Successfully</h1>
+<div class="flex items-center gap-2 mb-6">
+<span class="text-on-surface-variant font-medium">Transferred:</span>
+<span class="text-tertiary font-headline text-xl font-bold">100 $BEZ</span>
+</div>
+<a class="flex items-center gap-2 text-primary hover:text-primary-fixed-dim transition-colors mb-10 group" href="#">
+<span class="text-sm font-medium underline underline-offset-4">View on PolygonScan</span>
+<span class="material-symbols-outlined text-sm group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">open_in_new</span>
+</a>
+<!-- Divider -->
+<div class="w-full h-px bg-outline-variant/30 mb-8"></div>
+<!-- Rate Section -->
+<div class="w-full mb-10">
+<p class="text-on-surface-variant text-sm font-medium mb-4 uppercase tracking-widest">Rate your partner</p>
+<div class="flex justify-center gap-2">
+<button class="text-surface-bright hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="text-surface-bright hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="text-surface-bright hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="text-surface-bright hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="text-surface-bright hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 0;">star</span>
+</button>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="w-full grid grid-cols-1 gap-4">
+<button class="bg-primary-container text-on-primary-container font-headline font-bold py-4 rounded-xl hover:shadow-[0_0_20px_rgba(0,229,255,0.3)] active:scale-[0.98] transition-all">
+                    Finish
+                </button>
+</div>
+</div>
+</div>
+<!-- Top App Bar (Restricted State) -->
+<header class="fixed top-0 w-full z-50 bg-[#181c22]/60 backdrop-blur-xl border-b border-[#00e5ff]/15 shadow-[0_4px_30px_rgba(0,0,0,0.1)] flex justify-between items-center px-6 h-16 pointer-events-none opacity-50">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-highest">
+<img alt="User" class="w-full h-full object-cover" data-alt="Cyberpunk style user avatar portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAamvJWEt5Pc5x0kyS-HU8xH0zHyR7aLnc1PTjTG-N91YQfM-_QwH8nXLupRVb6s3ahFgouTSI7AphaEOVVbnyvwA5b010EoGeWu2oMbXfnhd13ayXpYEDReUbEXV3SRn8xIhDjd--jRsWmXLyvbpUhUA685ibyU3s4kDr4dqzfginOGo0LrKl_rKcLlySZrLzimiu54Mf2pgn4lieFXFS8gpVzRU_KdjwmIvuHBognCZyuaz6qNftN8AVUeoOPbpenVtf29zrMoAQ"/>
+</div>
+<span class="text-xl font-bold text-[#00e5ff] drop-shadow-[0_0_8px_rgba(0,229,255,0.4)] font-['Space_Grotesk'] tracking-tight">@BeZhas_Nexus</span>
+</div>
+<div class="bg-surface-container px-3 py-1 rounded-full border border-outline-variant">
+<span class="text-[#00e5ff] text-sm font-bold">1,250 $BEZ</span>
+</div>
+</header>
+<!-- Bottom Nav Bar (Mobile Suppression) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 md:hidden bg-[#181c22]/80 backdrop-blur-2xl rounded-t-3xl border-t border-[#00e5ff]/20 shadow-[0_-10px_40px_rgba(0,229,255,0.05)] opacity-50 pointer-events-none">
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60">
+<span class="material-symbols-outlined" data-icon="dynamic_feed">dynamic_feed</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest">Feed</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest">Wallet</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest">Search</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#00e5ff] scale-110 drop-shadow-[0_0_5px_#00e5ff]">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest">Profile</span>
+</div>
+</nav>
+<!-- Decorative Elements -->
+<div class="fixed top-[20%] right-[-10%] w-[400px] h-[400px] bg-primary-container/5 blur-[120px] rounded-full z-0"></div>
+<div class="fixed bottom-[-10%] left-[-10%] w-[300px] h-[300px] bg-tertiary-container/5 blur-[100px] rounded-full z-0"></div>
+</body></html>

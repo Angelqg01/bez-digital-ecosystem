@@ -1,0 +1,19 @@
+{
+  "id": "skill_1777477034839_abad40",
+  "created_at": "2026-04-29T15:37:14.839Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "blockchain",
+    "help"
+  ],
+  "turn": {
+    "user": "Ok",
+    "agent": "Entendido. Estoy listo para tus comandos. ¿Hay algo en lo que pueda ayudarte con la plataforma BeZhas Blockchain?"
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

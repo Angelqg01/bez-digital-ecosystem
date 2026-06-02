@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Bio-Agent Monitoring</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .scan-line {
+            background: linear-gradient(to bottom, transparent, #25aff4, transparent);
+            height: 2px;
+            width: 100%;
+            position: absolute;
+            top: 40%;
+            opacity: 0.5;
+        }
+        .vision-overlay {
+            border: 2px solid #25aff4;
+            box-shadow: 0 0 15px rgba(37, 175, 244, 0.4);
+        }
+        .danger-overlay {
+            border: 2px solid #ef4444;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top Header -->
+<header class="flex items-center bg-slate-100/50 dark:bg-slate-900/50 backdrop-blur-md p-4 sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center">
+<span class="material-symbols-outlined text-3xl">biotech</span>
+</div>
+<div class="flex-1 ml-3">
+<h1 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">BeZhas Bio-Agent</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Cold Chain • Asset ID: VAX-0992</p>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1 bg-red-500/10 text-red-500 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+<span class="size-2 bg-red-500 rounded-full"></span>
+                Critical
+            </div>
+<button class="flex items-center justify-center rounded-lg size-10 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto pb-24">
+<!-- Main Camera Feed -->
+<div class="p-4">
+<div class="relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
+<img alt="Close up of vaccine vials in a sterile environment" class="w-full h-full object-cover opacity-60 grayscale" data-alt="Close up of vaccine vials in a laboratory setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwCpoQinOoVDcLmW6TRrO3QSFslZDV-7BS4bkGKoQ1Wh_Q0ruF54yTvT3I8sOt1ooZpI7FFjBKqiuEw6tPI3LhknoizVuEhHeExqU9UdRyl1zc3EN9UuXzunOC5TwcdczpfqkWMpORQqcU8NIcfm5ki50_jx4bdlYVo7T6sha5xYuHSQFoDaGnKSM9NmjjaDj9mpPmtb-4gkbJdmF7oWnWUQd7uxkweY3a_-KDMfKsPTZErzpwgaWQrJACrNCf5zOFtzvkJa03gEM"/>
+<!-- CV Overlays -->
+<div class="absolute inset-0 pointer-events-none">
+<div class="scan-line"></div>
+<!-- Detection Box 1: Degradation -->
+<div class="absolute top-[20%] left-[15%] w-[30%] h-[40%] danger-overlay rounded flex flex-col justify-start">
+<div class="bg-red-600 text-white text-[10px] font-bold px-1 py-0.5 w-fit">THERMAL DEGRADATION 88%</div>
+<div class="mt-auto p-1 bg-red-950/80 text-red-200 text-[8px] leading-tight uppercase font-bold">Protein Denaturation Detected</div>
+</div>
+<!-- Detection Box 2: Fungal -->
+<div class="absolute top-[35%] left-[55%] w-[25%] h-[35%] vision-overlay rounded flex flex-col justify-start border-primary shadow-[0_0_10px_rgba(37,175,244,0.5)]">
+<div class="bg-primary text-white text-[10px] font-bold px-1 py-0.5 w-fit">FUNGAL PATTERN 94%</div>
+<div class="mt-auto p-1 bg-primary/20 backdrop-blur-sm text-primary text-[8px] leading-tight uppercase font-bold">Colony Expansion Alpha</div>
+</div>
+<!-- Telemetry Overlay -->
+<div class="absolute bottom-2 right-2 flex flex-col gap-1 items-end">
+<div class="text-[10px] font-mono text-primary bg-background-dark/80 px-2 py-1 rounded border border-primary/30">
+                            CAM_04 // 4K // CV_ACTIVE
+                        </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Metrics Grid -->
+<div class="px-4 grid grid-cols-2 gap-4">
+<div class="bg-slate-100 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm">analytics</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold">PSNR</p>
+</div>
+<p class="text-2xl font-bold dark:text-slate-100">42.5 dB</p>
+<div class="flex items-center gap-1 text-emerald-500 text-xs mt-1">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+<span>+0.2% Stability</span>
+</div>
+</div>
+<div class="bg-slate-100 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm">waves</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold">MSE</p>
+</div>
+<p class="text-2xl font-bold dark:text-slate-100">0.0018</p>
+<div class="flex items-center gap-1 text-orange-500 text-xs mt-1">
+<span class="material-symbols-outlined text-xs">trending_down</span>
+<span>-0.05% Variance</span>
+</div>
+</div>
+</div>
+<!-- Autonomous Execution Alert -->
+<div class="p-4">
+<div class="bg-red-500/5 border border-red-500/20 rounded-xl overflow-hidden">
+<div class="bg-red-500 px-4 py-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-white">gavel</span>
+<h3 class="text-white text-sm font-bold uppercase tracking-wider">Autonomous Execution</h3>
+</div>
+<span class="text-[10px] text-white/80 font-mono">HASH: 8F2A...91B</span>
+</div>
+<div class="p-4 space-y-4">
+<div class="flex gap-4">
+<div class="flex flex-col items-center">
+<div class="size-8 rounded-full bg-red-500 flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xl">lock</span>
+</div>
+<div class="w-px flex-1 bg-red-500/20 my-1"></div>
+</div>
+<div class="pb-2">
+<p class="font-bold text-red-500 text-sm">Payment to Logistics Blocked</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Escrow contract #992 held due to biological non-compliance. Smart-lock engaged on transport bay.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex flex-col items-center">
+<div class="size-8 rounded-full bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xl">account_balance</span>
+</div>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-slate-100 text-sm">Authorities Notified</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Sanitary Authorities Alerted. Compliance protocol 22.4 initiated. Full audit trail uploaded to ledger.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Live Biological Status -->
+<div class="px-4 pb-4">
+<h3 class="text-slate-900 dark:text-slate-100 font-bold mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">microbiology</span>
+                Spoilage Analysis
+            </h3>
+<div class="space-y-2">
+<div class="bg-slate-100 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 flex justify-between items-center">
+<div>
+<p class="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Fungal Load</p>
+<p class="text-[10px] text-slate-500">Colony count estimation</p>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-red-500">CRITICAL</p>
+<p class="text-[10px] font-mono text-slate-400">0.82 CFU/ml</p>
+</div>
+</div>
+<div class="bg-slate-100 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 flex justify-between items-center">
+<div>
+<p class="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Temp History</p>
+<p class="text-[10px] text-slate-500">Mean Kinetic Temp (MKT)</p>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-amber-500">+8.4°C</p>
+<p class="text-[10px] font-mono text-slate-400">T-REF: 4.0°C</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 px-6 pb-6 pt-3 flex justify-between items-center z-50">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">dashboard</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Dash</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Logs</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-red-500" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Escrow</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Alerts</span>
+</a>
+</nav>
+</body></html>

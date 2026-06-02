@@ -1,0 +1,38 @@
+{
+  "name": "bezhas-agent-24-7",
+  "version": "1.0.0",
+  "description": "BeZhas AI Agent 24/7 — Marketing, M&A, Token Sales & Blockchain Adoption",
+  "main": "bezhas-agent-server.js",
+  "scripts": {
+    "start": "node bezhas-agent-server.js",
+    "bot": "node telegram-bot.js",
+    "dev": "nodemon bezhas-agent-server.js",
+    "dev:bot": "nodemon telegram-bot.js",
+    "all": "concurrently \"pnpm run start\" \"pnpm run bot\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "axios": "^1.7.7",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "node-telegram-bot-api": "^0.66.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "nodemon": "^3.1.7"
+  },
+  "keywords": [
+    "bezhas",
+    "blockchain",
+    "ai-agent",
+    "telegram-bot"
+  ],
+  "author": "BeZhas Strategy Office",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

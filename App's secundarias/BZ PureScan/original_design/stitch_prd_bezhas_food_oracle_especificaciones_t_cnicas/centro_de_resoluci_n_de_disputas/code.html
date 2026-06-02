@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b8cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(43, 140, 238, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(43, 140, 238, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Header -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 border-b border-primary/10 sticky top-0 z-10">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-primary/10 cursor-pointer">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<div class="flex-1 ml-2">
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">Resolución de Disputa #4019-Z</h2>
+<div class="flex items-center gap-2">
+<span class="flex h-2 w-2 rounded-full bg-yellow-500"></span>
+<p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Estado: En Revisión de Oráculo</p>
+</div>
+</div>
+<div class="flex items-center justify-end">
+<button class="flex size-10 items-center justify-center rounded-full text-slate-500 hover:bg-primary/10">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<main class="flex-1 flex flex-col p-4 space-y-6">
+<!-- AI Analysis Section -->
+<section class="space-y-3">
+<div class="flex items-center justify-between">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-wider">Análisis IA: Botrytis Cinerea</h3>
+<span class="text-primary text-xs font-bold px-2 py-1 rounded bg-primary/10">94% Precisión</span>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="relative rounded-xl overflow-hidden group">
+<div class="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur-md text-[10px] text-white px-2 py-0.5 rounded uppercase font-bold border border-white/20">Lote Escaneado</div>
+<img class="w-full aspect-square object-cover grayscale brightness-75 group-hover:grayscale-0 transition-all" data-alt="Microscopic view of botrytis fungal growth on fruit" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOQ-9_n4r_tuh2Hj7bbTpSIiLN5H0sTAt-tJRLepMQ61Zb-iKssNxWiNjPsXemJTwQHtx_2EIs0B7RBJ3OAdmQTQnM-6ZarCnuIUtibpne4IgecmP3FXkO5kX9jLLheynhpUvxAzRkZuQFo79MgnUuCX-kt66u8F4dTjcyZRK7U_mJ57gjysdtK-JMn5zLE8uvLgNhdA4-23588texdKxby2kR1FqoJ4P0BneNlVcUsh1sEw4KgpNwH06AZxOVIF-uW6n1C-TVLBs"/>
+<div class="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-red-600/40 to-transparent"></div>
+</div>
+<div class="relative rounded-xl overflow-hidden group">
+<div class="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur-md text-[10px] text-white px-2 py-0.5 rounded uppercase font-bold border border-white/20">Referencia Saludable</div>
+<img class="w-full aspect-square object-cover group-hover:scale-105 transition-all" data-alt="Healthy fresh strawberries reference batch" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwqZlRMLO23aRmtyEBppoHu1T0OJd3Q61oS1r_s7XsLDMtaaWWdQ1XEseZhYM0CYIMl3lDmGjdj_QS3UnZ4zLvaEuaQ4oxbQulT_0HQLJ5xwl8MJ5zZsB-o0dCeAFTQtKBaVp1O4AoTQwsb2wErc0DopP3v_fNqaMp7iySqGZQSaNBJFtJ01oR3Dpqaut5DQ6Omq4kgC4zbsj_RGZbxCsIDCBiLSSO45Eb7KPcIu5hRH3_NQ-ob6pfh8Wiw9k65c4o_860MMCOoRo"/>
+<div class="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-green-600/40 to-transparent"></div>
+</div>
+</div>
+</section>
+<!-- Data Visualization Section -->
+<div class="glass-panel p-4 rounded-xl">
+<div class="flex flex-col gap-1 mb-4">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase">Desviación Térmica Detectada</p>
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-bold">+12% vs Umbral Smart Contract</p>
+</div>
+<div class="grid grid-flow-col gap-4 grid-rows-[1fr_auto] items-end justify-items-center h-32 px-2">
+<div class="bg-primary/20 rounded-t-sm w-full border-t border-primary/40" style="height: 25%;"></div>
+<p class="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase mt-2">Salida</p>
+<div class="bg-primary/40 rounded-t-sm w-full border-t border-primary/60" style="height: 45%;"></div>
+<p class="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase mt-2">Nodo A</p>
+<div class="bg-red-500/60 rounded-t-sm w-full border-t border-red-500" style="height: 95%;"></div>
+<p class="text-red-500 text-[10px] font-bold uppercase mt-2">Incidente</p>
+<div class="bg-primary/20 rounded-t-sm w-full border-t border-primary/40" style="height: 15%;"></div>
+<p class="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase mt-2">Arribo</p>
+</div>
+</div>
+<!-- Decision Panel -->
+<div class="bg-slate-900 dark:bg-slate-800/50 p-5 rounded-xl border border-primary/30">
+<div class="flex items-start gap-3 mb-3">
+<span class="material-symbols-outlined text-primary text-3xl">psychology</span>
+<div>
+<h4 class="text-primary text-sm font-bold uppercase">Dictamen de Gemini 1.5 Pro</h4>
+<p class="text-slate-100 text-base font-medium leading-tight mt-1">
+                            Evidencia de Negligencia Térmica Confirmada. El sensor 0x82... detectó temperaturas superiores a 8°C por 140 minutos consecutivos.
+                        </p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3 border-t border-white/10">
+<span class="text-slate-400 text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">verified_user</span> 
+                        Polygon Tx: Pending Verification
+                    </span>
+<span class="text-primary text-xs font-bold">Ver en Explorer</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-3 pt-4">
+<button class="bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+                    Ejecutar Reembolso Total
+                </button>
+<button class="bg-transparent border border-slate-700 dark:border-slate-500 text-slate-700 dark:text-slate-300 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+<span class="material-symbols-outlined">gavel</span>
+                    Arbitraje Humano
+                </button>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<div class="flex gap-2 border-t border-slate-200 dark:border-primary/10 bg-white dark:bg-background-dark px-4 pb-6 pt-2 sticky bottom-0">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Dashboard</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">security</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Disputas</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Scanner</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Ajustes</p>
+</a>
+</div>
+</div>
+</body></html>

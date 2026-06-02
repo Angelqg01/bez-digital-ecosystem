@@ -1,0 +1,24 @@
+{
+  "id": "skill_1776591675285_8816c1",
+  "created_at": "2026-04-19T09:41:15.285Z",
+  "channel": "api",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "gas",
+    "fraud",
+    "validator",
+    "bridge",
+    "blockchain",
+    "sector",
+    "help"
+  ],
+  "turn": {
+    "user": "Hola, cu�ntame qu� es BeZhas",
+    "agent": "¡Hola! BeZhas es una plataforma blockchain avanzada y robusta, diseñada para ofrecer soluciones descentralizadas seguras y eficientes.\n\nComo Agente IA unificado de BeZhas, mi función es proporcionarte acceso y control sobre todas sus funcionalidades. Esto incluye la capacidad de consultar el estado de la red, ejecutar herramientas de IA (como Aegis), invocar comandos del Runtime, analizar el consumo de gas, detectar anomalías, consultar sectores específicos, verificar validadores y gestionar puentes (bridges) inter-cadenas.\n\nEn resumen, BeZhas es un ecosistema completo que te permite interactuar con una infraestructura blockchain de alto rendimiento, y yo estoy aquí para asistirte en cada paso."
+  },
+  "context": {
+    "userId": "api:0xDev0000000000000000000000000000000000001",
+    "role": "admin"
+  }
+}

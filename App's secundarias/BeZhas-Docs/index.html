@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeZhas | Documentation & Developer Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: white; }
+        .font-space { font-family: 'Space Grotesk', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glow-cyan { box-shadow: 0 0 30px rgba(0, 229, 255, 0.1); }
+        .glow-green { box-shadow: 0 0 30px rgba(121, 255, 91, 0.1); }
+        .glow-yellow { box-shadow: 0 0 30px rgba(244, 206, 0, 0.1); }
+        .card-hover:hover { border-color: rgba(0, 229, 255, 0.3); transform: translateY(-5px); transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Header -->
+    <nav class="fixed top-0 w-full z-50 glass border-b border-white/5 py-4 px-8 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#00e5ff] rounded-xl flex items-center justify-center text-black shadow-[0_0_20px_#00e5ff]">
+                <i data-lucide="shield"></i>
+            </div>
+            <span class="font-space font-bold text-xl tracking-tighter text-[#00e5ff]">BEZHAS <span class="text-white/40 font-light">DOCS</span></span>
+        </div>
+        <div class="hidden md:flex gap-8 text-[10px] font-black uppercase tracking-widest text-white/40">
+            <a href="#ecosistema" class="hover:text-white transition-colors">Ecosistema</a>
+            <a href="#developers" class="hover:text-white transition-colors">Desarrolladores</a>
+            <a href="../../docs/developer-portal/api-sdk-nodos-rpc.md" class="hover:text-white transition-colors">API / SDK / RPC</a>
+            <a href="../../docs/developer-portal/index.md" class="text-[#00e5ff]">Portal Docs</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <header class="pt-40 pb-20 px-8 text-center relative overflow-hidden">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[#00e5ff10] rounded-full blur-[120px] -z-10"></div>
+        <h1 class="font-space font-extrabold text-5xl md:text-7xl mb-6 tracking-tighter leading-none">
+            CENTRO DE <span class="text-[#00e5ff]">CONOCIMIENTO</span> BEZHAS
+        </h1>
+        <p class="text-white/40 max-w-2xl mx-auto text-lg mb-12">
+            Explora la infraestructura descentralizada que está redefiniendo la economía local, 
+            la logística inteligente y la soberanía energética.
+        </p>
+    </header>
+
+    <!-- Main Grid -->
+    <main id="ecosistema" class="max-w-7xl mx-auto px-8 pb-32 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        <!-- BZ Sphere Card -->
+        <div class="glass p-8 rounded-[32px] card-hover glow-cyan">
+            <div class="w-12 h-12 bg-[#00e5ff10] rounded-2xl flex items-center justify-center text-[#00e5ff] mb-6">
+                <i data-lucide="workflow"></i>
+            </div>
+            <h2 class="font-space font-bold text-2xl mb-2 text-white">Workflow BeZhas 2026</h2>
+            <p class="text-white/40 text-sm mb-8 leading-relaxed">Presentacion ejecutiva actualizada del ecosistema: sectores, middleware de validacion, stack, monetizacion, proyecciones e impacto.</p>
+            <div class="space-y-3 mb-10">
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Vision general y workflow</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Sectores y apps desarrolladas</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Modelo financiero a 5 anos</div>
+            </div>
+            <a href="../../docs/Presentacion_Workflow_BeZhas_Blockchain_2026.md" class="block w-full py-4 bg-white/5 border border-white/10 rounded-xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-[#00e5ff] hover:text-black transition-all">Abrir Presentacion</a>
+        </div>
+
+        <!-- BZ Sphere Card -->
+        <div class="glass p-8 rounded-[32px] card-hover glow-cyan">
+            <div class="w-12 h-12 bg-[#00e5ff10] rounded-2xl flex items-center justify-center text-[#00e5ff] mb-6">
+                <i data-lucide="message-square"></i>
+            </div>
+            <h2 class="font-space font-bold text-2xl mb-2 text-white">BZ Sphere</h2>
+            <p class="text-white/40 text-sm mb-8 leading-relaxed">Red social de comercio hiperlocal con Escrow, P2P Lending y gobernanza vecinal.</p>
+            <div class="space-y-3 mb-10">
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Manual de Usuario</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Protocolo de Arbitraje</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Guía de Bóveda</div>
+            </div>
+            <a href="../BZ Sphere/doc/ecosystem_overview.md" class="block w-full py-4 bg-white/5 border border-white/10 rounded-xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-[#00e5ff] hover:text-black transition-all">Leer Documentación</a>
+        </div>
+
+        <!-- BZ CargoLink Card -->
+        <div class="glass p-8 rounded-[32px] card-hover glow-green">
+            <div class="w-12 h-12 bg-[#79ff5b10] rounded-2xl flex items-center justify-center text-[#79ff5b] mb-6">
+                <i data-lucide="truck"></i>
+            </div>
+            <h2 class="font-space font-bold text-2xl mb-2 text-white">BZ CargoLink</h2>
+            <p class="text-white/40 text-sm mb-8 leading-relaxed">Ecosistema logístico inteligente con AR, oráculos de integridad y sincronización aduanera.</p>
+            <div class="space-y-3 mb-10">
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#79ff5b]"></i> Terminal de Validador</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#79ff5b]"></i> Guía de Estiba AR</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#79ff5b]"></i> API de Aduanas</div>
+            </div>
+            <a href="../BZ CargoLink/doc/manual.md" class="block w-full py-4 bg-white/5 border border-white/10 rounded-xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-[#79ff5b] hover:text-black transition-all">Leer Documentación</a>
+        </div>
+
+        <!-- BZ Energy Card -->
+        <div class="glass p-8 rounded-[32px] card-hover glow-yellow">
+            <div class="w-12 h-12 bg-[#f4ce0010] rounded-2xl flex items-center justify-center text-[#f4ce00] mb-6">
+                <i data-lucide="zap"></i>
+            </div>
+            <h2 class="font-space font-bold text-2xl mb-2 text-white">BeZhas Energy</h2>
+            <p class="text-white/40 text-sm mb-8 leading-relaxed">Infraestructura DePIN para la tokenización y comercio de energía renovable comunitaria.</p>
+            <div class="space-y-3 mb-10">
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#f4ce00]"></i> Configuración de Nodo</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#f4ce00]"></i> Marketplace de kWh</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#f4ce00]"></i> Guía de Tokenización</div>
+            </div>
+            <a href="../Sistema energeticos/doc/manual.md" class="block w-full py-4 bg-white/5 border border-white/10 rounded-xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-[#f4ce00] hover:text-black transition-all">Leer Documentación</a>
+        </div>
+
+        <!-- BZ PureScan Card -->
+        <div class="glass p-8 rounded-[32px] card-hover glow-yellow">
+            <div class="w-12 h-12 bg-[#00e5ff10] rounded-2xl flex items-center justify-center text-[#00e5ff] mb-6">
+                <i data-lucide="fingerprint"></i>
+            </div>
+            <h2 class="font-space font-bold text-2xl mb-2 text-white">BZ PureScan</h2>
+            <p class="text-white/40 text-sm mb-8 leading-relaxed">Oráculo de Identidad Digital (DID) para la certificación inmutable de origen y calidad.</p>
+            <div class="space-y-3 mb-10">
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Pasaporte Digital</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Certificación AA+</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Huella de Carbono</div>
+            </div>
+            <a href="../BZ PureScan/doc/manual.md" class="block w-full py-4 bg-white/5 border border-white/10 rounded-xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-[#00e5ff] hover:text-black transition-all">Leer Documentación</a>
+        </div>
+
+        <!-- Enterprise Infrastructure Card -->
+        <div class="glass p-8 rounded-[32px] card-hover glow-green">
+            <div class="w-12 h-12 bg-[#79ff5b10] rounded-2xl flex items-center justify-center text-[#79ff5b] mb-6">
+                <i data-lucide="building"></i>
+            </div>
+            <h2 class="font-space font-bold text-2xl mb-2 text-white">Enterprise Infra.</h2>
+            <p class="text-white/40 text-sm mb-8 leading-relaxed">Descubre cómo funciona la infraestructura de BeZhas aplicada al sector Logística y Supply Chain corporativo.</p>
+            <div class="space-y-3 mb-10">
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#79ff5b]"></i> Arquitectura de Red</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#79ff5b]"></i> Trazabilidad Logística</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#79ff5b]"></i> Supply Chain Inteligente</div>
+            </div>
+            <a href="../../docs/BeZhas_Enterprise_Infrastructure.pdf" target="_blank" class="block w-full py-4 bg-white/5 border border-white/10 rounded-xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-[#79ff5b] hover:text-black transition-all">Abrir PDF</a>
+        </div>
+
+        <!-- API / SDK / Nodes / RPC Card -->
+        <div class="glass p-8 rounded-[32px] card-hover glow-cyan">
+            <div class="w-12 h-12 bg-[#00e5ff10] rounded-2xl flex items-center justify-center text-[#00e5ff] mb-6">
+                <i data-lucide="terminal-square"></i>
+            </div>
+            <h2 class="font-space font-bold text-2xl mb-2 text-white">API, SDK, Nodos y RPC</h2>
+            <p class="text-white/40 text-sm mb-8 leading-relaxed">Guia central para instalar el SDK con pnpm, levantar nodos, configurar RPC real y ejecutar pruebas unitarias.</p>
+            <div class="space-y-3 mb-10">
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> pnpm add @bezhas/sdk</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> Enterprise Node y Edge Node</div>
+                <div class="flex items-center gap-3 text-xs text-white/60"><i data-lucide="check" class="w-4 h-4 text-[#00e5ff]"></i> RPC local 31337 y BeZhas L2 2708</div>
+            </div>
+            <a href="../../docs/developer-portal/api-sdk-nodos-rpc.md" class="block w-full py-4 bg-white/5 border border-white/10 rounded-xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-[#00e5ff] hover:text-black transition-all">Abrir Guia Tecnica</a>
+        </div>
+
+    </main>
+
+    <!-- Developer Section -->
+    <section id="developers" class="max-w-7xl mx-auto px-8 pb-40">
+        <div class="glass rounded-[40px] p-12 relative overflow-hidden border border-[#00e5ff]/10">
+            <div class="absolute -right-20 -top-20 opacity-10">
+                <i data-lucide="code-2" class="w-96 h-96"></i>
+            </div>
+            <div class="relative z-10 md:w-2/3">
+                <h3 class="font-space font-extrabold text-4xl mb-6">RECURSOS PARA <span class="text-[#00e5ff]">DEVELOPERS</span></h3>
+                <p class="text-white/60 mb-12 text-lg">Integra tus aplicaciones con la red Antigravity L2, despliega Smart Contracts de Escrow personalizados y conéctate a los oráculos de identidad PureScan. Nuestra infraestructura está abierta para expandir el Nodo BeZhas.</p>
+                <div class="grid grid-cols-2 gap-8 mb-12">
+                   <div>
+                      <h4 class="text-[#00e5ff] font-space font-bold mb-2">SDK Core</h4>
+                      <p class="text-xs text-white/40 leading-relaxed">Instalacion con pnpm, acceso a contratos, ABIs, billing, wallet y SubApps.</p>
+                   </div>
+                   <div>
+                      <h4 class="text-[#00e5ff] font-space font-bold mb-2">Nodos y RPC</h4>
+                      <p class="text-xs text-white/40 leading-relaxed">Enterprise Node, Edge Node, Anvil local, geth/op-geth y validacion de despliegues.</p>
+                   </div>
+                </div>
+                <div class="flex flex-wrap gap-4">
+                    <a href="../../docs/developer-portal/api-sdk-nodos-rpc.md" class="bg-[#00e5ff] text-black px-8 py-4 rounded-xl font-black uppercase text-xs tracking-widest">Ver Guia API / SDK / RPC</a>
+                    <a href="../../docs/developer-portal/index.md" class="bg-white/5 border border-white/10 text-white px-8 py-4 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-white/10">Abrir Portal Developer</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-20 border-t border-white/5 text-center text-white/20 text-[10px] font-black uppercase tracking-[0.3em]">
+        &copy; 2026 BeZhas Antigravity Ecosistema Descentralizado
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

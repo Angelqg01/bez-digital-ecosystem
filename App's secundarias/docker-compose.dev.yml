@@ -1,0 +1,90 @@
+# ═══════════════════════════════════════════════════════
+# BeZhas Ecosystem — Docker Compose (Development)
+# Orchestrates all services for local development
+# ═══════════════════════════════════════════════════════
+
+services:
+  # ─── Infrastructure ────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: bezhas-postgres
+    environment:
+      POSTGRES_DB: bezhas
+      POSTGRES_USER: bezhas
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-bezhas_dev_2708}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bezhas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bezhas-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ─── API Gateway ───────────────────────────────────
+  gateway:
+    build:
+      context: ./packages/api-gateway
+      dockerfile: Dockerfile
+    container_name: bezhas-gateway
+    ports:
+      - "3001:3001"
+    environment:
+      - GATEWAY_PORT=3001
+      - RPC_URL=${RPC_URL:-http://host.docker.internal:8545}
+      - DATABASE_URL=postgresql://bezhas:${DB_PASSWORD:-bezhas_dev_2708}@postgres:5432/bezhas
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-bezhas-dev-secret-change-in-production}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - AEGIS_BASE_URL=${AEGIS_BASE_URL}
+      - BEZ_TOKEN_ADDRESS=${BEZ_TOKEN_ADDRESS}
+      - STAKING_POOL_ADDRESS=${STAKING_POOL_ADDRESS}
+      - LOGISTICS_NFT_ADDRESS=${LOGISTICS_NFT_ADDRESS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── Aegis Security / AI Proxy ─────────────────────
+  aegis:
+    build:
+      context: ../Aegis
+      dockerfile: Dockerfile
+    container_name: bezhas-aegis
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://bezhas:${DB_PASSWORD:-bezhas_dev_2708}@postgres:5432/bezhas
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - full  # Only start with --profile full
+
+volumes:
+  pgdata:
+    driver: local
+
+# Usage:
+# Basic:  docker compose -f docker-compose.dev.yml up -d
+# Full:   docker compose -f docker-compose.dev.yml --profile full up -d
+# Logs:   docker compose -f docker-compose.dev.yml logs -f gateway
+# Down:   docker compose -f docker-compose.dev.yml down

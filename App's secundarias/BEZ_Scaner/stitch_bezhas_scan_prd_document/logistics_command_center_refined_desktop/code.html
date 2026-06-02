@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Logistics Command Center</title>
+<!-- BEGIN: External Resources -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            industrial: {
+              charcoal: '#121417',
+              darker: '#0a0b0d',
+              gray: '#1e2126',
+              border: '#2d3139',
+              orange: '#f97316',
+              green: '#22c55e',
+              amber: '#fbbf24'
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- END: External Resources -->
+<!-- BEGIN: Custom Styles -->
+<style data-purpose="layout">
+    body {
+      background-color: #0a0b0d;
+      color: #e5e7eb;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #121417;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #2d3139;
+      border-radius: 2px;
+    }
+    .pulse-animation {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.1); }
+    }
+    .grid-lines {
+      background-image: linear-gradient(#1e2126 1px, transparent 1px), linear-gradient(90deg, #1e2126 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+  </style>
+<style data-purpose="data-visuals">
+    .sparkline-canvas { width: 100%; height: 40px; }
+    .status-ring {
+      transition: stroke-dashoffset 0.5s ease;
+    }
+  </style>
+<!-- END: Custom Styles -->
+</head>
+<body class="h-screen flex">
+<!-- BEGIN: Sidebar Navigation -->
+<aside class="w-20 lg:w-64 bg-industrial-charcoal border-r border-industrial-border flex flex-col z-50">
+<div class="p-6 flex items-center gap-3">
+<div class="w-8 h-8 bg-industrial-orange rounded flex items-center justify-center font-bold text-white">B</div>
+<span class="hidden lg:block font-bold tracking-tight text-lg">BeZhas <span class="text-industrial-orange text-xs align-top">SDK</span></span>
+</div>
+<nav class="flex-1 px-4 py-6 space-y-4">
+<a class="flex items-center gap-4 p-3 rounded-lg bg-industrial-orange bg-opacity-10 text-industrial-orange border border-industrial-orange/20" data-purpose="nav-link-active" href="#">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span class="hidden lg:block font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-lg text-gray-400 hover:bg-industrial-gray transition" data-purpose="nav-link" href="#">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span class="hidden lg:block font-medium">Fleet</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-lg text-gray-400 hover:bg-industrial-gray transition" href="#">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span class="hidden lg:block font-medium">Scans</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-lg text-gray-400 hover:bg-industrial-gray transition" href="#">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span class="hidden lg:block font-medium text-red-500">Alerts <span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">4</span></span>
+</a>
+</nav>
+<div class="p-4 border-t border-industrial-border space-y-4">
+<div class="hidden lg:flex items-center gap-2 p-2 bg-industrial-darker rounded text-xs">
+<div class="w-2 h-2 rounded-full bg-industrial-green"></div>
+<span class="text-gray-400">BeZhas-ID: 884-XTR</span>
+</div>
+<a class="flex items-center gap-4 p-3 rounded-lg text-gray-400 hover:bg-industrial-gray transition" href="#">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span class="hidden lg:block font-medium">Settings</span>
+</a>
+</div>
+</aside>
+<!-- END: Sidebar Navigation -->
+<main class="flex-1 flex flex-col min-w-0">
+<!-- BEGIN: Header Stats -->
+<header class="h-16 border-b border-industrial-border bg-industrial-charcoal flex items-center justify-between px-8 z-10">
+<div class="flex items-center gap-8">
+<h1 class="text-xl font-semibold tracking-wide">COMMAND CENTER</h1>
+<div class="flex items-center gap-4 text-xs font-mono">
+<span class="text-gray-500">SYSTEM: <span class="text-industrial-green uppercase">Operational</span></span>
+<span class="text-gray-500">LATENCY: <span class="text-white">12ms</span></span>
+<span class="text-gray-500">SDK CONNECTIVITY: <span class="text-industrial-green text-[10px] px-1 bg-industrial-green/10 border border-industrial-green/20 rounded">ACTIVE</span></span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<div class="text-right">
+<div class="text-[10px] text-gray-500 uppercase leading-none">Global Stability</div>
+<div class="text-industrial-orange font-bold leading-tight">98.4%</div>
+</div>
+<div class="text-right border-l border-industrial-border pl-4">
+<div class="text-[10px] text-gray-500 uppercase leading-none">Claims Prevented</div>
+<div class="text-industrial-green font-bold leading-tight">1,204</div>
+</div>
+</div>
+<div class="w-10 h-10 rounded-full bg-industrial-gray border border-industrial-border flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4BIW61DRK3ojnqVsnz2Y_E6g9IFQ2eJWpjbx5x3Jv5xo9g9knaKqgHDirVYeXmaHFrxX3rjgt-LgNJKS63bUkfnQ7Q_epNc1el5DV6We_9ayU6lEReNLvhOSUq6iVucb9d5exWoK1YCrdPp-pFMP2smHxNGOxflJozlg2EEquTJlnFXxn7L4mISwi32R9IB51fPJWyH9nJNa34k4ItSt3NZxJmurpVxomdCQckn3vwysXUNc02XHcdLI0pNENEEfldQsttIg6lD9e"/>
+</div>
+</div>
+</header>
+<!-- END: Header Stats -->
+<!-- BEGIN: Main Dashboard Content -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+<!-- Top Row: Map and Stability Matrix -->
+<div class="grid grid-cols-12 gap-6">
+<!-- BEGIN: Logistics Map Visualization -->
+<section class="col-span-12 xl:col-span-8 bg-industrial-charcoal rounded-xl border border-industrial-border relative overflow-hidden h-[450px]">
+<div class="absolute top-4 left-4 z-20 flex flex-col gap-2">
+<h2 class="text-sm font-bold text-gray-400 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-industrial-orange"></span>
+              ACTIVE TRANSIT ROUTES
+            </h2>
+<div class="flex gap-2 text-[10px] font-mono">
+<span class="bg-industrial-darker px-2 py-0.5 rounded border border-industrial-border text-industrial-green">VESSEL: 124</span>
+<span class="bg-industrial-darker px-2 py-0.5 rounded border border-industrial-border text-industrial-amber">LAND: 48</span>
+<span class="bg-industrial-darker px-2 py-0.5 rounded border border-industrial-border text-industrial-orange">PORT: 12</span>
+</div>
+</div>
+<div class="absolute inset-0 grid-lines opacity-20 pointer-events-none"></div>
+<!-- Mock Map Overlay -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+<svg class="w-full h-full text-industrial-gray/40" preserveaspectratio="xMidYMid slice" viewbox="0 0 1000 500">
+<!-- Simplified World Path -->
+<path d="M150,150 Q200,100 250,150 T350,150" fill="none" stroke="currentColor" stroke-width="2"></path>
+<circle cx="150" cy="150" fill="currentColor" r="4"></circle>
+<circle cx="350" cy="150" fill="currentColor" r="4"></circle>
+<!-- Transit lines -->
+<path d="M150,150 L350,150" fill="none" stroke="#f97316" stroke-dasharray="4,2" stroke-width="1"></path>
+<circle class="pulse-animation" cx="250" cy="150" fill="#f97316" r="3"></circle>
+<path d="M400,300 L600,200" fill="none" stroke="#22c55e" stroke-dasharray="4,2" stroke-width="1"></path>
+<circle class="pulse-animation" cx="500" cy="250" fill="#22c55e" r="3"></circle>
+</svg>
+</div>
+<div class="absolute bottom-4 right-4 z-20 space-y-2">
+<div class="bg-industrial-darker/80 backdrop-blur border border-industrial-border p-3 rounded-lg w-48">
+<div class="text-[10px] text-gray-500 uppercase">Current Focus</div>
+<div class="text-xs font-bold mt-1 text-white">Atlantic Route Alpha-4</div>
+<div class="h-1 bg-industrial-gray rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-industrial-orange w-2/3"></div>
+</div>
+<div class="flex justify-between text-[9px] text-gray-500 mt-1">
+<span>EST: 14h 22m</span>
+<span>67% Complete</span>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Logistics Map Visualization -->
+<!-- BEGIN: Fleet Stability Matrix -->
+<section class="col-span-12 xl:col-span-4 bg-industrial-charcoal rounded-xl border border-industrial-border flex flex-col p-6">
+<h2 class="text-sm font-bold text-gray-400 mb-6 uppercase">Stability Matrix</h2>
+<div class="flex-1 space-y-8">
+<!-- Overall Metric -->
+<div class="flex items-center justify-between">
+<div>
+<div class="text-3xl font-bold text-white tracking-tighter">98.4%</div>
+<div class="text-xs text-gray-500 uppercase tracking-widest">System Confidence</div>
+</div>
+<div class="relative w-16 h-16">
+<svg class="w-full h-full -rotate-90">
+<circle class="text-industrial-gray" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-industrial-orange status-ring" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="176" stroke-dashoffset="28" stroke-width="6"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold">98</div>
+</div>
+</div>
+<div class="space-y-4">
+<!-- Row 1: Active Scan Fingerprints -->
+<div class="p-3 bg-industrial-darker rounded-lg border border-industrial-border/50">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs text-gray-400 uppercase">Active Scan IDs</span>
+<span class="text-xs font-mono text-industrial-green">41,209</span>
+</div>
+<div class="flex items-end gap-1 h-8">
+<div class="w-full bg-industrial-gray h-4 rounded-t-sm"></div>
+<div class="w-full bg-industrial-gray h-6 rounded-t-sm"></div>
+<div class="w-full bg-industrial-orange h-8 rounded-t-sm"></div>
+<div class="w-full bg-industrial-gray h-5 rounded-t-sm"></div>
+<div class="w-full bg-industrial-gray h-7 rounded-t-sm"></div>
+<div class="w-full bg-industrial-gray h-4 rounded-t-sm"></div>
+<div class="w-full bg-industrial-gray h-6 rounded-t-sm"></div>
+</div>
+</div>
+<!-- Row 2: Sub-App Connectors -->
+<div class="grid grid-cols-3 gap-2">
+<div class="bg-industrial-gray p-2 rounded border border-industrial-border text-center">
+<div class="text-[10px] text-gray-500 uppercase leading-none mb-1">Fingerprint</div>
+<div class="w-2 h-2 rounded-full bg-industrial-green mx-auto"></div>
+</div>
+<div class="bg-industrial-gray p-2 rounded border border-industrial-border text-center">
+<div class="text-[10px] text-gray-500 uppercase leading-none mb-1">Stowage</div>
+<div class="w-2 h-2 rounded-full bg-industrial-green mx-auto"></div>
+</div>
+<div class="bg-industrial-gray p-2 rounded border border-industrial-border text-center">
+<div class="text-[10px] text-gray-500 uppercase leading-none mb-1">Sync</div>
+<div class="w-2 h-2 rounded-full bg-industrial-amber mx-auto pulse-animation"></div>
+</div>
+</div>
+</div>
+<button class="w-full py-3 bg-industrial-border hover:bg-industrial-gray text-xs font-bold uppercase tracking-widest rounded-lg transition border border-industrial-border flex items-center justify-center gap-2">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              Run System Diagnostic
+            </button>
+</div>
+</section>
+<!-- END: Fleet Stability Matrix -->
+</div>
+<!-- Bottom Row: Telemetry and Analytics -->
+<div class="grid grid-cols-12 gap-6">
+<!-- BEGIN: Live Telemetry Stream -->
+<section class="col-span-12 lg:col-span-4 bg-industrial-charcoal rounded-xl border border-industrial-border flex flex-col max-h-[400px]">
+<div class="p-4 border-b border-industrial-border flex justify-between items-center">
+<h2 class="text-sm font-bold text-gray-400 uppercase">Live Telemetry</h2>
+<span class="text-[10px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded animate-pulse">LIVE STREAM</span>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-[11px] custom-scrollbar">
+<!-- Telemetry Entry 1 -->
+<div class="flex gap-3 border-b border-industrial-border/30 pb-2">
+<span class="text-gray-600">14:22:01</span>
+<div class="flex-1">
+<span class="text-industrial-green font-bold">VERIFIED</span>
+<span class="text-gray-400 ml-1">Golden Image Hash: BZ-993-X</span>
+</div>
+</div>
+<!-- Telemetry Entry 2 -->
+<div class="flex gap-3 border-b border-industrial-border/30 pb-2">
+<span class="text-gray-600">14:21:55</span>
+<div class="flex-1">
+<span class="text-industrial-amber font-bold">WARNING</span>
+<span class="text-gray-400 ml-1">Stability Threshold Low: Ship A1</span>
+</div>
+</div>
+<!-- Telemetry Entry 3 -->
+<div class="flex gap-3 border-b border-industrial-border/30 pb-2">
+<span class="text-gray-600">14:21:40</span>
+<div class="flex-1">
+<span class="text-blue-400 font-bold">SYNC</span>
+<span class="text-gray-400 ml-1">Customs API Handshake v4.2</span>
+</div>
+</div>
+<!-- Telemetry Entry 4 -->
+<div class="flex gap-3 border-b border-industrial-border/30 pb-2">
+<span class="text-gray-600">14:21:12</span>
+<div class="flex-1">
+<span class="text-industrial-green font-bold">VERIFIED</span>
+<span class="text-gray-400 ml-1">Cargo ID: #TR-4422 Accepted</span>
+</div>
+</div>
+<!-- Telemetry Entry 5 -->
+<div class="flex gap-3 border-b border-industrial-border/30 pb-2">
+<span class="text-gray-600">14:20:58</span>
+<div class="flex-1">
+<span class="text-industrial-green font-bold">SDK</span>
+<span class="text-gray-400 ml-1">Encrypted Payload Transmitted</span>
+</div>
+</div>
+<!-- Telemetry Entry 6 -->
+<div class="flex gap-3 border-b border-industrial-border/30 pb-2">
+<span class="text-gray-600">14:20:45</span>
+<div class="flex-1">
+<span class="text-industrial-green font-bold">VERIFIED</span>
+<span class="text-gray-400 ml-1">Golden Image Hash: BZ-993-Y</span>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Live Telemetry Stream -->
+<!-- BEGIN: Throughput Analytics -->
+<section class="col-span-12 lg:col-span-8 bg-industrial-charcoal rounded-xl border border-industrial-border flex flex-col p-6">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="text-sm font-bold text-gray-400 uppercase mb-1">Throughput Analytics</h2>
+<div class="text-2xl font-bold">14m <span class="text-xs text-gray-500 font-normal">avg. Customs Latency</span></div>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 bg-industrial-orange rounded-sm"></div>
+<span class="text-xs text-gray-400">Scan Volume</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 bg-gray-600 rounded-sm"></div>
+<span class="text-xs text-gray-400">Latency</span>
+</div>
+</div>
+</div>
+<div class="flex-1 min-h-[200px] flex items-end gap-2 relative">
+<!-- Mock Bar Chart -->
+<div class="flex-1 bg-industrial-orange/20 h-[60%] border-t border-industrial-orange rounded-t relative group">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] hidden group-hover:block bg-industrial-darker p-1 px-2 border border-industrial-border">1,240</div>
+</div>
+<div class="flex-1 bg-industrial-orange/20 h-[45%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[70%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[55%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[90%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[65%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[40%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[50%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[75%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[85%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[60%] border-t border-industrial-orange rounded-t"></div>
+<div class="flex-1 bg-industrial-orange/20 h-[50%] border-t border-industrial-orange rounded-t"></div>
+<!-- Line Chart Overlay Placeholder -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveaspectratio="none">
+<polyline fill="none" points="0,150 100,140 200,160 300,130 400,145 500,120 600,140 700,150 800,140 900,135 1000,145" stroke="#4b5563" stroke-width="2"></polyline>
+</svg>
+</div>
+<div class="flex justify-between mt-4 text-[10px] text-gray-500 font-mono">
+<span>24H AGO</span>
+<span>18H</span>
+<span>12H</span>
+<span>6H</span>
+<span>CURRENT</span>
+</div>
+</section>
+<!-- END: Throughput Analytics -->
+</div>
+</div>
+<!-- END: Main Dashboard Content -->
+<!-- BEGIN: Integrated App Status Footer Bar -->
+<footer class="h-10 border-t border-industrial-border bg-industrial-darker px-8 flex items-center justify-between z-10">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<svg class="w-3 h-3 text-industrial-green" fill="currentColor" viewbox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293l-4-4a1 1 0 00-1.414 0l-4 4a1 1 0 001.414 1.414L9 7.414V13a1 1 0 102 0V7.414l1.293 1.293a1 1 0 001.414-1.414z"></path></svg>
+<span class="text-[10px] font-mono text-gray-400">UPLINK: ACTIVE</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-industrial-green rounded-full"></div>
+<span class="text-[10px] font-mono text-gray-400">CARGO FINGERPRINT: SYNCED</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-industrial-amber rounded-full"></div>
+<span class="text-[10px] font-mono text-gray-400">SMART STOWAGE: RECALCULATING...</span>
+</div>
+</div>
+<div class="text-[10px] font-mono text-gray-500">
+        BUILD v4.11.0 // SESSION: 449-ALPHA
+      </div>
+</footer>
+<!-- END: Integrated App Status Footer Bar -->
+</main>
+<!-- BEGIN: Canvas Setup Script (Future Data Visualization) -->
+<script data-purpose="canvas-setup">
+    // Placeholder for real-time sparkline or canvas-based telemetry visualizers
+    console.log("Logistics Dashboard Canvas Engine Initialized...");
+  </script>
+<!-- END: Canvas Setup Script -->
+</body></html>

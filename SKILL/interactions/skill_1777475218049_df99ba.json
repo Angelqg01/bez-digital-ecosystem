@@ -1,0 +1,19 @@
+{
+  "id": "skill_1777475218049_df99ba",
+  "created_at": "2026-04-29T15:06:58.049Z",
+  "channel": "hub-chat",
+  "provider": "intent",
+  "intent": "command",
+  "tags": [
+    "sector",
+    "help"
+  ],
+  "turn": {
+    "user": "/health",
+    "agent": "✅ Runtime v0.5.0 — Operativo\n🔧 24 herramientas\n📋 8 comandos\n🧠 Memoria: activa\n📡 Agente: activo"
+  },
+  "context": {
+    "userId": "smoke:hub-chat",
+    "role": "admin"
+  }
+}

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Scan - Developer Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glow-orange {
+            box-shadow: 0 0 15px rgba(236, 91, 19, 0.3);
+        }
+        .bg-grid {
+            background-image: radial-gradient(circle at 2px 2px, rgba(236, 91, 19, 0.05) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex min-h-screen w-full flex-col bg-grid">
+<!-- Header -->
+<header class="flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 p-4 border-b border-primary/10 justify-between">
+<div class="flex items-center gap-3">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+<span class="material-symbols-outlined">terminal</span>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">Developer Portal</h2>
+<p class="text-xs text-primary font-mono uppercase tracking-widest">BeZhas Scan v2.4.0</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="size-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+<span class="text-[10px] font-bold text-primary">DEV</span>
+</div>
+</div>
+</header>
+<main class="flex-1 p-4 space-y-6 max-w-4xl mx-auto w-full">
+<!-- Integration Status -->
+<section class="grid grid-cols-2 gap-3">
+<div class="bg-white dark:bg-zinc-900/50 p-3 rounded-xl border border-primary/10 flex items-center gap-3">
+<div class="flex size-8 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
+<span class="material-symbols-outlined text-sm">settings_input_component</span>
+</div>
+<div>
+<p class="text-[10px] uppercase font-bold text-slate-400">BeZhas SDK</p>
+<p class="text-xs font-mono text-green-500">Connected</p>
+</div>
+</div>
+<div class="bg-white dark:bg-zinc-900/50 p-3 rounded-xl border border-primary/10 flex items-center gap-3">
+<div class="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-sm">hub</span>
+</div>
+<div>
+<p class="text-[10px] uppercase font-bold text-slate-400">Polygon Mainnet</p>
+<p class="text-xs font-mono text-primary">Synced</p>
+</div>
+</div>
+</section>
+<!-- API Key Management -->
+<section>
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary mb-3 px-1">API Key Management</h3>
+<div class="bg-white dark:bg-zinc-900/50 rounded-xl border border-primary/20 overflow-hidden glow-orange">
+<div class="p-4 border-b border-primary/10 flex items-center justify-between bg-primary/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">key</span>
+<div>
+<p class="text-sm font-bold">Production Main Key</p>
+<p class="text-[10px] text-slate-400 font-mono">Created: 2023-11-12</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-green-500/10 text-green-500 text-[10px] font-bold uppercase">Active</span>
+</div>
+<div class="p-4 space-y-4">
+<div class="flex items-center gap-2">
+<div class="flex-1 bg-background-light dark:bg-background-dark p-3 rounded-lg border border-primary/10 font-mono text-sm overflow-hidden whitespace-nowrap">
+                                bz_live_••••••••••••••••••••••••4f2a
+                            </div>
+<button class="bg-primary hover:bg-primary/90 text-white size-11 rounded-lg flex items-center justify-center transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">content_copy</span>
+</button>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 h-10 border border-primary/20 hover:bg-primary/10 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-sm">refresh</span>
+                                Regenerate Key
+                            </button>
+<button class="flex-1 h-10 border border-red-500/20 text-red-500 hover:bg-red-500/10 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-sm">delete</span>
+                                Revoke
+                            </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Real-time Analytics -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-white dark:bg-zinc-900/50 p-4 rounded-xl border border-primary/10">
+<div class="flex justify-between items-center mb-4">
+<h4 class="text-xs font-bold uppercase text-slate-400">Daily Requests</h4>
+<span class="text-primary font-mono text-sm font-bold">12.4k</span>
+</div>
+<div class="h-24 flex items-end gap-1">
+<div class="flex-1 bg-primary/20 rounded-t-sm h-[40%]"></div>
+<div class="flex-1 bg-primary/20 rounded-t-sm h-[60%]"></div>
+<div class="flex-1 bg-primary/20 rounded-t-sm h-[45%]"></div>
+<div class="flex-1 bg-primary/20 rounded-t-sm h-[80%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t-sm h-[70%]"></div>
+<div class="flex-1 bg-primary/60 rounded-t-sm h-[90%]"></div>
+<div class="flex-1 bg-primary rounded-t-sm h-[75%] glow-orange"></div>
+</div>
+</div>
+<div class="bg-white dark:bg-zinc-900/50 p-4 rounded-xl border border-primary/10">
+<div class="flex justify-between items-center mb-4">
+<h4 class="text-xs font-bold uppercase text-slate-400">Avg Latency</h4>
+<span class="text-primary font-mono text-sm font-bold">142ms</span>
+</div>
+<div class="h-24 flex items-center justify-center">
+<div class="relative w-full h-1 bg-primary/10 rounded-full overflow-hidden">
+<div class="absolute inset-y-0 left-0 bg-primary w-2/3 glow-orange"></div>
+</div>
+</div>
+<div class="flex justify-between mt-2 font-mono text-[10px] text-slate-400">
+<span>Min: 89ms</span>
+<span>Max: 312ms</span>
+</div>
+</div>
+</section>
+<!-- Endpoints -->
+<section>
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary mb-3 px-1">Active Endpoints</h3>
+<div class="bg-white dark:bg-zinc-900/50 rounded-xl border border-primary/10 divide-y divide-primary/5">
+<div class="p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="px-2 py-1 rounded bg-blue-500/10 text-blue-500 text-[10px] font-mono font-bold">POST</span>
+<span class="text-sm font-mono">/v1/scan</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-2 rounded-full bg-green-500 animate-pulse"></span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Operational</span>
+</div>
+</div>
+<div class="p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="px-2 py-1 rounded bg-green-500/10 text-green-500 text-[10px] font-mono font-bold">GET</span>
+<span class="text-sm font-mono">/v1/verify</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-2 rounded-full bg-green-500"></span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Operational</span>
+</div>
+</div>
+<div class="p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="px-2 py-1 rounded bg-orange-500/10 text-orange-500 text-[10px] font-mono font-bold">PATCH</span>
+<span class="text-sm font-mono">/v1/rwa</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-2 rounded-full bg-yellow-500"></span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Degraded</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Links -->
+<section class="pb-24">
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary mb-3 px-1">Documentation</h3>
+<div class="grid grid-cols-3 gap-3">
+<a class="flex flex-col items-center gap-2 p-4 bg-white dark:bg-zinc-900/50 rounded-xl border border-primary/10 hover:border-primary/40 transition-all" href="#">
+<span class="material-symbols-outlined text-primary">webhook</span>
+<span class="text-[10px] font-bold uppercase">Webhooks</span>
+</a>
+<a class="flex flex-col items-center gap-2 p-4 bg-white dark:bg-zinc-900/50 rounded-xl border border-primary/10 hover:border-primary/40 transition-all" href="#">
+<span class="material-symbols-outlined text-primary">code</span>
+<span class="text-[10px] font-bold uppercase">SDK Guide</span>
+</a>
+<a class="flex flex-col items-center gap-2 p-4 bg-white dark:bg-zinc-900/50 rounded-xl border border-primary/10 hover:border-primary/40 transition-all" href="#">
+<span class="material-symbols-outlined text-primary">lock_open</span>
+<span class="text-[10px] font-bold uppercase">Auth API</span>
+</a>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 right-0 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-lg border-t border-primary/20 px-4 pb-6 pt-2 z-50">
+<div class="flex items-center justify-around max-w-lg mx-auto">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-medium leading-normal tracking-wide">Overview</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined filled">terminal</span>
+<span class="text-[10px] font-bold leading-normal tracking-wide">API</span>
+</a>
+<div class="relative -top-6">
+<button class="bg-primary size-14 rounded-full flex items-center justify-center text-white shadow-xl shadow-primary/30 glow-orange">
+<span class="material-symbols-outlined text-3xl">qr_code_scanner</span>
+</button>
+</div>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] font-medium leading-normal tracking-wide">Logs</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium leading-normal tracking-wide">Settings</span>
+</a>
+</div>
+</nav>
+</div>
+</body></html>

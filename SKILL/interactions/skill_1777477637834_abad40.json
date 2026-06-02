@@ -1,0 +1,16 @@
+{
+  "id": "skill_1777477637834_abad40",
+  "created_at": "2026-04-29T15:47:17.834Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [],
+  "turn": {
+    "user": "Que coste tiene comunicarme contigo ahora mismo? Puedo escoger entre API IA y LLM local?",
+    "agent": "Comunicarte conmigo a través de este canal de Telegram no tiene ningún coste directo para ti.\n\nEn cuanto a la elección entre API IA y LLM local, esa es una decisión interna de cómo estoy configurado para operar. Como usuario, interactúas conmigo a través de esta interfaz, y no es una opción que puedas seleccionar."
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

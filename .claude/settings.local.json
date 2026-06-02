@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls smart-contracts/)",
+      "Bash(ls api/)",
+      "Bash(ls core/)",
+      "Bash(ls agent-runtime/)"
+    ]
+  }
+}

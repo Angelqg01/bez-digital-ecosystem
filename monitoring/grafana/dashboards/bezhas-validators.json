@@ -1,0 +1,518 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "panels": [
+        {
+            "title": "Active Validators",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "bezhas_validators_active_total",
+                    "legendFormat": "Active"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 5
+                            },
+                            {
+                                "color": "green",
+                                "value": 10
+                            }
+                        ]
+                    },
+                    "unit": "none"
+                }
+            }
+        },
+        {
+            "title": "Total Staked BEZ",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 6,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "bezhas_validators_total_staked_bez",
+                    "legendFormat": "Staked BEZ"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "blue",
+                                "value": 0
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "title": "DePIN Points Distributed",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 12,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "bezhas_depin_points_distributed_total",
+                    "legendFormat": "Total Points"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "purple",
+                                "value": 0
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "title": "Slashing Events (24h)",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 18,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "increase(bezhas_slashing_events_total[24h])",
+                    "legendFormat": "Slashes"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 1
+                            },
+                            {
+                                "color": "red",
+                                "value": 5
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "title": "Validators by Tier",
+            "type": "piechart",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "bezhas_validators_by_tier",
+                    "legendFormat": "{{ tier }}"
+                }
+            ],
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right"
+                },
+                "pieType": "donut"
+            }
+        },
+        {
+            "title": "Heartbeat Rate (per minute)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 16,
+                "x": 8,
+                "y": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(bezhas_validator_heartbeats_total[5m])) * 60",
+                    "legendFormat": "heartbeats/min"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "fillOpacity": 20,
+                        "lineWidth": 2,
+                        "gradientMode": "opacity"
+                    },
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "green"
+                    }
+                }
+            }
+        },
+        {
+            "title": "Validator Health Distribution",
+            "type": "bargauge",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 12
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "bezhas_validator_health_score",
+                    "legendFormat": "{{ operator }}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100,
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 40
+                            },
+                            {
+                                "color": "green",
+                                "value": 70
+                            }
+                        ]
+                    }
+                }
+            },
+            "options": {
+                "displayMode": "gradient",
+                "orientation": "horizontal"
+            }
+        },
+        {
+            "title": "Validation Points by Task Type",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 12
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum by (task_type) (rate(bezhas_validation_points_total[5m]))",
+                    "legendFormat": "{{ task_type }}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "bars",
+                        "fillOpacity": 80,
+                        "stacking": {
+                            "mode": "normal"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Sequencer — Current Epoch Progress",
+            "type": "gauge",
+            "gridPos": {
+                "h": 6,
+                "w": 8,
+                "x": 0,
+                "y": 20
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "bezhas_sequencer_epoch_progress_pct",
+                    "legendFormat": "Epoch Progress"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100,
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "blue",
+                                "value": 0
+                            },
+                            {
+                                "color": "green",
+                                "value": 50
+                            },
+                            {
+                                "color": "orange",
+                                "value": 90
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "title": "Sequencer Rotations",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 6,
+                "w": 8,
+                "x": 8,
+                "y": 20
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "increase(bezhas_sequencer_rotations_total[1h])",
+                    "legendFormat": "rotations/hour"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "bars",
+                        "fillOpacity": 60
+                    },
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "blue"
+                    }
+                }
+            }
+        },
+        {
+            "title": "Aegis Validator Alerts (24h)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 6,
+                "w": 8,
+                "x": 16,
+                "y": 20
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum by (severity) (increase(bezhas_aegis_validator_alerts_total[1h]))",
+                    "legendFormat": "{{ severity }}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "bars",
+                        "fillOpacity": 80,
+                        "stacking": {
+                            "mode": "normal"
+                        }
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "critical"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "red"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "warning"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "yellow"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "title": "BEZ Rewards Claimed",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 6,
+                "w": 12,
+                "x": 0,
+                "y": 26
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(bezhas_rewards_claimed_bez_total[1h])) * 3600",
+                    "legendFormat": "BEZ claimed/hour"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "fillOpacity": 30,
+                        "lineWidth": 2
+                    },
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "orange"
+                    },
+                    "unit": "none"
+                }
+            }
+        },
+        {
+            "title": "Edge Node Uptime (top 10)",
+            "type": "table",
+            "gridPos": {
+                "h": 6,
+                "w": 12,
+                "x": 12,
+                "y": 26
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "topk(10, bezhas_edge_node_uptime_pct)",
+                    "legendFormat": "{{ operator }}",
+                    "format": "table",
+                    "instant": true
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent"
+                }
+            },
+            "options": {
+                "showHeader": true
+            }
+        }
+    ],
+    "schemaVersion": 39,
+    "tags": [
+        "bezhas",
+        "validators",
+        "depin",
+        "sequencer"
+    ],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-24h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "BeZhas — Validators & DePIN",
+    "uid": "bezhas-validators",
+    "version": 1
+}

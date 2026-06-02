@@ -1,0 +1,19 @@
+{
+  "id": "skill_1776592724652_abad40",
+  "created_at": "2026-04-19T09:58:44.652Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "blockchain",
+    "help"
+  ],
+  "turn": {
+    "user": "Puedes empezar una campaña de obtención de leads, ya la tengo en gemini por si quieres te lo comparto",
+    "agent": "Como Agente IA de la plataforma BeZhas Blockchain, mis funciones están centradas en la gestión y monitorización de la blockchain (consultar estado, ejecutar herramientas de IA como Aegis, invocar comandos de Runtime, etc.).\n\nIniciar y gestionar campañas de obtención de leads como la que mencionas no es una de mis capacidades directas. Te sugiero que contactes al equipo de marketing o al departamento comercial de BeZhas, ellos son los más indicados para ayudarte con tu campaña y revisar el material que tienes en Gemini."
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "operator"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "skill_1776592208205_abad40",
+  "created_at": "2026-04-19T09:50:08.205Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "blockchain",
+    "help"
+  ],
+  "turn": {
+    "user": "Hola",
+    "agent": "¡Hola! Soy el Agente IA unificado de la plataforma BeZhas Blockchain. ¿En qué puedo ayudarte hoy como operator?"
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "operator"
+  }
+}

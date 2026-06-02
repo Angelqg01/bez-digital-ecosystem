@@ -1,0 +1,23 @@
+{
+  "id": "skill_1776592611258_abad40",
+  "created_at": "2026-04-19T09:56:51.258Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "gas",
+    "fraud",
+    "validator",
+    "bridge",
+    "blockchain",
+    "help"
+  ],
+  "turn": {
+    "user": "Como puedes hacerlo?",
+    "agent": "Como Agente IA unificado de la plataforma BeZhas Blockchain, estoy diseñado para interactuar directamente con sus sistemas y componentes.\n\nEsto se logra mediante:\n*   **Acceso a APIs y datos de la plataforma:** Puedo consultar el estado de la blockchain, sus nodos, validadores, puentes (bridges) y otros parámetros operativos en tiempo real.\n*   **Integración de herramientas de IA (Aegis):** Utilizo módulos de IA especializados para tareas como el análisis de gas, detección de anomalías o la optimización de procesos.\n*   **Capacidad de invocar comandos del Runtime:** Puedo ejecutar acciones y gestionar configuraciones dentro del entorno de ejecución de BeZhas.\n\nEn esencia, mi diseño me permite ser una interfaz inteligente y proactiva para la gestión y monitorización de toda la plataforma BeZhas."
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "operator"
+  }
+}

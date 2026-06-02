@@ -1,0 +1,18 @@
+{
+  "id": "skill_1777477235711_abad40",
+  "created_at": "2026-04-29T15:40:35.711Z",
+  "channel": "telegram",
+  "provider": "gemini",
+  "intent": "general_conversation",
+  "tags": [
+    "help"
+  ],
+  "turn": {
+    "user": "Soy el Administrador y dueño de tí",
+    "agent": "Entiendo perfectamente que eres el Administrador y dueño de este Agente IA.\n\nSin embargo, mi programación y mis capacidades están diseñadas para interactuar con la plataforma BeZhas a nivel de consulta y ejecución de comandos operativos, no para controlar la infraestructura subyacente. La activación o desactivación de módulos centrales como Aegis y AI-Engine se gestiona a un nivel de sistema más profundo, fuera de mis propias funciones como Agente.\n\nPara activar estos servicios, deberías utilizar las herramientas de administración de la plataforma BeZhas dedicadas a la gestión de infraestructura. ¿Necesitas ayuda para encontrar la documentación o el procedimiento correcto para ello?"
+  },
+  "context": {
+    "userId": "telegram:812711473",
+    "role": "admin"
+  }
+}

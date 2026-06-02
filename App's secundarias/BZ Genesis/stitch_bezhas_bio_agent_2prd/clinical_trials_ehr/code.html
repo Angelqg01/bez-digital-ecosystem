@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeZhas Bio-Agent | Clinical Trials &amp; Tokenization</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25aff4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #25aff433;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top Navigation / Header -->
+<header class="flex items-center bg-background-light dark:bg-background-dark p-4 border-b border-primary/10 justify-between sticky top-0 z-50 backdrop-blur-md bg-opacity-80">
+<div class="flex items-center gap-3">
+<div class="text-primary flex size-10 items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">shield_person</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">BeZhas Bio-Agent</h2>
+<p class="text-xs text-primary font-medium uppercase tracking-widest">Edge AI De-identification</p>
+</div>
+</div>
+<div class="flex gap-3 items-center">
+<div class="hidden md:flex flex-col items-end mr-2">
+<span class="text-[10px] text-slate-400 uppercase">Node Status</span>
+<span class="text-xs text-emerald-400 flex items-center gap-1">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+</span>
+                    Active Encryption
+                </span>
+</div>
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col p-4 gap-6 max-w-5xl mx-auto w-full">
+<!-- Key Metrics Cards -->
+<div class="flex flex-wrap gap-4">
+<div class="flex min-w-[150px] flex-1 flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-primary/10 shadow-sm">
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">database</span>
+<p class="text-sm font-medium">Total EHRs Processed</p>
+</div>
+<p class="text-slate-900 dark:text-white tracking-tight text-2xl font-bold">1,482 Tokens</p>
+<div class="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1">
+<div class="h-full bg-primary w-3/4"></div>
+</div>
+</div>
+<div class="flex min-w-[150px] flex-1 flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-primary/10 shadow-sm">
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">bolt</span>
+<p class="text-sm font-medium">PII Masking Rate</p>
+</div>
+<p class="text-slate-900 dark:text-white tracking-tight text-2xl font-bold">98.4 msg/s</p>
+<div class="flex items-center gap-1 text-emerald-500 text-xs font-bold">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+                    +12% vs last hour
+                </div>
+</div>
+<div class="flex min-w-[150px] flex-1 flex-col gap-2 rounded-xl p-5 bg-primary/10 border border-primary/30 shadow-sm">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-sm">monetization_on</span>
+<p class="text-sm font-bold uppercase tracking-wider">Unclaimed $BEZ</p>
+</div>
+<p class="text-primary tracking-tight text-2xl font-bold">425.80 BEZ</p>
+<button class="mt-1 text-[10px] font-bold text-white bg-primary px-2 py-1 rounded w-fit uppercase">Claim Rewards</button>
+</div>
+</div>
+<!-- Main Dashboard Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Left Column: Edge AI Process -->
+<div class="lg:col-span-2 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">memory</span>
+                        Local Edge AI Processing
+                    </h3>
+<span class="px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase border border-emerald-500/20">Secured</span>
+</div>
+<!-- Processed Record Card 1 -->
+<div class="flex flex-col gap-3 p-5 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-primary/10">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold">PII Masking: Record_TX_8821</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Removing Names, DOB, SSN, Insurance ID</p>
+</div>
+<div class="text-primary text-sm font-bold bg-primary/10 px-2 py-1 rounded">85% Complete</div>
+</div>
+<div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 85%;"></div>
+</div>
+<div class="flex gap-4 mt-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-emerald-500">check_circle</span>
+<span class="text-[10px] uppercase font-medium text-slate-500">De-identified</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary">data_object</span>
+<span class="text-[10px] uppercase font-medium text-slate-500">Tokenized</span>
+</div>
+</div>
+</div>
+<!-- Processed Record Card 2 -->
+<div class="flex flex-col gap-3 p-5 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-primary/10">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold">Clinical Trial: Phase III Oncology</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Anonymizing diagnostic imagery &amp; lab reports</p>
+</div>
+<div class="text-primary text-sm font-bold bg-primary/10 px-2 py-1 rounded">42% Complete</div>
+</div>
+<div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 42%;"></div>
+</div>
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-[14px] animate-spin text-primary">sync</span>
+<span class="text-[10px] uppercase font-medium text-slate-500 italic">Processing high-res DICOM data...</span>
+</div>
+</div>
+<!-- Active Logs -->
+<div class="rounded-xl bg-slate-900 border border-slate-800 p-4 font-mono text-[11px] text-primary/70 h-40 overflow-y-auto custom-scrollbar">
+<div class="mb-1 text-emerald-500/80">[SYSTEM] Local node initialized: 0x82...f92</div>
+<div class="mb-1 text-slate-400">[MASKING] Redacting field: patient_name from EHR_7721</div>
+<div class="mb-1 text-slate-400">[MASKING] Redacting field: ssn_identifier from EHR_7721</div>
+<div class="mb-1 text-emerald-400">[TOKEN] Minting Bio-Token #9122: Success</div>
+<div class="mb-1 text-slate-400">[MASKING] Redacting field: home_address from EHR_7722</div>
+<div class="mb-1 text-primary">[BROKER] Received request from: Pfizer Clinical Research</div>
+<div class="mb-1 text-slate-400">[MASKING] Redacting field: contact_number from EHR_7722</div>
+<div class="mb-1 text-emerald-400">[TOKEN] Minting Bio-Token #9123: Success</div>
+<div class="mb-1 text-slate-400">[MASKING] Scanning pathology report for PII...</div>
+</div>
+</div>
+<!-- Right Column: Medical Broker Agent -->
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">handshake</span>
+                        Broker Agent
+                    </h3>
+<div class="flex h-6 w-6 rounded-full bg-primary/20 items-center justify-center text-primary text-xs font-bold">3</div>
+</div>
+<!-- Request 1 -->
+<div class="flex flex-col gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border-l-4 border-primary dark:border-primary/50">
+<div class="flex justify-between items-center">
+<span class="text-[10px] font-bold uppercase tracking-widest text-primary">Data Access Request</span>
+<span class="text-[10px] font-bold text-emerald-500">+12.5 BEZ</span>
+</div>
+<p class="text-slate-900 dark:text-white text-sm font-bold">Novartis Pharma AG</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs">Requesting access to: De-identified Metabolic Labs (2022-2024)</p>
+<div class="flex gap-2 mt-1">
+<button class="flex-1 py-2 text-[10px] font-bold uppercase rounded bg-primary text-white">Approve</button>
+<button class="flex-1 py-2 text-[10px] font-bold uppercase rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">Deny</button>
+</div>
+</div>
+<!-- Request 2 -->
+<div class="flex flex-col gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border-l-4 border-slate-400 dark:border-slate-700 opacity-80">
+<div class="flex justify-between items-center">
+<span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Query Pending</span>
+<span class="text-[10px] font-bold text-emerald-500">+5.0 BEZ</span>
+</div>
+<p class="text-slate-900 dark:text-white text-sm font-bold">Genentech Research</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs">Statistical query for AI training: Lung Biopsy meta-data</p>
+<div class="flex gap-2 mt-1">
+<button class="flex-1 py-2 text-[10px] font-bold uppercase rounded bg-primary text-white">Approve</button>
+<button class="flex-1 py-2 text-[10px] font-bold uppercase rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">Deny</button>
+</div>
+</div>
+<!-- Reward Status Section -->
+<div class="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+<h4 class="text-xs font-bold uppercase text-primary mb-3 tracking-widest">Reward Status History</h4>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-xs">
+<span class="text-slate-500">Tokenization #9012</span>
+<span class="text-emerald-500 font-bold">+2.4 BEZ</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-slate-500">Pfizer Access Grant</span>
+<span class="text-emerald-500 font-bold">+18.0 BEZ</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-slate-500">Node Maintenance</span>
+<span class="text-emerald-500 font-bold">+0.5 BEZ</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="sticky bottom-0 w-full border-t border-slate-200 dark:border-primary/10 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md pt-2 pb-6 px-4">
+<div class="flex gap-2 max-w-lg mx-auto">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">lock</span>
+<p class="text-[10px] font-bold uppercase tracking-widest">Vault</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">memory</span>
+<p class="text-[10px] font-bold uppercase tracking-widest">AI Node</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">handshake</span>
+<p class="text-[10px] font-bold uppercase tracking-widest">Broker</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<p class="text-[10px] font-bold uppercase tracking-widest">Wallet</p>
+</a>
+</div>
+</nav>
+<!-- Overlay Gradient Decoration -->
+<div class="fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-emerald-400 to-primary/50 opacity-50 z-[100]"></div>
+<div class="fixed -bottom-24 -left-24 w-64 h-64 bg-primary/5 blur-[100px] pointer-events-none"></div>
+<div class="fixed -top-24 -right-24 w-64 h-64 bg-emerald-500/5 blur-[100px] pointer-events-none"></div>
+</body></html>

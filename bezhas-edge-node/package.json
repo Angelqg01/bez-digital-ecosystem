@@ -1,0 +1,20 @@
+{
+  "name": "bezhas-edge-node",
+  "version": "1.0.0",
+  "description": "BeZhas L2 enterprise integration node",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.11.1",
+    "express": "^4.19.2",
+    "axios": "^1.7.2"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

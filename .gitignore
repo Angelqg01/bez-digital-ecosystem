@@ -1,0 +1,82 @@
+# Environment variables (API keys, secrets)
+.env
+.env.*
+!.env.example
+!.env.testnet.example
+# nested env files in any subdir (api/, openclaw/, App's secundarias/, etc.)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Docker data volumes
+pg-data/
+geth-data/
+
+# OpenClaw local install
+openclaw/node_modules/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE
+.vscode/
+/.next/
+control-center/frontend/.next/
+*.swp
+*.swo
+
+# Local sensitive artifacts (never commit)
+bezhas_subapp_credentials.txt
+Agentes IA MCP.zip
+*credentials*.txt
+*.key
+*.pem
+*.p12
+*.keystore
+secrets.local.*
+**/secrets.local.*
+# scratch files that have leaked live keys (sanitize+rotate, never commit)
+**/Untitled-*.json
+**/untitled-*.json
+
+# Foundry broadcast logs may embed RPC URLs / sender keys
+smart-contracts/broadcast/
+smart-contracts/cache/
+smart-contracts/out/
+**/broadcast/**/run-*.json
+
+# Build outputs
+dist/
+build/
+.next/
+*.tsbuildinfo
+
+# Archives / heavy binaries (never commit)
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.bak
+
+# Local runtime data / logs
+logs/
+*.log
+mnt/
+status/*.json
+
+# Compose / debugging logs
+build-log.txt
+docker-build-output.log

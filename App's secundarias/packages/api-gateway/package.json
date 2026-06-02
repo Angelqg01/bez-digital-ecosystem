@@ -1,0 +1,27 @@
+{
+  "name": "@bezhas/api-gateway",
+  "version": "1.0.0",
+  "description": "Unified API Gateway for all BeZhas ecosystem apps",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "helmet": "^8.1.0",
+    "compression": "^1.7.4",
+    "jsonwebtoken": "^9.0.2",
+    "ethers": "^6.16.0",
+    "dotenv": "^16.4.5",
+    "express-rate-limit": "^7.5.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.11.5"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

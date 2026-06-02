@@ -1,0 +1,24 @@
+{
+  "name": "@bezhas/enterprise-node",
+  "version": "1.0.0",
+  "description": "BeZhas L2 Enterprise Node — blockchain client + event indexer + REST API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "migrate": "node lib/db.js",
+    "check": "node --check server.js && node --check lib/db.js && node --check lib/abi-sync.js && node --check lib/event-indexer.js && node --check lib/sdk-bridge.js && node --check lib/tokenomics-service.js && node --check lib/hook-dispatcher.js && node --check lib/validator-service.js",
+    "compose:config": "docker compose config",
+    "validate": "pnpm run check && docker compose config --quiet"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.11.1",
+    "express": "^4.19.2",
+    "pg": "^8.13.1"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

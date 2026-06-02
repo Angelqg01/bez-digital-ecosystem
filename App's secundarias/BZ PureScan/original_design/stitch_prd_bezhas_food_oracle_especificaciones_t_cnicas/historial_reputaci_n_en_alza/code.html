@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b8cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Historial de Reputación - Fincas del Sol</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="max-w-md mx-auto min-h-screen flex flex-col bg-background-light dark:bg-background-dark shadow-xl">
+<!-- Header -->
+<div class="flex items-center p-4 pt-6 justify-between border-b border-slate-200 dark:border-slate-800">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 cursor-pointer">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">Historial de Reputación</h2>
+</div>
+<!-- Provider Profile Section -->
+<div class="flex p-6">
+<div class="flex w-full flex-col gap-4 items-center">
+<div class="flex gap-4 flex-col items-center">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full border-4 border-primary/20 p-1" data-alt="Vista aérea de campos agrícolas verdes y fértiles" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBcAqsLnFKkfGDfs09UCSmT3wh5xSlb0HwIeq5P4I5MD40sa1A-vZuXLgs_9JuP88xYzBVrbWwlLVa2RwRCRH8SiudFBwoeiXnMqEXoEwaI8GRDaumuojzcbxPPH-A3wVFDDIgQMnD9gzshR6oCnR0GqPM02Hq569g_mcerhF1dQ2YSjzp3k-3W10WqgbQRyFfDH44SKs-0lmPZnv2QnkBv3aGWNlL-UYzptPOK0KDsioqJQJDINMevDwi5qsBArXBd7mTm2owAP70");'>
+</div>
+<div class="flex flex-col items-center justify-center">
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-bold leading-tight tracking-tight text-center">Fincas del Sol</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium leading-normal text-center bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full mt-1">ID Proveedor: #FS-9012</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Metrics Cards -->
+<div class="flex flex-wrap gap-4 px-4 py-2">
+<div class="flex min-w-[150px] flex-1 flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">stars</span>
+<p class="text-xs font-semibold uppercase tracking-wider">Puntaje Total</p>
+</div>
+<div class="flex items-baseline gap-2">
+<p class="text-slate-900 dark:text-slate-100 text-3xl font-bold leading-tight">725</p>
+<div class="flex items-center text-emerald-500 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">arrow_upward</span>
+<span>+45</span>
+</div>
+</div>
+<p class="text-slate-400 dark:text-slate-500 text-xs">Anterior: 680 PoR</p>
+</div>
+<div class="flex min-w-[150px] flex-1 flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<p class="text-xs font-semibold uppercase tracking-wider">Estado Actual</p>
+</div>
+<p class="text-primary tracking-tight text-xl font-bold leading-tight uppercase">RECUPERANDO</p>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="flex size-2 rounded-full bg-primary animate-pulse"></span>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Mejorando de Observación</p>
+</div>
+</div>
+</div>
+<!-- Activity Feed -->
+<div class="flex-1 px-4 mt-6">
+<div class="flex items-center justify-between mb-4 px-1">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold tracking-tight">Resumen de Actividad</h3>
+<span class="text-primary text-sm font-medium cursor-pointer">Ver todo</span>
+</div>
+<div class="space-y-4">
+<!-- Recent Milestone -->
+<div class="relative pl-8 pb-4 border-l-2 border-primary/30">
+<div class="absolute -left-[9px] top-0 size-4 rounded-full bg-primary ring-4 ring-primary/20"></div>
+<div class="flex flex-col gap-2 p-4 rounded-xl bg-primary/5 border border-primary/10">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold">Entrega Exitosa Lote #9012</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Validado por Control de Calidad</p>
+</div>
+<span class="text-emerald-500 font-bold">+45</span>
+</div>
+<div class="flex items-center gap-2 text-xs text-slate-400">
+<span class="material-symbols-outlined text-xs">calendar_today</span>
+<span>Hoy, 10:45 AM</span>
+</div>
+</div>
+</div>
+<!-- Previous Activity -->
+<div class="relative pl-8 pb-4 border-l-2 border-slate-200 dark:border-slate-800">
+<div class="absolute -left-[9px] top-0 size-4 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+<div class="flex flex-col gap-1 p-3">
+<p class="text-slate-700 dark:text-slate-300 font-medium">Inspección de Granja Aprobada</p>
+<div class="flex items-center gap-2 text-xs text-slate-500">
+<span class="material-symbols-outlined text-xs">calendar_today</span>
+<span>15 Oct 2023</span>
+<span class="mx-1">•</span>
+<span class="text-emerald-500 font-semibold">+10 PoR</span>
+</div>
+</div>
+</div>
+<!-- Warning Activity -->
+<div class="relative pl-8 border-l-2 border-slate-200 dark:border-slate-800">
+<div class="absolute -left-[9px] top-0 size-4 rounded-full bg-amber-500"></div>
+<div class="flex flex-col gap-1 p-3">
+<p class="text-slate-700 dark:text-slate-300 font-medium text-opacity-80">Retraso en Despacho #8840</p>
+<div class="flex items-center gap-2 text-xs text-slate-500">
+<span class="material-symbols-outlined text-xs">calendar_today</span>
+<span>02 Oct 2023</span>
+<span class="mx-1">•</span>
+<span class="text-rose-500 font-semibold">-25 PoR</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Spacer -->
+<div class="h-24"></div>
+<!-- Bottom Navigation Bar -->
+<div class="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4">
+<div class="flex w-full max-w-md items-center justify-around rounded-full bg-slate-900/90 dark:bg-slate-800/95 backdrop-blur-md px-4 py-3 border border-slate-700 shadow-2xl">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Inicio</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">history</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Historial</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Reportes</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Ajustes</p>
+</a>
+</div>
+</div>
+</div>
+</body></html>

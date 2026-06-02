@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-fixed": "#001d36",
+              "secondary-container": "#02c953",
+              "primary-container": "#2196f3",
+              "on-tertiary-fixed-variant": "#6d3900",
+              "surface-dim": "#0c1420",
+              "error": "#ffb4ab",
+              "on-surface-variant": "#bfc7d4",
+              "on-secondary": "#003912",
+              "surface-container-lowest": "#070e1a",
+              "outline": "#89919d",
+              "secondary-fixed": "#69ff87",
+              "surface-container": "#18202c",
+              "surface": "#0c1420",
+              "surface-variant": "#2d3542",
+              "inverse-on-surface": "#29313e",
+              "on-tertiary-fixed": "#2e1500",
+              "error-container": "#93000a",
+              "primary-fixed": "#d1e4ff",
+              "on-secondary-container": "#004d1b",
+              "on-secondary-fixed-variant": "#00531e",
+              "on-surface": "#dbe3f4",
+              "surface-container-high": "#232a37",
+              "on-tertiary": "#4d2700",
+              "surface-tint": "#9ecaff",
+              "tertiary-fixed-dim": "#ffb77b",
+              "on-error": "#690005",
+              "surface-container-low": "#141c28",
+              "on-primary-fixed-variant": "#00497d",
+              "secondary-fixed-dim": "#3ce36a",
+              "tertiary": "#ffb77b",
+              "primary": "#9ecaff",
+              "inverse-surface": "#dbe3f4",
+              "tertiary-fixed": "#ffdcc2",
+              "on-tertiary-container": "#452200",
+              "on-secondary-fixed": "#002108",
+              "surface-bright": "#323947",
+              "on-background": "#dbe3f4",
+              "inverse-primary": "#0061a4",
+              "secondary": "#40e56c",
+              "surface-container-highest": "#2d3542",
+              "background": "#0c1420",
+              "on-error-container": "#ffdad6",
+              "tertiary-container": "#db7900",
+              "on-primary-container": "#002c4f",
+              "outline-variant": "#404752",
+              "primary-fixed-dim": "#9ecaff",
+              "on-primary": "#003258"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        background-color: #0c1420;
+        color: #dbe3f4;
+        font-family: 'Inter', sans-serif;
+      }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- TopNavBar -->
+<nav class="bg-[#0c1420] flex justify-between items-center w-full px-6 py-4 h-16 fixed top-0 z-50">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black text-blue-400 tracking-tighter font-headline">BeZhas</span>
+<div class="hidden md:flex items-center bg-surface-container-low px-4 py-2 rounded-lg border border-white/5 w-96">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-on-surface-variant/50" placeholder="Buscar por ID de lote o hash..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-[#dbe3f4] hover:bg-white/10 transition-colors rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-[#dbe3f4] hover:bg-white/10 transition-colors rounded-full">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-screen fixed left-0 top-0 pt-20 pb-8 px-4 w-64 border-r border-white/5 bg-[#0c1420] z-40">
+<div class="mb-8 px-4">
+<h2 class="text-xl font-bold text-blue-400 font-headline">BeZhas</h2>
+<p class="text-xs text-on-surface-variant opacity-60 uppercase tracking-widest mt-1">Editorial Logistics</p>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 rounded-lg group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<span class="font-medium text-sm">Scan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-blue-400 bg-blue-400/10 border-r-2 border-blue-400 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-medium text-sm">Storage</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-medium text-sm">Shipments</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-medium text-sm">Wallet</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#dbe3f4]/60 hover:bg-white/5 hover:text-[#dbe3f4] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium text-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4">
+<div class="bg-surface-container-low p-4 rounded-xl border border-white/5">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary text-xs" style="font-variation-settings: 'FILL' 1;">circle</span>
+<span class="text-[10px] uppercase font-bold tracking-tighter text-on-surface-variant">Blockchain Node</span>
+</div>
+<p class="text-[10px] font-mono text-on-surface-variant truncate">0x4f...92e1</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="lg:ml-64 pt-24 pb-20 px-6 min-h-screen">
+<!-- Page Header & Flow Summary -->
+<header class="mb-12">
+<div class="flex flex-col md:flex-row justify-between items-end gap-6">
+<div class="max-w-2xl">
+<h1 class="text-5xl font-black font-headline tracking-tighter mb-4 leading-none">Registro de <span class="text-blue-400">Movimiento.</span></h1>
+<p class="text-on-surface-variant text-lg font-light leading-relaxed">Auditoría inmutable de entradas, salidas y transferencias internas sincronizadas con el Oracle DeFi.</p>
+</div>
+<!-- Resumen de Flujo Card -->
+<div class="w-full md:w-80 bg-surface-container rounded-xl p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+<span class="material-symbols-outlined text-6xl">analytics</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-2 block">Volumen Biomasa (24h)</span>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold font-headline">4,829.4</span>
+<span class="text-sm text-secondary font-medium">TN</span>
+</div>
+<div class="mt-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm">trending_up</span>
+<span class="text-xs text-secondary">+12.4% vs ayer</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Advanced Search Mobile & Filters -->
+<div class="flex flex-col md:flex-row gap-4 mb-8">
+<div class="flex-1 bg-surface-container-low p-4 rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-400">filter_list</span>
+<span class="text-xs font-bold uppercase tracking-wider">Filtros Activos:</span>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-surface-container-highest rounded-full text-[10px] flex items-center gap-2">
+                        Todo <span class="material-symbols-outlined text-[10px]">close</span>
+</span>
+<span class="px-3 py-1 bg-surface-container-highest rounded-full text-[10px] flex items-center gap-2">
+                        Últimas 48h <span class="material-symbols-outlined text-[10px]">close</span>
+</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary px-6 py-3 rounded-md font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined text-sm">download</span>
+                Exportar Auditoría
+            </button>
+</div>
+<!-- Timeline Table Module -->
+<section class="bg-surface-container rounded-xl overflow-hidden border border-white/5">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high/50 border-b border-white/5">
+<th class="px-6 py-4 text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">Evento</th>
+<th class="px-6 py-4 text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">ID Lote</th>
+<th class="px-6 py-4 text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">Ubicación</th>
+<th class="px-6 py-4 text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">Responsable (DID)</th>
+<th class="px-6 py-4 text-[10px] uppercase font-bold tracking-widest text-on-surface-variant text-right">Blockchain Tx</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<!-- Row 1: Entrada -->
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-sm">login</span>
+</div>
+<div>
+<div class="text-sm font-bold">Entrada</div>
+<div class="text-[10px] text-on-surface-variant">14:23 - 22 Oct</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="text-sm font-mono text-blue-400">#BZ-492-AX</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm">Silo Central Alpha</span>
+<span class="text-[10px] text-on-surface-variant">Zona A-4</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional male headshot with neutral background for user profile identification" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbnPRQTzCPV8VZ7xVabomW7sQUlPHxr-lqsuL2zrpW18ZTnvyGdVyQMAGOA18U9kTAQxQT0dT2Zy4ccIM9swJ84wapbRNsSoUf1BkRwa6F7j_ZNVti0zc2Kh17HKp_MI57vUcZy4pzbUcvdC3Nj1pnz1yjmTvZL1Z9Ap4_YW7Uyd_VcwBEMKcO3YMqHjs9hRgluYSQ-dtjhBVG_TP6zGZkiSqmpqS29WHSj7AGbDm7S-PE7LVoGmDlknmFmrSACRNRKCsENGj-WPw"/>
+</div>
+<span class="text-xs font-medium">did:bz:9210...21a</span>
+</div>
+</td>
+<td class="px-6 py-5 text-right">
+<a class="inline-flex items-center gap-1 text-on-surface-variant hover:text-blue-400 transition-colors text-xs font-mono" href="#">
+                                    0x9f...a342
+                                    <span class="material-symbols-outlined text-xs">open_in_new</span>
+</a>
+</td>
+</tr>
+<!-- Row 2: Transferencia -->
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-blue-400/10 flex items-center justify-center text-blue-400">
+<span class="material-symbols-outlined text-sm">sync_alt</span>
+</div>
+<div>
+<div class="text-sm font-bold">Transferencia</div>
+<div class="text-[10px] text-on-surface-variant">12:05 - 22 Oct</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="text-sm font-mono text-blue-400">#BZ-318-TR</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm">Terminal Portuaria</span>
+<span class="text-[10px] text-on-surface-variant">Muelle 09</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional female profile portrait with soft studio lighting and dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGtXrLIh4iM7kWiFe3E0vA9Ybgv_--nkq29K0YcAD0Dz6_n3jQROwZAyWcIctbbDEXUzdgbvrQX-7OZ9pGUmr8lFEdOVFB-5Vyzhof5RxTuSB9yWWUg07rwgEdPmDipugTYy8Itk5cbKdDnG7C4fdajxp8wVakFpxeGSHRoVfgRHuLEcY0Iv7UHw8QT6H9y-pdLLaOOQTRk7neC9NA7ozzTiBy_5k9h-wC6N6YRhmlKfUckhBTLGHoydUsTtsvHlOfNbBCRWDnAls"/>
+</div>
+<span class="text-xs font-medium">did:bz:1102...99d</span>
+</div>
+</td>
+<td class="px-6 py-5 text-right">
+<a class="inline-flex items-center gap-1 text-on-surface-variant hover:text-blue-400 transition-colors text-xs font-mono" href="#">
+                                    0x2a...bb90
+                                    <span class="material-symbols-outlined text-xs">open_in_new</span>
+</a>
+</td>
+</tr>
+<!-- Row 3: Salida -->
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-sm">logout</span>
+</div>
+<div>
+<div class="text-sm font-bold">Salida</div>
+<div class="text-[10px] text-on-surface-variant">09:45 - 22 Oct</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="text-sm font-mono text-blue-400">#BZ-882-OP</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm">Distribuidora Norte</span>
+<span class="text-[10px] text-on-surface-variant">Salida de Planta</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional portrait of a man in casual business attire with focused expression and blurred office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCf7G1_lrBQiK2QHd6n6DRNBlqEWuRHhkneso2cJpC1BH9K72FHOdMPnHd6JSPH0jy4tnCyieV9WoTgg9FTxx45kD-SIOqVotb9LU6AdoF63TgMaV3KR6sHyaPjG7_5VKR9OBSi12txbKPXFuVlQfVOMa1XPiV8MJllKApIwCekUipY3n1i-xS1PvGFuSUMM9TlJdpYd2HqHDVdx_DC3hl3IqkPVcIyEYZXGnjoV1hpb4YkG2EqYoj0TLCPV916tz2TfHfrcvEouk"/>
+</div>
+<span class="text-xs font-medium">did:bz:8832...fe2</span>
+</div>
+</td>
+<td class="px-6 py-5 text-right">
+<a class="inline-flex items-center gap-1 text-on-surface-variant hover:text-blue-400 transition-colors text-xs font-mono" href="#">
+                                    0xec...7122
+                                    <span class="material-symbols-outlined text-xs">open_in_new</span>
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination-like Footer -->
+<div class="px-6 py-4 bg-surface-container-low/30 flex justify-between items-center">
+<span class="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">Mostrando 1-25 de 1,429 registros</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded bg-surface-container-highest/50 text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-surface-container-highest text-blue-400 border border-blue-400/20">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-surface-container-highest/50 text-on-surface-variant hover:bg-surface-container-highest transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-surface-container-highest/50 text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Insights/Audit Cards (Asymmetric Bento) -->
+<section class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 bg-surface-container rounded-xl p-8 relative group">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-xl font-bold font-headline">Estado de Sincronización</h3>
+<div class="px-3 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full animate-pulse uppercase tracking-wider">Oracle Live</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 block">Tps Promedio</span>
+<div class="text-2xl font-bold">142.8 <span class="text-xs font-normal opacity-50">tx/s</span></div>
+</div>
+<div>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 block">Validaciones</span>
+<div class="text-2xl font-bold">99.98<span class="text-xs font-normal opacity-50">%</span></div>
+</div>
+<div>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 block">Bloques Confirmados</span>
+<div class="text-2xl font-bold">1.2M+</div>
+</div>
+</div>
+</div>
+<div class="bg-gradient-to-br from-blue-600/20 to-transparent border border-blue-400/10 rounded-xl p-8 flex flex-col justify-between">
+<div>
+<span class="material-symbols-outlined text-blue-400 text-3xl mb-4" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<h4 class="text-lg font-bold font-headline leading-tight">Certificación de Huella Hídrica</h4>
+<p class="text-xs text-on-surface-variant mt-2 leading-relaxed">Última validación automática completada para todos los movimientos de hoy.</p>
+</div>
+<button class="mt-6 text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 group">
+                    Ver Certificado
+                    <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_right_alt</span>
+</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#0c1420]/80 backdrop-blur-xl border-t border-white/10 shadow-2xl shadow-black">
+<a class="flex flex-col items-center justify-center text-[#dbe3f4]/50 p-2" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#dbe3f4]/50 p-2" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold mt-1">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-blue-400 bg-blue-400/10 rounded-xl p-2" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#dbe3f4]/50 p-2" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-bold mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

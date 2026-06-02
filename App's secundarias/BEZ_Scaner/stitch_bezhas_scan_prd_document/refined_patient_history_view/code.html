@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 border-r border-slate-200 dark:border-primary/20 flex flex-col bg-background-light dark:bg-background-dark shrink-0">
+<div class="p-6 border-b border-slate-200 dark:border-primary/20 flex items-center gap-3">
+<img alt="BeZhas Scan Logo" class="size-8" data-alt="Official BeZhas Scan medical logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBicueWQ5Cmp15LoYlLzrwZ2qoQugy9EWt0D-C9-k8GsMMALlTgh4MCoiujiM6ojmr1EVfmQLLqUpiFy1CCYfaNd6iqrqPRELLikPxRIp3j2zuD0Pm0PlEvsZy9qF-vvLntjXOG9Vil3saSOYfhW-Z-5l3S-39ijLW4bCi5pNqSXcosI34MAOywXdM01eJyLe2paQi9mXy83b7zM6hEwbRjlWwpzelK8urjTJBV6TxNWqGgj1yYuDThAkoPzUDwPfqQQmYMaRXi9k14"/>
+<h2 class="text-lg font-bold tracking-tight text-primary">BeZhas Scan</h2>
+</div>
+<nav class="flex-1 p-4 space-y-2">
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl bg-primary text-white" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">history</span>
+<span class="text-sm font-medium">Patient History</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="text-sm font-medium">Wallet</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined">science</span>
+<span class="text-sm font-medium">AI Lab</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-primary/20">
+<div class="flex items-center gap-3 p-2 rounded-xl bg-slate-100 dark:bg-primary/5">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+<div class="overflow-hidden">
+<p class="text-sm font-bold truncate">Dr. Aris Thorne</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Chief Pathologist</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col overflow-y-auto no-scrollbar">
+<!-- Top Nav -->
+<header class="h-16 border-b border-slate-200 dark:border-primary/20 flex items-center justify-between px-8 bg-background-light dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4 flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-primary/10 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/50" placeholder="Search patient history, scans, or prescriptions..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-primary/10 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-primary rounded-full"></span>
+</button>
+<button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-primary/10">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<div class="p-8 space-y-8 max-w-7xl mx-auto w-full">
+<!-- Patient Header Card -->
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+<div class="flex gap-5 items-center">
+<div class="size-20 rounded-xl bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-white text-4xl">fingerprint</span>
+</div>
+<div>
+<div class="flex items-center gap-3">
+<h1 class="text-2xl font-bold">BZH-9921-X</h1>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/20 text-primary border border-primary/30 uppercase tracking-wider">Blockchain Verified</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Classification: Prime Citizen | Priority Scan Access</p>
+<div class="flex gap-4 mt-3">
+<div class="flex items-center gap-1.5 text-xs">
+<span class="material-symbols-outlined text-primary text-sm">verified_user</span>
+<span class="font-medium text-slate-600 dark:text-slate-300 underline underline-offset-4 decoration-primary/30">Identity Node: 0x82...f92</span>
+</div>
+<div class="flex items-center gap-1.5 text-xs">
+<span class="material-symbols-outlined text-primary text-sm">calendar_month</span>
+<span class="font-medium text-slate-600 dark:text-slate-300">File Active: 4.2 Years</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-black/20 p-4 rounded-xl border border-slate-200 dark:border-primary/10 text-center min-w-[160px]">
+<p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Citizen Trust Score</p>
+<p class="text-4xl font-display font-black text-primary italic">985</p>
+<div class="w-full bg-slate-200 dark:bg-primary/20 h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary h-full w-[98.5%]"></div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Main Timeline -->
+<div class="lg:col-span-2 space-y-6">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">reorder</span>
+                            Medical Interaction Timeline
+                        </h3>
+<div class="flex gap-2">
+<select class="bg-slate-100 dark:bg-primary/10 border-none rounded-lg text-xs font-medium py-1.5 focus:ring-1 focus:ring-primary">
+<option>All Scan Types</option>
+<option>MRI</option>
+<option>Epidermal</option>
+<option>Radiology</option>
+</select>
+<button class="bg-slate-100 dark:bg-primary/10 p-1.5 rounded-lg flex items-center">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+</button>
+</div>
+</div>
+<!-- Timeline Item 1 -->
+<div class="relative pl-8 border-l-2 border-primary/20 space-y-4">
+<div class="absolute -left-[9px] top-0 size-4 rounded-full bg-primary shadow-sm shadow-primary/50"></div>
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-xl p-5 hover:border-primary/40 transition-all">
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-xs font-bold text-primary uppercase tracking-tighter">October 28, 2023</p>
+<h4 class="text-base font-bold">Advanced Epidermal Scan</h4>
+<p class="text-sm text-slate-500">Node: Zurich Med-Bay 4</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-slate-500 uppercase">Audit Score</p>
+<p class="text-lg font-bold text-green-500">99.2%</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="h-20 w-32 rounded-lg bg-slate-200 dark:bg-primary/10 overflow-hidden relative group cursor-pointer border border-primary/10">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<p class="text-[8px] text-white">View Scan Layers</p>
+</div>
+<div class="w-full h-full bg-slate-300 dark:bg-primary/20" data-alt="Close-up epidermal medical scan imagery" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDiwG_8qoMsv2iO2NN52A5Z0g-gTD_n3BQDjMrKnnvFWH-TMsqW4YCo0duHK08ouT419i2wjEIwIstD0JvP57Zhm0VRgCO5kKDSeGaXTjh3WV7aN3lB3B-Zk9M-Piumw3WjMgpXHOPfuf0RrARlUK4HVVVAEPBE5wIku0vcPfnIuQNlQnQkN6DXoHEjzDN-YyC1wpXalUrl8O1tdAtq_HhqjeLCtKi1g9s7PmmqitDRon527Iqyx1SJkQLZhMBpjTbsALzYFNIr1fG0'); background-size: cover;"></div>
+</div>
+<div class="flex-1 space-y-2">
+<p class="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">Neural pathway reconstruction complete. Cellular regeneration at 84% post-trauma baseline. No anomalies detected in the secondary dermal layer.</p>
+<div class="flex gap-3">
+<button class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-sm">view_in_ar</span> 3D Scan Detail
+                                        </button>
+<button class="text-slate-500 text-xs font-bold flex items-center gap-1 hover:text-primary">
+<span class="material-symbols-outlined text-sm">download</span> Report.pdf
+                                        </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2 - AI Analysis -->
+<div class="relative pl-8 border-l-2 border-primary/20 space-y-4">
+<div class="absolute -left-[9px] top-0 size-4 rounded-full bg-slate-300 dark:bg-primary/40"></div>
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-xl p-5 border-l-4 border-l-primary/50">
+<div class="flex justify-between items-start mb-2">
+<div>
+<p class="text-xs font-bold text-slate-500 uppercase tracking-tighter">October 15, 2023</p>
+<h4 class="text-base font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">psychology</span>
+                                        Automated AI Diagnostic Analysis
+                                    </h4>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-slate-500 uppercase">Recovery Metric</p>
+<p class="text-lg font-bold text-primary">+12.4%</p>
+</div>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-400 mb-3 italic">"Comparison with 09/2023 scan shows significant reduction in inflammatory markers within the spinal column. Recommended: Continue Grade-A nanite therapy."</p>
+</div>
+</div>
+<!-- Timeline Item 3 - Prescription -->
+<div class="relative pl-8 border-l-2 border-primary/20 space-y-4">
+<div class="absolute -left-[9px] top-0 size-4 rounded-full bg-slate-300 dark:bg-primary/40"></div>
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-xl p-5">
+<div class="flex justify-between items-start">
+<div class="flex gap-4">
+<div class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">pill</span>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-500 uppercase tracking-tighter">October 12, 2023</p>
+<h4 class="text-base font-bold">Neuro-Link Prescription Vault</h4>
+<p class="text-xs text-slate-500 mt-1">Status: <span class="text-green-500 font-bold">Fulfilled via Blockchain Node 44</span></p>
+</div>
+</div>
+<button class="text-[10px] font-bold border border-primary/30 text-primary px-2 py-1 rounded hover:bg-primary/10">VIEW HASH</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Diagnostics & Vault -->
+<div class="space-y-8">
+<!-- AI Diagnostic Summaries -->
+<section class="space-y-4">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">monitoring</span>
+                            AI Diagnostic Trends
+                        </h3>
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-xl p-5 space-y-6">
+<div>
+<div class="flex justify-between items-end mb-2">
+<p class="text-xs font-bold text-slate-500">HEALING PROGRESS (CELLULAR)</p>
+<p class="text-sm font-bold text-primary">84%</p>
+</div>
+<div class="h-16 flex items-end gap-1 px-1">
+<div class="flex-1 bg-primary/20 h-2/5 rounded-t"></div>
+<div class="flex-1 bg-primary/20 h-3/5 rounded-t"></div>
+<div class="flex-1 bg-primary/20 h-2/5 rounded-t"></div>
+<div class="flex-1 bg-primary/40 h-4/5 rounded-t"></div>
+<div class="flex-1 bg-primary/60 h-3/5 rounded-t"></div>
+<div class="flex-1 bg-primary h-full rounded-t"></div>
+<div class="flex-1 bg-slate-200 dark:bg-white/10 h-1/5 rounded-t"></div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-black/20 border border-slate-100 dark:border-white/5">
+<span class="text-xs">Metabolic Stability</span>
+<span class="text-xs font-bold text-green-500">Stable</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-black/20 border border-slate-100 dark:border-white/5">
+<span class="text-xs">Neural Sync Rate</span>
+<span class="text-xs font-bold text-primary">94.2 Hz</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Tokenized Prescription Vault -->
+<section class="space-y-4">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">lock</span>
+                            Prescription Vault
+                        </h3>
+<div class="space-y-3">
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-xl p-4 flex items-center gap-3">
+<div class="size-10 rounded-lg bg-slate-100 dark:bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">medication</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold truncate">Synapto-Forge Pro</p>
+<p class="text-[10px] text-slate-500 uppercase">200mg | Daily</p>
+</div>
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+</div>
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-xl p-4 flex items-center gap-3">
+<div class="size-10 rounded-lg bg-slate-100 dark:bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">medication</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold truncate">Dermal-Regen V3</p>
+<p class="text-[10px] text-slate-500 uppercase">Topical | PRN</p>
+</div>
+<span class="material-symbols-outlined text-slate-300 dark:text-slate-600">verified</span>
+</div>
+<button class="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-primary/20 text-xs font-bold text-slate-400 hover:text-primary hover:border-primary/50 transition-all uppercase tracking-widest">
+                                View Vault History
+                            </button>
+</div>
+</section>
+<!-- Legend/Quick Stats -->
+<div class="bg-gradient-to-br from-primary to-orange-600 rounded-xl p-5 text-white shadow-xl shadow-primary/20">
+<div class="flex justify-between items-center mb-4">
+<h4 class="font-bold">Protocol Status</h4>
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<p class="text-xs opacity-90 leading-relaxed mb-4">Patient BZH-9921-X is currently adhering to 98% of prescribed recovery protocols. No manual intervention required.</p>
+<button class="w-full py-2 bg-white text-primary rounded-lg text-sm font-bold">Initiate Real-time Sync</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
