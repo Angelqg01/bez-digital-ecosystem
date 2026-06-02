@@ -91,3 +91,4 @@ status/*.json
 # Compose / debugging logs
 build-log.txt
 docker-build-output.log
+.claude/

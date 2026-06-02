@@ -81,6 +81,38 @@ body {
     opacity: 1;
 }
 
+/* Galeria vertical auto-scroll de SubApps secundarias */
+@keyframes subapp-vscroll {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        /* La pista contiene la lista duplicada (x2); -50% = un set completo => bucle continuo */
+        transform: translateY(-50%);
+    }
+}
+
+.subapp-marquee-track {
+    animation: subapp-vscroll 36s linear infinite;
+    will-change: transform;
+}
+
+/* Pausa al pasar el raton para poder leer y hacer clic */
+.subapp-marquee:hover .subapp-marquee-track {
+    animation-play-state: paused;
+}
+
+/* Accesibilidad: sin movimiento si el usuario lo prefiere */
+@media (prefers-reduced-motion: reduce) {
+    .subapp-marquee-track {
+        animation: none;
+    }
+
+    .subapp-marquee {
+        overflow-y: auto;
+    }
+}
+
 .native-app-card {
     position: relative;
     overflow: hidden;

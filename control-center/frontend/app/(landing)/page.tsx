@@ -112,6 +112,51 @@ const subApps = [
   },
 ];
 
+// Apps secundarias del ecosistema con enlace directo a su propia SubApp (subdominios bez.digital).
+// Para cambiar un destino, edita solo el campo `href` de la tarjeta correspondiente.
+const secondaryApps = [
+  {
+    name: 'BeZhas-Hub',
+    status: 'Creada',
+    href: 'https://hub.bez.digital',
+    icon: 'hub',
+    label: 'Centro social y marketplace',
+    desc: 'Portal consumer del ecosistema: perfiles, comunidad, comercio, contenido y experiencia VIP. La puerta de entrada publica a BeZhas.',
+  },
+  {
+    name: 'BeZhas-DeFi',
+    status: 'Creada',
+    href: 'https://defi.bez.digital',
+    icon: 'account_balance',
+    label: 'Finanzas Web3',
+    desc: 'Suite financiera descentralizada: staking, farming, bridge, wallet, DAO y liquidez conectadas al token BEZ.',
+  },
+  {
+    name: 'BZ PureScan',
+    status: 'Integrada',
+    href: 'https://purescan.bez.digital',
+    icon: 'document_scanner',
+    label: 'IA, vision y trazabilidad',
+    desc: 'Verificacion con IA y vision artificial: escaneo, firmas SIFT, Food Oracle y gemelos digitales de activos RWA inmutables.',
+  },
+  {
+    name: 'BEZ-Energy',
+    status: 'En desarrollo',
+    href: 'https://energy.bez.digital',
+    icon: 'bolt',
+    label: 'Energia y RWA verde',
+    desc: 'Tokenizacion energetica: certificados CAE, creditos de carbono, oraculos ESG y mercados P2P de energia on-chain.',
+  },
+  {
+    name: 'BZ-CargoLink',
+    status: 'En desarrollo',
+    href: 'https://cargolink.bez.digital',
+    icon: 'local_shipping',
+    label: 'Logistica y aduanas',
+    desc: 'Logistica y aduanas on-chain: tracking de cargas, NFTs de envio, escrow de entrega y despacho aduanero verificable.',
+  },
+];
+
 const accentClasses: Record<string, string> = {
   cyan: 'border-cyan-400/20 text-cyan-300 shadow-cyan-950/20',
   violet: 'border-violet-400/20 text-violet-300 shadow-violet-950/20',
@@ -479,6 +524,52 @@ export default function Home() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Galeria vertical auto-scroll de las SubApps secundarias (enlaces directos) */}
+        <div className="relative z-10 mt-10">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#0d33f2]">Accesos directos</p>
+              <h3 className="mt-1 text-2xl font-black uppercase italic text-slate-950 md:text-3xl">Galeria de SubApps</h3>
+            </div>
+            <span className="hidden items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 md:flex">
+              <span className="material-symbols-outlined text-sm">pan_tool</span>
+              Pasa el raton para pausar
+            </span>
+          </div>
+
+          <div className="subapp-marquee group relative mx-auto h-[34rem] max-w-2xl overflow-hidden">
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-14 bg-gradient-to-b from-[#f5f7fb] to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-14 bg-gradient-to-t from-[#f5f7fb] to-transparent" />
+            <div className="subapp-marquee-track flex flex-col gap-4">
+              {[...secondaryApps, ...secondaryApps].map((app, index) => (
+                <a
+                  key={`${app.name}-${index}`}
+                  href={app.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Abrir ${app.name}`}
+                  className="app-orbit-card group/card block min-h-[15rem] rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#0d33f2]/30 hover:shadow-2xl hover:shadow-blue-950/10"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#0d33f2] text-white">
+                      <span className="material-symbols-outlined">{app.icon}</span>
+                    </div>
+                    <span className="rounded-full border border-slate-200 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                      {app.status}
+                    </span>
+                  </div>
+                  <p className="mt-7 text-[10px] font-black uppercase tracking-[0.24em] text-[#0d33f2]">{app.label}</p>
+                  <h3 className="mt-3 text-2xl font-black uppercase italic text-slate-950">{app.name}</h3>
+                  <p className="mt-4 text-sm leading-6 text-slate-600">{app.desc}</p>
+                  <span className="mt-6 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-950 group-hover/card:text-[#0d33f2]">
+                    Abrir App <span className="material-symbols-outlined text-sm transition group-hover/card:translate-x-1">arrow_forward</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="relative z-10 mt-8 rounded-xl border border-slate-200 bg-slate-950 p-5 text-white">
