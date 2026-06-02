@@ -1,0 +1,9 @@
+// Placeholder page (original missing; referenced by a lazy route in App.jsx).
+export default function Scanner() {
+    return (
+        <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.7 }}>
+            <h2>Scanner</h2>
+            <p>Módulo en preparación.</p>
+        </div>
+    );
+}
