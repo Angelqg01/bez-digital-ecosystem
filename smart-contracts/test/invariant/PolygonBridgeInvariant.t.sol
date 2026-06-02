@@ -5,6 +5,27 @@ import "forge-std/Test.sol";
 import {BEZPolygonBridge} from "../../src/core/BEZPolygonBridge.sol";
 import {BEZCoinV2} from "../../src/tokens/BEZCoinV2.sol";
 
+/**
+ * @dev Fee model used by these tests MUST mirror BEZPolygonBridge.lock():
+ *      fee = max(amount * bridgeFeeRate / 10_000, minimumFee)
+ *      with the contract defaults bridgeFeeRate = 50 (0.5%) and minimumFee = 10 BEZ.
+ *      lock() also requires amount > fee, so successful locks bound amount above MIN_FEE.
+ */
+uint256 constant FEE_RATE = 50;        // contract default bridgeFeeRate (0.5%)
+uint256 constant FEE_DENOM = 10_000;
+uint256 constant MIN_FEE = 10 ether;   // contract default minimumFee (10 BEZ)
+// Floor for amounts that must succeed: strictly above MIN_FEE so `amount > fee` holds.
+uint256 constant SAFE_MIN_AMOUNT = 11 ether;
+
+function _feeFor(uint256 amount, uint256 rate) pure returns (uint256 f) {
+    f = (amount * rate) / FEE_DENOM;
+    if (f < MIN_FEE) f = MIN_FEE;
+}
+
+function _fee(uint256 amount) pure returns (uint256) {
+    return _feeFor(amount, FEE_RATE);
+}
+
 // ─── Handler ─────────────────────────────────────────────────────
 contract PolygonBridgeHandler is Test {
     BEZPolygonBridge public bridge;
@@ -48,9 +69,9 @@ contract PolygonBridgeHandler is Test {
 
     function lock(uint256 userSeed, uint256 amount) external {
         address user = users[userSeed % users.length];
-        amount = bound(amount, 1 ether, 500_000 ether);
+        amount = bound(amount, SAFE_MIN_AMOUNT, 500_000 ether);
 
-        uint256 fee = (amount * 10) / 10_000; // 0.1%
+        uint256 fee = _fee(amount); // mirrors contract fee (with minimum-fee floor)
         uint256 net = amount - fee;
 
         vm.prank(user);
@@ -167,11 +188,11 @@ contract PolygonBridgeFuzzTest is Test {
         bez.approve(address(bridge), type(uint256).max);
     }
 
-    /// @dev Fee is always exactly 0.1% of amount
-    function testFuzz_feeExactly01Percent(uint256 amount) public {
-        amount = bound(amount, 1 ether, 1_000_000 ether);
+    /// @dev Fee equals max(0.5%, minimumFee) — the contract's actual fee model.
+    function testFuzz_feeMatchesModel(uint256 amount) public {
+        amount = bound(amount, SAFE_MIN_AMOUNT, 1_000_000 ether);
 
-        uint256 expectedFee = (amount * 10) / 10_000;
+        uint256 expectedFee = _fee(amount);
         uint256 expectedNet = amount - expectedFee;
 
         vm.prank(user);
@@ -192,8 +213,8 @@ contract PolygonBridgeFuzzTest is Test {
 
     /// @dev Daily limit resets across days
     function testFuzz_dailyLimitResetsAcrossDays(uint256 day1Amount, uint256 day2Amount) public {
-        day1Amount = bound(day1Amount, 1 ether, 500_000 ether);
-        day2Amount = bound(day2Amount, 1 ether, 500_000 ether);
+        day1Amount = bound(day1Amount, SAFE_MIN_AMOUNT, 500_000 ether);
+        day2Amount = bound(day2Amount, SAFE_MIN_AMOUNT, 500_000 ether);
 
         vm.prank(user);
         bridge.lock(day1Amount, POLYGON);
@@ -211,14 +232,15 @@ contract PolygonBridgeFuzzTest is Test {
     /// @dev Replay protection: same srcTxHash always reverts on second use
     function testFuzz_replayProtection(bytes32 srcTxHash, uint256 amount) public {
         vm.assume(srcTxHash != bytes32(0));
-        amount = bound(amount, 1 ether, 100_000 ether);
+        amount = bound(amount, SAFE_MIN_AMOUNT, 100_000 ether);
 
         // Lock first
         vm.prank(user);
         bridge.lock(amount, POLYGON);
 
+        uint256 net = amount - _fee(amount);
         vm.prank(relayer);
-        bridge.unlock(user, amount - (amount * 10 / 10_000), srcTxHash);
+        bridge.unlock(user, net, srcTxHash);
 
         vm.prank(relayer);
         vm.expectRevert(bytes("Already processed"));
@@ -231,7 +253,7 @@ contract PolygonBridgeFuzzTest is Test {
 
         for (uint256 i = 0; i < lockCount; i++) {
             vm.prank(user);
-            bridge.lock(1 ether, POLYGON);
+            bridge.lock(SAFE_MIN_AMOUNT, POLYGON); // above minimum fee so lock succeeds
         }
 
         assertEq(bridge.nonces(user), lockCount);
@@ -239,7 +261,7 @@ contract PolygonBridgeFuzzTest is Test {
 
     /// @dev Pause blocks locks and unlocks
     function testFuzz_pauseBlocksOps(uint256 amount) public {
-        amount = bound(amount, 1 ether, 100_000 ether);
+        amount = bound(amount, SAFE_MIN_AMOUNT, 100_000 ether);
 
         vm.prank(admin);
         bridge.pause();
@@ -255,7 +277,7 @@ contract PolygonBridgeFuzzTest is Test {
         bridge.lock(amount, POLYGON);
     }
 
-    /// @dev Fee rate change applies to subsequent locks
+    /// @dev Fee rate change applies to subsequent locks (with minimum-fee floor)
     function testFuzz_feeRateChangeApplies(uint256 newRate) public {
         newRate = bound(newRate, 0, 500); // 0-5%
 
@@ -263,7 +285,7 @@ contract PolygonBridgeFuzzTest is Test {
         bridge.setFeeRate(newRate);
 
         uint256 amount = 100_000 ether;
-        uint256 expectedFee = (amount * newRate) / 10_000;
+        uint256 expectedFee = _feeFor(amount, newRate); // honors minimumFee floor
 
         vm.prank(user);
         bridge.lock(amount, POLYGON);
@@ -286,7 +308,7 @@ contract PolygonBridgeFuzzTest is Test {
         vm.assume(attacker != admin);
 
         vm.prank(user);
-        bridge.lock(1 ether, POLYGON);
+        bridge.lock(SAFE_MIN_AMOUNT, POLYGON); // above minimum fee so lock succeeds
 
         vm.prank(attacker);
         vm.expectRevert();

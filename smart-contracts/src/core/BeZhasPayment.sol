@@ -252,8 +252,14 @@ contract BeZhasPayment is AccessControl, ReentrancyGuard, Pausable {
     // REEMBOLSO
     // ═══════════════════════════════════════════════════════════════════════════
     /**
-     * @notice Reembolsa un pago al payer original (solo OPERATOR)
-     * @dev Devuelve amount + fee al payer, el contrato debe tener balance
+     * @notice Reembolsa un pago estándar (COMPLETED) al payer original (solo OPERATOR).
+     * @dev Solvencia garantizada y aislada por pago:
+     *      - La porción `fee` la custodia este contrato (accruedFees) → se devuelve desde aquí.
+     *      - La porción neta YA salió al recipient en processPayment; por eso el operator
+     *        la FONDEA vía transferFrom (clawback de plataforma). Así el reembolso nunca
+     *        drena las fees de otros pagos ni depende de fondos externos en el contrato.
+     *      El operator debe haber aprobado a este contrato por al menos `record.amount`.
+     *      Los pagos de bridge (status PENDING) no son reembolsables por esta vía.
      */
     function refundPayment(bytes32 orderId)
         external
@@ -264,14 +270,19 @@ contract BeZhasPayment is AccessControl, ReentrancyGuard, Pausable {
         if (record.payer == address(0))          revert PaymentNotFound(orderId);
         if (record.status != Status.COMPLETED)   revert PaymentNotRefundable(orderId, record.status);
 
-        uint256 refundAmount = record.amount + record.fee;
+        uint256 feePart = record.fee;   // custodiada en accruedFees
+        uint256 netPart = record.amount; // entregada al recipient → la fondea el operator
 
+        // Efectos antes de interacciones (checks-effects-interactions)
         record.status = Status.REFUNDED;
-        accruedFees  -= record.fee;
+        accruedFees  -= feePart;
 
-        bezToken.safeTransfer(record.payer, refundAmount);
+        // Devolver fee desde el balance del contrato
+        if (feePart > 0) bezToken.safeTransfer(record.payer, feePart);
+        // Operator fondea el neto del clawback (revierte limpio si no hay approve/saldo)
+        if (netPart > 0) bezToken.safeTransferFrom(msg.sender, record.payer, netPart);
 
-        emit PaymentRefunded(orderId, record.payer, refundAmount, block.timestamp);
+        emit PaymentRefunded(orderId, record.payer, netPart + feePart, block.timestamp);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

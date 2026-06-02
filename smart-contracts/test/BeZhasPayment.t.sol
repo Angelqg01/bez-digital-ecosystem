@@ -205,9 +205,11 @@ contract BeZhasPaymentTest is Test {
         vm.prank(payer);
         payment.processPayment(recipient, PAYMENT_AMOUNT, orderId, "refundable");
 
-        // Recipient devuelve netAmt al contrato para que el refund tenga fondos
-        vm.prank(recipient);
-        bezToken.transfer(address(payment), netAmt);
+        // El operator fondea el neto del clawback (semántica solvente y aislada por pago)
+        vm.prank(admin);
+        bezToken.mint(operator, netAmt);
+        vm.prank(operator);
+        bezToken.approve(address(payment), type(uint256).max);
 
         uint256 payerBalBefore = bezToken.balanceOf(payer);
 
@@ -245,9 +247,11 @@ contract BeZhasPaymentTest is Test {
         vm.prank(payer);
         payment.processPayment(recipient, PAYMENT_AMOUNT, orderId, "");
 
-        // Recipient devuelve tokens para que el refund pueda ejecutarse
-        vm.prank(recipient);
-        bezToken.transfer(address(payment), netAmt);
+        // El operator fondea el neto del clawback
+        vm.prank(admin);
+        bezToken.mint(operator, netAmt);
+        vm.prank(operator);
+        bezToken.approve(address(payment), type(uint256).max);
 
         vm.startPrank(operator);
         payment.refundPayment(orderId);
@@ -255,6 +259,49 @@ contract BeZhasPaymentTest is Test {
         vm.expectRevert(); // PaymentNotRefundable
         payment.refundPayment(orderId);
         vm.stopPrank();
+    }
+
+    // Regresión: el refund debe revertir limpio si el operator no fondea el neto
+    // (sin approve/saldo) en vez de drenar fondos del contrato.
+    function test_RefundPayment_RevertsIfOperatorNotFunded() public {
+        bytes32 orderId = keccak256("order-unfunded");
+        vm.prank(payer);
+        payment.processPayment(recipient, PAYMENT_AMOUNT, orderId, "");
+
+        // Operator sin saldo ni approve → la parte neta no puede fondearse
+        vm.prank(operator);
+        vm.expectRevert();
+        payment.refundPayment(orderId);
+    }
+
+    // Regresión clave: un refund NO debe drenar las fees de OTRO pago.
+    function test_RefundPayment_DoesNotDrainOtherFees() public {
+        uint256 fee = (PAYMENT_AMOUNT * FEE_BPS) / 10_000;
+        uint256 netAmt = PAYMENT_AMOUNT - fee;
+
+        // Dos pagos independientes → accruedFees = 2 * fee
+        bytes32 o1 = keccak256("o1");
+        bytes32 o2 = keccak256("o2");
+        vm.startPrank(payer);
+        payment.processPayment(recipient, PAYMENT_AMOUNT, o1, "");
+        payment.processPayment(recipient, PAYMENT_AMOUNT, o2, "");
+        vm.stopPrank();
+        assertEq(payment.accruedFees(), 2 * fee);
+
+        // Operator fondea solo el neto y reembolsa o1
+        vm.prank(admin);
+        bezToken.mint(operator, netAmt);
+        vm.prank(operator);
+        bezToken.approve(address(payment), type(uint256).max);
+        vm.prank(operator);
+        payment.refundPayment(o1);
+
+        // accruedFees baja exactamente el fee de o1; la fee de o2 sigue intacta y retirable
+        assertEq(payment.accruedFees(), fee);
+        uint256 tBefore = bezToken.balanceOf(treasury);
+        vm.prank(treasury);
+        payment.withdrawFees();
+        assertEq(bezToken.balanceOf(treasury), tBefore + fee);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

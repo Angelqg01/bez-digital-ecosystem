@@ -45,16 +45,26 @@ contract BEZCoinV2 is ERC20, ERC20Burnable, ERC20Permit, ERC20Votes, AccessContr
         emit TokensMinted(to, amount, "L2 Operations / DePIN");
     }
 
+    /**
+     * @notice "Quema" para el bridge: NO reduce totalSupply, transfiere a `treasuryWallet`.
+     * @dev Semántica deliberada: los tokens "quemados" se recolectan en tesorería en lugar de
+     *      destruirse, para conservar el supply circulante bajo control del DAO. El balance del
+     *      bridge/escrow en la otra cadena debe casar con lo recolectado aquí, no con el supply.
+     */
     function bridgeBurn(address from, uint256 amount) public onlyRole(BRIDGE_ROLE) {
-        // En lugar de quemar, transferimos a la tesorería
         _transfer(from, treasuryWallet, amount);
     }
 
-    // Sobrescribimos las funciones de ERC20Burnable para redirigir las quemas a tesorería
+    /**
+     * @notice ATENCIÓN: override de ERC20Burnable. NO destruye tokens ni reduce totalSupply;
+     *         redirige el importe a `treasuryWallet`. El nombre se mantiene por compatibilidad
+     *         de interfaz ERC20Burnable, pero el efecto es una transferencia a tesorería.
+     */
     function burn(uint256 value) public override {
         _transfer(_msgSender(), treasuryWallet, value);
     }
 
+    /// @notice Igual que `burn`: NO reduce supply, transfiere a tesorería (consume allowance).
     function burnFrom(address account, uint256 value) public override {
         _spendAllowance(account, _msgSender(), value);
         _transfer(account, treasuryWallet, value);

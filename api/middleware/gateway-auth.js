@@ -11,10 +11,8 @@ const jwt = require('jsonwebtoken');
 const { query } = require('../db/pool');
 const logger = require('pino')({ level: 'info', name: 'gateway-auth' });
 
-const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-only-secret' : null);
-if (!JWT_SECRET) {
-    throw new Error('FATAL: JWT_SECRET is required for gateway auth.');
-}
+// Single source of truth for secrets (never read process.env independently here).
+const { JWT_SECRET, AUTH_BYPASS } = require('../config/secrets');
 
 /**
  * Authenticate a registered app via x-api-key header.
@@ -101,8 +99,9 @@ function requireScope(...scopes) {
  * Populates req.user with the decoded claims.
  */
 function authenticateSSOToken(req, res, next) {
-    // DEV MODE bypass
-    if (process.env.NODE_ENV !== 'production') {
+    // Auth bypass: ONLY when explicitly opted in (AUTH_BYPASS=true, non-prod).
+    // Impossible in production — see config/secrets.js.
+    if (AUTH_BYPASS) {
         req.user = {
             address: '0xDev0000000000000000000000000000000000001',
             userId: 1,

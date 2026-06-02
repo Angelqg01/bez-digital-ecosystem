@@ -126,6 +126,13 @@ contract BEZPolygonBridge is AccessControl, ReentrancyGuard, Pausable {
 
     /**
      * @dev Relayer unlocks BEZ when wBEZ is burned on the source chain.
+     *
+     * SECURITY / TRUST MODEL: this is a custodial lock-mint bridge. `RELAYER_ROLE` is fully
+     * trusted to assert that a burn happened on the remote chain — there is NO on-chain proof
+     * (Merkle/light-client) here. Therefore RELAYER_ROLE MUST be a multisig or a threshold/MPC
+     * signer, never a single hot EOA. Replay is bounded per `srcTxHash`; solvency is bounded by
+     * `totalLocked -= amount` (reverts on underflow if a relayer tries to unlock more than locked).
+     *
      * @param recipient User to receive BEZ.
      * @param amount Amount to unlock.
      * @param srcTxHash Hash of the burn tx on the source chain.

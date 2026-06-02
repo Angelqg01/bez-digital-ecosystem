@@ -5,12 +5,14 @@ const jwt = require('jsonwebtoken');
 const { ethers } = require('ethers');
 const { query } = require('../db/pool');
 const { checkRateLimit } = require('../cache/redis');
-const { JWT_SECRET, DEV_MODE } = require('../config/secrets');
+const { JWT_SECRET, AUTH_BYPASS } = require('../config/secrets');
+const { consumeNonce, extractNonce } = require('../utils/walletNonce');
 
 // ── JWT authentication ──
 function authenticateToken(req, res, next) {
-    // DEV MODE: bypass auth and inject a dev user
-    if (DEV_MODE) {
+    // Auth bypass: ONLY when explicitly opted in (AUTH_BYPASS=true, non-prod).
+    // Impossible in production — see config/secrets.js.
+    if (AUTH_BYPASS) {
         req.user = { address: '0xDev0000000000000000000000000000000000001', userId: 1, role: 'admin' };
         return next();
     }
@@ -35,9 +37,24 @@ async function verifyWalletSignature(req, res, next) {
             return res.status(400).json({ error: 'Address, signature, and message required' });
         }
 
+        // 1) Cryptographic check: signature was produced by `address`.
         const recoveredAddress = ethers.verifyMessage(message, signature);
         if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
             return res.status(401).json({ error: 'Invalid signature' });
+        }
+
+        // 2) Anti-replay: the signed message must carry a server-issued, single-use
+        //    nonce that we now atomically consume. Without this, any captured
+        //    signature could be replayed forever. Skipped only under explicit dev bypass.
+        if (!AUTH_BYPASS) {
+            const presentedNonce = extractNonce(message);
+            if (!presentedNonce) {
+                return res.status(401).json({ error: 'Login message missing nonce. Request one at GET /auth/nonce.' });
+            }
+            const storedNonce = await consumeNonce(address);
+            if (!storedNonce || storedNonce !== presentedNonce) {
+                return res.status(401).json({ error: 'Invalid, expired, or already-used nonce. Request a new one at GET /auth/nonce.' });
+            }
         }
 
         req.walletAddress = address;
@@ -85,6 +102,12 @@ function enterpriseRateLimit(limit = 100, windowSec = 60) {
     };
 }
 
+// Reads (GET) of these path segments are security-sensitive and must be audited too.
+const SENSITIVE_READ_PATTERNS = [
+    /\/wallet/i, /\/treasury/i, /\/admin/i, /\/keys?/i, /\/secrets?/i,
+    /\/validators?/i, /\/transactions?/i, /\/vault/i, /\/config/i,
+];
+
 // ── Audit logger ──
 async function auditLog(req, res, next) {
     const start = Date.now();
@@ -93,7 +116,9 @@ async function auditLog(req, res, next) {
         try {
             const duration = Date.now() - start;
             const address = req.user?.address || 'anonymous';
-            if (req.method !== 'GET') {
+            const isSensitiveRead = req.method === 'GET'
+                && SENSITIVE_READ_PATTERNS.some((re) => re.test(req.originalUrl));
+            if (req.method !== 'GET' || isSensitiveRead) {
                 await query(
                     `INSERT INTO ai_logs (module, action, severity, input_data, output_data, processing_ms)
                      VALUES ($1, $2, $3, $4, $5, $6)`,

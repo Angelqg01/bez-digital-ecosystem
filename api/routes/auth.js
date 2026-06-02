@@ -8,9 +8,25 @@ const bcrypt = require('bcryptjs');
 const { query } = require('../db/pool');
 const { verifyWalletSignature, authenticateToken } = require('../middleware/security');
 const { JWT_SECRET } = require('../config/secrets');
+const { issueNonce, NONCE_TTL_SECONDS } = require('../utils/walletNonce');
 const walletService = require('../services/walletService');
 
 const router = Router();
+
+// ── Nonce challenge (anti-replay) ──
+// Client flow: GET /auth/nonce?address=0x.. → sign returned `message` → POST /auth/login.
+router.get('/nonce', [
+    require('express-validator').query('address').isEthereumAddress().withMessage('Invalid Ethereum address'),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    try {
+        const { nonce, message } = await issueNonce(req.query.address);
+        res.json({ success: true, nonce, message, expiresInSeconds: NONCE_TTL_SECONDS });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to issue nonce' });
+    }
+});
 
 // ── Login (wallet signature) ──
 router.post('/login', [
