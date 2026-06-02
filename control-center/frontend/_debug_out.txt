@@ -1,0 +1,3 @@
+STDERR:
+STDOUT:
+MSG:spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT

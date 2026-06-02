@@ -1,0 +1,66 @@
+// Tabla principal de Plugins
+model Plugin {
+  id                String   @id @default(uuid())
+  name              String   @unique
+  slug              String   @unique // Ej: "chat-system-v2"
+  description       String?
+  repoUrl           String   // URL de GitHub para sincronización
+  currentVersionId  String?  @unique
+  status            Status   @default(ACTIVE)
+  
+  // Relaciones
+  versions          PluginVersion[] @relation("PluginToVersions")
+  currentVersion    PluginVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  logs              UpdateLog[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Historial de versiones por plugin
+model PluginVersion {
+  id          String   @id @default(uuid())
+  pluginId    String
+  versionTag  String   // Ej: "v1.0.2"
+  isStable    Boolean  @default(false)
+  changelog   String?
+  zipUrl      String?  // Link al artefacto en GitHub Releases
+  
+  // Relaciones
+  plugin      Plugin   @relation("PluginToVersions", fields: [pluginId], references: [id])
+  referencedByPlugin Plugin? @relation("CurrentVersion")
+
+  createdAt   DateTime @default(now())
+}
+
+// Auditoría de cambios (Para el Admin Panel)
+model UpdateLog {
+  id            String   @id @default(uuid())
+  pluginId      String
+  adminWallet   String   // Dirección de la wallet que ejecutó la acción
+  action        Action   // UPDATE, ROLLBACK, INSTALL
+  fromVersion   String?
+  toVersion     String?
+  status        LogStatus @default(SUCCESS)
+  
+  plugin        Plugin   @relation(fields: [pluginId], references: [id])
+  timestamp     DateTime @default(now())
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  UPDATING
+  ERROR
+}
+
+enum Action {
+  UPDATE
+  ROLLBACK
+  INSTALL
+}
+
+enum LogStatus {
+  SUCCESS
+  FAILED
+}

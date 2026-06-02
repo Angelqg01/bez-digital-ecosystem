@@ -1,0 +1,138 @@
+{
+    "settings": {
+        "quorumPercentage": 10,
+        "votingPeriodDays": 7,
+        "proposalThreshold": 100000,
+        "allowDelegation": true,
+        "maxDelegations": 100,
+        "rewardPerVote": 10,
+        "createdAt": "2025-11-20T00:00:00.000Z",
+        "updatedAt": "2025-11-20T00:00:00.000Z"
+    },
+    "treasuryTransactions": [
+        {
+            "type": "deposit",
+            "token": "USDC",
+            "amount": 1000000,
+            "description": "Fondos iniciales de la tesorería",
+            "status": "completed",
+            "createdAt": "2025-11-20T00:00:00.000Z",
+            "updatedAt": "2025-11-20T00:00:00.000Z"
+        },
+        {
+            "type": "deposit",
+            "token": "BEZ",
+            "amount": 5000000,
+            "description": "Asignación de tokens BEZ",
+            "status": "completed",
+            "createdAt": "2025-11-20T00:00:00.000Z",
+            "updatedAt": "2025-11-20T00:00:00.000Z"
+        },
+        {
+            "type": "deposit",
+            "token": "ETH",
+            "amount": 100,
+            "description": "Reserva de ETH",
+            "status": "completed",
+            "createdAt": "2025-11-20T00:00:00.000Z",
+            "updatedAt": "2025-11-20T00:00:00.000Z"
+        }
+    ],
+    "proposals": [
+        {
+            "title": "Aumentar recompensas por contenido verificado",
+            "description": "Propuesta para incrementar en un 25% las recompensas para creadores que verifican contenido mediante blockchain. Esto incentivará la creación de contenido de calidad y aumentará la participación en la plataforma.",
+            "category": "treasury",
+            "creator": "0x1234567890abcdef1234567890abcdef12345678",
+            "status": "active",
+            "startDate": "2025-11-20T00:00:00.000Z",
+            "endDate": "2025-11-25T00:00:00.000Z",
+            "votesFor": 1245000,
+            "votesAgainst": 234000,
+            "actions": [
+                {
+                    "type": "updateSettings",
+                    "target": "rewards.contentCreation",
+                    "value": "1.25",
+                    "data": {
+                        "multiplier": 1.25
+                    }
+                }
+            ],
+            "createdAt": "2025-11-20T00:00:00.000Z",
+            "updatedAt": "2025-11-20T00:00:00.000Z"
+        },
+        {
+            "title": "Implementar sistema de moderación descentralizada",
+            "description": "Crear un sistema de jurados aleatorios usando NFTs para moderar contenido reportado. Los jurados serán seleccionados de holders de NFTs especiales y recibirán recompensas por participar.",
+            "category": "governance",
+            "creator": "0x1234567890abcdef1234567890abcdef12345678",
+            "status": "active",
+            "startDate": "2025-11-20T00:00:00.000Z",
+            "endDate": "2025-11-27T00:00:00.000Z",
+            "votesFor": 890000,
+            "votesAgainst": 567000,
+            "actions": [
+                {
+                    "type": "custom",
+                    "target": "moderation.system",
+                    "value": "decentralized-jury",
+                    "data": {
+                        "jurySize": 5,
+                        "requiredNFT": "ModeratorBadge"
+                    }
+                }
+            ],
+            "createdAt": "2025-11-20T00:00:00.000Z",
+            "updatedAt": "2025-11-20T00:00:00.000Z"
+        },
+        {
+            "title": "Financiar hackathon de desarrolladores Q1 2026",
+            "description": "Asignar 50,000 USDC de la tesorería para premios del hackathon y atracción de talento. El evento se enfocará en construir dApps sobre nuestra infraestructura.",
+            "category": "development",
+            "creator": "0x1234567890abcdef1234567890abcdef12345678",
+            "status": "active",
+            "startDate": "2025-11-20T00:00:00.000Z",
+            "endDate": "2025-11-23T00:00:00.000Z",
+            "votesFor": 2100000,
+            "votesAgainst": 150000,
+            "actions": [
+                {
+                    "type": "transfer",
+                    "target": "0xHackathonWallet123456789",
+                    "value": "50000",
+                    "data": {
+                        "token": "USDC",
+                        "purpose": "Q1 2026 Hackathon"
+                    }
+                }
+            ],
+            "createdAt": "2025-11-20T00:00:00.000Z",
+            "updatedAt": "2025-11-20T00:00:00.000Z"
+        },
+        {
+            "title": "Reducir comisión de marketplace al 1.5%",
+            "description": "Propuesta para reducir la comisión del marketplace NFT del 2.5% al 1.5% para aumentar volumen de transacciones y competitividad con otras plataformas.",
+            "category": "protocol",
+            "creator": "0x1234567890abcdef1234567890abcdef12345678",
+            "status": "approved",
+            "startDate": "2025-11-10T00:00:00.000Z",
+            "endDate": "2025-11-17T00:00:00.000Z",
+            "votesFor": 3400000,
+            "votesAgainst": 890000,
+            "actions": [
+                {
+                    "type": "updateSettings",
+                    "target": "marketplace.fee",
+                    "value": "1.5",
+                    "data": {
+                        "newFee": 1.5,
+                        "oldFee": 2.5
+                    }
+                }
+            ],
+            "createdAt": "2025-11-10T00:00:00.000Z",
+            "updatedAt": "2025-11-17T00:00:00.000Z"
+        }
+    ]
+}

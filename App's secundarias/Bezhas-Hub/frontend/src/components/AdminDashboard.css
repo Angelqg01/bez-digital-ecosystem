@@ -1,0 +1,209 @@
+/* AdminDashboard.css */
+
+:root {
+  --admin-bg: #1a1d2e;
+  --sidebar-bg: #242842;
+  --card-bg: #2f3456;
+  --primary-text: #ffffff;
+  --secondary-text: #a0a4c2;
+  --accent-purple: #6c5dd3;
+  --accent-blue: #3e92cc;
+  --accent-pink: #d64f7b;
+  --positive-change: #34c759;
+  --negative-change: #ff3b30;
+  --border-color: #4a4e69;
+}
+
+.admin-panel {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--admin-bg);
+  color: var(--primary-text);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  width: 260px;
+  background-color: var(--sidebar-bg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-color);
+}
+
+.sidebar-header {
+  margin-bottom: 2rem;
+}
+
+.sidebar-header h2 {
+  font-size: 1.5rem;
+  color: var(--primary-text);
+  text-align: center;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-nav li a {
+  display: block;
+  padding: 1rem;
+  color: var(--secondary-text);
+  text-decoration: none;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.sidebar-nav li a:hover {
+  background-color: var(--card-bg);
+  color: var(--primary-text);
+}
+
+.sidebar-nav li.active a {
+  background-color: var(--accent-purple);
+  color: var(--primary-text);
+  font-weight: 600;
+}
+
+/* --- Main Content --- */
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.main-header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-actions input[type="search"] {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--primary-text);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  min-width: 250px;
+}
+
+.notifications-btn {
+  background: none;
+  border: none;
+  color: var(--secondary-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+/* --- Stats Grid --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.stat-card h3 {
+  font-size: 1rem;
+  color: var(--secondary-text);
+  margin: 0 0 0.5rem 0;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-text);
+}
+
+/* --- Tables and Lists --- */
+.recent-activity {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 2rem;
+  border: 1px solid var(--border-color);
+}
+
+.recent-activity h3 {
+  margin-top: 0;
+}
+
+.activity-list .activity-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.activity-list .activity-item:last-child {
+  border-bottom: none;
+}
+
+/* --- General Controls --- */
+.control-section {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.control-section h3 {
+  margin-top: 0;
+}
+
+.input-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.input-group input {
+  flex: 1;
+  background-color: var(--admin-bg);
+  border: 1px solid var(--border-color);
+  color: var(--primary-text);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+button {
+  background-color: var(--accent-purple);
+  color: var(--primary-text);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #5a4db3;
+}
+
+button:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+}

@@ -1,0 +1,98 @@
+# ===================================================
+# BeZhas Backend - Multi-Stage Optimized Dockerfile
+# ===================================================
+# Stage 1: Dependencies
+# Stage 2: Build
+# Stage 3: Production (minimal image)
+# ===================================================
+
+# ===== STAGE 1: Dependencies =====
+FROM node:20-alpine AS deps
+
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++ git
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY pnpm-lock.yaml* ./
+
+# Install pnpm and dependencies
+RUN npm install -g pnpm@9 && \
+    pnpm install --frozen-lockfile --prod=false
+
+# ===== STAGE 2: Builder =====
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Prune dev dependencies and prepare for production
+RUN npm prune --production && \
+    rm -rf .git .github tests test coverage .env.* *.md *.log
+
+# ===== STAGE 3: Production =====
+FROM node:20-alpine AS production
+
+# Add security and optimization
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+WORKDIR /app
+
+# Copy production dependencies and code
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/server.js ./
+COPY --from=builder --chown=nodejs:nodejs /app/config.js ./
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/services ./services
+COPY --from=builder --chown=nodejs:nodejs /app/routes ./routes
+COPY --from=builder --chown=nodejs:nodejs /app/controllers ./controllers
+COPY --from=builder --chown=nodejs:nodejs /app/middleware ./middleware
+COPY --from=builder --chown=nodejs:nodejs /app/models ./models
+COPY --from=builder --chown=nodejs:nodejs /app/utils ./utils
+COPY --from=builder --chown=nodejs:nodejs /app/abis ./abis
+COPY --from=builder --chown=nodejs:nodejs /app/config ./config
+COPY --from=builder --chown=nodejs:nodejs /app/lib ./lib
+COPY --from=builder --chown=nodejs:nodejs /app/automation ./automation
+COPY --from=builder --chown=nodejs:nodejs /app/websocket-server.js ./
+COPY --from=builder --chown=nodejs:nodejs /app/swagger.config.js ./
+
+# Environment variables
+ENV NODE_ENV=production \
+    PORT=3001 \
+    # Memory optimization
+    NODE_OPTIONS="--max-old-space-size=512 --gc-interval=100"
+
+# Security: Run as non-root user
+USER nodejs
+
+# Expose port
+EXPOSE 3001
+
+# Health check with curl (more reliable)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:3001/api/health || exit 1
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "server.js"]
+
+# Labels for container metadata
+LABEL org.opencontainers.image.title="BeZhas Backend API" \
+    org.opencontainers.image.description="Backend API for BeZhas Web3 Social Network" \
+    org.opencontainers.image.version="1.0.0" \
+    org.opencontainers.image.vendor="BeZhas" \
+    maintainer="BeZhas Team <devops@bezhas.com>"

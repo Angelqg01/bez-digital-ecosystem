@@ -1,0 +1,156 @@
+.profile-page {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* New Profile Header */
+.profile-header-card {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.profile-avatar-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid var(--background-primary);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.profile-level-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: var(--primary-accent);
+  color: white;
+  font-weight: 700;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--background-secondary);
+  font-size: 1rem;
+}
+
+.profile-header-info {
+  flex-grow: 1;
+}
+
+.profile-header-info h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 2rem;
+}
+
+.profile-rank {
+  color: var(--primary-accent);
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+}
+
+.profile-bio {
+  color: var(--text-secondary);
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+}
+
+/* XP Bar */
+.xp-progress-bar-container {
+  width: 100%;
+}
+
+.xp-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.level-label { font-weight: 600; }
+
+.xp-progress-bar {
+  height: 10px;
+  background: var(--border-color);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.xp-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-accent), var(--secondary-accent));
+  border-radius: 5px;
+  transition: width 0.5s ease-in-out;
+}
+
+.profile-content-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 2rem;
+}
+
+.profile-tabs-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: transparent;
+  border: none;
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.tab-button:hover {
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+}
+
+.tab-button.active {
+  background-color: var(--primary-accent);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.profile-tab-content {
+  padding: 0; /* Padding will be on the inner cards */
+}
+
+@media (max-width: 768px) {
+  .profile-content-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-tabs-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .tab-button {
+    justify-content: center;
+  }
+
+  .tab-button span {
+    display: none; /* Hide text on mobile tabs */
+  }
+}

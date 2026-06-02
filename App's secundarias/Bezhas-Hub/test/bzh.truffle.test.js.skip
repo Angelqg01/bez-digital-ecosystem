@@ -1,0 +1,19 @@
+const BZHToken = artifacts.require("BZHToken");
+
+contract("BZHToken", (accounts) => {
+    it("should deploy and mint initial supply", async () => {
+        const instance = await BZHToken.deployed();
+        const total = await instance.totalSupply();
+        assert(total.gt(web3.utils.toBN(0)), "Initial supply should be > 0");
+    });
+
+    it("should transfer tokens", async () => {
+        const instance = await BZHToken.deployed();
+        const from = accounts[0];
+        const to = accounts[1];
+        const amount = web3.utils.toWei("10", "ether");
+        await instance.transfer(to, amount, { from });
+        const bal = await instance.balanceOf(to);
+        assert.equal(bal.toString(), amount, "Transfer failed");
+    });
+});

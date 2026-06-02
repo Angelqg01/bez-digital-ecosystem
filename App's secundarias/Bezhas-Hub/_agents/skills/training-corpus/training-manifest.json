@@ -1,0 +1,89 @@
+{
+  "name": "BeZhas Training Corpus",
+  "version": "1.0.0",
+  "lastUpdated": "2026-03-22T11:20:00+01:00",
+  "description": "Manifiesto de todos los archivos de entrenamiento/documentación para la IA de BeZhas",
+  "categories": {
+    "admin": {
+      "label": "Admin Panel",
+      "fileCount": 14,
+      "path": "backup_docs_20260114_071707/ADMIN_*.md",
+      "tags": ["dashboard", "panel", "admin", "configuration"]
+    },
+    "ai": {
+      "label": "AI / Machine Learning",
+      "fileCount": 14,
+      "path": "backup_docs_20260114_071707/AI_*.md",
+      "tags": ["ai", "ml", "aegis", "openclaw", "llm"]
+    },
+    "automation": {
+      "label": "Automation & Deployment",
+      "fileCount": 11,
+      "path": "backup_docs_20260114_071707/AUTOMATION_*.md",
+      "tags": ["automation", "deployment", "gcp", "docker", "ci-cd"]
+    },
+    "blockchain": {
+      "label": "Blockchain / DeFi",
+      "fileCount": 6,
+      "path": "backup_docs_20260114_071707/{BEZ_COIN,AMOY,STAKING,TOKEN}*.md",
+      "tags": ["blockchain", "defi", "smart-contracts", "staking", "farming"]
+    },
+    "bridge": {
+      "label": "Bridge / Integrations",
+      "fileCount": 4,
+      "path": "backup_docs_20260114_071707/BRIDGE_*.md",
+      "tags": ["bridge", "adapters", "vinted", "airbnb", "maersk"]
+    },
+    "payment": {
+      "label": "Payment / Fiat",
+      "fileCount": 4,
+      "path": "backup_docs_20260114_071707/{PAYMENT,STRIPE,VIP,FIAT}*.md",
+      "tags": ["payment", "stripe", "sepa", "bez-pay", "fiat"]
+    },
+    "api": {
+      "label": "API / SDK",
+      "fileCount": 8,
+      "path": "sdk/*.md",
+      "tags": ["api", "sdk", "developer-console", "endpoints"]
+    },
+    "social": {
+      "label": "Feed / Social",
+      "fileCount": 4,
+      "path": "backup_docs_20260114_071707/{FEED,CHAT}*.md",
+      "tags": ["feed", "social", "chat", "posts"]
+    },
+    "security": {
+      "label": "Security / Auth",
+      "fileCount": 4,
+      "path": "backup_docs_20260114_071707/{SECURITY,WEBAUTHN,OAUTH}*.md",
+      "tags": ["security", "auth", "2fa", "webauthn", "oauth"]
+    }
+  },
+  "skills": {
+    "platform-management": "_agents/skills/platform-management/SKILL.md",
+    "payment-system": "_agents/skills/payment-system/SKILL.md",
+    "blockchain-contracts": "_agents/skills/blockchain-contracts/SKILL.md",
+    "bridge-adapters": "_agents/skills/bridge-adapters/SKILL.md",
+    "ai-aegis": "_agents/skills/ai-aegis/SKILL.md",
+    "deployment": "_agents/skills/deployment/SKILL.md",
+    "testing": "_agents/skills/testing/SKILL.md",
+    "feedback-loop": "_agents/skills/feedback-loop/SKILL.md"
+  },
+  "workflows": {
+    "deploy": "_agents/workflows/deploy.md",
+    "test-payment": "_agents/workflows/test-payment.md",
+    "add-adapter": "_agents/workflows/add-adapter.md",
+    "troubleshoot": "_agents/workflows/troubleshoot.md"
+  },
+  "automationServices": {
+    "diagnosticAgent": "backend/services/automation/diagnosticAgent.service.js",
+    "rewardSystem": "backend/services/automation/rewardSystem.service.js",
+    "thirdPartyAnalyzer": "backend/services/automation/thirdPartyAnalyzer.service.js"
+  },
+  "configFiles": [
+    "BEZHAS_API_KEYS_ABIS_WEBHOOKS.txt",
+    "BEZHAS_CONEXION_TERCEROS_OPENCLAW_AEGIS.txt",
+    "RWA_ENV_CONFIG.txt",
+    "SCRIPTS_COMANDOS.txt"
+  ]
+}

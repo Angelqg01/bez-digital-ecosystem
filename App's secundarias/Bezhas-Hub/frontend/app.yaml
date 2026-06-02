@@ -1,0 +1,36 @@
+# ===================================================
+# BeZhas Frontend - App Engine Configuration
+# ===================================================
+# Deploy with: gcloud app deploy frontend/app.yaml
+# ===================================================
+
+runtime: nodejs22
+service: default
+
+# Instance configuration
+instance_class: F1
+
+# Auto-scaling configuration
+automatic_scaling:
+  min_instances: 1
+  max_instances: 5
+  min_idle_instances: 1
+  max_idle_instances: 2
+  target_cpu_utilization: 0.75
+  target_throughput_utilization: 0.75
+  max_concurrent_requests: 100
+
+# Environment variables
+env_variables:
+  NODE_ENV: "production"
+
+# Build configuration - uses Vite build
+build_env_variables:
+  VITE_API_URL: "https://bezhas-backend-o5xep6gbwq-uc.a.run.app"
+  VITE_WS_URL: "wss://bezhas-backend-o5xep6gbwq-uc.a.run.app"
+  VITE_CHAIN_ID: "137"
+  VITE_NETWORK: "polygon"
+
+# Handlers removed for dynamic Node.js runtime (build on cloud)
+# App Engine will run 'pnpm run start' which serves the built 'dist' folder
+

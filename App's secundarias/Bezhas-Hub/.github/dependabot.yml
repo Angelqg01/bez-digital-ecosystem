@@ -1,0 +1,37 @@
+version: 2
+updates:
+  # =========================================================================
+  # Unified Monorepo Workspace (pnpm)
+  # Tracks all workspaces natively: api, backend, frontend, frontend-next, sdk, packages/*
+  # =========================================================================
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Group updates to prevent PR spam
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    versioning-strategy: increase-if-necessary
+
+  # =========================================================================
+  # GitHub Actions
+  # =========================================================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"

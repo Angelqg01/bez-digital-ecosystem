@@ -1,0 +1,162 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
+import { Client } from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
+
+interface IBezhasToken {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function burn(uint256 amount) external;
+    function mint(address to, uint256 amount) external;
+}
+
+/**
+ * @title BezhasBridge
+ * @dev Simplified bridge contract for local development and testing.
+ * In production, this would integrate with Chainlink CCIP.
+ */
+contract BezhasBridge is Ownable, ReentrancyGuard, CCIPReceiver {
+    IBezhasToken private s_bezhasToken;
+
+    // Simplified mapping for demo purposes
+    mapping(address => bool) public authorizedBridges;
+    
+    event BridgeAuthorizationUpdated(address indexed bridge, bool authorized);
+    
+    event TokensTransferred(
+        bytes32 indexed messageId,
+        uint64 indexed destinationChainSelector,
+        address receiver,
+        uint256 amount
+    );
+
+    event TokensReceived(
+        address indexed receiver,
+        uint256 amount
+    );
+
+    // --- Production-grade controls ---
+    // trusted remote sender per source chain
+    mapping(uint64 => address) public trustedSenderByChain;
+    // replay protection: processed messageIds
+    mapping(bytes32 => bool) public processed;
+    // per-transaction amount limits
+    uint256 public minAmount;
+    uint256 public maxAmount;
+
+    /**
+     * @param _router CCIP router address
+     * @param _bezhasToken The address of the BezhasToken contract.
+     */
+    constructor(address _router, address _bezhasToken)
+        Ownable(msg.sender)
+        CCIPReceiver(_router)
+    {
+        s_bezhasToken = IBezhasToken(_bezhasToken);
+        minAmount = 1e9; // example: 1e9 wei
+        maxAmount = 1_000_000 ether; // example upper bound; adjust to token decimals if needed
+    }
+
+    /**
+     * @dev Authorize a bridge contract (simplified version)
+     */
+    function authorizeBridge(address _bridge) external onlyOwner {
+        authorizedBridges[_bridge] = true;
+        emit BridgeAuthorizationUpdated(_bridge, true);
+    }
+
+    /**
+     * @dev Revoke authorization of a bridge contract
+     */
+    function deauthorizeBridge(address _bridge) external onlyOwner {
+        authorizedBridges[_bridge] = false;
+        emit BridgeAuthorizationUpdated(_bridge, false);
+    }
+
+    /**
+     * @dev Set trusted remote sender for a given chain selector
+     */
+    function setTrustedSender(uint64 chainSelector, address sender) external onlyOwner {
+        trustedSenderByChain[chainSelector] = sender;
+    }
+
+    function setAmountLimits(uint256 _min, uint256 _max) external onlyOwner {
+        require(_min > 0 && _max > _min, "Invalid limits");
+        minAmount = _min;
+        maxAmount = _max;
+    }
+
+    /**
+     * @dev Simplified token transfer function for demo
+     * @param _destinationChainSelector The destination chain (for compatibility)
+     * @param _receiver The receiver address
+     * @param _amount The amount to transfer
+     */
+    function transferTokens(
+        uint64 _destinationChainSelector,
+        address _receiver,
+        uint256 _amount
+    ) external nonReentrant returns (bytes32 messageId) {
+        require(_amount > 0, "Amount must be greater than 0");
+        require(_receiver != address(0), "Invalid receiver address");
+        require(_amount >= minAmount && _amount <= maxAmount, "Amount out of bounds");
+        
+        // Transfer and burn tokens (simplified)
+        bool ok = s_bezhasToken.transferFrom(msg.sender, address(this), _amount);
+        require(ok, "Token transfer failed");
+        s_bezhasToken.burn(_amount);
+        
+        // Generate a simple message ID for demo
+        messageId = keccak256(abi.encodePacked(block.timestamp, msg.sender, _amount));
+        
+        emit TokensTransferred(messageId, _destinationChainSelector, _receiver, _amount);
+        return messageId;
+    }
+
+    /**
+     * @dev CCIP receive with strict validations
+     */
+    function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
+        // basic checks
+        // expected payload size for abi.encode(address,uint256) is 32 + 32 = 64 bytes
+        require(message.data.length == 64, "Invalid payload");
+
+        // decode expected payload: abi.encode(address receiver, uint256 amount)
+        (address receiver, uint256 amount) = abi.decode(message.data, (address, uint256));
+        require(receiver != address(0), "Invalid receiver");
+        require(amount >= minAmount && amount <= maxAmount, "Amount out of bounds");
+
+        // validate trusted sender per chain
+        address trusted = trustedSenderByChain[message.sourceChainSelector];
+        require(trusted != address(0), "Untrusted chain");
+        require(abi.decode(message.sender, (address)) == trusted, "Untrusted sender");
+
+        // replay protection
+        bytes32 mid = message.messageId;
+        require(!processed[mid], "Already processed");
+        processed[mid] = true;
+
+        // mint tokens on this chain
+        s_bezhasToken.mint(receiver, amount);
+        emit TokensReceived(receiver, amount);
+    }
+
+    /**
+     * @dev Emergency withdrawal function
+     */
+    function withdrawETH() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+    /**
+     * @dev Get token contract address
+     */
+    function getBezhasToken() external view returns (address) {
+        return address(s_bezhasToken);
+    }
+
+    receive() external payable {}
+}
+

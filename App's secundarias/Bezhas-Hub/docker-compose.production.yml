@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  # ===== MongoDB =====
+  mongo:
+    image: mongo:6-jammy
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-changeme123}
+      MONGO_INITDB_DATABASE: bezhas
+    volumes:
+      - postgres_data:/data/db
+      - postgres_config:/data/configdb
+    networks:
+      - bezhas-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/bezhas --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Redis =====
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - bezhas-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ===== TimescaleDB (Analytics) =====
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${TIMESCALE_DB:-bezhas_analytics}
+      POSTGRES_USER: ${TIMESCALE_USER:-postgres}
+      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-changeme123}
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    networks:
+      - bezhas-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Backend (Node.js + Express) =====
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-changeme123}@mongo:27017/bezhas?authSource=admin
+      REDIS_URL: redis://redis:6379
+      TIMESCALE_URI: postgresql://${TIMESCALE_USER:-postgres}:${TIMESCALE_PASSWORD:-changeme123}@timescaledb:5432/${TIMESCALE_DB:-bezhas_analytics}
+      JWT_SECRET: ${JWT_SECRET}
+      POLYGON_AMOY_RPC: ${POLYGON_AMOY_RPC}
+      PRIVATE_KEY: ${PRIVATE_KEY}
+      LOGISTICS_CONTRACT_ADDRESS: ${LOGISTICS_CONTRACT_ADDRESS}
+      PINATA_API_KEY: ${PINATA_API_KEY}
+      PINATA_SECRET_KEY: ${PINATA_SECRET_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    networks:
+      - bezhas-network
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - backend_logs:/app/logs
+
+  # ===== Frontend (React + Nginx) =====
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - bezhas-network
+    volumes:
+      # Para SSL (si usas Let's Encrypt)
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+
+  # ===== Aegis AI Service (Opcional) =====
+  # aegis:
+  #   build:
+  #     context: ./aegis
+  #     dockerfile: Dockerfile
+  #   restart: unless-stopped
+  #   environment:
+  #     PYTHONUNBUFFERED: 1
+  #   networks:
+  #     - bezhas-network
+
+networks:
+  bezhas-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local
+  mongo_config:
+    driver: local
+  redis_data:
+    driver: local
+  timescale_data:
+    driver: local
+  backend_logs:
+    driver: local

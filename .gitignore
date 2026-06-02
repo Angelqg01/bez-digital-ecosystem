@@ -58,6 +58,17 @@ smart-contracts/cache/
 smart-contracts/out/
 **/broadcast/**/run-*.json
 
+# Foundry dev worktrees (not part of the monorepo)
+smart-contracts.worktrees/
+
+# Google Drive sync artifacts
+.tmp.driveupload/
+**/.tmp.driveupload/
+.tmp.drivedownload/
+**/.tmp.drivedownload/
+*.gdoc
+*.gsheet
+
 # Build outputs
 dist/
 build/

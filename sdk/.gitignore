@@ -1,0 +1,34 @@
+# Dependency directories
+node_modules/
+.pnpm-store/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Env files (keep keys and secrets out of git)
+.env
+.env.*
+!.env.example
+
+# Build files (optional to ignore, but standard)
+dist/
+
+# Local packaged tarballs
+*.tgz

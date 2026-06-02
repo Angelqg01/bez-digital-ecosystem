@@ -1,0 +1,77 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud. It follows the same syntax as .gitignore.
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Build outputs (will be built in Cloud Build)
+frontend/dist/
+frontend/build/
+backend/dist/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Environment files (secrets are in Secret Manager)
+.env
+.env.*
+!.env.example
+
+# Test files
+coverage/
+.nyc_output/
+*.test.js
+*.spec.js
+__tests__/
+
+# Documentation files (not needed for deployment)
+*.md
+# Only exclude root-level docs, not frontend/src/pages/docs/
+/docs/
+
+# Development files
+.eslintcache
+.prettierignore
+*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Hardhat cache (artifacts ARE needed for SDK ABIs)
+cache/
+typechain-types/
+
+# Docker local files
+docker-compose*.yml
+Dockerfile
+!backend/Dockerfile.gcp
+!backend/Dockerfile.optimized
+!frontend/Dockerfile.gcp
+!packages/mcp-server/Dockerfile
+!packages/mcp-server/.dockerignore
+
+# Scripts not needed for build
+*.ps1
+*.bat
+*.sh
+scripts/*
+!scripts/test-ai-acquisition-flow.js
+!scripts/test-webhook.js
+
+# Miscellaneous
+*.zip
+*.tar.gz
+# Note: pnpm-lock.yaml is needed for MCP server build

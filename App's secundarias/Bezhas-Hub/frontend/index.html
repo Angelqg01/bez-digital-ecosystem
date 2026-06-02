@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Permissions-Policy" content="clipboard-read=*, clipboard-write=*" />
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="BeZhas: Red social descentralizada y marketplace crypto" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BeZhas" />
+
+  <title>BeZhas | Connecting Bridge</title>
+</head>
+
+<body class="bg-slate-900 text-white overscroll-none">
+  <div id="root"></div>
+
+  <!-- Google Translate Script (carga segura con fallback) -->
+  <script type="text/javascript">
+    // Función de inicialización de Google Translate
+    function googleTranslateElementInit() {
+      try {
+        if (typeof google !== 'undefined' && google.translate) {
+          new google.translate.TranslateElement({
+            pageLanguage: 'es',
+            includedLanguages: 'en,fr,de,it,pt,ru,zh-CN,es',
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: false
+          }, 'google_translate_element');
+        }
+      } catch (e) {
+        // Silenciar error si Google Translate no está disponible
+      }
+    }
+
+    // Cargar Google Translate de forma segura (no bloquea si falla)
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+      script.async = true;
+      script.onerror = function () {
+        // Silenciar - Google Translate no disponible (sin conexión o bloqueado)
+      };
+      document.body.appendChild(script);
+    })();
+  </script>
+
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

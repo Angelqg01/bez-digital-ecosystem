@@ -1,0 +1,31 @@
+# Dockerfile for BeZhas Revenue Monitor
+# Build: docker build -t bezhas-monitor -f Dockerfile.monitor .
+# Run: docker run -d --name revenue-monitor --env-file backend/.env bezhas-monitor
+
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies first (cache layer)
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+RUN npm install --only=production
+RUN cd backend && npm install --only=production
+
+# Copy application code
+COPY backend/services ./backend/services
+COPY backend/scripts ./backend/scripts
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node -e "console.log('OK')" || exit 1
+
+# Set environment
+ENV NODE_ENV=production
+
+# Run monitor
+CMD ["node", "backend/scripts/monitorRevenue.js"]

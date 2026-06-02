@@ -1,0 +1,14 @@
+creationTimestamp: '2026-02-05T01:15:30.652-08:00'
+defaultService: https://www.googleapis.com/compute/v1/projects/totemic-bonus-479312-c6/global/backendServices/bezhas-frontend-backend
+fingerprint: 7ZXOpzMrHAM=
+hostRules:
+- hosts:
+  - api.bez.digital
+  pathMatcher: api-matcher
+id: 284367296660103518
+kind: compute#urlMap
+name: bezhas-url-map
+pathMatchers:
+- defaultService: https://www.googleapis.com/compute/v1/projects/totemic-bonus-479312-c6/global/backendServices/bezhas-backend-backend
+  name: api-matcher
+selfLink: https://www.googleapis.com/compute/v1/projects/totemic-bonus-479312-c6/global/urlMaps/bezhas-url-map

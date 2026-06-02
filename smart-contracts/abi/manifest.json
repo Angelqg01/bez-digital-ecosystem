@@ -1,0 +1,713 @@
+{
+  "generated": "2026-05-11T18:41:54.974Z",
+  "totalContracts": 88,
+  "extracted": 88,
+  "missing": 0,
+  "errors": 0,
+  "contracts": {
+    "AegisSecurityProvider": {
+      "sector": "core",
+      "functions": 22,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/AegisSecurityProvider.json",
+      "sdkPath": "sdk/artifacts/contracts/AegisSecurityProvider.sol/AegisSecurityProvider.json"
+    },
+    "BEZCoinV2": {
+      "sector": "core",
+      "functions": 37,
+      "events": 9,
+      "errors": 22,
+      "abiPath": "abi/BEZCoinV2.json",
+      "sdkPath": "sdk/artifacts/contracts/BEZCoinV2.sol/BEZCoinV2.json"
+    },
+    "BEZPolygonBridge": {
+      "sector": "core",
+      "functions": 33,
+      "events": 9,
+      "errors": 5,
+      "abiPath": "abi/BEZPolygonBridge.json",
+      "sdkPath": "sdk/artifacts/contracts/BEZPolygonBridge.sol/BEZPolygonBridge.json"
+    },
+    "BEZSectorStandard": {
+      "sector": "core",
+      "functions": 9,
+      "events": 4,
+      "errors": 5,
+      "abiPath": "abi/BEZSectorStandard.json",
+      "sdkPath": "sdk/artifacts/contracts/BEZSectorStandard.sol/BEZSectorStandard.json"
+    },
+    "BeZhasBridgeL2": {
+      "sector": "core",
+      "functions": 12,
+      "events": 7,
+      "errors": 3,
+      "abiPath": "abi/BeZhasBridgeL2.json",
+      "sdkPath": "sdk/artifacts/contracts/BeZhasBridgeL2.sol/BeZhasBridgeL2.json"
+    },
+    "BeZhasDEX": {
+      "sector": "core",
+      "functions": 16,
+      "events": 6,
+      "errors": 12,
+      "abiPath": "abi/BeZhasDEX.json",
+      "sdkPath": "sdk/artifacts/contracts/BeZhasDEX.sol/BeZhasDEX.json"
+    },
+    "BeZhasPayment": {
+      "sector": "core",
+      "functions": 28,
+      "events": 12,
+      "errors": 15,
+      "abiPath": "abi/BeZhasPayment.json",
+      "sdkPath": "sdk/artifacts/contracts/BeZhasPayment.sol/BeZhasPayment.json"
+    },
+    "BeZhasWorkflowRegistry": {
+      "sector": "core",
+      "functions": 12,
+      "events": 5,
+      "errors": 2,
+      "abiPath": "abi/BeZhasWorkflowRegistry.json",
+      "sdkPath": "sdk/artifacts/contracts/BeZhasWorkflowRegistry.sol/BeZhasWorkflowRegistry.json"
+    },
+    "DeliveryEscrow": {
+      "sector": "core",
+      "functions": 30,
+      "events": 13,
+      "errors": 15,
+      "abiPath": "abi/DeliveryEscrow.json",
+      "sdkPath": "sdk/artifacts/contracts/DeliveryEscrow.sol/DeliveryEscrow.json"
+    },
+    "EdgeNodeRewards": {
+      "sector": "core",
+      "functions": 32,
+      "events": 9,
+      "errors": 4,
+      "abiPath": "abi/EdgeNodeRewards.json",
+      "sdkPath": "sdk/artifacts/contracts/EdgeNodeRewards.sol/EdgeNodeRewards.json"
+    },
+    "GovernanceSystem": {
+      "sector": "core",
+      "functions": 51,
+      "events": 13,
+      "errors": 22,
+      "abiPath": "abi/GovernanceSystem.json",
+      "sdkPath": "sdk/artifacts/contracts/GovernanceSystem.sol/GovernanceSystem.json"
+    },
+    "L2Sequencer": {
+      "sector": "core",
+      "functions": 22,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/L2Sequencer.json",
+      "sdkPath": "sdk/artifacts/contracts/L2Sequencer.sol/L2Sequencer.json"
+    },
+    "LiquidityFarming": {
+      "sector": "core",
+      "functions": 23,
+      "events": 5,
+      "errors": 4,
+      "abiPath": "abi/LiquidityFarming.json",
+      "sdkPath": "sdk/artifacts/contracts/LiquidityFarming.sol/LiquidityFarming.json"
+    },
+    "OpenClawAgent": {
+      "sector": "core",
+      "functions": 29,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/OpenClawAgent.json",
+      "sdkPath": "sdk/artifacts/contracts/OpenClawAgent.sol/OpenClawAgent.json"
+    },
+    "QualityEscrow": {
+      "sector": "core",
+      "functions": 11,
+      "events": 4,
+      "errors": 2,
+      "abiPath": "abi/QualityEscrow.json",
+      "sdkPath": "sdk/artifacts/contracts/QualityEscrow.sol/QualityEscrow.json"
+    },
+    "SequencerRotation": {
+      "sector": "core",
+      "functions": 32,
+      "events": 10,
+      "errors": 2,
+      "abiPath": "abi/SequencerRotation.json",
+      "sdkPath": "sdk/artifacts/contracts/SequencerRotation.sol/SequencerRotation.json"
+    },
+    "SlashingManager": {
+      "sector": "core",
+      "functions": 42,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/SlashingManager.json",
+      "sdkPath": "sdk/artifacts/contracts/SlashingManager.sol/SlashingManager.json"
+    },
+    "StakingPool": {
+      "sector": "core",
+      "functions": 26,
+      "events": 6,
+      "errors": 4,
+      "abiPath": "abi/StakingPool.json",
+      "sdkPath": "sdk/artifacts/contracts/StakingPool.sol/StakingPool.json"
+    },
+    "ValidatorRegistry": {
+      "sector": "core",
+      "functions": 41,
+      "events": 14,
+      "errors": 4,
+      "abiPath": "abi/ValidatorRegistry.json",
+      "sdkPath": "sdk/artifacts/contracts/ValidatorRegistry.sol/ValidatorRegistry.json"
+    },
+    "WrappedBEZ": {
+      "sector": "core",
+      "functions": 26,
+      "events": 8,
+      "errors": 16,
+      "abiPath": "abi/WrappedBEZ.json",
+      "sdkPath": "sdk/artifacts/contracts/WrappedBEZ.sol/WrappedBEZ.json"
+    },
+    "SmartWallet": {
+      "sector": "wallet",
+      "functions": 35,
+      "events": 16,
+      "errors": 5,
+      "abiPath": "abi/SmartWallet.json",
+      "sdkPath": "sdk/artifacts/contracts/SmartWallet.sol/SmartWallet.json"
+    },
+    "SmartWalletFactory": {
+      "sector": "wallet",
+      "functions": 13,
+      "events": 3,
+      "errors": 2,
+      "abiPath": "abi/SmartWalletFactory.json",
+      "sdkPath": "sdk/artifacts/contracts/SmartWalletFactory.sol/SmartWalletFactory.json"
+    },
+    "MultiSigWallet": {
+      "sector": "wallet",
+      "functions": 31,
+      "events": 12,
+      "errors": 1,
+      "abiPath": "abi/MultiSigWallet.json",
+      "sdkPath": "sdk/artifacts/contracts/MultiSigWallet.sol/MultiSigWallet.json"
+    },
+    "Paymaster": {
+      "sector": "wallet",
+      "functions": 31,
+      "events": 14,
+      "errors": 4,
+      "abiPath": "abi/Paymaster.json",
+      "sdkPath": "sdk/artifacts/contracts/Paymaster.sol/Paymaster.json"
+    },
+    "SecurityModule": {
+      "sector": "wallet",
+      "functions": 37,
+      "events": 15,
+      "errors": 3,
+      "abiPath": "abi/SecurityModule.json",
+      "sdkPath": "sdk/artifacts/contracts/SecurityModule.sol/SecurityModule.json"
+    },
+    "WalletGuardian": {
+      "sector": "wallet",
+      "functions": 21,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/WalletGuardian.json",
+      "sdkPath": "sdk/artifacts/contracts/WalletGuardian.sol/WalletGuardian.json"
+    },
+    "BeZhasLogisticsNFT": {
+      "sector": "tokens",
+      "functions": 21,
+      "events": 9,
+      "errors": 10,
+      "abiPath": "abi/BeZhasLogisticsNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/BeZhasLogisticsNFT.sol/BeZhasLogisticsNFT.json"
+    },
+    "IdentityRegistry": {
+      "sector": "identity",
+      "functions": 17,
+      "events": 6,
+      "errors": 2,
+      "abiPath": "abi/IdentityRegistry.json",
+      "sdkPath": "sdk/artifacts/contracts/IdentityRegistry.sol/IdentityRegistry.json"
+    },
+    "HealthRecordSBT": {
+      "sector": "health",
+      "functions": 28,
+      "events": 11,
+      "errors": 10,
+      "abiPath": "abi/HealthRecordSBT.json",
+      "sdkPath": "sdk/artifacts/contracts/HealthRecordSBT.sol/HealthRecordSBT.json"
+    },
+    "PharmaTracker": {
+      "sector": "health",
+      "functions": 17,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/PharmaTracker.json",
+      "sdkPath": "sdk/artifacts/contracts/PharmaTracker.sol/PharmaTracker.json"
+    },
+    "HealthInsuranceEscrow": {
+      "sector": "health",
+      "functions": 19,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/HealthInsuranceEscrow.json",
+      "sdkPath": "sdk/artifacts/contracts/HealthInsuranceEscrow.sol/HealthInsuranceEscrow.json"
+    },
+    "ClinicalDataMarketplace": {
+      "sector": "health",
+      "functions": 23,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/ClinicalDataMarketplace.json",
+      "sdkPath": "sdk/artifacts/contracts/ClinicalDataMarketplace.sol/ClinicalDataMarketplace.json"
+    },
+    "CarbonCreditToken": {
+      "sector": "energy",
+      "functions": 25,
+      "events": 11,
+      "errors": 9,
+      "abiPath": "abi/CarbonCreditToken.json",
+      "sdkPath": "sdk/artifacts/contracts/CarbonCreditToken.sol/CarbonCreditToken.json"
+    },
+    "P2PEnergyMarket": {
+      "sector": "energy",
+      "functions": 20,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/P2PEnergyMarket.json",
+      "sdkPath": "sdk/artifacts/contracts/P2PEnergyMarket.sol/P2PEnergyMarket.json"
+    },
+    "SolarFarmToken": {
+      "sector": "energy",
+      "functions": 26,
+      "events": 13,
+      "errors": 9,
+      "abiPath": "abi/SolarFarmToken.json",
+      "sdkPath": "sdk/artifacts/contracts/SolarFarmToken.sol/SolarFarmToken.json"
+    },
+    "ESGScoreOracle": {
+      "sector": "energy",
+      "functions": 20,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/ESGScoreOracle.json",
+      "sdkPath": "sdk/artifacts/contracts/ESGScoreOracle.sol/ESGScoreOracle.json"
+    },
+    "VehicleIdentityNFT": {
+      "sector": "automotive",
+      "functions": 32,
+      "events": 10,
+      "errors": 10,
+      "abiPath": "abi/VehicleIdentityNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/VehicleIdentityNFT.sol/VehicleIdentityNFT.json"
+    },
+    "AutoPartsRegistry": {
+      "sector": "automotive",
+      "functions": 22,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/AutoPartsRegistry.json",
+      "sdkPath": "sdk/artifacts/contracts/AutoPartsRegistry.sol/AutoPartsRegistry.json"
+    },
+    "FleetLeaseEscrow": {
+      "sector": "automotive",
+      "functions": 21,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/FleetLeaseEscrow.json",
+      "sdkPath": "sdk/artifacts/contracts/FleetLeaseEscrow.sol/FleetLeaseEscrow.json"
+    },
+    "EVChargeToken": {
+      "sector": "automotive",
+      "functions": 22,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/EVChargeToken.json",
+      "sdkPath": "sdk/artifacts/contracts/EVChargeToken.sol/EVChargeToken.json"
+    },
+    "QualityCertificateNFT": {
+      "sector": "manufacturing",
+      "functions": 29,
+      "events": 10,
+      "errors": 10,
+      "abiPath": "abi/QualityCertificateNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/QualityCertificateNFT.sol/QualityCertificateNFT.json"
+    },
+    "DigitalTwinRegistry": {
+      "sector": "manufacturing",
+      "functions": 17,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/DigitalTwinRegistry.json",
+      "sdkPath": "sdk/artifacts/contracts/DigitalTwinRegistry.sol/DigitalTwinRegistry.json"
+    },
+    "MaterialTokenMRP": {
+      "sector": "manufacturing",
+      "functions": 21,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/MaterialTokenMRP.json",
+      "sdkPath": "sdk/artifacts/contracts/MaterialTokenMRP.sol/MaterialTokenMRP.json"
+    },
+    "PredictiveMaintenanceLog": {
+      "sector": "manufacturing",
+      "functions": 22,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/PredictiveMaintenanceLog.json",
+      "sdkPath": "sdk/artifacts/contracts/PredictiveMaintenanceLog.sol/PredictiveMaintenanceLog.json"
+    },
+    "CropTokenFutures": {
+      "sector": "agriculture",
+      "functions": 19,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/CropTokenFutures.json",
+      "sdkPath": "sdk/artifacts/contracts/CropTokenFutures.sol/CropTokenFutures.json"
+    },
+    "AgriSupplyChain": {
+      "sector": "agriculture",
+      "functions": 23,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/AgriSupplyChain.json",
+      "sdkPath": "sdk/artifacts/contracts/AgriSupplyChain.sol/AgriSupplyChain.json"
+    },
+    "AquaFarmMonitor": {
+      "sector": "agriculture",
+      "functions": 22,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/AquaFarmMonitor.json",
+      "sdkPath": "sdk/artifacts/contracts/AquaFarmMonitor.sol/AquaFarmMonitor.json"
+    },
+    "LandTitleNFT": {
+      "sector": "agriculture",
+      "functions": 31,
+      "events": 10,
+      "errors": 10,
+      "abiPath": "abi/LandTitleNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/LandTitleNFT.sol/LandTitleNFT.json"
+    },
+    "PolicyNFT": {
+      "sector": "insurance",
+      "functions": 20,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/PolicyNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/PolicyNFT.sol/PolicyNFT.json"
+    },
+    "ParametricInsurance": {
+      "sector": "insurance",
+      "functions": 19,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/ParametricInsurance.json",
+      "sdkPath": "sdk/artifacts/contracts/ParametricInsurance.sol/ParametricInsurance.json"
+    },
+    "ClaimAdjuster": {
+      "sector": "insurance",
+      "functions": 23,
+      "events": 10,
+      "errors": 2,
+      "abiPath": "abi/ClaimAdjuster.json",
+      "sdkPath": "sdk/artifacts/contracts/ClaimAdjuster.sol/ClaimAdjuster.json"
+    },
+    "ReinsurancePool": {
+      "sector": "insurance",
+      "functions": 21,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/ReinsurancePool.json",
+      "sdkPath": "sdk/artifacts/contracts/ReinsurancePool.sol/ReinsurancePool.json"
+    },
+    "CourseTokenNFT": {
+      "sector": "education",
+      "functions": 21,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/CourseTokenNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/CourseTokenNFT.sol/CourseTokenNFT.json"
+    },
+    "SkillBadgeSBT": {
+      "sector": "education",
+      "functions": 19,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/SkillBadgeSBT.json",
+      "sdkPath": "sdk/artifacts/contracts/SkillBadgeSBT.sol/SkillBadgeSBT.json"
+    },
+    "EduDAO": {
+      "sector": "education",
+      "functions": 22,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/EduDAO.json",
+      "sdkPath": "sdk/artifacts/contracts/EduDAO.sol/EduDAO.json"
+    },
+    "ScholarshipPool": {
+      "sector": "education",
+      "functions": 21,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/ScholarshipPool.json",
+      "sdkPath": "sdk/artifacts/contracts/ScholarshipPool.sol/ScholarshipPool.json"
+    },
+    "EventTicketNFT": {
+      "sector": "entertainment",
+      "functions": 23,
+      "events": 10,
+      "errors": 2,
+      "abiPath": "abi/EventTicketNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/EventTicketNFT.sol/EventTicketNFT.json"
+    },
+    "FanTokenDAO": {
+      "sector": "entertainment",
+      "functions": 29,
+      "events": 10,
+      "errors": 2,
+      "abiPath": "abi/FanTokenDAO.json",
+      "sdkPath": "sdk/artifacts/contracts/FanTokenDAO.sol/FanTokenDAO.json"
+    },
+    "RoyaltyDistributor": {
+      "sector": "entertainment",
+      "functions": 25,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/RoyaltyDistributor.json",
+      "sdkPath": "sdk/artifacts/contracts/RoyaltyDistributor.sol/RoyaltyDistributor.json"
+    },
+    "StreamingRightsMarket": {
+      "sector": "entertainment",
+      "functions": 26,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/StreamingRightsMarket.json",
+      "sdkPath": "sdk/artifacts/contracts/StreamingRightsMarket.sol/StreamingRightsMarket.json"
+    },
+    "SmartLegalContract": {
+      "sector": "legal",
+      "functions": 24,
+      "events": 10,
+      "errors": 2,
+      "abiPath": "abi/SmartLegalContract.json",
+      "sdkPath": "sdk/artifacts/contracts/SmartLegalContract.sol/SmartLegalContract.json"
+    },
+    "EvidenceVault": {
+      "sector": "legal",
+      "functions": 23,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/EvidenceVault.json",
+      "sdkPath": "sdk/artifacts/contracts/EvidenceVault.sol/EvidenceVault.json"
+    },
+    "ArbitrationDAO": {
+      "sector": "legal",
+      "functions": 27,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/ArbitrationDAO.json",
+      "sdkPath": "sdk/artifacts/contracts/ArbitrationDAO.sol/ArbitrationDAO.json"
+    },
+    "IPRegistryNFT": {
+      "sector": "legal",
+      "functions": 39,
+      "events": 12,
+      "errors": 10,
+      "abiPath": "abi/IPRegistryNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/IPRegistryNFT.sol/IPRegistryNFT.json"
+    },
+    "SupplyTracker": {
+      "sector": "supplychain",
+      "functions": 21,
+      "events": 7,
+      "errors": 2,
+      "abiPath": "abi/SupplyTracker.json",
+      "sdkPath": "sdk/artifacts/contracts/SupplyTracker.sol/SupplyTracker.json"
+    },
+    "ProcurementNFT": {
+      "sector": "supplychain",
+      "functions": 23,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/ProcurementNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/ProcurementNFT.sol/ProcurementNFT.json"
+    },
+    "WarehouseManager": {
+      "sector": "supplychain",
+      "functions": 24,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/WarehouseManager.json",
+      "sdkPath": "sdk/artifacts/contracts/WarehouseManager.sol/WarehouseManager.json"
+    },
+    "SupplierScoreOracle": {
+      "sector": "supplychain",
+      "functions": 26,
+      "events": 10,
+      "errors": 2,
+      "abiPath": "abi/SupplierScoreOracle.json",
+      "sdkPath": "sdk/artifacts/contracts/SupplierScoreOracle.sol/SupplierScoreOracle.json"
+    },
+    "ClearanceCertificateNFT": {
+      "sector": "supplychain",
+      "functions": 32,
+      "events": 9,
+      "errors": 10,
+      "abiPath": "abi/ClearanceCertificateNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/ClearanceCertificateNFT.sol/ClearanceCertificateNFT.json"
+    },
+    "CustomsClearanceOracle": {
+      "sector": "supplychain",
+      "functions": 32,
+      "events": 9,
+      "errors": 3,
+      "abiPath": "abi/CustomsClearanceOracle.json",
+      "sdkPath": "sdk/artifacts/contracts/CustomsClearanceOracle.sol/CustomsClearanceOracle.json"
+    },
+    "TrackingIntegrationGateway": {
+      "sector": "supplychain",
+      "functions": 24,
+      "events": 8,
+      "errors": 3,
+      "abiPath": "abi/TrackingIntegrationGateway.json",
+      "sdkPath": "sdk/artifacts/contracts/TrackingIntegrationGateway.sol/TrackingIntegrationGateway.json"
+    },
+    "TrackingToCustomsGateway": {
+      "sector": "supplychain",
+      "functions": 23,
+      "events": 8,
+      "errors": 3,
+      "abiPath": "abi/TrackingToCustomsGateway.json",
+      "sdkPath": "sdk/artifacts/contracts/TrackingToCustomsGateway.sol/TrackingToCustomsGateway.json"
+    },
+    "CitizenIdentityNFT": {
+      "sector": "government",
+      "functions": 24,
+      "events": 10,
+      "errors": 2,
+      "abiPath": "abi/CitizenIdentityNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/CitizenIdentityNFT.sol/CitizenIdentityNFT.json"
+    },
+    "PublicBudgetDAO": {
+      "sector": "government",
+      "functions": 20,
+      "events": 11,
+      "errors": 2,
+      "abiPath": "abi/PublicBudgetDAO.json",
+      "sdkPath": "sdk/artifacts/contracts/PublicBudgetDAO.sol/PublicBudgetDAO.json"
+    },
+    "LandCadastralRegistry": {
+      "sector": "government",
+      "functions": 24,
+      "events": 11,
+      "errors": 2,
+      "abiPath": "abi/LandCadastralRegistry.json",
+      "sdkPath": "sdk/artifacts/contracts/LandCadastralRegistry.sol/LandCadastralRegistry.json"
+    },
+    "VotingSystem": {
+      "sector": "government",
+      "functions": 25,
+      "events": 11,
+      "errors": 2,
+      "abiPath": "abi/VotingSystem.json",
+      "sdkPath": "sdk/artifacts/contracts/VotingSystem.sol/VotingSystem.json"
+    },
+    "MicroLendingPool": {
+      "sector": "finance",
+      "functions": 25,
+      "events": 11,
+      "errors": 2,
+      "abiPath": "abi/MicroLendingPool.json",
+      "sdkPath": "sdk/artifacts/contracts/MicroLendingPool.sol/MicroLendingPool.json"
+    },
+    "InvoiceFactoring": {
+      "sector": "finance",
+      "functions": 27,
+      "events": 11,
+      "errors": 2,
+      "abiPath": "abi/InvoiceFactoring.json",
+      "sdkPath": "sdk/artifacts/contracts/InvoiceFactoring.sol/InvoiceFactoring.json"
+    },
+    "CreditScoreOracle": {
+      "sector": "finance",
+      "functions": 25,
+      "events": 10,
+      "errors": 2,
+      "abiPath": "abi/CreditScoreOracle.json",
+      "sdkPath": "sdk/artifacts/contracts/CreditScoreOracle.sol/CreditScoreOracle.json"
+    },
+    "TreasuryVault": {
+      "sector": "finance",
+      "functions": 26,
+      "events": 10,
+      "errors": 2,
+      "abiPath": "abi/TreasuryVault.json",
+      "sdkPath": "sdk/artifacts/contracts/TreasuryVault.sol/TreasuryVault.json"
+    },
+    "FreelanceMarketplace": {
+      "sector": "services",
+      "functions": 32,
+      "events": 14,
+      "errors": 2,
+      "abiPath": "abi/FreelanceMarketplace.json",
+      "sdkPath": "sdk/artifacts/contracts/FreelanceMarketplace.sol/FreelanceMarketplace.json"
+    },
+    "SubscriptionManager": {
+      "sector": "services",
+      "functions": 25,
+      "events": 11,
+      "errors": 2,
+      "abiPath": "abi/SubscriptionManager.json",
+      "sdkPath": "sdk/artifacts/contracts/SubscriptionManager.sol/SubscriptionManager.json"
+    },
+    "SLAMonitor": {
+      "sector": "services",
+      "functions": 23,
+      "events": 11,
+      "errors": 2,
+      "abiPath": "abi/SLAMonitor.json",
+      "sdkPath": "sdk/artifacts/contracts/SLAMonitor.sol/SLAMonitor.json"
+    },
+    "ServiceReputationNFT": {
+      "sector": "services",
+      "functions": 22,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/ServiceReputationNFT.json",
+      "sdkPath": "sdk/artifacts/contracts/ServiceReputationNFT.sol/ServiceReputationNFT.json"
+    },
+    "LoyaltyRewards": {
+      "sector": "otros",
+      "functions": 18,
+      "events": 8,
+      "errors": 2,
+      "abiPath": "abi/LoyaltyRewards.json",
+      "sdkPath": "sdk/artifacts/contracts/LoyaltyRewards.sol/LoyaltyRewards.json"
+    },
+    "CrowdfundingPool": {
+      "sector": "otros",
+      "functions": 21,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/CrowdfundingPool.json",
+      "sdkPath": "sdk/artifacts/contracts/CrowdfundingPool.sol/CrowdfundingPool.json"
+    },
+    "P2PMarketplace": {
+      "sector": "otros",
+      "functions": 23,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/P2PMarketplace.json",
+      "sdkPath": "sdk/artifacts/contracts/P2PMarketplace.sol/P2PMarketplace.json"
+    },
+    "CharityVault": {
+      "sector": "otros",
+      "functions": 21,
+      "events": 9,
+      "errors": 2,
+      "abiPath": "abi/CharityVault.json",
+      "sdkPath": "sdk/artifacts/contracts/CharityVault.sol/CharityVault.json"
+    }
+  }
+}

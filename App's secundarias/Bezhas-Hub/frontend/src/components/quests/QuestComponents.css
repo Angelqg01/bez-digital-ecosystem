@@ -1,0 +1,77 @@
+.quest-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-left: 4px solid;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.quest-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); }
+
+.quest-card.difficulty-easy { border-color: #10b981; }
+.quest-card.difficulty-medium { border-color: #f59e0b; }
+.quest-card.difficulty-hard { border-color: #ef4444; }
+
+.quest-card.completed, .quest-card.in_progress { background-color: rgba(16, 185, 129, 0.05); }
+
+.quest-card-content { padding-bottom: 1rem; }
+
+.quest-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.quest-category-icon { font-size: 1.5rem; }
+.quest-title { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); flex-grow: 1; margin: 0; }
+
+.quest-difficulty {
+  font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+  padding: 0.25rem 0.75rem; border-radius: 12px; color: white;
+}
+.quest-difficulty.difficulty-easy { background-color: #10b981; }
+.quest-difficulty.difficulty-medium { background-color: #f59e0b; }
+.quest-difficulty.difficulty-hard { background-color: #ef4444; }
+
+.quest-description { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 1rem 0; }
+
+.quest-progress-section {
+  margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.progress-bar-container { flex-grow: 1; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--primary-accent); border-radius: 4px; transition: width 0.3s ease; }
+.progress-text { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); }
+
+.quest-rewards {
+  display: flex; gap: 0.75rem; margin-bottom: 1rem;
+}
+
+.reward-item {
+  padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+}
+.reward-item.exp { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.reward-item.tokens { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+.quest-time-limit {
+  display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #ef4444;
+}
+
+.quest-actions { border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem; }
+
+.quest-completed-status {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  font-weight: 600; color: var(--secondary-accent);
+}
+
+.action-button {
+  width: 100%;
+}
+
+.action-button.in-progress-btn {
+  cursor: not-allowed;
+  background-color: var(--background-tertiary);
+  color: var(--text-secondary);
+}
+
+.claim-button { width: 100%; }

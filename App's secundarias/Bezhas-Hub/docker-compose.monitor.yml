@@ -1,0 +1,37 @@
+# Docker Compose for Revenue Monitor
+# Usage: docker-compose -f docker-compose.monitor.yml up -d
+
+version: '3.8'
+
+services:
+  revenue-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.monitor
+    container_name: bezhas-revenue-monitor
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+    environment:
+      - NODE_ENV=production
+      - TZ=America/Mexico_City
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - bezhas-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+networks:
+  bezhas-network:
+    name: bezhas-network
+    driver: bridge

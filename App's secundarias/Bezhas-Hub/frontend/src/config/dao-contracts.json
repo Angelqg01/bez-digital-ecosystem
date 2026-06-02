@@ -1,0 +1,34 @@
+{
+    "network": "localhost",
+    "chainId": "31337",
+    "deployer": "",
+    "contracts": {
+        "token": {
+            "address": "",
+            "name": "DAO Governance Token",
+            "symbol": "DGT"
+        },
+        "pluginManager": {
+            "address": "",
+            "name": "PluginManager (Core)"
+        },
+        "treasury": {
+            "address": "",
+            "name": "TreasuryPlugin"
+        },
+        "hr": {
+            "address": "",
+            "name": "HumanResourcesPlugin"
+        },
+        "governance": {
+            "address": "",
+            "name": "GovernancePlugin"
+        },
+        "advertising": {
+            "address": "",
+            "name": "AdvertisingPlugin"
+        }
+    },
+    "timestamp": "",
+    "_note": "Este archivo es generado automáticamente por scripts/deploy-dao.js"
+}

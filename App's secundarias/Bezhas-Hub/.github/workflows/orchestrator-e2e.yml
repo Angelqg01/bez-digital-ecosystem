@@ -1,0 +1,96 @@
+name: CI — Orchestrator E2E Smoke Test
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Runs the 13-tool MCP Orchestrator smoke test on every push to main
+# and on pull requests targeting main.
+# ──────────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/services/orchestrator.service.js'
+      - 'backend/routes/mcp.routes.js'
+      - 'scripts/test-orchestrator-e2e.js'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/services/orchestrator.service.js'
+      - 'backend/routes/mcp.routes.js'
+  workflow_dispatch:
+    inputs:
+      tool:
+        description: 'Run only this tool (leave blank for all)'
+        required: false
+      fast:
+        description: 'Fast mode (skip slow tests)'
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '20'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  orchestrator-e2e:
+    name: MCP Orchestrator E2E Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.local/share/pnpm/store
+          key: pnpm-orch-deps-${{ hashFiles('backend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-orch-deps-
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: |
+          pnpm install --frozen-lockfile --prefer-offline 2>/dev/null || pnpm install
+
+      - name: Run E2E Smoke Test
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.tool }}" ]; then
+            ARGS="--tool ${{ inputs.tool }}"
+          fi
+          if [ "${{ inputs.fast }}" = "true" ]; then
+            ARGS="$ARGS --fast"
+          fi
+
+          # Use --fast in CI to avoid slow external API calls without keys
+          node scripts/test-orchestrator-e2e.js --fast $ARGS
+        env:
+          # Public / non-secret vars for CI
+          POLYGON_RPC_URL: https://polygon-bor.publicnode.com
+          # Optional API keys from GitHub secrets
+          GITHUB_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
+          TALLY_API_KEY:       ${{ secrets.TALLY_API_KEY }}
+          FIRECRAWL_API_KEY:   ${{ secrets.FIRECRAWL_API_KEY }}
+          ALPACA_API_KEY:      ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:   ${{ secrets.ALPACA_SECRET_KEY }}
+          ONEINCH_API_KEY:     ${{ secrets.ONEINCH_API_KEY }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            scripts/test-orchestrator-e2e.js
+          retention-days: 7

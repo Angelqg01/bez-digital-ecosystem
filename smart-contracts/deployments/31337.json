@@ -1,0 +1,256 @@
+{
+  "chainId": 31337,
+  "timestamp": "2026-05-11T19:20:23.677Z",
+  "core": {
+    "BEZCoinV2": "0xd8a5a9b31c3c0232e196d518e89fd8bf83acad43",
+    "BeZhasLogisticsNFT": "0xdc11f7e700a4c898ae5caddb1082cffa76512add",
+    "QualityEscrow": "0x51a1ceb83b83f1985a81c295d1ff28afef186e02",
+    "BeZhasBridgeL2": "0x36b58f5c1969b7b6591d752ea6f5486d069010ab",
+    "StakingPool": "0x8198f5d8f8cffe8f9c413d98a0a55aeb8ab9fbb7",
+    "LiquidityFarming": "0x0355b7b8cb128fa5692729ab3aaa199c1753f726",
+    "BeZhasDEX": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "ValidatorRegistry": "0xdbC43Ba45381e02825b14322cDdd15eC4B3164E6",
+    "L2Sequencer": "0x04C89607413713Ec9775E14b954286519d836FEf",
+    "AegisSecurityProvider": "0x4C4a2f8c81640e47606d3fd77B353E87Ba015584",
+    "EdgeNodeRewards": "0x21dF544947ba3E8b3c32561399E88B52Dc8b2823",
+    "SequencerRotation": "0x2E2Ed0Cfd3AD2f1d34481277b3204d807Ca2F8c2",
+    "SlashingManager": "0xD8a5a9b31c3C0232E196d518E89Fd8bF83AcAd43",
+    "DeliveryEscrow": "0xDC11f7E700A4c898AE5CAddB1082cFfa76512aDD",
+    "GovernanceSystem": "0x51A1ceB83B83F1985a81C295d1fF28Afef186E02",
+    "OpenClawAgent": "0x36b58F5C1969B7b6591D752ea6F5486D069010AB",
+    "BEZPolygonBridge": "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
+    "WrappedBEZ": "0x0355B7B8cb128fA5692729Ab3AAa199C1753f726",
+    "BeZhasPayment": "0x202CCe504e04bEd6fC0521238dDf04Bc9E8E15aB",
+    "BeZhasWorkflowRegistry": "0xf4B146FbA71F41E0592668ffbF264F1D186b2Ca8"
+  },
+  "sectors": {
+    "health": {
+      "HealthRecordSBT": "0x2b0d36facd61b71cc05ab8f3d2355ec3631c0dd5",
+      "PharmaTracker": "0xfbc22278a96299d91d41c453234d97b4f5eb9b2d",
+      "HealthInsuranceEscrow": "0x46b142dd1e924fab83ecc3c08e4d46e82f005e0e",
+      "ClinicalDataMarketplace": "0xc9a43158891282a2b1475592d5719c001986aaec"
+    },
+    "energy": {
+      "CarbonCreditToken": "0x1c85638e118b37167e9298c2268758e058ddfda0",
+      "P2PEnergyMarket": "0x367761085bf3c12e5da2df99ac6e1a824612b8fb",
+      "SolarFarmToken": "0x4c2f7092c2ae51d986befee378e50bd4db99c901",
+      "ESGScoreOracle": "0x7a9ec1d04904907de0ed7b6839ccdd59c3716ac9"
+    },
+    "automotive": {
+      "VehicleIdentityNFT": "0x49fd2be640db2910c2fab69bb8531ab6e76127ff",
+      "AutoPartsRegistry": "0x4631bcabd6df18d94796344963cb60d44a4136b6",
+      "FleetLeaseEscrow": "0x86a2ee8faf9a840f7a2c64ca3d51209f9a02081d",
+      "EVChargeToken": "0xa4899d35897033b927acfcf422bc745916139776"
+    },
+    "manufacturing": {
+      "QualityCertificateNFT": "0xf953b3a269d80e3eb0f2947630da976b896a8c5b",
+      "DigitalTwinRegistry": "0xaa292e8611adf267e563f334ee42320ac96d0463",
+      "MaterialTokenMRP": "0x5c74c94173f05da1720953407cbb920f3df9f887",
+      "PredictiveMaintenanceLog": "0x720472c8ce72c2a2d711333e064abd3e6bbeadd3"
+    },
+    "agriculture": {
+      "CropTokenFutures": "0xe8d2a1e88c91dcd5433208d4152cc4f399a7e91d",
+      "AgriSupplyChain": "0x5067457698fd6fa1c6964e416b3f42713513b3dd",
+      "AquaFarmMonitor": "0x18e317a7d70d8fbf8e6e893616b52390ebbdb629",
+      "LandTitleNFT": "0x4b6ab5f819a515382b0deb6935d793817bb4af28"
+    },
+    "insurance": {
+      "PolicyNFT": "0xcace1b78160ae76398f486c8a18044da0d66d86d",
+      "ParametricInsurance": "0xd5ac451b0c50b9476107823af206ed814a2e2580",
+      "ClaimAdjuster": "0xf8e31cb472bc70500f08cd84917e5a1912ec8397",
+      "ReinsurancePool": "0xc0f115a19107322cfbf1cdbc7ea011c19ebdb4f8"
+    },
+    "education": {
+      "CourseTokenNFT": "0xc96304e3c037f81da488ed9dea1d8f2a48278a75",
+      "SkillBadgeSBT": "0x34b40ba116d5dec75548a9e9a8f15411461e8c70",
+      "EduDAO": "0xd0141e899a65c95a556fe2b27e5982a6de7fdd7a",
+      "ScholarshipPool": "0x07882ae1ecb7429a84f1d53048d35c4bb2056877"
+    },
+    "entertainment": {
+      "EventTicketNFT": "0x22753e4264fddc6181dc7cce468904a80a363e44",
+      "FanTokenDAO": "0xa7c59f010700930003b33ab25a7a0679c860f29c",
+      "RoyaltyDistributor": "0xfaaddc93baf78e89dcf37ba67943e1be8f37bb8c",
+      "StreamingRightsMarket": "0x276c216d241856199a83bf27b2286659e5b877d3"
+    },
+    "legal": {
+      "SmartLegalContract": "0x3347b4d90ebe72befb30444c9966b2b990ae9fcb",
+      "EvidenceVault": "0x3155755b79aa083bd953911c92705b7aa82a18f9",
+      "ArbitrationDAO": "0x5bf5b11053e734690269c6b9d438f8c9d48f528a",
+      "IPRegistryNFT": "0xffa7ca1aeeebbc30c874d32c7e22f052bbea0429"
+    },
+    "supplychain": {
+      "SupplyTracker": "0x3aade2dcd2df6a8cac689ee797591b2913658659",
+      "ProcurementNFT": "0xab16a69a5a8c12c732e0deff4be56a70bb64c926",
+      "WarehouseManager": "0xe3011a37a904ab90c8881a99bd1f6e21401f1522",
+      "SupplierScoreOracle": "0x1f10f3ba7acb61b2f50b9d6ddcf91a6f787c0e82",
+      "ClearanceCertificateNFT": "0x457ccf29090fe5a24c19c1bc95f492168c0eafdb",
+      "CustomsClearanceOracle": "0x525c7063e7c20997baae9bda922159152d0e8417",
+      "TrackingIntegrationGateway": "0x38a024c0b412b9d1db8bc398140d00f5af3093d4",
+      "TrackingToCustomsGateway": "0x5fc748f1feb28d7b76fa1c6b07d8ba2d5535177c"
+    },
+    "government": {
+      "CitizenIdentityNFT": "0xb82008565fdc7e44609fa118a4a681e92581e680",
+      "PublicBudgetDAO": "0x2a810409872afc346f9b5b26571fd6ec42ea4849",
+      "LandCadastralRegistry": "0xb9beecd1a582768711de1ee7b0a1d582d9d72a6c",
+      "VotingSystem": "0x8a93d247134d91e0de6f96547cb0204e5be8e5d8"
+    },
+    "finance": {
+      "MicroLendingPool": "0x40918ba7f132e0acba2ce4de4c4baf9bd2d7d849",
+      "InvoiceFactoring": "0xf32d39ff9f6aa7a7a64d7a4f00a54826ef791a55",
+      "CreditScoreOracle": "0xd6e1afe5ca8d00a2efc01b89997abe2de47fdfaf",
+      "TreasuryVault": "0x99dbe4aea58e518c50a1c04ae9b48c9f6354612f"
+    },
+    "services": {
+      "FreelanceMarketplace": "0x6f6f570f45833e249e27022648a26f4076f48f78",
+      "SubscriptionManager": "0xca8c8688914e0f7096c920146cd0ad85cd7ae8b9",
+      "SLAMonitor": "0xb0f05d25e41fbc2b52013099ed9616f1206ae21b",
+      "ServiceReputationNFT": "0x5feaebfb4439f3516c74939a9d04e95afe82c4ae"
+    },
+    "otros": {
+      "LoyaltyRewards": "0x976fcd02f7c4773dd89c309fbf55d5923b4c98a1",
+      "CrowdfundingPool": "0x19ceccd6942ad38562ee10bafd44776ceb67e923",
+      "P2PMarketplace": "0xd42912755319665397ff090fbb63b1a31ae87cee",
+      "CharityVault": "0xfcdb4564c18a9134002b9771816092c9693622e3"
+    }
+  },
+  "wallet": {
+    "SmartWalletFactory": "0xD84379CEae14AA33C123Af12424A37803F885889",
+    "Paymaster": "0xBEc49fA140aCaA83533fB00A2BB19bDdd0290f25",
+    "SecurityModule": "0x4EE6eCAD1c2Dae9f525404De8555724e3c35d07B",
+    "WalletGuardian": "0x172076E0166D1F9Cc711C77Adf8488051744980C",
+    "MultiSigWallet": "0xfbC22278A96299D91d41C453234d97b4F5Eb9B2d",
+    "IdentityRegistry": "0x2B0d36FACD61B71CC05ab8F3D2355ec3631C0dd5"
+  },
+  "abi_manifest": {
+    "total_abis": 88,
+    "sectors": {
+      "core": [
+        "AegisSecurityProvider",
+        "BEZCoinV2",
+        "BEZPolygonBridge",
+        "BEZSectorStandard",
+        "BeZhasBridgeL2",
+        "BeZhasDEX",
+        "BeZhasPayment",
+        "BeZhasWorkflowRegistry",
+        "DeliveryEscrow",
+        "EdgeNodeRewards",
+        "GovernanceSystem",
+        "L2Sequencer",
+        "LiquidityFarming",
+        "OpenClawAgent",
+        "QualityEscrow",
+        "SequencerRotation",
+        "SlashingManager",
+        "StakingPool",
+        "ValidatorRegistry",
+        "WrappedBEZ"
+      ],
+      "wallet": [
+        "SmartWallet",
+        "SmartWalletFactory",
+        "MultiSigWallet",
+        "Paymaster",
+        "SecurityModule",
+        "WalletGuardian"
+      ],
+      "tokens": [
+        "BeZhasLogisticsNFT"
+      ],
+      "identity": [
+        "IdentityRegistry"
+      ],
+      "health": [
+        "HealthRecordSBT",
+        "PharmaTracker",
+        "HealthInsuranceEscrow",
+        "ClinicalDataMarketplace"
+      ],
+      "energy": [
+        "CarbonCreditToken",
+        "P2PEnergyMarket",
+        "SolarFarmToken",
+        "ESGScoreOracle"
+      ],
+      "automotive": [
+        "VehicleIdentityNFT",
+        "AutoPartsRegistry",
+        "FleetLeaseEscrow",
+        "EVChargeToken"
+      ],
+      "manufacturing": [
+        "QualityCertificateNFT",
+        "DigitalTwinRegistry",
+        "MaterialTokenMRP",
+        "PredictiveMaintenanceLog"
+      ],
+      "agriculture": [
+        "CropTokenFutures",
+        "AgriSupplyChain",
+        "AquaFarmMonitor",
+        "LandTitleNFT"
+      ],
+      "insurance": [
+        "PolicyNFT",
+        "ParametricInsurance",
+        "ClaimAdjuster",
+        "ReinsurancePool"
+      ],
+      "education": [
+        "CourseTokenNFT",
+        "SkillBadgeSBT",
+        "EduDAO",
+        "ScholarshipPool"
+      ],
+      "entertainment": [
+        "EventTicketNFT",
+        "FanTokenDAO",
+        "RoyaltyDistributor",
+        "StreamingRightsMarket"
+      ],
+      "legal": [
+        "SmartLegalContract",
+        "EvidenceVault",
+        "ArbitrationDAO",
+        "IPRegistryNFT"
+      ],
+      "supplychain": [
+        "SupplyTracker",
+        "ProcurementNFT",
+        "WarehouseManager",
+        "SupplierScoreOracle",
+        "ClearanceCertificateNFT",
+        "CustomsClearanceOracle",
+        "TrackingIntegrationGateway",
+        "TrackingToCustomsGateway"
+      ],
+      "government": [
+        "CitizenIdentityNFT",
+        "PublicBudgetDAO",
+        "LandCadastralRegistry",
+        "VotingSystem"
+      ],
+      "finance": [
+        "MicroLendingPool",
+        "InvoiceFactoring",
+        "CreditScoreOracle",
+        "TreasuryVault"
+      ],
+      "services": [
+        "FreelanceMarketplace",
+        "SubscriptionManager",
+        "SLAMonitor",
+        "ServiceReputationNFT"
+      ],
+      "otros": [
+        "LoyaltyRewards",
+        "CrowdfundingPool",
+        "P2PMarketplace",
+        "CharityVault"
+      ]
+    }
+  },
+  "lastSync": "sync-deployment.cjs",
+  "lastDeploy": "deploy-missing-inmemory.cjs (deterministic)",
+  "_note": "Addresses generated deterministically. Re-run with live Anvil node for on-chain deployment."
+}

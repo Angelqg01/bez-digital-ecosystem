@@ -1,0 +1,320 @@
+================================================================================
+                    BEZHAS WEB3 - SCRIPTS Y COMANDOS
+================================================================================
+                         Guia Rapida de Ejecucion
+                              Enero 2026
+================================================================================
+
+
+================================================================================
+1. INICIO RAPIDO (Desarrollo Local)
+================================================================================
+
+# Iniciar Backend (Terminal 1)
+cd backend
+node server.js
+
+# Iniciar Frontend (Terminal 2)
+cd frontend
+pnpm dev
+
+# O usar Docker Compose (todo junto)
+pnpm run dev:up
+
+
+================================================================================
+2. INSTALACION DE DEPENDENCIAS
+================================================================================
+
+# Instalar todo el proyecto
+pnpm install
+
+# Solo Backend
+cd backend && pnpm install
+
+# Solo Frontend
+cd frontend && pnpm install
+
+# Limpiar e instalar (si hay problemas)
+cd frontend && rm -rf node_modules && pnpm install
+cd backend && rm -rf node_modules && pnpm install
+
+
+================================================================================
+3. TESTS
+================================================================================
+
+# Test de paginas Admin (requiere servidores corriendo)
+node frontend/tests/admin-pages.test.js
+
+# O con PowerShell
+powershell -ExecutionPolicy Bypass -File run-admin-tests.ps1
+
+# Tests del Backend (Jest)
+cd backend && pnpm test
+
+# Tests con coverage
+cd backend && pnpm test:coverage
+
+# Tests de Smart Contracts
+npx hardhat test
+
+
+================================================================================
+4. SMART CONTRACTS
+================================================================================
+
+# Compilar contratos
+npx hardhat compile
+
+# Deploy DAO (Testnet Amoy)
+pnpm run deploy:dao
+# o
+npx hardhat run scripts/deploy-dao.js --network amoy
+
+# Deploy Quality Oracle
+npx hardhat run scripts/deploy-quality-oracle.js --network amoy
+
+# Deploy Token BEZ
+npx hardhat run scripts/deploy-token.js --network amoy
+
+# Red local Hardhat
+npx hardhat node
+
+# Deploy en local
+npx hardhat run scripts/deploy-dao.js --network localhost
+
+# Verificar contrato en Polygonscan
+npx hardhat verify --network amoy <CONTRACT_ADDRESS> <CONSTRUCTOR_ARGS>
+
+
+================================================================================
+5. BASE DE DATOS
+================================================================================
+
+# Seed de datos DAO
+cd backend && pnpm run seed:dao
+
+# Conectar a MongoDB local
+mongosh mongodb://localhost:27017/bezhas
+
+# Backup de MongoDB
+mongodump --uri="mongodb://localhost:27017/bezhas" --out=./backup
+
+# Restaurar MongoDB
+mongorestore --uri="mongodb://localhost:27017/bezhas" ./backup/bezhas
+
+
+================================================================================
+6. DOCKER
+================================================================================
+
+# Iniciar todos los servicios (desarrollo)
+docker-compose up -d
+
+# Iniciar con build
+docker-compose up -d --build
+
+# Ver logs
+docker-compose logs -f
+
+# Logs de un servicio especifico
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Detener servicios
+docker-compose down
+
+# Limpiar todo (volumenes incluidos)
+docker-compose down -v
+
+# Produccion
+docker-compose -f docker-compose.prod.yml up -d
+
+
+================================================================================
+7. CACHE Y LIMPIEZA
+================================================================================
+
+# Limpiar cache de Vite
+cd frontend && rm -rf node_modules/.vite
+
+# PowerShell
+Remove-Item -Recurse -Force frontend/node_modules/.vite -ErrorAction SilentlyContinue
+
+# Limpiar cache de Hardhat
+npx hardhat clean
+
+# Matar procesos Node (Windows PowerShell)
+taskkill /F /IM node.exe
+
+# Matar procesos Node (PowerShell alternativo)
+Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force
+
+
+================================================================================
+8. VERIFICACION DE SERVIDORES
+================================================================================
+
+# Verificar Frontend (puerto 5173)
+Test-NetConnection -ComputerName localhost -Port 5173
+
+# Verificar Backend (puerto 3001)
+Test-NetConnection -ComputerName localhost -Port 3001
+
+# Verificar MongoDB (puerto 27017)
+Test-NetConnection -ComputerName localhost -Port 27017
+
+# Verificar Redis (puerto 6379)
+Test-NetConnection -ComputerName localhost -Port 6379
+
+# Health check del API
+curl http://localhost:3001/api/health
+
+
+================================================================================
+9. BUILD Y PRODUCCION
+================================================================================
+
+# Build del Frontend
+cd frontend && pnpm build
+
+# Preview del build
+cd frontend && pnpm preview
+
+# Analizar bundle
+cd frontend && pnpm analyze
+
+# Build de produccion con Docker
+docker build -t bezhas-frontend -f Dockerfile.frontend .
+docker build -t bezhas-backend -f Dockerfile.backend .
+
+
+================================================================================
+10. LINTING Y FORMATEO
+================================================================================
+
+# Lint del Frontend
+cd frontend && pnpm lint
+
+# Fix automatico de lint
+cd frontend && pnpm lint --fix
+
+
+================================================================================
+11. GIT
+================================================================================
+
+# Estado de cambios
+git status
+
+# Ver diferencias
+git diff
+
+# Agregar cambios
+git add .
+
+# Commit
+git commit -m "mensaje"
+
+# Push
+git push origin main
+
+# Pull
+git pull origin main
+
+
+================================================================================
+12. URLS DE DESARROLLO
+================================================================================
+
+Frontend:           http://localhost:5173
+Backend API:        http://localhost:3001
+API Health:         http://localhost:3001/api/health
+
+# Admin Pages
+Admin Dashboard:    http://localhost:5173/admin
+Centro de IA:       http://localhost:5173/admin/ai
+Usuarios:           http://localhost:5173/admin/users-management
+Contenido:          http://localhost:5173/admin/content
+Anuncios:           http://localhost:5173/admin/ads
+
+# Otras paginas
+Home:               http://localhost:5173/home
+Marketplace:        http://localhost:5173/marketplace
+Staking:            http://localhost:5173/staking
+Developer Console:  http://localhost:5173/developer-console
+ML Dashboard:       http://localhost:5173/ml-dashboard
+Ad Center:          http://localhost:5173/ad-center
+
+
+================================================================================
+13. TROUBLESHOOTING
+================================================================================
+
+# Si el frontend no carga:
+1. Matar procesos: taskkill /F /IM node.exe
+2. Limpiar cache: Remove-Item -Recurse -Force frontend/node_modules/.vite
+3. Reiniciar: cd frontend && pnpm dev
+
+# Si el backend no conecta a MongoDB:
+1. Verificar MongoDB: Test-NetConnection localhost -Port 27017
+2. Iniciar MongoDB: mongod --dbpath "C:\data\db"
+3. O usar Docker: docker-compose up -d mongo
+
+# Si hay errores de modulos:
+1. Borrar node_modules: rm -rf node_modules
+2. Limpiar cache pnpm: pnpm store prune
+3. Reinstalar: pnpm install
+
+# Si Hardhat no compila:
+1. Limpiar: npx hardhat clean
+2. Compilar: npx hardhat compile
+
+
+================================================================================
+14. SCRIPTS POWERSHELL PERSONALIZADOS
+================================================================================
+
+# Inicio completo (backend + frontend)
+.\start-bezhas.ps1
+
+# Solo backend
+.\start-backend.ps1
+
+# Verificar gas en contratos
+.\check-gas.ps1
+
+# Tests de admin pages
+.\run-admin-tests.ps1
+
+# Limpiar documentos redundantes
+.\cleanup-redundant-docs.ps1
+
+# Deploy token
+.\deploy-token.ps1
+
+
+================================================================================
+15. VARIABLES DE ENTORNO REQUERIDAS
+================================================================================
+
+# Backend (.env)
+MONGODB_URI=mongodb://localhost:27017/bezhas
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=tu_secreto_jwt
+PORT=3001
+
+# Blockchain
+PRIVATE_KEY=tu_private_key
+POLYGON_RPC_URL=https://polygon-amoy.g.alchemy.com/v2/tu_api_key
+POLYGONSCAN_API_KEY=tu_api_key
+
+# AI Services
+OPENAI_API_KEY=tu_api_key
+GOOGLE_GEMINI_API_KEY=tu_api_key
+
+
+================================================================================
+                              FIN DEL DOCUMENTO
+================================================================================

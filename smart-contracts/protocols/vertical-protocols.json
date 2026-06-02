@@ -1,0 +1,437 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-04-29",
+  "network": {
+    "type": "sovereign-l2",
+    "token": "BEZ",
+    "coreDeployScript": "script/DeployAll.s.sol",
+    "sectorDeployScript": "script/DeploySectors.s.sol",
+    "deploymentParser": "script/parse-deployment.js"
+  },
+  "sharedControls": {
+    "wallet": [
+      "SmartWallet",
+      "SmartWalletFactory",
+      "MultiSigWallet",
+      "Paymaster",
+      "SecurityModule",
+      "WalletGuardian"
+    ],
+    "core": [
+      "AegisSecurityProvider",
+      "BeZhasPayment",
+      "BeZhasWorkflowRegistry",
+      "EdgeNodeRewards",
+      "GovernanceSystem",
+      "LiquidityFarming",
+      "StakingPool",
+      "ValidatorRegistry",
+      "WrappedBEZ"
+    ],
+    "requiredPermissions": [
+      "DEFAULT_ADMIN_ROLE",
+      "OPERATOR_ROLE",
+      "ORACLE_ROLE",
+      "TREASURY_ROLE",
+      "PAUSER_ROLE",
+      "AUDITOR_ROLE",
+      "EDGE_NODE_ROLE"
+    ],
+    "approvalModel": "Sensitive operations require SmartWallet policy checks and MultiSig quorum before settlement.",
+    "privacyModel": "Store hashes, attestations, SBT/NFT identifiers and policy evidence on-chain. PII, PHI and trade secrets stay off-chain behind edge encryption, anonymization and consent records."
+  },
+  "verticals": [
+    {
+      "id": "logistics-global-kinetics",
+      "name": "BeZhas Global Kinetics",
+      "sector": "logistics_and_global_trade",
+      "contracts": [
+        "SupplyTracker",
+        "WarehouseManager",
+        "ProcurementNFT",
+        "SupplierScoreOracle",
+        "CustomsClearanceOracle",
+        "ClearanceCertificateNFT",
+        "TrackingIntegrationGateway",
+        "TrackingToCustomsGateway",
+        "BeZhasPayment",
+        "QualityEscrow"
+      ],
+      "flows": [
+        "sku_tokenization",
+        "warehouse_receipt",
+        "supplier_scoring",
+        "customs_clearance",
+        "shipment_checkpoint",
+        "instant_settlement",
+        "quality_dispute_escrow"
+      ],
+      "permissions": [
+        "manufacturer",
+        "warehouse_operator",
+        "logistics_provider",
+        "customs_oracle",
+        "buyer",
+        "auditor",
+        "treasury"
+      ],
+      "oracles": [
+        "SupplierScoreOracle",
+        "CustomsClearanceOracle",
+        "TrackingIntegrationGateway",
+        "TrackingToCustomsGateway"
+      ],
+      "tests": [
+        "test/supplychain/SupplyTracker.t.sol",
+        "test/supplychain/WarehouseManager.t.sol",
+        "test/supplychain/ProcurementNFT.t.sol",
+        "test/supplychain/SupplierScoreOracle.t.sol",
+        "test/supplychain/CustomsClearanceOracle.t.sol",
+        "test/supplychain/ClearanceCertificateNFT.t.sol",
+        "test/supplychain/TrackingIntegrationGateway.t.sol",
+        "test/supplychain/TrackingToCustomsGateway.t.sol",
+        "test/core/QualityEscrow.t.sol"
+      ],
+      "deploy": {
+        "script": "script/DeploySectors.s.sol",
+        "requiredEnv": [
+          "BEZ_TOKEN",
+          "TREASURY",
+          "PRIVATE_KEY",
+          "RPC_URL"
+        ]
+      },
+      "docs": [
+        "docs/cto-ciso/LOGISTICS_PROTOCOL.md"
+      ]
+    },
+    {
+      "id": "bio-health-nexus",
+      "name": "BeZhas Bio-Agent and Nexus",
+      "sector": "health_and_biotechnology",
+      "contracts": [
+        "HealthRecordSBT",
+        "ClinicalDataMarketplace",
+        "PharmaTracker",
+        "HealthInsuranceEscrow",
+        "BeZhasWorkflowRegistry",
+        "AegisSecurityProvider"
+      ],
+      "flows": [
+        "patient_consent",
+        "phi_hash_anchor",
+        "clinical_dataset_listing",
+        "dao_research_access",
+        "pharma_batch_traceability",
+        "insured_claim_escrow"
+      ],
+      "permissions": [
+        "patient",
+        "hospital",
+        "lab",
+        "researcher",
+        "bio_oracle",
+        "insurer",
+        "compliance_auditor"
+      ],
+      "oracles": [
+        "PIIAnonymizationGateway",
+        "ClinicalDatasetVerifier",
+        "PharmaCustodyOracle",
+        "ConsentPolicyOracle"
+      ],
+      "tests": [
+        "test/health/HealthRecordSBT.t.sol",
+        "test/health/ClinicalDataMarketplace.t.sol",
+        "test/health/PharmaTracker.t.sol",
+        "test/health/HealthInsuranceEscrow.t.sol"
+      ],
+      "deploy": {
+        "script": "script/DeploySectors.s.sol",
+        "requiredEnv": [
+          "BEZ_TOKEN",
+          "TREASURY",
+          "PRIVATE_KEY",
+          "RPC_URL"
+        ]
+      },
+      "docs": [
+        "docs/cto-ciso/BIO_HEALTH_PROTOCOL.md"
+      ]
+    },
+    {
+      "id": "rwa-asset-marketplace",
+      "name": "BeZhas RWA Marketplace",
+      "sector": "real_world_assets",
+      "contracts": [
+        "LandCadastralRegistry",
+        "LandTitleNFT",
+        "VehicleIdentityNFT",
+        "FleetLeaseEscrow",
+        "DigitalTwinRegistry",
+        "QualityCertificateNFT",
+        "EvidenceVault",
+        "IPRegistryNFT",
+        "TreasuryVault"
+      ],
+      "flows": [
+        "asset_registration",
+        "legal_document_hashing",
+        "valuation_attestation",
+        "fractional_offer",
+        "escrowed_transfer",
+        "secondary_market_exit",
+        "collateral_lock"
+      ],
+      "permissions": [
+        "asset_owner",
+        "notary",
+        "valuation_oracle",
+        "custodian",
+        "investor",
+        "market_operator",
+        "auditor"
+      ],
+      "oracles": [
+        "RWAValuationOracle",
+        "LegalDocumentOracle",
+        "CustodyProofOracle",
+        "KYCEligibilityOracle"
+      ],
+      "tests": [
+        "test/government/LandCadastralRegistry.t.sol",
+        "test/agriculture/LandTitleNFT.t.sol",
+        "test/automotive/VehicleIdentityNFT.t.sol",
+        "test/automotive/FleetLeaseEscrow.t.sol",
+        "test/manufacturing/DigitalTwinRegistry.t.sol",
+        "test/manufacturing/QualityCertificateNFT.t.sol",
+        "test/legal/EvidenceVault.t.sol",
+        "test/legal/IPRegistryNFT.t.sol",
+        "test/finance/TreasuryVault.t.sol"
+      ],
+      "deploy": {
+        "script": "script/DeploySectors.s.sol",
+        "requiredEnv": [
+          "BEZ_TOKEN",
+          "TREASURY",
+          "PRIVATE_KEY",
+          "RPC_URL"
+        ]
+      },
+      "docs": [
+        "docs/cto-ciso/RWA_FINANCE_PROTOCOL.md"
+      ]
+    },
+    {
+      "id": "institutional-finance-tax",
+      "name": "BeZhas Institutional Finance and Fiscality",
+      "sector": "banks_institutions_tax",
+      "contracts": [
+        "CreditScoreOracle",
+        "InvoiceFactoring",
+        "MicroLendingPool",
+        "TreasuryVault",
+        "BeZhasPayment",
+        "MultiSigWallet",
+        "Paymaster"
+      ],
+      "flows": [
+        "credit_score_attestation",
+        "invoice_tokenization",
+        "rwa_backed_lending",
+        "treasury_multisig_approval",
+        "gas_sponsorship_policy",
+        "audit_export",
+        "tax_evidence_pack"
+      ],
+      "permissions": [
+        "borrower",
+        "lender",
+        "credit_oracle",
+        "treasury_admin",
+        "tax_auditor",
+        "risk_officer",
+        "paymaster_operator"
+      ],
+      "oracles": [
+        "CreditScoreOracle",
+        "InvoiceVerificationOracle",
+        "TaxRuleOracle",
+        "FXSettlementOracle"
+      ],
+      "tests": [
+        "test/finance/CreditScoreOracle.t.sol",
+        "test/finance/InvoiceFactoring.t.sol",
+        "test/finance/MicroLendingPool.t.sol",
+        "test/finance/TreasuryVault.t.sol",
+        "test/BeZhasPayment.t.sol",
+        "test/MultiSigWalletTest.t.sol",
+        "test/PaymasterTest.t.sol"
+      ],
+      "deploy": {
+        "script": "script/DeployAll.s.sol",
+        "requiredEnv": [
+          "PRIVATE_KEY",
+          "RPC_URL"
+        ]
+      },
+      "docs": [
+        "docs/cto-ciso/RWA_FINANCE_PROTOCOL.md"
+      ]
+    },
+    {
+      "id": "insurance-defi-risk",
+      "name": "BeZhas Smart Insurance and DeFi Risk Vaults",
+      "sector": "insurance_and_defi",
+      "contracts": [
+        "PolicyNFT",
+        "ParametricInsurance",
+        "ClaimAdjuster",
+        "ReinsurancePool",
+        "LiquidityFarming",
+        "StakingPool",
+        "TreasuryVault"
+      ],
+      "flows": [
+        "policy_issuance",
+        "parametric_event_trigger",
+        "claim_adjustment",
+        "reinsurance_capitalization",
+        "risk_vault_yield",
+        "dao_reserve_policy"
+      ],
+      "permissions": [
+        "policyholder",
+        "insurer",
+        "claim_adjuster",
+        "event_oracle",
+        "reinsurer",
+        "vault_manager",
+        "auditor"
+      ],
+      "oracles": [
+        "ParametricEventOracle",
+        "ClaimsEvidenceOracle",
+        "RiskModelOracle",
+        "YieldSourceOracle"
+      ],
+      "tests": [
+        "test/insurance/PolicyNFT.t.sol",
+        "test/insurance/ParametricInsurance.t.sol",
+        "test/insurance/ClaimAdjuster.t.sol",
+        "test/insurance/ReinsurancePool.t.sol",
+        "test/core/LiquidityFarming.t.sol",
+        "test/core/StakingPool.t.sol"
+      ],
+      "deploy": {
+        "script": "script/DeploySectors.s.sol",
+        "requiredEnv": [
+          "BEZ_TOKEN",
+          "TREASURY",
+          "PRIVATE_KEY",
+          "RPC_URL"
+        ]
+      },
+      "docs": [
+        "docs/cto-ciso/INSURANCE_DEFI_PROTOCOL.md"
+      ]
+    },
+    {
+      "id": "industrial-manufacturing",
+      "name": "BeZhas Industrial Manufacturing",
+      "sector": "manufacturing",
+      "contracts": [
+        "DigitalTwinRegistry",
+        "MaterialTokenMRP",
+        "PredictiveMaintenanceLog",
+        "QualityCertificateNFT",
+        "QualityEscrow"
+      ],
+      "flows": [
+        "digital_twin_creation",
+        "material_mrp_tokenization",
+        "maintenance_event_attestation",
+        "quality_certificate_mint",
+        "supplier_dispute_resolution"
+      ],
+      "permissions": [
+        "plant_operator",
+        "maintenance_oracle",
+        "quality_auditor",
+        "supplier",
+        "buyer"
+      ],
+      "oracles": [
+        "IoTMachineOracle",
+        "QualityInspectionOracle",
+        "MaintenancePredictionOracle"
+      ],
+      "tests": [
+        "test/manufacturing/DigitalTwinRegistry.t.sol",
+        "test/manufacturing/MaterialTokenMRP.t.sol",
+        "test/manufacturing/PredictiveMaintenanceLog.t.sol",
+        "test/manufacturing/QualityCertificateNFT.t.sol",
+        "test/core/QualityEscrow.t.sol"
+      ],
+      "deploy": {
+        "script": "script/DeploySectors.s.sol",
+        "requiredEnv": [
+          "BEZ_TOKEN",
+          "TREASURY",
+          "PRIVATE_KEY",
+          "RPC_URL"
+        ]
+      },
+      "docs": [
+        "docs/cto-ciso/MANUFACTURING_PROTOCOL.md"
+      ]
+    },
+    {
+      "id": "energy-esg",
+      "name": "BeZhas Energy and ESG",
+      "sector": "energy",
+      "contracts": [
+        "SolarFarmToken",
+        "P2PEnergyMarket",
+        "CarbonCreditToken",
+        "ESGScoreOracle"
+      ],
+      "flows": [
+        "solar_asset_tokenization",
+        "peer_energy_trade",
+        "carbon_credit_mint",
+        "esg_score_attestation"
+      ],
+      "permissions": [
+        "producer",
+        "consumer",
+        "grid_oracle",
+        "esg_auditor",
+        "market_operator"
+      ],
+      "oracles": [
+        "ESGScoreOracle",
+        "MeteringOracle",
+        "CarbonRegistryOracle"
+      ],
+      "tests": [
+        "test/energy/SolarFarmToken.t.sol",
+        "test/energy/P2PEnergyMarket.t.sol",
+        "test/energy/CarbonCreditToken.t.sol",
+        "test/energy/ESGScoreOracle.t.sol"
+      ],
+      "deploy": {
+        "script": "script/DeploySectors.s.sol",
+        "requiredEnv": [
+          "BEZ_TOKEN",
+          "TREASURY",
+          "PRIVATE_KEY",
+          "RPC_URL"
+        ]
+      },
+      "docs": [
+        "docs/cto-ciso/ENERGY_ESG_PROTOCOL.md"
+      ]
+    }
+  ]
+}

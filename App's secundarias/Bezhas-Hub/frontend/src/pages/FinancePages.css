@@ -1,0 +1,52 @@
+.finance-page {
+    padding: 1rem;
+}
+
+.finance-header {
+    margin-bottom: 1rem;
+}
+
+.finance-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.stat-card-finance {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: 1rem;
+}
+
+.stat-label-finance {
+    font-size: .875rem;
+    opacity: .75;
+}
+
+.stat-value-finance {
+    font-weight: 600;
+}
+
+.finance-main-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+}
+
+.finance-actions .action-form {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+}
+
+.form-input-finance {
+    padding: .5rem .75rem;
+    border: 1px solid #ddd;
+    border-radius: .5rem;
+}
+
+.related-quests-section {
+    align-self: start;
+}

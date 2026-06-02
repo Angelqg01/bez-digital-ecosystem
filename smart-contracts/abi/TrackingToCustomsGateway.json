@@ -1,0 +1,846 @@
+{
+  "contractName": "TrackingToCustomsGateway",
+  "sector": "supplychain",
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [
+        {
+          "name": "_trackingGateway",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_customsOracle",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "DEFAULT_ADMIN_ROLE",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "OPERATOR_ROLE",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "addCheckpointWithTracking",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_latitude",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "_longitude",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "_timestamp",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_statusCode",
+          "type": "uint8",
+          "internalType": "uint8"
+        },
+        {
+          "name": "_temperature",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "_speed",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_locationName",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "approveClearanceAndRelease",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_signatureHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "completeCountryClearance",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_country",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "createIntegratedShipment",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_trackingProviderId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "_trackingRefId",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "_customsPlatform",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "_hsCode",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "_cargoValue",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_duaHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "customsOracle",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "contract CustomsClearanceOracle"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getCompleteShipmentHistory",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple[]",
+          "internalType": "struct TrackingIntegrationGateway.CheckpointRecord[]",
+          "components": [
+            {
+              "name": "shipmentId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "latitude",
+              "type": "int256",
+              "internalType": "int256"
+            },
+            {
+              "name": "longitude",
+              "type": "int256",
+              "internalType": "int256"
+            },
+            {
+              "name": "timestamp",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "statusCode",
+              "type": "uint8",
+              "internalType": "uint8"
+            },
+            {
+              "name": "temperature",
+              "type": "int256",
+              "internalType": "int256"
+            },
+            {
+              "name": "speed",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "locationName",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "recordedBy",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getCurrentLocation",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latitude",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "longitude",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "location",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "timestamp",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getMultiCountryStatus",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "countries",
+          "type": "string[]",
+          "internalType": "string[]"
+        },
+        {
+          "name": "allCleared",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "checkpointsRecorded",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getRoleAdmin",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getShipmentStatus",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "isIntegrated",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "trackingActive",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "clearanceApproved",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "platform",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "grantRole",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "hasRole",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "integratedShipments",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "trackingProviderId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "customsPlatform",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "hsCode",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "cargoValue",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "trackingActive",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "clearanceApproved",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "createdAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "isClearedAndReadyForRelease",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "multiCountryClearances",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "totalCheckpointsCrossed",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "allCountriesCleared",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "renounceRole",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "callerConfirmation",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "revokeRole",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setupMultiCountryClearance",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_countries",
+          "type": "string[]",
+          "internalType": "string[]"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "supportsInterface",
+      "inputs": [
+        {
+          "name": "interfaceId",
+          "type": "bytes4",
+          "internalType": "bytes4"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "totalIntegratedShipments",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "trackingGateway",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "contract TrackingIntegrationGateway"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "event",
+      "name": "CountryClearanceCompleted",
+      "inputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "EndToEndComplianceCompleted",
+      "inputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "IntegratedShipmentCreated",
+      "inputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "providerId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "customsPlatform",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        },
+        {
+          "name": "hsCode",
+          "type": "bytes32",
+          "indexed": false,
+          "internalType": "bytes32"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "MultiCountryClearanceStarted",
+      "inputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "countries",
+          "type": "string[]",
+          "indexed": false,
+          "internalType": "string[]"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "RoleAdminChanged",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "previousAdminRole",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "newAdminRole",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "RoleGranted",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "sender",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "RoleRevoked",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "sender",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "TrackingAndClearanceLinked",
+      "inputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "trackingActive",
+          "type": "bool",
+          "indexed": false,
+          "internalType": "bool"
+        },
+        {
+          "name": "clearanceRequested",
+          "type": "bool",
+          "indexed": false,
+          "internalType": "bool"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "AccessControlBadConfirmation",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "AccessControlUnauthorizedAccount",
+      "inputs": [
+        {
+          "name": "account",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "neededRole",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "ReentrancyGuardReentrantCall",
+      "inputs": []
+    }
+  ],
+  "methodIdentifiers": {
+    "DEFAULT_ADMIN_ROLE()": "a217fddf",
+    "OPERATOR_ROLE()": "f5b541a6",
+    "addCheckpointWithTracking(uint256,int256,int256,uint256,uint8,int256,uint256,string)": "6da00ac2",
+    "approveClearanceAndRelease(uint256,bytes32)": "943eb389",
+    "completeCountryClearance(uint256,string)": "c3baf386",
+    "createIntegratedShipment(uint256,bytes32,string,string,bytes32,uint256,bytes32)": "8347c475",
+    "customsOracle()": "69f4b505",
+    "getCompleteShipmentHistory(uint256)": "13e772ea",
+    "getCurrentLocation(uint256)": "23bb1835",
+    "getMultiCountryStatus(uint256)": "4ba490d9",
+    "getRoleAdmin(bytes32)": "248a9ca3",
+    "getShipmentStatus(uint256)": "ee21259d",
+    "grantRole(bytes32,address)": "2f2ff15d",
+    "hasRole(bytes32,address)": "91d14854",
+    "integratedShipments(uint256)": "6434acbd",
+    "isClearedAndReadyForRelease(uint256)": "45b8d88f",
+    "multiCountryClearances(uint256)": "5a0e52c1",
+    "renounceRole(bytes32,address)": "36568abe",
+    "revokeRole(bytes32,address)": "d547741f",
+    "setupMultiCountryClearance(uint256,string[])": "173c128e",
+    "supportsInterface(bytes4)": "01ffc9a7",
+    "totalIntegratedShipments()": "27e9879e",
+    "trackingGateway()": "131bafee"
+  }
+}

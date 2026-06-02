@@ -1,0 +1,68 @@
+# ===================================================
+# BeZhas Frontend - Cloud Run Service Configuration
+# ===================================================
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: bezhas-frontend
+  labels:
+    cloud.googleapis.com/location: us-central1
+  annotations:
+    run.googleapis.com/description: "BeZhas Web3 Social Network - Frontend"
+    run.googleapis.com/ingress: all
+    run.googleapis.com/launch-stage: GA
+
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "50"
+        autoscaling.knative.dev/target: "100"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/execution-environment: gen2
+
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 60
+
+      containers:
+        - name: bezhas-frontend
+          image: gcr.io/PROJECT_ID/bezhas-frontend:latest
+
+          ports:
+            - name: http1
+              containerPort: 80
+
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+
+          # Liveness probe
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness probe
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  traffic:
+    - percent: 100
+      latestRevision: true

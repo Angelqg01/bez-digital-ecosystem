@@ -1,0 +1,964 @@
+{
+  "contractName": "TrackingIntegrationGateway",
+  "sector": "supplychain",
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [
+        {
+          "name": "_bezCoin",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_treasury",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "DEFAULT_ADMIN_ROLE",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "OPERATOR_ROLE",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "PROVIDER_ROLE",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "bezCoin",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "contract IERC20"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "cargoTracking",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "providerID",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "externalRefID",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "tokenizationFeeBEZ",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "checkpointCount",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "lastCheckpointTime",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "isActive",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getLastCheckpoint",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct TrackingIntegrationGateway.CheckpointRecord",
+          "components": [
+            {
+              "name": "shipmentId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "latitude",
+              "type": "int256",
+              "internalType": "int256"
+            },
+            {
+              "name": "longitude",
+              "type": "int256",
+              "internalType": "int256"
+            },
+            {
+              "name": "timestamp",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "statusCode",
+              "type": "uint8",
+              "internalType": "uint8"
+            },
+            {
+              "name": "temperature",
+              "type": "int256",
+              "internalType": "int256"
+            },
+            {
+              "name": "speed",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "locationName",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "recordedBy",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getProviderStats",
+      "inputs": [
+        {
+          "name": "_providerId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "name",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "budgetBEZ",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "budgetUsed",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "callsProcessed",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "totalFeesCollected",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "isActive",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getRoleAdmin",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getShipmentCheckpoints",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple[]",
+          "internalType": "struct TrackingIntegrationGateway.CheckpointRecord[]",
+          "components": [
+            {
+              "name": "shipmentId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "latitude",
+              "type": "int256",
+              "internalType": "int256"
+            },
+            {
+              "name": "longitude",
+              "type": "int256",
+              "internalType": "int256"
+            },
+            {
+              "name": "timestamp",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "statusCode",
+              "type": "uint8",
+              "internalType": "uint8"
+            },
+            {
+              "name": "temperature",
+              "type": "int256",
+              "internalType": "int256"
+            },
+            {
+              "name": "speed",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "locationName",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "recordedBy",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "grantRole",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "hasRole",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "mintCargoWithTracking",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_providerId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "_externalRefID",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "_cargoValue",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "providers",
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "name",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "endpointHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "monthlyBudgetBEZ",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "budgetUsedThisMonth",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "webhookAddress",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "isActive",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "callsProcessed",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "totalFeesCollected",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "recordCheckpointViaAPI",
+      "inputs": [
+        {
+          "name": "_shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_latitude",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "_longitude",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "_timestamp",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_statusCode",
+          "type": "uint8",
+          "internalType": "uint8"
+        },
+        {
+          "name": "_temperature",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "_speed",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_locationName",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "registerProvider",
+      "inputs": [
+        {
+          "name": "_providerId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "_name",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "_webhookAddress",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_monthlyBudgetBEZ",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "renounceRole",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "callerConfirmation",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "revokeRole",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setProviderActive",
+      "inputs": [
+        {
+          "name": "_providerId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "_active",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "shipmentCheckpoints",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "latitude",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "longitude",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "timestamp",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "statusCode",
+          "type": "uint8",
+          "internalType": "uint8"
+        },
+        {
+          "name": "temperature",
+          "type": "int256",
+          "internalType": "int256"
+        },
+        {
+          "name": "speed",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "locationName",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "recordedBy",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "supportsInterface",
+      "inputs": [
+        {
+          "name": "interfaceId",
+          "type": "bytes4",
+          "internalType": "bytes4"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "totalCheckpointsRecorded",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "totalTokenizationFees",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "treasuryMultisig",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "updateProviderBudget",
+      "inputs": [
+        {
+          "name": "_providerId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "_newBudgetBEZ",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "CargoTokenizedWithTracking",
+      "inputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "providerId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "externalRefId",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        },
+        {
+          "name": "tokenizationFee",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "CheckpointRecordedViaProvider",
+      "inputs": [
+        {
+          "name": "shipmentId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "lat",
+          "type": "int256",
+          "indexed": false,
+          "internalType": "int256"
+        },
+        {
+          "name": "lon",
+          "type": "int256",
+          "indexed": false,
+          "internalType": "int256"
+        },
+        {
+          "name": "timestamp",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "MonthlyBudgetReset",
+      "inputs": [
+        {
+          "name": "month",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ProviderBudgetUpdated",
+      "inputs": [
+        {
+          "name": "providerId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "newBudgetBEZ",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ProviderRegistered",
+      "inputs": [
+        {
+          "name": "providerId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        },
+        {
+          "name": "monthlyBudget",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "RoleAdminChanged",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "previousAdminRole",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "newAdminRole",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "RoleGranted",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "sender",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "RoleRevoked",
+      "inputs": [
+        {
+          "name": "role",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "account",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "sender",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "AccessControlBadConfirmation",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "AccessControlUnauthorizedAccount",
+      "inputs": [
+        {
+          "name": "account",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "neededRole",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "ReentrancyGuardReentrantCall",
+      "inputs": []
+    }
+  ],
+  "methodIdentifiers": {
+    "DEFAULT_ADMIN_ROLE()": "a217fddf",
+    "OPERATOR_ROLE()": "f5b541a6",
+    "PROVIDER_ROLE()": "24c20a34",
+    "bezCoin()": "c7763542",
+    "cargoTracking(uint256)": "8766f2f1",
+    "getLastCheckpoint(uint256)": "fe3e6f60",
+    "getProviderStats(bytes32)": "5a36b542",
+    "getRoleAdmin(bytes32)": "248a9ca3",
+    "getShipmentCheckpoints(uint256)": "5f19f4f5",
+    "grantRole(bytes32,address)": "2f2ff15d",
+    "hasRole(bytes32,address)": "91d14854",
+    "mintCargoWithTracking(uint256,bytes32,string,uint256)": "8e171d9b",
+    "providers(bytes32)": "1acc050e",
+    "recordCheckpointViaAPI(uint256,int256,int256,uint256,uint8,int256,uint256,string)": "6fdcbbc9",
+    "registerProvider(bytes32,string,address,uint256)": "f491a7e1",
+    "renounceRole(bytes32,address)": "36568abe",
+    "revokeRole(bytes32,address)": "d547741f",
+    "setProviderActive(bytes32,bool)": "5f392d58",
+    "shipmentCheckpoints(uint256,uint256)": "2cdc1164",
+    "supportsInterface(bytes4)": "01ffc9a7",
+    "totalCheckpointsRecorded()": "384c1c6d",
+    "totalTokenizationFees()": "8eb5fe28",
+    "treasuryMultisig()": "bf628408",
+    "updateProviderBudget(bytes32,uint256)": "acdedb6f"
+  }
+}

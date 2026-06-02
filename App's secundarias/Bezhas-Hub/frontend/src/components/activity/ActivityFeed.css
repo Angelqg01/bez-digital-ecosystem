@@ -1,0 +1,56 @@
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-item {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-icon-container {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-icon-container .icon {
+  color: white;
+}
+
+/* Icon Colors */
+.type-quest_completed .activity-icon-container { background-color: #f59e0b; }
+.type-new_member .activity-icon-container { background-color: #3b82f6; }
+.type-proposal_created .activity-icon-container { background-color: #8b5cf6; }
+.type-item_sold .activity-icon-container { background-color: #10b981; }
+.type-badge_unlocked .activity-icon-container { background-color: #ef4444; }
+
+.activity-content {
+  flex-grow: 1;
+}
+
+.activity-text {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.activity-text strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.activity-timestamp {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}

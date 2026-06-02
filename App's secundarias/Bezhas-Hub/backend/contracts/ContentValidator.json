@@ -1,0 +1,316 @@
+{
+    "abi": [
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_bezCoinToken",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "_validationFeeBezCoin",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "_validationFeeNative",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "address",
+                    "name": "_treasuryWallet",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "bytes32",
+                    "name": "contentHash",
+                    "type": "bytes32"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "author",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "timestamp",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "string",
+                    "name": "contentUri",
+                    "type": "string"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "string",
+                    "name": "contentType",
+                    "type": "string"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "validationId",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "enum ContentValidator.PaymentMethod",
+                    "name": "paymentMethod",
+                    "type": "uint8"
+                }
+            ],
+            "name": "ContentValidated",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "bytes32",
+                    "name": "contentHash",
+                    "type": "bytes32"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "revokedBy",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "string",
+                    "name": "reason",
+                    "type": "string"
+                }
+            ],
+            "name": "ValidationRevoked",
+            "type": "event"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "_contentHash",
+                    "type": "bytes32"
+                },
+                {
+                    "internalType": "string",
+                    "name": "_contentUri",
+                    "type": "string"
+                },
+                {
+                    "internalType": "string",
+                    "name": "_contentType",
+                    "type": "string"
+                }
+            ],
+            "name": "validateWithBezCoin",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "_contentHash",
+                    "type": "bytes32"
+                },
+                {
+                    "internalType": "string",
+                    "name": "_contentUri",
+                    "type": "string"
+                },
+                {
+                    "internalType": "string",
+                    "name": "_contentType",
+                    "type": "string"
+                }
+            ],
+            "name": "validateWithNative",
+            "outputs": [],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "_contentHash",
+                    "type": "bytes32"
+                },
+                {
+                    "internalType": "address",
+                    "name": "_author",
+                    "type": "address"
+                },
+                {
+                    "internalType": "string",
+                    "name": "_contentUri",
+                    "type": "string"
+                },
+                {
+                    "internalType": "string",
+                    "name": "_contentType",
+                    "type": "string"
+                }
+            ],
+            "name": "validateDelegated",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "_contentHash",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "isContentValidated",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "_contentHash",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "getValidation",
+            "outputs": [
+                {
+                    "components": [
+                        {
+                            "internalType": "bytes32",
+                            "name": "contentHash",
+                            "type": "bytes32"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "author",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "timestamp",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "contentUri",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "contentType",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "validationId",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "enum ContentValidator.PaymentMethod",
+                            "name": "paymentMethod",
+                            "type": "uint8"
+                        },
+                        {
+                            "internalType": "bool",
+                            "name": "isActive",
+                            "type": "bool"
+                        }
+                    ],
+                    "internalType": "struct ContentValidator.ContentValidation",
+                    "name": "",
+                    "type": "tuple"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_author",
+                    "type": "address"
+                }
+            ],
+            "name": "getAuthorValidations",
+            "outputs": [
+                {
+                    "internalType": "bytes32[]",
+                    "name": "",
+                    "type": "bytes32[]"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "totalValidations",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "validationFeeBezCoin",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "validationFeeNative",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ]
+}

@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bezhas
+      POSTGRES_PASSWORD: bezhas_password
+      POSTGRES_DB: bezhas
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+
+  # Optional: add a local hardhat node container if you want to run Solidity tests inside compose.
+  # This example uses the standard hardhat image via node and runs `pnpm exec hardhat node` on start.
+  hardhat:
+    image: node:18
+    working_dir: /usr/src/app
+    volumes:
+      - ./:/usr/src/app
+    command: sh -c "corepack enable && pnpm install --no-frozen-lockfile && pnpm exec hardhat node --hostname 0.0.0.0"
+    ports:
+      - "8545:8545"
+    restart: "no"
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    working_dir: /usr/src/app/backend
+    volumes:
+      - ./backend:/usr/src/app/backend
+      - /usr/src/app/backend/node_modules
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=postgresql://bezhas:bezhas_password@postgres:5432/bezhas
+      - REDIS_URL=redis://redis:6379
+      - MCP_SERVER_URL=http://bezhas-intelligence:8080
+      - BEZCOIN_CONTRACT_ADDRESS=0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8
+    depends_on:
+      - postgres
+      - redis
+      - bezhas-intelligence
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    working_dir: /usr/src/app/frontend
+    volumes:
+      - ./frontend:/usr/src/app/frontend
+      - /usr/src/app/frontend/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3001
+    depends_on:
+      - backend
+
+  # ── BeZhas Intelligence MCP Server (AI Brain) ──
+  bezhas-intelligence:
+    build:
+      context: ./packages/mcp-server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - POLYGON_RPC_URL=https://rpc-amoy.polygon.technology
+      - POLYGON_AMOY_RPC_URL=https://rpc-amoy.polygon.technology
+      - NETWORK_MODE=amoy
+      - BEZ_CONTRACT_ADDRESS=0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8
+      - DATABASE_URL=postgresql://bezhas:bezhas_password@postgres:5432/bezhas
+      - HTTP_PORT=8080
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/api/mcp/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aegis:
+    build:
+      context: ./aegis
+      dockerfile: Dockerfile
+    working_dir: /usr/src/app/aegis
+    volumes:
+      - ./aegis:/usr/src/app/aegis
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://bezhas:bezhas_password@postgres:5432/bezhas
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - AEGIS_PORT=8001
+      - AEGIS_HOST=0.0.0.0
+    depends_on:
+      - postgres
+      - redis
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=bezhas
+      - POSTGRES_PASSWORD=bezhas
+      - POSTGRES_DB=bezhas_analytics
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
+  timescale_data:

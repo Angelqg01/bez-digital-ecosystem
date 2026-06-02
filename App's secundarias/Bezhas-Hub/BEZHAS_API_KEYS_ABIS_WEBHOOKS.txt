@@ -1,0 +1,704 @@
+╔═══════════════════════════════════════════════════════════════════════════════════════╗
+║                   BeZhas — API Keys, ABIs & Webhooks por Sector                      ║
+║                   Para incrustar en Sub-Apps de clientes                              ║
+║                   Generado: 2026-03-22                                                ║
+╚═══════════════════════════════════════════════════════════════════════════════════════╝
+
+Base URL API (Producción):  https://bezhas-backend-<PROJECT_ID>.run.app/api
+Base URL API (Desarrollo):  http://localhost:3001/api
+Network:                    Polygon Mainnet (ChainID: 137)
+RPC URL:                    https://polygon-bor.publicnode.com
+Admin Wallet:               0x52Df82920CBAE522880dD7657e43d1A754eD044E
+BEZ-Coin Contract:          0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8
+
+═══════════════════════════════════════════════════════════════════════════════════════
+
+                        AUTENTICACIÓN GENERAL
+                        ─────────────────────
+Todas las Sub-Apps deben autenticarse con:
+  Header:  Authorization: Bearer <JWT_TOKEN>
+  ó
+  Header:  x-api-key: <API_KEY_DEL_SECTOR>
+  Header:  x-wallet-address: <WALLET_ADDRESS_CLIENTE>
+
+Webhook Verification:
+  Cada webhook incluye un header x-bezhas-signature con HMAC-SHA256
+  firmado con el Webhook Secret del sector correspondiente.
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 1: MARKETPLACE (Compra/Venta/Subastas)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_marketplace_200ca409fde45f2fc37c75b2fcbe13c7d800bd4438fdf790
+Webhook Secret: whsec_25b6498f8c15b59d2034d747f90857daafaf36b1a0668a6ca8d431d54863bdf3
+
+Contrato:       BeZhasMarketplace.sol
+Dirección:      0x1c061A896E0ac9C046A93eaf475c45ED5Bd8A1fE
+
+ABI (funciones principales):
+  - listItem(tokenId, price, currency)
+  - buyItem(listingId)
+  - makeOffer(listingId, amount)
+  - acceptOffer(offerId)
+  - cancelListing(listingId)
+  - getListings()
+  - getListingById(listingId)
+  - createAuction(tokenId, startPrice, duration)
+  - placeBid(auctionId, amount)
+
+Endpoints API:
+  POST   /marketplace/list          → Listar producto
+  GET    /marketplace/listings      → Obtener listados
+  POST   /marketplace/buy           → Comprar item
+  POST   /marketplace/offer         → Hacer oferta
+  PUT    /marketplace/offer/:id     → Aceptar/Rechazar oferta
+  DELETE /marketplace/listing/:id   → Cancelar listado
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/marketplace
+Eventos Webhook:
+  - marketplace.item.listed
+  - marketplace.item.sold
+  - marketplace.offer.received
+  - marketplace.offer.accepted
+  - marketplace.auction.ended
+  - marketplace.payment.completed
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 2: DeFi — STAKING
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_defi_staking_8d28d5b49725028617edc4d6135f207e88a1cac75dd1d8bf
+Webhook Secret: whsec_2a9ca6154d6968865fb1224a78c195e0ce30865d8e84e460132f223dfd7eaf92
+
+Contrato:       StakingPool.sol / StakingPoolV2.sol
+Dirección:      (via SDK — StakingManager)
+
+ABI (funciones principales):
+  - stake(amount)
+  - unstake(amount)
+  - claimRewards()
+  - getStakeInfo(address)
+  - getAPY()
+  - totalStaked()
+  - pendingRewards(address)
+
+Endpoints API:
+  POST   /staking/stake             → Hacer staking de BEZ
+  POST   /staking/unstake           → Retirar staking
+  POST   /staking/claim             → Reclamar recompensas
+  GET    /staking/info/:address     → Info de staking del usuario
+  GET    /staking/apy               → APY actual
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/staking
+Eventos Webhook:
+  - staking.deposit.confirmed
+  - staking.withdrawal.completed
+  - staking.rewards.distributed
+  - staking.apy.changed
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 3: DeFi — LIQUIDITY FARMING
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_defi_farming_18f3c0907ab499d30280f22b6f1f74a27257573230ca8550
+Webhook Secret: whsec_77bf75a4edffb529c943a590ffd41da710429dd049eb4b7b46aab95f93ce8ed1
+
+Contrato:       LiquidityFarming.sol
+Dirección:      0x4C5330B45FEa670d5ffEAD418E74dB7EA5ECdD26
+
+ABI (funciones principales):
+  - deposit(poolId, amount)
+  - withdraw(poolId, amount)
+  - harvest(poolId)
+  - getPoolInfo(poolId)
+  - getUserInfo(poolId, address)
+  - pendingReward(poolId, address)
+  - getMultiplier(lockDuration)
+  - emergencyWithdraw(poolId)
+
+Endpoints API:
+  POST   /farming/deposit           → Depositar en pool
+  POST   /farming/withdraw          → Retirar de pool
+  POST   /farming/harvest           → Cosechar recompensas
+  GET    /farming/pools             → Listar pools disponibles
+  GET    /farming/pool/:id          → Info de pool específico
+  GET    /farming/user/:address     → Posiciones del usuario
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/farming
+Eventos Webhook:
+  - farming.deposit.confirmed
+  - farming.withdrawal.completed
+  - farming.harvest.claimed
+  - farming.pool.created
+  - farming.multiplier.updated
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 4: GOVERNANCE / DAO
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_governance_dao_0b550f4474ffa73def469ebf349cd5264745114145946fa5
+Webhook Secret: whsec_a79fc010424acf1b9d64b50666d13bdf7895e612ada2dec675eea5b8594be723
+
+Contrato:       GovernanceSystem.sol
+Dirección:      0x304Fd77f64C03482edcec0923f0Cd4A066a305F3
+
+Treasury DAO:   0x89c23890c742d710265dD61be789C71dC8999b12
+
+ABI (funciones principales):
+  - propose(targets, values, calldatas, description)
+  - castVote(proposalId, support)
+  - castVoteWithReason(proposalId, support, reason)
+  - execute(targets, values, calldatas, descriptionHash)
+  - queue(targets, values, calldatas, descriptionHash)
+  - getProposal(proposalId)
+  - state(proposalId)
+  - quorum(blockNumber)
+  - votingDelay()
+  - votingPeriod()
+
+Endpoints API:
+  GET    /dao/proposals             → Listar propuestas
+  POST   /dao/proposals             → Crear propuesta
+  POST   /dao/proposals/:id/vote    → Votar en propuesta
+  GET    /dao/proposals/:id         → Detalle de propuesta
+  POST   /dao/proposals/:id/execute → Ejecutar propuesta aprobada
+  GET    /dao/treasury              → Estado del tesoro
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/governance
+Eventos Webhook:
+  - governance.proposal.created
+  - governance.vote.cast
+  - governance.proposal.passed
+  - governance.proposal.defeated
+  - governance.proposal.executed
+  - governance.treasury.transfer
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 5: PAYMENTS (Fiat + Crypto + BEZ-Pay)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_payments_9df1331b3893cc82c12eeb4e381b5967181f1baae508db84
+Webhook Secret: whsec_05ee933dab0d236d33f27b7826103e426e717eac88c6ea6386b17220b2303edc
+
+Contratos:
+  - BezhasToken.sol (BEZ-Coin)    → 0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8
+  - BeZhasQualityEscrow.sol       → 0x3088573c025F197A886b97440761990c9A9e83C9
+
+ABI BezhasToken (funciones principales):
+  - transfer(to, amount)
+  - approve(spender, amount)
+  - balanceOf(address)
+  - allowance(owner, spender)
+  - totalSupply()
+
+ABI BeZhasQualityEscrow (funciones principales):
+  - createEscrow(seller, amount, conditions)
+  - releaseEscrow(escrowId)
+  - disputeEscrow(escrowId, reason)
+  - getEscrow(escrowId)
+
+Endpoints API:
+  POST   /payment/create-intent     → Crear intención de pago (Stripe)
+  POST   /payment/crypto-pay        → Pago con crypto
+  POST   /bezpay/send               → Enviar BEZ a otro usuario
+  POST   /bezpay/request            → Solicitar pago BEZ
+  GET    /bezpay/balance/:address   → Balance BEZ del usuario
+  POST   /escrow/create             → Crear escrow
+  POST   /escrow/:id/release        → Liberar escrow
+  POST   /escrow/:id/dispute        → Disputar escrow
+  POST   /fiat/buy-bez              → Comprar BEZ con fiat (Stripe)
+  GET    /payment/history/:address  → Historial de pagos
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/payments
+Eventos Webhook:
+  - payment.completed
+  - payment.failed
+  - payment.refunded
+  - bezpay.sent
+  - bezpay.received
+  - escrow.created
+  - escrow.released
+  - escrow.disputed
+  - fiat.purchase.completed
+  - stripe.checkout.completed
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 6: RWA / REAL ESTATE (Activos del Mundo Real)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_rwa_realestate_83cdd6be93abde61c77636e3890561151fee395d5a876a18
+Webhook Secret: whsec_4e6ebbc75f281c3cac1db0b0f4092bc8bfa16b42a1e713bf941c457d7d5a9cfd
+
+Contratos:
+  - BeZhasRWAFactory.sol          → 0x5F999157aF1DEfBf4E7e1b8021850b49e458CCc0
+  - BeZhasRealEstate.sol          → (via RealEstateModule)
+  - PropertyFractionalizer.sol    → (via SDK)
+  - RWA Vault                    → 0xCDd23058bf8143680f0A320318604bB749f701ED
+
+ABI BeZhasRWAFactory (funciones principales):
+  - tokenizeAsset(name, symbol, totalSupply, metadata)
+  - getAsset(assetId)
+  - listAssets()
+  - transferFraction(assetId, to, amount)
+  - getAssetsByOwner(owner)
+
+ABI BeZhasRealEstate (funciones principales):
+  - createProperty(metadata, price, fractions)
+  - buyFraction(propertyId, amount)
+  - listProperty(propertyId)
+  - getPropertyDetails(propertyId)
+
+Endpoints API:
+  POST   /realestate/tokenize       → Tokenizar propiedad
+  GET    /realestate/properties      → Listar propiedades
+  GET    /realestate/property/:id    → Detalle propiedad
+  POST   /realestate/buy-fraction    → Comprar fracción
+  POST   /rwa/create                 → Crear activo RWA
+  GET    /rwa/assets                 → Listar activos RWA
+  GET    /rwa/asset/:id              → Detalle activo RWA
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/rwa-realestate
+Eventos Webhook:
+  - rwa.asset.tokenized
+  - rwa.fraction.sold
+  - rwa.dividend.distributed
+  - realestate.property.listed
+  - realestate.fraction.purchased
+  - realestate.valuation.updated
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 7: LOGISTICS (Logística / Supply Chain)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_logistics_539cf3ee59706a8694b4c51ab3c1bfc9881271a817b544c5
+Webhook Secret: whsec_fbb5cc28bf29f9e54f64466719e1a588d9e1ac6959df13b79b18242070a6d101
+
+Contratos:
+  - LogisticsContainer.sol        → (via SDK)
+  - CargoManifestNFT.sol          → (via SDK)
+
+ABI LogisticsContainer (funciones principales):
+  - createShipment(origin, destination, cargo, carrier)
+  - updateStatus(shipmentId, status, location)
+  - deliverShipment(shipmentId, proof)
+  - getShipment(shipmentId)
+  - getShipmentsByCarrier(carrier)
+
+ABI CargoManifestNFT (funciones principales):
+  - mintManifest(shipmentId, metadata)
+  - getManifest(tokenId)
+  - verifyManifest(tokenId)
+
+Endpoints API:
+  POST   /logistics/shipment        → Crear envío
+  GET    /logistics/shipments        → Listar envíos
+  PUT    /logistics/shipment/:id     → Actualizar estado
+  POST   /logistics/deliver/:id      → Marcar como entregado
+  GET    /logistics/track/:id        → Rastrear envío
+  POST   /logistics/manifest         → Crear manifiesto NFT
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/logistics
+Eventos Webhook:
+  - logistics.shipment.created
+  - logistics.status.updated
+  - logistics.shipment.delivered
+  - logistics.manifest.minted
+  - logistics.delay.detected
+  - logistics.customs.cleared
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 8: NFT EXTENSIONS (NFTs, Bundles, Alquiler, Ofertas, Staking)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_nft_extensions_5a3e46efbe899f41126e2a370814ee298131a9a239815f11
+Webhook Secret: whsec_03252334fd161c91561bd0dde8370bd08506adfe9698b342dca0a26504876227
+
+Contratos:
+  - BezhasNFT.sol                 → (via SDK)
+  - NFTOffers.sol                 → 0x0C9Bf667b838f6d466619ddb90a08d6c9A64d0A4
+  - NFTRental.sol                 → 0x96B1754BbfdC5a2f6013A8a04cB6AF2E4090C024
+  - NFTBundle.sol                 → (via SDK)
+  - NFTStaking.sol                → (via SDK)
+  - FractionalNFT.sol             → (via SDK)
+  - LazyNFT.sol                   → (via SDK)
+
+ABI NFTOffers (funciones principales):
+  - makeOffer(tokenId, amount, duration)
+  - acceptOffer(offerId)
+  - cancelOffer(offerId)
+  - getOffers(tokenId)
+
+ABI NFTRental (funciones principales):
+  - listForRent(tokenId, pricePerDay, maxDuration)
+  - rent(tokenId, duration)
+  - returnNFT(rentalId)
+  - getRentalInfo(rentalId)
+
+ABI NFTBundle (funciones principales):
+  - createBundle(tokenIds, name, price)
+  - buyBundle(bundleId)
+  - dissolveBundle(bundleId)
+
+Endpoints API:
+  POST   /nft/mint                  → Mintear NFT
+  POST   /nft/offers/make           → Hacer oferta
+  POST   /nft/offers/:id/accept     → Aceptar oferta
+  POST   /nft/rental/list           → Listar para alquiler
+  POST   /nft/rental/rent           → Alquilar NFT
+  POST   /nft/bundle/create         → Crear bundle
+  GET    /nft/collection/:address   → Colección del usuario
+  POST   /nft/stake                 → Hacer staking de NFT
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/nft
+Eventos Webhook:
+  - nft.minted
+  - nft.transferred
+  - nft.offer.received
+  - nft.offer.accepted
+  - nft.rental.started
+  - nft.rental.ended
+  - nft.bundle.created
+  - nft.staking.deposited
+  - nft.staking.withdrawn
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 9: SOCIAL / FEED (Red Social, Posts, Chat)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_social_feed_d2d9eafe5d5ffa63759aca5fa3f405621ab6596e79558764
+Webhook Secret: whsec_32a7e900f4adafb9b0349316daf30f96d998bc9304fcc0291a3f25a1d42334e3
+
+Contratos:
+  - SocialInteractions.sol        → (via SDK)
+  - PersonalizedFeed.sol          → (via SDK)
+  - ContentValidator.sol          → (via SDK)
+  - Post.sol                      → (via SDK)
+
+ABI SocialInteractions (funciones principales):
+  - createPost(content, mediaHash)
+  - likePost(postId)
+  - commentPost(postId, content)
+  - sharePost(postId)
+  - followUser(address)
+  - unfollowUser(address)
+
+Endpoints API:
+  POST   /posts/create              → Crear publicación
+  GET    /feed                      → Obtener feed personalizado
+  POST   /posts/:id/like            → Dar like
+  POST   /posts/:id/comment         → Comentar
+  POST   /posts/:id/share           → Compartir
+  GET    /social/followers/:address → Seguidores
+  GET    /social/following/:address → Siguiendo
+  POST   /chat/send                 → Enviar mensaje chat
+  GET    /chat/messages/:roomId     → Mensajes del chat
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/social
+Eventos Webhook:
+  - social.post.created
+  - social.post.liked
+  - social.post.commented
+  - social.post.shared
+  - social.user.followed
+  - social.chat.message
+  - social.notification.new
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 10: AI / IDENTITY (Inteligencia Artificial + Verificación)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_ai_identity_cac5d457dd6032578ee5f6a414ee82a32e839e8592dabddc
+Webhook Secret: whsec_2376d592d58d5733dce0758395f63c3e7cbc97172e38c8be8fab038fa0c80a41
+
+Contratos:
+  - AuthenticationManager.sol     → (via SDK)
+  - EnhancedAuthManager.sol       → (via SDK)
+  - DataOracle.sol                → (via SDK)
+  - QualityOracle.sol             → (via SDK)
+  - Quality Oracle V2             → 0x2DDF2FbC3f16bf137E1C61B1d02ff242C9255EC4
+
+ABI AuthenticationManager (funciones principales):
+  - registerIdentity(address, metadata)
+  - verifyIdentity(address)
+  - revokeIdentity(address)
+  - getIdentity(address)
+  - isVerified(address)
+
+ABI DataOracle (funciones principales):
+  - requestData(source, query)
+  - fulfillData(requestId, data)
+  - getLatestData(feedId)
+
+Endpoints API:
+  POST   /ai/chat                   → Chat con AI BeZhas
+  POST   /ai/analyze                → Análisis AI de datos
+  POST   /ai/identity/verify        → Verificar identidad
+  GET    /ai/identity/:address      → Estado de identidad
+  POST   /ai/risk-engine            → Motor de riesgo AI
+  GET    /oracle/data/:feedId       → Datos del oráculo
+  POST   /oracle/request            → Solicitar datos externos
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/ai-identity
+Eventos Webhook:
+  - ai.identity.verified
+  - ai.identity.revoked
+  - ai.analysis.completed
+  - ai.risk.alert
+  - oracle.data.updated
+  - oracle.request.fulfilled
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 11: VIP / SUBSCRIPTIONS
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_vip_subscriptions_4a7e55aa7b94e35c2195fe4a797b5a0452dd9aafeff0456d
+Webhook Secret: whsec_f3f5dce5fc4a4b596e8881665289e33b1a069610270776b452312889bf94b8db
+
+Contratos:
+  - GamificationSystem.sol        → (via SDK)
+  - BeZhasRewardsCalculator.sol   → (via SDK)
+
+ABI GamificationSystem (funciones principales):
+  - getUserLevel(address)
+  - getUserPoints(address)
+  - claimAchievement(achievementId)
+  - getLeaderboard(limit)
+  - addPoints(address, amount, reason)
+
+Endpoints API:
+  GET    /vip/status/:address       → Estado VIP del usuario
+  POST   /vip/subscribe             → Suscribirse a plan VIP
+  POST   /vip/upgrade               → Upgradear plan
+  GET    /vip/benefits/:tier        → Beneficios por tier
+  GET    /rewards/:address          → Recompensas del usuario
+  POST   /rewards/claim             → Reclamar recompensas
+  GET    /subscription/plans        → Planes disponibles
+  POST   /subscription/create       → Crear suscripción
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/vip
+Eventos Webhook:
+  - vip.subscription.created
+  - vip.subscription.upgraded
+  - vip.subscription.cancelled
+  - vip.tier.changed
+  - vip.reward.earned
+  - vip.achievement.unlocked
+  - vip.points.added
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 12: HEALTHCARE (Salud)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_healthcare_c6ed8780542d010c8f44a57eec85fffeb91e69a381af06e0
+Webhook Secret: whsec_5b12703d51e4206cbecc4c3f9ba106692de7232117a0288a07d4678eab45662b
+
+SDK Module:     HealthcareModule (sdk/modules/HealthcareModule.js)
+
+Endpoints API:
+  POST   /healthcare/record/create  → Crear registro médico
+  GET    /healthcare/records/:id    → Obtener registros
+  POST   /healthcare/prescription   → Crear receta digital
+  POST   /healthcare/verify         → Verificar credencial médica
+  POST   /healthcare/consent        → Gestionar consentimiento
+  GET    /healthcare/providers      → Listar proveedores
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/healthcare
+Eventos Webhook:
+  - healthcare.record.created
+  - healthcare.record.updated
+  - healthcare.prescription.issued
+  - healthcare.consent.granted
+  - healthcare.consent.revoked
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 13: AUTOMOTIVE (Automotriz)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_automotive_09e05ac68e9155243811adb34c5202b70cafb0afa1067a0f
+Webhook Secret: whsec_5accbb6df500af3ae8f7590201114aae96cc1fa140e0961514bff533dbf88c98
+
+SDK Module:     AutomotiveModule (sdk/modules/AutomotiveModule.js)
+
+Endpoints API:
+  POST   /automotive/vehicle/register → Registrar vehículo
+  GET    /automotive/vehicle/:vin     → Info de vehículo
+  POST   /automotive/service-log      → Añadir servicio
+  GET    /automotive/history/:vin     → Historial del vehículo
+  POST   /automotive/transfer         → Transferir propiedad
+  POST   /automotive/inspect          → Registrar inspección
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/automotive
+Eventos Webhook:
+  - automotive.vehicle.registered
+  - automotive.service.logged
+  - automotive.ownership.transferred
+  - automotive.inspection.completed
+  - automotive.recall.issued
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 14: MANUFACTURING (Manufacturing / Industrial)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_manufacturing_a7fbb3c27c2406dedde55890b3e1bcb1988732d109cde2bc
+Webhook Secret: whsec_b7ae54a4451bd5f1eeece9dbbf454f0c4c263947b2143370ab2a151580e18bb2
+
+SDK Module:     ManufacturingModule (sdk/modules/ManufacturingModule.js)
+
+Endpoints API:
+  POST   /manufacturing/batch/create  → Crear lote de producción
+  GET    /manufacturing/batch/:id     → Info del lote
+  POST   /manufacturing/qc            → Control de calidad
+  POST   /manufacturing/certify       → Certificar producto
+  GET    /manufacturing/trace/:id     → Trazabilidad completa
+  GET    /manufacturing/analytics     → Métricas de producción
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/manufacturing
+Eventos Webhook:
+  - manufacturing.batch.created
+  - manufacturing.qc.passed
+  - manufacturing.qc.failed
+  - manufacturing.product.certified
+  - manufacturing.defect.detected
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 15: ENERGY (Energía)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_energy_1b59e50565a8a8115a939db9f940d4a607f427cb580707fa
+Webhook Secret: whsec_a07db39b01797fce407fcaa7a0b52cfc450f93f87b47cac882742bf569bc00a9
+
+SDK Module:     EnergyModule (sdk/modules/EnergyModule.js)
+
+Endpoints API:
+  POST   /energy/meter/register      → Registrar medidor
+  GET    /energy/consumption/:id     → Consumo energético
+  POST   /energy/trade               → Trading de energía P2P
+  POST   /energy/certificate         → Emisión certificado verde
+  GET    /energy/grid/status         → Estado de la red
+  GET    /energy/analytics           → Analíticas de energía
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/energy
+Eventos Webhook:
+  - energy.meter.reading
+  - energy.trade.completed
+  - energy.certificate.issued
+  - energy.grid.alert
+  - energy.surplus.detected
+
+═══════════════════════════════════════════════════════════════════════════════════════
+██  SECTOR 16: AGRICULTURE (Agricultura / Agritech)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+API Key:        bzh_agriculture_b76160153af6704d1a0631e37031f6f47416af4b6e0a9a61
+Webhook Secret: whsec_34a9643ef37c8dc96dd7f167a7abefea0531280e914f106d066ac49aef6bdfd3
+
+SDK Module:     AgricultureModule (sdk/modules/AgricultureModule.js)
+
+Endpoints API:
+  POST   /agriculture/farm/register  → Registrar parcela
+  POST   /agriculture/harvest        → Registrar cosecha
+  GET    /agriculture/trace/:id      → Trazabilidad alimento
+  POST   /agriculture/certify        → Certificación orgánica
+  GET    /agriculture/weather/:zone  → Datos meteorológicos
+  GET    /agriculture/market-prices  → Precios de mercado
+
+Webhook URL:    https://<TU_SUBAPP_URL>/webhooks/agriculture
+Eventos Webhook:
+  - agriculture.harvest.registered
+  - agriculture.certification.issued
+  - agriculture.weather.alert
+  - agriculture.price.updated
+  - agriculture.quality.verified
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                        RESUMEN DE CONTRATOS DESPLEGADOS
+                        (Polygon Mainnet — ChainID 137)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+Contrato                    │ Dirección
+────────────────────────────┼──────────────────────────────────────────────
+BEZ-Coin (BezhasToken)      │ 0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8
+Quality Escrow              │ 0x3088573c025F197A886b97440761990c9A9e83C9
+Quality Oracle V2           │ 0x2DDF2FbC3f16bf137E1C61B1d02ff242C9255EC4
+Treasury DAO                │ 0x89c23890c742d710265dD61be789C71dC8999b12
+LP Pool QuickSwap           │ 0x4edc77de01f2a2c87611c2f8e9249be43df745a9
+RWA Factory                 │ 0x5F999157aF1DEfBf4E7e1b8021850b49e458CCc0
+RWA Vault                   │ 0xCDd23058bf8143680f0A320318604bB749f701ED
+Governance System           │ 0x304Fd77f64C03482edcec0923f0Cd4A066a305F3
+BeZhas Core                 │ 0x260A9fBcE1c6817c04e51c170b5BFd8d594c0d8A
+Liquidity Farming           │ 0x4C5330B45FEa670d5ffEAD418E74dB7EA5ECdD26
+NFT Offers                  │ 0x0C9Bf667b838f6d466619ddb90a08d6c9A64d0A4
+NFT Rental                  │ 0x96B1754BbfdC5a2f6013A8a04cB6AF2E4090C024
+BeZhas Marketplace          │ 0x1c061A896E0ac9C046A93eaf475c45ED5Bd8A1fE
+Admin Registry              │ 0xfCe2F7dcf1786d1606b9b858E9ba04dA499F1e3C
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                        EJEMPLO DE INTEGRACIÓN EN SUB-APP
+═══════════════════════════════════════════════════════════════════════════════════════
+
+// 1. Instalar SDK
+npm install @bezhas/sdk
+
+// 2. Inicializar con la API Key del sector
+const { BeZhas } = require('@bezhas/sdk');
+
+const bezhas = new BeZhas({
+  apiKey: 'bzh_marketplace_200ca409fde45f2fc37c75b2fcbe13c7d800bd4438fdf790',
+  network: 'polygon',
+  baseUrl: 'https://bezhas-backend-<PROJECT_ID>.run.app/api'
+});
+
+// 3. Usar servicios del sector
+const listings = await bezhas.marketplace.getListings();
+const balance = await bezhas.payments.getBalance('0x...');
+
+// 4. Configurar Webhook en tu Sub-App (Express.js ejemplo)
+const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+app.post('/webhooks/marketplace', express.raw({type: 'application/json'}), (req, res) => {
+  const signature = req.headers['x-bezhas-signature'];
+  const secret = 'whsec_25b6498f8c15b59d2034d747f90857daafaf36b1a0668a6ca8d431d54863bdf3';
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(req.body)
+    .digest('hex');
+
+  if (signature !== expectedSignature) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  const event = JSON.parse(req.body);
+  switch (event.type) {
+    case 'marketplace.item.sold':
+      console.log('Item vendido:', event.data);
+      break;
+    case 'marketplace.offer.received':
+      console.log('Nueva oferta:', event.data);
+      break;
+  }
+  res.status(200).json({ received: true });
+});
+
+app.listen(3000, () => console.log('Webhook server running on port 3000'));
+
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                        NOTAS DE SEGURIDAD
+═══════════════════════════════════════════════════════════════════════════════════════
+
+⚠️  IMPORTANTE:
+  1. NUNCA expongas las API Keys en código frontend (solo backend/server-side)
+  2. Rota las API Keys periódicamente via POST /api/developer/keys/:id/rotate
+  3. Verifica SIEMPRE la firma HMAC del webhook antes de procesar eventos
+  4. Usa HTTPS en todas las URLs de webhook
+  5. Configura rate limiting en tus Sub-Apps
+  6. Cada API Key tiene un límite de 10,000 requests/día (ampliable con VIP)
+  7. Los webhook secrets son únicos por sector — NO los reutilices
+  8. En producción, almacena las claves en variables de entorno, NO en código
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                        FIN DEL DOCUMENTO
+═══════════════════════════════════════════════════════════════════════════════════════

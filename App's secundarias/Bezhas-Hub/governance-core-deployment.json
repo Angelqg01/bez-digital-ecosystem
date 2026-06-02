@@ -1,0 +1,27 @@
+{
+  "network": "polygon",
+  "chainId": 137,
+  "timestamp": "2026-01-19T12:47:37.273Z",
+  "deployer": "0x52Df82920CBAE522880dD7657e43d1A754eD044E",
+  "contracts": {
+    "governanceSystem": {
+      "address": "0x304Fd77f64C03482edcec0923f0Cd4A066a305F3",
+      "txHash": "0xdbf63e0176c929269cd726f797c3ef6b50cf82069dcaf6b44860bb0408451e5f",
+      "params": {
+        "governanceToken": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+        "votingDelay": 172800,
+        "votingPeriod": 604800,
+        "proposalThreshold": "10000000000000000000000",
+        "quorumPercentage": 4
+      }
+    },
+    "bezhasCore": {
+      "address": "0x260A9fBcE1c6817c04e51c170b5BFd8d594c0d8A",
+      "txHash": "0x343dd8f0612882fa3b54fd83b75a6f82b3115e8cd288f4ed3e9d5d478cd743d1",
+      "params": {
+        "initialAPY": 1200,
+        "initialEmissionRate": "100000000000000000000"
+      }
+    }
+  }
+}

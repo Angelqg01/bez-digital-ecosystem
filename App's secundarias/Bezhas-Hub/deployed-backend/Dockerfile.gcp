@@ -1,0 +1,83 @@
+# ============================================
+# BeZhas Backend - Dockerfile para GCP Cloud Run
+# ============================================
+
+# Stage 1: Builder
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Instalar pnpm
+RUN npm install -g pnpm@9
+
+# Copiar archivos de dependencias del backend
+COPY backend/package.json backend/pnpm-lock.yaml ./
+
+# Instalar dependencias de producción
+RUN pnpm install --no-frozen-lockfile --prod
+
+# Copiar código fuente del backend
+COPY backend/ .
+
+# Copiar SDK (requerido por farming, marketplace, governance services)
+# El código usa require('../../sdk/...') - desde /app/services/ resuelve a /sdk
+COPY sdk/ /sdk/
+
+# Crear symlink para que ESM imports en SDK encuentren node_modules
+RUN ln -s /app/node_modules /sdk/node_modules
+
+# Copiar artifacts de contratos (requerido por SDK para ABIs)
+# El SDK usa require('../artifacts/...') - desde /sdk resuelve a /artifacts
+COPY artifacts/ /artifacts/
+
+# Eliminar archivos innecesarios
+RUN rm -rf tests/ *.test.js *.spec.js .env* *.md
+
+# ============================================
+# Stage 2: Production
+# ============================================
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Instalar dependencias del sistema para health checks
+RUN apk add --no-cache wget
+
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copiar desde builder (app) - incluye node_modules
+COPY --from=builder --chown=nodejs:nodejs /app ./
+
+# Copiar SDK desde builder (usado por services con require('../../sdk/...'))
+COPY --from=builder --chown=nodejs:nodejs /sdk /sdk
+
+# Copiar artifacts desde builder (ABIs de contratos, usado por SDK)
+COPY --from=builder --chown=nodejs:nodejs /artifacts /artifacts
+
+# Crear symlink para que ESM imports en SDK encuentren node_modules
+# (El symlink del builder no se copia, hay que recrearlo)
+RUN ln -s /app/node_modules /sdk/node_modules
+
+# Crear directorio de logs con permisos correctos
+RUN mkdir -p /app/logs && chown nodejs:nodejs /app/logs
+
+# Variables de entorno
+ENV NODE_ENV=production
+ENV PORT=5000
+# NODE_PATH permite que el SDK en /sdk use los módulos de /app/node_modules
+ENV NODE_PATH=/app/node_modules
+
+# Cambiar a usuario no-root
+USER nodejs
+
+# Exponer puerto
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+
+# Comando de inicio
+CMD ["node", "server.js"]

@@ -1,0 +1,75 @@
+.credits-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.balance-card {
+  background: linear-gradient(135deg, var(--primary-accent), #5a4db3);
+  color: var(--text-primary);
+  border: none;
+}
+
+.balance-card h3 {
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+.balance-loader {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.balance-amount {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.token-symbol {
+  font-size: 1.5rem;
+  font-weight: 500;
+  opacity: 0.8;
+  margin-left: 0.5rem;
+}
+
+.balance-usd-value {
+  opacity: 0.8;
+  margin: 0;
+}
+
+.buy-tokens-card h3, .history-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0;
+}
+
+.buy-form {
+  display: flex;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.buy-button {
+  flex-shrink: 0;
+}
+
+.buy-note {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.history-placeholder {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 992px) {
+  .credits-main-grid {
+    grid-template-columns: 1fr;
+  }
+}

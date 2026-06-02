@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: bezhas-backend-prod
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      # Add other environment variables here or use env_file
+      # - DATABASE_URL=...
+      # - REDIS_URL=...
+    networks:
+      - bezhas-network
+
+  frontend:
+    build: ./frontend
+    container_name: bezhas-frontend-prod
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - bezhas-network
+
+networks:
+  bezhas-network:
+    driver: bridge

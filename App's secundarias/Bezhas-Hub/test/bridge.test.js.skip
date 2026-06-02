@@ -1,0 +1,84 @@
+const { expect } = require('chai');
+const { ethers } = require('hardhat');
+
+// Helper to build Any2EVMMessage
+function buildMessage({ sourceChainSelector, sender, receiver, amount, messageId }) {
+  const data = ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256'], [receiver, amount]);
+  return {
+    messageId: messageId || ethers.id(Date.now().toString()),
+    sourceChainSelector,
+    sender: ethers.AbiCoder.defaultAbiCoder().encode(['address'], [sender]),
+    receiver: '0x', // unused by our implementation
+    data,
+    destTokenAmounts: [],
+    feeToken: ethers.ZeroAddress,
+    feeTokenAmount: 0n
+  };
+}
+
+describe('BezhasBridge (CCIPReceiver)', function () {
+  let owner, user, remoteBridge;
+  let token, bridge, harness;
+
+  beforeEach(async function () {
+    [owner, user, remoteBridge] = await ethers.getSigners();
+
+    const Token = await ethers.getContractFactory('BezhasToken');
+    token = await Token.deploy(ethers.parseUnits('1000000', 18));
+    await token.waitForDeployment();
+
+    const Bridge = await ethers.getContractFactory('BezhasBridge');
+    // router can be zero for local tests (no actual CCIP routing)
+    bridge = await Bridge.deploy(owner.address, token.target);
+    await bridge.waitForDeployment();
+
+    const Harness = await ethers.getContractFactory('contracts/mocks/BridgeHarness.sol:BridgeHarness');
+    harness = await Harness.deploy(owner.address, token.target);
+    await harness.waitForDeployment();
+
+    // grant roles to bridge/harness
+    await token.grantRole(await token.MINTER_ROLE(), harness.target);
+    await token.grantRole(await token.MINTER_ROLE(), bridge.target);
+
+    // set limits and trusted sender
+    await harness.setAmountLimits(1n, ethers.parseUnits('100000', 18));
+    await harness.setTrustedSender(16015286601757825753n /* example selector */, remoteBridge.address);
+  });
+
+  it('mints on receive from trusted sender and respects amount limits', async function () {
+    const chainSel = 16015286601757825753n; // e.g., Ethereum Sepolia -> local example
+    const msg = buildMessage({
+      sourceChainSelector: chainSel,
+      sender: remoteBridge.address,
+      receiver: user.address,
+      amount: ethers.parseUnits('10', 18)
+    });
+
+    await expect(harness.harnessReceive(msg))
+      .to.emit(harness, 'TokensReceived')
+      .withArgs(user.address, ethers.parseUnits('10', 18));
+
+    expect(await token.balanceOf(user.address)).to.equal(ethers.parseUnits('10', 18));
+  });
+
+  it('reverts if sender not trusted', async function () {
+    const chainSel = 16015286601757825753n;
+    const msg = buildMessage({
+      sourceChainSelector: chainSel,
+      sender: owner.address,
+      receiver: user.address,
+      amount: ethers.parseUnits('10', 18)
+    });
+
+    await expect(harness.harnessReceive(msg)).to.be.revertedWith('Untrusted sender');
+  });
+
+  it('replay protection prevents double processing', async function () {
+    const chainSel = 16015286601757825753n;
+    const mid = ethers.id('fixed');
+    const base = { sourceChainSelector: chainSel, sender: remoteBridge.address, receiver: user.address, amount: 1n, messageId: mid };
+
+    await harness.harnessReceive(buildMessage(base));
+    await expect(harness.harnessReceive(buildMessage(base))).to.be.revertedWith('Already processed');
+  });
+});

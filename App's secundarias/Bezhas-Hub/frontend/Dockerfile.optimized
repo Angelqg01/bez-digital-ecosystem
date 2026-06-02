@@ -1,0 +1,98 @@
+# ===================================================
+# BeZhas Frontend - Multi-Stage Optimized Dockerfile
+# ===================================================
+# Stage 1: Dependencies
+# Stage 2: Build
+# Stage 3: Production with Nginx
+# ===================================================
+
+# ===== STAGE 1: Dependencies =====
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY pnpm-lock.yaml* ./
+
+# Install pnpm and dependencies
+RUN npm install -g pnpm@9 && \
+    pnpm install --frozen-lockfile
+
+# ===== STAGE 2: Builder =====
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Build arguments for environment-specific builds
+ARG VITE_API_URL=https://api.bezhas.com
+ARG VITE_WS_URL=wss://api.bezhas.com
+ARG VITE_CHAIN_ID=137
+ARG VITE_NETWORK=polygon
+
+# Set build-time environment variables
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_WS_URL=$VITE_WS_URL \
+    VITE_CHAIN_ID=$VITE_CHAIN_ID \
+    VITE_NETWORK=$VITE_NETWORK
+
+# Build the application
+RUN npm run build
+
+# ===== STAGE 3: Production =====
+FROM nginx:1.25-alpine AS production
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built assets from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy security headers configuration
+RUN cat <<'EOF' > /etc/nginx/security-headers.conf
+# Security Headers
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.bezhas.com wss://api.bezhas.com https://polygon-rpc.com https://rpc.ankr.com https://cloudflare-eth.com https://api.coingecko.com; frame-ancestors 'self';" always;
+add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+EOF
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nginx-user && \
+    adduser -S nginx-user -u 1001 -G nginx-user && \
+    chown -R nginx-user:nginx-user /usr/share/nginx/html && \
+    chown -R nginx-user:nginx-user /var/cache/nginx && \
+    chown -R nginx-user:nginx-user /var/log/nginx && \
+    touch /var/run/nginx.pid && \
+    chown nginx-user:nginx-user /var/run/nginx.pid
+
+# Expose port 80
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
+
+# Run nginx
+CMD ["nginx", "-g", "daemon off;"]
+
+# Labels
+LABEL org.opencontainers.image.title="BeZhas Frontend" \
+    org.opencontainers.image.description="Frontend for BeZhas Web3 Social Network" \
+    org.opencontainers.image.version="1.0.0" \
+    org.opencontainers.image.vendor="BeZhas" \
+    maintainer="BeZhas Team <devops@bezhas.com>"

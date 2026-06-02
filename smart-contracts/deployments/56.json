@@ -1,0 +1,51 @@
+{
+  "chainId": 56,
+  "network": "bsc-mainnet",
+  "timestamp": "2026-05-11T19:35:00.000Z",
+  "_note": "Production deployment — BSC Mainnet. BEZ-Coin (v1) is the live token. BEZCoinV2 is NOT deployed yet.",
+  "tokens": {
+    "BEZCoin": {
+      "address": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+      "symbol": "BEZ",
+      "decimals": 18,
+      "version": "v1",
+      "chain": "BSC",
+      "status": "LIVE",
+      "note": "Primary token used across all production services"
+    },
+    "BEZCoinV2": {
+      "address": null,
+      "symbol": "BEZ",
+      "decimals": 18,
+      "version": "v2",
+      "chain": "BeZhas L2",
+      "status": "NOT_DEPLOYED",
+      "note": "Will replace BEZCoin when BeZhas L2 launches"
+    }
+  },
+  "core": {
+    "BEZCoin": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+    "BEZCoinV2": null,
+    "BeZhasLogisticsNFT": null,
+    "QualityEscrow": null,
+    "BeZhasBridgeL2": null,
+    "StakingPool": null,
+    "LiquidityFarming": null,
+    "BeZhasDEX": null,
+    "ValidatorRegistry": null,
+    "L2Sequencer": null,
+    "AegisSecurityProvider": null,
+    "EdgeNodeRewards": null,
+    "SequencerRotation": null,
+    "SlashingManager": null,
+    "DeliveryEscrow": null,
+    "GovernanceSystem": null,
+    "OpenClawAgent": null,
+    "BEZPolygonBridge": null,
+    "WrappedBEZ": null,
+    "BeZhasPayment": null,
+    "BeZhasWorkflowRegistry": null
+  },
+  "sectors": {},
+  "wallet": {}
+}

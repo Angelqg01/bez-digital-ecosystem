@@ -1,0 +1,17 @@
+{
+  "network": "polygon",
+  "chainId": 137,
+  "timestamp": "2026-01-19T13:54:13.099Z",
+  "deployer": "0x52Df82920CBAE522880dD7657e43d1A754eD044E",
+  "contracts": {
+    "beZhasMarketplace": {
+      "address": "0x1c061A896E0ac9C046A93eaf475c45ED5Bd8A1fE",
+      "txHash": "0xfc41bc2daa1f83ddd67adc214fe5c02e294d54539d77dce4daba1bcf8549b511",
+      "params": {
+        "token": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+        "vendorFee": "100 BEZ",
+        "platformCommission": "250 (2.5%)"
+      }
+    }
+  }
+}

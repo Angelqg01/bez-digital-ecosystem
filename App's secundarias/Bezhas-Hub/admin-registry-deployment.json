@@ -1,0 +1,14 @@
+{
+  "network": "polygon",
+  "chainId": 137,
+  "timestamp": "2026-01-19T13:58:35.840Z",
+  "deployer": "0x52Df82920CBAE522880dD7657e43d1A754eD044E",
+  "contracts": {
+    "beZhasAdminRegistry": {
+      "address": "0xfCe2F7dcf1786d1606b9b858E9ba04dA499F1e3C",
+      "txHash": "0x0da43d1a359503c371d4d5bcebe1dd69555b0d17cbb619595cdfdb683bf6f52b",
+      "owner": "0x52Df82920CBAE522880dD7657e43d1A754eD044E",
+      "firstAdmin": "0x52Df82920CBAE522880dD7657e43d1A754eD044E"
+    }
+  }
+}

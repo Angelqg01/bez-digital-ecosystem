@@ -1,0 +1,18 @@
+{
+  "network": "polygon",
+  "chainId": 137,
+  "timestamp": "2026-01-19T13:21:34.123Z",
+  "deployer": "0x52Df82920CBAE522880dD7657e43d1A754eD044E",
+  "contracts": {
+    "liquidityFarming": {
+      "address": "0x4C5330B45FEa670d5ffEAD418E74dB7EA5ECdD26",
+      "txHash": "0x15dc9fe179f96567c56dbe859f672281738e4bfed0bb7cb346587b5a8d9c2399",
+      "params": {
+        "rewardToken": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+        "rewardPerBlock": "100000000000000000",
+        "startBlock": 81854556,
+        "bonusEndBlock": 97622556
+      }
+    }
+  }
+}

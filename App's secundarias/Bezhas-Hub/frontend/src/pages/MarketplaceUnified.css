@@ -1,0 +1,26 @@
+.product-card {
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.product-image {
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.product-image:hover {
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .product-card {
+        margin-bottom: 16px;
+    }
+}

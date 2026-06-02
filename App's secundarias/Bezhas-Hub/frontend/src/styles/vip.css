@@ -1,0 +1,212 @@
+/* Estilos personalizados para sliders del simulador VIP */
+
+/* Purple Slider */
+.slider-purple::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-purple::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.8);
+}
+
+.slider-purple::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-purple::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.8);
+}
+
+/* Blue Slider */
+.slider-blue::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-blue::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+}
+
+.slider-blue::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-blue::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+}
+
+/* Pink Slider */
+.slider-pink::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-pink::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.8);
+}
+
+.slider-pink::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-pink::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.8);
+}
+
+/* Green Slider */
+.slider-green::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-green::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.8);
+}
+
+.slider-green::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-green::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.8);
+}
+
+/* Yellow Slider */
+.slider-yellow::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-yellow::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(234, 179, 8, 0.8);
+}
+
+.slider-yellow::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-yellow::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(234, 179, 8, 0.8);
+}
+
+/* Orange Slider */
+.slider-orange::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-orange::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.8);
+}
+
+.slider-orange::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+    transition: all 0.2s;
+}
+
+.slider-orange::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.8);
+}
+
+/* Track styles for WebKit */
+input[type="range"]::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 4px;
+}
+
+/* Track styles for Firefox */
+input[type="range"]::-moz-range-track {
+    height: 8px;
+    border-radius: 4px;
+    background: transparent;
+}

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeZhas - Admin Setup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .info-box p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button-secondary {
+            background: #6c757d;
+        }
+
+        .button-success {
+            background: #28a745;
+        }
+
+        .button-danger {
+            background: #dc3545;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .status-table th,
+        .status-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .status-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .links {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: 600;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔐 BeZhas Admin Setup</h1>
+        <p class="subtitle">Configuración rápida del Panel de Administración</p>
+
+        <div class="info-box">
+            <h3>📋 Estado Actual</h3>
+            <table class="status-table" id="statusTable">
+                <tr>
+                    <th>Configuración</th>
+                    <th>Estado</th>
+                    <th>Valor</th>
+                </tr>
+                <tr>
+                    <td>Admin Token</td>
+                    <td id="tokenStatus"></td>
+                    <td id="tokenValue"></td>
+                </tr>
+                <tr>
+                    <td>Rol de Usuario</td>
+                    <td id="roleStatus"></td>
+                    <td id="roleValue"></td>
+                </tr>
+                <tr>
+                    <td>Estado de Login</td>
+                    <td id="loginStatus"></td>
+                    <td id="loginValue"></td>
+                </tr>
+            </table>
+        </div>
+
+        <button class="button button-success" onclick="setupAdmin()">
+            ✅ Configurar Acceso Admin
+        </button>
+
+        <button class="button button-secondary" onclick="checkStatus()">
+            🔍 Verificar Estado
+        </button>
+
+        <button class="button button-danger" onclick="clearSetup()">
+            🧹 Limpiar Configuración
+        </button>
+
+        <div id="statusMessage" class="status"></div>
+
+        <div class="info-box" style="margin-top: 20px;">
+            <h3>🚀 Acceso Rápido</h3>
+            <p>Una vez configurado, accede al panel desde:</p>
+            <div class="code-block">
+                http://localhost:5173/admin/panel
+            </div>
+        </div>
+
+        <div class="links">
+            <a href="http://localhost:5173/" target="_blank">🏠 Inicio</a>
+            <a href="http://localhost:5173/admin/panel" target="_blank">🛡️ Panel Admin</a>
+            <a href="http://localhost:5173/dashboard" target="_blank">📊 Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        // Configuración por defecto
+        const config = {
+            adminToken: 'admin-dev-token-2025',
+            role: 'admin',
+            isLoggedIn: 'true'
+        };
+
+        // Actualizar estado visual
+        function updateStatusDisplay() {
+            const token = localStorage.getItem('adminToken');
+            const role = localStorage.getItem('role');
+            const login = localStorage.getItem('isLoggedIn');
+
+            document.getElementById('tokenStatus').innerHTML = token ?
+                '<span class="badge badge-success">✅ Configurado</span>' :
+                '<span class="badge badge-error">❌ No configurado</span>';
+            document.getElementById('tokenValue').textContent = token || 'N/A';
+
+            document.getElementById('roleStatus').innerHTML = role === 'admin' ?
+                '<span class="badge badge-success">✅ Admin</span>' :
+                '<span class="badge badge-error">❌ No admin</span>';
+            document.getElementById('roleValue').textContent = role || 'N/A';
+
+            document.getElementById('loginStatus').innerHTML = login === 'true' ?
+                '<span class="badge badge-success">✅ Logueado</span>' :
+                '<span class="badge badge-error">❌ No logueado</span>';
+            document.getElementById('loginValue').textContent = login || 'N/A';
+        }
+
+        // Mostrar mensaje
+        function showMessage(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Configurar acceso admin
+        function setupAdmin() {
+            try {
+                localStorage.setItem('adminToken', config.adminToken);
+                localStorage.setItem('role', config.role);
+                localStorage.setItem('isLoggedIn', config.isLoggedIn);
+
+                updateStatusDisplay();
+                showMessage('✅ Configuración completada exitosamente. Puedes acceder al panel admin.', 'success');
+
+                // Preguntar si desea abrir el panel
+                setTimeout(() => {
+                    if (confirm('¿Deseas abrir el Panel Admin ahora?')) {
+                        window.open('http://localhost:5173/admin/panel', '_blank');
+                    }
+                }, 1000);
+
+            } catch (error) {
+                showMessage('❌ Error al configurar: ' + error.message, 'error');
+            }
+        }
+
+        // Verificar estado
+        function checkStatus() {
+            updateStatusDisplay();
+
+            const token = localStorage.getItem('adminToken');
+            const role = localStorage.getItem('role');
+            const login = localStorage.getItem('isLoggedIn');
+
+            if (token && role === 'admin' && login === 'true') {
+                showMessage('✅ Todo configurado correctamente. Puedes acceder al panel admin.', 'success');
+            } else {
+                showMessage('⚠️ Configuración incompleta. Haz clic en "Configurar Acceso Admin".', 'info');
+            }
+        }
+
+        // Limpiar configuración
+        function clearSetup() {
+            if (confirm('¿Estás seguro de que deseas limpiar la configuración?')) {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('role');
+                localStorage.removeItem('isLoggedIn');
+
+                updateStatusDisplay();
+                showMessage('🧹 Configuración limpiada exitosamente.', 'info');
+            }
+        }
+
+        // Actualizar estado al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatusDisplay();
+        });
+    </script>
+</body>
+
+</html>

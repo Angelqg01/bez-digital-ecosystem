@@ -1,0 +1,20 @@
+{
+    "chainId": 137,
+    "timestamp": "2026-04-02T00:00:00.000Z",
+    "note": "Polygon Mainnet - production contracts deployed via Hardhat",
+    "core": {
+        "BEZCoin": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+        "BezhasToken": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+        "QualityEscrow": "0x3088573c025F197A886b97440761990c9A9e83C9",
+        "RWAFactory": "0x5F999157aF1DEfBf4E7e1b8021850b49e458CCc0",
+        "GovernanceSystem": "0x304Fd77f64C03482edcec0923f0Cd4A066a305F3",
+        "LiquidityFarming": "0x4C5330B45FEa670d5ffEAD418E74dB7EA5ECdD26"
+    },
+    "marketplace": {
+        "NFTOffers": "0x0C9Bf667b838f6d466619ddb90a08d6c9A64d0A4",
+        "Marketplace": "0x1c061A896E0ac9C046A93eaf475c45ED5Bd8A1fE"
+    },
+    "admin": {
+        "AdminRegistry": "0xfCe2F7dcf1786d1606b9b858E9ba04dA499F1e3C"
+    }
+}

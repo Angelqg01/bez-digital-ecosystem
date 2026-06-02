@@ -1,0 +1,24 @@
+{
+  "network": "polygon",
+  "chainId": 137,
+  "timestamp": "2026-01-19T13:37:29.383Z",
+  "deployer": "0x52Df82920CBAE522880dD7657e43d1A754eD044E",
+  "contracts": {
+    "nftOffers": {
+      "address": "0x0C9Bf667b838f6d466619ddb90a08d6c9A64d0A4",
+      "txHash": "0xe424e17b0c349c63c96abd835a3c2d7f3a92a22128e8fc50d182aa4976789d17",
+      "params": {
+        "paymentToken": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+        "feeRecipient": "0x52Df82920CBAE522880dD7657e43d1A754eD044E"
+      }
+    },
+    "nftRental": {
+      "address": "0x96B1754BbfdC5a2f6013A8a04cB6AF2E4090C024",
+      "txHash": "0xf0ea74598b5413575e4e1709f7a508d39ae89a79f5f461af42ce41e220e12c09",
+      "params": {
+        "paymentToken": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+        "feeRecipient": "0x52Df82920CBAE522880dD7657e43d1A754eD044E"
+      }
+    }
+  }
+}

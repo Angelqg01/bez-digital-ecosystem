@@ -1,0 +1,1 @@
+{"timestamp":"2026-03-28T10:45:41.009Z","type":"bridge","action":"DYNAMIC_WEBHOOK_DETECTION","status":"success","result":"Captured Shopify payment via Skills context","solution":"Use total_price field as defined in shopify.md","metadata":{"platform":"shopify","amount":450}}

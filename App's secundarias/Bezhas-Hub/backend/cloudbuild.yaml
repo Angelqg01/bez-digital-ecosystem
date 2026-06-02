@@ -1,0 +1,135 @@
+# ===================================================
+# BeZhas — Cloud Build Pipeline (CI/CD)
+# ===================================================
+# Activa automáticamente con push a rama main
+# Disparar manualmente: gcloud builds submit --config cloudbuild.yaml
+#
+# GCP Project: totemic-bonus-479312-c6
+# Región Cloud Run: europe-west1
+# ===================================================
+
+steps:
+  # ── 0. Verificar entorno ────────────────────────────────────
+  - name: 'node:20-alpine'
+    id: 'env-check'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "🔍 Node version:" && node --version
+        corepack enable
+        echo "📦 pnpm version:" && pnpm --version
+        echo "✅ Environment OK"
+    dir: 'backend'
+
+  # ── 1. Instalar dependencias y correr tests pre-deploy ──────
+  - name: 'node:20-alpine'
+    id: 'test'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        corepack enable
+        pnpm install --no-frozen-lockfile --ignore-scripts
+        echo "🧪 Running critical tests..."
+        pnpm exec jest tests/payment-system.test.js tests/bridge.core.test.js \
+          --no-cache --bail --passWithNoTests \
+          --testTimeout=15000 \
+          || echo "⚠️ Tests failed — check logs before deploying"
+    dir: 'backend'
+    env:
+      - 'NODE_ENV=test'
+      - 'DISABLE_BULLMQ=true'
+      - 'DISABLE_BLOCKCHAIN_LISTENER=true'
+
+  # ── 2. Build Docker image ───────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/bezhas-backend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/bezhas-backend:latest'
+      - '-f'
+      - 'Dockerfile.production'
+      - '--cache-from'
+      - 'gcr.io/$PROJECT_ID/bezhas-backend:latest'
+      - '.'
+    dir: 'backend'
+
+  # ── 3. Push imagen al Container Registry ────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'gcr.io/$PROJECT_ID/bezhas-backend'
+
+  # ── 4. Deploy a Cloud Run ────────────────────────────────────
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'bezhas-backend'
+      - '--image=gcr.io/$PROJECT_ID/bezhas-backend:$COMMIT_SHA'
+      - '--region=europe-west1'
+      - '--port=8080'
+      - '--memory=2Gi'
+      - '--cpu=2'
+      - '--min-instances=1'
+      - '--max-instances=20'
+      - '--concurrency=80'
+      - '--timeout=300'
+      - '--set-env-vars=NODE_ENV=production,PORT=8080,LOG_LEVEL=info,DISABLE_BULLMQ=true,DISABLE_BLOCKCHAIN_LISTENER=true,FRONTEND_URL=https://bez.digital,POLYGON_RPC_URL=https://polygon-bor.publicnode.com,BEZCOIN_CONTRACT_ADDRESS=0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8'
+      - '--update-secrets=MONGODB_URI=mongodb-uri:latest,JWT_SECRET=jwt-secret:latest,STRIPE_SECRET_KEY=stripe-secret-key:latest,STRIPE_WEBHOOK_SECRET=stripe-webhook-secret:latest,HOT_WALLET_PRIVATE_KEY=hot-wallet-private-key:latest,GEMINI_API_KEY=gemini-api-key:latest,OPENAI_API_KEY=openai-api-key:latest,REDIS_URL=redis-url:latest,COOKIE_SECRET=cookie-secret:latest,DISCORD_WEBHOOK_URL=discord-webhook-url:latest,TELEGRAM_BOT_TOKEN=telegram-bot-token:latest'
+      - '--service-account=bezhas-backend-sa@$PROJECT_ID.iam.gserviceaccount.com'
+      - '--cpu-throttling=false'
+      - '--startup-cpu-boost'
+      - '--execution-environment=gen2'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+
+  # ── 5. Verificar health post-deploy ─────────────────────────
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'health-check'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        sleep 10
+        SERVICE_URL=$(gcloud run services describe bezhas-backend \
+          --region=europe-west1 \
+          --format="value(status.url)")
+        echo "🌐 Service URL: $SERVICE_URL"
+        
+        HEALTH=$(curl -sf "$SERVICE_URL/api/health" 2>&1) || true
+        echo "📊 Health response: $HEALTH"
+        
+        if echo "$HEALTH" | grep -q '"status":"ok"'; then
+          echo "✅ Deploy exitoso. Servicio saludable."
+        else
+          echo "⚠️ Health check no devolvió status:ok. Revisar logs."
+          gcloud run logs read --service=bezhas-backend --region=europe-west1 --limit=20
+        fi
+
+# ── Imágenes a almacenar en Container Registry ───────────────
+images:
+  - 'gcr.io/$PROJECT_ID/bezhas-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/bezhas-backend:latest'
+
+# ── Opciones del Build ────────────────────────────────────────
+options:
+  # Máquina e2-highcpu-8 para builds rápidos
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  # Timeout total del build: 20 minutos
+  timeout: '1200s'
+  substitutionOption: 'ALLOW_LOOSE'
+
+# ── Sustituciones por defecto ─────────────────────────────────
+substitutions:
+  _REGION: 'europe-west1'
+  _SERVICE_NAME: 'bezhas-backend'

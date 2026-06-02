@@ -1,0 +1,114 @@
+# ===================================================
+# BeZhas Backend - Multi-Stage Optimized Dockerfile
+# ===================================================
+# Build Context: Root of Monorepo
+# Stage 1: Dependencies
+# Stage 2: Build
+# Stage 3: Production (minimal image)
+# ===================================================
+
+# ===== STAGE 1: Dependencies =====
+FROM node:20-alpine AS deps
+
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++ git
+
+WORKDIR /app
+
+# Copy root workspace definition
+COPY package.json pnpm-workspace.yaml ./
+
+# Copy package files for all workspaces
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
+COPY sdk/package.json ./sdk/
+COPY packages/mcp-server/package.json ./packages/mcp-server/
+
+# Install pnpm and dependencies (frozen-lockfile requires pnpm-lock.yaml)
+# We copy pnpm-lock.yaml if it exists
+COPY pnpm-lock.yaml* ./
+
+RUN npm install -g pnpm@9 && \
+    pnpm install --no-frozen-lockfile --prod=false
+
+# ===== STAGE 2: Builder =====
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/backend/node_modules ./backend/node_modules
+COPY --from=deps /app/sdk/node_modules ./sdk/node_modules
+COPY --from=deps /app/packages/mcp-server/node_modules ./packages/mcp-server/node_modules
+
+# Copy source code
+COPY . .
+
+# Build dependencies, generate tarballs for public downloads
+RUN npm install -g pnpm@9 && \
+    mkdir -p backend/public/downloads && \
+    cd sdk && pnpm run build && npm pack && mv *.tgz ../backend/public/downloads/ && \
+    cd ../packages/mcp-server && pnpm run build && npm pack && mv *.tgz ../../backend/public/downloads/ && \
+    cd ../..
+
+# Prune dev dependencies and prepare for production
+RUN pnpm prune --prod && \
+    rm -rf .git .github tests test coverage .env.* *.md *.log
+
+# ===== STAGE 3: Production =====
+FROM node:20-alpine AS production
+
+# Add security and optimization
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+WORKDIR /app
+
+# Copy production dependencies and code from builder
+# We need to preserve the monorepo structure for symlinks to work
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+# Copy Backend
+COPY --from=builder --chown=nodejs:nodejs /app/backend ./backend
+
+# Copy SDK & MCP (Dependencies)
+COPY --from=builder --chown=nodejs:nodejs /app/sdk ./sdk
+COPY --from=builder --chown=nodejs:nodejs /app/packages/mcp-server ./packages/mcp-server
+
+# Environment variables
+ENV NODE_ENV=production \
+    PORT=8080 \
+    # Memory optimization
+    NODE_OPTIONS="--max-old-space-size=1024"
+
+# Security: Run as non-root user
+USER nodejs
+
+# Expose port
+EXPOSE 8080
+
+# Health check with curl (more reliable)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/api/health || exit 1
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "backend/server.js"]
+
+# Labels for container metadata
+LABEL org.opencontainers.image.title="BeZhas Backend API" \
+    org.opencontainers.image.description="Backend API for BeZhas Web3 Social Network" \
+    org.opencontainers.image.version="1.0.0" \
+    org.opencontainers.image.vendor="BeZhas" \
+    maintainer="BeZhas Team <devops@bezhas.com>"

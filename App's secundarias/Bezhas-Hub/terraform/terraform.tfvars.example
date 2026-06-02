@@ -1,0 +1,7 @@
+# ─── Staging (Amoy Testnet) ───────────────────────────────
+project_id          = "bezhas-platform"
+region              = "us-central1"
+environment         = "staging"
+polygon_rpc_url     = "https://rpc-amoy.polygon.technology"
+polygon_amoy_rpc_url = "https://rpc-amoy.polygon.technology"
+# mongodb_uri is set via: terraform apply -var="mongodb_uri=mongodb+srv://..."
