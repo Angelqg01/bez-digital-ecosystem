@@ -73,14 +73,13 @@ contract EdgeNodeRewardsTest is Test {
         vm.prank(oracle);
         rewards.recordValidation(company1, 100, "AI Verification");
 
-        // Platinum boost = 20000 bps (2x)
-        // Expected: 100 points * 1e18 per point * 20000/10000 = 200 BEZ
+        // Platinum boost = 20000 bps (2x). Base rate = contract rewardPerPoint (0.0075 BEZ/point).
         uint256 balBefore = bez.balanceOf(company1);
         vm.prank(company1);
         rewards.claimRewards();
         uint256 balAfter = bez.balanceOf(company1);
 
-        uint256 expected = 100 * 1e18 * 20000 / 10000; // 200 BEZ
+        uint256 expected = 100 * rewards.rewardPerPoint() * 20000 / 10000;
         assertEq(balAfter - balBefore, expected);
     }
 
@@ -90,13 +89,13 @@ contract EdgeNodeRewardsTest is Test {
         vm.prank(oracle);
         rewards.recordValidation(company2, 100, "Supply Chain");
 
-        // Gold boost = 15000 bps (1.5x)
+        // Gold boost = 15000 bps (1.5x). Base rate = contract rewardPerPoint (0.0075 BEZ/point).
         uint256 balBefore = bez.balanceOf(company2);
         vm.prank(company2);
         rewards.claimRewards();
         uint256 balAfter = bez.balanceOf(company2);
 
-        uint256 expected = 100 * 1e18 * 15000 / 10000; // 150 BEZ
+        uint256 expected = 100 * rewards.rewardPerPoint() * 15000 / 10000;
         assertEq(balAfter - balBefore, expected);
     }
 

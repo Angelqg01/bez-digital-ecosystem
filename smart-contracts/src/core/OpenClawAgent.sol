@@ -33,6 +33,9 @@ contract OpenClawAgent is AccessControl {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
+    /// @notice Minimum delay between agent-driven security actions (rate-limit).
+    uint256 public constant ACTION_COOLDOWN = 60;
+
     IAegisSecurityProvider public aegis;
     IL2Sequencer public sequencer;
     address public slashingManager;
@@ -148,6 +151,11 @@ contract OpenClawAgent is AccessControl {
     function processSecurityAction() external onlyRole(OPERATOR_ROLE) returns (uint256) {
         (uint256 signalId, bool found) = aegis.getLatestUnconsumedSignal();
         require(found, "No unconsumed signal");
+        // Rate-limit consecutive agent actions (uses lastActionTimestamp set in _processSignal).
+        require(
+            lastActionTimestamp == 0 || block.timestamp >= lastActionTimestamp + ACTION_COOLDOWN,
+            "OCA: cooldown active"
+        );
         _processSignal(signalId);
         return signalId;
     }

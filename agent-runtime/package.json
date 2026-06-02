@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --verbose",
+    "test:ci": "jest --testPathIgnorePatterns /node_modules/ tests/obsidian-agentic-system.test.js tests/orchestration-manifest.test.js",
     "test:agentic": "node --test tests/obsidian-agentic-system.node.test.cjs",
     "test:watch": "jest --watch",
     "start": "node bootstrap-v2.js",

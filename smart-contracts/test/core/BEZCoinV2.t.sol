@@ -26,7 +26,7 @@ contract BEZCoinV2Test is Test {
     // ─── ERC20Votes Integration Tests ────────────────────────────────
 
     function test_InitialSupply() public view {
-        assertEq(bez.totalSupply(), 100_000_000 * 1e18);
+        assertEq(bez.totalSupply(), 3_000_000_000 * 1e18); // premint del constructor BEZCoinV2 (3B)
     }
 
     function test_DelegateToSelf() public {
@@ -78,7 +78,7 @@ contract BEZCoinV2Test is Test {
         // constructor minted at timestamp 100_000 (setUp warp)
         vm.warp(200_000);
 
-        assertEq(bez.getPastTotalSupply(100_000), 100_000_000 * 1e18);
+        assertEq(bez.getPastTotalSupply(100_000), 3_000_000_000 * 1e18); // premint 3B
     }
 
     // ─── Minting / Burning ───────────────────────────────────────────

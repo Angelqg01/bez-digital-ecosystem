@@ -1,0 +1,16 @@
+{
+  "id": "skill_1780417478164_6c409c",
+  "created_at": "2026-06-02T16:24:38.164Z",
+  "channel": "internal",
+  "provider": "system-routine",
+  "intent": "general_conversation",
+  "tags": [],
+  "turn": {
+    "user": "Sistema: Verificar tareas de mantenimiento programadas.",
+    "agent": "Recordatorio: Es necesario actualizar todas las dependencias del proyecto diariamente para garantizar la seguridad y estabilidad de la red BeZhas. Ejecutar 'npm update' y revisar vulnerabilidades con 'npm audit'."
+  },
+  "context": {
+    "userId": "system-scheduler",
+    "role": "admin"
+  }
+}

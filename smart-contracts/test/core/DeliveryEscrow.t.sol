@@ -31,10 +31,14 @@ contract DeliveryEscrowTest is Test {
         bez = new MockBEZ();
         escrow = new DeliveryEscrow(address(bez), treasury, 250, admin);
 
-        vm.prank(admin);
-        escrow.grantRole(escrow.ORACLE_ROLE(), oracle);
-        vm.prank(admin);
-        escrow.grantRole(escrow.EDGE_NODE_ROLE(), edgeNode);
+        // Cache role ids BEFORE pranking: an external view call (ORACLE_ROLE()) evaluated as
+        // an argument would otherwise consume vm.prank, making grantRole run as a non-admin.
+        bytes32 oracleRole = escrow.ORACLE_ROLE();
+        bytes32 edgeNodeRole = escrow.EDGE_NODE_ROLE();
+        vm.startPrank(admin);
+        escrow.grantRole(oracleRole, oracle);
+        escrow.grantRole(edgeNodeRole, edgeNode);
+        vm.stopPrank();
 
         bez.mint(buyer, AMOUNT);
         vm.prank(buyer);

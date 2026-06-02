@@ -13,9 +13,26 @@ env:
   NODE_VERSION: "20"
 
 jobs:
+  # ==========================================
+  # 0. Secret scan — blocking gate before anything else
+  # ==========================================
+  secret-scan:
+    name: Secret Scan (gate)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Scan for committed secrets
+        run: node scripts/security/scan-secrets.cjs
+
   build-and-test:
     name: Build and Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    needs: secret-scan
 
     strategy:
       matrix:
@@ -69,11 +86,23 @@ jobs:
         run: forge test -vvv
 
       # ==========================================
-      # 2. api backend (Jest)
+      # 2. api backend (Jest unit tests)
+      #    e2e/integration suites need a live chain (Anvil) + Postgres + Redis and
+      #    run in a separate workflow/job, not in this fast unit gate.
       # ==========================================
-      - name: Run Backend API Tests
+      - name: Install agent-runtime dependencies
+        working-directory: ./agent-runtime
+        run: pnpm install --frozen-lockfile
+
+      - name: Run agent-runtime tests (unit)
+        working-directory: ./agent-runtime
+        run: pnpm run test:ci
+        env:
+          NODE_ENV: test
+
+      - name: Run Backend API Tests (unit)
         working-directory: ./api
-        run: pnpm test
+        run: pnpm run test:unit
         env:
           NODE_ENV: test
           JWT_SECRET: ci-test-jwt-secret-key-12345

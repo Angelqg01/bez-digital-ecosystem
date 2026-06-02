@@ -11,6 +11,8 @@
     "db:seed": "node db/seed.js",
     "db:setup": "node db/migrate.js && node db/seed.js",
     "test": "jest",
+    "test:unit": "jest --testPathIgnorePatterns /node_modules/ __tests__/e2e/ __tests__/integration/",
+    "test:e2e": "jest __tests__/e2e __tests__/integration",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

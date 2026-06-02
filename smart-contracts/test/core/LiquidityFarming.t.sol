@@ -71,8 +71,11 @@ contract LiquidityFarmingTest is Test {
     }
 
     function test_OwnerCannotSetEmissionAboveCap() public {
+        // Cache the view BEFORE expectRevert: otherwise vm.expectRevert binds to the
+        // MAX_BEZ_PER_BLOCK() call (evaluated as an argument) instead of setBezPerBlock.
+        uint256 aboveCap = farming.MAX_BEZ_PER_BLOCK() + 1;
         vm.prank(admin);
         vm.expectRevert("LF: exceeds max per block");
-        farming.setBezPerBlock(farming.MAX_BEZ_PER_BLOCK() + 1);
+        farming.setBezPerBlock(aboveCap);
     }
 }

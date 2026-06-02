@@ -86,20 +86,20 @@ contract BridgeL2InvariantTest is Test {
         targetContract(address(handler));
     }
 
-    /// @dev Total minted via bridge - total burned == sum of user balances from bridge ops
+    /// @dev totalSupply == premint + bridge mints. NOTE: BEZCoinV2.bridgeBurn does NOT
+    ///      reduce totalSupply (it transfers "burned" tokens to the treasury wallet), so
+    ///      withdrawals do not subtract from supply — only deposits (mints) grow it.
     function invariant_mintBurnConsistency() public view {
-        // The bridge-minted amount minus burned should reflect in total supply growth
-        // Initial supply is 100M. Bridge mints add, and bridge burns subtract.
-        uint256 initialSupply = 100_000_000 * 1e18;
-        uint256 expected = initialSupply + handler.ghost_totalMinted() - handler.ghost_totalBurned();
+        uint256 initialSupply = 3_000_000_000 * 1e18; // BEZCoinV2 constructor premint
+        uint256 expected = initialSupply + handler.ghost_totalMinted();
         assertEq(bez.totalSupply(), expected, "Supply mismatch after bridge ops");
     }
 
-    /// @dev Burns never exceed mints (solvency)
+    /// @dev Burns never exceed the supply available to the bridge (solvency upper bound)
     function invariant_burnsNeverExceedMints() public view {
         assertLe(
             handler.ghost_totalBurned(),
-            handler.ghost_totalMinted() + 100_000_000 * 1e18, // pre-minted included
+            handler.ghost_totalMinted() + 3_000_000_000 * 1e18, // premint included
             "Burns exceed available supply"
         );
     }
@@ -141,7 +141,9 @@ contract BridgeL2FuzzTest is Test {
         assertEq(bez.balanceOf(user), balBefore + amount);
     }
 
-    /// @dev Withdrawal burns exact amount from sender
+    /// @dev Withdrawal moves exactly `withdrawAmt` out of the sender. With BEZCoinV2 the
+    ///      "burn" is a transfer to the treasury wallet, so totalSupply is UNCHANGED and the
+    ///      treasury balance grows by `withdrawAmt` (it is not destroyed).
     function testFuzz_withdrawalBurnsExact(uint256 depositAmt, uint256 withdrawAmt) public {
         depositAmt = bound(depositAmt, 1, 10_000_000 ether);
         withdrawAmt = bound(withdrawAmt, 1, depositAmt);
@@ -152,14 +154,18 @@ contract BridgeL2FuzzTest is Test {
 
         vm.prank(user);
         bez.approve(address(bridge), withdrawAmt);
-        
+
         uint256 supplyBefore = bez.totalSupply();
+        address treasury = bez.treasuryWallet();
+        uint256 treasuryBefore = bez.balanceOf(treasury);
 
         vm.prank(user);
         bridge.initiateWithdrawal(address(0xDEAD), withdrawAmt);
 
         assertEq(bez.balanceOf(user), depositAmt - withdrawAmt);
-        assertEq(bez.totalSupply(), supplyBefore - withdrawAmt);
+        // Supply unchanged; "burned" tokens are collected by the treasury.
+        assertEq(bez.totalSupply(), supplyBefore);
+        assertEq(bez.balanceOf(treasury), treasuryBefore + withdrawAmt);
     }
 
     /// @dev Zero deposit always reverts

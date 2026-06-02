@@ -213,7 +213,7 @@ contract IAL2BridgeIntegrationTest is Test {
 
     function test_NoSignals_Reverts() public {
         vm.prank(keeper);
-        vm.expectRevert("OCA: no pending signals");
+        vm.expectRevert("No unconsumed signal");
         agent.processSecurityAction();
     }
 
