@@ -6,6 +6,9 @@
 
 # Leer este archivo SIEMPRE al inicio de cada sesión.
 
+> [!TODO]
+> **PENDIENTE (recordatorio):** Subir online la plataforma BeZhas-Blockchain y **todas las SubApps** con sus **enlaces reales** ya en producción. Las tarjetas de la Landing (`/`) y de `/developers` apuntan a los subdominios `*.bez.digital` (hub, wallet, gas, edge, vision, capital, prestige, cargolink, pay, purescan, sphere, energy, genesis). Confirmar/ajustar cada subdominio cuando la SubApp esté desplegada (editar `secondaryApps` en `app/(landing)/page.tsx` y `SUBAPP_URLS` en `app/(landing)/developers/page.tsx`).
+
 # Válido para: Claude Code (terminal) \+ Cowork (desktop) \+ Claude.ai (MCPs)
 
 ---

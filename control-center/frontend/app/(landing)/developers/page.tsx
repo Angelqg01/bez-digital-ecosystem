@@ -162,6 +162,25 @@ const nativeApps = [
     },
 ];
 
+// Enlaces ONLINE reales de cada SubApp ya desarrollada (subdominios bez.digital).
+// Edita aqui para cambiar el destino de una App; las tarjetas abren en pestana nueva.
+const SUBAPP_URLS: Record<string, string> = {
+    'BeZhas Hub': 'https://hub.bez.digital',
+    'BEZ Wallet': 'https://wallet.bez.digital',
+    'Gas Tank Manager': 'https://gas.bez.digital',
+    'Edge Node Manager': 'https://edge.bez.digital',
+    'BEZ Vision Scan': 'https://vision.bez.digital',
+    'BZ Capital': 'https://capital.bez.digital',
+    'BZ Prestige': 'https://prestige.bez.digital',
+    'BZ CargoLink': 'https://cargolink.bez.digital',
+    'BeZhas Pay Manager': 'https://pay.bez.digital',
+    'BZ PureScan': 'https://purescan.bez.digital',
+    'BZ Sphere': 'https://sphere.bez.digital',
+    'BEZ Energy': 'https://energy.bez.digital',
+    'BZ Genesis': 'https://genesis.bez.digital',
+};
+const subAppUrl = (name: string) => SUBAPP_URLS[name] || '#';
+
 export default function DevelopersPage() {
     const [appsList, setAppsList] = useState(nativeApps);
     const [hubHref, setHubHref] = useState('/dashboard');
@@ -431,18 +450,20 @@ export default function DevelopersPage() {
                                     {/* GCP Route Deployment Details */}
                                     <div className="mb-3 p-3 bg-black/20 rounded-lg border border-white/5 space-y-1">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[9px] tracking-wider text-slate-500 uppercase font-bold">Ruta Online GCP</span>
+                                            <span className="text-[9px] tracking-wider text-slate-500 uppercase font-bold">Enlace Online</span>
                                             <span className="text-[9px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded flex items-center gap-1">
                                                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                                                 {app.gcpStatus || '200 OK'}
                                             </span>
                                         </div>
-                                        <Link 
-                                            href={app.gcpUrl || app.href} 
+                                        <a
+                                            href={subAppUrl(app.name)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                             className="text-xs font-mono text-cyan-300 hover:text-cyan-200 transition-colors block truncate"
                                         >
-                                            {app.gcpUrl || app.href}
-                                        </Link>
+                                            {subAppUrl(app.name).replace('https://', '')}
+                                        </a>
                                     </div>
 
                                     {/* GitHub Folder Link */}
@@ -466,13 +487,16 @@ export default function DevelopersPage() {
 
                                 <div className="border-t border-white/10 pt-4">
                                     <p className="text-xs text-slate-400 leading-relaxed mb-4">{app.use}</p>
-                                    <Link 
-                                        href={app.href} 
+                                    <a
+                                        href={subAppUrl(app.name)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={`Abrir ${app.name}`}
                                         className="w-full py-2.5 bg-primary/20 hover:bg-primary text-white rounded-lg text-xs font-bold tracking-widest uppercase transition-all duration-300 inline-flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(13,51,242,0.4)]"
                                     >
                                         <span>Abrir App</span>
                                         <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">arrow_forward</span>
-                                    </Link>
+                                    </a>
                                 </div>
                             </div>
                         ))}
