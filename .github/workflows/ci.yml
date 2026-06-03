@@ -15,7 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20"
+  # pnpm@11 (project standard, see package.json "packageManager") requires
+  # Node >=22.13 — matches the node:22 base images used by the Dockerfiles.
+  NODE_VERSION: "22"
 
 jobs:
   # ==========================================
@@ -30,7 +32,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ env.NODE_VERSION }}
       - name: Scan for committed secrets
         run: node scripts/security/scan-secrets.cjs
 
@@ -41,7 +43,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [22.x]
 
     steps:
       - name: Checkout repository
@@ -49,18 +51,29 @@ jobs:
         with:
           submodules: recursive
 
-      # Install pnpm BEFORE setup-node so setup-node's built-in pnpm cache works.
-      # No `version:` here — it is read from package.json "packageManager"
-      # (pnpm@11.0.0); pinning it too causes a "multiple versions" conflict.
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
+      # Node must be set up BEFORE pnpm: pnpm@11 needs Node >=22.13, so the
+      # action's self-installer must run under Node 22, not the runner default.
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: pnpm
-          cache-dependency-path: '**/pnpm-lock.yaml'
+
+      # No `version:` here — read from package.json "packageManager" (pnpm@11.0.0);
+      # pinning it too triggers a "multiple versions specified" conflict.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Resolve pnpm store path
+        shell: bash
+        run: echo "PNPM_STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PNPM_STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
 
       - name: Install root dependencies
         run: pnpm install --frozen-lockfile
