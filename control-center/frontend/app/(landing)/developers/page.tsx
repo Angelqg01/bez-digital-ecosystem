@@ -165,18 +165,18 @@ const nativeApps = [
 // Enlaces ONLINE reales de cada SubApp ya desarrollada (subdominios bez.digital).
 // Edita aqui para cambiar el destino de una App; las tarjetas abren en pestana nueva.
 const SUBAPP_URLS: Record<string, string> = {
-    'BeZhas Hub': 'https://hub.bez.digital',
-    'BEZ Wallet': 'https://wallet.bez.digital',
-    'Gas Tank Manager': 'https://gas.bez.digital',
-    'Edge Node Manager': 'https://edge.bez.digital',
-    'BEZ Vision Scan': 'https://vision.bez.digital',
-    'BZ Capital': 'https://capital.bez.digital',
-    'BZ Prestige': 'https://prestige.bez.digital',
+    'BeZhas Hub': 'https://bezhas-hub-o5xep6gbwq-ew.a.run.app',
+    'BEZ Wallet': 'https://bezhas-wallet-o5xep6gbwq-ew.a.run.app',
+    'Gas Tank Manager': 'https://bezhas-gas-o5xep6gbwq-ew.a.run.app',
+    'Edge Node Manager': 'https://bezhas-edge-o5xep6gbwq-ew.a.run.app',
+    'BEZ Vision Scan': 'https://bezhas-vision-o5xep6gbwq-ew.a.run.app',
+    'BZ Capital': 'https://bezhas-capital-o5xep6gbwq-ew.a.run.app/defi',
+    'BZ Prestige': 'https://bezhas-prestige-o5xep6gbwq-ew.a.run.app',
     'BZ CargoLink': 'https://bezhas-cargolink-o5xep6gbwq-ew.a.run.app',
     'BeZhas Pay Manager': 'https://bezhas-pay-o5xep6gbwq-ew.a.run.app',
-    'BZ PureScan': 'https://purescan.bez.digital',
+    'BZ PureScan': 'https://bezhas-purescan-o5xep6gbwq-ew.a.run.app',
     'BZ Sphere': 'https://bezhas-sphere-o5xep6gbwq-ew.a.run.app',
-    'BEZ Energy': 'https://energy.bez.digital',
+    'BEZ Energy': 'https://bezhas-energy-o5xep6gbwq-ew.a.run.app',
     'BZ Genesis': 'https://bezhas-genesis-o5xep6gbwq-ew.a.run.app',
 };
 const subAppUrl = (name: string) => SUBAPP_URLS[name] || '#';

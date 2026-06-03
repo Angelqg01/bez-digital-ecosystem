@@ -52,10 +52,19 @@ mkdir -p "${STAGE}/app" "${STAGE}/packages"
 [ -d "${SECDIR}/_shared" ] && cp -r "${SECDIR}/_shared" "${STAGE}/_shared" || mkdir -p "${STAGE}/_shared"
 # internal workspace packages (keep their prebuilt dist/)
 for p in "${SECDIR}/packages"/*/; do [ -d "$p" ] && copy_clean "$p" "${STAGE}/packages/$(basename "$p")"; done
+# Optionally include the repo-root SDK (@bezhas/sdk) as a workspace package
+# (Bezhas-Hub frontend depends on it via file:../../../sdk).
+if [ -n "${INCLUDE_ROOT_SDK:-}" ] && [ -d "${ROOT}/sdk" ]; then
+  copy_clean "${ROOT}/sdk" "${STAGE}/packages/sdk"
+fi
 # the app (drop its dist so it is rebuilt)
 copy_clean "${SRC}" "${STAGE}/app" "--exclude=dist"
 # Some apps import _shared as ../../_shared (app-root level) instead of ../../../_shared
 [ -d "${STAGE}/_shared" ] && cp -r "${STAGE}/_shared" "${STAGE}/app/_shared"
+# Hub frontend references @bezhas/sdk via file:../../../sdk -> use the staged workspace pkg
+if [ -n "${INCLUDE_ROOT_SDK:-}" ]; then
+  sed -i 's#"file:\.\./\.\./\.\./sdk"#"workspace:*"#' "${STAGE}/app/package.json" || true
+fi
 # optional cross-app sibling (e.g. PureScan imports ../../../BZ CargoLink/...)
 [ -n "${EXTRA_SIBLING}" ] && copy_clean "${SECDIR}/${EXTRA_SIBLING}" "${STAGE}/${EXTRA_SIBLING}" "--exclude=dist"
 
