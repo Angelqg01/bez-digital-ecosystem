@@ -2,12 +2,17 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, bezhas-blockchain-monorepo ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, bezhas-blockchain-monorepo ]
 
 permissions:
   contents: read
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: "20"
@@ -44,25 +49,18 @@ jobs:
         with:
           submodules: recursive
 
+      # Install pnpm BEFORE setup-node so setup-node's built-in pnpm cache works.
+      # No `version:` here — it is read from package.json "packageManager"
+      # (pnpm@11.0.0); pinning it too causes a "multiple versions" conflict.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-            ~/.local/share/pnpm/store
-          key: pnpm-deps-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            pnpm-deps-
+          cache: pnpm
+          cache-dependency-path: '**/pnpm-lock.yaml'
 
       - name: Install root dependencies
         run: pnpm install --frozen-lockfile
@@ -106,7 +104,7 @@ jobs:
         env:
           NODE_ENV: test
           JWT_SECRET: ci-test-jwt-secret-key-12345
-          DATABASE_URL: sqlite://:memory:
+          DATABASE_URL: "sqlite://:memory:"
 
       # ==========================================
       # 3. control-center/frontend (Next.js)
