@@ -127,6 +127,15 @@ jobs:
       # ==========================================
       # 3. control-center/frontend (Next.js)
       # ==========================================
+      # @agents/* and @bezhas/sdk resolve (tsconfig paths + webpack alias) to
+      # ./modules/agents-ui and ./sdk inside the frontend — both are gitignored
+      # and synced at build time (see scripts/gcp-deploy.sh). Mirror that here.
+      - name: Sync shared modules into frontend
+        run: |
+          mkdir -p control-center/frontend/modules
+          cp -r modules/agents-ui control-center/frontend/modules/agents-ui
+          tar -cf - --exclude=node_modules --exclude=.git sdk | (cd control-center/frontend && tar -xf -)
+
       # Advisory until the ESLint flat-config / Next 16 migration is finished
       # and the existing lint backlog is cleared; does not block the pipeline.
       - name: Lint frontend (advisory)
