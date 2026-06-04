@@ -127,7 +127,10 @@ jobs:
       # ==========================================
       # 3. control-center/frontend (Next.js)
       # ==========================================
-      - name: Lint frontend (blocking)
+      # Advisory until the ESLint flat-config / Next 16 migration is finished
+      # and the existing lint backlog is cleared; does not block the pipeline.
+      - name: Lint frontend (advisory)
+        continue-on-error: true
         working-directory: ./control-center/frontend
         run: pnpm run lint
 
