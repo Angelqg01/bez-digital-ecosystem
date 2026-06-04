@@ -80,13 +80,16 @@ jobs:
       - name: Install root dependencies
         run: pnpm install --frozen-lockfile
 
+      # --ignore-scripts: skip dependency build scripts (e.g. @scarf/scarf,
+      # protobufjs) not needed for the unit/build gate; avoids pnpm@11's
+      # ERR_PNPM_IGNORED_BUILDS when they are not pre-approved.
       - name: Install api dependencies
         working-directory: ./api
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Install frontend dependencies
         working-directory: ./control-center/frontend
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       # ==========================================
       # 1. smart-contracts (Foundry)
@@ -105,7 +108,7 @@ jobs:
       # ==========================================
       - name: Install agent-runtime dependencies
         working-directory: ./agent-runtime
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run agent-runtime tests (unit)
         working-directory: ./agent-runtime
