@@ -136,10 +136,9 @@ jobs:
           cp -r modules/agents-ui control-center/frontend/modules/agents-ui
           tar -cf - --exclude=node_modules --exclude=.git sdk | (cd control-center/frontend && tar -xf -)
 
-      # Advisory until the ESLint flat-config / Next 16 migration is finished
-      # and the existing lint backlog is cleared; does not block the pipeline.
-      - name: Lint frontend (advisory)
-        continue-on-error: true
+      # Blocking: ESLint 9 flat config. The pre-existing backlog is downgraded
+      # to warnings in eslint.config.mjs, so this fails only on NEW hard errors.
+      - name: Lint frontend (blocking)
         working-directory: ./control-center/frontend
         run: pnpm run lint
 
