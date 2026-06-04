@@ -242,12 +242,17 @@ jobs:
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: "20"
-                  cache: "npm"
-                  cache-dependency-path: api/package-lock.json
+                  node-version: "22"
+
+            # Corepack runs the pinned pnpm@11 under Node 22 (the project uses
+            # pnpm, not npm — there is no package-lock.json).
+            - name: Enable Corepack (pnpm from packageManager)
+              run: corepack enable
+              env:
+                  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
 
             - name: Install API Dependencies
-              run: npm ci
+              run: pnpm install --frozen-lockfile --ignore-scripts
 
             - name: Verify ABI Alignment
               run: |

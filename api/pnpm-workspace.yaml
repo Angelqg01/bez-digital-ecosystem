@@ -1,3 +1,16 @@
 allowBuilds:
   '@scarf/scarf': set this to true or false
   protobufjs: set this to true or false
+
+# Security overrides: force transitive deps to patched versions.
+# Kept within the same major as the consuming libraries (e.g. google-cloud)
+# to avoid breaking changes while clearing the advisories.
+overrides:
+  axios: '^1.16.0'
+  fast-xml-builder: '^1.2.0'
+  fast-xml-parser: '^5.8.0'
+  ws: '^8.21.0'
+  qs: '^6.15.2'
+  follow-redirects: '^1.16.0'
+  protobufjs: '^7.5.8'
+  brace-expansion: '5.0.6'

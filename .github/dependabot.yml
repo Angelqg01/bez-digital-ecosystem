@@ -1,0 +1,68 @@
+version: 2
+updates:
+  # ── Backend API (pnpm) ──────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /api
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    labels: [dependencies, security]
+    groups:
+      api-minor-patch:
+        update-types: [minor, patch]
+      api-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # ── Control Center frontend (Next.js / pnpm) ────────────────────
+  - package-ecosystem: npm
+    directory: /control-center/frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    labels: [dependencies, security]
+    groups:
+      frontend-minor-patch:
+        update-types: [minor, patch]
+      frontend-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # ── Agent runtime ───────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /agent-runtime
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, security]
+    groups:
+      agent-runtime-all:
+        update-types: [minor, patch]
+
+  # ── SDK ─────────────────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /sdk
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, security]
+
+  # ── CI security scripts ─────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /scripts
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, security]
+
+  # ── GitHub Actions workflows ────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [ci, security]
+    groups:
+      github-actions:
+        patterns: ["*"]
