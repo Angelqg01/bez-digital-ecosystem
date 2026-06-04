@@ -22,7 +22,13 @@ permissions:
   issues: write
 
 env:
-  NODE_VERSION: "20"
+  # pnpm@11 (project standard, see package.json "packageManager") requires
+  # Node >=22.13 — using Node 20 triggers ERR_PNPM_UNSUPPORTED_ENGINE and the
+  # whole npm-security-audit job fails, which the report step misreports as a
+  # "critical vulnerability". Keep this in lockstep with ci.yml.
+  NODE_VERSION: "22"
+  # Let Corepack fetch the pinned pnpm non-interactively (no CI prompt/hang).
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
 
 jobs:
   # ==========================================
@@ -49,10 +55,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
+      # Corepack (bundled with Node 22) runs pnpm@11 under Node 22, unlike
+      # pnpm/action-setup whose node20 runtime can't satisfy engines.node.
+      - name: Enable Corepack (pnpm from packageManager)
+        run: corepack enable
 
       - name: Cache npm dependencies
         uses: actions/cache@v4
@@ -65,14 +71,16 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./${{ matrix.path }}
-        run: pnpm install --frozen-lockfile --audit=false
+        run: pnpm install --frozen-lockfile --audit=false --ignore-scripts
 
       - name: Run NPM Audit (JSON Report)
         id: npm-audit
         working-directory: ./${{ matrix.path }}
         continue-on-error: true
         run: |
-          pnpm audit --json > npm-audit-report.json 2>&1 || true
+          # Keep stdout (pure JSON) separate from stderr (progress/warnings),
+          # otherwise the merged stream is invalid JSON and the gate is neutered.
+          pnpm audit --json > npm-audit-report.json 2>audit-stderr.log || true
           if [ ! -s npm-audit-report.json ]; then
             echo '{"metadata":{"vulnerabilities":{"critical":0,"high":0,"moderate":0}}}' > npm-audit-report.json
           fi
@@ -202,10 +210,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
+      # Corepack (bundled with Node 22) runs pnpm@11 under Node 22, unlike
+      # pnpm/action-setup whose node20 runtime can't satisfy engines.node.
+      - name: Enable Corepack (pnpm from packageManager)
+        run: corepack enable
 
       - name: Check Frontend Dependencies
         working-directory: ./control-center/frontend
@@ -253,10 +261,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
+      # Corepack (bundled with Node 22) runs pnpm@11 under Node 22, unlike
+      # pnpm/action-setup whose node20 runtime can't satisfy engines.node.
+      - name: Enable Corepack (pnpm from packageManager)
+        run: corepack enable
 
       - name: Cache Script Dependencies
         uses: actions/cache@v4
@@ -267,7 +275,7 @@ jobs:
 
       - name: Install Script Dependencies
         working-directory: scripts
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run Security Monitor Script
         id: security-monitor
@@ -307,18 +315,18 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
+      # Corepack (bundled with Node 22) runs pnpm@11 under Node 22, unlike
+      # pnpm/action-setup whose node20 runtime can't satisfy engines.node.
+      - name: Enable Corepack (pnpm from packageManager)
+        run: corepack enable
 
       - name: Install Frontend Dependencies
         working-directory: ./control-center/frontend
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Install ESLint Security Plugins
         working-directory: ./control-center/frontend
-        run: pnpm install --save-dev eslint-plugin-security eslint-plugin-no-unsanitized
+        run: pnpm install --save-dev --ignore-scripts eslint-plugin-security eslint-plugin-no-unsanitized
 
       - name: Run ESLint Security Scan
         working-directory: ./control-center/frontend
