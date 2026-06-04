@@ -18,6 +18,8 @@ env:
   # pnpm@11 (project standard, see package.json "packageManager") requires
   # Node >=22.13 — matches the node:22 base images used by the Dockerfiles.
   NODE_VERSION: "22"
+  # Let Corepack fetch the pinned pnpm non-interactively (no CI prompt/hang).
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
 
 jobs:
   # ==========================================
@@ -51,17 +53,17 @@ jobs:
         with:
           submodules: recursive
 
-      # Node must be set up BEFORE pnpm: pnpm@11 needs Node >=22.13, so the
-      # action's self-installer must run under Node 22, not the runner default.
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
-      # No `version:` here — read from package.json "packageManager" (pnpm@11.0.0);
-      # pinning it too triggers a "multiple versions specified" conflict.
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      # Corepack (bundled with Node 22) provides the exact pnpm pinned in
+      # package.json "packageManager" (pnpm@11.0.0) and runs under the Node 22
+      # set up above — unlike pnpm/action-setup, whose node20 runtime can't
+      # satisfy pnpm@11's engines.node >=22.13.
+      - name: Enable Corepack (pnpm from packageManager)
+        run: corepack enable
 
       - name: Resolve pnpm store path
         shell: bash
