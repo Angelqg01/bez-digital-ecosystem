@@ -81,19 +81,23 @@ body {
     opacity: 1;
 }
 
-/* Galeria vertical auto-scroll de SubApps secundarias */
-@keyframes subapp-vscroll {
+/* Galeria horizontal auto-scroll de SubApps secundarias (izquierda -> derecha).
+   La pista lleva la lista duplicada (x2) y cada tarjeta su margen derecho, de
+   modo que un set completo mide exactamente el 50% del ancho. Animar de
+   translateX(-50%) a translateX(0) avanza un set entero, asi el bucle es
+   continuo y SIEMPRE en el mismo sentido (sin cambios de rumbo). */
+@keyframes subapp-hscroll {
     from {
-        transform: translateY(0);
+        transform: translateX(-50%);
     }
     to {
-        /* La pista contiene la lista duplicada (x2); -50% = un set completo => bucle continuo */
-        transform: translateY(-50%);
+        transform: translateX(0);
     }
 }
 
 .subapp-marquee-track {
-    animation: subapp-vscroll 36s linear infinite;
+    width: max-content;
+    animation: subapp-hscroll 45s linear infinite;
     will-change: transform;
 }
 
@@ -109,7 +113,7 @@ body {
     }
 
     .subapp-marquee {
-        overflow-y: auto;
+        overflow-x: auto;
     }
 }
 
