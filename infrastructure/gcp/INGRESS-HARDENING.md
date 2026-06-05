@@ -37,6 +37,20 @@ The token-sending code MUST be live **before** public access is removed.
 
 `scripts/gcp-deploy.sh` already does (1) and (2). Step (3) is below.
 
+## Recommended: one idempotent script
+
+`scripts/harden-private-backends.sh` chains steps (2) and (3) safely:
+
+```bash
+scripts/harden-private-backends.sh --dry-run   # preview, no changes
+scripts/harden-private-backends.sh             # apply (prompts to confirm)
+scripts/harden-private-backends.sh --rollback  # re-allow public access
+```
+
+It refuses to run if the Cloud SDK is unhealthy, is safe to re-run, and prints
+the resulting IAM policy. Run it only after the token-sending caller images are
+deployed (step 1). The raw commands it runs are below.
+
 ## Manual commands (run when gcloud is healthy)
 
 ```bash
