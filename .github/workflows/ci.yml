@@ -2,15 +2,24 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, bezhas-blockchain-monorepo ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, bezhas-blockchain-monorepo ]
 
 permissions:
   contents: read
 
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  NODE_VERSION: "20"
+  # pnpm@11 (project standard, see package.json "packageManager") requires
+  # Node >=22.13 — matches the node:22 base images used by the Dockerfiles.
+  NODE_VERSION: "22"
+  # Let Corepack fetch the pinned pnpm non-interactively (no CI prompt/hang).
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
 
 jobs:
   # ==========================================
@@ -25,7 +34,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ env.NODE_VERSION }}
       - name: Scan for committed secrets
         run: node scripts/security/scan-secrets.cjs
 
@@ -36,7 +45,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [22.x]
 
     steps:
       - name: Checkout repository
@@ -49,31 +58,38 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
+      # Corepack (bundled with Node 22) provides the exact pnpm pinned in
+      # package.json "packageManager" (pnpm@11.0.0) and runs under the Node 22
+      # set up above — unlike pnpm/action-setup, whose node20 runtime can't
+      # satisfy pnpm@11's engines.node >=22.13.
+      - name: Enable Corepack (pnpm from packageManager)
+        run: corepack enable
 
-      - name: Cache dependencies
+      - name: Resolve pnpm store path
+        shell: bash
+        run: echo "PNPM_STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Cache pnpm store
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.npm
-            ~/.local/share/pnpm/store
-          key: pnpm-deps-${{ hashFiles('**/pnpm-lock.yaml') }}
+          path: ${{ env.PNPM_STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            pnpm-deps-
+            pnpm-store-${{ runner.os }}-
 
       - name: Install root dependencies
         run: pnpm install --frozen-lockfile
 
+      # --ignore-scripts: skip dependency build scripts (e.g. @scarf/scarf,
+      # protobufjs) not needed for the unit/build gate; avoids pnpm@11's
+      # ERR_PNPM_IGNORED_BUILDS when they are not pre-approved.
       - name: Install api dependencies
         working-directory: ./api
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Install frontend dependencies
         working-directory: ./control-center/frontend
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       # ==========================================
       # 1. smart-contracts (Foundry)
@@ -92,7 +108,7 @@ jobs:
       # ==========================================
       - name: Install agent-runtime dependencies
         working-directory: ./agent-runtime
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run agent-runtime tests (unit)
         working-directory: ./agent-runtime
@@ -106,11 +122,22 @@ jobs:
         env:
           NODE_ENV: test
           JWT_SECRET: ci-test-jwt-secret-key-12345
-          DATABASE_URL: sqlite://:memory:
+          DATABASE_URL: "sqlite://:memory:"
 
       # ==========================================
       # 3. control-center/frontend (Next.js)
       # ==========================================
+      # @agents/* and @bezhas/sdk resolve (tsconfig paths + webpack alias) to
+      # ./modules/agents-ui and ./sdk inside the frontend — both are gitignored
+      # and synced at build time (see scripts/gcp-deploy.sh). Mirror that here.
+      - name: Sync shared modules into frontend
+        run: |
+          mkdir -p control-center/frontend/modules
+          cp -r modules/agents-ui control-center/frontend/modules/agents-ui
+          tar -cf - --exclude=node_modules --exclude=.git sdk | (cd control-center/frontend && tar -xf -)
+
+      # Blocking: ESLint 9 flat config. The pre-existing backlog is downgraded
+      # to warnings in eslint.config.mjs, so this fails only on NEW hard errors.
       - name: Lint frontend (blocking)
         working-directory: ./control-center/frontend
         run: pnpm run lint

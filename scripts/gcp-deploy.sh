@@ -420,6 +420,20 @@ gcloud run deploy bezhas-agent-runtime \
 AGENT_RUNTIME_URL=$(gcloud run services describe bezhas-agent-runtime --region "${GCP_REGION}" --format "value(status.url)")
 ok "Agent Runtime: ${AGENT_RUNTIME_URL}"
 
+# ── Service-to-service auth: the private backends (aegis/ai-gateway/agent-runtime)
+#    were deployed with --no-allow-unauthenticated. Grant the runtime service
+#    account run.invoker on each so authenticated callers (api/ai-engine/
+#    agent-runtime/edge-node) can reach them via OIDC ID tokens. Public ingress
+#    stays open; only the IAM auth gate changes. Idempotent.
+for _priv in bezhas-aegis bezhas-ai-gateway bezhas-agent-runtime; do
+  gcloud run services add-iam-policy-binding "${_priv}" \
+    --region "${GCP_REGION}" \
+    --member "serviceAccount:${SA_EMAIL}" \
+    --role roles/run.invoker \
+    --quiet || warn "Could not grant run.invoker on ${_priv} (check permissions)."
+done
+ok "Private backends: run.invoker granted to ${SA_EMAIL}."
+
 # Edge Node
 EDGE_SECRETS="API_KEY=bezhas-edge-node-api-key:latest,EDGE_NODE_API_KEY=bezhas-edge-node-api-key:latest,CONTROL_JWT=bezhas-control-jwt:latest"
 if [ -n "${EDGE_NODE_PRIVATE_KEY:-}" ]; then

@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/build
+.git
+**/*.log
+**/.env
+**/.env.*
+**/.tmp.driveupload
+*.zip
+*.pdf
+*.xlsx
+*.bak
+**/vite.config.js.timestamp-*

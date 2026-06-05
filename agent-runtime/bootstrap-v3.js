@@ -8,6 +8,10 @@
 
 require('dotenv').config({ path: '../.env' });
 
+// Attach OIDC tokens to outbound calls to the private aegis / ai-gateway
+// backends. No-op locally; see gcpServiceAuth.js. (Cloud Run entrypoint.)
+require('./gcpServiceAuth').install();
+
 const AgentManager = require('./AgentManager');
 const AgentServer = require('./core/AgentServer');
 const TokenomicsAgent = require('./agents/TokenomicsAgent');

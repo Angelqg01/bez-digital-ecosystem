@@ -1,4 +1,7 @@
 require('dotenv').config();
+// Attach OIDC tokens to outbound calls to the private ai-gateway (MCP) backend.
+// No-op locally; see gcpServiceAuth.js.
+require('./gcpServiceAuth').install();
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');

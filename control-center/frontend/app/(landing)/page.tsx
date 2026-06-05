@@ -117,40 +117,40 @@ const subApps = [
 const secondaryApps = [
   {
     name: 'BeZhas-Hub',
-    status: 'Creada',
-    href: 'https://hub.bez.digital',
+    status: 'Online',
+    href: 'https://bezhas-hub-o5xep6gbwq-ew.a.run.app',
     icon: 'hub',
     label: 'Centro social y marketplace',
     desc: 'Portal consumer del ecosistema: perfiles, comunidad, comercio, contenido y experiencia VIP. La puerta de entrada publica a BeZhas.',
   },
   {
     name: 'BeZhas-DeFi',
-    status: 'Creada',
-    href: 'https://defi.bez.digital',
+    status: 'Online',
+    href: 'https://bezhas-capital-o5xep6gbwq-ew.a.run.app/defi',
     icon: 'account_balance',
     label: 'Finanzas Web3',
     desc: 'Suite financiera descentralizada: staking, farming, bridge, wallet, DAO y liquidez conectadas al token BEZ.',
   },
   {
     name: 'BZ PureScan',
-    status: 'Integrada',
-    href: 'https://purescan.bez.digital',
+    status: 'Online',
+    href: 'https://bezhas-purescan-o5xep6gbwq-ew.a.run.app',
     icon: 'document_scanner',
     label: 'IA, vision y trazabilidad',
     desc: 'Verificacion con IA y vision artificial: escaneo, firmas SIFT, Food Oracle y gemelos digitales de activos RWA inmutables.',
   },
   {
     name: 'BEZ-Energy',
-    status: 'En desarrollo',
-    href: 'https://energy.bez.digital',
+    status: 'Online',
+    href: 'https://bezhas-energy-o5xep6gbwq-ew.a.run.app',
     icon: 'bolt',
     label: 'Energia y RWA verde',
     desc: 'Tokenizacion energetica: certificados CAE, creditos de carbono, oraculos ESG y mercados P2P de energia on-chain.',
   },
   {
     name: 'BZ-CargoLink',
-    status: 'En desarrollo',
-    href: 'https://cargolink.bez.digital',
+    status: 'Online',
+    href: 'https://bezhas-cargolink-o5xep6gbwq-ew.a.run.app',
     icon: 'local_shipping',
     label: 'Logistica y aduanas',
     desc: 'Logistica y aduanas on-chain: tracking de cargas, NFTs de envio, escrow de entrega y despacho aduanero verificable.',
@@ -539,10 +539,10 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="subapp-marquee group relative mx-auto h-[34rem] max-w-2xl overflow-hidden">
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-14 bg-gradient-to-b from-[#f5f7fb] to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-14 bg-gradient-to-t from-[#f5f7fb] to-transparent" />
-            <div className="subapp-marquee-track flex flex-col gap-4">
+          <div className="subapp-marquee group relative w-full overflow-hidden py-2">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-[#f5f7fb] to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-[#f5f7fb] to-transparent" />
+            <div className="subapp-marquee-track flex">
               {[...secondaryApps, ...secondaryApps].map((app, index) => (
                 <a
                   key={`${app.name}-${index}`}
@@ -550,7 +550,7 @@ export default function Home() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Abrir ${app.name}`}
-                  className="app-orbit-card group/card block min-h-[15rem] rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#0d33f2]/30 hover:shadow-2xl hover:shadow-blue-950/10"
+                  className="app-orbit-card group/card mr-4 flex w-[22rem] shrink-0 flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#0d33f2]/30 hover:shadow-2xl hover:shadow-blue-950/10"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#0d33f2] text-white">

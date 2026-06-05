@@ -30,6 +30,10 @@ const compression = require('compression');
 const { randomUUID } = require('crypto');
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 
+// Attach OIDC tokens to outbound calls to the private Cloud Run backends
+// (aegis/ai-gateway). No-op locally; see services/gcpServiceAuth.js.
+require('./services/gcpServiceAuth').install();
+
 // ── Infrastructure ────────────────────────────────────────────────────────────
 const { connectRedis, redisClient } = require('./cache/redis');
 const { query, pool } = require('./db/pool');

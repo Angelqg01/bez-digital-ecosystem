@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Copy package files
 RUN npm install -g pnpm
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
 
 # Install dependencies (production only for smaller image)
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts

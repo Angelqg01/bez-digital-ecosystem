@@ -117,6 +117,7 @@ const PLACEHOLDER_HINTS = [
     'redacted',
     'seguro',
     'test',
+    'this_is_a',
     'tu_',
     'tu-',
     'your_',
@@ -131,6 +132,11 @@ function shouldSkipFile(filePath) {
     const base = path.basename(filePath);
     if (EXCLUDED_FILES.has(base)) return true;
     if (base === 'scan-secrets.cjs') return true;
+
+    // Test/fixture/mock files legitimately contain dummy credentials.
+    const norm = filePath.replace(/\\/g, '/');
+    if (/(?:^|\/)(?:__tests__|__mocks__|tests?)\//i.test(norm)) return true;
+    if (/\.(?:test|spec|e2e|mock|stories)\.[a-z]+$/i.test(base)) return true;
 
     const ext = path.extname(filePath).toLowerCase();
     if (base.includes('.env')) return false;

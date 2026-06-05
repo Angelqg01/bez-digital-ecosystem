@@ -18,7 +18,6 @@ const { authenticateToken, requireRole } = require('../middleware/security');
 const { INTERNAL_API_KEY } = require('../config/secrets');
 const { query } = require('../db/pool');
 const { redisClient } = require('../cache/redis');
-const MemoryManager = require('../../agent-runtime/MemoryManager');
 
 const router = Router();
 
@@ -52,6 +51,9 @@ function getAgent(options = {}) {
         const { createRuntime } = require('../../agent-runtime');
         const UnifiedAgent = require('../../agent-runtime/core/UnifiedAgent');
         const ChannelManager = require('../../agent-runtime/channels');
+        // Lazy-required (like the modules above) so the api container boots even
+        // when agent-runtime is not bundled; only this route needs it.
+        const MemoryManager = require('../../agent-runtime/MemoryManager');
 
         // Pass Redis client to Runtime so SessionManager gets persistence
         const runtime = createRuntime({

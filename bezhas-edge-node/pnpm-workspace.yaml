@@ -1,0 +1,5 @@
+# Marks bezhas-edge-node as its own pnpm workspace root (independent install,
+# not captured by the repo-root pnpm-workspace.yaml). Security overrides below.
+overrides:
+  axios: '^1.16.0'
+  form-data@<2.5.4: '^2.5.5'

@@ -1,0 +1,10 @@
+# Root package security overrides.
+# pnpm 11 reads `overrides` from pnpm-workspace.yaml, not package.json.
+# No `packages:` globs are declared on purpose: api/, control-center/frontend/,
+# agent-runtime/ and scripts/ each have their own pnpm-workspace.yaml + lockfile
+# and are installed independently (the CI installs them per-directory).
+overrides:
+  axios: '^1.16.0'
+  fast-uri: '^3.1.2'
+  form-data@<2.5.4: '^2.5.5'
+  form-data@>=3.0.0 <3.0.4: '^3.0.4'
