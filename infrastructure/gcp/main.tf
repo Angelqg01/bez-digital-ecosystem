@@ -633,6 +633,31 @@ resource "google_cloud_run_service_iam_member" "edge_node_public" {
   member   = "allUsers"
 }
 
+# ── Private IAM — aegis / ai-gateway / agent-runtime are NOT public. Only the ──
+#    Cloud Run service account may invoke them (service-to-service OIDC tokens,
+#    attached by each caller's gcpServiceAuth.js axios interceptor).
+
+resource "google_cloud_run_service_iam_member" "aegis_invoker" {
+  service  = google_cloud_run_v2_service.aegis.name
+  location = var.region
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.bezhas_run.email}"
+}
+
+resource "google_cloud_run_service_iam_member" "ai_gateway_invoker" {
+  service  = google_cloud_run_v2_service.ai_gateway.name
+  location = var.region
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.bezhas_run.email}"
+}
+
+resource "google_cloud_run_service_iam_member" "agent_runtime_invoker" {
+  service  = google_cloud_run_v2_service.agent_runtime.name
+  location = var.region
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.bezhas_run.email}"
+}
+
 # ── Outputs ────────────────────────────────────────────────────────────────────
 
 output "frontend_url"   { value = google_cloud_run_v2_service.control_center.uri }

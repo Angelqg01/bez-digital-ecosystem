@@ -8,10 +8,11 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "axios": "^1.7.2",
+    "axios": "^1.16.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "google-auth-library": "^9.15.1"
   },
   "devDependencies": {
     "jest": "^29.7.0",

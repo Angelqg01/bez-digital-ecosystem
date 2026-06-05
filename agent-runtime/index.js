@@ -4,6 +4,10 @@
  * PluginLoader, ParityChecker, CircuitBreaker, RuntimeEventBus and
  * registers core tools + MCP proxy tools + slash commands + sector plugins.
  */
+// Attach OIDC tokens to outbound calls to the private aegis / ai-gateway
+// backends. No-op locally; see gcpServiceAuth.js.
+require('./gcpServiceAuth').install();
+
 const ToolRegistry = require('./core/ToolRegistry');
 const PermissionEngine = require('./core/PermissionEngine');
 const CommandRouter = require('./core/CommandRouter');
