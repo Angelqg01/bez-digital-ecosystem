@@ -44,6 +44,7 @@ const { query } = require('../db/pool');
 const redis = require('../db/redis');                 // namespace: bezhas:energy:
 const OpenClaw = require('../agents/openclaw-client');   // AI Orchestrator
 const vppBroker = require('../services/vppMqttBroker');   // Edge Node telemetry ingestion (MQTT)
+const energyFeed = require('../services/energyFeedService'); // OMIE/ESIOS real market feeds
 const logger = require('../utils/logger');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -321,9 +322,8 @@ router.get('/nodes', authenticateToken, async (req, res) => {
 router.get('/market/omie', authenticateToken, async (req, res) => {
   try {
     const data = await withCache('omie', CACHE_TTL.OMIE_PRICE, async () => {
-      // PRODUCCIÓN: integrar con OMIE API o scraping de fichero marginalpdbc
-      // const response = await fetch(`https://www.omie.es/...`);
-      return buildOmiePrice();
+      // Real OMIE day-ahead price (marginalpdbc) when reachable; else simulated.
+      return (await energyFeed.getOmiePrice()) || buildOmiePrice();
     });
     res.json(data);
   } catch (err) {
@@ -341,7 +341,9 @@ router.get('/market/omie', authenticateToken, async (req, res) => {
 router.get('/market/esios', authenticateToken, async (req, res) => {
   try {
     const data = await withCache('esios', CACHE_TTL.ESIOS, async () => {
-      // PRODUCCIÓN: await fetch(`https://api.esios.ree.es/indicators/...`, { headers: { 'x-api-key': process.env.ESIOS_API_KEY } })
+      // Real ESIOS indicators when ESIOS_API_KEY is configured; else simulated.
+      const live = await energyFeed.getEsiosIndicators();
+      if (live) return live;
       return {
         timestamp: new Date().toISOString(),
         source: 'REE ESIOS',
