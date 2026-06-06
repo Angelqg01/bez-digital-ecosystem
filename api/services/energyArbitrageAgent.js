@@ -15,6 +15,7 @@
 const logger = require('../utils/logger');
 const energyFeed = require('./energyFeedService');
 const vppBroker = require('./vppMqttBroker');
+const vppChainBridge = require('./vppChainBridge');
 
 const DEFAULTS = {
   chargeBelowEurMwh: 30,    // charge when price is below this
@@ -94,9 +95,14 @@ async function runOnce(opts = {}) {
 
   const command = strategyToCommand(decision.strategy);
   decision.dispatched = false;
+  decision.onchainTx = null;
   if (command && decision.powerKw > 0 && decision.nodeId && opts.dispatch !== false) {
     decision.command = command;
     decision.dispatched = vppBroker.publishControl(decision.nodeId, command, { powerKw: decision.powerKw });
+    // Best-effort immutable audit on BeZhasVPP.sol (null when bridge unconfigured).
+    const jobId = `arb_${Date.now()}_${decision.nodeId}`;
+    const onchain = await vppChainBridge.logCommandOnChain(jobId, decision.nodeId, command, { powerKw: decision.powerKw }, decision.powerKw);
+    decision.onchainTx = onchain && onchain.ok ? onchain.hash : null;
   }
 
   logger.info('[ENERGY][ARBITRAGE] strategy=%s price=%s soc=%s dispatched=%s',

@@ -560,6 +560,20 @@ async function startServer() {
     gcpLogger.warning('[STARTUP] energyFeedService not found — OMIE feed lazy-load only', { error: err.message });
   }
 
+  // ── PASO 7.5: ⚡ Agente de arbitraje autónomo (opt-in) ────────────────────────
+  // Solo se arranca con ARBITRAGE_AUTO=true para evitar despachos automáticos no
+  // deseados. Evalúa OMIE real + telemetría de batería y despacha por MQTT.
+  if (process.env.ARBITRAGE_AUTO === 'true') {
+    try {
+      const arbAgent = require('./services/energyArbitrageAgent');
+      const intervalMs = parseInt(process.env.ARBITRAGE_INTERVAL_MS || '300000', 10);
+      arbAgent.start(intervalMs);
+      gcpLogger.info('[STARTUP] Arbitrage agent started', { intervalMs });
+    } catch (err) {
+      gcpLogger.warning('[STARTUP] Arbitrage agent failed to start', { error: err.message });
+    }
+  }
+
   // ── PASO 8: Escuchar (SIEMPRE el último paso) ─────────────────────────────────
   httpServer = app.listen(PORT, () => {
     const env = process.env.NODE_ENV || 'development';

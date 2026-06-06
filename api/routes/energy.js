@@ -46,6 +46,7 @@ const OpenClaw = require('../agents/openclaw-client');   // AI Orchestrator
 const vppBroker = require('../services/vppMqttBroker');   // Edge Node telemetry ingestion (MQTT)
 const energyFeed = require('../services/energyFeedService'); // OMIE/ESIOS real market feeds
 const energyArbitrage = require('../services/energyArbitrageAgent'); // autonomous battery arbitrage
+const vppChainBridge = require('../services/vppChainBridge'); // on-chain SCADA audit (BeZhasVPP.sol)
 const logger = require('../utils/logger');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -578,6 +579,9 @@ router.post(
       const published = vppBroker.publishControl(nodeId, command, params);
       logger.info(`[ENERGY][SCADA] job=${jobId} node=${nodeId} cmd=${command} transport=${published ? 'mqtt' : 'mock'} params=${JSON.stringify(params)}`);
 
+      // Best-effort immutable audit on BeZhasVPP.sol (null when bridge unconfigured).
+      const onchain = await vppChainBridge.logCommandOnChain(jobId, nodeId, command, params, params.powerKw || 0);
+
       res.json({
         success: true,
         job_id: jobId,
@@ -586,7 +590,10 @@ router.post(
         params,
         transport: published ? 'mqtt' : 'mock',
         dispatched_at: new Date().toISOString(),
-        audit_trail: `Logged to BeZhasVPP.sol — contract: ${ENERGY_CONTRACTS.VPP}`,
+        onchain_tx: onchain && onchain.ok ? onchain.hash : null,
+        audit_trail: onchain && onchain.ok
+          ? `Logged on-chain to BeZhasVPP.sol (tx ${onchain.hash})`
+          : `Audit pending — BeZhasVPP.sol contract: ${ENERGY_CONTRACTS.VPP}`,
       });
     } catch (err) {
       logger.error(`[ENERGY][SCADA][${nodeId}]`, err);
