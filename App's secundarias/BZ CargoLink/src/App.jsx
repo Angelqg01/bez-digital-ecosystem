@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, NavLink, Link } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, NavLink, Link, useLocation } from 'react-router-dom'
 import { 
   Terminal,
   Map as MapIcon,

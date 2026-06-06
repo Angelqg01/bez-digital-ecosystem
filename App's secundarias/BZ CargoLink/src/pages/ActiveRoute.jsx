@@ -14,6 +14,7 @@ import { useState } from 'react'
 import { usePlatformState } from '../hooks/usePlatformState'
 import { cargoGateway } from '../services/cargoGateway'
 import { blockchainStatusText, shortHash } from '../utils/blockchainDisplay'
+import PermissionPrime from '../components/PermissionPrime'
 
 const ActiveRoute = () => {
   const { platformState } = usePlatformState()
@@ -22,16 +23,26 @@ const ActiveRoute = () => {
   const [error, setError] = useState('')
   const [mapMode, setMapMode] = useState('route')
   const [trackingNotice, setTrackingNotice] = useState('')
+  const [showPrime, setShowPrime] = useState(false)
 
-  const generateProof = async () => {
+  // Envía la prueba de entrega al Core API, opcionalmente con la posición real
+  // (validación del punto de entrega). Las coordenadas se usan solo en sesión.
+  const submitProof = async (coords) => {
     try {
       setError('')
       setLoading(true)
       const response = await cargoGateway.getActiveRoute(
-        { routeId: 'TRX-9921-X', proofType: 'DELIVERY_QR' },
+        {
+          routeId: 'TRX-9921-X',
+          proofType: 'DELIVERY_QR',
+          ...(coords ? { lat: coords.latitude, lng: coords.longitude, geoVerified: true } : { geoVerified: false }),
+        },
         platformState.apiKey,
       )
       setProof(response)
+      setTrackingNotice(coords
+        ? 'Punto de entrega verificado con tu ubicación.'
+        : 'Prueba generada sin verificación de ubicación.')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -39,8 +50,34 @@ const ActiveRoute = () => {
     }
   }
 
+  // Just-in-time: pedimos GPS solo al pulsar "Generar prueba".
+  const generateProof = () => {
+    setError('')
+    setShowPrime(true)
+  }
+
+  const handleGeoGranted = (position) => {
+    setShowPrime(false)
+    submitProof(position.coords)
+  }
+
+  // Degradación elegante: sin GPS la prueba se emite igual, marcada como no
+  // verificada geográficamente. Sin reintentos molestos.
+  const handleGeoDenied = () => {
+    setShowPrime(false)
+    submitProof(null)
+  }
+
   return (
     <div className="flex flex-col h-full">
+      <PermissionPrime
+        tool="geolocation"
+        open={showPrime}
+        onGranted={handleGeoGranted}
+        onCancel={() => setShowPrime(false)}
+        onDenied={handleGeoDenied}
+      />
+
       {/* Status Bar */}
       <div style={{ padding: '8px 20px', background: '#0e0e0e', borderBottom: '1px solid var(--bz-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

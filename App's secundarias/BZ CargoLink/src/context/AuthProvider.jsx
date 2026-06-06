@@ -158,7 +158,7 @@ export function LockScreen({ title = "Acceso Restringido" }) {
           e.target.style.boxShadow = '0 4px 20px rgba(0, 240, 255, 0.3)';
         }}
       >
-        Crear Perfil Blockchain
+        Crear BeZhas_ID
       </button>
     </div>
   );
@@ -254,7 +254,7 @@ function LoginRegisterModal({ onClose }) {
           }}>
             🔑
           </div>
-          <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#fff', margin: 0 }}>BeZhas Blockchain L2</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#fff', margin: 0 }}>BeZhas</h3>
           <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Demo & Investor Authentication Panel</p>
         </div>
 
@@ -351,7 +351,7 @@ function LoginRegisterModal({ onClose }) {
           {!isLogin && (
             <div>
               <label style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', color: '#64748b', fontWeight: 800, marginBottom: '6px', letterSpacing: '0.5px' }}>
-                Perfil / Rol de Red
+                BeZhas_ID / Rol de Red
               </label>
               <select
                 value={role}

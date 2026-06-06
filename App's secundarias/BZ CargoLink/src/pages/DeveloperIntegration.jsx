@@ -17,6 +17,7 @@ import { usePlatformState } from '../hooks/usePlatformState'
 import { cargoGateway } from '../services/cargoGateway'
 import { CargoLinkSdk } from '../sdk/cargolink-sdk'
 import { blockchainStatusText } from '../utils/blockchainDisplay'
+import PosNetworkPanel from '../components/PosNetworkPanel'
 
 const SDK_INSTALL_COMMAND = 'pnpm add @bezhas/cargolink-sdk'
 
@@ -198,6 +199,9 @@ const DeveloperIntegration = () => {
         </div>
         {notice && <p style={{ gridColumn: 'span 2', fontSize: 11, color: 'var(--bz-primary)', borderTop: '1px solid var(--bz-border)', paddingTop: 10 }}>{notice}</p>}
       </div>
+
+      {/* POS network + B-UID transaction feed */}
+      <PosNetworkPanel apiKey={platformState.apiKey} />
 
       {/* API Keys */}
       <div className="card" style={{ marginBottom: 24 }}>
