@@ -18,7 +18,7 @@
  *   const tx = await cargoBlockchain.anchorFingerprint(data)
  */
 
-import { createSupplyChainClient } from '../../../_shared/bezhas-blockchain-client.js';
+import { createSupplyChainClient } from '../shared/bezhas-blockchain-client.js';
 
 // ── Client ──
 let _client = null;
