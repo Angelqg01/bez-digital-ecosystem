@@ -45,6 +45,7 @@ const redis = require('../db/redis');                 // namespace: bezhas:energ
 const OpenClaw = require('../agents/openclaw-client');   // AI Orchestrator
 const vppBroker = require('../services/vppMqttBroker');   // Edge Node telemetry ingestion (MQTT)
 const energyFeed = require('../services/energyFeedService'); // OMIE/ESIOS real market feeds
+const energyArbitrage = require('../services/energyArbitrageAgent'); // autonomous battery arbitrage
 const logger = require('../utils/logger');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -435,24 +436,31 @@ router.get('/alerts', authenticateToken, async (req, res) => {
  */
 router.get('/arbitrage/status', authenticateToken, async (req, res) => {
   try {
-    const omie = await withCache('omie', CACHE_TTL.OMIE_PRICE, buildOmiePrice);
-    // PRODUCCIÓN: leer SoC actual de BESS Unit desde telemetry_logs
-    const socPct = parseFloat((40 + Math.random() * 50).toFixed(1));
+    // Autonomous agent decision from real OMIE price + live battery telemetry (no dispatch).
+    const decision = await energyArbitrage.runOnce({ dispatch: false });
 
-    const strategy = (() => {
-      if (omie.price_eur_mwh < ARBITRAGE_THRESHOLD.NEGATIVE_PRICE_ACTION) return 'MAX_CHARGE';
-      if (omie.price_eur_mwh < ARBITRAGE_THRESHOLD.CHARGE_BELOW_PRICE) return 'CHARGE';
-      if (omie.price_eur_mwh > ARBITRAGE_THRESHOLD.DISCHARGE_ABOVE_PRICE) return 'DISCHARGE_SELL';
-      return 'HOLD';
-    })();
+    let { strategy, powerKw, reason, priceEurMwh, socPct, nodeId, priceSource } = decision;
+
+    // Demo fallback: simulate SoC when no live battery telemetry is connected.
+    if (socPct == null) {
+      socPct = parseFloat((40 + Math.random() * 50).toFixed(1));
+      const sim = energyArbitrage.evaluate({ priceEurMwh: priceEurMwh ?? buildOmiePrice().price_eur_mwh, socPct });
+      strategy = sim.strategy; powerKw = sim.powerKw; reason = `${sim.reason} (simulated SoC)`;
+      if (priceEurMwh == null) priceEurMwh = buildOmiePrice().price_eur_mwh;
+      priceSource = priceSource === 'none' ? 'simulated' : priceSource;
+    }
 
     res.json({
       timestamp: new Date().toISOString(),
       current_strategy: strategy,
+      reason,
+      power_kw: powerKw,
       battery_soc_pct: socPct,
-      omie_price: omie.price_eur_mwh,
+      omie_price: priceEurMwh,
+      price_source: priceSource,
+      node_id: nodeId,
       thresholds: ARBITRAGE_THRESHOLD,
-      estimated_yield_eur: parseFloat((omie.price_eur_mwh * 0.05 * socPct / 100).toFixed(2)),
+      estimated_yield_eur: parseFloat(((priceEurMwh || 0) * 0.05 * socPct / 100).toFixed(2)),
       next_evaluation: new Date(Date.now() + 5 * 60_000).toISOString(),
     });
   } catch (err) {
