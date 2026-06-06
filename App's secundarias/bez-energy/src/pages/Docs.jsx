@@ -40,7 +40,7 @@ const Docs = () => {
         <ValueCard 
           icon={<Database size={32} color="var(--bez-secondary)" />}
           title="¿Qué Ganas como Usuario?"
-          desc="Al conectar tu batería o inversor a nuestra VPP, cedes parte de su capacidad de flexibilización. A cambio, recibes pagos pasivos en token $BZHS por el arbitraje generado y por tu aportación a la estabilidad de la red eléctrica."
+          desc="Al conectar tu batería o inversor a nuestra VPP, cedes parte de su capacidad de flexibilización. A cambio, recibes pagos pasivos en token $BEZ por el arbitraje generado y por tu aportación a la estabilidad de la red eléctrica."
         />
 
         <ValueCard 

@@ -1,9 +1,11 @@
-import { 
-  Sun, 
-  Wind, 
-  Droplets, 
-  BatteryCharging, 
-  Factory, 
+import React from 'react'
+import { motion } from 'framer-motion'
+import {
+  Sun,
+  Wind,
+  Droplets,
+  BatteryCharging,
+  Factory,
   Grid3X3,
   TrendingUp,
   ShieldCheck,
@@ -12,7 +14,8 @@ import {
   Info,
   Wallet,
   FileText,
-  Download
+  Download,
+  Settings
 } from 'lucide-react'
 import { getTelemetry } from '../api'
 
@@ -83,8 +86,11 @@ const Dashboard = () => {
               <div style={{ fontSize: 10, color: 'var(--bez-text-muted)', fontWeight: 700 }}>kW NET</div>
             </motion.div>
 
-            {/* Orbiting Nodes */}
-            {data.nodes.map((node, index) => {
+            {/* Orbiting Nodes (generation sources only — battery/load rendered separately) */}
+            {data.nodes
+              .filter((n) => ['SOLAR', 'WIND', 'HYDRO'].includes(n.type))
+              .slice(0, 3)
+              .map((node, index) => {
               const positions = [
                 { top: 0, left: '20%' },
                 { top: 0, right: '20%' },
@@ -152,7 +158,7 @@ const Dashboard = () => {
               <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--bez-text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Global Ledger Balance</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
                 <h4 style={{ fontSize: 40, fontWeight: 800, letterSpacing: -1 }}>4,892.50</h4>
-                <span style={{ fontSize: 14, color: 'var(--bez-secondary)', fontWeight: 700, fontFamily: 'monospace' }}>BZHS</span>
+                <span style={{ fontSize: 14, color: 'var(--bez-secondary)', fontWeight: 700, fontFamily: 'monospace' }}>BEZ</span>
               </div>
             </div>
 
@@ -198,7 +204,7 @@ const Dashboard = () => {
       {/* Secondary Metrics */}
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
         <MetricCard icon={<Zap size={20} />} label="Consumption" val="8.2 kW" color="var(--bez-primary-light)" />
-        <MetricCard icon={<ArrowUpRight size={20} />} label="Grid Export" val={`${data.global.totalOutput} MW`} color="var(--bez-secondary)" sub="+2.45 BZHS/hr" />
+        <MetricCard icon={<ArrowUpRight size={20} />} label="Grid Export" val={`${data.global.totalOutput} MW`} color="var(--bez-secondary)" sub="+2.45 BEZ/hr" />
         <MetricCard icon={<ShieldCheck size={20} />} label="Aegis Protection" val="ENCRYPTED" color="var(--bez-secondary)" sub="No threats detected" />
         <MetricCard icon={<Settings size={20} />} label="Node Health" val="OPTIMAL" color="var(--bez-solar)" sub="Next sync in 12 min" />
       </section>
@@ -223,9 +229,9 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              <TableRow id="0x8a2...3f1c" type="ENERGY_SALE" val="+12.45 BZHS" status="PoA Verified" time="2m ago" typeColor="var(--bez-secondary)" />
-              <TableRow id="0x2d1...99e8" type="PROTOCOL_BURN" val="-0.12 BZHS" status="System Sync" time="15m ago" typeColor="var(--bez-aegis)" />
-              <TableRow id="0x7f4...c4a1" type="NODE_STAKING" val="500.00 BZHS" status="Validated" time="1h ago" typeColor="var(--bez-primary-light)" />
+              <TableRow id="0x8a2...3f1c" type="ENERGY_SALE" val="+12.45 BEZ" status="PoA Verified" time="2m ago" typeColor="var(--bez-secondary)" />
+              <TableRow id="0x2d1...99e8" type="PROTOCOL_BURN" val="-0.12 BEZ" status="System Sync" time="15m ago" typeColor="var(--bez-aegis)" />
+              <TableRow id="0x7f4...c4a1" type="NODE_STAKING" val="500.00 BEZ" status="Validated" time="1h ago" typeColor="var(--bez-primary-light)" />
             </tbody>
           </table>
         </div>

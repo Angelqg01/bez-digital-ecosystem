@@ -43,6 +43,7 @@ const { aegisCheck } = require('../middleware/aegis');         // Motor de anoma
 const { query } = require('../db/pool');
 const redis = require('../db/redis');                 // namespace: bezhas:energy:
 const OpenClaw = require('../agents/openclaw-client');   // AI Orchestrator
+const vppBroker = require('../services/vppMqttBroker');   // Edge Node telemetry ingestion (MQTT)
 const logger = require('../utils/logger');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,10 +245,9 @@ const buildOmiePrice = () => {
 router.get('/telemetry', authenticateToken, async (req, res) => {
   try {
     const data = await withCache('telemetry:all', CACHE_TTL.TELEMETRY, async () => {
-      // PRODUCCIÓN: const { rows } = await query(
-      //   'SELECT DISTINCT ON (node_id) * FROM telemetry_logs ORDER BY node_id, ts DESC'
-      // );
-      return buildTelemetry();
+      // Live telemetry from Edge Nodes (MQTT) when available; else simulated.
+      // PRODUCCIÓN alternativa: query('SELECT DISTINCT ON (node_id) * FROM telemetry_logs ORDER BY node_id, ts DESC')
+      return vppBroker.getLatestTelemetry() || buildTelemetry();
     });
     res.json(data);
   } catch (err) {
@@ -270,8 +270,8 @@ router.get(
     const { nodeId } = req.params;
     try {
       const data = await withCache(`telemetry:${nodeId}`, CACHE_TTL.TELEMETRY, async () => {
-        // PRODUCCIÓN: await query('SELECT * FROM telemetry_logs WHERE node_id = $1 ORDER BY ts DESC LIMIT 1', [nodeId])
-        return buildTelemetry(nodeId);
+        // Live node telemetry from MQTT when available; else simulated.
+        return vppBroker.getNodeTelemetry(nodeId) || buildTelemetry(nodeId);
       });
 
       if (!data.nodes.length) {
@@ -563,9 +563,10 @@ router.post(
         });
       }
 
-      // Despacho directo (comandos que no requieren aprobación)
-      // PRODUCCIÓN: await mqttBroker.publish(`bezhas/edge/${nodeId}/control`, JSON.stringify({ command, params }));
-      logger.info(`[ENERGY][SCADA] job=${jobId} node=${nodeId} cmd=${command} params=${JSON.stringify(params)}`);
+      // Despacho directo (comandos que no requieren aprobación).
+      // Publica al Edge Node vía MQTT si el broker está conectado; si no, queda en modo mock.
+      const published = vppBroker.publishControl(nodeId, command, params);
+      logger.info(`[ENERGY][SCADA] job=${jobId} node=${nodeId} cmd=${command} transport=${published ? 'mqtt' : 'mock'} params=${JSON.stringify(params)}`);
 
       res.json({
         success: true,
@@ -573,6 +574,7 @@ router.post(
         nodeId,
         command,
         params,
+        transport: published ? 'mqtt' : 'mock',
         dispatched_at: new Date().toISOString(),
         audit_trail: `Logged to BeZhasVPP.sol — contract: ${ENERGY_CONTRACTS.VPP}`,
       });
