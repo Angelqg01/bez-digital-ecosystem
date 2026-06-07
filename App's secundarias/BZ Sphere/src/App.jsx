@@ -32,12 +32,16 @@ import {
   Factory
 } from 'lucide-react'
 import { NotificationProvider } from './components/NotificationSystem'
+import WalletAuthButton from './WalletAuthButton.jsx'
 
 const App = () => {
   return (
     <NotificationProvider>
       <Router>
         <div className="app-shell">
+          <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 200 }}>
+            <WalletAuthButton accent="#00e5ff" statement="Inicia sesión en BeZhas Sphere." subscribePlan={{ amountBEZ: 50, label: 'Sphere Member' }} />
+          </div>
           <Routes>
             <Route path="/" element={<Chat />} />
             <Route path="/vault" element={<Vault />} />

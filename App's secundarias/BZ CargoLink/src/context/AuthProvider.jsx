@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { siweLogin, subscribeWithBEZ, shortAddress } from '../../../_shared/bezhas-wallet-auth.js';
 
 const AuthContext = createContext();
 
@@ -166,13 +167,26 @@ export function LockScreen({ title = "Acceso Restringido" }) {
 
 // --- MODAL DE AUTENTICACIÓN ---
 function LoginRegisterModal({ onClose }) {
-  const { login, register } = useAuth();
+  const { login, register, loginWithWallet } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [role, setRole] = useState('Inversor Especial');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [walletBusy, setWalletBusy] = useState(false);
+
+  const handleWallet = async () => {
+    setError('');
+    setWalletBusy(true);
+    try {
+      await loginWithWallet(isLogin ? 'login' : 'subscribe');
+    } catch (e) {
+      setError(e?.message || 'No se pudo conectar la wallet.');
+    } finally {
+      setWalletBusy(false);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -454,6 +468,41 @@ function LoginRegisterModal({ onClose }) {
             {isLogin ? 'Acceder al Ecosistema' : 'Registrar e Iniciar Sesión'}
           </button>
         </form>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 14px' }}>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+          <span style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>o</span>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+        </div>
+
+        {/* Wallet auth */}
+        <button
+          type="button"
+          onClick={handleWallet}
+          disabled={walletBusy}
+          style={{
+            width: '100%',
+            background: 'rgba(0, 240, 255, 0.06)',
+            border: '1px solid rgba(0, 240, 255, 0.3)',
+            borderRadius: '12px',
+            color: '#00f0ff',
+            padding: '12px',
+            fontSize: '13px',
+            fontWeight: 800,
+            cursor: walletBusy ? 'wait' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            transition: 'all 0.2s',
+          }}
+        >
+          👛 {walletBusy ? 'Firmando con la wallet…' : (isLogin ? 'Iniciar sesión con Wallet' : 'Suscribirse con Wallet')}
+        </button>
+        <p style={{ fontSize: 10, color: '#475569', textAlign: 'center', marginTop: 8 }}>
+          Sign-In With Ethereum (SIWE) · firma criptográfica, sin contraseña
+        </p>
       </div>
 
       <style>{`
@@ -549,6 +598,26 @@ export const AuthProvider = ({ children }) => {
     setIsLoginModalOpen(false);
   };
 
+  // Login / sign-up with a Web3 wallet (SIWE, with demo fallback). mode='subscribe'
+  // is cosmetic — the backend upserts the user on first verify.
+  const loginWithWallet = async (mode = 'login') => {
+    const session = await siweLogin({ statement: 'Inicia sesión en BeZhas CargoLink con tu wallet.', mode });
+    const walletUser = {
+      username: shortAddress(session.address),
+      role: session.authMethod === 'siwe' ? 'Wallet Verified' : 'Wallet (Demo)',
+      walletAddress: session.address,
+    };
+    localStorage.setItem('bezhas-jwt', session.token);
+    localStorage.setItem('bezhas-user', JSON.stringify(walletUser));
+    setToken(session.token);
+    setUser(walletUser);
+    setIsLoginModalOpen(false);
+    return session;
+  };
+
+  // Pay a subscription in BEZ-Coin (Polygon).
+  const subscribeWithBEZPlan = async (amountBEZ = 50) => subscribeWithBEZ({ amountBEZ });
+
   const logout = () => {
     localStorage.removeItem('bezhas-jwt');
     localStorage.removeItem('bezhas-user');
@@ -568,7 +637,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ token, user, login, register, logout, isLoginModalOpen, openLoginModal, closeLoginModal }}>
+    <AuthContext.Provider value={{ token, user, login, register, loginWithWallet, subscribeWithBEZPlan, logout, isLoginModalOpen, openLoginModal, closeLoginModal }}>
       {children}
       {isLoginModalOpen && <LoginRegisterModal onClose={closeLoginModal} />}
     </AuthContext.Provider>

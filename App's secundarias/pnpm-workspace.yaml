@@ -1,0 +1,7 @@
+# Scoped workspace: only the shared @bezhas/* packages and the apps that consume them
+# via the `workspace:*` protocol (e.g. bez-vision-scan). The other SubApps are
+# self-contained (their own node_modules) and intentionally NOT listed here so a
+# root install does not relink them.
+packages:
+  - 'packages/*'
+  - 'bez-vision-scan/frontend'

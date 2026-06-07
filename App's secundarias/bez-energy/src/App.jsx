@@ -13,6 +13,9 @@ import {
   FileText
 } from 'lucide-react'
 
+// Wallet login / subscribe (shared)
+import WalletAuthButton from './WalletAuthButton.jsx'
+
 // Pages
 import Dashboard from './pages/Dashboard'
 import Scada from './pages/Scada'
@@ -43,6 +46,7 @@ const App = () => {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <WalletAuthButton accent="#34d399" statement="Inicia sesión en BeZhas Energy VPP." subscribePlan={{ amountBEZ: 100, label: 'VPP Operator' }} />
             <div style={{ textAlign: 'right', display: 'none', md: 'block' }}>
               <div style={{ fontSize: '12px', color: 'var(--bez-text-muted)', fontFamily: 'monospace' }}>v4.0.2-Stable</div>
             </div>

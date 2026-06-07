@@ -20,6 +20,9 @@ import {
   // Menu — FIX #7: import eliminado, no se usaba
 } from 'lucide-react'
 
+// Wallet login / subscribe (shared)
+import WalletAuthButton from './WalletAuthButton.jsx'
+
 // Pages
 import Dashboard from './pages/Dashboard'
 import Scanner from './pages/Scanner'
@@ -111,6 +114,8 @@ const AppShell = () => {
           </h1>
         </div>
 
+        <div className="flex items-center gap-3">
+        <WalletAuthButton accent="#00D4AA" statement="Inicia sesión en BZ PureScan." subscribePlan={{ amountBEZ: 25, label: 'PureScan Pro' }} />
         {/* ─── FIX #3: Botón de settings con panel real ──────────────── */}
         <div className="relative">
           <button
@@ -127,6 +132,7 @@ const AppShell = () => {
           </button>
 
           {showSettings && <SettingsPanel onClose={closeSettings} />}
+        </div>
         </div>
       </header>
 

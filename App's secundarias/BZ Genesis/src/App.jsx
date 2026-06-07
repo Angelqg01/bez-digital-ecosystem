@@ -5,6 +5,9 @@ import { motion } from 'framer-motion';
 // Mock BeZhas Platform SDK hook
 import { BeZhasPlatform } from './lib/bezhas-sdk';
 
+// Wallet login / subscribe (shared)
+import WalletAuthButton from './WalletAuthButton.jsx';
+
 const useBeZhasPlatform = () => {
   const [status, setStatus] = useState('disconnected');
   const [wallet, setWallet] = useState(null);
@@ -148,15 +151,18 @@ const BZGenesisApp = () => {
       <main className="bz-main-content">
         <header className="bz-header">
           <h1>Bio-Agent Ecosystem</h1>
-          {wallet ? (
-            <div className="bz-wallet-chip">
-              <span className="address">{wallet.address.slice(0,6)}...{wallet.address.slice(-4)}</span>
-              <span className="balance">{wallet.balance}</span>
-              {wallet.pureScanVerified && <Shield size={16} className="verified-icon" />}
-            </div>
-          ) : (
-            <button className="bz-btn primary" onClick={connect}>Connect PureScan Wallet</button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {wallet ? (
+              <div className="bz-wallet-chip">
+                <span className="address">{wallet.address.slice(0,6)}...{wallet.address.slice(-4)}</span>
+                <span className="balance">{wallet.balance}</span>
+                {wallet.pureScanVerified && <Shield size={16} className="verified-icon" />}
+              </div>
+            ) : (
+              <button className="bz-btn primary" onClick={connect}>Connect PureScan Wallet</button>
+            )}
+            <WalletAuthButton accent="#7c3aed" statement="Inicia sesión en BZ Genesis." subscribePlan={{ amountBEZ: 75, label: 'Bio-Agent Access' }} />
+          </div>
         </header>
 
         <motion.div 
