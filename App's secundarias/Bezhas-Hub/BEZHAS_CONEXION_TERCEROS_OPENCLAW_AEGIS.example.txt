@@ -1,3 +1,7 @@
+# PLANTILLA SIN SECRETOS — generada por scripts/redact-secrets-to-template.cjs
+# Los valores <ROTATE_ME> deben rellenarse desde Secret Manager en runtime.
+# NO pegar credenciales reales en este fichero. Original (con secretos) está gitignorado.
+
 ╔═══════════════════════════════════════════════════════════════════════════════════════╗
 ║          BeZhas — APIs & Webhooks de Conexión con Plataformas de Terceros             ║
 ║          Distribución automática via Agente IA OpenCLaw + AEGIS                       ║
@@ -52,26 +56,26 @@
 ═══════════════════════════════════════════════════════════════════════════════════════
 
 ▸ Agente OpenCLaw (IA Personalizado BeZhas)
-  API Key:        bzh_3p_openclaw_agent_61efc9ba46b7898e4284a1a606c9a671280ba9285100a650
-  Webhook Secret: whsec_3p_9aa8a3c46f480ba3d5df83df4ec3fbf69cc30acc4b8f22e2409620a3018d325b
-  Client ID:      bzh_cid_8d2e5bfe9ef4ed4b74e2c0e55c26e6e3
+  API Key:        bzh_3p_openclaw_agent_<ROTATE_ME>
+  Webhook Secret: whsec_3p_<ROTATE_ME>
+  Client ID:      bzh_cid_<ROTATE_ME>
   Base URL:       https://bezhas-backend-<PROJECT_ID>.run.app/api/openclaw
   AEGIS Endpoint: http://localhost:8000/api/aegis (producción: https://aegis.bez.digital/api/aegis)
 
 ▸ AEGIS Bridge (Puente IA ↔ Plataforma)
-  API Key:        bzh_3p_aegis_bridge_c13dac70d2b5017f27ce15261dce4ea664df1d1bf2f80995
-  Webhook Secret: whsec_3p_f2e8a0a67d839ae525d771b811c03749c41a54cef389f80de4a552cdf114f5f1
-  Client ID:      bzh_cid_dab094cf3b97c45f20f28b6f6b6f5e05
+  API Key:        bzh_3p_aegis_bridge_<ROTATE_ME>
+  Webhook Secret: whsec_3p_<ROTATE_ME>
+  Client ID:      bzh_cid_<ROTATE_ME>
 
 ▸ Subscription Gateway (Pasarela de Suscripciones)
-  API Key:        bzh_3p_subscription_gateway_064959686b4f3043fab47eaa52a9ef655a467035fe06b8a6
-  Webhook Secret: whsec_3p_b3c41b03f8d59c75e3d8178ba02c6e27e4a3c9a999b3c6813457bde41fc81711
-  Client ID:      bzh_cid_9b472eadc11b49199b65104f482c9426
+  API Key:        bzh_3p_subscription_gateway_<ROTATE_ME>
+  Webhook Secret: whsec_3p_<ROTATE_ME>
+  Client ID:      bzh_cid_<ROTATE_ME>
 
 ▸ OAuth Connector Universal
-  API Key:        bzh_3p_oauth_connector_9396065dfef23734bf95ce9fab8058b3298a994a9b201944
-  Webhook Secret: whsec_3p_db425fb24d2ba84f3730a8f8942f36147b9ab1eaffe9465fbd993d6e85f2941b
-  Client ID:      bzh_cid_a34a661ff3edbb492bd126ada2667fb6
+  API Key:        bzh_3p_oauth_connector_<ROTATE_ME>
+  Webhook Secret: whsec_3p_<ROTATE_ME>
+  Client ID:      bzh_cid_<ROTATE_ME>
 
 
 ═══════════════════════════════════════════════════════════════════════════════════════
@@ -132,9 +136,9 @@ Webhook del OpenCLaw → Cliente:
 ██  PLATAFORMA 1: VINTED (Marketplace Moda Second-Hand)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_vinted_b59e5480a609426f9acf091ee7c0ecded4443c78f205f9be
-Webhook Secret: whsec_3p_e39cd23c5180ae4801ad16db193d609d654a6e1a7a293875f22a7d7064cd03a9
-Client ID:      bzh_cid_64084683e54508324e6eaae4fb78ac79
+API Key:        bzh_3p_vinted_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Bridge Adapter: backend/bridge/adapters/VintedAdapter.js
 Base API:       https://api.vinted.com/v1 (hipotético — requiere acceso oficial)
@@ -173,9 +177,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 2: AIRBNB (Alquileres / Real Estate P2P)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_airbnb_f9cc56001b2f11ee00ee272539d97568bf86c0fb9caf5e78
-Webhook Secret: whsec_3p_9211818125481c93eab7862e95e52f83f1539493fab868de0d8ae4b4a5a51a42
-Client ID:      bzh_cid_c182baedc251c341e7c7537b4d78f1c3
+API Key:        bzh_3p_airbnb_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Bridge Adapter: backend/bridge/adapters/AirbnbAdapter.js
 
@@ -213,9 +217,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 3: MAERSK (Logística / Shipping Internacional)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_maersk_d5e07d1389e97dd03512f585a339d6dc3eb26f8d8a5e1b27
-Webhook Secret: whsec_3p_6cd46972d078f11ac48057115db79f028d6d3148d5df9c2cdf59b05539ba1e85
-Client ID:      bzh_cid_4a297bb7ef4729a8aa61c27bb6ca36c0
+API Key:        bzh_3p_maersk_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Bridge Adapter: backend/bridge/adapters/MaerskAdapter.js
 
@@ -253,9 +257,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 4: AMAZON (E-Commerce Global)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_amazon_8d658ba75d03fd0ba35204d8b3b1f401e5674bafb19182bc
-Webhook Secret: whsec_3p_5541a607b35dca45537bf9114d0b932bd0c569cb4161bb76db84840c014ac7db
-Client ID:      bzh_cid_e85e461e9231522a3c044dfb26f8f756
+API Key:        bzh_3p_amazon_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Conexión:       Amazon SP-API (Selling Partner API)
 Auth:           OAuth 2.0 + AWS Sig V4
@@ -291,9 +295,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 5: EBAY (Marketplace Global)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_ebay_2b4ee4ee9e52a08f9c654d04961dfcc0a47b5df08cf55299
-Webhook Secret: whsec_3p_f0bb5251d728aeeb044f213de771a8bdc7e231993994cbfdac8750ec0fe830a5
-Client ID:      bzh_cid_53399948906d1698e921e8b328c8e862
+API Key:        bzh_3p_ebay_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Conexión:       eBay RESTful APIs + Webhook Subscriptions
 Auth:           OAuth 2.0
@@ -326,9 +330,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 6: WALLAPOP (Marketplace Local España)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_wallapop_081205c568ac93056479bc256c87e8f48fca3de764d64261
-Webhook Secret: whsec_3p_252fe4e04dd4aaeb4a3ffd1c73d78607baf22cb9bc64430ad40a2f85a67af6bf
-Client ID:      bzh_cid_ad8657ed73e6efdea69faf72c46b45e7
+API Key:        bzh_3p_wallapop_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Conexión:       API Wallapop (partnership requerido)
 
@@ -359,9 +363,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 7: SHOPIFY (E-Commerce SaaS)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_shopify_3ac0bee863ff68fdcc984473f5956f351ac8b6743555ff31
-Webhook Secret: whsec_3p_bb2a86203fe62a7d6c8a438bb0004f8214d5735c78ef438efe38d212f3ffe3f9
-Client ID:      bzh_cid_ddddb2e41a4f526be02be3c24f4dea7c
+API Key:        bzh_3p_shopify_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Conexión:       Shopify Admin API + Storefront API
 Auth:           OAuth 2.0 / API Access Token
@@ -398,9 +402,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 8: WOOCOMMERCE (E-Commerce WordPress)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_woocommerce_6691077d963012027ada485c35d456a218ae6be9860f6c3b
-Webhook Secret: whsec_3p_0a013f745d3179d34f5112f798df197523062773ecef8af76ba5e2e0ff62c23c
-Client ID:      bzh_cid_7bbee4bf479a6bf5864bff2c89974167
+API Key:        bzh_3p_woocommerce_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Conexión:       WooCommerce REST API v3
 Auth:           Consumer Key + Consumer Secret
@@ -434,9 +438,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 9: STRIPE CONNECT (Pagos Multi-vendedor)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_stripe_connect_fa9128140305d013ff2dc517cad60b18baedb97ff434ca00
-Webhook Secret: whsec_3p_14b62014805ce750ec259129053b949ccd3e9939c0994d90d29b9f8227162df8
-Client ID:      bzh_cid_8bfaabece0885ca953829ed05c563c1e
+API Key:        bzh_3p_stripe_connect_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Conexión:       Stripe Connect API (Standard/Express)
 Auth:           API Secret Key + Connect Account ID
@@ -470,9 +474,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 10: MERCADO LIBRE (Marketplace Latam)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_mercadolibre_0485126c06ae05bff677199fb59d72a12043f3963b6dd127
-Webhook Secret: whsec_3p_182aad92750fefa2033fdec26c84602db528b6d10e6f78d54e2214ab728ed73b
-Client ID:      bzh_cid_82ee1f4b58b6d0898bd3a4528e894383
+API Key:        bzh_3p_mercadolibre_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Conexión:       MercadoLibre API
 Auth:           OAuth 2.0 (App ID + Secret)
@@ -506,9 +510,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 11: ALIEXPRESS (Dropshipping / B2C China)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_aliexpress_5ddc1e5d827ddf328e3a7c01a78e1a42ae4360c50c3b2a3d
-Webhook Secret: whsec_3p_1268db8e17c5cc6a606df7598abb9603269b8c33306a54b16b6d1556b7abfe0d
-Client ID:      bzh_cid_2d8818b78a10930e77c25b08bd1e8578
+API Key:        bzh_3p_aliexpress_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Conexión:       AliExpress Open Platform API
 Auth:           App Key + App Secret + Access Token
@@ -541,9 +545,9 @@ Webhook BeZhas → Sub-App del Cliente:
 ██  PLATAFORMA 12: ETSY (Marketplace Artesanal / Handmade)
 ═══════════════════════════════════════════════════════════════════════════════════════
 
-API Key:        bzh_3p_etsy_4d858a234d080a881f39aff80a11d7d949597e9cae49d330
-Webhook Secret: whsec_3p_760b03c2a4c89453fcf1dff3e691b3163feb10bf1832eafa2d14d074557b89bc
-Client ID:      bzh_cid_bef34bded8db539ad88fea6841ffeb2f
+API Key:        bzh_3p_etsy_<ROTATE_ME>
+Webhook Secret: whsec_3p_<ROTATE_ME>
+Client ID:      bzh_cid_<ROTATE_ME>
 
 Conexión:       Etsy Open API v3
 Auth:           OAuth 2.0 (API Key + Shared Secret)
@@ -640,7 +644,7 @@ POST /api/subscription/create
 // 3. OpenCLaw provisiona credenciales automáticamente
 POST /api/openclaw/provision
 Headers:
-  x-api-key: bzh_3p_openclaw_agent_61efc9ba46b7898e4284a1a606c9a671280ba9285100a650
+  x-api-key: bzh_3p_openclaw_agent_<ROTATE_ME>
   x-aegis-token: <AEGIS_SESSION_TOKEN>
 Body:
 {
@@ -741,22 +745,22 @@ Monitoreo:
 
 Plataforma          │ Prefijo API Key            │ Client ID
 ────────────────────┼────────────────────────────┼──────────────────────────────────
-OpenCLaw Agent      │ bzh_3p_openclaw_agent_...  │ bzh_cid_8d2e5bfe9ef4ed4b...
-AEGIS Bridge        │ bzh_3p_aegis_bridge_...    │ bzh_cid_dab094cf3b97c45f...
-Subscription GW     │ bzh_3p_subscription_gw_... │ bzh_cid_9b472eadc11b4919...
-OAuth Connector     │ bzh_3p_oauth_connector_... │ bzh_cid_a34a661ff3edbb49...
-Vinted              │ bzh_3p_vinted_...          │ bzh_cid_64084683e5450832...
-Airbnb              │ bzh_3p_airbnb_...          │ bzh_cid_c182baedc251c341...
-Maersk              │ bzh_3p_maersk_...          │ bzh_cid_4a297bb7ef4729a8...
-Amazon              │ bzh_3p_amazon_...          │ bzh_cid_e85e461e9231522a...
-eBay                │ bzh_3p_ebay_...            │ bzh_cid_53399948906d1698...
-Wallapop            │ bzh_3p_wallapop_...        │ bzh_cid_ad8657ed73e6efde...
-Shopify             │ bzh_3p_shopify_...         │ bzh_cid_ddddb2e41a4f526b...
-WooCommerce         │ bzh_3p_woocommerce_...     │ bzh_cid_7bbee4bf479a6bf5...
-Stripe Connect      │ bzh_3p_stripe_connect_...  │ bzh_cid_8bfaabece0885ca9...
-MercadoLibre        │ bzh_3p_mercadolibre_...    │ bzh_cid_82ee1f4b58b6d089...
-AliExpress          │ bzh_3p_aliexpress_...      │ bzh_cid_2d8818b78a10930e...
-Etsy                │ bzh_3p_etsy_...            │ bzh_cid_bef34bded8db539a...
+OpenCLaw Agent      │ bzh_3p_openclaw_agent_...  │ bzh_cid_<ROTATE_ME>...
+AEGIS Bridge        │ bzh_3p_aegis_bridge_...    │ bzh_cid_<ROTATE_ME>...
+Subscription GW     │ bzh_3p_subscription_gw_... │ bzh_cid_<ROTATE_ME>...
+OAuth Connector     │ bzh_3p_oauth_connector_... │ bzh_cid_<ROTATE_ME>...
+Vinted              │ bzh_3p_vinted_...          │ bzh_cid_<ROTATE_ME>...
+Airbnb              │ bzh_3p_airbnb_...          │ bzh_cid_<ROTATE_ME>...
+Maersk              │ bzh_3p_maersk_...          │ bzh_cid_<ROTATE_ME>...
+Amazon              │ bzh_3p_amazon_...          │ bzh_cid_<ROTATE_ME>...
+eBay                │ bzh_3p_ebay_...            │ bzh_cid_<ROTATE_ME>...
+Wallapop            │ bzh_3p_wallapop_...        │ bzh_cid_<ROTATE_ME>...
+Shopify             │ bzh_3p_shopify_...         │ bzh_cid_<ROTATE_ME>...
+WooCommerce         │ bzh_3p_woocommerce_...     │ bzh_cid_<ROTATE_ME>...
+Stripe Connect      │ bzh_3p_stripe_connect_...  │ bzh_cid_<ROTATE_ME>...
+MercadoLibre        │ bzh_3p_mercadolibre_...    │ bzh_cid_<ROTATE_ME>...
+AliExpress          │ bzh_3p_aliexpress_...      │ bzh_cid_<ROTATE_ME>...
+Etsy                │ bzh_3p_etsy_...            │ bzh_cid_<ROTATE_ME>...
 
 
 ═══════════════════════════════════════════════════════════════════════════════════════

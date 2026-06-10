@@ -85,6 +85,15 @@ typechain-types/
 *.pem
 config.json
 
+# Reference docs with real credentials - NEVER commit (use *.example.txt instead)
+BEZHAS_API_KEYS_ABIS_WEBHOOKS.txt
+BEZHAS_CONEXION_TERCEROS_OPENCLAW_AEGIS.txt
+temp_secret.txt
+*_API_KEYS_*.txt
+*_CONEXION_TERCEROS_*.txt
+# Allow the redacted templates
+!*.example.txt
+
 # Uploaded files - May contain user sensitive data
 uploads/
 

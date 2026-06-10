@@ -37,9 +37,9 @@ jobs:
       matrix:
         include:
           - name: backend
-            path: api
+            path: backend
           - name: frontend
-            path: frontend-next
+            path: frontend
 
     steps:
       - name: Checkout Code
@@ -204,7 +204,7 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Check Frontend Dependencies
-        working-directory: ./frontend-next
+        working-directory: ./frontend
         continue-on-error: true
         run: |
           pnpm outdated --json > frontend-outdated.json 2>/dev/null || echo '{}' > frontend-outdated.json
@@ -214,7 +214,7 @@ jobs:
           fi
 
       - name: Check Backend Dependencies
-        working-directory: ./api
+        working-directory: ./backend
         continue-on-error: true
         run: |
           pnpm outdated --json > backend-outdated.json 2>/dev/null || echo '{}' > backend-outdated.json
@@ -228,8 +228,8 @@ jobs:
         with:
           name: outdated-dependencies
           path: |
-            ./frontend-next/frontend-outdated.json
-            ./api/backend-outdated.json
+            ./frontend/frontend-outdated.json
+            ./backend/backend-outdated.json
           retention-days: 7
           if-no-files-found: ignore
 
@@ -305,15 +305,15 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Install Frontend Dependencies
-        working-directory: ./frontend-next
+        working-directory: ./frontend
         run: pnpm install --frozen-lockfile
 
       - name: Install ESLint Security Plugins
-        working-directory: ./frontend-next
+        working-directory: ./frontend
         run: pnpm install --save-dev eslint-plugin-security eslint-plugin-no-unsanitized
 
       - name: Run ESLint Security Scan
-        working-directory: ./frontend-next
+        working-directory: ./frontend
         continue-on-error: true
         run: |
           pnpm exec eslint src --ext .js,.jsx,.ts,.tsx \
@@ -329,7 +329,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: eslint-security-report
-          path: ./frontend-next/eslint-security.json
+          path: ./frontend/eslint-security.json
           retention-days: 30
           if-no-files-found: ignore
 
@@ -357,8 +357,8 @@ jobs:
             paths-ignore:
               - node_modules
               - '**/node_modules'
+              - frontend/dist
               - frontend-next/dist
-              - api/dist
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v4
