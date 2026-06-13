@@ -21,6 +21,7 @@ const axios = require('axios');
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const MCP_URL = process.env.MCP_SERVER_URL || 'http://localhost:8080';
+const { mcpAuthHeaders } = require('../utils/mcpAuthHeaders');
 const CACHE_TTL_MS = 60 * 1000; // 1 minute cache
 const REQUEST_TIMEOUT = 5000; // 5s per MCP call
 
@@ -48,7 +49,7 @@ class MCPContextService {
         try {
             const response = await axios.post(`${MCP_URL}${endpoint}`, body, {
                 timeout: REQUEST_TIMEOUT,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...mcpAuthHeaders() },
             });
             return response.data;
         } catch (error) {

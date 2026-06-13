@@ -19,10 +19,17 @@ const optionalAuth = (req, res, next) => {
 
 /**
  * @swagger
- * /api/clothing-rental:
+ * /clothing-rental:
  *   post:
  *     summary: Crear nueva solicitud de alquiler/compra
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.post('/',
     optionalAuth,
@@ -59,10 +66,17 @@ router.post('/',
 
 /**
  * @swagger
- * /api/clothing-rental/customer/{walletAddress}:
+ * /clothing-rental/customer/{walletAddress}:
  *   get:
  *     summary: Obtener alquileres de un cliente
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.get('/customer/:walletAddress', async (req, res) => {
     try {
@@ -82,10 +96,17 @@ router.get('/customer/:walletAddress', async (req, res) => {
 
 /**
  * @swagger
- * /api/clothing-rental/merchant/{walletAddress}:
+ * /clothing-rental/merchant/{walletAddress}:
  *   get:
  *     summary: Obtener alquileres de un comercio
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.get('/merchant/:walletAddress', async (req, res) => {
     try {
@@ -105,10 +126,17 @@ router.get('/merchant/:walletAddress', async (req, res) => {
 
 /**
  * @swagger
- * /api/clothing-rental/{rentalId}:
+ * /clothing-rental/{rentalId}:
  *   get:
  *     summary: Obtener detalle de un alquiler
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.get('/:rentalId', async (req, res) => {
     try {
@@ -128,10 +156,17 @@ router.get('/:rentalId', async (req, res) => {
 
 /**
  * @swagger
- * /api/clothing-rental/{rentalId}/aegis/initiate:
+ * /clothing-rental/{rentalId}/aegis/initiate:
  *   post:
  *     summary: Iniciar cadena de evaluación AEGIS
  *     tags: [ClothingRental, AEGIS]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.post('/:rentalId/aegis/initiate', async (req, res) => {
     try {
@@ -155,10 +190,17 @@ router.post('/:rentalId/aegis/initiate', async (req, res) => {
 
 /**
  * @swagger
- * /api/clothing-rental/{rentalId}/aegis/status:
+ * /clothing-rental/{rentalId}/aegis/status:
  *   get:
  *     summary: Obtener estado de evaluación AEGIS
  *     tags: [ClothingRental, AEGIS]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.get('/:rentalId/aegis/status', async (req, res) => {
     try {
@@ -175,10 +217,17 @@ router.get('/:rentalId/aegis/status', async (req, res) => {
 
 /**
  * @swagger
- * /api/clothing-rental/{rentalId}/merchant-decision:
+ * /clothing-rental/{rentalId}/merchant-decision:
  *   post:
  *     summary: Registrar decisión del comercio basada en AEGIS
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.post('/:rentalId/merchant-decision',
     optionalAuth,
@@ -212,10 +261,17 @@ router.post('/:rentalId/merchant-decision',
 
 /**
  * @swagger
- * /api/clothing-rental/{rentalId}/payment:
+ * /clothing-rental/{rentalId}/payment:
  *   post:
  *     summary: Registrar pago de alquiler
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.post('/:rentalId/payment',
     [
@@ -249,10 +305,17 @@ router.post('/:rentalId/payment',
 
 /**
  * @swagger
- * /api/clothing-rental/{rentalId}/return:
+ * /clothing-rental/{rentalId}/return:
  *   post:
  *     summary: Registrar devolución de ropa
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.post('/:rentalId/return',
     [
@@ -286,10 +349,17 @@ router.post('/:rentalId/return',
 
 /**
  * @swagger
- * /api/clothing-rental/{rentalId}/review:
+ * /clothing-rental/{rentalId}/review:
  *   post:
  *     summary: Agregar review de cliente o comercio
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.post('/:rentalId/review',
     [
@@ -323,10 +393,17 @@ router.post('/:rentalId/review',
 
 /**
  * @swagger
- * /api/clothing-rental/pending-aegis:
+ * /clothing-rental/pending-aegis:
  *   get:
  *     summary: Obtener alquileres pendientes de revisión AEGIS
  *     tags: [ClothingRental, AEGIS]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.get('/pending-aegis', async (req, res) => {
     try {
@@ -344,10 +421,17 @@ router.get('/pending-aegis', async (req, res) => {
 
 /**
  * @swagger
- * /api/clothing-rental/stats:
+ * /clothing-rental/stats:
  *   get:
  *     summary: Obtener estadísticas del sistema
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.get('/stats/overview', async (req, res) => {
     try {
@@ -364,10 +448,17 @@ router.get('/stats/overview', async (req, res) => {
 
 /**
  * @swagger
- * /api/clothing-rental/categories:
+ * /clothing-rental/categories:
  *   get:
  *     summary: Obtener categorías disponibles
  *     tags: [ClothingRental]
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *       400:
+ *         description: Petición inválida
+ *       500:
+ *         description: Error interno
  */
 router.get('/categories', (req, res) => {
     res.json({

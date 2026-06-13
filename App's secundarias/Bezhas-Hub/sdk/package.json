@@ -1,0 +1,29 @@
+{
+  "name": "@bezhas/sdk",
+  "version": "2.1.0",
+  "description": "Official BeZhas Hub client SDK — typed access to the public API contract (institutions, holdings, partners)",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test/smoke.test.js"
+  },
+  "keywords": [
+    "bezhas",
+    "web3",
+    "sdk",
+    "api-client",
+    "polygon",
+    "blockchain"
+  ],
+  "author": "BeZhas",
+  "license": "SEE LICENSE IN https://bez.digital/terms",
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@11.0.0"
+}

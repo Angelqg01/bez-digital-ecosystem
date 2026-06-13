@@ -18,6 +18,7 @@
     "validate:deploy": "node scripts/validate-deployment.js",
     "smoke:online": "node scripts/smoke-online.js",
     "scan:secrets": "node scripts/scan-secrets.js",
+    "export:openapi": "node scripts/export-openapi.js",
     "grant:bridge:roles": "hardhat run scripts/grant-bridge-roles.js --network localhost",
     "dev:up": "docker compose up -d",
     "dev:down": "docker compose down",

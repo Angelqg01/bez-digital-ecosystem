@@ -43,11 +43,11 @@ Solo se documentan endpoints seguros para desarrolladores externos.
         },
         servers: [
             {
-                url: 'http://localhost:3000/api',
+                url: 'http://localhost:3001/api',
                 description: 'Development Server'
             },
             {
-                url: 'https://api.bez.digital',
+                url: 'https://api.bez.digital/api',
                 description: 'Production Server'
             }
         ],
@@ -156,10 +156,24 @@ Solo se documentan endpoints seguros para desarrolladores externos.
             {
                 name: 'Developer',
                 description: 'Gestión de API Keys y portal de desarrolladores'
+            },
+            {
+                name: 'Web3 Core',
+                description: 'Indexer blockchain, cola de transacciones y storage — superficie de solo lectura para integraciones institucionales'
             }
         ]
     },
-    apis: ['./routes/escrow.routes.js', './routes/bezcoin.routes.js', './routes/health.routes.js', './routes/developer-portal.routes.js']
+    // Lista CURADA: solo rutas público-seguras para devs externos (política del header).
+    // - bezcoin.routes.js eliminado: ya no se monta (delegado a SubApp wallet vía deprecatedSubappRoute).
+    // - globalSettings.routes.js tiene @swagger pero es admin-only → NO se expone aquí.
+    // Añade aquí cada ruta pública nueva cuando la anotes con @swagger.
+    apis: [
+        './routes/escrow.routes.js',
+        './routes/health.routes.js',
+        './routes/developer-portal.routes.js',
+        './routes/clothingRental.routes.js',
+        './routes/web3-core.routes.js'
+    ]
 };
 
 module.exports = swaggerJsdoc(options);

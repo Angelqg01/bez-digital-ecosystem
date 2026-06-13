@@ -26,10 +26,15 @@ import cors from 'cors';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools } from './tools/index.js';
 import { config } from './config.js';
+import { createApiKeyAuth } from './middleware/apiKeyAuth.js';
 
 const app: ReturnType<typeof express> = express();
 app.use(cors());
 app.use(express.json());
+
+// Auth por API key (opt-in vía MCP_API_KEY / MCP_API_KEYS; /api/mcp/health queda público).
+// Sin clave configurada → modo legacy con warning (no rompe despliegues actuales).
+app.use(createApiKeyAuth());
 
 // Initialize MCP Server (internal, not connected to transport)
 const mcpServer = new McpServer({

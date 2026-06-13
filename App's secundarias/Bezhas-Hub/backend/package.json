@@ -24,7 +24,8 @@
     "update-safe": "pnpm update",
     "clean": "rm -rf node_modules && pnpm install",
     "seed:dao": "node seeds/daoSeed.js",
-    "health": "curl -s http://localhost:3000/api/health | node -e \"console.log(JSON.parse(require('fs').readFileSync('/dev/stdin').toString()))\""
+    "health": "curl -s http://localhost:3001/api/health | node -e \"console.log(JSON.parse(require('fs').readFileSync('/dev/stdin').toString()))\"",
+    "openapi:export": "node scripts/export-openapi.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0",

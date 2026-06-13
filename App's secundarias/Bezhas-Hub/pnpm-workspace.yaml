@@ -1,6 +1,8 @@
+# @chainlink/contracts trae una subdep git (@zksync/contracts) que pnpm 11 bloquea por defecto
+blockExoticSubdeps: false
+
 packages:
   - 'backend'
   - 'frontend'
-  - 'frontend-next'
   - 'sdk'
   - 'packages/*'

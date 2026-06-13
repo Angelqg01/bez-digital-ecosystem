@@ -1,0 +1,1110 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "BeZhas API - Developer Documentation",
+    "version": "2.0.0",
+    "description": "\n# BeZhas Public API\n\nAPI RESTful para integrar BeZhas Quality Oracle en tu aplicación.\n\n## 🔐 Autenticación\nTodas las peticiones requieren un API Key:\n```\nX-API-Key: YOUR_API_KEY\n```\n\n## 📊 Rate Limits\n- **Free Tier**: 100 req/hour\n- **Pro Tier**: 1000 req/hour  \n- **Enterprise**: Sin límite\n\n## 🌐 Endpoints Públicos\nSolo se documentan endpoints seguros para desarrolladores externos.\n\n## 📝 Cómo obtener tu API Key\n1. Visita https://bez.digital/developers\n2. Crea una cuenta o inicia sesión\n3. Ve a Settings > Developer\n4. Genera tu API Key\n            ",
+    "contact": {
+      "name": "BeZhas Developer Support",
+      "email": "dev@bez.digital",
+      "url": "https://bez.digital/developers"
+    },
+    "license": {
+      "name": "Proprietary",
+      "url": "https://bez.digital/terms"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001/api",
+      "description": "Development Server"
+    },
+    {
+      "url": "https://api.bez.digital/api",
+      "description": "Production Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API Key obtenido desde el Developer Portal"
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token JWT para autenticación de usuarios"
+      }
+    },
+    "schemas": {
+      "Service": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "businessWallet": {
+            "type": "string",
+            "example": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+          },
+          "clientWallet": {
+            "type": "string",
+            "example": "0x456d35Cc6634C0532925a3b844Bc9e7595f0aaa"
+          },
+          "collateralAmount": {
+            "type": "string",
+            "example": "1000000000000000000"
+          },
+          "initialQuality": {
+            "type": "integer",
+            "example": 95,
+            "minimum": 1,
+            "maximum": 100
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "DISPUTED",
+              "CANCELLED"
+            ],
+            "example": "IN_PROGRESS"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Balance": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "example": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+          },
+          "balance": {
+            "type": "string",
+            "example": "1000000000000000000"
+          },
+          "balanceFormatted": {
+            "type": "string",
+            "example": "1.0 BEZ"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Invalid API Key"
+          },
+          "message": {
+            "type": "string",
+            "example": "La API Key proporcionada no es válida"
+          },
+          "code": {
+            "type": "integer",
+            "example": 403
+          }
+        }
+      },
+      "HealthStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "string",
+            "example": "2.0.0"
+          },
+          "uptime": {
+            "type": "number",
+            "example": 86400
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "API Key faltante o inválida",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimitExceeded": {
+        "description": "Límite de rate excedido",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Rate limit exceeded"
+                },
+                "retryAfter": {
+                  "type": "integer",
+                  "example": 3600
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Quality Oracle",
+      "description": "Endpoints para gestionar servicios con garantía de calidad",
+      "externalDocs": {
+        "description": "Ver Whitepaper",
+        "url": "https://bez.digital/whitepaper"
+      }
+    },
+    {
+      "name": "BezCoin",
+      "description": "Consultas de balance y transacciones (solo lectura)"
+    },
+    {
+      "name": "Health",
+      "description": "Estado del sistema y métricas públicas"
+    },
+    {
+      "name": "Developer",
+      "description": "Gestión de API Keys y portal de desarrolladores"
+    },
+    {
+      "name": "Web3 Core",
+      "description": "Indexer blockchain, cola de transacciones y storage — superficie de solo lectura para integraciones institucionales"
+    }
+  ],
+  "paths": {
+    "/escrow/create": {
+      "post": {
+        "summary": "Crear nuevo servicio con garantía de calidad",
+        "description": "Crea un nuevo servicio de escrow con colateral bloqueado y nivel de calidad prometido",
+        "tags": [
+          "Quality Oracle"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "clientWallet",
+                  "amount",
+                  "initialQuality"
+                ],
+                "properties": {
+                  "clientWallet": {
+                    "type": "string",
+                    "description": "Dirección Ethereum del cliente",
+                    "example": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+                  },
+                  "amount": {
+                    "type": "string",
+                    "description": "Colateral en wei (1 BEZ = 1000000000000000000 wei)",
+                    "example": "1000000000000000000"
+                  },
+                  "initialQuality": {
+                    "type": "integer",
+                    "description": "Nivel de calidad prometido (1-100)",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "example": 95
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Servicio creado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Service created successfully"
+                    },
+                    "serviceId": {
+                      "type": "integer",
+                      "example": 123
+                    },
+                    "txHash": {
+                      "type": "string",
+                      "example": "0xabc123def456..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          }
+        }
+      }
+    },
+    "/escrow/{serviceId}": {
+      "get": {
+        "summary": "Obtener detalles de un servicio",
+        "description": "Consulta el estado y detalles de un servicio de escrow existente",
+        "tags": [
+          "Quality Oracle"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "serviceId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del servicio",
+            "example": 123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del servicio",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "description": "Servicio no encontrado"
+          }
+        }
+      }
+    },
+    "/escrow/{serviceId}/finalize": {
+      "post": {
+        "summary": "Finalizar servicio",
+        "description": "Completa un servicio de escrow y libera el colateral según la calidad final",
+        "tags": [
+          "Quality Oracle"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "serviceId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del servicio"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "finalQuality"
+                ],
+                "properties": {
+                  "finalQuality": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Calidad final del servicio",
+                    "example": 98
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Servicio finalizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "serviceId": {
+                      "type": "integer"
+                    },
+                    "finalQuality": {
+                      "type": "integer"
+                    },
+                    "penaltyApplied": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/escrow/{serviceId}/dispute": {
+      "post": {
+        "summary": "Iniciar disputa de un servicio",
+        "description": "El cliente o negocio puede disputar un servicio en progreso",
+        "tags": [
+          "Quality Oracle"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "serviceId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "privateKey"
+                ],
+                "properties": {
+                  "privateKey": {
+                    "type": "string",
+                    "description": "Private key para firmar transacción"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Disputa iniciada"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/escrow/stats": {
+      "get": {
+        "summary": "Obtener estadísticas del sistema",
+        "description": "Retorna métricas generales del Quality Oracle",
+        "tags": [
+          "Quality Oracle"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estadísticas del sistema"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Quick health check",
+        "description": "Estado rápido del Hub. No requiere autenticación.",
+        "tags": [
+          "Health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Servicio operativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio degradado o no disponible"
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "summary": "Liveness probe (Cloud Run/K8s)",
+        "description": "Devuelve 200 si el proceso está vivo, aunque haya dependencias caídas.",
+        "tags": [
+          "Health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Proceso vivo"
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Readiness probe (Cloud Run/K8s)",
+        "description": "Devuelve 200 solo si el Hub puede aceptar tráfico (DB lista).",
+        "tags": [
+          "Health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Listo para aceptar tráfico"
+          },
+          "503": {
+            "description": "No listo (dependencias críticas caídas)"
+          }
+        }
+      }
+    },
+    "/developers/register": {
+      "get": {
+        "summary": "Portal de registro para desarrolladores",
+        "description": "Información sobre cómo registrarse y obtener una API Key",
+        "tags": [
+          "Developer"
+        ],
+        "responses": {
+          "200": {
+            "description": "Información de registro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "demoKeys": {
+                      "type": "object",
+                      "properties": {
+                        "free": {
+                          "type": "string"
+                        },
+                        "pro": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/developers/keys": {
+      "get": {
+        "summary": "Listar API Keys disponibles (Demo)",
+        "description": "Muestra las API Keys de demostración disponibles para testing",
+        "tags": [
+          "Developer"
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de API Keys demo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "tier": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/developers/generate": {
+      "post": {
+        "summary": "Generar nueva API Key (Demo)",
+        "description": "Genera una API Key temporal para testing (solo desarrollo)",
+        "tags": [
+          "Developer"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "tier",
+                  "name"
+                ],
+                "properties": {
+                  "tier": {
+                    "type": "string",
+                    "enum": [
+                      "free",
+                      "pro",
+                      "enterprise"
+                    ],
+                    "example": "free"
+                  },
+                  "name": {
+                    "type": "string",
+                    "example": "Mi App de Prueba"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "API Key generada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "apiKey": {
+                      "type": "string"
+                    },
+                    "tier": {
+                      "type": "string"
+                    },
+                    "rateLimit": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/developers/playground": {
+      "get": {
+        "summary": "API Playground",
+        "description": "Herramienta interactiva para probar la API",
+        "tags": [
+          "Developer"
+        ],
+        "responses": {
+          "200": {
+            "description": "Información del playground"
+          }
+        }
+      }
+    },
+    "/clothing-rental": {
+      "post": {
+        "summary": "Crear nueva solicitud de alquiler/compra",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/customer/{walletAddress}": {
+      "get": {
+        "summary": "Obtener alquileres de un cliente",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/merchant/{walletAddress}": {
+      "get": {
+        "summary": "Obtener alquileres de un comercio",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/{rentalId}": {
+      "get": {
+        "summary": "Obtener detalle de un alquiler",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/{rentalId}/aegis/initiate": {
+      "post": {
+        "summary": "Iniciar cadena de evaluación AEGIS",
+        "tags": [
+          "ClothingRental",
+          "AEGIS"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/{rentalId}/aegis/status": {
+      "get": {
+        "summary": "Obtener estado de evaluación AEGIS",
+        "tags": [
+          "ClothingRental",
+          "AEGIS"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/{rentalId}/merchant-decision": {
+      "post": {
+        "summary": "Registrar decisión del comercio basada en AEGIS",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/{rentalId}/payment": {
+      "post": {
+        "summary": "Registrar pago de alquiler",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/{rentalId}/return": {
+      "post": {
+        "summary": "Registrar devolución de ropa",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/{rentalId}/review": {
+      "post": {
+        "summary": "Agregar review de cliente o comercio",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/pending-aegis": {
+      "get": {
+        "summary": "Obtener alquileres pendientes de revisión AEGIS",
+        "tags": [
+          "ClothingRental",
+          "AEGIS"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/stats": {
+      "get": {
+        "summary": "Obtener estadísticas del sistema",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/clothing-rental/categories": {
+      "get": {
+        "summary": "Obtener categorías disponibles",
+        "tags": [
+          "ClothingRental"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación exitosa"
+          },
+          "400": {
+            "description": "Petición inválida"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/web3/health": {
+      "get": {
+        "summary": "Health check de los servicios Web3",
+        "description": "Estado agregado de indexer, cola de transacciones, account abstraction y storage descentralizado.",
+        "tags": [
+          "Web3 Core"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Servicios Web3 saludables"
+          },
+          "503": {
+            "description": "Uno o más servicios Web3 degradados"
+          }
+        }
+      }
+    },
+    "/web3/status": {
+      "get": {
+        "summary": "Estado detallado de los servicios Web3",
+        "tags": [
+          "Web3 Core"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Estado por servicio (indexer, queue, AA, storage)"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/web3/indexer/stats": {
+      "get": {
+        "summary": "Estadísticas del indexador blockchain",
+        "description": "Métricas de eventos indexados on-chain (solo lectura, rate-limited).",
+        "tags": [
+          "Web3 Core"
+        ],
+        "responses": {
+          "200": {
+            "description": "Estadísticas del indexer"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/web3/indexer/events": {
+      "get": {
+        "summary": "Consultar eventos blockchain indexados",
+        "description": "Auditoría on-chain consultable — útil para due diligence e integraciones institucionales.",
+        "tags": [
+          "Web3 Core"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "contractName",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por contrato (p.ej. BezhasToken)"
+          },
+          {
+            "in": "query",
+            "name": "eventName",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por evento (p.ej. Transfer)"
+          },
+          {
+            "in": "query",
+            "name": "userAddress",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por dirección involucrada"
+          },
+          {
+            "in": "query",
+            "name": "fromBlock",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "toBlock",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "in": "query",
+            "name": "skip",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de eventos y contador"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    },
+    "/web3/queue/stats": {
+      "get": {
+        "summary": "Estadísticas de la cola de transacciones",
+        "tags": [
+          "Web3 Core"
+        ],
+        "responses": {
+          "200": {
+            "description": "Métricas de la cola (pendientes, procesadas, fallidas)"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "description": "Error interno"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,8 @@
 const axios = require('axios');
 
 const MCP_BASE = process.env.MCP_SERVER_URL || 'http://localhost:8080';
+const { mcpAuthHeaders } = require('../utils/mcpAuthHeaders');
+const mcpPost = (url, body, cfg = {}) => axios.post(url, body, { ...cfg, headers: { ...(cfg.headers || {}), ...mcpAuthHeaders() } });
 
 /**
  * Lead Finder Service
@@ -21,7 +23,7 @@ async function findLeads({ query, platform = 'linkedin', maxResults = 20, filter
 
     for (const url of searchUrls) {
         try {
-            const res = await axios.post(`${MCP_BASE}/api/mcp/firecrawl`, {
+            const res = await mcpPost(`${MCP_BASE}/api/mcp/firecrawl`, {
                 action: 'scrape_page',
                 url,
                 extractSchema: {
@@ -112,7 +114,7 @@ async function enrichLead(lead) {
     if (!lead.profileUrl) return lead;
 
     try {
-        const res = await axios.post(`${MCP_BASE}/api/mcp/firecrawl`, {
+        const res = await mcpPost(`${MCP_BASE}/api/mcp/firecrawl`, {
             action: 'scrape_page',
             url: lead.profileUrl,
             extractSchema: {

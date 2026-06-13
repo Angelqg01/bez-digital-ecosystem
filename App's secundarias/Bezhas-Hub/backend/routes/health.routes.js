@@ -10,7 +10,22 @@ const pino = require('pino');
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
 /**
- * GET /health - Quick health check
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Quick health check
+ *     description: Estado rápido del Hub. No requiere autenticación.
+ *     tags: [Health]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Servicio operativo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthStatus'
+ *       503:
+ *         description: Servicio degradado o no disponible
  */
 router.get('/', async (req, res) => {
     try {
@@ -104,8 +119,16 @@ router.get('/system/info', (req, res) => {
 });
 
 /**
- * GET /health/live - Kubernetes/Cloud Run liveness probe
- * Returns 200 if the server is running (even if dependencies are down)
+ * @swagger
+ * /health/live:
+ *   get:
+ *     summary: Liveness probe (Cloud Run/K8s)
+ *     description: Devuelve 200 si el proceso está vivo, aunque haya dependencias caídas.
+ *     tags: [Health]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Proceso vivo
  */
 router.get('/live', (req, res) => {
     res.status(200).json({
@@ -115,8 +138,18 @@ router.get('/live', (req, res) => {
 });
 
 /**
- * GET /health/ready - Kubernetes/Cloud Run readiness probe
- * Returns 200 only if the server can accept traffic
+ * @swagger
+ * /health/ready:
+ *   get:
+ *     summary: Readiness probe (Cloud Run/K8s)
+ *     description: Devuelve 200 solo si el Hub puede aceptar tráfico (DB lista).
+ *     tags: [Health]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Listo para aceptar tráfico
+ *       503:
+ *         description: No listo (dependencias críticas caídas)
  */
 router.get('/ready', async (req, res) => {
     try {

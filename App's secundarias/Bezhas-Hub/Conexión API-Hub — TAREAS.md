@@ -36,10 +36,22 @@
 - [!] **Verificar pipeline verde**: los jobs de test ahora apuntan al código REAL (antes testeaban el mock). Pueden requerir setup de DB/env que antes estaba oculto — validar en el próximo push/PR. **Riesgo de rojo = señal real, no regresión introducida.**
 - [ ] (follow-up) Unificar build-args VITE_*/URLs entre `deploy-gcp.yml` y `cloudbuild.yaml` (fuente única) antes de re-activar auto-deploy
 
-### 1.3 OpenAPI único (D6)
-- [ ] Consolidar contrato vivo del backend reusando `backend/swagger.config.js`
-- [ ] Confirmar `/api-docs` sirve el spec actualizado
-- [ ] Exportar `openapi.json` versionado para consumo de SubApps/devs
+### 1.3 OpenAPI único (D6) — ✅ HECHO (2026-06-12)
+- [x] `swagger.config.js` consolidado: dev server → `:3001`, prod → `api.bez.digital/api`; quitado `bezcoin.routes.js` (no montado, delegado a SubApp wallet); añadido `clothingRental.routes.js`; lista `apis` curada con política comentada (solo rutas público-seguras; `globalSettings` admin excluida)
+- [x] Anotado `health.routes.js` (`/health`, `/health/live`, `/health/ready`) — antes el tag Health existía sin endpoints
+- [x] Reparadas 13 anotaciones de `clothingRental.routes.js` (sin `responses` obligatorio + prefijo `/api/` duplicado)
+- [x] **`backend/scripts/export-openapi.cjs`**: valida (swagger-parser + invariantes) y exporta `backend/openapi.json` — **25 paths / 25 operaciones**. Script pnpm: `openapi:export`. Sale ≠0 si el contrato es inválido → apto para CI
+- [x] **Test de contrato Jest**: `backend/tests/openapi-contract.test.js` (6 tests ✅, entra en `pnpm test` → CI): OpenAPI 3.x, paths>0, ApiKeyAuth, sin prefijo `/api` duplicado, responses en toda operación, validación swagger-parser completa
+- [x] Fix infra: `pnpm-workspace.yaml` + `blockExoticSubdeps: false` (subdep git de @chainlink/contracts bloqueaba `pnpm install`); backend reinstalado (faltaba `lru-cache` → roto el export y jest)
+- [x] Fix menor: script `health` de backend/package.json apuntaba a `:3000` → `:3001`
+- [x] (runtime smoke, 2026-06-12) Backend arrancado en local: `GET /api/health → 200`, `GET /api-docs/ → 200`. **Bug real encontrado y corregido**: `services/cache.service.js` estaba borrado del working tree (sin commitear) y 6 servicios lo requieren → el server no llegaba a escuchar; restaurado con `git checkout -- backend/services/cache.service.js`
+- [x] (2026-06-12) Anotada la superficie **read-only institucional de web3-core** (`/web3/health`, `/web3/status`, `/web3/indexer/stats`, `/web3/indexer/events` con query params, `/web3/queue/stats`) + tag `Web3 Core`. Contrato: **30 paths / 30 operaciones**, 6/6 tests ✅
+- [x] Decisión de política: rutas `/api/mcp` son admin-only (`verifyAdminToken` global) → **NO entran al contrato público**. La superficie MCP para instituciones es `packages/mcp-server` (bezhas-intelligence :8080), producto separado
+- [ ] (progresivo, alimenta 3B) Anotar las demás rutas públicas que deban entrar al contrato (posts, profile, …) — el test de contrato vigila cada anotación nueva
+- [x] (3B/SDK, 2026-06-12) **`@bezhas/sdk` v2.1.0 creado en `sdk/`** (la carpeta no existía pese a estar en workspace+scripts — referencia huérfana resuelta): cliente zero-deps (fetch nativo, Node 18+/browser), 30 métodos generados desde manifest `ENDPOINTS`, tipados `index.d.ts`, README institucional. Validación: smoke sin red (7 grupos de aserciones) + **test de sincronía bidireccional SDK↔OpenAPI** en `backend/tests/sdk-contract-sync.test.js` (CI falla si contrato y SDK divergen). 10/10 tests ✅
+- [ ] (3B/SDK) Publicar `@bezhas/sdk` en npm cuando el contrato se estabilice (`pnpm sdk:publish-npm` ya existe en root)
+- [x] (MCP institucional, 2026-06-12) **Superficie MCP asegurada y documentada.** 🔴 Hallazgo de seguridad: `bezhas-intelligence` desplegado `--allow-unauthenticated` en Cloud Run con secrets (GitHub/Alpaca/1inch) y **HTTP sin auth** → cualquiera podía invocar trading/repos con credenciales BeZhas. Fix: middleware `src/middleware/apiKeyAuth.ts` (opt-in vía `MCP_API_KEY`/`MCP_API_KEYS`; `/health` público; modo legacy con warning si no hay clave = no rompe nada). Backend actualizado para enviar `X-API-Key` (helper `backend/utils/mcpAuthHeaders.js` + 3 servicios parcheados: automationEngine, leadFinder, mcp-context; aiGateway ya usaba OIDC). README institucional con guía de conexión STDIO+HTTP. Validación: tsc limpio + **166/166 vitest** (9 nuevos de auth)
+- [!] **(Usuario/deploy)** Activar enforcement en prod: crear secret `MCP_API_KEY` y añadirlo a `--set-secrets` de `bezhas-intelligence` Y del backend en `cloudbuild.yaml`. Hasta entonces el MCP server sigue abierto (modo legacy)
 
 **DoD Fase 1:** una sola capa API; CI testea lo que se despliega; build sin errores.
 

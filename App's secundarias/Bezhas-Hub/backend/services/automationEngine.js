@@ -2,6 +2,7 @@ const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 
 const MCP_BASE = process.env.MCP_SERVER_URL || 'http://localhost:8080';
+const { mcpAuthHeaders } = require('../utils/mcpAuthHeaders');
 
 /**
  * MCP Tool endpoints map
@@ -44,7 +45,7 @@ async function executeMcpTool(toolId, params) {
 
     // MCP server call
     const url = `${MCP_BASE}${endpoint}`;
-    const res = await axios.post(url, params, { timeout: 30000 });
+    const res = await axios.post(url, params, { timeout: 30000, headers: mcpAuthHeaders() });
     return res.data;
 }
 

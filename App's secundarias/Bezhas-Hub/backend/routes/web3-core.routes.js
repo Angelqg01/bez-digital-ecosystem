@@ -29,8 +29,18 @@ const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 // ============ HEALTH & STATUS ============
 
 /**
- * @route GET /api/web3/health
- * @desc Health check for all Web3 services
+ * @swagger
+ * /web3/health:
+ *   get:
+ *     summary: Health check de los servicios Web3
+ *     description: Estado agregado de indexer, cola de transacciones, account abstraction y storage descentralizado.
+ *     tags: [Web3 Core]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Servicios Web3 saludables
+ *       503:
+ *         description: Uno o más servicios Web3 degradados
  */
 router.get('/health', async (req, res) => {
     try {
@@ -43,8 +53,17 @@ router.get('/health', async (req, res) => {
 });
 
 /**
- * @route GET /api/web3/status
- * @desc Get detailed status of Web3 services
+ * @swagger
+ * /web3/status:
+ *   get:
+ *     summary: Estado detallado de los servicios Web3
+ *     tags: [Web3 Core]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Estado por servicio (indexer, queue, AA, storage)
+ *       500:
+ *         description: Error interno
  */
 router.get('/status', async (req, res) => {
     try {
@@ -58,8 +77,19 @@ router.get('/status', async (req, res) => {
 // ============ BLOCKCHAIN INDEXER ============
 
 /**
- * @route GET /api/web3/indexer/stats
- * @desc Get blockchain indexer statistics
+ * @swagger
+ * /web3/indexer/stats:
+ *   get:
+ *     summary: Estadísticas del indexador blockchain
+ *     description: Métricas de eventos indexados on-chain (solo lectura, rate-limited).
+ *     tags: [Web3 Core]
+ *     responses:
+ *       200:
+ *         description: Estadísticas del indexer
+ *       429:
+ *         $ref: '#/components/responses/RateLimitExceeded'
+ *       500:
+ *         description: Error interno
  */
 router.get('/indexer/stats', rateLimiter.read(), async (req, res) => {
     try {
@@ -71,8 +101,44 @@ router.get('/indexer/stats', rateLimiter.read(), async (req, res) => {
 });
 
 /**
- * @route GET /api/web3/indexer/events
- * @desc Query indexed blockchain events
+ * @swagger
+ * /web3/indexer/events:
+ *   get:
+ *     summary: Consultar eventos blockchain indexados
+ *     description: Auditoría on-chain consultable — útil para due diligence e integraciones institucionales.
+ *     tags: [Web3 Core]
+ *     parameters:
+ *       - in: query
+ *         name: contractName
+ *         schema: { type: string }
+ *         description: Filtrar por contrato (p.ej. BezhasToken)
+ *       - in: query
+ *         name: eventName
+ *         schema: { type: string }
+ *         description: Filtrar por evento (p.ej. Transfer)
+ *       - in: query
+ *         name: userAddress
+ *         schema: { type: string }
+ *         description: Filtrar por dirección involucrada
+ *       - in: query
+ *         name: fromBlock
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: toBlock
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *       - in: query
+ *         name: skip
+ *         schema: { type: integer, default: 0 }
+ *     responses:
+ *       200:
+ *         description: Lista de eventos y contador
+ *       429:
+ *         $ref: '#/components/responses/RateLimitExceeded'
+ *       500:
+ *         description: Error interno
  */
 router.get('/indexer/events', rateLimiter.read(), async (req, res) => {
     try {
@@ -178,8 +244,18 @@ router.get('/queue/job/:queue/:jobId', rateLimiter.read(), async (req, res) => {
 });
 
 /**
- * @route GET /api/web3/queue/stats
- * @desc Get queue statistics
+ * @swagger
+ * /web3/queue/stats:
+ *   get:
+ *     summary: Estadísticas de la cola de transacciones
+ *     tags: [Web3 Core]
+ *     responses:
+ *       200:
+ *         description: Métricas de la cola (pendientes, procesadas, fallidas)
+ *       429:
+ *         $ref: '#/components/responses/RateLimitExceeded'
+ *       500:
+ *         description: Error interno
  */
 router.get('/queue/stats', rateLimiter.read(), async (req, res) => {
     try {
