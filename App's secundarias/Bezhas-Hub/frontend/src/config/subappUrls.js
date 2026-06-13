@@ -14,12 +14,22 @@
 
 const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
 
+// URLs canónicas — alineadas con `SUBAPP_URLS` del control-center
+// (control-center/frontend/app/(landing)/developers/page.tsx), fuente de verdad.
 export const SUBAPP_URLS = {
   hub: env.VITE_SUBAPP_HUB_URL || 'https://bezhas-hub-o5xep6gbwq-ew.a.run.app',
+  wallet: env.VITE_SUBAPP_WALLET_URL || 'https://bezhas-wallet-o5xep6gbwq-ew.a.run.app',
+  gas: env.VITE_SUBAPP_GAS_URL || 'https://bezhas-gas-o5xep6gbwq-ew.a.run.app',
+  edge: env.VITE_SUBAPP_EDGE_URL || 'https://bezhas-edge-o5xep6gbwq-ew.a.run.app',
+  vision: env.VITE_SUBAPP_VISION_URL || 'https://bezhas-vision-o5xep6gbwq-ew.a.run.app',
   capital: env.VITE_SUBAPP_CAPITAL_URL || 'https://bezhas-capital-o5xep6gbwq-ew.a.run.app/defi',
-  purescan: env.VITE_SUBAPP_PURESCAN_URL || 'https://bezhas-purescan-o5xep6gbwq-ew.a.run.app',
-  energy: env.VITE_SUBAPP_ENERGY_URL || 'https://bezhas-energy-o5xep6gbwq-ew.a.run.app',
+  prestige: env.VITE_SUBAPP_PRESTIGE_URL || 'https://bezhas-prestige-o5xep6gbwq-ew.a.run.app',
   cargolink: env.VITE_SUBAPP_CARGOLINK_URL || 'https://bezhas-cargolink-o5xep6gbwq-ew.a.run.app',
+  pay: env.VITE_SUBAPP_PAY_URL || 'https://bezhas-pay-o5xep6gbwq-ew.a.run.app',
+  purescan: env.VITE_SUBAPP_PURESCAN_URL || 'https://bezhas-purescan-o5xep6gbwq-ew.a.run.app',
+  sphere: env.VITE_SUBAPP_SPHERE_URL || 'https://bezhas-sphere-o5xep6gbwq-ew.a.run.app',
+  energy: env.VITE_SUBAPP_ENERGY_URL || 'https://bezhas-energy-o5xep6gbwq-ew.a.run.app',
+  genesis: env.VITE_SUBAPP_GENESIS_URL || 'https://bezhas-genesis-o5xep6gbwq-ew.a.run.app',
 };
 
 // Metadatos de presentación para los paneles "movido a SubApp".
@@ -28,9 +38,17 @@ export const SUBAPP_META = {
     name: 'BZ Capital',
     tagline: 'DeFi del ecosistema: staking, farming, gobernanza y tesorería',
   },
+  wallet: { name: 'BEZ Wallet', tagline: 'Wallet, bridge, gobernanza, validadores y gas' },
+  gas: { name: 'Gas Tank Manager', tagline: 'Gestión de gas y patrocinio de transacciones' },
+  edge: { name: 'Edge Node Manager', tagline: 'Nodos DePIN y recompensas' },
+  vision: { name: 'BEZ Vision Scan', tagline: 'Visión artificial y trazabilidad' },
   purescan: { name: 'BZ PureScan', tagline: 'Visión artificial y trazabilidad' },
   energy: { name: 'BZ Energy', tagline: 'Virtual Power Plant y mercado energético' },
   cargolink: { name: 'BZ CargoLink', tagline: 'Trazabilidad logística y aduanera' },
+  prestige: { name: 'BZ Prestige', tagline: 'Programa de fidelidad y prestigio' },
+  pay: { name: 'BeZhas Pay', tagline: 'Pagos y checkout' },
+  sphere: { name: 'BZ Sphere', tagline: 'Red social y comunidad' },
+  genesis: { name: 'BZ Genesis', tagline: 'Identidad y agentes bio' },
   hub: { name: 'BeZhas Hub', tagline: 'Plano de control del ecosistema' },
 };
 

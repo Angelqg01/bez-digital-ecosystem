@@ -41,7 +41,7 @@ const MarketplaceUnified = lazy(() => import('./pages/MarketplaceUnified')); // 
 const OraclePage = lazy(() => import('./pages/OraclePage')); // NEW: Data Oracle
 const CreatePage = lazy(() => import('./pages/Create')); // Unified Creation Hub
 const BeZhasFeed = lazy(() => import('./pages/BeZhasFeed'));
-const BridgePage = lazy(() => import('./pages/BridgePage')); // NEW: Bridge Page
+// BridgePage → [MIGRATED to BEZ Wallet] (deep-link vía MovedToSubApp)
 // ProfileView removed - using ProfilePage instead
 // const BadgesPage = lazy(() => import('./pages/BadgesPage')); // REMOVED: Badges system eliminated in cleanup
 // CreateItemPage removed - now integrated into MarketplaceUnified Tab 3
@@ -112,7 +112,7 @@ const DocViewer = lazy(() => import('./pages/docs/DocViewer')); // NEW: Document
 // const AdMarketplace = lazy(() => import('./pages/dao/AdMarketplace')); // REMOVED
 // const DAOAdminPanel = lazy(() => import('./components/admin/DAOAdminPanel')); // REMOVED
 // const PluginManager = lazy(() => import('./pages/dao/PluginManager')); // REMOVED
-const DAOPage = lazy(() => import('./pages/DAOPage')); // DAO Page Unificada: Gobernanza simplificada
+// DAOPage → [MIGRATED to BEZ Wallet] (deep-link vía MovedToSubApp)
 const Industria40FundPage = lazy(() => import('./pages/dao/Industria40FundPage')); // NEW: Industry 4.0 Fund Details
 const SaludBiotecFundPage = lazy(() => import('./pages/dao/SaludBiotecFundPage')); // NEW: Health & Biotech Fund Details
 const EnergiaSmartCitiesFundPage = lazy(() => import('./pages/dao/EnergiaSmartCitiesFundPage')); // NEW: Energy & Smart Cities Fund Details
@@ -123,7 +123,7 @@ const EducacionCredencialesFundPage = lazy(() => import('./pages/dao/EducacionCr
 const RWAPage = lazy(() => import('./pages/RWAPage')); // NEW: Real World Assets Marketplace
 
 // New Governance & Compliance
-const GovernancePage = lazy(() => import('./pages/GovernancePage'));
+// GovernancePage → [MIGRATED to BEZ Wallet] (deep-link vía MovedToSubApp)
 const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 
 // Developer Tools
@@ -366,7 +366,10 @@ export const router = createBrowserRouter(
             { path: '/farming', element: <MovedToSubApp app="capital" subPath="/farming" feature="Farming" /> },
             { path: '/liquidity', element: <MovedToSubApp app="capital" subPath="/treasury" feature="Liquidez / Tesorería" /> },
             { path: '/defi-hub', element: <Navigate to="/defi" replace /> },
-            // { path: '/governance', element: <GovernancePage /> }, // [MIGRATED to BeZhas Wallet]
+            // --- Governance / DAO / Bridge vertical → BEZ Wallet (Control Plane: deep-link) ---
+            { path: '/governance', element: <MovedToSubApp app="wallet" subPath="/governance" feature="Gobernanza" /> },
+            { path: '/dao-page', element: <MovedToSubApp app="wallet" subPath="/governance" feature="DAO / Gobernanza" /> },
+            { path: '/bridge', element: <MovedToSubApp app="wallet" subPath="/bridge" feature="Bridge" /> },
             { path: '/compliance', element: <CompliancePage /> }, // [KEEP] Compliance Dashboard
             { path: '/oracle', element: <OraclePage /> }, // NEW: Data Oracle
             // { path: '/members', element: <MembersPage /> }, // REMOVED: Members moved to other sections
@@ -426,7 +429,7 @@ export const router = createBrowserRouter(
             //     { path: 'plugins', element: <PluginManager /> },
             //   ],
             // },
-            // { path: '/dao-page', element: <DAOPage /> }, // [MIGRATED to BeZhas Wallet]
+            // /dao-page → ver bloque "Governance / DAO / Bridge vertical → BEZ Wallet" más arriba
             { path: '/dao/industria-4-0', element: <Industria40FundPage /> }, // Industry 4.0 Fund Details
             { path: '/dao/salud-biotecnologia', element: <SaludBiotecFundPage /> }, // Health & Biotech Fund Details
             { path: '/dao/energia-smart-cities', element: <EnergiaSmartCitiesFundPage /> }, // Energy & Smart Cities Fund Details
@@ -447,7 +450,7 @@ export const router = createBrowserRouter(
                 { path: 'create', element: <CreatePage /> }, // Unified Creation Hub
                 // { path: 'staking', element: <StakingPageUnified /> }, // [MIGRATED to BZ Capital]
                 // { path: 'farming', element: <FarmingPage /> }, // [MIGRATED to BZ Capital]
-                // { path: 'bridge', element: <BridgePage /> }, // [MIGRATED to BeZhas Wallet]
+                // bridge → /bridge en el bloque "Governance / DAO / Bridge vertical → BEZ Wallet" (arriba, nivel público)
                 // { path: 'quests', element: <QuestsPage /> }, // REMOVED: Quests system eliminated
                 // shop route removed - now points to MarketplaceUnified
               ],
