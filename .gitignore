@@ -75,6 +75,14 @@ build/
 .next/
 *.tsbuildinfo
 
+# Rust build artifacts (cargo target dirs)
+target/
+**/target/
+
+# Turborepo cache
+.turbo/
+**/.turbo/
+
 # Archives / heavy binaries (never commit)
 *.zip
 *.tar
