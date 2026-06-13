@@ -59,9 +59,13 @@
 
 ## 🟡 FASE 2 — Contrato y conexión estable Hub ↔ clientes
 ### 2.1 Frontend canónico (Decisión `frontend/` Vite)
-- [ ] Marcar `frontend-next/` como `EXPERIMENTAL/FROZEN` (README + sacar del build/CI)
+- [x] Marcar `frontend-next/` como `EXPERIMENTAL/FROZEN` (2026-06-13: banner WARNING en su README). Verificado: ya NO está en el build/CI — `cloudbuild.yaml` usa `frontend/Dockerfile.gcp`; los jobs de `deploy-gcp.yml` que lo construían fueron neutralizados en Fase 1.2; su única traza en CI es un `paths-ignore` de CodeQL (inofensivo)
 - [ ] Decidir si se archiva en `legacy/` o se mantiene congelado en sitio
-- [ ] Confirmar que `cloudbuild.yaml` y `docker-compose.yml` solo referencian `frontend/`
+- [x] Confirmar que `cloudbuild.yaml` y `docker-compose.yml` solo referencian `frontend/`
+
+> **Dedup Capa 2 (2026-06-13):** eliminados 2 duplicados muertos y sin referencias →
+> `deployed-backend/` (396 ficheros, snapshot obsoleto de `backend/` del 2026-06-02, no usado por ningún deploy, duplicaba `app-secrets.yaml`/`config/secrets.js`) y
+> `frontend/package/` (240 ficheros: copia desempaquetada de tailwindcss v3.4.18 metida por error). Recuperables vía historial git.
 
 ### 2.2 Config centralizada
 - [ ] Módulo único de config con base URL del Hub + `SUBAPP_URLS` (consumido por front)

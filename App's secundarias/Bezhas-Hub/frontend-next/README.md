@@ -1,3 +1,12 @@
+> [!WARNING]
+> **EXPERIMENTAL / FROZEN — NO usar en producción.**
+>
+> El frontend canónico del Hub es **`frontend/` (Vite)**, que es lo que despliega
+> `cloudbuild.yaml` (`frontend/Dockerfile.gcp`). Este `frontend-next/` (Next.js) es
+> un experimento paralelo congelado: **no entra en el build ni en el deploy de PROD**
+> y no debe recibir features nuevas. Pendiente decidir si se archiva en `legacy/` o
+> se elimina (ver `Conexión API-Hub — TAREAS.md`, Fase 2.1).
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
