@@ -67,8 +67,17 @@
 > `deployed-backend/` (396 ficheros, snapshot obsoleto de `backend/` del 2026-06-02, no usado por ningún deploy, duplicaba `app-secrets.yaml`/`config/secrets.js`) y
 > `frontend/package/` (240 ficheros: copia desempaquetada de tailwindcss v3.4.18 metida por error). Recuperables vía historial git.
 
+> **Vertical DeFi → BZ Capital migrado (2026-06-13, Capa 2A):** las rutas del Hub
+> `/defi`, `/staking`, `/farming`, `/liquidity` (+ `/defi-hub`→redirect) ya NO renderizan
+> operativa local: muestran el panel `MovedToSubApp` con deep-link a BZ Capital
+> (`basePath /defi`, p.ej. `…/defi/staking`). Imports lazy huérfanos de
+> `StakingPage`/`FarmingPage`/`DeFiHub` eliminados de `App.jsx`. Los ficheros de página
+> siguen en disco (aún los cubre `tests/critical-routes.test.jsx` en aislamiento) →
+> **borrado físico + limpieza de hooks (`useStaking`/`useFarming`/`useTokenomics`) y del
+> test = siguiente iteración.** Validado: esbuild transform OK en los 3 ficheros tocados.
+
 ### 2.2 Config centralizada
-- [ ] Módulo único de config con base URL del Hub + `SUBAPP_URLS` (consumido por front)
+- [~] Módulo único de config con base URL del Hub + `SUBAPP_URLS` (consumido por front) — creado `frontend/src/config/subappUrls.js` (fuente única, env-overridable `VITE_SUBAPP_*_URL`, mismas URLs que `secondaryApps` del control-center; helper `subappUrl(app, subPath)`). Falta migrar consumidores existentes (landing/EcosystemBar) a esta fuente.
 - [ ] Variables `VITE_API_URL` / `VITE_WS_URL` / `VITE_MCP_URL` coherentes con cloudbuild
 
 ### 2.3 Tests de contrato + observabilidad

@@ -28,6 +28,7 @@ import GlobalModals from './components/GlobalModals';
 import TranslateWidget from './components/TranslateWidget';
 import { BezPayProvider } from './context/BezPayContext';
 import BezPayModal from './components/payments/BezPayModal';
+import MovedToSubApp from './components/MovedToSubApp'; // Control Plane: deep-link a SubApp tras migrar un vertical
 
 // --- Pages (Lazy Loaded) ---
 const LandingPage = lazy(() => import('./pages/LandingPage')); // NEW: Marketing Landing Page
@@ -36,8 +37,7 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage')); // Simple Profile (temporary fix)
 const ProfileEditPage = lazy(() => import('./pages/ProfileEditPage')); // NEW: Profile Edit Page
 const MarketplaceUnified = lazy(() => import('./pages/MarketplaceUnified')); // Unified Marketplace + Shop + Create
-const StakingPageUnified = lazy(() => import('./pages/StakingPage')); // Updated path
-const FarmingPage = lazy(() => import('./pages/FarmingPage')); // Added FarmingPage
+// StakingPage / FarmingPage → [MIGRATED to BZ Capital] (operativa servida por la SubApp; el Hub solo enlaza vía MovedToSubApp)
 const OraclePage = lazy(() => import('./pages/OraclePage')); // NEW: Data Oracle
 const CreatePage = lazy(() => import('./pages/Create')); // Unified Creation Hub
 const BeZhasFeed = lazy(() => import('./pages/BeZhasFeed'));
@@ -132,7 +132,7 @@ const DeveloperConsole = lazy(() => import('./pages/DeveloperConsole')); // NEW:
 // const SDKTestPage = lazy(() => import('./pages/SDKTestPage')); // NEW: SDK Integration TestPage
 const AuthPage = lazy(() => import('./pages/AuthPage')); // NEW: Unified Auth (Email, Google, Facebook, Wallet)
 const BuyTokensPage = lazy(() => import('./pages/BuyTokensPage')); // Token Purchase Page
-const DeFiHub = lazy(() => import('./pages/DeFiHub')); // DeFi Hub with LP Integration
+// DeFiHub → [MIGRATED to BZ Capital] (deep-link vía MovedToSubApp)
 const BezPayPage = lazy(() => import('./pages/BezPayPage')); // NEW: BeZhas Pay System v2.0 full page
 
 // AI Guide Widget (Global)
@@ -360,7 +360,12 @@ export const router = createBrowserRouter(
             // Rutas de Marketplace y DeFi migradas a subapps correspondientes
             // { path: '/marketplace', element: <MarketplaceUnified /> }, // [MIGRATED to BZ Capital / Ecosystem]
             // { path: '/shop', element: <MarketplaceUnified /> }, // [MIGRATED]
-            // { path: '/defi', element: <Navigate to="/staking" replace /> }, // [MIGRATED to BZ Capital]
+            // --- DeFi vertical → BZ Capital (Control Plane: deep-link, sin operativa local) ---
+            { path: '/defi', element: <MovedToSubApp app="capital" feature="DeFi" /> },
+            { path: '/staking', element: <MovedToSubApp app="capital" subPath="/staking" feature="Staking" /> },
+            { path: '/farming', element: <MovedToSubApp app="capital" subPath="/farming" feature="Farming" /> },
+            { path: '/liquidity', element: <MovedToSubApp app="capital" subPath="/treasury" feature="Liquidez / Tesorería" /> },
+            { path: '/defi-hub', element: <Navigate to="/defi" replace /> },
             // { path: '/governance', element: <GovernancePage /> }, // [MIGRATED to BeZhas Wallet]
             { path: '/compliance', element: <CompliancePage /> }, // [KEEP] Compliance Dashboard
             { path: '/oracle', element: <OraclePage /> }, // NEW: Data Oracle
@@ -381,8 +386,7 @@ export const router = createBrowserRouter(
             { path: '/buy-tokens', element: <BuyTokensPage /> }, // Token Purchase (integrado con BezPayModal)
             { path: '/pay', element: <BezPayPage /> }, // BeZhas Pay System v2.0 — página completa
             { path: '/bez-pay', element: <BezPayPage /> }, // Alias: BeZhas Pay System
-            // { path: '/liquidity', element: <DeFiHub /> }, // [MIGRATED to BZ Capital]
-            // { path: '/defi-hub', element: <DeFiHub /> }, // [MIGRATED to BZ Capital]
+            // /liquidity y /defi-hub → ver bloque "DeFi vertical → BZ Capital" más arriba
             { path: '/light-home', element: <LightHomePage /> }, // NEW: Light Mode Design System Demo
             { path: '/whitepaper', element: <WhitePaper /> }, // NEW: WhitePaper Technical
             { path: '/docs', element: <DocsHub /> }, // NEW: Documentation Hub
