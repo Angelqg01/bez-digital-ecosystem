@@ -89,8 +89,7 @@ import AdminAdsPage from '../pages/admin/AdminAdsPage';
 import AdminUsersPage from '../pages/admin/AdminUsersPage';
 import AdminDashboard from '../pages/AdminDashboard';
 import BeVIP from '../pages/BeVIP';
-import DAOPage from '../pages/DAOPage';
-// StakingPage / DeFiHub → [MIGRATED to BZ Capital]: operativa en la SubApp; el Hub solo enlaza (MovedToSubApp)
+// DAOPage → [MIGRATED to BEZ Wallet] · StakingPage / DeFiHub → [MIGRATED to BZ Capital]: operativa en la SubApp; el Hub solo enlaza (MovedToSubApp)
 import MarketplaceUnified from '../pages/MarketplaceUnified';
 import BuyTokensPage from '../pages/BuyTokensPage';
 import CreatePage from '../pages/Create';
@@ -116,7 +115,6 @@ describe('Auditoría de Rutas Críticas (E2E y Conexiones)', () => {
         { name: 'AdminUsersPage', Component: AdminUsersPage, expectedText: /Usuarios/i },
         { name: 'AdminDashboard', Component: AdminDashboard, expectedText: /Dashboard/i },
         { name: 'BeVIP', Component: BeVIP, expectedText: /VIP/i },
-        { name: 'DAOPage', Component: DAOPage, expectedText: /Gobernanza/i },
         { name: 'MarketplaceUnified', Component: MarketplaceUnified, expectedText: /Marketplace/i },
         { name: 'BuyTokensPage', Component: BuyTokensPage, expectedText: /Comprar/i },
         { name: 'CreatePage', Component: CreatePage, expectedText: /Crear/i },
