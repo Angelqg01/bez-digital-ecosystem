@@ -1,9 +1,13 @@
 /**
- * @fileoverview Price Oracle Service - Oráculo de Precios QuickSwap DEX
- * @description Obtiene el precio en tiempo real de BEZ/USDC desde QuickSwap LP Pool
+ * @fileoverview Price Oracle Service - Oráculo de Precios BEZ/USDC
+ * @description Obtiene el precio en tiempo real de BEZ/USDC. Fuente preferente: la
+ *   POOL INTERNA del ecosistema en `BeZhasDEX` (config `BEZHAS_DEX_ADDRESS`). Si no
+ *   está configurada, cae a una pool externa QuickSwap (legacy) y, por último, al
+ *   precio fallback estático. Aditivo: sin `BEZHAS_DEX_ADDRESS` el comportamiento es
+ *   idéntico al anterior.
  * @critical Este servicio es crítico para evitar insolvencia por volatilidad
- * @version 2.0.0
- * @updated 2026-01-31
+ * @version 3.0.0
+ * @updated 2026-06-13
  */
 
 const { ethers } = require('ethers');
@@ -36,6 +40,22 @@ const ERC20_ABI = [
 // Token addresses
 const BEZ_TOKEN_ADDRESS = tokenomics.token.address;
 const USDC_ADDRESS = '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359'; // USDC en Polygon
+
+// ============================================================
+// BEZHAS DEX (POOL INTERNA) — fuente preferente
+// ============================================================
+// AMM nativo BeZhasDEX. Si está configurado, el oráculo lee el precio de la pool
+// interna BEZ/USDC en lugar de un DEX externo. Vacío => se omite esta fuente.
+const BEZHAS_DEX_ADDRESS =
+    process.env.BEZHAS_DEX_ADDRESS ||
+    (tokenomics.priceOracle.bezhasDex && tokenomics.priceOracle.bezhasDex.address) ||
+    '';
+
+// ABI mínima de BeZhasDEX (getPool devuelve el struct Pool)
+const BEZHAS_DEX_ABI = [
+    'function getPool(address tokenA, address tokenB) view returns (tuple(address token0, address token1, uint112 reserve0, uint112 reserve1, uint32 lastBlockTimestamp, uint256 totalLiquidity, bool exists) pool)',
+    'function getSpotPrice(address tokenIn, address tokenOut) view returns (uint256 price)'
+];
 
 // Provider
 const PROVIDER_URL = tokenomics.blockchain.polygonMainnet;
@@ -115,6 +135,49 @@ async function getEurUsdRate() {
     }
 
     return tokenomics.fiat.eurUsdRate;
+}
+
+/**
+ * Calcula USD/BEZ a partir de reservas crudas del par (maneja decimales BEZ 18 / USDC 6).
+ */
+function priceFromReserves(reserve0, reserve1, bezIsToken0) {
+    const BEZ_DECIMALS = 18;
+    const USDC_DECIMALS = 6;
+    const bezReserve = bezIsToken0 ? reserve0 : reserve1;
+    const usdcReserve = bezIsToken0 ? reserve1 : reserve0;
+    const bezAmount = Number(bezReserve) / (10 ** BEZ_DECIMALS);
+    const usdcAmount = Number(usdcReserve) / (10 ** USDC_DECIMALS);
+    if (bezAmount <= 0) return 0;
+    return usdcAmount / bezAmount;
+}
+
+/**
+ * Obtiene el precio de BEZ/USD desde la POOL INTERNA (BeZhasDEX).
+ * @returns {Promise<number>} Precio en USD por BEZ-Coin
+ */
+async function getBezUsdPriceFromBeZhasDEX() {
+    if (!BEZHAS_DEX_ADDRESS) throw new Error('BEZHAS_DEX_ADDRESS not configured');
+
+    const dex = new ethers.Contract(BEZHAS_DEX_ADDRESS, BEZHAS_DEX_ABI, provider);
+    const pool = await dex.getPool(BEZ_TOKEN_ADDRESS, USDC_ADDRESS);
+
+    if (!pool.exists) throw new Error('BeZhasDEX pool BEZ/USDC does not exist');
+    const reserve0 = pool.reserve0;
+    const reserve1 = pool.reserve1;
+    if (reserve0 === 0n || reserve1 === 0n) throw new Error('BeZhasDEX pool has no liquidity');
+
+    const bezIsToken0 = pool.token0.toLowerCase() === BEZ_TOKEN_ADDRESS.toLowerCase();
+    const price = priceFromReserves(reserve0, reserve1, bezIsToken0);
+
+    priceCache.reserves = {
+        reserve0: reserve0.toString(),
+        reserve1: reserve1.toString(),
+        bezIsToken0,
+        timestamp: new Date().toISOString()
+    };
+
+    logger.info({ price, source: 'bezhas-dex', pool: BEZHAS_DEX_ADDRESS }, 'BEZ/USD price fetched from BeZhasDEX (internal pool)');
+    return price;
 }
 
 /**
@@ -204,25 +267,31 @@ async function getBezUsdPrice(withSpread = false) {
         return withSpread ? applySpreadProtection(cachedPrice) : cachedPrice;
     }
 
-    // 2. Intentar obtener precio de QuickSwap
-    try {
-        const price = await getBezUsdPriceFromQuickSwap();
+    // 2. Fuentes on-chain en orden de preferencia: pool interna (BeZhasDEX) -> QuickSwap (legacy)
+    const sources = [];
+    if (BEZHAS_DEX_ADDRESS) sources.push({ name: 'bezhas-dex', fn: getBezUsdPriceFromBeZhasDEX });
+    if (QUICKSWAP_POOL_ADDRESS) sources.push({ name: 'quickswap', fn: getBezUsdPriceFromQuickSwap });
 
-        if (price && price > 0) {
-            // Actualizar cache (precio spot sin spread)
-            priceCache.bezUsd = price;
-            priceCache.timestamp = now;
-            priceCache.source = 'quickswap';
+    for (const src of sources) {
+        try {
+            const price = await src.fn();
 
-            // Calcular precio en EUR
-            const eurUsdRate = await getEurUsdRate();
-            priceCache.bezEur = price / eurUsdRate;
+            if (price && price > 0) {
+                // Actualizar cache (precio spot sin spread)
+                priceCache.bezUsd = price;
+                priceCache.timestamp = now;
+                priceCache.source = src.name;
 
-            // Retornar con o sin spread según parámetro
-            return withSpread ? applySpreadProtection(price) : price;
+                // Calcular precio en EUR
+                const eurUsdRate = await getEurUsdRate();
+                priceCache.bezEur = price / eurUsdRate;
+
+                // Retornar con o sin spread según parámetro
+                return withSpread ? applySpreadProtection(price) : price;
+            }
+        } catch (error) {
+            logger.warn({ error: error.message, source: src.name }, 'on-chain price fetch failed');
         }
-    } catch (error) {
-        logger.warn({ error: error.message }, 'QuickSwap price fetch failed');
     }
 
     // 3. Fallback a precio configurado
@@ -370,7 +439,9 @@ function getCacheInfo() {
         isValid: priceCache.timestamp && (Date.now() - priceCache.timestamp < priceCache.ttl),
         reserves: priceCache.reserves,
         eurUsdRate: eurUsdCache.rate,
-        poolAddress: QUICKSWAP_POOL_ADDRESS
+        bezhasDexAddress: BEZHAS_DEX_ADDRESS || null,
+        quickswapPoolAddress: QUICKSWAP_POOL_ADDRESS,
+        poolAddress: BEZHAS_DEX_ADDRESS || QUICKSWAP_POOL_ADDRESS
     };
 }
 
@@ -395,7 +466,9 @@ async function getOracleInfo() {
         spreadPercent: SPREAD_PERCENT,
         cache: getCacheInfo(),
         config: {
-            pool: QUICKSWAP_POOL_ADDRESS,
+            bezhasDex: BEZHAS_DEX_ADDRESS || null,
+            quickswapPool: QUICKSWAP_POOL_ADDRESS,
+            pool: BEZHAS_DEX_ADDRESS || QUICKSWAP_POOL_ADDRESS,
             bezToken: BEZ_TOKEN_ADDRESS,
             fallbackPriceUsd: FALLBACK_PRICE_USD,
             fallbackPriceEur: FALLBACK_PRICE_EUR,
@@ -421,7 +494,9 @@ module.exports = {
     clearCache,
     getCacheInfo,
     getOracleInfo,
+    getBezUsdPriceFromBeZhasDEX,
     // Export constants
+    BEZHAS_DEX_ADDRESS,
     QUICKSWAP_POOL_ADDRESS,
     FALLBACK_PRICE_USD,
     FALLBACK_PRICE_EUR,
