@@ -171,6 +171,26 @@ contract BeZhasDEX is Ownable, ReentrancyGuard {
         amountOut = (amountInWithFee * reserveOut) / ((reserveIn * 10_000) + amountInWithFee);
     }
 
+    /**
+     * @notice Precio spot (mid-price) de `tokenIn` expresado en `tokenOut`, escalado a 1e18.
+     * @dev Derivado solo de reservas (sin comision): `reserveOut * 1e18 / reserveIn`.
+     *      NO normaliza decimales entre tokens (el DEX es agnostico de decimales); el
+     *      consumidor (p. ej. el oraculo de precio BEZ/USDC del ecosistema) debe ajustar
+     *      por la diferencia de decimales. Pensado para alimentar el oraculo interno desde
+     *      esta pool en lugar de un DEX externo.
+     */
+    function getSpotPrice(address tokenIn, address tokenOut) external view returns (uint256 price) {
+        Pool memory pool = pools[pairId(tokenIn, tokenOut)];
+        if (!pool.exists) revert PoolNotFound();
+
+        bool zeroForOne = tokenIn == pool.token0;
+        uint256 reserveIn = zeroForOne ? pool.reserve0 : pool.reserve1;
+        uint256 reserveOut = zeroForOne ? pool.reserve1 : pool.reserve0;
+        if (reserveIn == 0 || reserveOut == 0) revert InsufficientLiquidity();
+
+        price = (reserveOut * 1e18) / reserveIn;
+    }
+
     function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minAmountOut)
         external
         nonReentrant
