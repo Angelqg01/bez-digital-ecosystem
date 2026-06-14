@@ -21,12 +21,17 @@ import {
   Cpu,
 } from 'lucide-react';
 
+import { SUBAPP_URLS } from '../config/subappUrls';
+
 export const BEZ_POLYGON_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 export const BEZ_POLYGONSCAN_URL = `https://polygonscan.com/token/${BEZ_POLYGON_ADDRESS}`;
 export const DEFI_TOKENOMICS_URL = import.meta.env.VITE_BEZHAS_DEFI_URL || '/defi';
 const BEZHAS_BASE_URL = 'https://bez.digital';
 
+// Páginas internas del propio Hub (portal, docs, tokenomics, etc.)
 const prodUrl = (path: string) => `${BEZHAS_BASE_URL}${path}`;
+// SubApps dedicadas → fuente única `config/subappUrls.js` (alineada con control-center).
+// Antes apuntaban a rutas internas /dashboard/* (drift); ahora deep-linkean a la SubApp real.
 
 export type EcosystemApp = {
   name: string;
@@ -64,96 +69,96 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BeZhas Wallet',
-    url: prodUrl('/dashboard/wallet'),
-    port: '/dashboard/wallet',
+    url: SUBAPP_URLS.wallet,
+    port: 'wallet ↗',
     icon: Wallet,
     accent: 'text-blue-300 bg-blue-400/10 border-blue-400/50',
     description: 'Cartera BEZ-Coin para identidad Web3, pagos P2P, saldos, staking y gobernanza.',
   },
   {
     name: 'Gas Tank Manager',
-    url: prodUrl('/dashboard/gas'),
-    port: '/dashboard/gas',
+    url: SUBAPP_URLS.gas,
+    port: 'gas ↗',
     icon: Activity,
     accent: 'text-orange-300 bg-orange-400/10 border-orange-400/50',
     description: 'Panel de gas abstraction, recargas, predicción Aegis ML y operación paymaster.',
   },
   {
     name: 'Edge Node Manager',
-    url: prodUrl('/dashboard/validators'),
-    port: '/dashboard/validators',
+    url: SUBAPP_URLS.edge,
+    port: 'edge ↗',
     icon: Server,
     accent: 'text-emerald-300 bg-emerald-400/10 border-emerald-400/50',
     description: 'Gestión DePIN de nodos, recursos, validadores, recompensas y salud de red.',
   },
   {
     name: 'BEZ Vision Scan',
-    url: prodUrl('/dashboard/qr'),
-    port: '/dashboard/qr',
+    url: SUBAPP_URLS.vision,
+    port: 'vision ↗',
     icon: Box,
     accent: 'text-pink-300 bg-pink-400/10 border-pink-400/50',
     description: 'Escaneo de activos físicos con IA, fingerprint visual, trazabilidad y oracle logístico.',
   },
   {
     name: 'BZ Capital',
-    url: prodUrl('/dashboard/farming'),
-    port: '/dashboard/farming',
+    url: SUBAPP_URLS.capital,
+    port: 'capital ↗',
     icon: Briefcase,
     accent: 'text-purple-300 bg-purple-400/10 border-purple-400/50',
     description: 'DeFi, tokenomics, staking, yield farming y fraccionamiento de activos RWA.',
   },
   {
     name: 'BZ Prestige',
-    url: prodUrl('/dashboard/nfts'),
-    port: '/dashboard/nfts',
+    url: SUBAPP_URLS.prestige,
+    port: 'prestige ↗',
     icon: Crown,
     accent: 'text-yellow-300 bg-yellow-400/10 border-yellow-400/50',
     description: 'Luxury retail DPP, autenticación NFT, trazabilidad de producto y royalties EIP-2981.',
   },
   {
     name: 'BZ CargoLink',
-    url: prodUrl('/dashboard/sectors'),
-    port: '/dashboard/sectors',
+    url: SUBAPP_URLS.cargolink,
+    port: 'cargolink ↗',
     icon: Ship,
     accent: 'text-sky-300 bg-sky-400/10 border-sky-400/50',
     description: 'Logística, contenedores, manifiestos digitales y seguimiento multimodal de carga.',
   },
   {
     name: 'BEZ Energy',
-    url: prodUrl('/enterprise'),
-    port: '/enterprise',
+    url: SUBAPP_URLS.energy,
+    port: 'energy ↗',
     icon: Droplets,
     accent: 'text-teal-300 bg-teal-400/10 border-teal-400/50',
     description: 'Energía tokenizada, medición industrial, eficiencia operativa y reporting de consumo.',
   },
   {
     name: 'BZ PureScan',
-    url: prodUrl('/dashboard/qr'),
-    port: '/dashboard/qr',
+    url: SUBAPP_URLS.purescan,
+    port: 'purescan ↗',
     icon: ShieldCheck,
     accent: 'text-lime-300 bg-lime-400/10 border-lime-400/50',
     description: 'Verificación de pureza, cumplimiento, certificados y auditoría de activos sensibles.',
   },
   {
     name: 'BZ Sphere',
-    url: prodUrl('/solutions'),
-    port: '/solutions',
+    url: SUBAPP_URLS.sphere,
+    port: 'sphere ↗',
     icon: Globe2,
     accent: 'text-indigo-300 bg-indigo-400/10 border-indigo-400/50',
     description: 'Vista global del ecosistema, relaciones entre módulos, operaciones y datos estratégicos.',
   },
   {
     name: 'BZ Genesis',
-    url: prodUrl('/dashboard'),
-    port: '/dashboard',
+    url: SUBAPP_URLS.genesis,
+    port: 'genesis ↗',
     icon: Cpu,
     accent: 'text-fuchsia-300 bg-fuchsia-400/10 border-fuchsia-400/50',
     description: 'Onboarding inicial, creación de activos, génesis de proyectos y configuración base.',
   },
   {
     name: 'BeZhas Pay Manager',
-    url: prodUrl('/payments'),
-    port: '/payments',
+    url: SUBAPP_URLS.pay,
+    port: 'pay ↗',
     icon: Coins,
     accent: 'text-amber-300 bg-amber-400/10 border-amber-400/50',
     description: 'Gestión de cobros, pagos, links comerciales y flujos de monetización del ecosistema.',

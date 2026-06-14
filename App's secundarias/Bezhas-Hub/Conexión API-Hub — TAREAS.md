@@ -77,7 +77,7 @@
 > test = siguiente iteración.** Validado: esbuild transform OK en los 3 ficheros tocados.
 
 ### 2.2 Config centralizada
-- [~] Módulo único de config con base URL del Hub + `SUBAPP_URLS` (consumido por front) — creado `frontend/src/config/subappUrls.js` (fuente única, env-overridable `VITE_SUBAPP_*_URL`, mismas URLs que `secondaryApps` del control-center; helper `subappUrl(app, subPath)`). Falta migrar consumidores existentes (landing/EcosystemBar) a esta fuente.
+- [x] Módulo único de config con base URL del Hub + `SUBAPP_URLS` (consumido por front) — `frontend/src/config/subappUrls.js` (fuente única, las 13 SubApps, env-overridable `VITE_SUBAPP_*_URL`, alineada con control-center; helper `subappUrl(app, subPath)`). Consumidor migrado: `data/landing.ts` `ECOSYSTEM_APPS` (12 tarjetas de SubApps) que antes apuntaban a rutas internas `/dashboard/*` (drift + enlaces incorrectos) ahora deep-linkean a la SubApp real; las páginas genuinamente internas del Hub siguen con `prodUrl`.
 - [ ] Variables `VITE_API_URL` / `VITE_WS_URL` / `VITE_MCP_URL` coherentes con cloudbuild
 
 ### 2.3 Tests de contrato + observabilidad
