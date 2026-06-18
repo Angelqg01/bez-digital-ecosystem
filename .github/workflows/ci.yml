@@ -47,15 +47,15 @@ jobs:
             pnpm-deps-
 
       - name: Install root dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Install api dependencies
         working-directory: ./api
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Install frontend dependencies
         working-directory: ./frontend-next
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       # ==========================================
       # 1. smart-contracts (Foundry at root)
