@@ -59,9 +59,15 @@ Settlement uses BEZ-Coin v1 (Polygon `0xEcBa…11A8`) as the currency.
 
 | Message | Meaning | BeZhas call |
 | ------- | ------- | ----------- |
-| ISO 20022 `pain.001` / SEPA credit transfer | fiat in | `pay.buy({ paymentMethod: "bank" })` → IBAN instructions; settled via the bank webhook → mint |
-| SWIFT MT103 | cross-border fiat in | same `pay.buy` bank path |
+| ISO 20022 `camt.054` / `pain.001` / SEPA | fiat credit | `iso20022_adapter.parse_camt` → `to_bank_event` → bank webhook → mint |
+| SWIFT MT103 | cross-border fiat in | `iso20022_adapter.parse_mt103` → `to_bank_event` (+ `sign_bank_event`) |
 | Stripe card | card in | `pay.buy({ paymentMethod: "card" })` → checkoutUrl |
+
+`clients/python/iso20022_adapter.py` parses the institutional message and emits
+the `{ iban, amountCents, currency, reference, walletAddress, eventId }` payload
+the BeZhas bank webhook expects, signed with the backend's bare-hex HMAC over the
+compact JSON body. (The live bank webhook gates on USD until an FX oracle lands;
+the parser preserves the real currency — gate before submitting.)
 
 > The authoritative settlement (mint) happens on the BeZhas side from the
 > Stripe/bank webhook; the connector reconciles via `pay.history()`.

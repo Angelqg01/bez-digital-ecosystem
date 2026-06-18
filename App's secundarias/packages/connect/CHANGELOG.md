@@ -18,7 +18,9 @@ Initial release. Outward-facing ("extension API") layer for embedding BeZhas
 - Multi-language clients (`clients/`), same surface, zero-dependency:
   - `clients/python` (3.8+) + `edifact_adapter.py`: working UN/EDIFACT translator
     — `CUSDEC`/`IFTMIN` → createTx, `COPARN`/`CODECO`/`COARRI`/`IFTSTA` → advanceTx.
-    17 tests (`python -m unittest`).
+  - `clients/python/iso20022_adapter.py`: institutions connector — SEPA `camt.054`
+    + SWIFT `MT103` → bank-webhook settlement payload, signed (bank HMAC scheme).
+    Python suite: 21 tests (`python -m unittest`).
   - `clients/dotnet` (.NET 6+): `BeZhasConnect.cs` + `.csproj`, builds clean.
   - `clients/java` (JDK 11+): `BeZhasConnect.java`.
 - `clients/CONNECTORS.md`: EDIFACT / AEAT / SWIFT-SEPA message-to-endpoint mapping.
