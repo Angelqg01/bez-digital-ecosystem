@@ -13,9 +13,9 @@ the BeZhas bank webhook (`POST /api/webhooks/bank`) expects:
 
 Pure stdlib (xml.etree, hmac, re). Settlement currency is BEZ-Coin v1.
 
-NOTE: the live bank webhook currently accepts only USD (it rejects other
-currencies until an FX oracle lands), while SEPA is EUR. The parser extracts the
-real currency; gate on it before submitting in production.
+Region rule (mirrors api/routes/webhooks.js): European/SEPA IBANs settle in EUR,
+the rest of the world in USD — the backend converts EUR→USD cents via an explicit
+FX rate before minting. Use `region_currency_for_iban` to pick/validate currency.
 """
 
 from __future__ import annotations
@@ -44,6 +44,21 @@ class CreditEntry:
             "amount": self.amount, "currency": self.currency, "reference": self.reference,
             "debtor": self.debtor, "debtorIban": self.debtor_iban, "creditorIban": self.creditor_iban,
         }
+
+
+# European/SEPA IBAN country prefixes settle in EUR; rest of world in USD.
+# Kept in sync with EUROPEAN_IBAN_PREFIXES in api/routes/webhooks.js.
+EUROPEAN_IBAN_PREFIXES = frozenset((
+    "AD", "AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GB",
+    "GR", "HR", "HU", "IE", "IS", "IT", "LI", "LT", "LU", "LV", "MC", "MT", "NL", "NO",
+    "PL", "PT", "RO", "SE", "SI", "SK", "SM",
+))
+
+
+def region_currency_for_iban(iban: str) -> str:
+    """Currency a region accepts, from the IBAN country code: EUR (Europe) or USD."""
+    cc = str(iban or "").strip()[:2].upper()
+    return "EUR" if cc in EUROPEAN_IBAN_PREFIXES else "USD"
 
 
 def _local(tag: str) -> str:

@@ -7,6 +7,7 @@ import unittest
 
 from iso20022_adapter import (
     parse_camt, parse_mt103, to_bank_event, sign_bank_event, compact_json,
+    region_currency_for_iban,
 )
 
 CAMT054 = """<?xml version="1.0" encoding="UTF-8"?>
@@ -78,6 +79,16 @@ class BankEventTests(unittest.TestCase):
         expected = hmac.new(b"s3cr3t", body.encode(), hashlib.sha256).hexdigest()
         self.assertEqual(sig, expected)
         self.assertNotIn(" ", compact_json(payload))   # truly compact
+
+
+class RegionTests(unittest.TestCase):
+    def test_european_ibans_are_eur(self):
+        self.assertEqual(region_currency_for_iban("ES7714650100911766376210"), "EUR")
+        self.assertEqual(region_currency_for_iban("de89370400440532013000"), "EUR")
+
+    def test_rest_of_world_is_usd(self):
+        self.assertEqual(region_currency_for_iban("US64SVBKUS6S3300958879"), "USD")
+        self.assertEqual(region_currency_for_iban(""), "USD")
 
 
 if __name__ == "__main__":

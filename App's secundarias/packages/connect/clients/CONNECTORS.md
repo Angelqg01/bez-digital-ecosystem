@@ -66,8 +66,9 @@ Settlement uses BEZ-Coin v1 (Polygon `0xEcBa…11A8`) as the currency.
 `clients/python/iso20022_adapter.py` parses the institutional message and emits
 the `{ iban, amountCents, currency, reference, walletAddress, eventId }` payload
 the BeZhas bank webhook expects, signed with the backend's bare-hex HMAC over the
-compact JSON body. (The live bank webhook gates on USD until an FX oracle lands;
-the parser preserves the real currency — gate before submitting.)
+compact JSON body. Currency is **region-based**: European/SEPA IBANs settle in
+**EUR**, the rest of the world in **USD** (`region_currency_for_iban`); the
+backend converts EUR→USD cents via an explicit FX rate before minting.
 
 > The authoritative settlement (mint) happens on the BeZhas side from the
 > Stripe/bank webhook; the connector reconciles via `pay.history()`.
