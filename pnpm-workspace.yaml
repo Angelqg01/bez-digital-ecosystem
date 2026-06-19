@@ -10,3 +10,18 @@ packages:
 # @zksync/contracts subdependency that pnpm's supply-chain guard blocks by default.
 # pnpm-workspace.yaml uses camelCase keys (the error reports "blockExoticSubdeps").
 blockExoticSubdeps: false
+
+# pnpm 10+ does not run dependency build scripts unless approved here; without
+# this it fails CI with ERR_PNPM_IGNORED_BUILDS. Approve the packages that
+# legitimately need a postinstall (native/codegen builds).
+onlyBuiltDependencies:
+  - '@arbitrum/nitro-contracts'
+  - '@prisma/engines'
+  - '@reown/appkit'
+  - '@scarf/scarf'
+  - esbuild
+  - keccak
+  - msgpackr-extract
+  - prisma
+  - secp256k1
+  - unrs-resolver
