@@ -24,8 +24,9 @@ export function useMCPTool<TResponse = unknown>(tool: string) {
         const result = response.data?.result as TResponse;
         setState({ data: result, error: null, isLoading: false });
         return result;
-      } catch (error: any) {
-        const message = error?.response?.data?.error || error?.message || 'No se pudo ejecutar la herramienta MCP.';
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { error?: string } }; message?: string };
+        const message = err?.response?.data?.error || err?.message || 'No se pudo ejecutar la herramienta MCP.';
         setState({ data: null, error: message, isLoading: false });
         throw new Error(message);
       }

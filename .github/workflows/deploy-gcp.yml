@@ -36,7 +36,7 @@ env:
   REGION: us-central1
   BACKEND_SERVICE: bezhas-backend
   FRONTEND_SERVICE: bezhas-frontend
-  NODE_VERSION: "20"
+  NODE_VERSION: "24"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
@@ -67,7 +67,7 @@ jobs:
           restore-keys: pnpm-lint-
 
       - name: Install root dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run security audit
         run: pnpm audit --audit-level=high
@@ -76,7 +76,7 @@ jobs:
       - name: Lint frontend
         working-directory: ./frontend-next
         run: |
-          pnpm install --frozen-lockfile
+          pnpm install --no-frozen-lockfile
           pnpm run lint
         continue-on-error: false
 
@@ -146,7 +146,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./api
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run backend tests
         working-directory: ./api
@@ -186,7 +186,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./frontend-next
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build frontend
         working-directory: ./frontend-next

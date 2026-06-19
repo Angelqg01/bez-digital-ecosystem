@@ -1,0 +1,12 @@
+{
+  "name": "@bezhas/sdk",
+  "version": "0.0.0-placeholder",
+  "description": "PLACEHOLDER for the canonical @bezhas/sdk. The real SDK source is not present in this repo; this stub only satisfies frontend-next's `import { BeZhasSDK }` so the workspace installs and builds. Replace with the real package.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": "./index.js"
+  },
+  "license": "UNLICENSED"
+}

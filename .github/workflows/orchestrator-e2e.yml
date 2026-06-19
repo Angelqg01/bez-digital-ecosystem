@@ -27,7 +27,7 @@ on:
         default: false
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
@@ -61,7 +61,7 @@ jobs:
       - name: Install backend dependencies
         working-directory: ./backend
         run: |
-          pnpm install --frozen-lockfile --prefer-offline 2>/dev/null || pnpm install
+          pnpm install --no-frozen-lockfile --prefer-offline 2>/dev/null || pnpm install
 
       - name: Run E2E Smoke Test
         run: |

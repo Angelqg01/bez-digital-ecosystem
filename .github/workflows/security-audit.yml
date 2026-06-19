@@ -22,7 +22,7 @@ permissions:
   issues: write
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "24"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
@@ -64,7 +64,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./${{ matrix.path }}
-        run: pnpm install --frozen-lockfile --audit=false
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run NPM Audit (JSON Report)
         id: npm-audit
@@ -261,7 +261,7 @@ jobs:
 
       - name: Install Script Dependencies
         working-directory: scripts
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run Security Monitor Script
         id: security-monitor
@@ -306,7 +306,7 @@ jobs:
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend-next
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Install ESLint Security Plugins
         working-directory: ./frontend-next

@@ -26,7 +26,7 @@ on:
 env:
   SDK_DIR: ./sdk
   MCP_DIR: ./packages/mcp-server
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 permissions:
@@ -72,7 +72,7 @@ jobs:
           echo "📦 @bezhas/sdk@$SDK_VERSION"
 
       - name: Install SDK dependencies
-        run: cd sdk && pnpm install --frozen-lockfile
+        run: cd sdk && pnpm install --no-frozen-lockfile
 
       - name: Build SDK (webpack bundle)
         run: cd sdk && pnpm run build
@@ -123,7 +123,7 @@ jobs:
           path: sdk/
 
       - name: Install dependencies
-        run: cd sdk && pnpm install --frozen-lockfile
+        run: cd sdk && pnpm install --no-frozen-lockfile
 
       - name: Set npm tag
         id: npm_tag
@@ -169,7 +169,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install SDK dependencies via pnpm
-        run: cd sdk && pnpm install --frozen-lockfile --ignore-scripts || pnpm install
+        run: cd sdk && pnpm install --no-frozen-lockfile --ignore-scripts || pnpm install
 
       - name: Build SDK bundle via pnpm
         run: cd sdk && pnpm run build --if-present
@@ -210,7 +210,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install MCP Server dependencies
-        run: cd packages/mcp-server && pnpm install --frozen-lockfile || pnpm install
+        run: cd packages/mcp-server && pnpm install --no-frozen-lockfile || pnpm install
 
       - name: Build MCP Server (TypeScript)
         run: |

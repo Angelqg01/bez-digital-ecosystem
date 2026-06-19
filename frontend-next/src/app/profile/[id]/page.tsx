@@ -4,11 +4,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-    User, Copy, Check, Edit, Activity,
+    User, Copy, Check, Activity,
     Wallet, ExternalLink, TrendingUp, Send, ArrowDownToLine,
     LayoutDashboard, Settings as SettingsIcon,
-    BarChart3, Users, MessageSquare, RefreshCw,
-    Shield, Bell, Save, Grid, ShoppingBag, Gift, MessageCircle, Eye, EyeOff, Loader2
+    MessageSquare,
+    Shield, Save, Grid, ShoppingBag, Gift, MessageCircle, Eye, EyeOff, Loader2
 } from 'lucide-react';
 import { useAccount, useBalance, useDisconnect } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
@@ -28,15 +28,6 @@ interface UserProfile {
     followersCount: number;
     followingCount: number;
     createdAt: string | number;
-}
-
-interface Transaction {
-    hash: string;
-    from: string;
-    to: string;
-    value: string;
-    type: 'send' | 'receive';
-    timestamp: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -71,7 +62,6 @@ export default function ProfilePage() {
     const [balanceVisible, setBalanceVisible] = useState(true);
 
     // Wallet states
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
 
     // Settings states
     const [editUsername, setEditUsername] = useState('');
