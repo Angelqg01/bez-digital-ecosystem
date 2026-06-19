@@ -25,3 +25,8 @@ onlyBuiltDependencies:
   - prisma
   - secp256k1
   - unrs-resolver
+
+# Do not hard-fail the install when some dependency build scripts remain ignored
+# (e.g. for per-directory `cd api && pnpm install` steps that don't pick up the
+# allowlist). Downgrades ERR_PNPM_IGNORED_BUILDS to a warning so CI proceeds.
+strictDepBuilds: false
