@@ -5,3 +5,7 @@ packages:
   - 'api'
   - 'sdk'
   - 'packages/*'
+
+# pnpm 10+ reads settings here, not from .npmrc. Allow the git-resolved
+# @zksync/contracts subdependency that pnpm's supply-chain guard blocks by default.
+block-exotic-subdeps: false
