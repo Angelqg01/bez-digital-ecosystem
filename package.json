@@ -82,5 +82,19 @@
   "packageManager": "pnpm@11.0.0",
   "engines": {
     "pnpm": ">=11"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@arbitrum/nitro-contracts",
+      "@prisma/engines",
+      "@reown/appkit",
+      "@scarf/scarf",
+      "esbuild",
+      "keccak",
+      "msgpackr-extract",
+      "prisma",
+      "secp256k1",
+      "unrs-resolver"
+    ]
   }
 }
