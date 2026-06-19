@@ -1,16 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
     Heart, MessageCircle, Share2, Bookmark, MoreHorizontal,
     Image as ImageIcon, Send, TrendingUp, Users, Globe,
-    Loader2, Plus, Sparkles, RefreshCw, Filter
+    Loader2, Sparkles
 } from 'lucide-react';
 import { useAccount } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { toast } from 'react-hot-toast';
-import api from '../../lib/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Post {
@@ -142,7 +141,7 @@ export default function FeedPage() {
     const { open } = useWeb3Modal();
 
     const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
-    const [loading, setLoading] = useState(false);
+    const [loading] = useState(false);
     const [newPostContent, setNewPostContent] = useState('');
     const [filter, setFilter] = useState<'all' | 'following' | 'trending'>('all');
 

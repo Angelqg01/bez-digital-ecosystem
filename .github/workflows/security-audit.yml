@@ -64,7 +64,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./${{ matrix.path }}
-        run: pnpm install --no-frozen-lockfile --audit=false
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run NPM Audit (JSON Report)
         id: npm-audit
