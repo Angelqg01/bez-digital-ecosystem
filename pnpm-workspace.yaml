@@ -3,5 +3,4 @@ packages:
   - 'frontend'
   - 'frontend-next'
   - 'api'
-  - 'sdk'
   - 'packages/*'
