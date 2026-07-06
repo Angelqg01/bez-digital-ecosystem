@@ -5,6 +5,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import {BeZhasLPToken} from "./BeZhasLPToken.sol";
 
 /**
  * @title BeZhasDEX
@@ -22,6 +23,7 @@ contract BeZhasDEX is Ownable, ReentrancyGuard {
         uint112 reserve1;
         uint32 lastBlockTimestamp;
         uint256 totalLiquidity;
+        address lpToken; // ERC-20 que representa la LP de este par (stakeable en farming)
         bool exists;
     }
 
@@ -29,9 +31,9 @@ contract BeZhasDEX is Ownable, ReentrancyGuard {
     uint16 public constant MAX_FEE_BPS = 100;
 
     mapping(bytes32 => Pool) public pools;
-    mapping(bytes32 => mapping(address => uint256)) public liquidityOf;
 
     event PoolCreated(bytes32 indexed pairId, address indexed token0, address indexed token1);
+    event LPTokenCreated(bytes32 indexed pairId, address indexed lpToken);
     event LiquidityAdded(bytes32 indexed pairId, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
     event LiquidityRemoved(bytes32 indexed pairId, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
     event Swap(bytes32 indexed pairId, address indexed trader, address indexed tokenIn, uint256 amountIn, uint256 amountOut);
@@ -67,6 +69,8 @@ contract BeZhasDEX is Ownable, ReentrancyGuard {
         id = keccak256(abi.encodePacked(token0, token1));
         if (pools[id].exists) revert PoolExists();
 
+        BeZhasLPToken lpToken = new BeZhasLPToken("BeZhas LP Token", "BEZ-LP");
+
         pools[id] = Pool({
             token0: token0,
             token1: token1,
@@ -74,16 +78,26 @@ contract BeZhasDEX is Ownable, ReentrancyGuard {
             reserve1: 0,
             lastBlockTimestamp: uint32(block.timestamp),
             totalLiquidity: 0,
+            lpToken: address(lpToken),
             exists: true
         });
 
         emit PoolCreated(id, token0, token1);
+        emit LPTokenCreated(id, address(lpToken));
     }
 
     function getPool(address tokenA, address tokenB) external view returns (Pool memory) {
         Pool memory pool = pools[pairId(tokenA, tokenB)];
         if (!pool.exists) revert PoolNotFound();
         return pool;
+    }
+
+    /// @notice LP tokens (posicion de liquidez) que posee `provider` en el par `id`.
+    /// @dev Conveniencia de lectura: la contabilidad real vive en el LP token (BeZhasLPToken).
+    function liquidityOf(bytes32 id, address provider) external view returns (uint256) {
+        Pool storage pool = pools[id];
+        if (!pool.exists) revert PoolNotFound();
+        return BeZhasLPToken(pool.lpToken).balanceOf(provider);
     }
 
     function addLiquidity(
@@ -119,7 +133,7 @@ contract BeZhasDEX is Ownable, ReentrancyGuard {
         pool.reserve1 += uint112(amount1);
         pool.totalLiquidity += liquidity;
         pool.lastBlockTimestamp = uint32(block.timestamp);
-        liquidityOf[id][msg.sender] += liquidity;
+        BeZhasLPToken(pool.lpToken).mint(msg.sender, liquidity);
 
         emit LiquidityAdded(id, msg.sender, amount0, amount1, liquidity);
     }
@@ -136,13 +150,13 @@ contract BeZhasDEX is Ownable, ReentrancyGuard {
         bytes32 id = pairId(tokenA, tokenB);
         Pool storage pool = pools[id];
         if (!pool.exists) revert PoolNotFound();
-        if (liquidityOf[id][msg.sender] < liquidity) revert InsufficientLiquidity();
+        if (BeZhasLPToken(pool.lpToken).balanceOf(msg.sender) < liquidity) revert InsufficientLiquidity();
 
         uint256 amount0 = (liquidity * pool.reserve0) / pool.totalLiquidity;
         uint256 amount1 = (liquidity * pool.reserve1) / pool.totalLiquidity;
         if (amount0 == 0 || amount1 == 0) revert InsufficientLiquidity();
 
-        liquidityOf[id][msg.sender] -= liquidity;
+        BeZhasLPToken(pool.lpToken).burn(msg.sender, liquidity);
         pool.totalLiquidity -= liquidity;
         pool.reserve0 -= uint112(amount0);
         pool.reserve1 -= uint112(amount1);
