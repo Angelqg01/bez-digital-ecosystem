@@ -248,15 +248,22 @@ async function activateVIPPlan(walletAddress, planId, txHash) {
 
 // ─── REGISTRAR FARMING DEPOSIT EN BD ─────────────────────────────────────────
 async function recordFarmingDeposit({ walletAddress, poolId, amountBEZ, lockDays, txHash }) {
+  // El modelo FarmingDeposit es opcional: si no existe, degradamos a solo-log.
+  let FarmingDeposit = null;
   try {
-    const FarmingDeposit = require('../models/FarmingDeposit.model').catch?.() || null;
-    // Si el modelo existe, registrar; si no, solo logear
-    if (FarmingDeposit) {
-      await FarmingDeposit.create({ walletAddress, poolId, amountBEZ, lockDays, txHash, createdAt: new Date() });
-    }
-    logger.info({ walletAddress, poolId, amountBEZ, txHash }, '🌾 [BezPay] Farming deposit recorded');
+    FarmingDeposit = require('../models/FarmingDeposit.model');
   } catch (_) {
-    logger.info({ walletAddress, poolId, amountBEZ, txHash }, '🌾 [BezPay] Farming deposit (no DB model)');
+    FarmingDeposit = null;
+  }
+  try {
+    if (FarmingDeposit && typeof FarmingDeposit.create === 'function') {
+      await FarmingDeposit.create({ walletAddress, poolId, amountBEZ, lockDays, txHash, createdAt: new Date() });
+      logger.info({ walletAddress, poolId, amountBEZ, txHash }, '🌾 [BezPay] Farming deposit recorded');
+    } else {
+      logger.info({ walletAddress, poolId, amountBEZ, txHash }, '🌾 [BezPay] Farming deposit (no DB model)');
+    }
+  } catch (err) {
+    logger.warn({ err: err.message, walletAddress, poolId, txHash }, '🌾 [BezPay] Farming deposit DB write failed');
   }
 }
 
