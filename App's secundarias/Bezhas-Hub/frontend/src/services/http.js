@@ -37,6 +37,16 @@ http.interceptors.request.use((config) => {
         config.headers['x-wallet-address'] = walletAddr;
       }
     }
+    // Multi-tenant: scope cada llamada a la organización/sede seleccionada.
+    // Punto ÚNICO de inyección (lo lee el middleware tenancy del backend).
+    if (!config.headers['X-Org-Id']) {
+      const orgId = localStorage.getItem('bezhas-org-id');
+      if (orgId) config.headers['X-Org-Id'] = orgId;
+    }
+    if (!config.headers['X-Site-Id']) {
+      const siteId = localStorage.getItem('bezhas-site-id');
+      if (siteId) config.headers['X-Site-Id'] = siteId;
+    }
   } catch (_) { }
   return config;
 });

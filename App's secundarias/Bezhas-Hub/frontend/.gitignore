@@ -1,0 +1,7 @@
+
+# design-sync (artefactos regenerables; lo durable es design-sync.config.json + .design-sync/{NOTES.md,previews,entry.jsx})
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/build/

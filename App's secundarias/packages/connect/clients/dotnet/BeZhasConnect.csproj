@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AssemblyName>BeZhas.Connect</AssemblyName>
+    <RootNamespace>BeZhas.Connect</RootNamespace>
+    <Version>0.1.0</Version>
+    <Description>BeZhas integration client for .NET — embed Pay &amp; CargoLink into CargoWise, customs-broker and ERP back-office apps.</Description>
+  </PropertyGroup>
+
+</Project>

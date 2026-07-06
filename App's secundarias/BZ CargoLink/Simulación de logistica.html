@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeZhas Network - Logística RWA y MCP</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #10b981; /* Verde más moderno y técnico */
+            --blockchain-bg: #020617;
+            --bg: #f8fafc;
+            --text-light: #94a3b8;
+            --mcp-color: #8b5cf6;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { color: var(--primary); margin-bottom: 5px; font-weight: 800;}
+        .subtitle { color: #475569; margin-top: 0; margin-bottom: 25px; text-align: center; font-size: 15px;}
+
+        /* Panel de Control */
+        .controls {
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        button:hover:not(:disabled) { background: #1e293b; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; color: #64748b;}
+
+        /* Core UI */
+        .simulation-container {
+            width: 1050px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Capa L2 Blockchain */
+        .blockchain-layer {
+            background-color: var(--blockchain-bg);
+            height: 95px;
+            border-bottom: 2px solid var(--accent);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .bc-node {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #e2e8f0;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            text-align: center;
+            min-width: 140px;
+            transition: all 0.3s ease;
+        }
+
+        .bc-node.active {
+            border-color: var(--accent);
+            background: rgba(16, 185, 129, 0.08);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+        }
+
+        .bc-node .pulse {
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .bc-node.active .pulse { background-color: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1.2s infinite; }
+
+        /* Capa Terrenal */
+        .map {
+            height: 250px;
+            position: relative;
+            background: linear-gradient(to right, #f8fafc 0%, #f1f5f9 30%, #e0f2fe 30%, #e0f2fe 70%, #fff7ed 70%, #fff7ed 100%);
+            border-bottom: 4px solid var(--primary);
+        }
+
+        .hub {
+            position: absolute;
+            bottom: 35px;
+            text-align: center;
+            font-size: 28px;
+            width: 90px;
+            font-weight: bold;
+            z-index: 2;
+        }
+        .hub span {
+            display: block;
+            font-size: 11px;
+            color: #334155;
+            background: rgba(255,255,255,0.95);
+            padding: 4px;
+            border-radius: 4px;
+            margin-top: 6px;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px solid #cbd5e1;
+        }
+
+        /* Posiciones X de Hubs */
+        #fabrica { left: 20px; }
+        #aduana-ori { left: 160px; }
+        #puerto-ori { left: 300px; }
+        #puerto-des { left: 660px; }
+        #aduana-des { left: 800px; }
+        #cliente { left: 940px; }
+
+        .route-line {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            z-index: 1;
+        }
+        .sea-seg { background: #0ea5e9; height: 6px; position: absolute; left: 345px; width: 350px; border-radius: 3px;}
+
+        /* Vehículos (Aceleración GPU) */
+        .vehicle {
+            position: absolute;
+            bottom: 38px;
+            left: 0; /* Base 0 para translateX */
+            font-size: 34px;
+            transform: translateX(-100px); /* Oculto por defecto */
+            opacity: 0;
+            z-index: 3;
+            /* La transición se aplica mediante JS dependiendo de si entra o se mueve */
+        }
+
+        /* Consola de Logs */
+        .log-panel {
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 18px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            height: 160px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .log-entry { margin-bottom: 8px; border-left: 3px solid #64748b; padding-left: 12px; opacity: 0; animation: fadeIn 0.3s forwards; }
+        .log-entry.bc { border-left-color: var(--accent); color: var(--accent); }
+        .log-entry.agent { border-left-color: var(--mcp-color); color: #c4b5fd; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes fadeIn { to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <h1>Simulador RWA: Infraestructura BeZhas</h1>
+    <div class="subtitle">Blockchain L2 · Automatización MCP · Smart Contracts · Trazabilidad On-Chain</div>
+
+    <div class="controls">
+        <button id="btn-start">▶ Ejecutar Flujo Autónomo</button>
+        <button id="btn-reset" disabled>🔄 Resetear Nodos</button>
+        <div id="status-badge" style="font-weight: bold; color: var(--primary);">Estado: L2 Operativa</div>
+    </div>
+
+    <div class="simulation-container">
+        <div class="blockchain-layer">
+            <div class="bc-node" id="node-rwa"><div class="pulse"></div>RWA Tokenizer<br><span id="rwa-status">Esperando...</span></div>
+            <div class="bc-node" id="node-contract"><div class="pulse"></div>Contratos Int.<br><span id="contract-status">Inactivo</span></div>
+            <div class="bc-node" id="node-mcp"><div class="pulse"></div>Agente IA (MCP)<br><span id="mcp-status">Standby</span></div>
+            <div class="bc-node" id="node-oraculo"><div class="pulse"></div>Oráculo IoT<br><span id="oraculo-status">Escuchando</span></div>
+        </div>
+
+        <div class="map">
+            <div class="route-line"><div class="sea-seg"></div></div>
+
+            <div class="hub" id="fabrica">🏭<span>1. Origen</span></div>
+            <div class="hub" id="aduana-ori">👮‍♂️<span>2. Aduana Ext.</span></div>
+            <div class="hub" id="puerto-ori">🏗️<span>3. Carga</span></div>
+            <div class="hub" id="puerto-des">⚓<span>4. Descarga</span></div>
+            <div class="hub" id="aduana-des">🛡️<span>5. Aduana Int.</span></div>
+            <div class="hub" id="cliente">🏪<span>6. Última Milla</span></div>
+
+            <div id="camion-ori" class="vehicle">🚚</div>
+            <div id="buque" class="vehicle">🚢</div>
+            <div id="camion-des" class="vehicle">🚛</div>
+        </div>
+
+        <div class="log-panel" id="log">
+            <div class="log-entry" style="opacity:1;">[BEZHAS OS] Red L2 inicializada. Esperando inyección de datos del mundo físico...</div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Cache (Optimización de memoria)
+        const DOM = {
+            btnStart: document.getElementById('btn-start'),
+            btnReset: document.getElementById('btn-reset'),
+            statusBadge: document.getElementById('status-badge'),
+            logPanel: document.getElementById('log'),
+            vehicles: {
+                'camion-ori': document.getElementById('camion-ori'),
+                'buque': document.getElementById('buque'),
+                'camion-des': document.getElementById('camion-des')
+            },
+            nodes: ['node-rwa', 'node-contract', 'node-mcp', 'node-oraculo'],
+            statuses: {
+                rwa: document.getElementById('rwa-status'),
+                contract: document.getElementById('contract-status'),
+                mcp: document.getElementById('mcp-status'),
+                oraculo: document.getElementById('oraculo-status')
+            }
+        };
+
+        // Data Definition
+        const flowSteps = [
+            { v: 'camion-ori', x1: 35, x2: 160, t: 1500, n: ['node-rwa', 'node-mcp'], st: {rwa:"Minting BEZ-9921", contract:"Validando", mcp:"Detectando Orden", oraculo:"Standby"}, 
+              msg: "🏭 Fábrica finaliza lote. El agente (MCP) detecta la mercancía.", bc: "🔗 [RWA] Activo fraccionado. ID #BEZ-9921 acuñado en la red." },
+            
+            { v: 'camion-ori', x1: 160, x2: 160, t: 1000, n: ['node-contract'], st: {rwa:"Escrow", contract:"Aduana OK", mcp:"Monitoreando", oraculo:"Docs OK"}, 
+              msg: "👮‍♂️ Despacho en Aduana de Origen. Documentación validada.", bc: "📜 [CONTRATO] Contrato inteligente firma electrónicamente los certificados de origen (Zero-Knowledge)." },
+            
+            { v: 'camion-ori', x1: 160, x2: 310, t: 1800, n: ['node-mcp'], st: {rwa:"Escrow", contract:"Flete Pagado", mcp:"Liquidando", oraculo:"Tracking"}, 
+              msg: "🚚 Contenedor llega al Puerto de Carga.", bc: "🤖 [MCP] Agente liquida automáticamente flete naviero con BEZ-Coin. Operación registrada en la L2." },
+            
+            { v: 'buque', x1: 310, x2: 310, t: 1000, n: ['node-oraculo'], st: {rwa:"Transit", contract:"Activo", mcp:"Standby", oraculo:"IoT Enlazado"}, 
+              msg: "🏗️ Maniobra STS: Contenedor estibado en buque portacontenedores.", bc: "📡 [ORÁCULO] Sensores IoT de la naviera sincronizados con el Smart Contract." },
+            
+            { v: 'buque', x1: 310, x2: 660, t: 3000, n: ['node-rwa', 'node-oraculo'], st: {rwa:"Mercado Abierto", contract:"OK", mcp:"Rastreo GPS", oraculo:"Telemetría"}, 
+              msg: "🚢 Tránsito oceánico.", bc: "🔗 [BLOCKCHAIN] Activo RWA cotizando en tiempo real. Telemetría inmutable insertada en bloques BeZhas." },
+            
+            { v: 'buque', x1: 660, x2: 660, t: 1000, n: ['node-contract'], st: {rwa:"Puerto Destino", contract:"Cláusula Activada", mcp:"Asignando Flota", oraculo:"Ping Local"}, 
+              msg: "⚓ Arribo al Puerto de Descarga y operación de grúas.", bc: "📜 [CONTRATO] Smart Contract dispara cláusula 'Destino Alcanzado'." },
+            
+            { v: 'camion-des', x1: 660, x2: 800, t: 1500, n: ['node-oraculo', 'node-contract'], st: {rwa:"Descargado", contract:"Impuestos Liquidados", mcp:"Standby", oraculo:"Aduana API"}, 
+              msg: "🚛 Traslado a la Aduana de Destino.", bc: "👮‍♂️ [ORÁCULO] API aduanera liquida aranceles. Fondos sustraídos del pool de liquidez del contrato." },
+            
+            { v: 'camion-des', x1: 800, x2: 800, t: 1000, n: ['node-mcp'], st: {rwa:"Liberado", contract:"Custodia Final", mcp:"Calculando Ruta", oraculo:"Luz Verde"}, 
+              msg: "🛡️ Luz verde fiscal lograda al instante.", bc: "🤖 [MCP] El agente procesa algoritmo de optimización y contrata transporte de última milla local." },
+            
+            { v: 'camion-des', x1: 800, x2: 940, t: 1800, n: ['node-rwa'], st: {rwa:"Última Milla", contract:"En Cierre", mcp:"Ruta Activa", oraculo:"GPS"}, 
+              msg: "🚚 Distribución B2B/B2C en curso.", bc: "🔗 [RWA] Trazabilidad habilitada para el cliente final vía explorador de bloques." },
+            
+            { v: 'camion-des', x1: 940, x2: 940, t: 1000, n: ['node-rwa', 'node-contract', 'node-mcp', 'node-oraculo'], st: {rwa:"Transferido", contract:"FINALIZADO", mcp:"Exit", oraculo:"Offline"}, 
+              msg: "🏪 Entrega confirmada y firmada digitalmente.", bc: "🎉 [SISTEMA] Smart Contract liquida el RWA. Fondos colaterales liberados en la red BeZhas." }
+        ];
+
+        // Utils (Motor Asíncrono)
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+
+        function writeLog(text, type = '') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
+            DOM.logPanel.appendChild(entry);
+            DOM.logPanel.scrollTop = DOM.logPanel.scrollHeight;
+        }
+
+        function resetUI() {
+            Object.values(DOM.vehicles).forEach(v => {
+                v.style.transition = 'none'; // Quitar transición para reseteo instantáneo
+                v.style.opacity = '0';
+                v.style.transform = `translateX(-100px)`;
+            });
+            DOM.nodes.forEach(n => document.getElementById(n).classList.remove('active'));
+            DOM.logPanel.innerHTML = '<div class="log-entry" style="opacity:1;">[BEZHAS OS] Nodos reseteados. Listos para nuevo bloque.</div>';
+            DOM.statusBadge.innerText = "Estado: L2 Operativa";
+            ['rwa', 'contract', 'mcp', 'oraculo'].forEach(k => DOM.statuses[k].innerText = "Standby");
+        }
+
+        // Motor de Lógica Principal
+        async function runSimulation() {
+            DOM.btnStart.disabled = true;
+            DOM.btnReset.disabled = true;
+            
+            for (let i = 0; i < flowSteps.length; i++) {
+                const step = flowSteps[i];
+                
+                // 1. Limpiar nodos anteriores y activar los nuevos
+                DOM.nodes.forEach(n => document.getElementById(n).classList.remove('active'));
+                step.n.forEach(nId => document.getElementById(nId).classList.add('active'));
+                
+                // 2. Actualizar estados de texto
+                Object.keys(step.st).forEach(k => DOM.statuses[k].innerText = step.st[k]);
+                DOM.statusBadge.innerText = `Bloque: ${step.st.rwa}`;
+
+                // 3. Preparar Vehículo Actual
+                const vehicle = DOM.vehicles[step.v];
+                Object.values(DOM.vehicles).forEach(v => {
+                    if(v !== vehicle) v.style.opacity = '0';
+                });
+                
+                // Set initial position without transition
+                vehicle.style.transition = 'none';
+                vehicle.style.transform = `translateX(${step.x1}px)`;
+                vehicle.style.opacity = '1';
+                
+                // Force layout reflow para que el navegador registre la posición inicial
+                void vehicle.offsetWidth; 
+
+                // 4. Imprimir Logs
+                writeLog(step.msg);
+                setTimeout(() => writeLog(step.bc, step.n.includes('node-mcp') && step.n.length === 1 ? 'agent' : 'bc'), 400);
+
+                // 5. Animación de Movimiento Físico (GPU Accelerated)
+                if (step.x1 !== step.x2) {
+                    vehicle.style.transition = `transform ${step.t}ms ease-in-out`;
+                    vehicle.style.transform = `translateX(${step.x2}px)`;
+                    await delay(step.t + 500); // Tiempo de viaje + padding visual
+                } else {
+                    await delay(2000); // Tiempo de lectura para procesos estáticos
+                }
+
+                await delay(800); // Breve pausa entre pasos para mejor legibilidad
+            }
+
+            // Fin de la simulación
+            DOM.nodes.forEach(n => document.getElementById(n).classList.remove('active'));
+            DOM.statusBadge.innerText = "Estado: Trazabilidad Completada";
+            DOM.btnReset.disabled = false;
+        }
+
+        // Event Listeners
+        DOM.btnStart.addEventListener('click', runSimulation);
+        DOM.btnReset.addEventListener('click', () => {
+            resetUI();
+            DOM.btnStart.disabled = false;
+            DOM.btnReset.disabled = true;
+        });
+
+    </script>
+</body>
+</html>

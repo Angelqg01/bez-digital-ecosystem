@@ -5,6 +5,8 @@ const cargoLinkService = require('../services/cargoLinkService');
 const lifecycle = require('../services/cargoLinkLifecycle');
 const posConnector = require('../services/cargoLinkPosConnector');
 const iot = require('../services/cargoLinkIot');
+const { authenticateToken } = require('../middleware/security');
+const { requireRole } = require('../middleware/rbac');
 
 const router = Router();
 
@@ -111,10 +113,40 @@ router.post('/v1/webhooks/register', async (req, res) => {
 // ── Transaction lifecycle (B-UID object model) ────────────────────────────
 
 // Issue a role-scoped key bound to a BeZhas_ID (pos | customs | carrier | logistics | lastmile).
-router.post('/v1/keys', async (req, res) => {
+// Admin-gated: issuing actor keys is a privileged operation (same guard as /admin/keys).
+router.post('/v1/keys', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const data = await lifecycle.issueKey(req.body || {});
     res.status(201).json({ success: true, ...data });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Admin operator (key) management — JWT admin-gated, mirrors energy ──────
+// The platform admin provisions the role-scoped actors (pos | customs | carrier
+// | logistics | lastmile) that operate on B-UIDs. Distinct from /v1/keys, which
+// is the programmatic issue path; these use the admin's JWT (requireRole admin).
+
+router.get('/admin/keys', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    res.json(await lifecycle.listKeys({ bezhasId: req.query.bezhasId }));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post('/admin/keys', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    res.status(201).json({ success: true, ...(await lifecycle.issueKey(req.body || {})) });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.delete('/admin/keys/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    res.json({ success: true, ...(await lifecycle.revokeKey(req.params.id)) });
   } catch (error) {
     sendError(res, error);
   }

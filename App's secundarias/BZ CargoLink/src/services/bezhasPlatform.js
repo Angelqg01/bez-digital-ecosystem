@@ -1,3 +1,9 @@
+/**
+ * @deprecated Since Fase 2 — use useBilling() hook + cargoLinkAdmin for real
+ * billing data. This file persists only as a dev fallback activated by
+ * VITE_ALLOW_LOCAL_FALLBACK=true. All production reads come from the backend
+ * billing/wallet endpoints.
+ */
 const STORAGE_KEY = 'bezhas-cargolink-platform-v1'
 
 const PLANS = {

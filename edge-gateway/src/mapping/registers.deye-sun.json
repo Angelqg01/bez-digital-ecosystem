@@ -1,0 +1,37 @@
+{
+  "vendor": "Deye",
+  "model": "SUN series (single-phase SUN-xKG / three-phase hybrid SUN-xK-SG) — TEMPLATE",
+  "source": "Deye/Sunsynk Modbus map (function 0x03). Deye has TWO incompatible register generations ('string' SUN-xxxKG vs 'hybrid' SUN-xxK-SG) — addresses below follow the widely-used hybrid map (deye-controller / Solarman). CONFIRM your exact generation's manual before production; this is a starter, not field-verified for every model.",
+  "encoding": "gain (engineering = raw / gain).",
+  "confidence": "TEMPLATE — verify every address against your unit. Marked PENDING in VENDORS.md.",
+  "function": "holding",
+  "wordSwap": false,
+  "modbusDefaults": { "unitId": 1 },
+  "blocks": [
+    { "start": 598, "count": 80 }
+  ],
+  "points": [
+    { "name": "running_status",  "address": 500, "type": "uint16" },
+    { "name": "grid_voltage_L1", "address": 598, "type": "uint16", "gain": 10 },
+    { "name": "grid_frequency",  "address": 609, "type": "uint16", "gain": 100 },
+    { "name": "active_power",    "address": 625, "type": "int16",  "gain": 1 },
+    { "name": "load_power",      "address": 653, "type": "int16",  "gain": 1 },
+    { "name": "battery_soc",     "address": 588, "type": "uint16", "gain": 1 },
+    { "name": "battery_temp",    "address": 586, "type": "int16",  "gain": 10 },
+    { "name": "daily_energy",    "address": 529, "type": "uint16", "gain": 10 }
+  ],
+  "metrics": {
+    "voltage_v":        { "point": "grid_voltage_L1", "round": 1 },
+    "grid_frequency":   { "point": "grid_frequency",  "round": 2 },
+    "output_kw":        { "point": "active_power",     "div": 1000, "round": 3 },
+    "consumption_kw":   { "point": "load_power",       "div": 1000, "round": 3 },
+    "soc_pct":          { "point": "battery_soc",      "round": 1 },
+    "temp_c":           { "point": "battery_temp",     "round": 1 },
+    "energy_today_kwh": { "point": "daily_energy",     "round": 2 }
+  },
+  "state": {
+    "point": "running_status",
+    "default": "DEGRADED",
+    "map": { "0": "OFFLINE", "1": "DEGRADED", "2": "ONLINE", "3": "DEGRADED", "4": "OFFLINE" }
+  }
+}

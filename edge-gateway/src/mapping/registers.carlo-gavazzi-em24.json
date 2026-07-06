@@ -1,0 +1,35 @@
+{
+  "vendor": "Carlo Gavazzi",
+  "model": "EM24-DIN (three-phase energy analyzer / anti-export meter)",
+  "source": "Carlo Gavazzi EM24 DIN Modbus protocol. Signed 32-bit measurements. Function 0x03 (holding) — EM24 also answers 0x04. Over RS485 → use a Modbus-TCP gateway, or modbusMeter via serial in a later RTU driver.",
+  "encoding": "gain (engineering = raw / gain).",
+  "wordSwap": false,
+  "wordSwapNote": "EM24 stores 32-bit values most-significant-word first (big-endian). If powers/energy read as absurd values, the unit is word-swapped → set wordSwap:true.",
+  "modbusDefaults": { "unitId": 1 },
+  "function": "holding",
+  "blocks": [
+    { "start": 0, "count": 54 }
+  ],
+  "points": [
+    { "name": "V_L1N",   "address": 0,  "type": "int32", "gain": 10 },
+    { "name": "V_L2N",   "address": 2,  "type": "int32", "gain": 10 },
+    { "name": "V_L3N",   "address": 4,  "type": "int32", "gain": 10 },
+    { "name": "A_L1",    "address": 12, "type": "int32", "gain": 1000 },
+    { "name": "A_L2",    "address": 14, "type": "int32", "gain": 1000 },
+    { "name": "A_L3",    "address": 16, "type": "int32", "gain": 1000 },
+    { "name": "W_sys",   "address": 40, "type": "int32", "gain": 10 },
+    { "name": "PF_sys",  "address": 50, "type": "int16", "gain": 1000 },
+    { "name": "Hz",      "address": 51, "type": "int16", "gain": 10 },
+    { "name": "kWh_pos", "address": 52, "type": "int32", "gain": 10 }
+  ],
+  "metrics": {
+    "voltage_v":      { "point": "V_L1N", "round": 1 },
+    "current_a":      { "point": "A_L1",  "round": 2 },
+    "output_kw":      { "point": "W_sys", "div": 1000, "round": 3 },
+    "consumption_kw": { "point": "W_sys", "div": 1000, "round": 3 },
+    "grid_frequency": { "point": "Hz",    "round": 2 },
+    "power_factor":   { "point": "PF_sys","round": 3 },
+    "energy_kwh":     { "point": "kWh_pos","round": 1 }
+  },
+  "note": "W_sys sign convention: positive = import (consumption), negative = export. The dashboard's net_flow is derived backend-side; expose both output_kw (signed) and consumption_kw so the aggregator can place it. For a pure load node set type:LOAD in config."
+}

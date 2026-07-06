@@ -1,6 +1,6 @@
 const express = require('express');
 const request = require('supertest');
-const { mockQuery } = require('../helpers');
+const { mockQuery, makeAdminToken } = require('../helpers');
 
 const cargoLinkRoutes = require('../../routes/cargolink');
 
@@ -26,7 +26,10 @@ describe('Routes: /api/cargolink lifecycle (B-UID object model)', () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
   });
 
-  it('issues a role-scoped key bound to a BeZhas_ID', async () => {
+  it('issues a role-scoped key bound to a BeZhas_ID (admin only)', async () => {
+    // requireRole('admin') first looks up the caller's role in the DB...
+    mockQuery.mockResolvedValueOnce({ rows: [{ role: 'admin' }], rowCount: 1 });
+    // ...then issueKey inserts the new key.
     mockQuery.mockResolvedValueOnce({
       rows: [{ id: 1, bezhas_id: 'BZ_ID_ACME', role: 'customs', label: 'customs key', created_at: 'now' }],
       rowCount: 1,
@@ -34,6 +37,7 @@ describe('Routes: /api/cargolink lifecycle (B-UID object model)', () => {
 
     const res = await request(createApp())
       .post('/api/cargolink/v1/keys')
+      .set('Authorization', `Bearer ${makeAdminToken()}`)
       .send({ bezhasId: 'BZ_ID_ACME', role: 'customs' });
 
     expect(res.status).toBe(201);
@@ -43,6 +47,14 @@ describe('Routes: /api/cargolink lifecycle (B-UID object model)', () => {
       expect.stringContaining('INSERT INTO cargolink_api_keys'),
       expect.arrayContaining([expect.any(String), 'BZ_ID_ACME', 'customs']),
     );
+  });
+
+  it('rejects key issuance without an admin token', async () => {
+    const res = await request(createApp())
+      .post('/api/cargolink/v1/keys')
+      .send({ bezhasId: 'BZ_ID_ACME', role: 'customs' });
+
+    expect(res.status).toBe(401);
   });
 
   it('lets the POS role create a B-UID transaction', async () => {

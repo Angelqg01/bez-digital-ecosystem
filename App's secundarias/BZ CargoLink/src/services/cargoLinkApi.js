@@ -31,6 +31,22 @@ async function call(method, path, { apiKey, body, query } = {}) {
   return data
 }
 
+// Admin (platform JWT) call — operator/key management. Reads the JWT stored by
+// the wallet/fiat login so requireRole('admin') resolves on the backend.
+function adminJwt() {
+  if (typeof localStorage === 'undefined') return null
+  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
+}
+
+// Roles a CargoLink actor key can hold (the B-UID lifecycle actors).
+export const KEY_ROLES = ['pos', 'customs', 'carrier', 'logistics', 'lastmile', 'admin']
+
+export const cargoLinkAdmin = {
+  listKeys: () => call('GET', '/admin/keys', { apiKey: adminJwt() }),
+  issueKey: (body) => call('POST', '/admin/keys', { apiKey: adminJwt(), body }),
+  revokeKey: (id) => call('DELETE', `/admin/keys/${encodeURIComponent(id)}`, { apiKey: adminJwt() }),
+}
+
 export const cargoLinkApi = {
   // Lifecycle
   listTransactions: (apiKey, query) => call('GET', '/v1/tx', { apiKey, query }),
@@ -42,6 +58,10 @@ export const cargoLinkApi = {
   getPosLink: (apiKey) => call('GET', '/v1/pos/link', { apiKey }),
   linkPos: (apiKey, body) => call('POST', '/v1/pos/link', { apiKey, body }),
   syncPos: (apiKey) => call('POST', '/v1/pos/sync', { apiKey }),
+  // IoT / hardware
+  registerDevice: (apiKey, body) => call('POST', '/v1/iot/devices', { apiKey, body }),
+  ingestTelemetry: (deviceKey, body) => call('POST', '/v1/iot/telemetry', { apiKey: deviceKey, body }),
+  getTelemetry: (apiKey, query) => call('GET', '/v1/iot/telemetry', { apiKey, query }),
 }
 
 // Lifecycle stages in order — used by the UI to render progress.

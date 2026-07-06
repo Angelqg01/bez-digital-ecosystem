@@ -1,0 +1,35 @@
+{
+  "vendor": "Generic Genset",
+  "model": "Diesel/gas genset controller (DeepSea DSE / ComAp InteliGen — Modbus)",
+  "source": "Genset controllers (DeepSea DSE73xx/86xx, ComAp InteliGen) expose Modbus-TCP/RTU. Addresses below are a representative layout; map exact registers from your controller's Modbus manual (DSE 'GenComm', ComAp register list).",
+  "encoding": "gain (engineering = raw / gain).",
+  "function": "holding",
+  "wordSwap": false,
+  "modbusDefaults": { "unitId": 1 },
+  "blocks": [
+    { "start": 0, "count": 12 }
+  ],
+  "points": [
+    { "name": "gen_power_w",     "address": 0, "type": "int32",  "gain": 1 },
+    { "name": "fuel_level_pct",  "address": 2, "type": "uint16", "gain": 1 },
+    { "name": "engine_rpm",      "address": 3, "type": "uint16", "gain": 1 },
+    { "name": "coolant_temp_c",  "address": 4, "type": "int16",  "gain": 1 },
+    { "name": "battery_voltage", "address": 5, "type": "uint16", "gain": 10 },
+    { "name": "gen_frequency",   "address": 6, "type": "uint16", "gain": 10 },
+    { "name": "run_hours",       "address": 7, "type": "uint32", "gain": 1 },
+    { "name": "gen_status",      "address": 9, "type": "uint16" }
+  ],
+  "metrics": {
+    "output_kw":      { "point": "gen_power_w",     "div": 1000, "round": 3 },
+    "fuel_pct":       { "point": "fuel_level_pct",  "round": 0 },
+    "rpm":            { "point": "engine_rpm" },
+    "temp_c":         { "point": "coolant_temp_c",  "round": 1 },
+    "grid_frequency": { "point": "gen_frequency",   "round": 2 },
+    "run_hours":      { "point": "run_hours" }
+  },
+  "state": {
+    "point": "gen_status",
+    "default": "DEGRADED",
+    "map": { "0": "OFFLINE", "1": "ONLINE", "2": "DEGRADED", "3": "OFFLINE" }
+  }
+}

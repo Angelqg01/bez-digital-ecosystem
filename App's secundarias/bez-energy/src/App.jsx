@@ -15,6 +15,7 @@ import {
 
 // Wallet login / subscribe (shared)
 import WalletAuthButton from './WalletAuthButton.jsx'
+import useMe from './hooks/useMe'
 
 // Pages
 import Dashboard from './pages/Dashboard'
@@ -24,8 +25,10 @@ import EnergyWallet from './pages/Wallet'
 import Analytics from './pages/Analytics'
 import Suppliers from './pages/Suppliers'
 import Docs from './pages/Docs'
+import Operators from './pages/Operators'
 
 const App = () => {
+  const { me } = useMe()
   return (
     <Router>
       <div className="app-shell">
@@ -65,6 +68,7 @@ const App = () => {
             <Route path="/wallet" element={<EnergyWallet />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/suppliers" element={<Suppliers />} />
+            <Route path="/operators" element={<Operators />} />
             <Route path="/docs" element={<Docs />} />
           </Routes>
         </main>
@@ -91,6 +95,12 @@ const App = () => {
             <BarChart3 size={24} />
             <span>NegaW</span>
           </NavLink>
+          {me.is_admin && (
+            <NavLink to="/operators" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Users size={24} />
+              <span>Operarios</span>
+            </NavLink>
+          )}
           <NavLink to="/docs" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <FileText size={24} />
             <span>Docs</span>

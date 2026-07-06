@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package as PackageIcon, Code as CodeIcon, Check as CheckIcon, Download as DownloadIcon, ExternalLink as ExternalLinkIcon, Plug as PlugIcon, Terminal as TerminalIcon } from 'lucide-react';
+import { Package as PackageIcon, Code as CodeIcon, Check as CheckIcon, Download as DownloadIcon, ExternalLink as ExternalLinkIcon, Plug as PlugIcon, Terminal as TerminalIcon, Globe as GlobeIcon } from 'lucide-react';
 
 /**
  * McpSdkDownloadTab - Download section for BEZHAS-MCP and BeZhas SDK
@@ -142,6 +142,46 @@ const McpSdkDownloadTab = () => {
                             <ExternalLinkIcon className="w-4 h-4" />
                         </a>
                     </div>
+                </div>
+            </div>
+
+            {/* WordPress Plugin Card */}
+            <div className="bg-gray-800/60 border border-gray-700 rounded-2xl p-6 hover:border-green-500/50 transition-all">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 bg-green-600/20 rounded-xl">
+                        <GlobeIcon className="text-green-400 w-8 h-8" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-white">Plugin WordPress</h3>
+                        <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-0.5 rounded-full">v2.0.0 — Embedded Gateway</span>
+                    </div>
+                </div>
+
+                <p className="text-gray-300 text-sm mb-4">
+                    Todo el ecosistema BeZhas dentro de tu plataforma: suscríbete a los planes, activa las SubApps y cobra con BeZhas-Pay sin salir de wp-admin. Gateway WooCommerce incluido.
+                </p>
+
+                <ul className="text-sm text-gray-400 space-y-2 mb-6">
+                    <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> Consola del Hub embebida en wp-admin</li>
+                    <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> Suscripción a los 4 planes (pago en $BEZ)</li>
+                    <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> Activación de SubApps (CargoLink, Energy, Pay...)</li>
+                    <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> BeZhas-Pay: shortcode + bloque + gateway WC</li>
+                    <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> Polygon & BNB Chain · liquidación SEPA</li>
+                </ul>
+
+                <div className="space-y-3">
+                    <div className="bg-gray-900/60 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">Instala el ZIP en WordPress → Plugins → Añadir nuevo → Subir:</p>
+                        <code className="text-sm text-green-400 font-mono">bezhas-hub-2.0.0.zip</code>
+                    </div>
+                    <a
+                        href="/api/downloads/bezhas-hub-wp.zip"
+                        className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all flex items-center justify-center gap-2"
+                    >
+                        <DownloadIcon className="w-5 h-5" />
+                        Descargar Plugin WordPress v2.0.0
+                        <ExternalLinkIcon className="w-4 h-4" />
+                    </a>
                 </div>
             </div>
 

@@ -24,6 +24,7 @@ const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { ethers } = require('ethers');
 const crypto = require('crypto');
+const fxService = require('../services/fxService');
 
 // ═══════════════════════════════════════════════
 // LOGGER ESTRUCTURADO [LOG-1]
@@ -75,6 +76,9 @@ const CONFIG = Object.freeze({
   treasuryPk: process.env.BEZ_TREASURY_PK || process.env.ADMIN_PK || '',
   rpcUrl: process.env.RPC_URL || 'https://rpc-amoy.polygon.technology',
   bezPriceUsdCents: parseInt(process.env.BEZ_PRICE_USD_CENTS || '7', 10),
+  // FX: EUR→USD for European-region settlements. Explicit & configurable — never
+  // a silent 1:1. Replace with a live oracle feed when available.
+  eurUsdRate: parseFloat(process.env.EUR_USD_RATE || '1.08'),
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
   bankWebhookSecret: process.env.BANK_WEBHOOK_SECRET ?? '',
   mintGasLimit: parseMintGasLimit(),
@@ -285,6 +289,30 @@ const RetryQueue = (() => {
 // ═══════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════
+
+// European/SEPA IBAN country prefixes settle in EUR; the rest of the world in USD.
+const EUROPEAN_IBAN_PREFIXES = new Set([
+  'AD', 'AT', 'BE', 'BG', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB',
+  'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MT', 'NL', 'NO',
+  'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'SM',
+]);
+
+/** Currency a region accepts, derived from the IBAN country code. */
+function regionCurrencyForIban(iban) {
+  const cc = String(iban || '').trim().slice(0, 2).toUpperCase();
+  return EUROPEAN_IBAN_PREFIXES.has(cc) ? 'EUR' : 'USD';
+}
+
+/**
+ * Convert a settled amount (minor units of its own currency) to USD cents — the
+ * unit the mint prices BEZ against. EUR uses the supplied EUR→USD rate (resolved
+ * live from the ECB by the caller). Returns null for an unsupported currency.
+ */
+function toUsdCents(amountCents, currency, eurUsdRate) {
+  if (currency === 'USD') return amountCents;
+  if (currency === 'EUR') return Math.round(amountCents * eurUsdRate);
+  return null;
+}
 
 /**
  * Convierte USD cents → BEZ wei usando aritmética de enteros. [sin cambio]
@@ -522,35 +550,53 @@ router.post('/bank', express.json(), async (req, res) => {
     });
   }
 
-  // 3. Currency normalization [SEC-2]
-  // Rejecting non-USD explicitly until a real FX oracle is integrated.
-  // NEVER silently use 1:1 for production — €1000 ≠ $1000.
-  if (currency !== 'USD') {
-    log.error('Bank', 'Non-USD currency rejected — FX conversion not yet implemented', {
-      currency, reference,
+  // 3. Region-based currency acceptance [SEC-2]
+  // European-region IBANs settle in EUR, the rest of the world in USD. The amount
+  // is converted to USD cents (the mint's pricing unit) via an explicit FX rate —
+  // never a silent 1:1 (€1000 ≠ $1000).
+  const expectedCurrency = regionCurrencyForIban(iban);
+  if (currency !== expectedCurrency) {
+    log.error('Bank', 'Currency does not match IBAN region', {
+      ibanCountry: String(iban).slice(0, 2).toUpperCase(), currency, expectedCurrency, reference,
     });
-    // Return 422 so the bank system knows to retry after FX is available,
-    // rather than 400 (which would indicate a bad request they shouldn't retry)
     return res.status(422).json({
-      error: `Currency "${currency}" is not supported yet. Only USD is accepted.`,
-      detail: 'FX oracle integration is pending. Contact BeZhas support.',
+      error: `Currency "${currency}" is not accepted for this region. Expected ${expectedCurrency}.`,
+      detail: `IBAN country ${String(iban).slice(0, 2).toUpperCase()} settles in ${expectedCurrency}.`,
     });
   }
 
-  log.info('Bank', 'Webhook received', { iban, amountCents, currency, reference });
+  // EUR converts to USD cents via the live ECB reference rate (falls back to the
+  // configured static rate if the feed is unreachable). USD needs no FX call.
+  let fx = { rate: 1, source: 'none' };
+  if (currency === 'EUR') {
+    fx = await fxService.getEurUsdRate({ fallback: CONFIG.eurUsdRate });
+  }
+  const usdCents = toUsdCents(amountCents, currency, fx.rate);
+  if (usdCents === null || usdCents <= 0) {
+    return res.status(422).json({ error: `Currency "${currency}" is not supported.` });
+  }
+
+  log.info('Bank', 'Webhook received', {
+    ibanCountry: String(iban).slice(0, 2).toUpperCase(), amountCents, currency, usdCents,
+    fxRate: currency === 'EUR' ? fx.rate : undefined, fxSource: currency === 'EUR' ? fx.source : undefined,
+    reference,
+  });
 
   try {
-    const result = await mintBezTokens(walletAddress, amountCents, eventId);
+    const result = await mintBezTokens(walletAddress, usdCents, eventId);
     if (result) {
       return res.json({ success: true, txHash: result.txHash, bezMinted: result.bezDisplay });
     }
     return res.json({ success: true, status: 'already_processed' });
   } catch (err) {
     log.error('Bank', 'Mint failed — enqueuing retry', { eventId, error: err.message });
-    RetryQueue.enqueue(walletAddress, amountCents, eventId);
+    RetryQueue.enqueue(walletAddress, usdCents, eventId);
     // Return 202 Accepted: we received the event and will process it asynchronously
     return res.status(202).json({ status: 'queued', message: 'Mint will be retried automatically.' });
   }
 });
 
 module.exports = router;
+// Pure helpers exposed for unit testing (does not change the mount — router is a fn).
+module.exports.regionCurrencyForIban = regionCurrencyForIban;
+module.exports.toUsdCents = toUsdCents;

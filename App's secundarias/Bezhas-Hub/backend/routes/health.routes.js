@@ -67,36 +67,6 @@ router.get('/detailed', async (req, res) => {
 });
 
 /**
- * GET /health/:service - Check specific service
- */
-router.get('/:service', async (req, res) => {
-    try {
-        const { service } = req.params;
-        const result = await healthService.checkService(service);
-
-        if (result.status === 'unknown') {
-            return res.status(404).json({
-                status: 'error',
-                message: `Service '${service}' not found`
-            });
-        }
-
-        const statusCode = result.status === 'healthy' ? 200 : 503;
-
-        res.status(statusCode).json({
-            service,
-            ...result
-        });
-    } catch (error) {
-        logger.error({ error: error.message, service: req.params.service }, 'Service health check error');
-        res.status(503).json({
-            status: 'error',
-            message: error.message
-        });
-    }
-});
-
-/**
  * GET /health/system/info - System information
  */
 router.get('/system/info', (req, res) => {
@@ -238,6 +208,39 @@ router.get('/startup', async (req, res) => {
             started: false,
             error: error.message,
             timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * GET /health/:service - Check specific service.
+ * IMPORTANTE: debe ir AL FINAL — este parámetro de un segmento captura
+ * cualquier `/health/<x>`, así que las rutas nombradas (/live, /ready, /startup)
+ * tienen que declararse antes o quedan ensombrecidas (devolvían 404).
+ */
+router.get('/:service', async (req, res) => {
+    try {
+        const { service } = req.params;
+        const result = await healthService.checkService(service);
+
+        if (result.status === 'unknown') {
+            return res.status(404).json({
+                status: 'error',
+                message: `Service '${service}' not found`
+            });
+        }
+
+        const statusCode = result.status === 'healthy' ? 200 : 503;
+
+        res.status(statusCode).json({
+            service,
+            ...result
+        });
+    } catch (error) {
+        logger.error({ error: error.message, service: req.params.service }, 'Service health check error');
+        res.status(503).json({
+            status: 'error',
+            message: error.message
         });
     }
 });

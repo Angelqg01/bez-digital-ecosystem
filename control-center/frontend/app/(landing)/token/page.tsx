@@ -44,10 +44,10 @@ export default function TokenPage() {
                         El token nativo de la red BeZhas. Paga gas, participa en governance, obtén rewards por staking y accede a servicios premium del protocolo.
                     </p>
                     <div className="flex flex-wrap gap-4">
-                        <a href={STRIPE_PAYMENT_LINKS.tokenPurchase} target="_blank" rel="noopener noreferrer" className="bg-primary text-white px-10 py-4 font-bold italic tracking-widest uppercase text-sm hover:shadow-[0_0_30px_rgba(13,51,242,0.4)] transition-all inline-flex items-center gap-2">
+                        <Link href="/token/buy" className="bg-primary text-white px-10 py-4 font-bold italic tracking-widest uppercase text-sm hover:shadow-[0_0_30px_rgba(13,51,242,0.4)] transition-all inline-flex items-center gap-2">
                             <span className="material-symbols-outlined text-lg">wallet</span>
                             COMPRAR BEZ-COIN
-                        </a>
+                        </Link>
                         <Link href={DEFI_TOKENOMICS_URL} className="glass-panel border border-white/10 text-white px-10 py-4 font-bold italic tracking-widest uppercase text-sm hover:bg-white/5 transition-all inline-flex items-center gap-2">
                             <span className="material-symbols-outlined text-lg">savings</span>
                             TOKENOMICS EN DEFI

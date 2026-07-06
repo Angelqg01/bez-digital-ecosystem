@@ -22,7 +22,7 @@ import { Wallet, LogOut, ChevronDown, BadgeCheck, Loader2, CreditCard, ShieldAle
 import {
   isWalletAvailable, siweLogin, siweSubscribe, subscribeWithBEZ,
   getSession, clearSession, shortAddress, onWalletEvent,
-} from '../../_shared/bezhas-wallet-auth.js';
+} from './shared/bezhas-wallet-auth.js';
 
 export default function WalletAuthButton({
   accent = '#00D4AA',

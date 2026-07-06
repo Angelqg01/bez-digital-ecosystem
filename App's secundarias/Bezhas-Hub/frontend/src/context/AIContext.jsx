@@ -26,7 +26,7 @@ export const AIProvider = ({ children }) => {
 
     const loadAgents = async () => {
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
             const response = await fetch(`${API_URL}/api/ai/agents`)
             const data = await response.json()
 

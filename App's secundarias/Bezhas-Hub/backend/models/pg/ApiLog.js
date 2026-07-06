@@ -4,9 +4,9 @@ class ApiLogPG {
     static async create(data) {
         const query = `
             INSERT INTO api_logs (
-                api_key_id, user_id, request, response, client, metadata, timestamp
+                api_key_id, user_id, request, response, client, metadata, timestamp, org_id, site_id
             ) VALUES (
-                $1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6::jsonb, $7
+                $1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6::jsonb, $7, $8::uuid, $9::uuid
             ) RETURNING *;
         `;
         const values = [
@@ -16,11 +16,39 @@ class ApiLogPG {
             JSON.stringify(data.response),
             JSON.stringify(data.client || {}),
             JSON.stringify(data.metadata || {}),
-            data.timestamp || new Date().toISOString()
+            data.timestamp || new Date().toISOString(),
+            data.orgId || null,
+            data.siteId || null
         ];
 
         const result = await pool.query(query, values);
         return result.rows[0];
+    }
+
+    /**
+     * Uso agregado por sede para facturación B2B. Devuelve nº de llamadas por
+     * site_id (y total) en una ventana temporal.
+     */
+    static async getUsageByOrg(orgId, { since = "30 days" } = {}) {
+        const query = `
+            SELECT site_id,
+                   COUNT(*)::int AS requests,
+                   AVG((response->>'responseTime')::numeric) AS avg_response_time,
+                   AVG(CASE WHEN (response->>'statusCode')::numeric >= 400 THEN 1 ELSE 0 END) AS error_rate
+              FROM api_logs
+             WHERE org_id = $1::uuid AND timestamp >= NOW() - ($2)::interval
+             GROUP BY site_id
+             ORDER BY requests DESC;
+        `;
+        const { rows } = await pool.query(query, [orgId, since]);
+        const bySite = rows.map((r) => ({
+            siteId: r.site_id,
+            requests: Number(r.requests),
+            avgResponseTime: r.avg_response_time != null ? Number(r.avg_response_time).toFixed(2) : null,
+            errorRate: r.error_rate != null ? (Number(r.error_rate) * 100).toFixed(2) : null,
+        }));
+        const totalRequests = bySite.reduce((s, r) => s + r.requests, 0);
+        return { orgId, since, totalRequests, bySite };
     }
 
     static async getTopEndpoints(apiKeyId, limit = 10) {

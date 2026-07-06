@@ -1,0 +1,38 @@
+{
+  "pkg": "bezhas-frontend",
+  "globalName": "BezhasUI",
+  "shape": "package",
+  "srcDir": "src/components/ui",
+  "cssEntry": ".design-sync/build/index.compiled.css",
+  "componentSrcMap": {
+    "Button": "src/components/ui/Button.jsx",
+    "Card": "src/components/ui/Card.jsx",
+    "CardHeader": "src/components/ui/Card.jsx",
+    "CardTitle": "src/components/ui/Card.jsx",
+    "CardDescription": "src/components/ui/Card.jsx",
+    "CardContent": "src/components/ui/Card.jsx",
+    "CardFooter": "src/components/ui/Card.jsx",
+    "Badge": "src/components/ui/Badge.jsx",
+    "Input": "src/components/ui/Input.jsx",
+    "Label": "src/components/ui/Label.jsx",
+    "Spinner": "src/components/ui/Spinner.jsx",
+    "BezCoinLoader": "src/components/ui/BezCoinLoader.jsx",
+    "GoogleTranslateWidget": null,
+    "OrigenChip": null,
+    "PageGuide": null
+  },
+  "dtsPropsFor": {
+    "Button": "children?: React.ReactNode; onClick?: () => void; disabled?: boolean; className?: string; variant?: 'primary' | 'secondary' | 'outline';",
+    "Card": "children?: React.ReactNode; className?: string;",
+    "CardHeader": "children?: React.ReactNode; className?: string;",
+    "CardTitle": "children?: React.ReactNode; className?: string;",
+    "CardDescription": "children?: React.ReactNode; className?: string;",
+    "CardContent": "children?: React.ReactNode; className?: string;",
+    "CardFooter": "children?: React.ReactNode; className?: string;",
+    "Badge": "children?: React.ReactNode; variant?: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'outline'; className?: string;",
+    "Input": "type?: string; placeholder?: string; value?: string; onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; disabled?: boolean; className?: string;",
+    "Label": "children?: React.ReactNode; htmlFor?: string; className?: string; required?: boolean;",
+    "Spinner": "size?: 'sm' | 'md' | 'lg';",
+    "BezCoinLoader": "size?: 'sm' | 'md' | 'lg' | 'xl'; text?: string; showProgress?: boolean; fullScreen?: boolean;"
+  }
+}

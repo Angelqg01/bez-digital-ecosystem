@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BeZhas Embed — demo</title>
+  <style>
+    body{margin:0;background:#080911;color:#e5e7eb;font-family:system-ui,sans-serif;
+      padding:3rem 1.5rem;max-width:760px;margin:0 auto;line-height:1.6}
+    h1{font-weight:800;letter-spacing:-.02em}
+    code{background:#1f2937;padding:.15rem .4rem;border-radius:.3rem;font-size:.85em}
+    .demo{margin:2rem 0;padding:1.5rem;border:1px solid rgba(255,255,255,.1);border-radius:.75rem}
+    .demo h3{margin-top:0;color:#22d3ee;font-size:.8rem;text-transform:uppercase;letter-spacing:.15em}
+  </style>
+
+  <!--
+    ESTO ES TODO LO QUE EL CLIENTE PEGA — un <script> + markup declarativo.
+    En producción: src="https://embed.bez.digital/widget.js".
+    Aquí apuntamos al archivo local y a un backend de demo.
+  -->
+  <script type="module"
+    src="./widget.js"
+    data-bezhas-key="pk_demo_publishable"
+    data-bezhas-base="http://localhost:3001"></script>
+</head>
+<body>
+  <h1>BeZhas Embed — demo de integración</h1>
+  <p>
+    Una plataforma de terceros (WordPress, Shopify, un ERP, una web a medida) pega
+    <strong>un solo <code>&lt;script type="module"&gt;</code></strong> y luego marca dónde
+    quiere cada servicio con <code>data-bezhas-widget</code>. Cero npm, cero PHP, cero framework.
+  </p>
+
+  <div class="demo">
+    <h3>Botón de pago (pay-button)</h3>
+    <p class="bez-muted">Inicia una compra de BEZ; <code>card</code> redirige al checkout hospedado.</p>
+    <div data-bezhas-widget="pay-button" data-amount="49.9" data-method="card"></div>
+    <pre><code>&lt;div data-bezhas-widget="pay-button" data-amount="49.9" data-method="card"&gt;&lt;/div&gt;</code></pre>
+  </div>
+
+  <div class="demo">
+    <h3>Precio en vivo (pay-price)</h3>
+    <div data-bezhas-widget="pay-price" data-amount="100"></div>
+    <pre><code>&lt;div data-bezhas-widget="pay-price" data-amount="100"&gt;&lt;/div&gt;</code></pre>
+  </div>
+
+  <div class="demo">
+    <h3>Rastreo de envío (cargolink-track)</h3>
+    <div data-bezhas-widget="cargolink-track"></div>
+    <pre><code>&lt;div data-bezhas-widget="cargolink-track" data-buid="B-123" data-rolekey="..."&gt;&lt;/div&gt;</code></pre>
+  </div>
+</body>
+</html>

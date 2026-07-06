@@ -98,6 +98,14 @@ const DiagnosticService = process.env.NODE_ENV === 'test'
 if (process.env.NODE_ENV !== 'test') {
     const WebhookBridge = require('./services/bridge/WebhookBlockchainBridge');
     WebhookBridge.init();
+
+    // 5. Universal Bridge (client.provisioned -> fan-out a adapters de terceros).
+    //    Opt-in: sólo arranca con FEATURE_THIRDPARTY_BRIDGE=true (degrada si no).
+    try {
+        require('./services/bridge/universalBridge').init();
+    } catch (e) {
+        console.warn('⚠️  UniversalBridge not started:', e.message);
+    }
 }
 
 const cron = require('node-cron');
@@ -953,6 +961,9 @@ const SUBAPP_URLS = getSubappRegistry().reduce((acc, subapp) => {
 }, {});
 
 app.use('/api/control-plane', controlPlaneRoutes);
+app.use('/api/organizations', require('./routes/organizations.routes')); // Multi-tenant B2B: Org → Sedes → Membresías
+app.use('/api/plans', require('./routes/plans.routes')); // Planes de suscripción definitivos + calculadora
+app.use('/api/identity', require('./routes/identity.routes')); // BeZhas_ID único (email/wallet/OAuth → 1 identidad)
 app.use('/api/rwa', deprecatedSubappRoute('rwa_operations', SUBAPP_URLS.capital));
 app.use('/api/logistics', deprecatedSubappRoute('logistics_operations', SUBAPP_URLS.cargo));
 app.use('/api/webhooks', webhookRoutes);
@@ -1011,6 +1022,10 @@ app.use('/api/developer', developerConsoleRoutes);
 
 // SDK & MCP Downloads (serves .tgz or redirects to npm registry)
 safeUseRoute('/api/downloads', require('./routes/downloads.routes'));
+
+// Plugin Bridge — manifiesto (planes + SubApps + pago) para la consola embebida
+// que el Plugin WordPress monta dentro de plataformas de terceros (CRM/ERP/WC).
+safeUseRoute('/api/plugin-bridge', require('./routes/plugin-bridge.routes'));
 
 
 // AI Risk Engine Routes (Revenue Stream Native) — mounted at dedicated subpath

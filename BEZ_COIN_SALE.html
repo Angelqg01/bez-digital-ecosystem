@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BEZ-Coin — Precio Semilla $0.0075 | BeZhas</title>
+<meta name="description" content="Compra BEZ-Coin al precio semilla de $0.0075. Pago con tarjeta o SEPA. Entrega directa en wallet Polygon. BeZhas — Red empresarial blockchain.">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0A0E1A;
+    --surface: #111827;
+    --cyan: #00D4FF;
+    --violet: #7B2FFF;
+    --orange: #FF6B35;
+    --text: #F9FAFB;
+    --muted: #6B7280;
+    --border: rgba(255,255,255,0.08);
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; min-height: 100vh; }
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  /* ── HERO ── */
+  .hero { position: relative; text-align: center; padding: 80px 20px 60px; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%); pointer-events: none; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 1px solid rgba(0,212,255,0.3); border-radius: 999px; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan); margin-bottom: 24px; }
+  .badge::before { content: ''; width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+  h1 { font-family: 'Syne', sans-serif; font-size: clamp(36px, 6vw, 72px); font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+  h1 span { color: var(--cyan); }
+  .subtitle { font-size: 18px; color: var(--muted); max-width: 520px; margin: 0 auto 40px; line-height: 1.6; }
+  .price-hero { font-family: 'JetBrains Mono', monospace; font-size: 48px; font-weight: 700; color: var(--cyan); margin-bottom: 6px; }
+  .price-sub { font-size: 14px; color: var(--muted); margin-bottom: 40px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; justify-content: center; gap: 0; margin-bottom: 48px; }
+  .tab { padding: 10px 28px; border: 1px solid var(--border); cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; background: var(--surface); color: var(--muted); }
+  .tab:first-child { border-radius: 10px 0 0 10px; }
+  .tab:last-child { border-radius: 0 10px 10px 0; }
+  .tab.active-crypto { background: rgba(0,212,255,0.1); border-color: rgba(0,212,255,0.4); color: var(--cyan); }
+  .tab.active-empresa { background: rgba(123,47,255,0.1); border-color: rgba(123,47,255,0.4); color: #a78bfa; }
+
+  /* ── PACKS GRID ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+  .packs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 48px; }
+  .pack { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; position: relative; transition: border-color .2s, transform .15s; }
+  .pack:hover { transform: translateY(-3px); }
+  .pack.crypto:hover { border-color: rgba(0,212,255,0.4); }
+  .pack.empresa:hover { border-color: rgba(123,47,255,0.4); }
+  .pack-badge { position: absolute; top: 16px; right: 16px; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .pack-badge.cyan { background: rgba(0,212,255,0.1); color: var(--cyan); border: 1px solid rgba(0,212,255,0.3); }
+  .pack-badge.violet { background: rgba(123,47,255,0.1); color: #a78bfa; border: 1px solid rgba(123,47,255,0.3); }
+  .pack-badge.orange { background: rgba(255,107,53,0.1); color: var(--orange); border: 1px solid rgba(255,107,53,0.3); }
+  .pack-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .pack-bez { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--cyan); margin-bottom: 2px; }
+  .pack-bez.violet { color: #a78bfa; }
+  .pack-usd { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .pack-perks { list-style: none; margin-bottom: 24px; }
+  .pack-perks li { font-size: 13px; color: #D1D5DB; padding: 4px 0; display: flex; align-items: flex-start; gap: 8px; }
+  .pack-perks li::before { content: '✓'; color: var(--cyan); font-weight: 700; flex-shrink: 0; }
+  .pack-perks li.violet::before { color: #a78bfa; }
+  .btn { display: block; width: 100%; text-align: center; padding: 13px; border-radius: 12px; font-size: 14px; font-weight: 700; text-decoration: none; transition: all .2s; cursor: pointer; border: none; }
+  .btn-cyan { background: var(--cyan); color: #0A0E1A; }
+  .btn-cyan:hover { background: #33ddff; box-shadow: 0 0 24px rgba(0,212,255,0.3); }
+  .btn-violet { background: var(--violet); color: white; }
+  .btn-violet:hover { background: #9747ff; box-shadow: 0 0 24px rgba(123,47,255,0.3); }
+
+  /* ── HOW IT WORKS ── */
+  .section-title { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 32px; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 60px; }
+  .step { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px 20px; text-align: center; }
+  .step-n { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--cyan); margin-bottom: 10px; }
+  .step-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .step-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* ── CONTRACT ── */
+  .contract-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .contract-label { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+  .contract-addr { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--cyan); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .contract-link { font-size: 12px; color: var(--cyan); text-decoration: none; flex-shrink: 0; }
+  .contract-link:hover { text-decoration: underline; }
+
+  /* ── CONTACT ── */
+  .contact-box { text-align: center; border: 1px solid var(--border); border-radius: 20px; padding: 40px 20px; margin-bottom: 48px; background: var(--surface); }
+  .contact-box h3 { font-family: 'Syne', sans-serif; font-size: 22px; margin-bottom: 8px; }
+  .contact-box p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .contact-btns { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .btn-outline { padding: 11px 24px; border: 1px solid var(--border); border-radius: 10px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600; transition: all .2s; }
+  .btn-outline:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  /* ── DISCLAIMER ── */
+  .disclaimer { text-align: center; font-size: 11px; color: #374151; padding-bottom: 40px; line-height: 1.6; }
+
+  /* ── HIDDEN ── */
+  [data-panel] { display: none; }
+  [data-panel].active { display: block; }
+
+  /* ── EMPRESA BANNER ── */
+  .empresa-banner { background: rgba(123,47,255,0.08); border: 1px solid rgba(123,47,255,0.2); border-radius: 14px; padding: 16px 20px; margin-bottom: 28px; font-size: 13px; color: #c4b5fd; line-height: 1.6; }
+  .empresa-banner strong { color: #a78bfa; }
+
+  /* ── TICKER ── */
+  .ticker { background: rgba(0,212,255,0.05); border-top: 1px solid rgba(0,212,255,0.1); border-bottom: 1px solid rgba(0,212,255,0.1); padding: 10px 0; overflow: hidden; margin-bottom: 60px; }
+  .ticker-inner { display: flex; gap: 60px; animation: scroll 20s linear infinite; white-space: nowrap; }
+  .ticker-item { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--cyan); }
+  @keyframes scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge">🟢 Venta directa activa · Precio semilla</div>
+  <h1>Compra <span>BEZ-Coin</span><br>al precio más bajo</h1>
+  <p class="subtitle">Accede a la red empresarial BeZhas con el activo que mueve sus operaciones. Pago con tarjeta o SEPA. Sin wallet previa necesaria.</p>
+  <div class="price-hero">$0.0075 <span style="font-size:24px;color:#6B7280">/ BEZ</span></div>
+  <p class="price-sub">3.000.000.000 BEZ supply total · Polygon + BNB Chain · Staking disponible</p>
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ticker-item">BEZ/USD $0.0075</span>
+    <span class="ticker-item">Supply 3B BEZ</span>
+    <span class="ticker-item">Polygon 0xEcBa...f11A8</span>
+    <span class="ticker-item">Staking APR activo</span>
+    <span class="ticker-item">5 sub-apps en producción</span>
+    <span class="ticker-item">SDK B2B disponible</span>
+    <span class="ticker-item">MiCA Compliance</span>
+    <span class="ticker-item">BEZ/USD $0.0075</span>
+    <span class="ticker-item">Supply 3B BEZ</span>
+    <span class="ticker-item">Polygon 0xEcBa...f11A8</span>
+    <span class="ticker-item">Staking APR activo</span>
+    <span class="ticker-item">5 sub-apps en producción</span>
+    <span class="ticker-item">SDK B2B disponible</span>
+    <span class="ticker-item">MiCA Compliance</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active-crypto" onclick="setTab('crypto')">💎 Inversores / Crypto</button>
+    <button class="tab" onclick="setTab('empresa')">🏢 Empresas B2B</button>
+  </div>
+
+  <!-- PANEL CRYPTO -->
+  <div data-panel="crypto" class="active">
+    <div class="packs">
+
+      <!-- Starter -->
+      <div class="pack crypto">
+        <p class="pack-label">Pack Starter</p>
+        <p class="pack-bez">13.333 BEZ</p>
+        <p class="pack-usd">$100 USD · $0.0075/BEZ</p>
+        <ul class="pack-perks">
+          <li>13.333 BEZ-Coin</li>
+          <li>Acceso dashboard DeFi</li>
+          <li>Staking desde día 1</li>
+          <li>Entrega en 24–48h</li>
+        </ul>
+        <a href="https://buy.stripe.com/8x2aEXgqY2q29bEeqTew807" target="_blank" class="btn btn-cyan">Comprar con Stripe →</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="pack crypto">
+        <span class="pack-badge cyan">Popular</span>
+        <p class="pack-label">Pack Pro</p>
+        <p class="pack-bez">73.333 BEZ</p>
+        <p class="pack-usd">$550 USD · $0.0075/BEZ</p>
+        <ul class="pack-perks">
+          <li>73.333 BEZ-Coin</li>
+          <li>+10% bonus tokens</li>
+          <li>Acceso BeZhas Vision Scan</li>
+          <li>Priority Telegram support</li>
+        </ul>
+        <a href="https://buy.stripe.com/aFa3cvb6E0hUafI82vew808" target="_blank" class="btn btn-cyan">Comprar con Stripe →</a>
+      </div>
+
+      <!-- Libre -->
+      <div class="pack crypto">
+        <span class="pack-badge orange">Flexible</span>
+        <p class="pack-label">Compra libre</p>
+        <p class="pack-bez" style="font-size:20px;padding-top:8px">Tú eliges el importe</p>
+        <p class="pack-usd">Tipo de cambio: $0.0075/BEZ</p>
+        <ul class="pack-perks">
+          <li>Cualquier cantidad USD</li>
+          <li>Mínimo $10</li>
+          <li>Recibo automático</li>
+          <li>Entrega 24–48h hábiles</li>
+        </ul>
+        <a href="https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806" target="_blank" class="btn btn-cyan">Comprar con Stripe →</a>
+      </div>
+    </div>
+
+    <!-- Founding roles -->
+    <p class="section-title">Roles Fundadores — Cupos limitados</p>
+    <div class="packs" style="grid-template-columns: repeat(auto-fit, minmax(240px,1fr))">
+      <div class="pack crypto">
+        <span class="pack-badge cyan">⭐ Limitado</span>
+        <p class="pack-label">Founding Partner</p>
+        <p style="font-size:14px;color:#D1D5DB;line-height:1.6;margin-bottom:20px">Acceso a DAO + validador + comisión perpetua sobre red</p>
+        <a href="https://book.stripe.com/bJefZh3Ec7Km1JcaaDew803" target="_blank" class="btn btn-cyan">Reservar plaza →</a>
+      </div>
+      <div class="pack crypto">
+        <span class="pack-badge cyan">🔧</span>
+        <p class="pack-label">Network Architect</p>
+        <p style="font-size:14px;color:#D1D5DB;line-height:1.6;margin-bottom:20px">Nodo edge + reparto de gas fees + acceso early features</p>
+        <a href="https://book.stripe.com/cNi9ATfmU9Su4VociLew802" target="_blank" class="btn btn-cyan">Reservar plaza →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL EMPRESA -->
+  <div data-panel="empresa">
+    <div class="empresa-banner">
+      <strong>Para empresas:</strong> BEZ-Coin es el activo de utilidad de la red BeZhas. Lo usas para gas fees, liquidaciones automáticas entre proveedores, escrow de entregas y acceso al SDK B2B. <strong>Factura válida para AEAT.</strong> Sin blockchain en la propuesta comercial si lo prefieres.
+    </div>
+    <div class="packs">
+      <div class="pack empresa">
+        <span class="pack-badge violet">B2B</span>
+        <p class="pack-label">Pack Enterprise</p>
+        <p class="pack-bez violet">266.667 BEZ</p>
+        <p class="pack-usd">$2.000 USD · $0.0075/BEZ</p>
+        <ul class="pack-perks">
+          <li class="violet">266.667 BEZ-Coin</li>
+          <li class="violet">+15% bonus tokens</li>
+          <li class="violet">SDK B2B licencia anual</li>
+          <li class="violet">Integración CargoLink / PureScan</li>
+          <li class="violet">Manager asignado</li>
+          <li class="violet">Factura válida para AEAT</li>
+        </ul>
+        <a href="https://buy.stripe.com/aFa4gzb6E4ya1Jc4Qjew809" target="_blank" class="btn btn-violet">Comprar con Stripe →</a>
+      </div>
+      <div class="pack empresa">
+        <span class="pack-badge orange">Flexible</span>
+        <p class="pack-label">Compra corporativa libre</p>
+        <p class="pack-bez violet" style="font-size:20px;padding-top:8px">Volumen personalizado</p>
+        <p class="pack-usd">$0.0075/BEZ · Precio fijo garantizado</p>
+        <ul class="pack-perks">
+          <li class="violet">Desde $500 hasta $50.000+</li>
+          <li class="violet">Factura empresarial emitida</li>
+          <li class="violet">Entrega directa en wallet corporativa</li>
+          <li class="violet">Asesoría técnica de integración</li>
+        </ul>
+        <a href="mailto:info.angelqg@gmail.com?subject=Compra BEZ-Coin Empresa" class="btn btn-violet">Contactar →</a>
+      </div>
+    </div>
+
+    <div class="contact-box">
+      <h3>¿Necesitas una propuesta a medida?</h3>
+      <p>Para volúmenes grandes, integración técnica o reunión comercial presencial en Algeciras o por videollamada.</p>
+      <div class="contact-btns">
+        <a href="mailto:info.angelqg@gmail.com?subject=BeZhas B2B" class="btn btn-violet" style="width:auto">📧 Email comercial</a>
+        <a href="https://t.me/BeZhasBot" target="_blank" class="btn-outline">✉️ Telegram</a>
+        <a href="https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view" target="_blank" class="btn-outline">📊 Deck Enterprise</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <p class="section-title" style="margin-top:20px">Cómo funciona</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-n">01</div>
+      <div class="step-title">Elige tu pack</div>
+      <div class="step-desc">Selecciona el importe y paga con tarjeta o SEPA via Stripe.</div>
+    </div>
+    <div class="step">
+      <div class="step-n">02</div>
+      <div class="step-title">Envía tu wallet</div>
+      <div class="step-desc">Mándanos tu dirección Polygon por email o Telegram tras el pago.</div>
+    </div>
+    <div class="step">
+      <div class="step-n">03</div>
+      <div class="step-title">Recibes BEZ</div>
+      <div class="step-desc">Transferencia directa desde el Treasury DAO en 24–48h hábiles.</div>
+    </div>
+    <div class="step">
+      <div class="step-n">04</div>
+      <div class="step-title">Activa y opera</div>
+      <div class="step-desc">Staking, farming, DAO y SDK B2B disponibles desde bez.digital.</div>
+    </div>
+  </div>
+
+  <!-- CONTRACT -->
+  <div class="contract-box">
+    <span class="contract-label">Contrato Polygon:</span>
+    <span class="contract-addr">0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8</span>
+    <a class="contract-link" href="https://polygonscan.com/token/0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8" target="_blank">Ver en Polygonscan →</a>
+  </div>
+
+  <p class="disclaimer">
+    BEZ-Coin es un token de utilidad. No constituye oferta de inversión ni producto financiero regulado.<br>
+    Cumplimiento MiCA UE · AEAT España · Precio fijo sin garantía de revalorización.<br>
+    © 2026 BeZhas — Algeciras, España · info.angelqg@gmail.com
+  </p>
+
+</div><!-- /container -->
+
+<script>
+  function setTab(tab) {
+    document.querySelectorAll('[data-panel]').forEach(p => p.classList.remove('active'));
+    document.querySelector('[data-panel="' + tab + '"]').classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => {
+      t.className = 'tab';
+    });
+    const btn = [...document.querySelectorAll('.tab')].find(t => t.onclick?.toString().includes(tab));
+    if (btn) btn.classList.add('active-' + tab);
+  }
+</script>
+</body>
+</html>

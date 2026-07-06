@@ -197,4 +197,116 @@ router.post('/chat', async (req, res) => {
     }
 });
 
+// ==========================================
+// GUIDE CHAT ENDPOINT POST /api/ai/guide-chat
+// Chatbot FAQ for client integration guides
+// ==========================================
+
+const GUIDE_FAQ_CONTEXT = `
+# ROL
+Eres el asistente de integración de BeZhas. Tu trabajo es ayudar a clientes B2B a integrar BeZhas en sus plataformas usando API REST, SDK JavaScript o Plugin WordPress.
+
+# CONOCIMIENTO BASE
+## 3 Métodos de Integración
+1. **API REST** (api.bez.digital:3001) — Control total, cualquier lenguaje. Header: x-api-key. Rate limit: 1000/min.
+2. **SDK JavaScript** (@bezhas/connect) — Zero-deps, Node.js 18+ y browsers. pnpm add @bezhas/connect.
+3. **Plugin WordPress** (bezhas-hub-v2.0.0.zip) — Sin código, WP 6.0+, WooCommerce opcional.
+
+## Autenticación
+- SIWE (Sign In With Ethereum): wallet firma mensaje → JWT
+- Email + 2FA: correo + contraseña + código SMS/app → JWT
+- API Key: header x-api-key en cada request (server-to-server)
+- JWT válido 24h, refresh token 30 días
+
+## 13 SubApps
+CargoLink (logística), BeZhas Pay (pagos), BZ Capital (DeFi/staking), BEZ Wallet (activos), BZ Energy (VPP), BZ Genesis (identidad), BZ Prestige (club B2B), BZ Sphere (social), PureScan (compliance), Vision Scan (IA visual), Gas Tank (gas fees), Edge Node (DePIN), RWA (inmobiliaria).
+
+## Endpoints Principales
+- POST /api/gateway/v1/pay — Crear pago (card, bank, crypto)
+- GET /api/gateway/v1/price — Precio BEZ actual
+- POST /api/cargolink/transactions — Crear transacción logística
+- PATCH /api/cargolink/transactions/:id — Actualizar estado
+- POST /api/capital/defi/stake — Hacer staking
+- POST /api/energy/trade — Trade energía
+- GET /api/identity/profile — Perfil usuario
+
+## Webhooks
+Eventos: payment.completed, payment.failed, cargo.created, cargo.delivered, energy.trade.completed
+Verificar firma: header x-bezhas-signature con HMAC-SHA256 del body usando webhook secret.
+Reintentos: 5 en 24h (inmediato, +5min, +30min, +2h).
+
+## FAQ Frecuentes
+- Puedo usar varios métodos a la vez: Sí.
+- Pierdo API Key: Genera nueva en /developers, la anterior se anula.
+- Costo: API pay-per-call, SDK incluido, Plugin gratis.
+- Blockchains: Polygon, BNB Chain, Amoy (testnet).
+- Sandbox: Sí, credenciales de sandbox en Developer Console.
+- Rate limit exceeded: Esperar 60s o implementar exponential backoff.
+- Webhook timeout: Responder 200 inmediatamente, procesar en background.
+
+## Seguridad
+- API Keys siempre en .env, nunca en código
+- Rotar keys cada 90 días
+- Verificar firma de todos los webhooks
+- HTTPS obligatorio en webhook URLs
+- JWT nunca en localStorage en producción
+
+# INSTRUCCIONES
+- Responde siempre en el idioma del usuario (español por defecto).
+- Sé conciso y directo. Incluye código cuando sea útil.
+- Si no sabes algo, di "Contacta support@bez.digital" en vez de inventar.
+- Nunca reveles API keys, secrets o información sensible.
+- Formato Markdown para respuestas estructuradas.
+`;
+
+router.post('/guide-chat', async (req, res) => {
+    try {
+        const { message, userRole, pageContext } = req.body;
+
+        if (!message || typeof message !== 'string') {
+            return res.status(400).json({ error: 'Se requiere un campo "message" de tipo string.' });
+        }
+
+        const systemMessages = [
+            { role: 'system', content: GUIDE_FAQ_CONTEXT },
+        ];
+
+        if (userRole) {
+            systemMessages.push({
+                role: 'system',
+                content: `El usuario tiene rol: ${userRole}. Adapta la profundidad técnica a su nivel.`,
+            });
+        }
+        if (pageContext) {
+            systemMessages.push({
+                role: 'system',
+                content: `El usuario está en la página: ${pageContext}. Prioriza información relevante a esa sección.`,
+            });
+        }
+
+        const conversationContext = [
+            ...systemMessages,
+            { role: 'user', content: message },
+        ];
+
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: conversationContext,
+            max_tokens: 1024,
+            temperature: 0.3,
+        });
+
+        res.status(200).json({
+            message: response.choices[0].message,
+            status: 'ok',
+        });
+    } catch (error) {
+        console.error('Guide Chat Error:', error.message);
+        res.status(500).json({
+            error: 'Error en el asistente de guías',
+            details: error.message,
+        });
+    }
+});
+
 module.exports = router;

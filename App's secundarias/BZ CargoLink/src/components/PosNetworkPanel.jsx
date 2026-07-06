@@ -31,7 +31,13 @@ const StatusTrail = ({ status }) => {
   )
 }
 
-const PosNetworkPanel = ({ apiKey }) => {
+function defaultAuthKey() {
+  if (typeof localStorage === 'undefined') return null
+  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
+}
+
+const PosNetworkPanel = ({ apiKey: apiKeyProp }) => {
+  const apiKey = apiKeyProp || defaultAuthKey()
   const [posLink, setPosLink] = useState(null)
   const [transactions, setTransactions] = useState([])
   const [notice, setNotice] = useState('')

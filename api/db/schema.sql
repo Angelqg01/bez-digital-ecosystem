@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     wallet_address  VARCHAR(42) UNIQUE NOT NULL,
     username        VARCHAR(100),
     email           VARCHAR(255),
-    role            VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'enterprise', 'edge_node')),
+    role            VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'enterprise', 'edge_node', 'operator')),
     avatar_url      TEXT,
     bezhas_id       VARCHAR(50) UNIQUE,
     created_at      TIMESTAMPTZ DEFAULT NOW(),

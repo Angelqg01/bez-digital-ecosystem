@@ -76,9 +76,9 @@ export const config = createConfig({
       retryDelay: 1000,
     }),
     [polygon.id]: fallback([
-      http('https://polygon-bor-rpc.publicnode.com', { timeout: 15_000 }),
-      http('https://rpc.ankr.com/polygon', { timeout: 15_000 }),
-      http('https://polygon-rpc.com', { timeout: 15_000 })
+      http('https://rpc.ankr.com/polygon', { timeout: 15_000, retryCount: 2 }),
+      http('https://polygon-bor-rpc.publicnode.com', { timeout: 15_000, retryCount: 2 }),
+      http('https://1rpc.io/matic', { timeout: 15_000, retryCount: 1 }),
     ]),
     [polygonAmoy.id]: http('https://rpc-amoy.polygon.technology', {
       timeout: 10_000,

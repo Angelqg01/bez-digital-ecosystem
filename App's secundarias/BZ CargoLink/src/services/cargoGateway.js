@@ -1,11 +1,15 @@
-import { bezhasPlatform } from './bezhasPlatform'
+/**
+ * cargoGateway — read-only / stateless endpoint wrapper.
+ *
+ * Used by CargoFingerprint (audit), DeveloperIntegration (endpoint tester),
+ * and the embedded SDK.  Delegates to the same Core API base URL as
+ * cargoLinkApi; no local fallback, no bezhasPlatform dependency.
+ */
 
 const normalizeBaseUrl = url => url.replace(/\/$/, '')
 
 const API_URL = import.meta.env.VITE_CARGOLINK_API_URL
   || (import.meta.env.VITE_API_URL ? `${normalizeBaseUrl(import.meta.env.VITE_API_URL)}/cargolink` : 'http://localhost:3001/api/cargolink')
-const ENABLE_REAL_BLOCKCHAIN = import.meta.env.VITE_ENABLE_REAL_BLOCKCHAIN === 'true'
-const ALLOW_LOCAL_FALLBACK = import.meta.env.DEV && import.meta.env.VITE_ALLOW_LOCAL_FALLBACK === 'true'
 
 const toHex = buffer => Array.from(new Uint8Array(buffer))
   .map(byte => byte.toString(16).padStart(2, '0'))
@@ -44,69 +48,19 @@ const remoteCall = async ({ method, endpoint, payload, apiKey }) => {
   return response.json()
 }
 
-const localCall = ({ method, endpoint, payload, apiKey }) =>
-  bezhasPlatform.callApi({ method, endpoint, payload, apiKey })
-
-const tryRealBlockchain = async ({ endpoint, payload, hash }) => {
-  if (!ENABLE_REAL_BLOCKCHAIN) {
-    return { ok: false, mode: 'disabled', reason: 'VITE_ENABLE_REAL_BLOCKCHAIN is not true' }
-  }
-
-  try {
-    const { cargoBlockchain } = await import('./blockchainService.js')
-
-    if (endpoint === '/v1/customs/dispatch') {
-      const tx = await cargoBlockchain.requestClearance(
-        payload.shipmentId || payload.manifestId || payload.bUid,
-        { documentHash: hash },
-      )
-      return { ok: true, mode: 'real', txHash: tx.hash, contract: 'CustomsClearanceOracle' }
-    }
-
-    if (endpoint === '/v1/shipping/stowage' || endpoint === '/v1/audit/fingerprint') {
-      const tx = await cargoBlockchain.anchorFingerprint({
-        shipmentId: payload.shipmentId || payload.manifestId || payload.bUid,
-        location: payload.location || 'BZ CargoLink',
-        hash,
-      })
-      return { ok: true, mode: 'real', txHash: tx.hash, contract: 'SupplyTracker' }
-    }
-
-    return { ok: false, mode: 'unsupported', reason: `No blockchain mapper for ${endpoint}` }
-  } catch (error) {
-    return { ok: false, mode: 'fallback', reason: error.message }
-  }
-}
-
 export const callCargoGateway = async ({ method = 'POST', endpoint, payload = {}, apiKey } = {}) => {
-  const payloadHash = payload.payloadHash || payload.visualFingerprint || payload.fingerprintHash || await sha256(payload)
-  let source = 'remote'
-  let response
-
-  try {
-    response = await remoteCall({ method, endpoint, payload: { ...payload, payloadHash }, apiKey })
-  } catch (error) {
-    if (!ALLOW_LOCAL_FALLBACK) {
-      throw new Error(`CargoLink Core API no disponible en ${API_URL}: ${error.message}`)
-    }
-    console.warn('[CargoGateway] Remote API unavailable, using explicit dev fallback:', error.message)
-    response = localCall({ method, endpoint, payload: { ...payload, payloadHash }, apiKey })
-    source = 'local-dev-fallback'
-  }
-
-  const realBlockchain = await tryRealBlockchain({ endpoint, payload, hash: payloadHash })
+  const payloadHash = payload.payloadHash || await sha256(payload)
+  const response = await remoteCall({ method, endpoint, payload: { ...payload, payloadHash }, apiKey })
 
   return {
     ...response,
-    source,
+    source: 'remote',
     payloadHash,
-    realBlockchain,
     bridge: {
       app: 'BZ CargoLink',
       endpoint,
       payloadHash,
-      source,
-      realBlockchain,
+      source: 'remote',
       createdAt: new Date().toISOString(),
     },
   }

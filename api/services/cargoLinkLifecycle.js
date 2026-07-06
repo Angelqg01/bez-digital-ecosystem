@@ -15,6 +15,7 @@
 const crypto = require('crypto');
 const { query } = require('../db/pool');
 const { validateTransition } = require('./cargoLinkValidators');
+const { anchorTransition } = require('./cargoLinkOnChain');
 
 // BEZ Token V1 (Polygon) — the settlement currency for escrow.
 const BEZ_TOKEN_V1 = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
@@ -87,6 +88,31 @@ async function issueKey({ bezhasId, role = 'pos', label }) {
   return { ...rows[0], apiKey };
 }
 
+/** Admin: list issued role-scoped keys (never returns the plaintext key). */
+async function listKeys({ bezhasId } = {}) {
+  const { rows } = await query(
+    `SELECT id, bezhas_id, role, label, status, created_at
+       FROM cargolink_api_keys
+       WHERE ($1::text IS NULL OR bezhas_id = $1)
+       ORDER BY created_at DESC LIMIT 200`,
+    [bezhasId || null]
+  );
+  return { count: rows.length, keys: rows };
+}
+
+/** Admin: revoke a role-scoped key (soft-delete → status='revoked'). */
+async function revokeKey(id) {
+  if (!id) throw httpError('key id is required', 400);
+  const { rows } = await query(
+    `UPDATE cargolink_api_keys SET status = 'revoked'
+       WHERE id = $1 AND status = 'active'
+       RETURNING id, bezhas_id, role, status`,
+    [id]
+  );
+  if (!rows.length) throw httpError('Key not found or already revoked', 404);
+  return rows[0];
+}
+
 /** POS creates a B-UID transaction (the order/sale entering the network). */
 async function createTransaction(req, body = {}) {
   const identity = await resolveIdentity(req);
@@ -126,7 +152,10 @@ async function createTransactionWith(identity, body = {}) {
   // Notify subscribers that an order entered the network.
   await fanoutWebhooks({ tx, eventName: 'ON_TRANSACTION_CREATED' });
 
-  return { success: true, transaction: tx };
+  // Post-commit: anchor the creation on-chain (best-effort).
+  const anchor = await anchorTransition(tx, 'CREATED', { posRef: body.posRef, cargo: body.cargo || {} });
+
+  return { success: true, transaction: tx, anchor };
 }
 
 /**
@@ -185,6 +214,10 @@ async function advanceTransaction(req, bUid, body = {}) {
   const eventName = EVENT_FOR_STATUS[toStatus] || `ON_${toStatus}`;
   const deliveries = await fanoutWebhooks({ tx: nextTx, eventName });
 
+  // Post-commit: anchor the transition on-chain (best-effort).
+  const transitionPayload = { input: inputPayload, validation: validation.result };
+  const anchor = await anchorTransition(nextTx, toStatus, transitionPayload);
+
   return {
     success: true,
     transaction: nextTx,
@@ -192,6 +225,7 @@ async function advanceTransaction(req, bUid, body = {}) {
     validation: { result: validation.result, warnings: validation.reasons },
     escrowReleased: releaseEscrow,
     webhookDeliveries: deliveries,
+    anchor,
   };
 }
 
@@ -304,6 +338,8 @@ module.exports = {
   TRANSITIONS,
   resolveIdentity,
   issueKey,
+  listKeys,
+  revokeKey,
   createTransaction,
   createTransactionWith,
   advanceTransaction,

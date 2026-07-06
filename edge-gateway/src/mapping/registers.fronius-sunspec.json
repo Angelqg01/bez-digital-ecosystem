@@ -1,0 +1,46 @@
+{
+  "vendor": "Fronius",
+  "model": "Primo (single-phase) / Symo GEN24 (three-phase hybrid) — SunSpec Int+SF inverter model 103",
+  "source": "Fronius implements the open SunSpec Modbus map. Inverter models 101 (1ph) / 103 (3ph), 'Int+SF' variant. Function 0x03 (holding). Enable Modbus TCP in Fronius Solar.web / device config; default port 502, unit id 1.",
+  "encoding": "SunSpec scale-factor (value = raw × 10^sf).",
+  "baseNote": "Addresses below are the common Fronius layout where the inverter model block begins at register 40070 (1-based) → the points sit at 40072+. If your unit uses a different SunSpec base (some firmwares start at 40000 / 50000, or expose the 'float' models 111/113 instead of 103), run scripts/sunspec-discover.js to print the real model base and adjust block.start + addresses, OR switch to registers.generic.sunspec.json offsets. The DECODER and driver are correct regardless — only these absolute addresses are firmware-dependent.",
+  "function": "holding",
+  "wordSwap": false,
+  "blocks": [
+    { "start": 40071, "count": 40 }
+  ],
+  "points": [
+    { "name": "A",      "address": 40071, "type": "uint16", "sf": "A_SF" },
+    { "name": "A_SF",   "address": 40075, "type": "sunssf" },
+    { "name": "PhVphA", "address": 40079, "type": "uint16", "sf": "V_SF" },
+    { "name": "V_SF",   "address": 40082, "type": "sunssf" },
+    { "name": "W",      "address": 40083, "type": "int16",  "sf": "W_SF" },
+    { "name": "W_SF",   "address": 40084, "type": "sunssf" },
+    { "name": "Hz",     "address": 40085, "type": "uint16", "sf": "Hz_SF" },
+    { "name": "Hz_SF",  "address": 40086, "type": "sunssf" },
+    { "name": "WH",     "address": 40093, "type": "acc32",  "sf": "WH_SF" },
+    { "name": "WH_SF",  "address": 40095, "type": "sunssf" },
+    { "name": "DCW",    "address": 40100, "type": "int16",  "sf": "DCW_SF" },
+    { "name": "DCW_SF", "address": 40101, "type": "sunssf" },
+    { "name": "TmpCab", "address": 40103, "type": "int16",  "sf": "Tmp_SF" },
+    { "name": "Tmp_SF", "address": 40106, "type": "sunssf" },
+    { "name": "St",     "address": 40107, "type": "uint16" }
+  ],
+  "metrics": {
+    "output_kw":      { "point": "W",      "div": 1000, "round": 3 },
+    "current_a":      { "point": "A",      "round": 2 },
+    "voltage_v":      { "point": "PhVphA", "round": 1 },
+    "grid_frequency": { "point": "Hz",     "round": 3 },
+    "dc_power_kw":    { "point": "DCW",     "div": 1000, "round": 3 },
+    "temp_c":         { "point": "TmpCab",  "round": 1 },
+    "energy_kwh":     { "point": "WH",      "div": 1000, "round": 3 }
+  },
+  "state": {
+    "point": "St",
+    "default": "DEGRADED",
+    "map": {
+      "1": "OFFLINE", "2": "DEGRADED", "3": "DEGRADED", "4": "ONLINE",
+      "5": "ONLINE", "6": "DEGRADED", "7": "DEGRADED", "8": "OFFLINE"
+    }
+  }
+}

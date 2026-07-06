@@ -22,7 +22,10 @@ import LoyaltyMetricsTab from '../components/developer-console/LoyaltyMetricsTab
 import { EmptyState, ApiKeyCard, CreateKeyModal, KeyRevealModal, KeyDetailsModal } from '../components/developer-console/ApiKeyManagement';
 import BeZhasLogisticsSimulator from '../components/logistics/BeZhasLogisticsSimulator';
 import OpenClawTab from '../components/developer-console/OpenClawTab';
+import OrgApiKeysTab from '../components/developer-console/OrgApiKeysTab';
+import ScrollableTabBar from '../components/developer-console/ScrollableTabBar';
 import RevenueDashboardTab from '../components/developer-console/RevenueDashboardTab';
+import WordPressPluginTab from '../components/developer-console/WordPressPluginTab';
 
 // Constantes y Mapeos
 const PERMISSION_MODULES = {
@@ -152,33 +155,25 @@ const DeveloperConsole = () => {
                     )}
                 </div>
 
-                {/* Tabs Navigation */}
-                <div className="flex overflow-x-auto gap-2 mb-8 pb-2 scrollbar-hide">
-                    {[
+                {/* Tabs Navigation — barra desplazable (scroll + arrastre + flechas) */}
+                <ScrollableTabBar
+                    active={activeTab}
+                    onSelect={setActiveTab}
+                    tabs={[
                         { id: 'simulator', label: 'SDK Simulator', icon: ZapIcon },
                         { id: 'revenue', label: 'Ingresos (Web3)', icon: DollarSignIcon },
                         { id: 'openclaw', label: 'OpenClaw (AI)', icon: CpuIcon },
                         { id: 'keys', label: 'API Keys', icon: KeyIcon },
-                        { id: 'downloads', label: 'Downloads (MCP)', icon: TerminalIcon }, // NEW
+                        { id: 'sites', label: 'API & Sedes', icon: BuildingIcon }, // B2B: claves por organización/sede
+                        { id: 'wordpress', label: 'Plugin WordPress', icon: GlobeIcon },
+                        { id: 'downloads', label: 'Downloads (MCP)', icon: TerminalIcon },
                         { id: 'sdk', label: 'Integración SDK', icon: FileCodeIcon },
                         { id: 'webhooks', label: 'Webhooks', icon: GlobeIcon },
                         { id: 'widgets', label: 'Widgets', icon: ActivityIcon },
                         { id: 'docs', label: 'Documentación', icon: CodeIcon },
-                        { id: 'metrics', label: 'Métricas & Loyalty', icon: BarChart2Icon }
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === tab.id
-                                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                }`}
-                        >
-                            <tab.icon size={18} />
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
+                        { id: 'metrics', label: 'Métricas & Loyalty', icon: BarChart2Icon },
+                    ]}
+                />
 
                 {/* Content Area */}
                 <div className="min-h-[500px]">
@@ -230,6 +225,14 @@ const DeveloperConsole = () => {
                             )}
 
                             {/* TAB: DOWNLOADS (MCP & SDK) */}
+                            {activeTab === 'sites' && (
+                                <OrgApiKeysTab />
+                            )}
+
+                            {activeTab === 'wordpress' && (
+                                <WordPressPluginTab />
+                            )}
+
                             {activeTab === 'downloads' && (
                                 <McpSdkDownloadTab />
                             )}

@@ -1,0 +1,40 @@
+{
+  "vendor": "Huawei",
+  "model": "Smart Power Sensor (DTSU666-H single-phase / three-phase) — anti-export meter",
+  "source": "The Smart Power Sensor is read THROUGH the SUN2000 inverter's Modbus at the 37100+ region (not as a standalone device). Convention from huawei_solar. Function 0x03, same unit id as the inverter.",
+  "encoding": "gain (engineering = raw / gain). 32-bit big-endian.",
+  "confidence": "Voltage/status offsets are stable; CONFIRM active_power(37113)/frequency(37118)/energy(37119) against your inverter firmware — Huawei has shifted a few meter offsets across releases. Use scripts/modbus dump if values look off.",
+  "function": "holding",
+  "wordSwap": false,
+  "modbusDefaults": { "unitId": 1 },
+  "blocks": [
+    { "start": 37100, "count": 24 }
+  ],
+  "points": [
+    { "name": "meter_status",      "address": 37100, "type": "uint16" },
+    { "name": "phase_A_voltage",   "address": 37101, "type": "int32", "gain": 10 },
+    { "name": "phase_B_voltage",   "address": 37103, "type": "int32", "gain": 10 },
+    { "name": "phase_C_voltage",   "address": 37105, "type": "int32", "gain": 10 },
+    { "name": "phase_A_current",   "address": 37107, "type": "int32", "gain": 100 },
+    { "name": "active_power",      "address": 37113, "type": "int32", "gain": 1 },
+    { "name": "reactive_power",    "address": 37115, "type": "int32", "gain": 1 },
+    { "name": "power_factor",      "address": 37117, "type": "int16", "gain": 1000 },
+    { "name": "grid_frequency",    "address": 37118, "type": "int16", "gain": 100 },
+    { "name": "positive_energy",   "address": 37119, "type": "int32", "gain": 100 }
+  ],
+  "metrics": {
+    "voltage_v":      { "point": "phase_A_voltage", "round": 1 },
+    "current_a":      { "point": "phase_A_current", "round": 2 },
+    "output_kw":      { "point": "active_power",     "div": 1000, "round": 3 },
+    "consumption_kw": { "point": "active_power",     "div": 1000, "round": 3 },
+    "grid_frequency": { "point": "grid_frequency",   "round": 2 },
+    "power_factor":   { "point": "power_factor",     "round": 3 },
+    "energy_kwh":     { "point": "positive_energy",  "round": 2 }
+  },
+  "state": {
+    "point": "meter_status",
+    "default": "OFFLINE",
+    "map": { "0": "OFFLINE", "1": "ONLINE" }
+  },
+  "note": "Huawei meter sign: active_power > 0 = export to grid, < 0 = import. Adjust node type (LOAD vs feed-in) and the backend net_flow accordingly."
+}

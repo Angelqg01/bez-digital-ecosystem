@@ -20,6 +20,7 @@
  */
 
 const logger = require('../utils/logger');
+const aegis = require('./aegisAnomalyEngine'); // Phase 2 — telemetry anomaly detection
 
 const TELEMETRY_TOPIC = 'bezhas/edge/+/telemetry';
 const controlTopic = (nodeId) => `bezhas/edge/${nodeId}/control`;
@@ -31,6 +32,14 @@ let connected = false;
 /** nodeId -> normalized node object (carries a private _rxAt receive timestamp) */
 const store = new Map();
 
+/**
+ * Optional persistence sink (Phase 3). Set by index.js to energyTelemetryStore;
+ * receives every ingest verdict (accepted or rejected) best-effort. Kept optional
+ * so the broker stays requireable + unit-testable with no DB.
+ */
+let telemetrySink = null;
+function setTelemetrySink(fn) { telemetrySink = typeof fn === 'function' ? fn : null; }
+
 function topicNodeId(topic) {
   // bezhas/edge/<nodeId>/telemetry
   const parts = String(topic).split('/');
@@ -39,29 +48,46 @@ function topicNodeId(topic) {
 
 /**
  * Ingest a telemetry payload for a node. Pure & synchronous — unit-testable
- * without a broker. Returns the stored node object, or null if invalid.
+ * without a broker. Returns the stored node object, or null if invalid OR
+ * rejected by Aegis (bad signature / replay) — in which case the last known-good
+ * reading is preserved.
  *
  * Expected payload:
- *   { type, name, status, protocol, metrics: { output_kw|consumption_kw, ... }, ts, sig }
+ *   { type, name, status, protocol, metrics: {...}, ts, seq, keyId, sig }
  */
 function ingest(nodeId, payload) {
   if (!nodeId || !payload || typeof payload !== 'object') return null;
+
+  // Phase 2 — Aegis: verify authenticity + integrity before trusting the data.
+  const prev = store.get(nodeId);
+  const verdict = aegis.evaluate({ nodeId, payload, lastSeq: prev ? prev._seq : null });
+  if (verdict.anomalies.length) aegis.record(verdict.anomalies);
+  if (!verdict.accept) {
+    logger.warn('[VPP][AEGIS] rejected telemetry for %s: %s', nodeId,
+      verdict.anomalies.map((a) => a.type).join(','));
+    if (telemetrySink) { try { telemetrySink({ nodeId, payload, verdict, accepted: false }); } catch (_) { /* best-effort */ } }
+    return null; // keep last known-good in `store`
+  }
+  if (payload.sig) aegis.recordPass(nodeId, 'TELEMETRY_VALIDATED', `seq ${payload.seq}`);
+
   const metrics = payload.metrics && typeof payload.metrics === 'object' ? payload.metrics : {};
   const node = {
     id: nodeId,
     type: payload.type || 'UNKNOWN',
     name: payload.name || nodeId,
-    status: payload.status || 'ONLINE',
+    status: verdict.status || payload.status || 'ONLINE',
     protocol: payload.protocol || 'MQTT',
     ...metrics,
     _rxAt: Date.now(),
+    _seq: typeof payload.seq === 'number' ? payload.seq : (prev ? prev._seq : null),
   };
   store.set(nodeId, node);
+  if (telemetrySink) { try { telemetrySink({ nodeId, payload, verdict, accepted: true }); } catch (_) { /* best-effort */ } }
   return node;
 }
 
 function _withStaleness(node) {
-  const { _rxAt, ...rest } = node;
+  const { _rxAt, _seq, ...rest } = node; // eslint-disable-line no-unused-vars
   const stale = Date.now() - _rxAt > STALE_MS;
   return { ...rest, status: stale ? 'OFFLINE' : rest.status };
 }
@@ -200,6 +226,21 @@ function publishControl(nodeId, command, params = {}) {
   }
 }
 
+/**
+ * Publish a pre-built, backend-SIGNED control command (Phase 5). The Edge verifies
+ * the signature before moving any hardware. Returns true if published.
+ */
+function publishSignedControl(nodeId, signedCommand) {
+  if (!client || !connected) return false;
+  try {
+    client.publish(controlTopic(nodeId), JSON.stringify(signedCommand), { qos: 2 });
+    return true;
+  } catch (err) {
+    logger.warn('[VPP] signed control publish failed for %s: %s', nodeId, err.message);
+    return false;
+  }
+}
+
 async function disconnect() {
   if (client) {
     await new Promise((res) => client.end(false, {}, res));
@@ -212,6 +253,7 @@ async function disconnect() {
 function _reset() {
   store.clear();
   connected = false;
+  telemetrySink = null;
 }
 
 module.exports = {
@@ -221,7 +263,9 @@ module.exports = {
   getLatestTelemetry,
   getNodeTelemetry,
   publishControl,
+  publishSignedControl,
   isConnected,
+  setTelemetrySink,
   TELEMETRY_TOPIC,
   controlTopic,
   _reset,

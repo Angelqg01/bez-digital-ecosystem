@@ -1,0 +1,53 @@
+{
+  "broker": {
+    "url": "mqtt://localhost:1883",
+    "username": null,
+    "password": null
+  },
+  "publishIntervalMs": 5000,
+  "buffer": {
+    "enabled": true,
+    "file": "./.buffer/telemetry.ndjson",
+    "maxRecords": 5000
+  },
+  "security": {
+    "_comment": "Phase 2 — telemetry signing. Provision a key with `pnpm keygen`. In production the private key lives in an ATECC608A/TPM, not on disk. Remove this block to publish unsigned (simulator-compatible).",
+    "keyId": "edge-key-1",
+    "privateKeyFile": "./keys/edge-key-1.pem"
+  },
+  "control": {
+    "_comment": "Phase 5 — SCADA control. Fetch the backend's command public key once from GET /api/energy/control/pubkey and save it here; the Edge only obeys commands it can verify. Remove this block to disable inbound control.",
+    "backendPublicKeyFile": "./keys/backend-control.pub.pem"
+  },
+  "nodes": [
+    {
+      "nodeId": "n1",
+      "name": "Array Alpha (sim)",
+      "type": "SOLAR",
+      "protocol": "SunSpec/Modbus-TCP",
+      "driver": "modbusSunspec",
+      "modbus": { "host": "127.0.0.1", "port": 1502, "unitId": 1 },
+      "map": "./src/mapping/registers.sunspec.json"
+    },
+    {
+      "nodeId": "inv-huawei",
+      "name": "Huawei SUN2000",
+      "type": "SOLAR",
+      "protocol": "Huawei/Modbus-TCP",
+      "driver": "modbusHuawei",
+      "_enabled_when": "a real SUN2000 is reachable; unitId 1 (inverter) or 0 (SDongle)",
+      "modbus": { "host": "192.168.1.50", "port": 502, "unitId": 1 },
+      "map": "./src/mapping/registers.huawei-sun2000.json"
+    },
+    {
+      "nodeId": "meter-em24",
+      "name": "Carlo Gavazzi EM24",
+      "type": "LOAD",
+      "protocol": "Modbus-TCP (via RS485 gateway)",
+      "driver": "modbusMeter",
+      "_enabled_when": "EM24 reachable through a Modbus-TCP/RS485 gateway",
+      "modbus": { "host": "192.168.1.60", "port": 502, "unitId": 1 },
+      "map": "./src/mapping/registers.carlo-gavazzi-em24.json"
+    }
+  ]
+}

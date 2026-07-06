@@ -63,4 +63,65 @@ describe('energyArbitrageAgent helpers', () => {
     expect(agent.pickBattery({ nodes: [] })).toBeNull();
     expect(agent.pickBattery(null)).toBeNull();
   });
+
+  it('estimates € exposure from power, price and duration', () => {
+    expect(agent.estimateEur(500, 80, 1)).toBe(40);     // 0.5 MW × 1h × 80 €/MWh
+    expect(agent.estimateEur(200, 100, 0.25)).toBe(5);  // 0.2 MW × 0.25h × 100
+    expect(agent.estimateEur(0, 80, 1)).toBe(0);
+  });
+});
+
+describe('energyArbitrageAgent.dispatchDecision — Phase 6 production safety', () => {
+  const vppBroker = require('../../services/vppMqttBroker');
+  const controlSecurity = require('../../services/controlSecurity');
+  const hitlQueue = require('../../services/hitlQueue');
+  const aegis = require('../../services/aegisAnomalyEngine');
+
+  const decision = (over = {}) => ({ strategy: 'CHARGE', powerKw: 100, nodeId: 'n4', priceEurMwh: 20, socPct: 50, estimatedEur: 5, ...over });
+
+  beforeEach(() => { hitlQueue._reset(); aegis._reset(); agent._resetLog(); jest.restoreAllMocks(); });
+
+  it('shadow mode recommends but never actuates', async () => {
+    const spy = jest.spyOn(vppBroker, 'publishSignedControl').mockReturnValue(true);
+    const d = await agent.dispatchDecision(decision(), { mode: 'shadow' });
+    expect(d.shadow).toBe(true);
+    expect(d.dispatched).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('live mode signs + dispatches a small command via the F5 write-path', async () => {
+    const signSpy = jest.spyOn(controlSecurity, 'signCommand');
+    const pubSpy = jest.spyOn(vppBroker, 'publishSignedControl').mockReturnValue(true);
+    const d = await agent.dispatchDecision(decision({ estimatedEur: 5 }), { mode: 'live', hitlAboveEur: 500 });
+    expect(signSpy).toHaveBeenCalled();
+    expect(pubSpy).toHaveBeenCalled();
+    expect(d.signed).toBe(true);
+    expect(d.dispatched).toBe(true);
+    expect(d.hitlPending).toBeFalsy();
+  });
+
+  it('routes a large-€ command through HITL instead of dispatching', async () => {
+    const pubSpy = jest.spyOn(vppBroker, 'publishSignedControl').mockReturnValue(true);
+    const d = await agent.dispatchDecision(decision({ estimatedEur: 750 }), { mode: 'live', hitlAboveEur: 500 });
+    expect(d.hitlPending).toBe(true);
+    expect(d.dispatched).toBe(false);
+    expect(pubSpy).not.toHaveBeenCalled();
+    expect(hitlQueue.get(d.jobId).status).toBe('PENDING');
+  });
+
+  it('kill-switch blocks trading on a node with a recent HIGH Aegis anomaly', async () => {
+    aegis.record([{ id: 'x', ts: new Date().toISOString(), node: 'n4', type: 'SPOOFING_ATTEMPT', severity: 'HIGH', result: 'FAIL' }]);
+    const pubSpy = jest.spyOn(vppBroker, 'publishSignedControl').mockReturnValue(true);
+    const d = await agent.dispatchDecision(decision(), { mode: 'live' });
+    expect(d.blocked).toBe('aegis_high_anomaly');
+    expect(d.dispatched).toBe(false);
+    expect(pubSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not actuate a HOLD decision', async () => {
+    const pubSpy = jest.spyOn(vppBroker, 'publishSignedControl').mockReturnValue(true);
+    const d = await agent.dispatchDecision(decision({ strategy: 'HOLD', powerKw: 0 }), { mode: 'live' });
+    expect(d.dispatched).toBe(false);
+    expect(pubSpy).not.toHaveBeenCalled();
+  });
 });

@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 // --- Providers & Stores ---
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import { OrgProvider } from './context/OrgContext';
 import { Web3Provider } from './context/Web3Context';
 import { BezCoinProvider } from './context/BezCoinContext';
 // import { DAOProvider } from './context/DAOContext'; // REMOVED: Sistema DAO complejo eliminado
@@ -15,7 +16,6 @@ import useUserStore from './stores/userStore';
 
 // --- Layouts & Components ---
 import MainLayout from './components/layout/MainLayout';
-import SidebarDrawer from './components/SidebarDrawer';
 import { Spinner } from './components/ui/Spinner';
 import { BezCoinLoader } from './components/ui/BezCoinLoader';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -31,7 +31,12 @@ import BezPayModal from './components/payments/BezPayModal';
 import MovedToSubApp from './components/MovedToSubApp'; // Control Plane: deep-link a SubApp tras migrar un vertical
 
 // --- Pages (Lazy Loaded) ---
-const LandingPage = lazy(() => import('./pages/LandingPage')); // NEW: Marketing Landing Page
+const LandingPage = lazy(() => import('./pages/LandingPage')); // legacy: accesible en /landing-legacy
+const LandingPageCommercial = lazy(() => import('./pages/LandingPageCommercial')); // comercial: accesible en /landing-commercial
+const IntegratedServicePortal = lazy(() => import('./pages/IntegratedServicePortal')); // Portal Integrado "Cyber-Pipeline" (accesible en /portal)
+const InstitutionalLanding = lazy(() => import('./pages/InstitutionalLanding')); // NEW: Home institucional (PDF) — tema conexión de nodos
+const MasterBeZhasHub = lazy(() => import('./pages/MasterBeZhasHub')); // NEW: Guía educativa "Cómo dominar BeZhas Hub"
+const DocsPortal = lazy(() => import('./components/landing/DocsPortal')); // developer docs
 const HomePage = lazy(() => import('./pages/HomePage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage')); // Simple Profile (temporary fix)
@@ -128,6 +133,7 @@ const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 
 // Developer Tools
 const DeveloperConsole = lazy(() => import('./pages/DeveloperConsole')); // NEW: API Key Management
+const ClientGuidesPage = lazy(() => import('./pages/ClientGuidesPage')); // NEW: Client Integration Guides
 // SDKTestPage removed from production build - requires @sdk dependencies not available in container
 // const SDKTestPage = lazy(() => import('./pages/SDKTestPage')); // NEW: SDK Integration TestPage
 const AuthPage = lazy(() => import('./pages/AuthPage')); // NEW: Unified Auth (Email, Google, Facebook, Wallet)
@@ -216,6 +222,7 @@ const Root = () => {
       <ThemeProvider>
         <Web3Provider>
           <AuthProvider>
+            <OrgProvider>
             <BezCoinProvider>
               <MarketplaceProvider>
                 <RightSidebarProvider>
@@ -250,6 +257,7 @@ const Root = () => {
                 </RightSidebarProvider>
               </MarketplaceProvider>
             </BezCoinProvider>
+            </OrgProvider>
           </AuthProvider>
         </Web3Provider>
       </ThemeProvider>
@@ -289,8 +297,24 @@ const AppLayout = () => {
     );
   }
 
+  // Páginas con layout PROPIO (incluyen su propio Header + Sidebar).
+  // Se renderizan SIEMPRE sin MainLayout para evitar Header/Sidebar duplicados,
+  // tanto si la wallet está conectada como si no.
+  const selfLayoutPaths = ['/', '/home', '/master'];
+  if (selfLayoutPaths.includes(location)) {
+    return (
+      <Suspense fallback={
+        <div className="w-full h-screen flex justify-center items-center bg-gradient-to-br from-slate-900 to-purple-900">
+          <BezCoinLoader size="lg" text="Cargando..." />
+        </div>
+      }>
+        <Outlet />
+      </Suspense>
+    );
+  }
+
   // Páginas públicas que no requieren MainLayout (landing, auth, etc.)
-  const publicPaths = ['/', '/login', '/register', '/auth', '/admin-login', '/auth/github/callback'];
+  const publicPaths = ['/login', '/register', '/auth', '/admin-login', '/auth/github/callback'];
   const isPublicPage = publicPaths.includes(location);
 
   // Si es página pública y no está conectado, mostrar sin MainLayout
@@ -330,7 +354,7 @@ const LandingRoute = () => {
     return <Navigate to="/home" replace />;
   }
 
-  return <LandingPage />;
+  return <InstitutionalLanding />;
 };
 
 // Define the application's routes using React Router DOM v6
@@ -343,9 +367,14 @@ export const router = createBrowserRouter(
           element: <AppLayout />,
           children: [
             // --- Public Routes ---
-            { path: '/', element: <LandingRoute /> }, // Marketing Landing Page (redirects to /home if connected)
-            { path: '/home', element: <HomePage /> }, // Main app home (feed)
-            { path: '/feed', element: <HomePage /> }, // Direct access to feed (protected)
+            { path: '/', element: <LandingRoute /> }, // Portal Integrado "Cyber-Pipeline" (redirects to /home if connected)
+            { path: '/portal', element: <Suspense fallback={<Spinner size="lg" />}><IntegratedServicePortal /></Suspense> }, // Portal Integrado siempre accesible
+            { path: '/landing-commercial', element: <Suspense fallback={<Spinner size="lg" />}><LandingPageCommercial /></Suspense> }, // landing comercial anterior
+            { path: '/landing-legacy', element: <Suspense fallback={<Spinner size="lg" />}><LandingPage /></Suspense> }, // landing antigua para comparación
+            { path: '/developers/docs', element: <Suspense fallback={<Spinner size="lg" />}><DocsPortal /></Suspense> }, // Portal de documentación
+            { path: '/home', element: <Suspense fallback={<Spinner size="lg" />}><InstitutionalLanding /></Suspense> }, // NEW: Home institucional (diseño AVAX-style, contenido íntegro PDF)
+            { path: '/feed', element: <HomePage /> }, // Feed principal (antiguo /home)
+            { path: '/home-feed', element: <HomePage /> }, // Alias directo al feed
             { path: '/login', element: <LoginPage /> }, // [KEEP]
             { path: '/register', element: <RegisterPage /> }, // [KEEP]
             { path: '/auth/github/callback', element: <GitHubCallback /> },
@@ -376,6 +405,7 @@ export const router = createBrowserRouter(
             // { path: '/ranks', element: <RanksPage /> }, // REMOVED: Rankings system eliminated
             { path: '/metrics', element: <MetricsDashboard /> }, // Re-enabled
             { path: '/about', element: <AboutPage /> },
+            { path: '/master', element: <Suspense fallback={<Spinner size="lg" />}><MasterBeZhasHub /></Suspense> }, // NEW: Guía educativa "Cómo dominar BeZhas Hub"
             { path: '/magazine', element: <MagazinePage /> },
             { path: '/notifications', element: <NotificationsPage /> },
             { path: '/rewards', element: <Navigate to="/profile" replace /> }, // REMOVED: Redirige al perfil (incluye balance y stats)
@@ -394,6 +424,7 @@ export const router = createBrowserRouter(
             { path: '/whitepaper', element: <WhitePaper /> }, // NEW: WhitePaper Technical
             { path: '/docs', element: <DocsHub /> }, // NEW: Documentation Hub
             { path: '/docs/:docId', element: <DocViewer /> }, // NEW: Documentation Viewer
+            { path: '/client-guides', element: <ClientGuidesPage /> }, // Client Integration Guides (API, SDK, WP)
 
             // --- Ad Center Routes ---
             { path: '/ad-center', element: <AdCenterDashboard /> }, // Main Ad Center Dashboard

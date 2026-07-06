@@ -29,18 +29,28 @@ export function buildBankTransferInstructions(reference) {
   };
 }
 
+// Normaliza los IDs de plan (esquema definitivo y esquema legacy de /be-vip) a
+// su enlace Stripe. Así /pay (ids: starter, creator_pro, business, enterprise_vip)
+// y /be-vip (ids: starter, creator, business, enterprise) enrutan correctamente.
+const PLAN_ID_TO_STRIPE = {
+  starter: STRIPE_PAYMENT_LINKS.subscriptions.starter,
+  creator: STRIPE_PAYMENT_LINKS.subscriptions.pro,
+  creator_pro: STRIPE_PAYMENT_LINKS.subscriptions.pro,
+  pro: STRIPE_PAYMENT_LINKS.subscriptions.pro,
+  business: STRIPE_PAYMENT_LINKS.vipPlus,
+  enterprise: STRIPE_PAYMENT_LINKS.subscriptions.enterprise,
+  enterprise_vip: STRIPE_PAYMENT_LINKS.subscriptions.enterprise,
+};
+
 export function getStripePaymentLink(useCase = 'tokenPurchase') {
-  if (useCase === 'starter') return STRIPE_PAYMENT_LINKS.subscriptions.starter;
-  if (useCase === 'pro') return STRIPE_PAYMENT_LINKS.subscriptions.pro;
-  if (useCase === 'enterprise') return STRIPE_PAYMENT_LINKS.subscriptions.enterprise;
-  if (useCase === 'vip') return STRIPE_PAYMENT_LINKS.vip;
-  if (useCase === 'vipPlus') return STRIPE_PAYMENT_LINKS.vipPlus;
+  const key = String(useCase || '').toLowerCase();
+  if (PLAN_ID_TO_STRIPE[key]) return PLAN_ID_TO_STRIPE[key];
+  if (key === 'vip') return STRIPE_PAYMENT_LINKS.vip;
+  if (key === 'vipplus') return STRIPE_PAYMENT_LINKS.vipPlus;
   return STRIPE_PAYMENT_LINKS.tokenPurchase;
 }
 
 export function getVipStripeLink(tierId) {
   const tier = String(tierId || '').toLowerCase();
-  if (tier === 'enterprise') return STRIPE_PAYMENT_LINKS.subscriptions.enterprise;
-  if (tier === 'business') return STRIPE_PAYMENT_LINKS.vipPlus;
-  return STRIPE_PAYMENT_LINKS.vip;
+  return PLAN_ID_TO_STRIPE[tier] || STRIPE_PAYMENT_LINKS.vip;
 }

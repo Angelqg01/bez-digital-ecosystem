@@ -73,4 +73,20 @@ describe('vppMqttBroker — Edge Node telemetry ingestion', () => {
     expect(broker.TELEMETRY_TOPIC).toBe('bezhas/edge/+/telemetry');
     expect(broker.controlTopic('n4')).toBe('bezhas/edge/n4/control');
   });
+
+  it('feeds the persistence sink on both accept and reject (Phase 3)', () => {
+    const seen = [];
+    broker.setTelemetrySink((rec) => seen.push(rec));
+    try {
+      broker.ingest('n1', { type: 'SOLAR', status: 'ONLINE', metrics: { output_kw: 10 }, seq: 1 });
+      // Replayed seq (1 <= 1) is rejected by Aegis but must still reach the sink.
+      broker.ingest('n1', { type: 'SOLAR', status: 'ONLINE', metrics: { output_kw: 10 }, seq: 1 });
+      expect(seen).toHaveLength(2);
+      expect(seen[0].accepted).toBe(true);
+      expect(seen[1].accepted).toBe(false);
+      expect(seen[1].verdict.anomalies[0].type).toBe('REPLAY');
+    } finally {
+      broker.setTelemetrySink(null);
+    }
+  });
 });

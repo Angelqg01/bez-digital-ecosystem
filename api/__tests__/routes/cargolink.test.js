@@ -48,6 +48,12 @@ describe('Routes: /api/cargolink', () => {
   });
 
   it('registers webhooks with a signing secret', async () => {
+    // resolveIdentity: SELECT the role-scoped key -> binds the webhook to a BeZhas_ID.
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ bezhas_id: 'BZ-ACME', role: 'pos', status: 'active' }],
+      rowCount: 1,
+    });
+    // INSERT INTO cargolink_webhooks ... RETURNING
     mockQuery.mockResolvedValueOnce({
       rows: [{
         id: 7,

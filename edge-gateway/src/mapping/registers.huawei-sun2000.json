@@ -1,0 +1,53 @@
+{
+  "vendor": "Huawei",
+  "model": "SUN2000 (residential 2-6KTL single-phase / 8-10KTL-M1 three-phase hybrid)",
+  "source": "Huawei SUN2000 Modbus Interface Definitions (V3.x) — convention used by the battle-tested huawei_solar library. Registers are STABLE across the SUN2000 line. Holding registers, function 0x03.",
+  "encoding": "gain (engineering = raw / gain). 32-bit big-endian word order.",
+  "modbusDefaults": { "unitId": 1, "note": "SDongle/SmartLogger use unit 0; the inverter itself answers on unit 1. Confirm per install." },
+  "function": "holding",
+  "wordSwap": false,
+  "blocks": [
+    { "start": 32016, "count": 110 }
+  ],
+  "points": [
+    { "name": "input_power",          "address": 32064, "type": "int32",  "gain": 1 },
+    { "name": "phase_A_voltage",      "address": 32069, "type": "uint16", "gain": 10 },
+    { "name": "phase_B_voltage",      "address": 32070, "type": "uint16", "gain": 10 },
+    { "name": "phase_C_voltage",      "address": 32071, "type": "uint16", "gain": 10 },
+    { "name": "phase_A_current",      "address": 32072, "type": "int32",  "gain": 1000 },
+    { "name": "active_power",         "address": 32080, "type": "int32",  "gain": 1 },
+    { "name": "reactive_power",       "address": 32082, "type": "int32",  "gain": 1 },
+    { "name": "power_factor",         "address": 32084, "type": "int16",  "gain": 1000 },
+    { "name": "grid_frequency",       "address": 32085, "type": "uint16", "gain": 100 },
+    { "name": "efficiency",           "address": 32086, "type": "uint16", "gain": 100 },
+    { "name": "internal_temperature", "address": 32087, "type": "int16",  "gain": 10 },
+    { "name": "device_status",        "address": 32089, "type": "uint16" },
+    { "name": "accumulated_energy",   "address": 32106, "type": "uint32", "gain": 100 },
+    { "name": "daily_energy",         "address": 32114, "type": "uint32", "gain": 100 }
+  ],
+  "metrics": {
+    "output_kw":      { "point": "active_power",         "div": 1000, "round": 3 },
+    "dc_power_kw":    { "point": "input_power",          "div": 1000, "round": 3 },
+    "voltage_v":      { "point": "phase_A_voltage",      "round": 1 },
+    "current_a":      { "point": "phase_A_current",      "round": 2 },
+    "grid_frequency": { "point": "grid_frequency",       "round": 2 },
+    "power_factor":   { "point": "power_factor",         "round": 3 },
+    "temp_c":         { "point": "internal_temperature", "round": 1 },
+    "efficiency_pct": { "point": "efficiency",           "round": 1 },
+    "energy_kwh":     { "point": "accumulated_energy",   "round": 2 },
+    "energy_today_kwh": { "point": "daily_energy",       "round": 2 }
+  },
+  "state": {
+    "point": "device_status",
+    "default": "DEGRADED",
+    "map": {
+      "0": "OFFLINE", "1": "OFFLINE", "2": "OFFLINE", "3": "OFFLINE",
+      "256": "DEGRADED",
+      "512": "ONLINE", "513": "ONLINE", "514": "ONLINE", "515": "ONLINE", "516": "ONLINE",
+      "768": "OFFLINE", "769": "OFFLINE", "770": "OFFLINE",
+      "1025": "ONLINE", "1026": "ONLINE", "1027": "ONLINE", "1028": "ONLINE",
+      "1280": "DEGRADED",
+      "40960": "OFFLINE", "40961": "OFFLINE", "45056": "OFFLINE"
+    }
+  }
+}

@@ -14,6 +14,21 @@ export async function login(email, password) {
     return res.data;
 }
 
+/**
+ * Resuelve la identidad ÚNICA BeZhas_ID del usuario (email/wallet/OAuth → 1 id).
+ * Capa adicional sobre la auth existente; no la reemplaza ni la duplica.
+ * @returns {Promise<{bezhasId:string, identity:object}|null>}
+ */
+export async function resolveIdentity({ email, wallet, userId, displayName } = {}) {
+    if (!email && !wallet && !userId) return null;
+    try {
+        const res = await axios.post(`${API_URL}/identity/resolve`, { email, wallet, userId, displayName });
+        return res.data; // { bezhasId, created, merged, identity }
+    } catch {
+        return null; // identidad opcional: nunca bloquea el login
+    }
+}
+
 export async function verifyLogin2FA(userId, token) {
     const res = await axios.post(`${API_URL}/auth/verify-login-2fa`, { userId, token });
     return res.data;

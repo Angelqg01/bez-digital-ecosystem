@@ -1,0 +1,21 @@
+{
+  "name": "bezhas-sales-agency",
+  "version": "1.0.0",
+  "description": "BeZhas — Agencia de ventas autónoma BEZ-Coin",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "scout": "node index.js --mode=scout",
+    "followup": "node index.js --mode=followup",
+    "report": "node index.js --mode=report",
+    "status": "node index.js --mode=status"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
+    "dotenv": "^17.4.2",
+    "googleapis": "^144.0.0",
+    "node-cron": "^3.0.3",
+    "node-telegram-bot-api": "^0.67.0",
+    "nodemailer": "^6.9.14"
+  }
+}

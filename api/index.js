@@ -533,6 +533,33 @@ async function startServer() {
   // El servidor controla via: bezhas/edge/<nodeId>/control
   try {
     const vppBroker = require('./services/vppMqttBroker');  // cliente MQTT/WebSocket para Edge Nodes
+
+    // Phase 2 — load registered Edge Node public keys (telemetry signature verification).
+    try {
+      const telemetrySecurity = require('./services/telemetrySecurity');
+      const n = telemetrySecurity.loadKeys();
+      if (n) gcpLogger.info(`[STARTUP] VPP telemetry signing keys loaded: ${n}`);
+    } catch (e) { gcpLogger.warning('[STARTUP] telemetrySecurity load skipped', { error: e.message }); }
+
+    // Phase 3 + 4 — persist telemetry/Aegis events AND accumulate signed telemetry
+    // for on-chain merkle anchoring. One composed sink feeds both.
+    try {
+      const telemetryStore = require('./services/energyTelemetryStore');
+      const telemetryAnchor = require('./services/telemetryAnchor');
+      vppBroker.setTelemetrySink((rec) => { telemetryStore.capture(rec); telemetryAnchor.observe(rec); });
+      telemetryStore.start();
+      gcpLogger.info('[STARTUP] VPP telemetry persistence enabled');
+
+      // Phase 4 — auto-anchor merkle roots on-chain (opt-in: VPP_ANCHOR_AUTO=true).
+      try {
+        const vppChainBridge = require('./services/vppChainBridge');
+        const beneficiary = process.env.VPP_ANCHOR_ACCOUNT || process.env.HOT_WALLET_ADDRESS;
+        if (beneficiary && telemetryAnchor.start(vppChainBridge, beneficiary)) {
+          gcpLogger.info('[STARTUP] VPP on-chain telemetry anchoring enabled');
+        }
+      } catch (e) { gcpLogger.warning('[STARTUP] telemetry anchoring skipped', { error: e.message }); }
+    } catch (e) { gcpLogger.warning('[STARTUP] telemetry persistence skipped', { error: e.message }); }
+
     vppBroker
       .connect({
         brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',

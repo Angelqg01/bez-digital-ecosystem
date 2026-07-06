@@ -226,6 +226,14 @@ export default function BezPayModal() {
   const pool = FARMING_POOLS.find(p => p.pid === selPool)     || FARMING_POOLS[0];
   const lock = LOCK_PERIODS.find(l => l.days === lockDays)    || LOCK_PERIODS[2];
 
+  // ── Cálculo definitivo de suscripción (PDF) ──────────────────────────────
+  // Precios en EUR/mes (sin IVA). −20% si se paga con el token nativo $BEZ.
+  const BEZ_SUB_DISCOUNT = 0.20;
+  const subBezDiscount = (type === 'subscription' && payToken === 'BEZ') ? BEZ_SUB_DISCOUNT : 0;
+  const planEur    = plan.priceEUR ?? plan.priceUSD ?? 0;            // €/mes base
+  const planEurNet = +(planEur * (1 - subBezDiscount)).toFixed(2);   // tras descuento BEZ
+  const planBez    = Math.round((plan.priceBEZ || 0) * (1 - subBezDiscount));
+
   // ── COPIAR AL PORTAPAPELES ─────────────────────────────────────────────────
   const copy = (field, val) => {
     navigator.clipboard.writeText(val).catch(() => {});
@@ -241,7 +249,7 @@ export default function BezPayModal() {
       return;
     }
 
-    const numAmount = +amount || (type === 'subscription' ? plan.priceUSD : 0);
+    const numAmount = +amount || (type === 'subscription' ? planEurNet : 0);
     if (numAmount <= 0 && type !== 'subscription') {
       toast.error('Introduce un monto válido');
       return;
@@ -251,7 +259,7 @@ export default function BezPayModal() {
     if (['USD','EUR'].includes(payToken)) {
       const refCode = `BEZ-${Date.now().toString(36).toUpperCase().slice(-8)}`;
       const fiatAmt = type === 'subscription'
-        ? (payToken === 'EUR' ? (plan.priceUSD * 0.92) : plan.priceUSD)
+        ? (payToken === 'EUR' ? planEurNet : +(planEurNet / 0.92).toFixed(2))
         : numAmount * payP;
       const bankInstructions = buildBankTransferInstructions(refCode);
       setBankData({
@@ -262,7 +270,7 @@ export default function BezPayModal() {
         amount: fiatAmt.toFixed(2),
         stripeUrl:   getStripePaymentLink(type === 'subscription' ? selPlan : 'tokenPurchase'),
         wallet:      walletAddr,
-        bezAmount:   (bezOut || plan.priceBEZ).toFixed(2),
+        bezAmount:   (bezOut || planBez).toFixed(2),
       });
       setStep('bank');
       return;
@@ -430,7 +438,7 @@ function FormStep({ type, payToken, setPayToken, amount, setAmount, selPlan, set
             Plan de Suscripción
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
-            {SUBSCRIPTION_PLANS.filter(p => p.id !== 'free').map(p => (
+            {SUBSCRIPTION_PLANS.filter(p => (p.priceEUR ?? p.priceUSD) > 0).map(p => (
               <button key={p.id} onClick={() => setSelPlan(p.id)} style={{
                 background: selPlan === p.id ? `${p.color}22` : '#0C1628',
                 border: `2px solid ${selPlan === p.id ? p.color : '#0D2040'}`,
@@ -451,7 +459,7 @@ function FormStep({ type, payToken, setPayToken, amount, setAmount, selPlan, set
                 <div style={{ color: '#E8F4FF', fontFamily: 'monospace', fontSize: 13, fontWeight: 800, marginTop: 2 }}>
                   {p.priceBEZ.toLocaleString()} <span style={{ color: '#FFB800', fontSize: 9 }}>BEZ</span>
                 </div>
-                <div style={{ color: C.muted, fontSize: 9 }}>${p.priceUSD}/mes</div>
+                <div style={{ color: C.muted, fontSize: 9 }}>€{p.priceUSD}/mes</div>
               </button>
             ))}
           </div>
@@ -605,11 +613,13 @@ function FormStep({ type, payToken, setPayToken, amount, setAmount, selPlan, set
         <div style={{ borderTop: `1px solid ${C.border2}`, paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <div style={{ color: C.muted, fontSize: 9 }}>
-              {type === 'subscription' ? 'Costo mensual' : type === 'farming' ? `APY efectivo: ${(pool.apy * lock.mult).toFixed(1)}%` : 'Recibirás via dispenseTokens()'}
+              {type === 'subscription'
+                ? (subBezDiscount > 0 ? `Costo mensual · −20% en $BEZ (€${planEurNet})` : `Costo mensual · €${planEurNet}`)
+                : type === 'farming' ? `APY efectivo: ${(pool.apy * lock.mult).toFixed(1)}%` : 'Recibirás via dispenseTokens()'}
             </div>
             <div style={{ color: typeInfo.color, fontFamily: 'monospace', fontSize: 26, fontWeight: 800, marginTop: 4 }}>
               {type === 'subscription'
-                ? `${plan.priceBEZ.toLocaleString()} BEZ`
+                ? `${planBez.toLocaleString()} BEZ`
                 : type === 'farming'
                 ? `${fmt((+amount||0) * pool.apy * lock.mult / 100 / 12, 4)} BEZ/mes`
                 : `🪙 ${fmt(bezOut, 4)} BEZ`}
@@ -652,7 +662,7 @@ function FormStep({ type, payToken, setPayToken, amount, setAmount, selPlan, set
       >
         <span style={{ fontSize: 16 }}>{typeInfo.icon}</span>
         {type === 'subscription'
-          ? `Suscribirse · ${plan.name} · ${plan.priceBEZ.toLocaleString()} BEZ/mes`
+          ? `Suscribirse · ${plan.name} · ${planBez.toLocaleString()} BEZ/mes`
           : type === 'farming'
           ? `Depositar ${amount || '0'} BEZ · APY ×${lock.mult}`
           : type === 'escrow'

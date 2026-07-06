@@ -2,6 +2,8 @@
 
 const crypto = require('crypto');
 const { query } = require('../db/pool');
+const { resolveIdentity } = require('./cargoLinkLifecycle');
+const { isConfigured: onChainConfigured, getAddresses } = require('./cargoLinkOnChain');
 
 const ENDPOINTS = {
   '/v1/customs/dispatch': {
@@ -75,25 +77,39 @@ function getApiKey(req) {
   return req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.headers['x-api-key'] || '';
 }
 
-function buildBlockchainStatus(eventName, payloadHash) {
+function buildBlockchainStatus(eventName, payloadHash, anchor) {
   const chainId = Number(process.env.BEZHAS_CHAIN_ID || process.env.CHAIN_ID || 31337);
   const rpcUrl = process.env.RPC_URL || process.env.BEZHAS_L2_RPC_URL || null;
-  const contractsReady = Boolean(
-    process.env.SUPPLY_TRACKER_ADDRESS ||
-    process.env.CUSTOMS_CLEARANCE_ORACLE_ADDRESS
-  );
+  const configured = onChainConfigured();
+  const addresses = configured ? getAddresses() : null;
+
+  if (anchor?.anchored) {
+    return {
+      event: eventName,
+      payloadHash,
+      chainId,
+      rpcUrl,
+      mode: 'anchored',
+      txHash: anchor.txHash,
+      contract: anchor.contract,
+      chainShipmentId: anchor.chainShipmentId || null,
+    };
+  }
 
   return {
     event: eventName,
     payloadHash,
     chainId,
     rpcUrl,
-    mode: contractsReady ? 'wallet_signature_required' : 'pending_contract_config',
+    mode: configured
+      ? (anchor?.mode || 'wallet_signature_required')
+      : 'pending_contract_config',
     txHash: null,
-    contract: null,
-    nextAction: contractsReady
+    contract: addresses?.supplyTracker || null,
+    nextAction: configured
       ? 'connect_wallet_and_submit_transaction'
       : 'configure_supply_chain_contract_addresses',
+    anchorError: anchor?.error || null,
   };
 }
 
@@ -167,15 +183,18 @@ async function registerWebhook(req, { url, events }) {
     throw error;
   }
 
+  // Bind the webhook to the caller's BeZhas_ID. fanoutWebhooks() selects hooks
+  // `WHERE bezhas_id = tx.owner_bezhas_id` and HMAC-signs with the plaintext
+  // `secret`, so both must be persisted here — and `secret` must equal the value
+  // we hand back as signingSecret (both sides HMAC with the same bytes).
+  const identity = await resolveIdentity(req);
   const secret = crypto.randomBytes(24).toString('hex');
-  const secretHash = crypto.createHash('sha256').update(secret).digest('hex');
-  const apiKeyHash = hashApiKey(getApiKey(req));
 
   const saved = await query(
-    `INSERT INTO cargolink_webhooks (api_key_hash, url, events, secret_hash)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO cargolink_webhooks (bezhas_id, api_key_hash, url, events, secret)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING id, url, events, status, created_at`,
-    [apiKeyHash, url, events, secretHash]
+    [identity.bezhasId, identity.keyHash, url, events, secret]
   );
 
   return {

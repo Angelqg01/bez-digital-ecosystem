@@ -1,0 +1,34 @@
+{
+  "name": "bezhas-edge-gateway",
+  "private": true,
+  "version": "0.1.0",
+  "description": "BeZhas VPP Edge Gateway — reads real field devices (SunSpec/Modbus inverters, meters, BESS, gensets) and publishes signed telemetry to MQTT for the BeZhas Energy backend.",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js --config ./config.json",
+    "dry-run": "node src/index.js --config ./config.json --dry-run",
+    "sim": "node scripts/modbus-sim.js",
+    "verify": "node scripts/verify-edge-pipeline.js",
+    "verify:vendors": "node scripts/verify-vendor-maps.js",
+    "verify:signing": "node scripts/verify-signing-interop.js",
+    "verify:signed": "node scripts/verify-signed-pipeline.js",
+    "verify:control": "node scripts/verify-signed-control.js",
+    "verify:arbitrage": "node scripts/verify-arbitrage-loop.js",
+    "verify:all": "node __tests__/decode.test.js && node __tests__/signer.test.js && node scripts/verify-edge-pipeline.js && node scripts/verify-vendor-maps.js && node scripts/verify-signing-interop.js && node scripts/verify-signed-pipeline.js && node scripts/verify-signed-control.js && node scripts/verify-arbitrage-loop.js",
+    "discover": "node scripts/sunspec-discover.js",
+    "keygen": "node scripts/keygen.js",
+    "test": "node __tests__/decode.test.js && node __tests__/signer.test.js"
+  },
+  "dependencies": {
+    "jsmodbus": "^4.0.10",
+    "mqtt": "^5.10.1"
+  },
+  "devDependencies": {
+    "aedes": "^0.51.3"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "pnpm": ">=11"
+  }
+}

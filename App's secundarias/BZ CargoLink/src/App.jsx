@@ -1,13 +1,15 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, NavLink, Link, useLocation } from 'react-router-dom'
-import { 
+import {
   Terminal,
   Map as MapIcon,
   Fingerprint,
   Box,
   Globe,
   Wallet as WalletIcon,
-  Code2
+  Code2,
+  Users,
+  Radio,
 } from 'lucide-react'
 import EcosystemBar from './components/EcosystemBar'
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen } from './context/AuthProvider'
@@ -19,9 +21,13 @@ import SmartStowage from './pages/SmartStowage'
 import CustomsSync from './pages/CustomsSync'
 import Wallet from './pages/Wallet'
 import DeveloperIntegration from './pages/DeveloperIntegration'
+import Operators from './pages/Operators'
+import TransactionDetail from './pages/TransactionDetail'
+import Telemetry from './pages/Telemetry'
 
 const App = () => {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
+  const isAdmin = (user?.role || '').toLowerCase() === 'admin'
   const location = useLocation()
 
   const isDashboard = location.pathname === '/'
@@ -58,7 +64,10 @@ const App = () => {
               <Route path="/stowage" element={<SmartStowage />} />
               <Route path="/customs" element={<CustomsSync />} />
               <Route path="/wallet" element={<Wallet />} />
+              <Route path="/operators" element={<Operators />} />
               <Route path="/integration" element={<DeveloperIntegration />} />
+              <Route path="/telemetry" element={<Telemetry />} />
+              <Route path="/tx/:bUid" element={<TransactionDetail />} />
             </Routes>
           )}
         </main>
@@ -84,6 +93,18 @@ const App = () => {
             <WalletIcon size={24} />
             <span>Wallet</span>
           </NavLink>
+          {isAdmin && (
+            <NavLink to="/telemetry" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Radio size={24} />
+              <span>IoT</span>
+            </NavLink>
+          )}
+          {isAdmin && (
+            <NavLink to="/operators" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Users size={24} />
+              <span>Operarios</span>
+            </NavLink>
+          )}
         </nav>
       </div>
 

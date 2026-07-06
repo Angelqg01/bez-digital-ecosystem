@@ -22,6 +22,7 @@ const DOWNLOADS_DIR = process.env.DOWNLOADS_DIR
 
 const SDK_PACKAGE_DIR = path.join(__dirname, '..', '..', 'sdk');
 const MCP_PACKAGE_DIR = path.join(__dirname, '..', '..', 'packages', 'mcp-server');
+const WP_PLUGIN_DIR = path.join(__dirname, '..', '..', 'packages', 'wp-plugin');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,15 @@ function findTgz(dir) {
     if (!fs.existsSync(dir)) return null;
     const files = fs.readdirSync(dir);
     return files.find(f => f.endsWith('.tgz')) || null;
+}
+
+/**
+ * Busca el ZIP del plugin WP con mayor versión (orden semver simple por nombre).
+ */
+function findZip(dir) {
+    if (!fs.existsSync(dir)) return null;
+    const zips = fs.readdirSync(dir).filter(f => /^bezhas-hub-.*\.zip$/.test(f));
+    return zips.sort().reverse()[0] || null;
 }
 
 /**
@@ -89,6 +99,19 @@ router.get('/bezhas-sdk.tgz', (req, res) => {
 // ── GET /api/downloads/bezhas-mcp.tgz ────────────────────────────────────────
 router.get('/bezhas-mcp.tgz', (req, res) => {
     servePackage(req, res, MCP_PACKAGE_DIR, 'bezhas-mcp');
+});
+
+// ── GET /api/downloads/bezhas-hub-wp.zip ─────────────────────────────────────
+router.get('/bezhas-hub-wp.zip', (req, res) => {
+    // Sirve el ZIP más reciente del plugin (bezhas-hub-<version>.zip).
+    const zipName = (findZip(WP_PLUGIN_DIR) || 'bezhas-hub-2.0.0.zip');
+    const zipFile = path.join(WP_PLUGIN_DIR, zipName);
+    if (fs.existsSync(zipFile)) {
+        res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+        res.setHeader('Content-Type', 'application/zip');
+        return res.sendFile(zipFile);
+    }
+    res.status(404).json({ error: 'WordPress plugin not found. Install from WordPress directory.' });
 });
 
 // ── Shared handler ────────────────────────────────────────────────────────────

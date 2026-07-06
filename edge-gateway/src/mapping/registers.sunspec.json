@@ -1,0 +1,41 @@
+{
+  "model": "SunSpec model 103 (three-phase inverter) — reference template",
+  "note": "0-based Modbus protocol addresses for holding registers. This is a COMPACTED reference map kept consistent with scripts/modbus-sim.js. Replace per real vendor (SMA / Fronius / Huawei / Ingeteam) with their published SunSpec register block. Real maps add the SunSpec base discovery ('SunS' marker) and the model header (id+len); here we read a single contiguous block for simplicity.",
+  "block": { "start": 0, "count": 40 },
+  "points": [
+    { "name": "St",     "address": 0,  "type": "uint16" },
+    { "name": "A",      "address": 2,  "type": "int16",  "sf": "A_SF" },
+    { "name": "A_SF",   "address": 4,  "type": "sunssf" },
+    { "name": "PhVphA", "address": 11, "type": "int16",  "sf": "V_SF" },
+    { "name": "V_SF",   "address": 13, "type": "sunssf" },
+    { "name": "W",      "address": 14, "type": "int16",  "sf": "W_SF" },
+    { "name": "W_SF",   "address": 15, "type": "sunssf" },
+    { "name": "Hz",     "address": 16, "type": "uint16", "sf": "Hz_SF" },
+    { "name": "Hz_SF",  "address": 17, "type": "sunssf" },
+    { "name": "WH",     "address": 23, "type": "acc32",  "sf": "WH_SF" },
+    { "name": "WH_SF",  "address": 25, "type": "sunssf" },
+    { "name": "DCW",    "address": 31, "type": "int16",  "sf": "DCW_SF" },
+    { "name": "DCW_SF", "address": 32, "type": "sunssf" },
+    { "name": "TmpCab", "address": 34, "type": "int16",  "sf": "Tmp_SF" },
+    { "name": "Tmp_SF", "address": 35, "type": "sunssf" }
+  ],
+  "metrics": {
+    "output_kw":      { "point": "W",      "div": 1000, "round": 3 },
+    "voltage_v":      { "point": "PhVphA", "round": 1 },
+    "grid_frequency": { "point": "Hz",     "round": 3 },
+    "dc_power_kw":    { "point": "DCW",     "div": 1000, "round": 3 },
+    "temp_c":         { "point": "TmpCab",  "round": 1 },
+    "energy_kwh":     { "point": "WH",      "div": 1000, "round": 3 }
+  },
+  "state": {
+    "point": "St",
+    "map": { "1": "OFFLINE", "2": "DEGRADED", "3": "DEGRADED", "4": "ONLINE", "5": "ONLINE", "7": "DEGRADED", "8": "OFFLINE" }
+  },
+  "control": {
+    "_comment": "Phase 5 write-path: SCADA command → holding-register write. `param` reads params[param] from the command; `scale` multiplies it; `value` is a fixed write. Addresses 40-42 are outside the simulator's refreshed block so writes persist for verification. Replace with the real vendor control registers per model.",
+    "SET_REACTIVE_POWER": { "address": 40, "param": "kvar",    "scale": 1 },
+    "CHARGE_BATTERY":     { "address": 41, "param": "powerKw", "scale": 1 },
+    "DISCHARGE_BATTERY":  { "address": 41, "param": "powerKw", "scale": -1 },
+    "EMERGENCY_STOP":     { "address": 42, "value": 1 }
+  }
+}

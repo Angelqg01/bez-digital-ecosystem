@@ -1,0 +1,37 @@
+{
+  "vendor": "Generic BESS",
+  "model": "Battery Energy Storage (Pylontech / BYD / generic Modbus BMS) — SoC/voltage/current/temp",
+  "source": "Generic BESS Modbus holding-register layout. Many home/industrial BMS expose SoC + pack telemetry over Modbus-TCP (or RTU via a gateway). Provides the soc_pct the arbitrage agent needs. Confirm addresses/gains against your BMS manual.",
+  "encoding": "gain (engineering = raw / gain).",
+  "function": "holding",
+  "wordSwap": false,
+  "modbusDefaults": { "unitId": 1 },
+  "blocks": [
+    { "start": 0, "count": 12 }
+  ],
+  "points": [
+    { "name": "soc_pct",      "address": 0, "type": "uint16", "gain": 10 },
+    { "name": "pack_voltage", "address": 1, "type": "uint16", "gain": 10 },
+    { "name": "pack_current", "address": 2, "type": "int16",  "gain": 10 },
+    { "name": "pack_temp",    "address": 3, "type": "int16",  "gain": 10 },
+    { "name": "power_w",      "address": 4, "type": "int32",  "gain": 1 },
+    { "name": "soh_pct",      "address": 6, "type": "uint16", "gain": 10 },
+    { "name": "bms_status",   "address": 7, "type": "uint16" },
+    { "name": "cycle_count",  "address": 8, "type": "uint16" }
+  ],
+  "metrics": {
+    "soc_pct":    { "point": "soc_pct",      "round": 1 },
+    "voltage_v":  { "point": "pack_voltage", "round": 1 },
+    "current_a":  { "point": "pack_current", "round": 1 },
+    "temp_c":     { "point": "pack_temp",    "round": 1 },
+    "output_kw":  { "point": "power_w",      "div": 1000, "round": 3 },
+    "soh_pct":    { "point": "soh_pct",      "round": 1 },
+    "cycles":     { "point": "cycle_count" }
+  },
+  "state": {
+    "point": "bms_status",
+    "default": "DEGRADED",
+    "map": { "0": "ONLINE", "1": "ONLINE", "2": "ONLINE", "3": "OFFLINE", "4": "DEGRADED" }
+  },
+  "note": "pack_current/power sign: negative = discharging (delivering), positive = charging. The arbitrage agent reads soc_pct from this node (type BATTERY)."
+}

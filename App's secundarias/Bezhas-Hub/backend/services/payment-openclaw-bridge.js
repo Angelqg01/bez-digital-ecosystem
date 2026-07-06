@@ -314,6 +314,31 @@ async function onPaymentCompleted({ walletAddress, type, txHash, bezAmount, plan
   logger.info({ walletAddress, type, txHash, bezAmount, planId }, '📩 [Bridge] Payment completed event');
 
   try {
+    // Fase 3C wiring: settlement on-chain real (opt-in via FEATURE_BEZ_SETTLEMENT).
+    // Si el flag está off → comportamiento idéntico al actual (confirmación optimista).
+    // Si está on y hay txHash → verificamos Transfer(BEZ → expectedTo) on-chain.
+    // Idempotente: el mismo txHash no se acredita dos veces.
+    const settlement = require('./bezSettlement.service');
+    if (settlement.isEnabled() && txHash) {
+      const expectedTo = metadata.expectedTo
+        || process.env.TREASURY_WALLET
+        || '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4';
+      const settled = await settlement.settle({
+        txHash, expectedTo, minAmountBez: Number(bezAmount) || 0,
+      });
+      if (!settled.valid) {
+        logger.warn({ walletAddress, txHash, reason: settled.reason }, '⚠️ [Bridge] BEZ settlement rejected');
+        bridgeEvents.emit('payment.rejected', { walletAddress, reason: `settlement:${settled.reason}`, txHash });
+        return { success: false, reason: `settlement:${settled.reason}` };
+      }
+      if (settled.alreadySettled) {
+        logger.info({ txHash, walletAddress }, '[Bridge] idempotent settlement hit — skipping re-provision');
+        return { success: true, alreadySettled: true, type };
+      }
+      logger.info({ txHash, amountBez: settled.amountBez, confirmations: settled.confirmations },
+        '✅ [Bridge] BEZ settlement verified on-chain');
+    }
+
     const aegisResult = await AegisValidator.validateTransaction({
       walletAddress, txHash, amount: bezAmount, type,
     });

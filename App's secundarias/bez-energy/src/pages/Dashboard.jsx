@@ -21,17 +21,33 @@ import { getTelemetry } from '../api'
 
 const Dashboard = () => {
   const [data, setData] = React.useState(null)
+  const [error, setError] = React.useState(null)
 
   React.useEffect(() => {
     const fetch = async () => {
-      const telemetry = await getTelemetry()
-      if (telemetry) setData(telemetry)
+      try {
+        const telemetry = await getTelemetry()
+        if (telemetry) { setData(telemetry); setError(null) }
+      } catch (err) {
+        // With the simulated fallback disabled (production), surface the real
+        // backend/auth failure instead of leaving the panel stuck loading.
+        setError(err.message || 'Telemetry backend unreachable')
+      }
     }
     fetch()
     const interval = setInterval(fetch, 5000)
     return () => clearInterval(interval)
   }, [])
 
+  if (error && !data) return (
+    <div style={{ color: '#FF6B9D', padding: 40 }}>
+      <strong>VPP telemetry unavailable.</strong>
+      <div style={{ color: '#9aa', marginTop: 8, fontSize: 14 }}>{error}</div>
+      <div style={{ color: '#667', marginTop: 8, fontSize: 13 }}>
+        Sign in with your wallet and confirm the API gateway is reachable. Retrying every 5s…
+      </div>
+    </div>
+  )
   if (!data) return <div style={{ color: 'white', padding: 40 }}>Synchronizing with Node...</div>
 
   return (

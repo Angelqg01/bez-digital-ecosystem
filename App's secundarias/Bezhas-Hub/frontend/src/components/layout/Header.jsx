@@ -27,6 +27,7 @@ import { useBezPay } from '../../context/BezPayContext';
 import WalletHeaderButton from '../common/WalletHeaderButton';
 import UnifiedBuyBezButton from '../UnifiedBuyBezButton';
 import AppSwitcher from './AppSwitcher';
+import TenantSwitcher from './TenantSwitcher';
 import { ethers } from 'ethers';
 import { BezhasTokenAddress, TokenSaleAddress, TokenSaleABI, BezhasTokenABI } from '../../contract-config';
 import { FaCoins } from 'react-icons/fa';
@@ -306,6 +307,8 @@ const Header = () => {
 
           {/* Right Section - Actions */}
           <div className="flex items-center gap-3">
+            {/* Multi-tenant: selector de organización/sede + BeZhas_ID */}
+            <TenantSwitcher />
             {/* 🔐 BEZ Balance Display - Privado con toggle para mostrar/ocultar */}
             {isConnected && (
               <div

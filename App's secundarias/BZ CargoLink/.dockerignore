@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.gitignore
+*.md
+doc/
+*.log
+*.zip
+stitch_*
+.env
+.env.local
+.env.*.local

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Code, FileText, GraduationCap, Shield, Cpu, Globe } from 'lucide-react';
+import { BookOpen, Code, FileText, GraduationCap, Shield, Cpu, Globe, Plug } from 'lucide-react';
 
 const DocsHub = () => {
     const navigate = useNavigate();
@@ -12,6 +12,13 @@ const DocsHub = () => {
             icon: <FileText size={32} className="text-blue-500" />,
             description: 'BEZ Token ERC-20, staking, farming, DAO y economía de la plataforma.',
             path: '/docs/whitepaper'
+        },
+        {
+            id: 'client-guides',
+            title: 'Guías de Integración',
+            icon: <Plug size={32} className="text-teal-500" />,
+            description: 'API REST, SDK JavaScript y Plugin WordPress: paso a paso con código y vídeos.',
+            path: '/client-guides'
         },
         {
             id: 'developers',

@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "db:migrate": "node scripts/run-migrations.js",
+    "db:migrate:list": "node scripts/run-migrations.js --list",
     "chat": "node chat/chat-server.js",
     "chat:dev": "nodemon chat/chat-server.js",
     "test": "jest --env=node",

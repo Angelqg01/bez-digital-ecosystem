@@ -3,6 +3,7 @@ process.env.JWT_SECRET = 'test-secret';
 process.env.INTERNAL_API_KEY = 'test-internal-key';
 process.env.BEZ_TREASURY_PK = '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
+process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
 process.env.BANK_WEBHOOK_SECRET = 'bank_webhook_secret_test';
 process.env.NODE_ENV = 'production';
 

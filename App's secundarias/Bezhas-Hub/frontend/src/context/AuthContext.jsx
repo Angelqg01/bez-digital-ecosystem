@@ -10,17 +10,40 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [bezhasId, setBezhasId] = useState(null); // identidad ÚNICA BeZhas_ID
     const navigate = useNavigate();
     const { data: walletClient } = useWalletClient();
 
     useEffect(() => {
         const stored = localStorage.getItem('auth');
         if (stored) {
-            const { user, token } = JSON.parse(stored);
+            const { user, token, bezhasId } = JSON.parse(stored);
             setUser(user);
             setToken(token);
+            if (bezhasId) setBezhasId(bezhasId);
         }
     }, []);
+
+    // BeZhas_ID único: una sola resolución para TODOS los métodos de acceso
+    // (login email, wallet, OAuth…). Evita duplicar la lógica en cada método.
+    useEffect(() => {
+        if (!user || bezhasId) return;
+        let cancel = false;
+        authService.resolveIdentity({
+            email: user.email,
+            wallet: user.walletAddress || user.wallet,
+            userId: user.id || user._id,
+            displayName: user.name || user.username,
+        }).then((res) => {
+            if (cancel || !res?.bezhasId) return;
+            setBezhasId(res.bezhasId);
+            try {
+                const stored = JSON.parse(localStorage.getItem('auth') || '{}');
+                localStorage.setItem('auth', JSON.stringify({ ...stored, bezhasId: res.bezhasId }));
+            } catch { /* noop */ }
+        });
+        return () => { cancel = true; };
+    }, [user, bezhasId]);
 
     const login = async (email, password) => {
         setLoading(true);
@@ -222,6 +245,7 @@ export function AuthProvider({ children }) {
     const logout = () => {
         setUser(null);
         setToken(null);
+        setBezhasId(null);
         localStorage.removeItem('auth');
         navigate('/login');
     };
@@ -230,6 +254,7 @@ export function AuthProvider({ children }) {
         <AuthContext.Provider value={{
             user,
             token,
+            bezhasId,
             loading,
             login,
             loginWithWallet,

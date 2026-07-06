@@ -85,7 +85,7 @@ export default function SidebarDrawer({ open, setOpen }) {
                     <div className={`flex items-center gap-3 transition-all ${collapsed ? 'justify-center w-full' : 'flex-1'}`}>
                         {!collapsed && (
                             <span className="text-xl font-bold text-gray-900 dark:text-white">
-                                BeZhas<span className="text-purple-600 dark:text-purple-400">Web3</span>
+                                BeZ<span className="text-purple-600 dark:text-purple-400">-Hub</span>
                             </span>
                         )}
                     </div>

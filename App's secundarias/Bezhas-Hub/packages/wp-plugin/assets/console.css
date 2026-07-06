@@ -1,0 +1,56 @@
+/* BeZhas Hub — consola embebida. Estética dark-luxury del ecosistema. */
+.bezhas-console { max-width: 1100px; }
+.bezhas-hero {
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(135deg, #0b1220 0%, #131a2e 100%);
+  border: 1px solid #1f2a44; border-radius: 16px; padding: 22px 26px; margin: 16px 0 20px; color: #e8eefc;
+}
+.bezhas-hero-title { display: flex; align-items: center; gap: 16px; }
+.bezhas-logo { font-size: 38px; color: #00D4AA; line-height: 1; }
+.bezhas-hero h1 { color: #fff; margin: 0; font-size: 24px; }
+.bezhas-hero p { margin: 4px 0 0; color: #9fb0d0; }
+.bezhas-status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9fb0d0; }
+.bezhas-status .dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7280; display: inline-block; }
+.bezhas-status.is-ok .dot { background: #1a9d57; box-shadow: 0 0 8px #1a9d57; }
+.bezhas-status.is-warn .dot { background: #d9a406; }
+.bezhas-status.is-down .dot { background: #c0392b; }
+
+.bezhas-card { background: #fff; border: 1px solid #e2e4e9; border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+.bezhas-card h2 { margin-top: 0; }
+.bezhas-muted { color: #6b7280; font-size: 13px; }
+.bezhas-field { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.bezhas-field input, .bezhas-field select { min-width: 220px; }
+
+.bezhas-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.bezhas-tab { background: #eef1f6; border: 1px solid #d8dde8; border-radius: 999px; padding: 8px 18px; cursor: pointer; font-weight: 600; }
+.bezhas-tab.is-active { background: #00D4AA; color: #06251e; border-color: #00D4AA; }
+
+.bezhas-toggle-inline { display: inline-flex; align-items: center; gap: 6px; margin-right: 18px; font-size: 13px; }
+
+.bezhas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 14px; }
+
+.bezhas-plan { position: relative; border: 1px solid #e2e4e9; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; }
+.bezhas-plan.is-rec { border-color: #00D4AA; box-shadow: 0 0 0 2px rgba(0,212,170,.18); }
+.bezhas-plan.is-active { border-color: #6b7280; background: #f7f9fc; }
+.bezhas-badge { position: absolute; top: -10px; right: 14px; background: #FFD700; color: #3a2f00; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.bezhas-plan h3 { margin: 0 0 2px; }
+.bezhas-profile { color: #6b7280; font-size: 12px; margin: 0 0 10px; }
+.bezhas-price { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+.bezhas-price span { display: block; font-size: 11px; font-weight: 400; color: #6b7280; }
+.bezhas-value { color: #1a9d57; font-size: 12px; font-weight: 600; margin: 6px 0 14px; }
+.bezhas-plan button { margin-top: auto; }
+
+.bezhas-subapp { border: 1px solid #e2e4e9; border-radius: 14px; padding: 16px; }
+.bezhas-subapp.is-on { border-color: #00D4AA; background: #f3fffb; }
+.bezhas-subapp-head { display: flex; justify-content: space-between; align-items: center; }
+.bezhas-subapp-head h3 { margin: 0; font-size: 15px; }
+
+.bezhas-switch { position: relative; display: inline-block; width: 42px; height: 24px; }
+.bezhas-switch input { opacity: 0; width: 0; height: 0; }
+.bezhas-switch span { position: absolute; inset: 0; background: #cbd2de; border-radius: 999px; transition: .2s; cursor: pointer; }
+.bezhas-switch span:before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+.bezhas-switch input:checked + span { background: #00D4AA; }
+.bezhas-switch input:checked + span:before { transform: translateX(18px); }
+
+.bezhas-pay-btn { background: #00D4AA; color: #06251e; border: 0; border-radius: 10px; padding: 12px 22px; font-weight: 700; cursor: pointer; }
+.bezhas-pay-btn:hover { background: #00b894; }

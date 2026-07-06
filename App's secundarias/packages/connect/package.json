@@ -1,0 +1,45 @@
+{
+  "name": "@bezhas/connect",
+  "version": "0.1.0",
+  "description": "Outward-facing BeZhas integration SDK — embed Pay & CargoLink into any 3rd-party platform (WooCommerce, Shopify, SAP, custom Node). Zero dependencies, framework-agnostic.",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": "./src/index.js",
+    "./pay": "./src/pay.js",
+    "./cargolink": "./src/cargolink.js",
+    "./webhooks": "./src/webhooks.js",
+    "./registry": "./src/registry.js",
+    "./service": "./src/service.js",
+    "./subscription": "./src/subscription.js",
+    "./embed": "./embed/widget.js",
+    "./embed/core": "./embed/core.js"
+  },
+  "files": [
+    "src",
+    "embed",
+    "index.d.ts",
+    "plugins",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "bezhas",
+    "blockchain",
+    "payments",
+    "logistics",
+    "cargolink",
+    "sdk",
+    "woocommerce",
+    "embed"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@11.0.0",
+  "license": "UNLICENSED"
+}

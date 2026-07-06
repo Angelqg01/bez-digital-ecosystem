@@ -11,6 +11,8 @@
  */
 
 import { createContext, useContext, useState, useCallback } from 'react';
+// FUENTE ÚNICA de planes definitivos (PDF). Ver config/plans.js.
+import { PLANS as DEFINITIVE_PLANS } from '../config/plans';
 
 // ─── TIPOS DE PAGO SOPORTADOS ─────────────────────────────────────────────────
 export const BEZ_PAY_TYPES = {
@@ -25,36 +27,21 @@ export const BEZ_PAY_TYPES = {
 };
 
 // ─── PLANES DE SUSCRIPCIÓN ────────────────────────────────────────────────────
-export const SUBSCRIPTION_PLANS = [
-  {
-    id: 'free', name: 'Free', icon: '🌱',
-    priceBEZ: 0, priceUSD: 0,
-    color: '#3D5E80',
-    features: ['1 Bot básico', '5 Activos cartera', 'Bridge $500/mes', 'Soporte comunidad'],
-    limits: { bots: 1, assets: 5, bridge: '$500', api: false, escrow: false, farming: false }
-  },
-  {
-    id: 'starter', name: 'Starter', icon: '⚡',
-    priceBEZ: 500, priceUSD: 29,
-    color: '#2563EB',
-    features: ['3 Bots de trading', '20 Activos', 'Bridge $5k/mes', 'Farming básico', 'Alertas real-time'],
-    limits: { bots: 3, assets: 20, bridge: '$5k', api: false, escrow: false, farming: true }
-  },
-  {
-    id: 'pro', name: 'Pro', icon: '🚀', badge: 'POPULAR',
-    priceBEZ: 1500, priceUSD: 79,
-    color: '#00C896',
-    features: ['Bots ilimitados+IA', '50 Activos', 'IA Claude+Gemini', 'Quality Escrow', 'API completa', 'Farming avanzado'],
-    limits: { bots: '∞', assets: 50, bridge: '∞', api: true, escrow: true, farming: true }
-  },
-  {
-    id: 'enterprise', name: 'Enterprise', icon: '🏛️', badge: 'WHITE LABEL',
-    priceBEZ: 5000, priceUSD: 299,
-    color: '#FFB800',
-    features: ['Todo Pro', 'Activos ilimitados', 'White label', 'API institucional', 'DAO governance', 'Multi-cuenta 50', 'Account manager', 'SLA 99.9%'],
-    limits: { bots: '∞', assets: '∞', bridge: '∞', api: true, escrow: true, farming: true }
-  },
-];
+// FUENTE ÚNICA: config/plans.js (4 planes definitivos del PDF). Aquí se derivan
+// con la forma que consume BezPayModal (priceUSD = importe €/mes, priceBEZ = BEZ/mes).
+export const SUBSCRIPTION_PLANS = DEFINITIVE_PLANS.map((p) => ({
+  id: p.id,
+  name: p.name,
+  icon: p.icon,
+  badge: p.badge || undefined,
+  color: p.color,
+  priceEUR: p.priceEUR,
+  priceUSD: p.priceEUR,   // importe €/mes (compat con BezPayModal)
+  priceBEZ: p.bezPerMonth,
+  profile: p.profile,
+  features: p.features,
+  recommended: p.recommended,
+}));
 
 // ─── POOLS DE FARMING ─────────────────────────────────────────────────────────
 export const FARMING_POOLS = [
@@ -93,7 +80,7 @@ export function BezPayProvider({ children }) {
     openPayModal({ type: BEZ_PAY_TYPES.BUY_BEZ, amount, ...options });
   }, [openPayModal]);
 
-  const openSubscription = useCallback((planId = 'pro', options = {}) => {
+  const openSubscription = useCallback((planId = 'business', options = {}) => {
     openPayModal({ type: BEZ_PAY_TYPES.SUBSCRIPTION, planId, ...options });
   }, [openPayModal]);
 

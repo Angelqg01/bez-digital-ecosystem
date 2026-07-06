@@ -17,15 +17,23 @@ import {
   Video
 } from 'lucide-react'
 import { getTelemetry, sendControlCommand } from '../api'
+import useMe from '../hooks/useMe'
 
 const Scada = () => {
   const [expandedAsset, setExpandedAsset] = useState('DER-SOL-001')
   const [data, setData] = useState(null)
+  const [error, setError] = useState(null)
+  const { me } = useMe()
+  const canControl = me.is_operator // operator or admin
 
   useEffect(() => {
     const fetch = async () => {
-      const telemetry = await getTelemetry()
-      if (telemetry) setData(telemetry)
+      try {
+        const telemetry = await getTelemetry()
+        if (telemetry) { setData(telemetry); setError(null) }
+      } catch (err) {
+        setError(err.message || 'SCADA telemetry backend unreachable')
+      }
     }
     fetch()
     const interval = setInterval(fetch, 10000)
@@ -33,16 +41,32 @@ const Scada = () => {
   }, [])
 
   const handleCommand = async (nodeId, command) => {
-    const result = await sendControlCommand(nodeId, command)
-    if (result.success) {
-      // Refresh data after command
-      const telemetry = await getTelemetry()
-      if (telemetry) setData(telemetry)
-    } else {
-      alert('Control Error: ' + result.error)
+    if (!canControl) {
+      alert('Permiso denegado: el control SCADA requiere rol de operador. Solicítalo al administrador.')
+      return
+    }
+    try {
+      const result = await sendControlCommand(nodeId, command)
+      if (result.success) {
+        // Refresh data after command
+        const telemetry = await getTelemetry()
+        if (telemetry) setData(telemetry)
+      } else {
+        alert('Control Error: ' + result.error)
+      }
+    } catch (err) {
+      // Backend rejected (e.g. 403 without operator role, or unreachable).
+      alert('Control Error: ' + (err.message || 'comando rechazado'))
     }
   }
 
+  if (error && !data) return (
+    <div style={{ color: '#FF6B9D', padding: 40 }}>
+      <strong>SCADA no disponible.</strong>
+      <div style={{ color: '#9aa', marginTop: 8, fontSize: 14 }}>{error}</div>
+      <div style={{ color: '#667', marginTop: 8, fontSize: 13 }}>Inicia sesión y comprueba el gateway. Reintentando cada 10s…</div>
+    </div>
+  )
   if (!data) return <div style={{ color: 'white', padding: 40 }}>Initializing SCADA Interface...</div>
 
   return (
@@ -105,8 +129,13 @@ const Scada = () => {
               {/* Operational Logic */}
               <div style={{ borderLeft: '1px solid var(--bez-border)', borderRight: '1px solid var(--bez-border)', padding: '0 32px' }}>
                 <h4 style={{ fontSize: 10, color: 'var(--bez-text-muted)', textTransform: 'uppercase', letterSpacing: 2, borderBottom: '1px solid var(--bez-border)', paddingBottom: 8, marginBottom: 16 }}>Operational Logic</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <ControlToggle 
+                {!canControl && (
+                  <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', padding: 12, borderRadius: 12, marginBottom: 12, fontSize: 11, color: 'var(--bez-solar)' }}>
+                    🔒 Vista de solo lectura. El despacho de comandos requiere rol de <strong>operador</strong>.
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, opacity: canControl ? 1 : 0.5, pointerEvents: canControl ? 'auto' : 'none' }}>
+                  <ControlToggle
                     label="Node Execution" 
                     active={node.status === 'Online' ? 'Start' : 'Stop'} 
                     options={['Start', 'Stop']} 

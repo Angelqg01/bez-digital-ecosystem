@@ -74,9 +74,9 @@ describe('Core contracts — BEZCoinV2', () => {
         expect(await bez.decimals()).toBe(18n);
     });
 
-    test('totalSupply is 100M BEZ', async () => {
+    test('totalSupply is 3B BEZ (pre-mint)', async () => {
         const supply = await bez.totalSupply();
-        expect(ethers.formatEther(supply)).toBe('100000000.0');
+        expect(ethers.formatEther(supply)).toBe('3000000000.0');
     });
 
     test('edge node has BEZ balance >= 10,000', async () => {

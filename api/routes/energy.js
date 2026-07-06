@@ -47,7 +47,27 @@ const vppBroker = require('../services/vppMqttBroker');   // Edge Node telemetry
 const energyFeed = require('../services/energyFeedService'); // OMIE/ESIOS real market feeds
 const energyArbitrage = require('../services/energyArbitrageAgent'); // autonomous battery arbitrage
 const vppChainBridge = require('../services/vppChainBridge'); // on-chain SCADA audit (BeZhasVPP.sol)
+const ledger = require('../services/energyLedgerService'); // DB-backed wallet/staking/p2p/cae + on-chain reads
+const aegis = require('../services/aegisAnomalyEngine'); // Phase 2 — real telemetry anomaly detection
+const telemetryStore = require('../services/energyTelemetryStore'); // Phase 3 — persisted history/analytics
+const controlSecurity = require('../services/controlSecurity'); // Phase 5 — sign outbound SCADA commands
+const hitlQueue = require('../services/hitlQueue'); // Phase 5 — real human-in-the-loop approvals
 const logger = require('../utils/logger');
+
+/** Sign a SCADA command and publish it to the Edge (best-effort). Returns transport+onchain audit. */
+async function dispatchSignedCommand(jobId, nodeId, command, params) {
+  const signed = controlSecurity.signCommand({ jobId, command, params, ts: new Date().toISOString() });
+  const published = vppBroker.publishSignedControl(nodeId, signed);
+  logger.info(`[ENERGY][SCADA] job=${jobId} node=${nodeId} cmd=${command} transport=${published ? 'mqtt(signed)' : 'mock'}`);
+  const onchain = await vppChainBridge.logCommandOnChain(jobId, nodeId, command, params, params.powerKw || 0);
+  return { published, onchain };
+}
+
+/** Map a service error (with optional .status) onto an HTTP response. */
+function sendLedgerError(res, err, code) {
+  const status = err && err.status ? err.status : 500;
+  res.status(status).json({ error: err.message, code });
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTES DEL DOMINIO
@@ -310,6 +330,60 @@ router.get('/nodes', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/energy/telemetry/:nodeId/history
+ * @desc    Histórico persistido de telemetría de un nodo (Fase 3, TimescaleDB).
+ * @access  Private
+ * @query   ?hours=24&limit=100
+ */
+router.get(
+  '/telemetry/:nodeId/history',
+  authenticateToken,
+  [
+    param('nodeId').matches(/^[\w-]+$/).withMessage('Invalid nodeId'),
+    queryValidator('hours').optional().isInt({ min: 1, max: 2160 }).toInt(),
+    queryValidator('limit').optional().isInt({ min: 1, max: 5000 }).toInt(),
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const samples = await telemetryStore.getHistory(req.params.nodeId, {
+        hours: req.query.hours || 24,
+        limit: req.query.limit || 100,
+      });
+      res.json({ node_id: req.params.nodeId, count: samples.length, samples });
+    } catch (err) {
+      logger.error('[ENERGY][HISTORY]', err);
+      res.status(500).json({ error: 'Failed to fetch telemetry history', code: 'HISTORY_ERROR' });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/energy/analytics
+ * @desc    Analítica agregada (medias, picos, kWh) sobre telemetría persistida.
+ * @access  Private
+ * @query   ?nodeId=n1&hours=24
+ */
+router.get(
+  '/analytics',
+  authenticateToken,
+  [
+    queryValidator('nodeId').matches(/^[\w-]+$/).withMessage('nodeId required'),
+    queryValidator('hours').optional().isInt({ min: 1, max: 2160 }).toInt(),
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const stats = await telemetryStore.getAnalytics(req.query.nodeId, { hours: req.query.hours || 24 });
+      res.json({ node_id: req.query.nodeId, window_hours: req.query.hours || 24, ...stats });
+    } catch (err) {
+      logger.error('[ENERGY][ANALYTICS]', err);
+      res.status(500).json({ error: 'Failed to compute analytics', code: 'ANALYTICS_ERROR' });
+    }
+  }
+);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // AI ORCHESTRATION — Mercado OMIE/ESIOS y alertas del agente
 // ─────────────────────────────────────────────────────────────────────────────
@@ -471,6 +545,21 @@ router.get('/arbitrage/status', authenticateToken, async (req, res) => {
 });
 
 /**
+ * @route   GET /api/energy/arbitrage/pnl
+ * @desc    Shadow-mode validation: notional P&L + recent decisions of the agent (Phase 6).
+ *          Run the agent in VPP_ARBITRAGE_MODE=shadow for ~7 days before going live.
+ * @access  Private
+ */
+router.get('/arbitrage/pnl', authenticateToken, (req, res) => {
+  res.json({
+    mode: energyArbitrage.RISK.mode,
+    hitl_above_eur: energyArbitrage.RISK.hitlAboveEur,
+    summary: energyArbitrage.getPnlSummary(),
+    recent_decisions: energyArbitrage.getDecisionLog(20),
+  });
+});
+
+/**
  * @route   POST /api/energy/arbitrage/execute
  * @desc    Ejecutar manualmente una estrategia de arbitraje sugerida por la IA.
  *          Requiere HITL si el valor comprometido supera €500.
@@ -561,26 +650,22 @@ router.post(
     try {
       const jobId = `scada_${Date.now()}_${nodeId}`;
 
-      // HITL obligatorio para comandos críticos
+      // HITL obligatorio para comandos críticos — encolar para aprobación humana real.
       if (cmdConfig.requiresApproval) {
-        // PRODUCCIÓN: await hitlApprove({ jobId, command, nodeId, params, requestedBy: req.user.id });
-        logger.warn(`[ENERGY][SCADA][HITL] job=${jobId} awaiting human approval`);
+        const job = hitlQueue.submit({ jobId, nodeId, command, params, requestedBy: req.user?.userId || req.user?.id });
+        logger.warn(`[ENERGY][SCADA][HITL] job=${jobId} PENDING human approval`);
         return res.status(202).json({
           accepted: true,
           hitl_pending: true,
           job_id: jobId,
+          status: job.status,
           message: `Command ${command} queued for Human-In-The-Loop approval`,
-          estimated_approval_window: '5 min',
+          approve_url: `/api/energy/control/${jobId}/approve`,
         });
       }
 
-      // Despacho directo (comandos que no requieren aprobación).
-      // Publica al Edge Node vía MQTT si el broker está conectado; si no, queda en modo mock.
-      const published = vppBroker.publishControl(nodeId, command, params);
-      logger.info(`[ENERGY][SCADA] job=${jobId} node=${nodeId} cmd=${command} transport=${published ? 'mqtt' : 'mock'} params=${JSON.stringify(params)}`);
-
-      // Best-effort immutable audit on BeZhasVPP.sol (null when bridge unconfigured).
-      const onchain = await vppChainBridge.logCommandOnChain(jobId, nodeId, command, params, params.powerKw || 0);
+      // Despacho directo, FIRMADO (comandos que no requieren aprobación).
+      const { published, onchain } = await dispatchSignedCommand(jobId, nodeId, command, params);
 
       res.json({
         success: true,
@@ -588,6 +673,7 @@ router.post(
         nodeId,
         command,
         params,
+        signed: true,
         transport: published ? 'mqtt' : 'mock',
         dispatched_at: new Date().toISOString(),
         onchain_tx: onchain && onchain.ok ? onchain.hash : null,
@@ -599,6 +685,90 @@ router.post(
       logger.error(`[ENERGY][SCADA][${nodeId}]`, err);
       res.status(500).json({ error: 'Failed to dispatch SCADA command', code: 'SCADA_DISPATCH_ERROR' });
     }
+  }
+);
+
+/**
+ * @route   GET /api/energy/control/pubkey
+ * @desc    Public key (PEM) Edge Nodes use to verify backend-signed commands (Phase 5).
+ * @access  Private
+ */
+router.get('/control/pubkey', authenticateToken, (req, res) => {
+  res.json({ keyId: controlSecurity.getKeyId(), publicKeyPem: controlSecurity.getPublicKeyPem(), algorithm: 'ECDSA-P256-SHA256' });
+});
+
+/**
+ * @route   GET /api/energy/control/pending
+ * @desc    SCADA commands awaiting Human-In-The-Loop approval.
+ * @access  Private (operator)
+ */
+router.get('/control/pending', authenticateToken, requireRole('operator'), (req, res) => {
+  res.json({ pending: hitlQueue.list('PENDING') });
+});
+
+/**
+ * @route   POST /api/energy/control/:jobId/approve
+ * @desc    Approve a pending SCADA command → sign + dispatch to the Edge (Phase 5 HITL).
+ * @access  Private (operator)
+ */
+router.post(
+  '/control/:jobId/approve',
+  authenticateToken,
+  requireRole('operator'),
+  [param('jobId').isString().notEmpty()],
+  validate,
+  async (req, res) => {
+    const approved = hitlQueue.approve(req.params.jobId, req.user?.userId || req.user?.id);
+    if (approved.error) return res.status(409).json({ error: approved.error, code: 'HITL_APPROVE_ERROR' });
+    try {
+      const { published, onchain } = await dispatchSignedCommand(approved.jobId, approved.nodeId, approved.command, approved.params);
+      logger.info(`[ENERGY][SCADA][HITL] job=${approved.jobId} APPROVED by ${req.user?.userId} → dispatched`);
+      res.json({
+        success: true, job_id: approved.jobId, status: 'APPROVED', signed: true,
+        transport: published ? 'mqtt' : 'mock',
+        onchain_tx: onchain && onchain.ok ? onchain.hash : null,
+      });
+    } catch (err) {
+      logger.error('[ENERGY][SCADA][HITL][APPROVE]', err);
+      res.status(500).json({ error: 'Failed to dispatch approved command', code: 'HITL_DISPATCH_ERROR' });
+    }
+  }
+);
+
+/**
+ * @route   POST /api/energy/control/:jobId/reject
+ * @desc    Reject a pending SCADA command (no dispatch). Audited.
+ * @access  Private (operator)
+ */
+router.post(
+  '/control/:jobId/reject',
+  authenticateToken,
+  requireRole('operator'),
+  [param('jobId').isString().notEmpty(), body('reason').optional().isString()],
+  validate,
+  (req, res) => {
+    const rejected = hitlQueue.reject(req.params.jobId, req.user?.userId || req.user?.id, req.body.reason);
+    if (rejected.error) return res.status(409).json({ error: rejected.error, code: 'HITL_REJECT_ERROR' });
+    res.json({ success: true, job_id: rejected.jobId, status: 'REJECTED' });
+  }
+);
+
+/**
+ * @route   POST /api/energy/control/ack
+ * @desc    Edge Node reports the result of a dispatched command (Phase 5 ACK).
+ * @access  Private
+ * @body    { jobId, accepted, applied, error?, write? }
+ */
+router.post(
+  '/control/ack',
+  authenticateToken,
+  [body('jobId').isString().notEmpty()],
+  validate,
+  (req, res) => {
+    const updated = hitlQueue.recordAck(req.body.jobId, req.body);
+    if (updated && updated.error) return res.status(404).json({ error: updated.error, code: 'ACK_UNKNOWN_JOB' });
+    logger.info(`[ENERGY][SCADA][ACK] job=${req.body.jobId} applied=${req.body.applied} error=${req.body.error || 'none'}`);
+    res.json({ success: true, job: updated });
   }
 );
 
@@ -665,34 +835,11 @@ router.post(
  */
 router.get('/wallet/stats', authenticateToken, async (req, res) => {
   try {
-    // PRODUCCIÓN:
-    // const { rows } = await query(
-    //   'SELECT balance, yield_pct, reputation, self_sufficiency FROM energy_wallets WHERE user_id = $1',
-    //   [req.user.id]
-    // );
-    res.json({
-      address: req.user?.address || '0x0000...0000',
-      balance_bzhs: '4892.50',
-      yield_percentage: '+12.4',
-      yield_eur_30d: '284.70',
-      reputation_score: 98,
-      self_sufficiency_pct: 92,
-      staking: {
-        staked_bzhs: '2000.00',
-        apy_pct: '8.5',
-        pending_rewards_bzhs: '14.23',
-        lock_until: new Date(Date.now() + 30 * 86_400_000).toISOString(),
-      },
-      energy_credits: {
-        available_kwh: 340.5,
-        reserved_kwh: 50.0,
-        expires_at: new Date(Date.now() + 90 * 86_400_000).toISOString(),
-      },
-      contracts: ENERGY_CONTRACTS,
-    });
+    const stats = await ledger.getWalletStats(req);
+    res.json({ ...stats, contracts: ENERGY_CONTRACTS });
   } catch (err) {
     logger.error('[ENERGY][WALLET][STATS]', err);
-    res.status(500).json({ error: 'Failed to fetch wallet stats', code: 'WALLET_ERROR' });
+    sendLedgerError(res, err, 'WALLET_ERROR');
   }
 });
 
@@ -710,26 +857,11 @@ router.get(
   ],
   validate,
   async (req, res) => {
-    const limit = req.query.limit || 20;
-    const typeFilter = req.query.type;
-
     try {
-      // PRODUCCIÓN: await query(
-      //   'SELECT * FROM energy_tx_history WHERE user_id=$1 AND ($2::text IS NULL OR type=$2) ORDER BY ts DESC LIMIT $3',
-      //   [req.user.id, typeFilter, limit]
-      // );
-      const history = [
-        { id: 'tx1', type: 'ARBITRAGE', amount_bzhs: '+12.40', amount_eur: '+3.20', ts: new Date(Date.now() - 3_600_000).toISOString(), status: 'CONFIRMED', tx_hash: '0xabc...001' },
-        { id: 'tx2', type: 'DR_INCENTIVE', amount_bzhs: '+45.00', amount_eur: '+11.70', ts: new Date(Date.now() - 86_400_000).toISOString(), status: 'CONFIRMED', tx_hash: '0xabc...002' },
-        { id: 'tx3', type: 'P2P', amount_bzhs: '-8.30', amount_eur: '-2.15', ts: new Date(Date.now() - 172_800_000).toISOString(), status: 'CONFIRMED', tx_hash: '0xabc...003' },
-        { id: 'tx4', type: 'STAKING', amount_bzhs: '+5.80', amount_eur: '+1.50', ts: new Date(Date.now() - 259_200_000).toISOString(), status: 'CONFIRMED', tx_hash: '0xabc...004' },
-        { id: 'tx5', type: 'CREDIT_PURCHASE', amount_bzhs: '-500.00', amount_eur: '-130.00', ts: new Date(Date.now() - 604_800_000).toISOString(), status: 'CONFIRMED', tx_hash: '0xabc...005' },
-      ].filter(tx => !typeFilter || tx.type === typeFilter).slice(0, limit);
-
-      res.json({ count: history.length, history });
+      res.json(await ledger.getHistory(req, { limit: req.query.limit || 20, type: req.query.type }));
     } catch (err) {
       logger.error('[ENERGY][WALLET][HISTORY]', err);
-      res.status(500).json({ error: 'Failed to fetch transaction history', code: 'HISTORY_ERROR' });
+      sendLedgerError(res, err, 'HISTORY_ERROR');
     }
   }
 );
@@ -751,44 +883,13 @@ router.post(
   validate,
   async (req, res) => {
     const { amountBzhs, txHash } = req.body;
-
     try {
-      // PRODUCCIÓN:
-      // 1. Verificar txHash en BeZhasVPP.sol vía ethers.js
-      //    const tx = await provider.getTransactionReceipt(txHash);
-      //    if (!tx || tx.status !== 1) return res.status(400).json({ error: 'TX not confirmed on-chain' });
-      //
-      // 2. Verificar que no ha sido procesado antes (prevención de replay)
-      //    const exists = await query('SELECT id FROM energy_tx_history WHERE tx_hash = $1', [txHash]);
-      //    if (exists.rowCount > 0) return res.status(409).json({ error: 'TX already processed' });
-      //
-      // 3. Acreditar balance en DB
-      //    await query(
-      //      'UPDATE energy_wallets SET balance = balance + $1 WHERE user_id = $2',
-      //      [amountBzhs, req.user.id]
-      //    );
-      //
-      // 4. Registrar en historial
-      //    await query(
-      //      'INSERT INTO energy_tx_history (user_id, type, amount_bzhs, tx_hash, ts) VALUES ($1,$2,$3,$4,NOW())',
-      //      [req.user.id, 'CREDIT_PURCHASE', amountBzhs, txHash]
-      //    );
-
-      logger.info(`[ENERGY][WALLET][BUY] ${amountBzhs} BZHS via tx=${txHash} user=${req.user?.id}`);
-
-      res.status(201).json({
-        success: true,
-        tx_hash: txHash,
-        amount_bzhs: amountBzhs,
-        // Simulación de balance actualizado — en prod. leer de DB
-        new_balance_bzhs: (4892.50 + parseFloat(amountBzhs)).toFixed(2),
-        credited_kwh: parseFloat((amountBzhs * 0.25).toFixed(2)), // conversión estimada
-        credited_at: new Date().toISOString(),
-        contract: ENERGY_CONTRACTS.VPP,
-      });
+      const result = await ledger.recordCreditPurchase(req, { amountBzhs, txHash });
+      logger.info(`[ENERGY][WALLET][BUY] ${amountBzhs} BZHS via tx=${txHash} user=${req.user?.userId}`);
+      res.status(201).json({ success: true, ...result, contract: ENERGY_CONTRACTS.VPP });
     } catch (err) {
       logger.error('[ENERGY][WALLET][BUY]', err);
-      res.status(500).json({ error: 'Failed to process credit top-up', code: 'TOPUP_ERROR' });
+      sendLedgerError(res, err, 'TOPUP_ERROR');
     }
   }
 );
@@ -805,52 +906,11 @@ router.post(
  */
 router.get('/cae/tokens', authenticateToken, async (req, res) => {
   try {
-    // PRODUCCIÓN: llamada RPC a EnergyCAEToken.sol → balanceOf(req.user.address)
-    res.json({
-      contract: ENERGY_CONTRACTS.CAE_TOKEN,
-      owner: req.user?.address || '0x0000...0000',
-      total_tokens: 3,
-      total_value_eur: '1250.00',
-      tokens: [
-        {
-          token_id: 'CAE-2025-001',
-          savings_kwh: 5000,
-          period: '2025-Q1',
-          certified_by: 'CNMC',
-          status: 'VERIFIED',
-          market_value_eur: '500.00',
-          for_sale: false,
-          tx_hash: '0xdef...001',
-          minted_at: '2025-04-01T00:00:00Z',
-        },
-        {
-          token_id: 'CAE-2025-002',
-          savings_kwh: 3800,
-          period: '2025-Q2',
-          certified_by: 'CNMC',
-          status: 'PENDING_AUDIT',
-          market_value_eur: '380.00',
-          for_sale: false,
-          tx_hash: '0xdef...002',
-          minted_at: '2025-07-01T00:00:00Z',
-        },
-        {
-          token_id: 'CAE-2025-003',
-          savings_kwh: 3700,
-          period: '2025-Q2',
-          certified_by: 'CNMC',
-          status: 'VERIFIED',
-          market_value_eur: '370.00',
-          for_sale: true,
-          listing_price_eur: '395.00',
-          tx_hash: '0xdef...003',
-          minted_at: '2025-07-15T00:00:00Z',
-        },
-      ],
-    });
+    const data = await ledger.listCaeTokens(req);
+    res.json({ contract: ENERGY_CONTRACTS.CAE_TOKEN, ...data });
   } catch (err) {
     logger.error('[ENERGY][CAE][TOKENS]', err);
-    res.status(500).json({ error: 'Failed to fetch CAE tokens', code: 'CAE_ERROR' });
+    sendLedgerError(res, err, 'CAE_ERROR');
   }
 });
 
@@ -874,32 +934,13 @@ router.post(
   validate,
   async (req, res) => {
     const { savingsKwh, period, certifier, telemetryProof } = req.body;
-
     try {
-      // PRODUCCIÓN:
-      // 1. Verificar telemetryProof contra EnergyOracle.sol
-      // 2. Llamar EnergyCAEToken.sol.mint(req.user.address, savingsKwh, period, telemetryProof)
-      // 3. Registrar en DB
-
-      const tokenId = `CAE-${period}-${Date.now().toString(36).toUpperCase()}`;
-      logger.info(`[ENERGY][CAE][MINT] tokenId=${tokenId} savingsKwh=${savingsKwh} user=${req.user?.id}`);
-
-      res.status(201).json({
-        success: true,
-        token_id: tokenId,
-        savings_kwh: savingsKwh,
-        period,
-        certifier,
-        telemetry_proof: telemetryProof,
-        estimated_value_eur: parseFloat((savingsKwh * 0.1).toFixed(2)),
-        minted_at: new Date().toISOString(),
-        contract: ENERGY_CONTRACTS.CAE_TOKEN,
-        tx_hash: null, // Rellenado tras confirmación on-chain
-        status: 'PENDING_MINT',
-      });
+      const result = await ledger.mintCae(req, { savingsKwh, period, certifier, telemetryProof });
+      logger.info(`[ENERGY][CAE][MINT] tokenId=${result.token_id} savingsKwh=${savingsKwh} user=${req.user?.userId}`);
+      res.status(201).json({ success: true, ...result, contract: ENERGY_CONTRACTS.CAE_TOKEN });
     } catch (err) {
       logger.error('[ENERGY][CAE][MINT]', err);
-      res.status(500).json({ error: 'Failed to mint CAE token', code: 'CAE_MINT_ERROR' });
+      sendLedgerError(res, err, 'CAE_MINT_ERROR');
     }
   }
 );
@@ -916,36 +957,10 @@ router.post(
  */
 router.get('/p2p/market', authenticateToken, async (req, res) => {
   try {
-    res.json({
-      market: 'BeZhas P2P Energy Market',
-      settlement_token: 'BZHS',
-      active_offers: [
-        {
-          offer_id: 'p2p-001',
-          seller: '0xABCD...1234',
-          energy_kwh: 50,
-          price_bzhs_kwh: 0.08,
-          total_bzhs: 4.0,
-          source: NODE_TYPE.SOLAR,
-          location: 'Sevilla',
-          expires_at: new Date(Date.now() + 3_600_000).toISOString(),
-          verified: true,
-        },
-        {
-          offer_id: 'p2p-002',
-          seller: '0xEFGH...5678',
-          energy_kwh: 120,
-          price_bzhs_kwh: 0.075,
-          total_bzhs: 9.0,
-          source: NODE_TYPE.WIND,
-          location: 'Huelva',
-          expires_at: new Date(Date.now() + 7_200_000).toISOString(),
-          verified: true,
-        },
-      ],
-    });
+    res.json(await ledger.listP2pOffers());
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch P2P market', code: 'P2P_MARKET_ERROR' });
+    logger.error('[ENERGY][P2P][MARKET]', err);
+    sendLedgerError(res, err, 'P2P_MARKET_ERROR');
   }
 });
 
@@ -966,26 +981,14 @@ router.post(
   ],
   validate,
   async (req, res) => {
-    const { energyKwh, priceBzhsKwh, nodeId, expiresInMinutes } = req.body;
-
+    const { energyKwh, priceBzhsKwh, nodeId, expiresInMinutes, source, location } = req.body;
     try {
-      const offerId = `p2p-${Date.now().toString(36)}`;
-      logger.info(`[ENERGY][P2P][OFFER] offerId=${offerId} energyKwh=${energyKwh} price=${priceBzhsKwh} BZHS/kWh`);
-
-      res.status(201).json({
-        success: true,
-        offer_id: offerId,
-        seller: req.user?.address || '0x0000...0000',
-        energy_kwh: energyKwh,
-        price_bzhs_kwh: priceBzhsKwh,
-        total_bzhs: parseFloat((energyKwh * priceBzhsKwh).toFixed(4)),
-        node_id: nodeId,
-        expires_at: new Date(Date.now() + expiresInMinutes * 60_000).toISOString(),
-        contract: ENERGY_CONTRACTS.VPP,
-        tx_hash: null,
-      });
+      const result = await ledger.createP2pOffer(req, { energyKwh, priceBzhsKwh, nodeId, expiresInMinutes, source, location });
+      logger.info(`[ENERGY][P2P][OFFER] offerId=${result.offer_id} energyKwh=${energyKwh} price=${priceBzhsKwh} BZHS/kWh`);
+      res.status(201).json({ success: true, ...result, contract: ENERGY_CONTRACTS.VPP });
     } catch (err) {
-      res.status(500).json({ error: 'Failed to publish P2P offer', code: 'P2P_OFFER_ERROR' });
+      logger.error('[ENERGY][P2P][OFFER]', err);
+      sendLedgerError(res, err, 'P2P_OFFER_ERROR');
     }
   }
 );
@@ -1007,16 +1010,12 @@ router.post(
   async (req, res) => {
     const { offerId, txHash } = req.body;
     try {
-      logger.info(`[ENERGY][P2P][BUY] offerId=${offerId} txHash=${txHash} buyer=${req.user?.id}`);
-      res.json({
-        success: true,
-        offer_id: offerId,
-        tx_hash: txHash,
-        settled_at: new Date().toISOString(),
-        delivery_window: '15 min',
-      });
+      const result = await ledger.buyP2pOffer(req, { offerId, txHash });
+      logger.info(`[ENERGY][P2P][BUY] offerId=${offerId} txHash=${txHash} buyer=${req.user?.userId}`);
+      res.json({ success: true, ...result });
     } catch (err) {
-      res.status(500).json({ error: 'Failed to purchase P2P energy', code: 'P2P_BUY_ERROR' });
+      logger.error('[ENERGY][P2P][BUY]', err);
+      sendLedgerError(res, err, 'P2P_BUY_ERROR');
     }
   }
 );
@@ -1033,29 +1032,15 @@ router.post(
  */
 router.get('/staking/rewards', authenticateToken, async (req, res) => {
   try {
+    const data = await ledger.getStaking(req);
     res.json({
-      staker: req.user?.address || '0x0000...0000',
+      ...data,
       contract: ENERGY_CONTRACTS.STAKING,
-      staked_bzhs: '2000.00',
-      apy_pct: '8.5',
-      epoch_current: Math.floor(Date.now() / (7 * 86_400_000)), // semanas desde epoch
-      rewards: {
-        pending_bzhs: '14.23',
-        pending_eur: '3.69',
-        claimable_at: new Date().toISOString(), // ya disponible
-        source: 'VPP Flexibility Pool Yield',
-      },
-      flexibility_score: 0.92,  // 1.0 = 100% disponibilidad de batería
-      contributions_7d: {
-        charge_events: 12,
-        discharge_events: 8,
-        dr_activations: 2,
-        total_kwh_flex: 340.5,
-      },
+      epoch_current: Math.floor(Date.now() / (7 * 86_400_000)),
     });
   } catch (err) {
     logger.error('[ENERGY][STAKING][REWARDS]', err);
-    res.status(500).json({ error: 'Failed to fetch staking rewards', code: 'STAKING_ERROR' });
+    sendLedgerError(res, err, 'STAKING_ERROR');
   }
 });
 
@@ -1066,19 +1051,12 @@ router.get('/staking/rewards', authenticateToken, async (req, res) => {
  */
 router.post('/staking/claim', authenticateToken, async (req, res) => {
   try {
-    // PRODUCCIÓN: await stakingContract.claimRewards(req.user.address);
-    const claimed = '14.23';
-    logger.info(`[ENERGY][STAKING][CLAIM] ${claimed} BZHS user=${req.user?.id}`);
-    res.json({
-      success: true,
-      claimed_bzhs: claimed,
-      claimed_at: new Date().toISOString(),
-      contract: ENERGY_CONTRACTS.STAKING,
-      tx_hash: null, // rellenado tras confirmación on-chain
-    });
+    const result = await ledger.claimStaking(req);
+    logger.info(`[ENERGY][STAKING][CLAIM] ${result.claimed_bzhs} BZHS user=${req.user?.userId}`);
+    res.json({ success: true, ...result, contract: ENERGY_CONTRACTS.STAKING });
   } catch (err) {
     logger.error('[ENERGY][STAKING][CLAIM]', err);
-    res.status(500).json({ error: 'Failed to claim staking rewards', code: 'CLAIM_ERROR' });
+    sendLedgerError(res, err, 'CLAIM_ERROR');
   }
 });
 
@@ -1094,23 +1072,27 @@ router.post('/staking/claim', authenticateToken, async (req, res) => {
  */
 router.get('/compliance/aegis', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
+    // Real anomaly stats + events from the Aegis engine (Phase 2) — no longer hardcoded.
+    const s = aegis.stats();
+    const events = aegis.recentEvents(20).map((e) => ({ ts: e.ts, event: e.type, node: e.node, severity: e.severity, result: e.result, message: e.message }));
+    const integrityOk = s.telemetry_integrity === 'PASS';
+
     res.json({
       report_date: new Date().toISOString(),
       regulation: 'RD 88/2026 — Agregador Independiente',
-      overall_status: 'COMPLIANT',
-      anomaly_engine: 'Aegis v2.1',
+      overall_status: integrityOk ? 'COMPLIANT' : 'REVIEW_REQUIRED',
+      anomaly_engine: 'Aegis v2.1 (ECDSA P-256 telemetry verification)',
+      signing_enforced: require('../services/telemetrySecurity').isEnforced(),
       checks: {
-        spoofing_attempts_24h: 0,
-        telemetry_integrity: 'PASS',
-        oracle_data_freshness_s: 47,
+        spoofing_attempts_24h: s.spoofing_attempts,
+        replay_attempts_24h: s.replay_attempts,
+        implausible_values_24h: s.implausible_values,
+        telemetry_integrity: s.telemetry_integrity,
+        events_evaluated_24h: s.events_evaluated,
+        fail_rate_pct: s.fail_rate_pct,
         onchain_audit_coverage: '100%',
-        false_positive_rate: '0.12%',
       },
-      events_last_24h: [
-        { ts: new Date(Date.now() - 3_600_000).toISOString(), event: 'TELEMETRY_VALIDATED', node: 'n1', result: 'PASS' },
-        { ts: new Date(Date.now() - 7_200_000).toISOString(), event: 'SCADA_COMMAND_AUDIT', node: 'n4', result: 'PASS' },
-        { ts: new Date(Date.now() - 10_800_000).toISOString(), event: 'P2P_TRADE_VERIFIED', node: 'n2', result: 'PASS' },
-      ],
+      events_last_24h: events,
       certification: {
         issuer: 'BeZhas Aegis Security Layer',
         valid_until: new Date(Date.now() + 30 * 86_400_000).toISOString(),
@@ -1122,6 +1104,157 @@ router.get('/compliance/aegis', authenticateToken, requireRole('admin'), async (
     res.status(500).json({ error: 'Failed to fetch Aegis compliance report', code: 'AEGIS_ERROR' });
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDENTITY & RBAC — current user + admin operator management (real, DB-backed)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @route   GET /api/energy/me
+ * @desc    Authenticated user's real identity + role, so the SPA can gate the UI
+ *          (operator-only SCADA controls, admin-only OPERARIOS section).
+ * @access  Private
+ */
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const { rows } = await query(
+      'SELECT id, wallet_address, username, email, role, bezhas_id FROM users WHERE wallet_address = $1',
+      [req.user.address]
+    );
+    if (!rows.length) {
+      // Authenticated token without a persisted row (e.g. dev auth bypass).
+      const role = req.user.role || 'user';
+      return res.json({
+        address: req.user.address, role,
+        is_operator: role === 'operator' || role === 'admin',
+        is_admin: role === 'admin', persisted: false,
+      });
+    }
+    const u = rows[0];
+    res.json({
+      id: u.id, address: u.wallet_address, username: u.username, email: u.email,
+      role: u.role, bezhas_id: u.bezhas_id,
+      is_operator: u.role === 'operator' || u.role === 'admin',
+      is_admin: u.role === 'admin', persisted: true,
+    });
+  } catch (err) {
+    logger.error('[ENERGY][ME]', err);
+    res.status(500).json({ error: 'Failed to resolve identity', code: 'ME_ERROR' });
+  }
+});
+
+/**
+ * @route   GET /api/energy/admin/operators
+ * @desc    List current operators/admins + recent promotable users (candidates).
+ * @access  Private (admin)
+ */
+router.get('/admin/operators', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { rows: operators } = await query(
+      `SELECT id, wallet_address, username, email, role, last_login, created_at
+         FROM users WHERE role IN ('operator', 'admin')
+         ORDER BY role DESC, created_at DESC`
+    );
+    const { rows: candidates } = await query(
+      `SELECT id, wallet_address, username, email, role, created_at
+         FROM users WHERE role = 'user'
+         ORDER BY created_at DESC LIMIT 50`
+    );
+    res.json({ total_operators: operators.length, operators, candidates });
+  } catch (err) {
+    logger.error('[ENERGY][ADMIN][OPERATORS][LIST]', err);
+    res.status(500).json({ error: 'Failed to list operators', code: 'OPERATORS_LIST_ERROR' });
+  }
+});
+
+/**
+ * @route   POST /api/energy/admin/operators
+ * @desc    Grant the operator role to a user (by userId | walletAddress | email).
+ *          Audited in operator_provisioning_log.
+ * @access  Private (admin)
+ */
+router.post(
+  '/admin/operators',
+  authenticateToken,
+  requireRole('admin'),
+  [
+    body('userId').optional().isUUID(),
+    body('walletAddress').optional().matches(/^0x[a-fA-F0-9]{40}$/),
+    body('email').optional().isEmail(),
+    body('note').optional().isString(),
+  ],
+  validate,
+  async (req, res) => {
+    const { userId, walletAddress, email, note } = req.body;
+    if (!userId && !walletAddress && !email) {
+      return res.status(422).json({ error: 'Provide userId, walletAddress or email', code: 'TARGET_REQUIRED' });
+    }
+    try {
+      const { rows } = await query(
+        `SELECT id, role FROM users
+           WHERE ($1::uuid IS NULL OR id = $1)
+             AND ($2::text IS NULL OR wallet_address = $2)
+             AND ($3::text IS NULL OR email = $3)
+           LIMIT 1`,
+        [userId || null, walletAddress || null, email || null]
+      );
+      if (!rows.length) return res.status(404).json({ error: 'Target user not found', code: 'TARGET_NOT_FOUND' });
+
+      const target = rows[0];
+      if (target.role === 'admin') {
+        return res.status(409).json({ error: 'User is an admin — not modified', code: 'TARGET_IS_ADMIN' });
+      }
+      if (target.role === 'operator') {
+        return res.json({ success: true, already_operator: true, user_id: target.id, role: 'operator' });
+      }
+
+      await query("UPDATE users SET role = 'operator', updated_at = NOW() WHERE id = $1", [target.id]);
+      await query(
+        `INSERT INTO operator_provisioning_log (operator_id, admin_id, action, previous_role, note)
+           VALUES ($1, $2, 'GRANT', $3, $4)`,
+        [target.id, req.user.userId || null, target.role, note || null]
+      );
+      logger.info(`[ENERGY][ADMIN][OPERATORS] GRANT operator=${target.id} by admin=${req.user.userId}`);
+      res.status(201).json({ success: true, user_id: target.id, role: 'operator', previous_role: target.role });
+    } catch (err) {
+      logger.error('[ENERGY][ADMIN][OPERATORS][GRANT]', err);
+      res.status(500).json({ error: 'Failed to grant operator role', code: 'OPERATOR_GRANT_ERROR' });
+    }
+  }
+);
+
+/**
+ * @route   DELETE /api/energy/admin/operators/:id
+ * @desc    Revoke the operator role (back to 'user'). Audited.
+ * @access  Private (admin)
+ */
+router.delete(
+  '/admin/operators/:id',
+  authenticateToken,
+  requireRole('admin'),
+  [param('id').isUUID().withMessage('Invalid user id')],
+  validate,
+  async (req, res) => {
+    try {
+      const { rows } = await query('SELECT id, role FROM users WHERE id = $1', [req.params.id]);
+      if (!rows.length) return res.status(404).json({ error: 'User not found', code: 'USER_NOT_FOUND' });
+      if (rows[0].role !== 'operator') {
+        return res.status(409).json({ error: `User role is '${rows[0].role}', not operator`, code: 'NOT_AN_OPERATOR' });
+      }
+      await query("UPDATE users SET role = 'user', updated_at = NOW() WHERE id = $1", [req.params.id]);
+      await query(
+        `INSERT INTO operator_provisioning_log (operator_id, admin_id, action, previous_role)
+           VALUES ($1, $2, 'REVOKE', 'operator')`,
+        [req.params.id, req.user.userId || null]
+      );
+      logger.info(`[ENERGY][ADMIN][OPERATORS] REVOKE operator=${req.params.id} by admin=${req.user.userId}`);
+      res.json({ success: true, user_id: req.params.id, role: 'user' });
+    } catch (err) {
+      logger.error('[ENERGY][ADMIN][OPERATORS][REVOKE]', err);
+      res.status(500).json({ error: 'Failed to revoke operator role', code: 'OPERATOR_REVOKE_ERROR' });
+    }
+  }
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXPORT

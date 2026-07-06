@@ -60,8 +60,8 @@ const buildVipBankReference = (tierId, address) => `VIP-${tierId || 'plan'}-${ad
 const UNIFIED_VIP_TIERS = {
     STARTER: {
         id: 'starter',
-        name: 'Freemium',
-        subtitle: 'Coste segun su uso',
+        name: 'Starter',
+        subtitle: 'Autónomos / Startups · Acceso Core',
         icon: Star,
         color: 'from-slate-500 to-slate-600',
         borderColor: 'border-slate-500/30',
@@ -107,8 +107,8 @@ const UNIFIED_VIP_TIERS = {
 
     CREATOR: {
         id: 'creator',
-        name: 'Starter',
-        subtitle: 'Automatiza. Valida. Crece. ROI en 3 semanas.',
+        name: 'Creator Pro',
+        subtitle: 'Pymes / Creadores · +343% ahorro en gestión manual',
         icon: Zap,
         color: 'from-blue-500 to-cyan-500',
         borderColor: 'border-blue-500/50',
@@ -159,8 +159,8 @@ const UNIFIED_VIP_TIERS = {
 
     BUSINESS: {
         id: 'business',
-        name: 'BeZhas Pro',
-        subtitle: 'Elimina categorías enteras de gasto operativo.',
+        name: 'Business',
+        subtitle: 'Empresas en Crecimiento · +654% eficiencia operativa',
         icon: Building2,
         color: 'from-purple-500 to-pink-500',
         borderColor: 'border-purple-500/50',

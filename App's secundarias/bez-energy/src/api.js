@@ -24,6 +24,15 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 const ENERGY_API = `${API_BASE_URL}/energy`;
 const REQUEST_TIMEOUT_MS = 8000;
 
+/**
+ * Simulated fallback gate.
+ * In dev it stays on so the dashboard is always navigable. In production set
+ * VITE_ALLOW_SIMULATED_FALLBACK="true" to keep the demo data, or leave it unset
+ * to surface real backend/auth failures instead of silently masking them.
+ */
+const ALLOW_SIMULATED_FALLBACK =
+  import.meta.env.DEV || import.meta.env.VITE_ALLOW_SIMULATED_FALLBACK === 'true';
+
 // ═══════════════════════════════════════════════════════════════
 //  FETCH HELPERS (native fetch — no axios dependency)
 // ═══════════════════════════════════════════════════════════════
@@ -202,6 +211,7 @@ export const getTelemetry = async () => {
   try {
     return normalizeTelemetry(await apiGet('/telemetry')) || mockTelemetry();
   } catch (error) {
+    if (!ALLOW_SIMULATED_FALLBACK) throw error;
     console.warn('[energy] telemetry → simulated fallback:', error.message);
     return mockTelemetry();
   }
@@ -211,6 +221,7 @@ export const getAlerts = async () => {
   try {
     return normalizeAlerts(await apiGet('/alerts'));
   } catch (error) {
+    if (!ALLOW_SIMULATED_FALLBACK) throw error;
     console.warn('[energy] alerts → simulated fallback:', error.message);
     return mockAlerts();
   }
@@ -229,6 +240,7 @@ export const sendControlCommand = async (nodeId, command, params = {}) => {
   try {
     return await apiPost('/control', { nodeId, command, params });
   } catch (error) {
+    if (!ALLOW_SIMULATED_FALLBACK) throw error;
     // Demo-friendly: surface as a simulated dispatch instead of a hard error.
     console.warn('[energy] control → simulated dispatch:', error.message);
     return { success: true, simulated: true, nodeId, command, params };
@@ -246,6 +258,39 @@ export const buyEnergyCredit = async (amountBzhs, txHash) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
+//  IDENTITY & RBAC (real backend role — gates operator/admin UI)
+// ═══════════════════════════════════════════════════════════════
+
+/** Resolve the authenticated user's real role from the backend. */
+export const getMe = async () => {
+  try {
+    return await apiGet('/me');
+  } catch (error) {
+    // Not signed in / backend unreachable → treat as anonymous viewer.
+    return { role: 'anonymous', is_operator: false, is_admin: false, persisted: false };
+  }
+};
+
+/** Admin: list current operators + promotable candidate users. */
+export const listOperators = async () => apiGet('/admin/operators');
+
+/** Admin: grant the operator role to a user (by walletAddress | email | userId). */
+export const grantOperator = async ({ walletAddress, email, userId, note } = {}) =>
+  apiPost('/admin/operators', { walletAddress, email, userId, note });
+
+/** Admin: revoke the operator role from a user id. */
+export const revokeOperator = async (userId) => {
+  const res = await fetch(`${ENERGY_API}/admin/operators/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `DELETE operator → ${res.status}`);
+  return data;
+};
+
+// ═══════════════════════════════════════════════════════════════
 //  BLOCKCHAIN OPERATIONS (lazy-loaded — ethers only pulled in on use)
 // ═══════════════════════════════════════════════════════════════
 
@@ -253,7 +298,7 @@ let _blockchainClient = null;
 
 async function getBlockchainClient() {
   if (!_blockchainClient) {
-    const { createEnergyClient } = await import('../../_shared/bezhas-blockchain-client.js');
+    const { createEnergyClient } = await import('./shared/bezhas-blockchain-client.js');
     _blockchainClient = createEnergyClient({
       apiBaseUrl: API_BASE_URL,
       rpcUrl: import.meta.env.VITE_RPC_URL || 'http://localhost:8545',
@@ -328,6 +373,11 @@ export default {
   getWalletStats,
   sendControlCommand,
   buyEnergyCredit,
+  // Identity & RBAC
+  getMe,
+  listOperators,
+  grantOperator,
+  revokeOperator,
   // Blockchain
   loadEnergyContracts,
   getCarbonCreditBalance,
