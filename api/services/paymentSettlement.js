@@ -14,7 +14,7 @@ const logger = require('pino')({ level: 'info', name: 'payment-settlement' });
 class SettlementError extends Error {
     constructor(code, message) {
         super(message);
-        this.code = code; // NOT_FOUND | ALREADY_COMPLETED
+        this.code = code; // NOT_FOUND | ALREADY_COMPLETED | EXPIRED
     }
 }
 
@@ -43,6 +43,9 @@ async function settlePayment({ paymentId, status = 'completed', providerReferenc
     const payment = rows[0];
     if (payment.status === 'completed') {
         throw new SettlementError('ALREADY_COMPLETED', 'Payment already completed');
+    }
+    if (payment.status === 'expired') {
+        throw new SettlementError('EXPIRED', 'Payment order expired — create a new order');
     }
 
     const price = await query(
@@ -113,4 +116,33 @@ async function settlePayment({ paymentId, status = 'completed', providerReferenc
     };
 }
 
-module.exports = { settlePayment, SettlementError };
+/**
+ * Sweep pending orders past their TTL → 'expired', emitting payment.expired
+ * per order so the creating app can refresh its checkout. Idempotent (the
+ * UPDATE only touches still-pending rows). Returns the number expired.
+ */
+async function expireStaleOrders() {
+    const { rows } = await query(
+        `UPDATE payment_transactions
+         SET status = 'expired', updated_at = NOW()
+         WHERE type = 'buy' AND status = 'pending'
+           AND expires_at IS NOT NULL AND expires_at < NOW()
+         RETURNING id, wallet_address, amount_usd, payment_method, app_id`
+    );
+    for (const order of rows) {
+        logger.info({ paymentId: order.id, method: order.payment_method }, 'Payment order expired');
+        if (order.app_id) {
+            paymentWebhooks.emit(order.app_id, 'payment.expired', {
+                paymentId: order.id,
+                status: 'expired',
+                walletAddress: order.wallet_address,
+                amountUSD: parseFloat(order.amount_usd || '0'),
+                paymentMethod: order.payment_method,
+                expiredAt: new Date().toISOString(),
+            }).catch((err) => logger.warn({ err: err.message, paymentId: order.id }, 'Webhook enqueue failed'));
+        }
+    }
+    return rows.length;
+}
+
+module.exports = { settlePayment, expireStaleOrders, SettlementError };

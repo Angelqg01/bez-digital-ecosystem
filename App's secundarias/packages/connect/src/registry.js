@@ -52,6 +52,11 @@ export const REGISTRY = {
         required: ['sender', 'recipient', 'amount'],
         description: 'BezPay peer transfer in BEZ.',
       },
+      getPayment: {
+        method: 'GET', path: '/payments/:paymentId',
+        required: ['paymentId'],
+        description: 'Poll one order: status, settlement, on-chain instructions, expiry.',
+      },
       history: {
         method: 'GET', path: '/payments/history/:address',
         required: ['address'],

@@ -17,7 +17,7 @@
  */
 const { ethers } = require('ethers');
 const { query } = require('../db/pool');
-const { settlePayment } = require('./paymentSettlement');
+const { settlePayment, expireStaleOrders } = require('./paymentSettlement');
 const logger = require('pino')({ level: 'info', name: 'bez-settlement-watcher' });
 
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
@@ -161,6 +161,9 @@ function startWatcher({ chainId = 137, intervalMs = 30_000 } = {}) {
     if (_timer) return _timer;
     _timer = setInterval(() => {
         scanOnce(chainId).catch((err) => logger.error({ err: err.message, chainId }, 'Watcher tick failed'));
+        // Same cadence: park pending orders past their TTL so stale intents
+        // stop matching fresh transfers.
+        expireStaleOrders().catch((err) => logger.error({ err: err.message }, 'Expiry sweep failed'));
     }, intervalMs);
     _timer.unref?.();
     logger.info({ chainId, intervalMs, treasury: TREASURY }, 'BEZ settlement watcher started');

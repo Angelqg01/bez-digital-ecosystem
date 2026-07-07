@@ -1150,13 +1150,19 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
                 tokenomics: feeBreakdown.allocations,
             })
             : null;
+        // TTL del intent: on-chain corto (el watcher deja de casar órdenes
+        // rancias contra transfers nuevos); card/bank más holgado.
+        const ttlHours = onchain
+            ? parseInt(process.env.ONCHAIN_ORDER_TTL_HOURS || '24', 10)
+            : parseInt(process.env.FIAT_ORDER_TTL_HOURS || '168', 10);
+
         const result = await query(
             `INSERT INTO payment_transactions (wallet_address, primary_wallet_address, amount_usd,
-                                               platform_fee_usd, payment_method, type, status, note, idempotency_key, app_id)
-             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5, $6, $7)
+                                               platform_fee_usd, payment_method, type, status, note, idempotency_key, app_id, expires_at)
+             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5, $6, $7, NOW() + ($8 || ' hours')::interval)
              ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
-             RETURNING id, status, created_at`,
-            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note, idempotencyKey, req.registeredApp?.id || null]
+             RETURNING id, status, created_at, expires_at`,
+            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note, idempotencyKey, req.registeredApp?.id || null, String(ttlHours)]
         );
 
         // Carrera perdida: otro request con la misma key insertó primero → replay.
@@ -1198,6 +1204,7 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
             tokenomics: feeBreakdown.allocations,
             stripeUseCase: stripeLink?.id,
             stripeLabel: stripeLink?.label,
+            expiresAt: result.rows[0].expires_at,
             nextAction: stripeLink
                 ? 'redirect_to_checkout'
                 : bankTransfer
@@ -1209,6 +1216,64 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
     } catch (error) {
         logger.error(error, 'Payment buy failed');
         res.status(500).json({ error: 'Payment processing failed' });
+    }
+});
+
+/**
+ * GET /payments/:id — poll one order (intent) by id.
+ * Visible only to the app that created it (app_id) or, for JWT sessions,
+ * to the wallet that owns it. Admin-scoped apps see everything.
+ */
+router.get('/payments/:id(\\d+)', authenticateGateway, requireScope('wallet'), [
+    param('id').isInt({ min: 1 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    try {
+        const { rows } = await query(
+            `SELECT id, wallet_address, amount_usd, amount_bez, platform_fee_usd, payment_method,
+                    type, status, note, tx_hash, app_id, expires_at, created_at, updated_at
+             FROM payment_transactions WHERE id = $1 AND type = 'buy' LIMIT 1`,
+            [parseInt(req.params.id, 10)]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Payment order not found' });
+        }
+        const order = rows[0];
+
+        const isAdmin = req.registeredApp?.scopes?.includes('admin');
+        const ownsAsApp = req.registeredApp && order.app_id === req.registeredApp.id;
+        const userWallet = req.user?.address?.toLowerCase();
+        const ownsAsWallet = userWallet && order.wallet_address?.toLowerCase() === userWallet;
+        if (!isAdmin && !ownsAsApp && !ownsAsWallet) {
+            return res.status(404).json({ error: 'Payment order not found' });
+        }
+
+        let meta = {};
+        try { meta = order.note ? JSON.parse(order.note) : {}; } catch { meta = {}; }
+        res.json({
+            success: true,
+            payment: {
+                paymentId: order.id,
+                status: order.status,
+                walletAddress: order.wallet_address,
+                amountUSD: parseFloat(order.amount_usd || '0'),
+                amountBEZ: order.amount_bez,
+                platformFeeUSD: parseFloat(order.platform_fee_usd || '0'),
+                paymentMethod: order.payment_method,
+                provider: meta.provider || order.payment_method,
+                txHash: order.tx_hash,
+                settlement: meta.settlement || null,
+                onchain: meta.provider === 'onchain'
+                    ? { treasury: meta.treasury, expectedBez: meta.expectedBez, token: meta.token }
+                    : undefined,
+                expiresAt: order.expires_at,
+                createdAt: order.created_at,
+                updatedAt: order.updated_at,
+            },
+        });
+    } catch (error) {
+        logger.error(error, 'Payment fetch failed');
+        res.status(500).json({ error: 'Failed to fetch payment' });
     }
 });
 

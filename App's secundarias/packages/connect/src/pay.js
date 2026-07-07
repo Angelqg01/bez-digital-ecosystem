@@ -52,6 +52,17 @@ export class PayModule {
   }
 
   /**
+   * Poll one order (intent) by id — status, settlement details, on-chain
+   * instructions and expiry. Visible only to the app/wallet that owns it.
+   * @param {number|string} paymentId
+   * @returns {Promise<object>} { payment: { paymentId, status, ... } }
+   */
+  getPayment(paymentId) {
+    if (!paymentId) throw new TypeError('pay.getPayment requires a paymentId.');
+    return this.client.request('GET', `${BASE}/payments/${paymentId}`);
+  }
+
+  /**
    * Sell BEZ back to fiat/crypto.
    * @param {object} p
    * @param {string} p.walletAddress
