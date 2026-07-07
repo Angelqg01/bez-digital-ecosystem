@@ -15,6 +15,7 @@
  *   /api/gateway/v1/treasury/*   — DAO treasury data
  *   /api/gateway/v1/token/*      — Token info, balances, distribution
  *   /api/gateway/v1/contracts/*  — Contract ABIs, addresses, calls
+ *   /api/gateway/v1/subscription/* — Plan, quote, SubApp entitlements
  */
 const { Router } = require('express');
 const { body, param, validationResult } = require('express-validator');
@@ -27,6 +28,7 @@ const bcrypt = require('bcryptjs');
 const { STRIPE_PAYMENT_LINKS, getStripePaymentLink } = require('../config/stripe-payment-links');
 const { BANK_TRANSFER_DETAILS, buildBankTransferInstructions } = require('../config/bank-transfer-details');
 const { TOKENOMICS_FEE, calculateFeeBreakdown } = require('../config/tokenomics');
+const { PLANS, CORE_SUBAPPS, ACTIVATABLE_SUBAPPS, calculateSubscription } = require('../config/plans');
 const logger = require('pino')({ level: 'info', name: 'gateway' });
 
 const router = Router();
@@ -1325,6 +1327,149 @@ router.get('/token/price', authenticateGateway, requireScope('token'), async (re
     } catch (error) {
         logger.error(error, 'Token price fetch failed');
         res.status(500).json({ error: 'Failed to fetch token price' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  SUBSCRIPTION & ENTITLEMENTS — plan + active SubApps per registered app
+//  Consumed by the @bezhas/connect SDK (subscription module) and the
+//  embed widget. Infra surface: never entitlement-gated itself.
+// ═══════════════════════════════════════════════════════════
+
+// Subscription is per registered app (API key). JWT-only sessions have no
+// app identity to attach a subscription to.
+const requireRegisteredApp = (req, res, next) => {
+    if (!req.registeredApp) {
+        return res.status(401).json({ error: 'Subscription endpoints require API-key auth (x-api-key)' });
+    }
+    next();
+};
+
+async function loadSubscription(appId) {
+    const { rows } = await query(
+        'SELECT plan_id, subapps, status, renews_at FROM gateway_subscriptions WHERE app_id = $1',
+        [appId]
+    );
+    if (rows.length === 0) {
+        return { plan: 'starter', addons: [], status: 'active', renewsAt: null };
+    }
+    const row = rows[0];
+    const addons = Array.isArray(row.subapps) ? row.subapps : [];
+    return { plan: row.plan_id, addons, status: row.status, renewsAt: row.renews_at };
+}
+
+/**
+ * GET /subscription — Current plan + active SubApps (entitlements).
+ * Shape matches Entitlements.fromApi in @bezhas/connect: { plan, subapps, ... }.
+ */
+router.get('/subscription', authenticateGateway, requireRegisteredApp, async (req, res) => {
+    try {
+        const sub = await loadSubscription(req.registeredApp.id);
+        res.json({
+            success: true,
+            plan: sub.plan,
+            subapps: [...new Set([...CORE_SUBAPPS, ...sub.addons])],
+            addons: sub.addons,
+            status: sub.status,
+            renewsAt: sub.renewsAt,
+        });
+    } catch (error) {
+        logger.error(error, 'Subscription fetch failed');
+        res.status(500).json({ error: 'Failed to fetch subscription' });
+    }
+});
+
+/**
+ * GET /subscription/quote — Price a plan config without committing.
+ * Query: plan (o planId), addons (csv), annual (1|true), payWithBez (1|true).
+ * Same calculation as the Hub landing (config/plans.js is a mirror of the
+ * canonical Hub config).
+ */
+router.get('/subscription/quote', authenticateGateway, requireRegisteredApp, (req, res) => {
+    const planId = req.query.plan || req.query.planId;
+    const annual = req.query.annual === '1' || req.query.annual === 'true';
+    const payWithBez = req.query.payWithBez === '1' || req.query.payWithBez === 'true';
+    const addons = String(req.query.addons || '').split(',').map(s => s.trim()).filter(Boolean);
+
+    const unknownAddons = addons.filter(a => !ACTIVATABLE_SUBAPPS.includes(a));
+    if (unknownAddons.length > 0) {
+        return res.status(400).json({
+            error: `Unknown SubApp addon(s): ${unknownAddons.join(', ')}`,
+            activatable: ACTIVATABLE_SUBAPPS,
+        });
+    }
+
+    try {
+        const quote = calculateSubscription({ planId, payWithBez, annual });
+        res.json({ success: true, ...quote, addons });
+    } catch (error) {
+        if (error.code === 'UNKNOWN_PLAN') {
+            return res.status(404).json({ error: error.message, plans: PLANS.map(p => p.id) });
+        }
+        logger.error(error, 'Subscription quote failed');
+        res.status(500).json({ error: 'Failed to quote subscription' });
+    }
+});
+
+/**
+ * POST /subscription/activate — Activate a SubApp (adds it to the bill +
+ * entitlements). Idempotent.
+ */
+router.post('/subscription/activate', authenticateGateway, requireRegisteredApp, [
+    body('subapp').isString().notEmpty(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    const { subapp } = req.body;
+    if (CORE_SUBAPPS.includes(subapp)) {
+        const sub = await loadSubscription(req.registeredApp.id).catch(() => ({ addons: [] }));
+        return res.json({ success: true, subapp, alreadyIncluded: true, subapps: [...new Set([...CORE_SUBAPPS, ...sub.addons])] });
+    }
+    if (!ACTIVATABLE_SUBAPPS.includes(subapp)) {
+        return res.status(404).json({ error: `Unknown SubApp: ${subapp}`, activatable: ACTIVATABLE_SUBAPPS });
+    }
+
+    try {
+        const sub = await loadSubscription(req.registeredApp.id);
+        const next = [...new Set([...sub.addons, subapp])];
+        await query(
+            `INSERT INTO gateway_subscriptions (app_id, subapps)
+             VALUES ($1, $2::jsonb)
+             ON CONFLICT (app_id) DO UPDATE SET subapps = $2::jsonb, updated_at = NOW()`,
+            [req.registeredApp.id, JSON.stringify(next)]
+        );
+        res.json({ success: true, subapp, subapps: [...new Set([...CORE_SUBAPPS, ...next])] });
+    } catch (error) {
+        logger.error(error, 'Subscription activate failed');
+        res.status(500).json({ error: 'Failed to activate SubApp' });
+    }
+});
+
+/**
+ * POST /subscription/deactivate — Deactivate a SubApp at the next cycle.
+ * Core SubApps cannot be deactivated.
+ */
+router.post('/subscription/deactivate', authenticateGateway, requireRegisteredApp, [
+    body('subapp').isString().notEmpty(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    const { subapp } = req.body;
+    if (CORE_SUBAPPS.includes(subapp)) {
+        return res.status(400).json({ error: `SubApp "${subapp}" is included in every subscription and cannot be deactivated` });
+    }
+
+    try {
+        const sub = await loadSubscription(req.registeredApp.id);
+        const next = sub.addons.filter(a => a !== subapp);
+        await query(
+            `INSERT INTO gateway_subscriptions (app_id, subapps)
+             VALUES ($1, $2::jsonb)
+             ON CONFLICT (app_id) DO UPDATE SET subapps = $2::jsonb, updated_at = NOW()`,
+            [req.registeredApp.id, JSON.stringify(next)]
+        );
+        res.json({ success: true, subapp, subapps: [...new Set([...CORE_SUBAPPS, ...next])] });
+    } catch (error) {
+        logger.error(error, 'Subscription deactivate failed');
+        res.status(500).json({ error: 'Failed to deactivate SubApp' });
     }
 });
 
