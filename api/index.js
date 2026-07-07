@@ -507,6 +507,21 @@ async function startServer() {
   gasMonitor.startDaemon(60_000);
   gcpLogger.info('[STARTUP] Gas monitor daemon started (60s interval)');
 
+  // ── PASO 4b: BEZ-Pay — settlement watcher + webhook dispatcher (opt-in) ──────
+  if (process.env.PAYMENTS_WATCHER_ENABLED === 'true') {
+    const { startWatcher } = require('./services/bezSettlementWatcher');
+    startWatcher({
+      chainId: parseInt(process.env.SETTLEMENT_CHAIN_ID || '137', 10),
+      intervalMs: parseInt(process.env.SETTLEMENT_POLL_MS || '30000', 10),
+    });
+    gcpLogger.info('[STARTUP] BEZ settlement watcher started');
+  }
+  if (process.env.PAYMENTS_WEBHOOKS_ENABLED === 'true') {
+    const { startDispatcher } = require('./services/paymentWebhooks');
+    startDispatcher(parseInt(process.env.WEBHOOK_DISPATCH_MS || '15000', 10));
+    gcpLogger.info('[STARTUP] Payment webhook dispatcher started');
+  }
+
   // ── PASO 5: OpenClaw AI Orchestrator ──────────────────────────────────────────
   try {
     const openclaw = require('@bezhas/openclaw-unified');

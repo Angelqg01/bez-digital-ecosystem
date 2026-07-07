@@ -16,6 +16,7 @@
  *   /api/gateway/v1/token/*      — Token info, balances, distribution
  *   /api/gateway/v1/contracts/*  — Contract ABIs, addresses, calls
  *   /api/gateway/v1/subscription/* — Plan, quote, SubApp entitlements
+ *   /api/gateway/v1/webhooks/*   — Outbound signed payment events (register, deliveries, retry)
  */
 const { Router } = require('express');
 const { body, param, validationResult } = require('express-validator');
@@ -29,6 +30,9 @@ const { STRIPE_PAYMENT_LINKS, getStripePaymentLink } = require('../config/stripe
 const { BANK_TRANSFER_DETAILS, buildBankTransferInstructions } = require('../config/bank-transfer-details');
 const { TOKENOMICS_FEE, calculateFeeBreakdown } = require('../config/tokenomics');
 const { PLANS, CORE_SUBAPPS, ACTIVATABLE_SUBAPPS, calculateSubscription } = require('../config/plans');
+const { settlePayment } = require('../services/paymentSettlement');
+const paymentWebhooks = require('../services/paymentWebhooks');
+const { TREASURY: SETTLEMENT_TREASURY } = require('../services/bezSettlementWatcher');
 const logger = require('pino')({ level: 'info', name: 'gateway' });
 
 const router = Router();
@@ -1097,7 +1101,28 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
             ? getStripePaymentLink(stripeUseCase || 'token_purchase')
             : null;
         const bankTransfer = paymentMethod === 'bank';
-        const note = stripeLink || bankTransfer
+        const onchain = paymentMethod === 'crypto' || paymentMethod === 'qr';
+
+        // On-chain rail: quote the expected BEZ so the customer knows exactly
+        // what to transfer and the settlement watcher can match it later.
+        let onchainInstructions = null;
+        if (onchain) {
+            const price = await query(
+                "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
+            ).catch(() => ({ rows: [] }));
+            const priceUSD = parseFloat(price.rows[0]?.price_usd || '0.10');
+            onchainInstructions = {
+                provider: 'onchain',
+                token: 'BEZ',
+                treasury: SETTLEMENT_TREASURY,
+                priceUSD,
+                expectedBez: priceUSD > 0 ? Math.round((parseFloat(amountUSD) / priceUSD) * 1e6) / 1e6 : null,
+                sendFrom: walletAddress,
+                note: 'Transfer the BEZ from your order wallet — the watcher matches sender + amount.',
+            };
+        }
+
+        const note = stripeLink || bankTransfer || onchain
             ? JSON.stringify(stripeLink ? {
                 provider: 'stripe_payment_link',
                 stripeUseCase: stripeLink.id,
@@ -1107,7 +1132,7 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
                 platformFeeUSD,
                 grossAmountUSD,
                 tokenomics: feeBreakdown.allocations,
-            } : {
+            } : bankTransfer ? {
                 provider: 'bank_transfer',
                 paymentRail: BANK_TRANSFER_DETAILS.paymentRail,
                 beneficiaryAlias: BANK_TRANSFER_DETAILS.beneficiaryAlias,
@@ -1117,15 +1142,21 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
                 platformFeeUSD,
                 grossAmountUSD,
                 tokenomics: feeBreakdown.allocations,
+            } : {
+                ...onchainInstructions,
+                platformFeeBps: PLATFORM_FEE_BPS,
+                platformFeeUSD,
+                grossAmountUSD,
+                tokenomics: feeBreakdown.allocations,
             })
             : null;
         const result = await query(
             `INSERT INTO payment_transactions (wallet_address, primary_wallet_address, amount_usd,
-                                               platform_fee_usd, payment_method, type, status, note, idempotency_key)
-             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5, $6)
+                                               platform_fee_usd, payment_method, type, status, note, idempotency_key, app_id)
+             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5, $6, $7)
              ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
              RETURNING id, status, created_at`,
-            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note, idempotencyKey]
+            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note, idempotencyKey, req.registeredApp?.id || null]
         );
 
         // Carrera perdida: otro request con la misma key insertó primero → replay.
@@ -1158,6 +1189,7 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
             provider: stripeLink ? 'stripe_payment_link' : bankTransfer ? 'bank_transfer' : paymentMethod,
             checkoutUrl: stripeLink?.url,
             bankTransfer: bankTransferInstructions,
+            onchain: onchainInstructions || undefined,
             walletAddress,
             amountUSD: grossAmountUSD,
             netAmountUSD: parseFloat(amountUSD),
@@ -1170,7 +1202,9 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
                 ? 'redirect_to_checkout'
                 : bankTransfer
                     ? 'display_bank_transfer_instructions'
-                    : 'await_payment_confirmation',
+                    : onchain
+                        ? 'transfer_bez_to_treasury'
+                        : 'await_payment_confirmation',
         });
     } catch (error) {
         logger.error(error, 'Payment buy failed');
@@ -1295,74 +1329,17 @@ router.post('/payments/settle', requirePaymentSettlementKey, [
     const txHash = req.body.txHash || null;
 
     try {
-        const { rows } = await query(
-            `SELECT id, wallet_address, amount_usd, platform_fee_usd, payment_method, type, status, note
-             FROM payment_transactions
-             WHERE id = $1 AND type = 'buy'
-             LIMIT 1`,
-            [paymentId]
-        );
-
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Payment buy order not found' });
-        }
-
-        const payment = rows[0];
-        if (payment.status === 'completed') {
-            return res.status(409).json({ error: 'Payment already completed' });
-        }
-
-        const price = await query(
-            "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
-        ).catch(() => ({ rows: [] }));
-        const priceUSD = parseFloat(price.rows[0]?.price_usd || '0.10');
-        const amountUSD = parseFloat(payment.amount_usd || '0');
-        const platformFeeUSD = parseFloat(payment.platform_fee_usd || '0');
-        const netAmountUSD = Math.max(amountUSD - platformFeeUSD, 0);
-        const amountBEZ = status === 'completed' && priceUSD > 0
-            ? (netAmountUSD / priceUSD).toFixed(18)
-            : null;
-        const platformFeeBEZ = status === 'completed' && priceUSD > 0
-            ? (platformFeeUSD / priceUSD).toFixed(18)
-            : null;
-        const feeBreakdown = calculateFeeBreakdown(netAmountUSD, priceUSD);
-
-        let note = {};
-        try { note = payment.note ? JSON.parse(payment.note) : {}; } catch { note = {}; }
-        note.settlement = {
-            status,
-            providerReference,
-            txHash,
-            priceUSD,
-            amountBEZ,
-            platformFeeUSD,
-            platformFeeBEZ,
-            tokenomics: feeBreakdown.allocations,
-            settledAt: new Date().toISOString(),
-        };
-
-        const update = await query(
-            `UPDATE payment_transactions
-             SET status = $1,
-                 amount_bez = COALESCE($2, amount_bez),
-                 tx_hash = COALESCE($3, tx_hash),
-                 platform_fee_bez = COALESCE($4, platform_fee_bez),
-                 note = $5,
-                 updated_at = NOW()
-             WHERE id = $6
-             RETURNING id, wallet_address, amount_usd, amount_bez, payment_method, status, tx_hash, updated_at`,
-            [status, amountBEZ, txHash, platformFeeBEZ, JSON.stringify(note), paymentId]
-        );
-
-        logger.info({ paymentId, status, amountBEZ, txHash }, 'Payment settled');
-        res.json({
-            success: true,
-            payment: update.rows[0],
-            nextAction: status === 'completed' && !txHash
-                ? 'submit_or_attach_bez_transfer_tx'
-                : 'settlement_recorded',
-        });
+        // Single settlement path shared with the on-chain watcher
+        // (services/paymentSettlement.js) — also emits payment.settled webhooks.
+        const result = await settlePayment({ paymentId, status, providerReference, txHash });
+        res.json({ success: true, ...result });
     } catch (error) {
+        if (error.code === 'NOT_FOUND') {
+            return res.status(404).json({ error: error.message });
+        }
+        if (error.code === 'ALREADY_COMPLETED') {
+            return res.status(409).json({ error: error.message });
+        }
         logger.error(error, 'Payment settlement failed');
         res.status(500).json({ error: 'Payment settlement failed' });
     }
@@ -1398,6 +1375,131 @@ router.get('/token/price', authenticateGateway, requireScope('token'), async (re
     } catch (error) {
         logger.error(error, 'Token price fetch failed');
         res.status(500).json({ error: 'Failed to fetch token price' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  OUTBOUND WEBHOOKS — signed payment events per registered app
+//  Deliveries signed with X-BeZhas-Signature (sha256=<hex HMAC>), the format
+//  @bezhas/connect webhooks.verify checks. Retries with exponential backoff.
+// ═══════════════════════════════════════════════════════════
+
+const requireAppForWebhooks = (req, res, next) => {
+    if (!req.registeredApp) {
+        return res.status(401).json({ error: 'Webhook endpoints require API-key auth (x-api-key)' });
+    }
+    next();
+};
+
+/**
+ * POST /webhooks/register — subscribe a URL to payment events.
+ * The signing secret is returned ONCE; store it to verify deliveries.
+ */
+router.post('/webhooks/register', authenticateGateway, requireAppForWebhooks, [
+    body('url').isURL({ protocols: ['https', 'http'], require_protocol: true }),
+    body('events').optional().isArray({ min: 1, max: 10 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    const events = (req.body.events || ['payment.settled']).map(String);
+    const secret = paymentWebhooks.generateSecret();
+    try {
+        const { rows } = await query(
+            `INSERT INTO payment_webhooks (app_id, url, secret, events)
+             VALUES ($1, $2, $3, $4::jsonb)
+             ON CONFLICT (app_id, url) DO UPDATE SET events = $4::jsonb, secret = $3, is_active = TRUE
+             RETURNING id, url, events, created_at`,
+            [req.registeredApp.id, req.body.url, secret, JSON.stringify(events)]
+        );
+        res.json({
+            success: true,
+            webhook: rows[0],
+            secret, // shown only on registration — never retrievable again
+            signatureHeader: 'X-BeZhas-Signature',
+            signatureFormat: 'sha256=<hex(hmacSha256(secret, rawBody))>',
+        });
+    } catch (error) {
+        logger.error(error, 'Webhook registration failed');
+        res.status(500).json({ error: 'Failed to register webhook' });
+    }
+});
+
+/** GET /webhooks — list this app's webhooks (secrets never returned). */
+router.get('/webhooks', authenticateGateway, requireAppForWebhooks, async (req, res) => {
+    try {
+        const { rows } = await query(
+            `SELECT id, url, events, is_active, created_at
+             FROM payment_webhooks WHERE app_id = $1 ORDER BY created_at DESC`,
+            [req.registeredApp.id]
+        );
+        res.json({ success: true, webhooks: rows });
+    } catch (error) {
+        logger.error(error, 'Webhook list failed');
+        res.status(500).json({ error: 'Failed to list webhooks' });
+    }
+});
+
+/** GET /webhooks/deliveries — recent delivery attempts (incl. dead-letter). */
+router.get('/webhooks/deliveries', authenticateGateway, requireAppForWebhooks, async (req, res) => {
+    try {
+        const status = ['pending', 'delivered', 'dead'].includes(req.query.status) ? req.query.status : null;
+        const { rows } = await query(
+            `SELECT d.id, d.webhook_id, d.event_name, d.status, d.attempts, d.max_attempts,
+                    d.last_http_status, d.last_error, d.next_attempt_at, d.created_at, w.url
+             FROM payment_webhook_deliveries d
+             JOIN payment_webhooks w ON w.id = d.webhook_id
+             WHERE w.app_id = $1 ${status ? 'AND d.status = $2' : ''}
+             ORDER BY d.created_at DESC LIMIT 100`,
+            status ? [req.registeredApp.id, status] : [req.registeredApp.id]
+        );
+        res.json({ success: true, deliveries: rows });
+    } catch (error) {
+        logger.error(error, 'Webhook deliveries fetch failed');
+        res.status(500).json({ error: 'Failed to fetch deliveries' });
+    }
+});
+
+/** POST /webhooks/deliveries/:id/retry — re-queue a dead delivery. */
+router.post('/webhooks/deliveries/:id/retry', authenticateGateway, requireAppForWebhooks, [
+    param('id').isInt({ min: 1 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    try {
+        const { rows } = await query(
+            `UPDATE payment_webhook_deliveries d
+             SET status = 'pending', attempts = 0, next_attempt_at = NOW(), updated_at = NOW()
+             FROM payment_webhooks w
+             WHERE d.id = $1 AND w.id = d.webhook_id AND w.app_id = $2 AND d.status = 'dead'
+             RETURNING d.id, d.status`,
+            [parseInt(req.params.id, 10), req.registeredApp.id]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Dead delivery not found for this app' });
+        }
+        res.json({ success: true, delivery: rows[0] });
+    } catch (error) {
+        logger.error(error, 'Webhook retry failed');
+        res.status(500).json({ error: 'Failed to retry delivery' });
+    }
+});
+
+/** DELETE /webhooks/:id — deactivate a webhook. */
+router.delete('/webhooks/:id', authenticateGateway, requireAppForWebhooks, [
+    param('id').isInt({ min: 1 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    try {
+        const { rows } = await query(
+            `UPDATE payment_webhooks SET is_active = FALSE
+             WHERE id = $1 AND app_id = $2 RETURNING id`,
+            [parseInt(req.params.id, 10), req.registeredApp.id]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Webhook not found for this app' });
+        }
+        res.json({ success: true, deactivated: rows[0].id });
+    } catch (error) {
+        logger.error(error, 'Webhook delete failed');
+        res.status(500).json({ error: 'Failed to deactivate webhook' });
     }
 });
 
