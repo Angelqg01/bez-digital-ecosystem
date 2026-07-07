@@ -571,5 +571,7 @@ module.exports = {
   handleWebhook,
   getQuote,
   getHotWalletStatus,
+  getBezPriceUSD,
   BEZ_ADDR: ADDRS.BEZ_POLYGON,
+  TREASURY_ADDR: ADDRS.TREASURY,
 };

@@ -61,6 +61,11 @@ class BeZhas_REST {
             'callback' => [$this, 'subscribe'],
             'permission_callback' => $perm,
         ]);
+        register_rest_route(self::NS, '/subscribe/confirm', [
+            'methods'  => 'POST',
+            'callback' => [$this, 'subscribe_confirm'],
+            'permission_callback' => $perm,
+        ]);
         register_rest_route(self::NS, '/subapp/toggle', [
             'methods'  => 'POST',
             'callback' => [$this, 'toggle_subapp'],
@@ -146,8 +151,35 @@ class BeZhas_REST {
         ];
         // Bridge autenticado por API-Key (sin el JWT de /api/subscription/checkout).
         $res = BeZhas_Client::request('POST', '/api/plugin-bridge/subscribe', $payload);
-        if (!is_wp_error($res) && $res['code'] >= 200 && $res['code'] < 300) {
+        // Solo marcar el plan activo si el Hub lo activó (planes gratuitos).
+        // Los de pago quedan pending_payment hasta /subscribe/confirm.
+        if (!is_wp_error($res) && $res['code'] >= 200 && $res['code'] < 300
+            && (($res['data']['status'] ?? '') === 'active')) {
             update_option(BeZhas_Client::OPT_PLAN, $payload['planId']);
+        }
+        return $this->relay($res);
+    }
+
+    // ── POST /subscribe/confirm ──────────────────────────────────────────────
+    // Verifica en el Hub la transferencia $BEZ del plan pendiente. El plan solo
+    // se marca activo en WP cuando el Hub confirma el pago on-chain.
+    public function subscribe_confirm(WP_REST_Request $req) {
+        if (!BeZhas_Client::is_connected()) {
+            return new WP_REST_Response(['success' => false, 'message' => 'Conecta tu cuenta BeZhas primero.'], 401);
+        }
+        $tx_hash = sanitize_text_field($req->get_param('txHash'));
+        if (!preg_match('/^0x[0-9a-fA-F]{64}$/', $tx_hash)) {
+            return new WP_REST_Response(['success' => false, 'message' => 'txHash inválido.'], 400);
+        }
+        $payload = ['txHash' => $tx_hash];
+        $chain_id = absint($req->get_param('chainId'));
+        if ($chain_id > 0) {
+            $payload['chainId'] = $chain_id;
+        }
+        $res = BeZhas_Client::request('POST', '/api/plugin-bridge/subscribe/confirm', $payload);
+        if (!is_wp_error($res) && $res['code'] >= 200 && $res['code'] < 300
+            && (($res['data']['status'] ?? '') === 'active') && !empty($res['data']['plan'])) {
+            update_option(BeZhas_Client::OPT_PLAN, sanitize_text_field($res['data']['plan']));
         }
         return $this->relay($res);
     }

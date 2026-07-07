@@ -125,6 +125,58 @@ class ApiKeyPG {
         return result.rows[0] || null;
     }
 
+    /**
+     * Registra un plan como PENDIENTE de pago. El plan no se activa hasta que
+     * confirmPendingPlan verifique la transferencia BEZ on-chain.
+     * @param {object} pending  { planId, amountEUR, expectedBez, quotedAt }
+     */
+    static async setPendingPlan(id, pending) {
+        const current = await pool.query('SELECT metadata FROM api_keys WHERE id = $1::uuid', [id]);
+        if (!current.rows[0]) return null;
+        const meta = { ...(current.rows[0].metadata || {}), pendingPlan: pending };
+        const result = await pool.query(
+            'UPDATE api_keys SET metadata = $1::jsonb WHERE id = $2::uuid RETURNING id, metadata',
+            [JSON.stringify(meta), id],
+        );
+        return result.rows[0] || null;
+    }
+
+    /** Lee el plan pendiente (o null). */
+    static async getPendingPlan(id) {
+        const current = await pool.query('SELECT metadata FROM api_keys WHERE id = $1::uuid', [id]);
+        return current.rows[0]?.metadata?.pendingPlan || null;
+    }
+
+    /**
+     * Activa el plan pendiente tras verificar el pago: fija metadata.plan,
+     * limpia pendingPlan y guarda el tx de pago para auditoría/anti-reuso.
+     */
+    static async confirmPendingPlan(id, { txHash, chainId, amountBez }) {
+        const current = await pool.query('SELECT metadata FROM api_keys WHERE id = $1::uuid', [id]);
+        if (!current.rows[0]) return null;
+        const meta = { ...(current.rows[0].metadata || {}) };
+        const pending = meta.pendingPlan;
+        if (!pending) return null;
+        delete meta.pendingPlan;
+        meta.plan = pending.planId;
+        meta.planUpdatedAt = new Date().toISOString();
+        meta.planPayment = { txHash, chainId, amountBez, amountEUR: pending.amountEUR, verifiedAt: meta.planUpdatedAt };
+        const result = await pool.query(
+            'UPDATE api_keys SET metadata = $1::jsonb WHERE id = $2::uuid RETURNING id, metadata',
+            [JSON.stringify(meta), id],
+        );
+        return result.rows[0] || null;
+    }
+
+    /** True si algún tenant ya usó este txHash para activar un plan (anti-reuso global). */
+    static async isPlanTxUsed(txHash) {
+        const result = await pool.query(
+            "SELECT 1 FROM api_keys WHERE metadata->'planPayment'->>'txHash' = $1 LIMIT 1",
+            [txHash],
+        );
+        return result.rows.length > 0;
+    }
+
     static generateKey(userId, sector, environment = 'development') {
         const prefix = environment === 'production' ? 'bzh_live' : 'bzh_test';
         const randomPart = crypto.randomBytes(24).toString('hex');

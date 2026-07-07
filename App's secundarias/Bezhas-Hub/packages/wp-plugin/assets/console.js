@@ -109,14 +109,58 @@
     api('/subscribe', { method: 'POST', body: {
       planId: planId, payWithBez: el('bezhas-paybez').checked, annual: el('bezhas-annual').checked,
     } }).then(function (res) {
-      if (res.ok) {
-        if (res.data && res.data.paymentUrl) { window.open(res.data.paymentUrl, '_blank'); }
+      if (res.ok && res.data && res.data.status === 'active') {
+        // Plan gratuito: activación inmediata.
         manifest.active = manifest.active || {}; manifest.active.plan = planId;
         renderPlans();
+      } else if (res.ok && res.data && res.data.status === 'pending_payment') {
+        // Plan de pago: el Hub lo deja pendiente hasta verificar la tx $BEZ.
+        renderPlans();
+        renderPendingPayment(planId, res.data.payment || {});
       } else {
         btn.disabled = false; btn.textContent = 'Suscribirme';
         alert((res.data && res.data.message) || 'No se pudo completar la suscripción.');
       }
+    });
+  }
+
+  // Panel de pago pendiente: instrucciones de transferencia + verificación de tx.
+  function renderPendingPayment(planId, pay) {
+    var panel = el('bezhas-pending-pay');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'bezhas-pending-pay';
+      panel.className = 'bezhas-pending-pay';
+      el('bezhas-plans').parentNode.appendChild(panel);
+    }
+    panel.innerHTML =
+      '<h3>Completa el pago del plan</h3>' +
+      '<p>Transfiere <strong>' + (pay.expectedBez || '—') + ' $BEZ</strong> (' + eur(pay.amountEUR || 0) + ') ' +
+      'en ' + (pay.defaultNetwork || 'polygon') + ' a:</p>' +
+      '<code class="bezhas-treasury">' + (pay.to || '') + '</code>' +
+      '<p>Después pega el hash de la transacción y verifica:</p>' +
+      '<div class="bezhas-confirm-row">' +
+        '<input type="text" id="bezhas-txhash" placeholder="0x…" />' +
+        '<button class="button button-primary" id="bezhas-confirm-btn">Verificar pago</button>' +
+      '</div>';
+    el('bezhas-confirm-btn').addEventListener('click', function () {
+      var cbtn = this;
+      var txHash = (el('bezhas-txhash').value || '').trim();
+      if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) { alert('Introduce un txHash válido (0x…).'); return; }
+      cbtn.disabled = true; cbtn.textContent = 'Verificando…';
+      api('/subscribe/confirm', { method: 'POST', body: { txHash: txHash } }).then(function (res) {
+        if (res.ok && res.data && res.data.status === 'active') {
+          manifest.active = manifest.active || {}; manifest.active.plan = planId;
+          panel.remove();
+          renderPlans();
+        } else if (res.ok && res.data && res.data.confirmed === false) {
+          cbtn.disabled = false; cbtn.textContent = 'Verificar pago';
+          alert('La transacción aún no está confirmada on-chain. Espera unos segundos y reintenta.');
+        } else {
+          cbtn.disabled = false; cbtn.textContent = 'Verificar pago';
+          alert((res.data && res.data.message) || 'No se pudo verificar el pago.');
+        }
+      });
     });
   }
 
