@@ -1156,13 +1156,17 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
             ? parseInt(process.env.ONCHAIN_ORDER_TTL_HOURS || '24', 10)
             : parseInt(process.env.FIAT_ORDER_TTL_HOURS || '168', 10);
 
+        // Bearer token del checkout hosted: quien tenga la URL puede ver el
+        // estado de ESTA orden (y solo esta) sin API key.
+        const checkoutToken = require('crypto').randomBytes(16).toString('hex');
+
         const result = await query(
             `INSERT INTO payment_transactions (wallet_address, primary_wallet_address, amount_usd,
-                                               platform_fee_usd, payment_method, type, status, note, idempotency_key, app_id, expires_at)
-             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5, $6, $7, NOW() + ($8 || ' hours')::interval)
+                                               platform_fee_usd, payment_method, type, status, note, idempotency_key, app_id, expires_at, checkout_token)
+             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5, $6, $7, NOW() + ($8 || ' hours')::interval, $9)
              ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
-             RETURNING id, status, created_at, expires_at`,
-            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note, idempotencyKey, req.registeredApp?.id || null, String(ttlHours)]
+             RETURNING id, status, created_at, expires_at, checkout_token`,
+            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note, idempotencyKey, req.registeredApp?.id || null, String(ttlHours), checkoutToken]
         );
 
         // Carrera perdida: otro request con la misma key insertó primero → replay.
@@ -1205,6 +1209,7 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
             stripeUseCase: stripeLink?.id,
             stripeLabel: stripeLink?.label,
             expiresAt: result.rows[0].expires_at,
+            hostedCheckoutUrl: `${process.env.PUBLIC_PAY_BASE_URL || ''}/c/${result.rows[0].checkout_token}`,
             nextAction: stripeLink
                 ? 'redirect_to_checkout'
                 : bankTransfer
@@ -1440,6 +1445,60 @@ router.get('/token/price', authenticateGateway, requireScope('token'), async (re
     } catch (error) {
         logger.error(error, 'Token price fetch failed');
         res.status(500).json({ error: 'Failed to fetch token price' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  HOSTED CHECKOUT — public, token-scoped order status
+//  The bearer token (returned once at buy as hostedCheckoutUrl) is the only
+//  credential: it reveals THIS order's payment state and instructions, never
+//  the API surface. Consumed by the /c/:token page (routes/checkout.js).
+// ═══════════════════════════════════════════════════════════
+
+router.get('/checkout/:token([0-9a-f]{32})', async (req, res) => {
+    try {
+        const { rows } = await query(
+            `SELECT id, status, amount_usd, platform_fee_usd, payment_method, note,
+                    tx_hash, expires_at, created_at, updated_at
+             FROM payment_transactions
+             WHERE checkout_token = $1 AND type = 'buy' LIMIT 1`,
+            [req.params.token]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Checkout not found' });
+        }
+        const order = rows[0];
+        let meta = {};
+        try { meta = order.note ? JSON.parse(order.note) : {}; } catch { meta = {}; }
+
+        // Solo lo que el pagador necesita — nada de app_id, wallets ajenas ni fees internos.
+        res.set('Cache-Control', 'no-store');
+        res.json({
+            success: true,
+            checkout: {
+                paymentId: order.id,
+                status: order.status,
+                amountUSD: parseFloat(order.amount_usd || '0'),
+                method: order.payment_method,
+                provider: meta.provider || order.payment_method,
+                onchain: meta.provider === 'onchain'
+                    ? { token: meta.token, treasury: meta.treasury, expectedBez: meta.expectedBez, sendFrom: meta.sendFrom }
+                    : undefined,
+                bank: meta.provider === 'bank_transfer'
+                    ? { iban: meta.iban, bic: meta.bic, beneficiary: meta.beneficiaryAlias, reference: `BEZ-${order.id}` }
+                    : undefined,
+                stripeUrl: meta.provider === 'stripe_payment_link'
+                    ? getStripePaymentLink(meta.stripeUseCase || 'token_purchase')?.url
+                    : undefined,
+                txHash: order.tx_hash || undefined,
+                expiresAt: order.expires_at,
+                createdAt: order.created_at,
+                updatedAt: order.updated_at,
+            },
+        });
+    } catch (error) {
+        logger.error(error, 'Checkout status fetch failed');
+        res.status(500).json({ error: 'Failed to fetch checkout' });
     }
 });
 

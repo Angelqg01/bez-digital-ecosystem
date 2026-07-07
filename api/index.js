@@ -317,6 +317,7 @@ app.use('/api/qr', qrRoutes);
 
 // ── Gateway ───────────────────────────────────────────────────────────────────
 app.use('/api/gateway/v1', gatewayRoutes);
+app.use('/c', require('./routes/checkout')); // hosted checkout (pay.bez.digital/c/<token>)
 app.use('/api/cargolink', cargoLinkRoutes);
 
 // ── Enterprise lookup (interno — Edge Nodes / Nodos Empresariales) ────────────
