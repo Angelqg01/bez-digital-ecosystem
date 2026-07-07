@@ -30,7 +30,7 @@ const { STRIPE_PAYMENT_LINKS, getStripePaymentLink } = require('../config/stripe
 const { BANK_TRANSFER_DETAILS, buildBankTransferInstructions } = require('../config/bank-transfer-details');
 const { TOKENOMICS_FEE, calculateFeeBreakdown } = require('../config/tokenomics');
 const { PLANS, CORE_SUBAPPS, ACTIVATABLE_SUBAPPS, calculateSubscription } = require('../config/plans');
-const { settlePayment } = require('../services/paymentSettlement');
+const { settlePayment, refundPayment } = require('../services/paymentSettlement');
 const paymentWebhooks = require('../services/paymentWebhooks');
 const { TREASURY: SETTLEMENT_TREASURY } = require('../services/bezSettlementWatcher');
 const logger = require('pino')({ level: 'info', name: 'gateway' });
@@ -1445,6 +1445,36 @@ router.get('/token/price', authenticateGateway, requireScope('token'), async (re
     } catch (error) {
         logger.error(error, 'Token price fetch failed');
         res.status(500).json({ error: 'Failed to fetch token price' });
+    }
+});
+
+/**
+ * POST /payments/:id/refund — Internal-only refund of a completed order.
+ * Same trust boundary as /payments/settle: refunds move money, so only the
+ * settlement key (backoffice / hot-wallet worker) may trigger them. The BEZ
+ * return transfer itself is executed by the treasury; attach its txHash.
+ */
+router.post('/payments/:id(\\d+)/refund', requirePaymentSettlementKey, [
+    param('id').isInt({ min: 1 }),
+    body('reason').optional().isString().isLength({ min: 1, max: 300 }),
+    body('refundTxHash').optional().matches(/^0x[a-fA-F0-9]{64}$/),
+    body('requestedBy').optional().isString().isLength({ min: 1, max: 120 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    try {
+        const result = await refundPayment({
+            paymentId: parseInt(req.params.id, 10),
+            reason: req.body.reason || null,
+            refundTxHash: req.body.refundTxHash || null,
+            requestedBy: req.body.requestedBy || null,
+        });
+        res.json({ success: true, ...result });
+    } catch (error) {
+        if (error.code === 'NOT_FOUND') return res.status(404).json({ error: error.message });
+        if (error.code === 'ALREADY_REFUNDED') return res.status(409).json({ error: error.message });
+        if (error.code === 'NOT_REFUNDABLE') return res.status(422).json({ error: error.message });
+        logger.error(error, 'Payment refund failed');
+        res.status(500).json({ error: 'Payment refund failed' });
     }
 });
 

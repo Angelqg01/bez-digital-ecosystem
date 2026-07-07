@@ -14,7 +14,7 @@ const logger = require('pino')({ level: 'info', name: 'payment-settlement' });
 class SettlementError extends Error {
     constructor(code, message) {
         super(message);
-        this.code = code; // NOT_FOUND | ALREADY_COMPLETED | EXPIRED
+        this.code = code; // NOT_FOUND | ALREADY_COMPLETED | EXPIRED | NOT_REFUNDABLE | ALREADY_REFUNDED
     }
 }
 
@@ -145,4 +145,73 @@ async function expireStaleOrders() {
     return rows.length;
 }
 
-module.exports = { settlePayment, expireStaleOrders, SettlementError };
+/**
+ * Refund a COMPLETED buy order. Internal-only (backoffice / settlement key):
+ * the actual BEZ return transfer happens from the treasury/hot wallet; this
+ * records it, flips the state and notifies the creating app.
+ *
+ * @param {object} p
+ * @param {number} p.paymentId
+ * @param {string} [p.reason]
+ * @param {string|null} [p.refundTxHash]  On-chain return transfer, if sent.
+ * @param {string} [p.requestedBy]        Audit trail (operator/service id).
+ * @throws {SettlementError} NOT_FOUND | ALREADY_REFUNDED | NOT_REFUNDABLE
+ */
+async function refundPayment({ paymentId, reason = null, refundTxHash = null, requestedBy = null }) {
+    const { rows } = await query(
+        `SELECT id, wallet_address, amount_usd, amount_bez, payment_method, type, status, note, app_id
+         FROM payment_transactions
+         WHERE id = $1 AND type = 'buy'
+         LIMIT 1`,
+        [paymentId]
+    );
+    if (rows.length === 0) {
+        throw new SettlementError('NOT_FOUND', 'Payment buy order not found');
+    }
+    const payment = rows[0];
+    if (payment.status === 'refunded') {
+        throw new SettlementError('ALREADY_REFUNDED', 'Payment already refunded');
+    }
+    if (payment.status !== 'completed') {
+        throw new SettlementError('NOT_REFUNDABLE', `Only completed payments can be refunded (status: ${payment.status})`);
+    }
+
+    let note = {};
+    try { note = payment.note ? JSON.parse(payment.note) : {}; } catch { note = {}; }
+    note.refund = {
+        reason,
+        refundTxHash,
+        requestedBy,
+        amountUSD: parseFloat(payment.amount_usd || '0'),
+        amountBEZ: payment.amount_bez,
+        refundedAt: new Date().toISOString(),
+    };
+
+    const update = await query(
+        `UPDATE payment_transactions
+         SET status = 'refunded', note = $1, updated_at = NOW()
+         WHERE id = $2
+         RETURNING id, wallet_address, amount_usd, amount_bez, payment_method, status, tx_hash, updated_at`,
+        [JSON.stringify(note), paymentId]
+    );
+
+    logger.info({ paymentId, reason, refundTxHash, requestedBy }, 'Payment refunded');
+
+    if (payment.app_id) {
+        paymentWebhooks.emit(payment.app_id, 'payment.refunded', {
+            paymentId: update.rows[0].id,
+            status: 'refunded',
+            walletAddress: update.rows[0].wallet_address,
+            amountUSD: parseFloat(update.rows[0].amount_usd || '0'),
+            amountBEZ: update.rows[0].amount_bez,
+            paymentMethod: update.rows[0].payment_method,
+            reason,
+            refundTxHash,
+            refundedAt: note.refund.refundedAt,
+        }).catch((err) => logger.warn({ err: err.message, paymentId }, 'Webhook enqueue failed'));
+    }
+
+    return { payment: update.rows[0], refund: note.refund };
+}
+
+module.exports = { settlePayment, expireStaleOrders, refundPayment, SettlementError };
