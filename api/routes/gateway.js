@@ -48,6 +48,39 @@ async function resolvePrimaryWallet(req, explicitAddress) {
     return safeWallet.smartWalletAddress || safeWallet.ownerAddress;
 }
 
+/**
+ * Rebuild the /payments/buy response from a stored order row so an
+ * Idempotency-Key retry returns the SAME order (never a duplicate).
+ */
+function buildBuyReplayResponse(row) {
+    let meta = {};
+    try { meta = JSON.parse(row.note) || {}; } catch (_) { /* note may be null */ }
+    const stripeLink = meta.provider === 'stripe_payment_link'
+        ? getStripePaymentLink(meta.stripeUseCase || 'token_purchase')
+        : null;
+    const bankTransfer = meta.provider === 'bank_transfer';
+    return {
+        success: true,
+        idempotent: true,
+        paymentId: row.id,
+        status: row.status,
+        provider: meta.provider || row.payment_method,
+        checkoutUrl: stripeLink?.url,
+        bankTransfer: bankTransfer ? buildBankTransferInstructions(`BEZ-${row.id}`) : undefined,
+        walletAddress: row.wallet_address,
+        amountUSD: parseFloat(row.amount_usd),
+        platformFeeUSD: parseFloat(row.platform_fee_usd),
+        platformFeeBps: PLATFORM_FEE_BPS,
+        stripeUseCase: stripeLink?.id,
+        stripeLabel: stripeLink?.label,
+        nextAction: stripeLink
+            ? 'redirect_to_checkout'
+            : bankTransfer
+                ? 'display_bank_transfer_instructions'
+                : 'await_payment_confirmation',
+    };
+}
+
 const requirePaymentSettlementKey = (req, res, next) => {
     const key = req.headers['authorization']?.replace('Bearer ', '') || req.headers['x-internal-key'];
     const expected = process.env.INTERNAL_API_KEY || (process.env.NODE_ENV !== 'production' ? 'dev-internal-key' : null);
@@ -1028,11 +1061,35 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
 ], async (req, res) => {
     if (!validate(req, res)) return;
     const { amountUSD, paymentMethod, stripeUseCase, email } = req.body;
+
+    // Stripe-style idempotency: same key → replay the original order instead
+    // of creating a duplicate (network retries must be safe).
+    const idempotencyKey = req.headers['idempotency-key'] || req.body.idempotencyKey || null;
+    if (idempotencyKey && !/^[A-Za-z0-9_-]{8,80}$/.test(idempotencyKey)) {
+        return res.status(400).json({ error: 'Idempotency-Key must be 8-80 chars [A-Za-z0-9_-]' });
+    }
+
     try {
         const walletAddress = await resolvePrimaryWallet(req, req.body.walletAddress);
         if (!walletAddress) {
             return res.status(400).json({ error: 'walletAddress is required unless a user JWT is provided' });
         }
+
+        if (idempotencyKey) {
+            const existing = await query(
+                `SELECT id, status, wallet_address, amount_usd, platform_fee_usd, payment_method, note, created_at
+                 FROM payment_transactions WHERE idempotency_key = $1 AND type = 'buy'`,
+                [idempotencyKey]
+            );
+            if (existing.rows.length > 0) {
+                const row = existing.rows[0];
+                if (row.wallet_address?.toLowerCase() !== walletAddress.toLowerCase()) {
+                    return res.status(409).json({ error: 'Idempotency-Key already used for a different wallet' });
+                }
+                return res.json(buildBuyReplayResponse(row));
+            }
+        }
+
         const feeBreakdown = calculateFeeBreakdown(amountUSD);
         const platformFeeUSD = feeBreakdown.platformFeeUSD;
         const grossAmountUSD = feeBreakdown.grossAmountUSD;
@@ -1064,11 +1121,25 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
             : null;
         const result = await query(
             `INSERT INTO payment_transactions (wallet_address, primary_wallet_address, amount_usd,
-                                               platform_fee_usd, payment_method, type, status, note)
-             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5)
+                                               platform_fee_usd, payment_method, type, status, note, idempotency_key)
+             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5, $6)
+             ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
              RETURNING id, status, created_at`,
-            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note]
+            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note, idempotencyKey]
         );
+
+        // Carrera perdida: otro request con la misma key insertó primero → replay.
+        if (result.rows.length === 0 && idempotencyKey) {
+            const raced = await query(
+                `SELECT id, status, wallet_address, amount_usd, platform_fee_usd, payment_method, note, created_at
+                 FROM payment_transactions WHERE idempotency_key = $1 AND type = 'buy'`,
+                [idempotencyKey]
+            );
+            if (raced.rows.length > 0) {
+                return res.json(buildBuyReplayResponse(raced.rows[0]));
+            }
+            return res.status(500).json({ error: 'Payment processing failed' });
+        }
         logger.info({
             walletAddress,
             amountUSD,

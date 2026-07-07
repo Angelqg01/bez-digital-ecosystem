@@ -48,6 +48,19 @@ test('pay.buy rejects an unknown payment method before any network call', async 
   assert.equal(fetch.calls.length, 0);
 });
 
+test('pay.buy sends the Idempotency-Key header (retry-safe) and validates its shape', async () => {
+  const fetch = fakeFetch(() => ({ body: { success: true, paymentId: 7 } }));
+  const bezhas = new BeZhasConnect({ apiKey: 'sk', fetch });
+
+  await bezhas.pay.buy({ amountUSD: 10, paymentMethod: 'bank', idempotencyKey: 'order-2026-0001' });
+  assert.equal(fetch.calls[0].init.headers['Idempotency-Key'], 'order-2026-0001');
+  // The key travels as a header, never in the body.
+  assert.equal(JSON.parse(fetch.calls[0].init.body).idempotencyKey, undefined);
+
+  assert.throws(() => bezhas.pay.buy({ amountUSD: 10, paymentMethod: 'bank', idempotencyKey: 'x!' }), /idempotencyKey/);
+  assert.equal(fetch.calls.length, 1);
+});
+
 test('pay.history builds the address path + limit query', async () => {
   const fetch = fakeFetch(() => ({ body: { success: true, payments: [] } }));
   const bezhas = new BeZhasConnect({ apiKey: 'sk', baseUrl: 'https://api.example', fetch });

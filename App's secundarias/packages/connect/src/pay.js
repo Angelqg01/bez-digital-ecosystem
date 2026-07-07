@@ -26,6 +26,9 @@ export class PayModule {
    * @param {string} [p.walletAddress]        Required unless a user JWT is set.
    * @param {string} [p.stripeUseCase]        Stripe payment-link selector (card only).
    * @param {string} [p.email]
+   * @param {string} [p.idempotencyKey]       Retry-safe key (8-80 chars [A-Za-z0-9_-]):
+   *                                          the same key replays the original order
+   *                                          instead of creating a duplicate.
    * @returns {Promise<object>} { paymentId, status, checkoutUrl?, bankTransfer?, nextAction, ... }
    */
   buy(p = {}) {
@@ -33,7 +36,11 @@ export class PayModule {
       throw new TypeError(`paymentMethod must be one of ${PAYMENT_METHODS.join(', ')}`);
     }
     if (!(p.amountUSD >= 1)) throw new TypeError('amountUSD must be a number >= 1');
+    if (p.idempotencyKey && !/^[A-Za-z0-9_-]{8,80}$/.test(p.idempotencyKey)) {
+      throw new TypeError('idempotencyKey must be 8-80 chars [A-Za-z0-9_-]');
+    }
     return this.client.request('POST', `${BASE}/payments/buy`, {
+      headers: p.idempotencyKey ? { 'Idempotency-Key': p.idempotencyKey } : undefined,
       body: {
         amountUSD: p.amountUSD,
         paymentMethod: p.paymentMethod,
