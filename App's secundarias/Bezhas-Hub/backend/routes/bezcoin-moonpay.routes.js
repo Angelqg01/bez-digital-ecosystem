@@ -520,6 +520,11 @@ router.post('/transfer', protect, async (req, res) => {
  */
 router.post('/moonpay/webhook', async (req, res) => {
     try {
+        // Fail closed: sin clave de firma cualquiera podría falsificar eventos.
+        if (!MOONPAY_SECRET_KEY) {
+            return res.status(503).json({ message: 'MoonPay webhook not configured' });
+        }
+
         const signature = req.headers['moonpay-signature'];
         const payload = JSON.stringify(req.body);
 
@@ -563,10 +568,13 @@ function generateMoonPaySignature(url) {
  * Verificar firma de MoonPay
  */
 function verifyMoonPaySignature(payload, signature) {
+    if (!signature) return false;
     const hmac = crypto.createHmac('sha256', MOONPAY_SECRET_KEY);
     hmac.update(payload);
     const expectedSignature = hmac.digest('base64');
-    return signature === expectedSignature;
+    const a = Buffer.from(String(signature));
+    const b = Buffer.from(expectedSignature);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 module.exports = router;
