@@ -117,19 +117,100 @@ export const REGISTRY = {
     },
   },
 
-  // ── Energy (VPP) — read-only surface today (api/routes/energy.js) ─────────────
-  // Seeded so the generic path works for Energy the moment the backend confirms
-  // these endpoints; extend `actions` as routes are verified.
+  // ── Energy (VPP) — api/routes/energy.js (JWT bearer) ─────────────────────────
   energy: {
     baseUrl: '/api/energy',
-    auth: 'apiKey',
+    auth: 'bearer',
     label: 'BeZhas Energy (VPP)',
     actions: {
-      assets: { method: 'GET', path: '/assets', description: 'List registered energy assets.' },
-      price: { method: 'GET', path: '/price', description: 'Current spot/market price (OMIE feed).' },
-      telemetry: { method: 'GET', path: '/telemetry', description: 'Live generation/consumption feed.' },
+      telemetry: { method: 'GET', path: '/telemetry', description: 'Live node telemetry feed.' },
+      nodes: { method: 'GET', path: '/nodes', description: 'Registered energy nodes.' },
+      omie: { method: 'GET', path: '/market/omie', description: 'OMIE spot market price feed.' },
+      alerts: { method: 'GET', path: '/alerts', description: 'Aegis anomaly alerts for the VPP.' },
+      arbitrageStatus: { method: 'GET', path: '/arbitrage/status', description: 'Battery arbitrage agent status.' },
+      arbitragePnl: { method: 'GET', path: '/arbitrage/pnl', description: 'Arbitrage running P&L.' },
     },
   },
+
+  // ── Wallet — balances + history via the gateway (api/routes/gateway.js) ──────
+  wallet: {
+    baseUrl: '/api/gateway/v1',
+    auth: 'apiKey',
+    label: 'BEZ Wallet',
+    actions: {
+      balance: { method: 'GET', path: '/wallet/balance/:address', required: ['address'], description: 'Native + BEZ balance of a wallet.' },
+      me: { method: 'GET', path: '/wallet/me', description: 'Primary wallet of the authenticated session.' },
+      history: { method: 'GET', path: '/wallet/history/:address', required: ['address'], description: 'Transaction history of a wallet.' },
+    },
+  },
+
+  // ── Capital — DeFi: staking, farming, DAO, DEX, treasury, bridge (gateway) ───
+  capital: {
+    baseUrl: '/api/gateway/v1',
+    auth: 'apiKey',
+    label: 'BZ Capital (DeFi)',
+    actions: {
+      stakingPositions: { method: 'GET', path: '/staking/positions/:address', required: ['address'], description: 'Staking positions of a wallet.' },
+      stake: { method: 'POST', path: '/staking/stake', required: ['amount'], description: 'Stake BEZ (returns unsigned tx).' },
+      unstake: { method: 'POST', path: '/staking/unstake', required: ['amount'], description: 'Unstake BEZ.' },
+      farmingPositions: { method: 'GET', path: '/farming/positions/:address', required: ['address'], description: 'LP farming positions.' },
+      farmingDeposit: { method: 'POST', path: '/farming/deposit', required: ['amount'], description: 'Deposit LP tokens into a farm.' },
+      proposals: { method: 'GET', path: '/governance/proposals', description: 'DAO proposals.' },
+      vote: { method: 'POST', path: '/governance/vote', required: ['proposalId', 'support'], description: 'Cast a DAO vote.' },
+      dexPool: { method: 'GET', path: '/dex/pool', description: 'Native BEZ/USDC pool state.' },
+      dexQuote: { method: 'GET', path: '/dex/quote', description: 'Swap quote from the native DEX.' },
+      dexSwap: { method: 'POST', path: '/dex/swap', required: ['amountIn'], description: 'Swap on the native DEX (unsigned tx).' },
+      treasury: { method: 'GET', path: '/treasury/overview', description: 'DAO treasury overview.' },
+      bridgeTransfers: { method: 'GET', path: '/bridge/transfers/:address', required: ['address'], description: 'Cross-chain bridge transfers of a wallet.' },
+      bridgeInitiate: { method: 'POST', path: '/bridge/initiate', required: ['amount', 'targetChain'], description: 'Start a cross-chain transfer.' },
+    },
+  },
+
+  // ── Gas — sponsorship/relayer status (api/routes/gas.js) ─────────────────────
+  gas: {
+    baseUrl: '/api/gas',
+    auth: 'bearer',
+    label: 'BeZhas Gas',
+    actions: {
+      status: { method: 'GET', path: '/status', auth: 'public', description: 'Gas tank / relayer status.' },
+      balances: { method: 'GET', path: '/balances', description: 'Sponsored gas balances (admin/enterprise JWT).' },
+    },
+  },
+
+  // ── Genesis — validators & network genesis (api/routes/validators.js) ────────
+  genesis: {
+    baseUrl: '/api/validators',
+    auth: 'public',
+    label: 'BZ Genesis (Validators)',
+    actions: {
+      list: { method: 'GET', path: '/', description: 'Registered validators.' },
+      tiers: { method: 'GET', path: '/tiers', description: 'Validator tier definitions.' },
+      stats: { method: 'GET', path: '/stats', description: 'Network validator stats.' },
+      validator: { method: 'GET', path: '/:address', required: ['address'], description: 'One validator profile.' },
+      rewards: { method: 'GET', path: '/:address/rewards', required: ['address'], description: 'Validator reward history.' },
+    },
+  },
+
+  // ── Hub — public platform surface ─────────────────────────────────────────────
+  hub: {
+    baseUrl: '/api',
+    auth: 'public',
+    label: 'BeZhas Hub',
+    actions: {
+      networkStats: { method: 'GET', path: '/gateway/v1/network/stats', description: 'Public network stats (landing).' },
+      marketStats: { method: 'GET', path: '/market/stats', description: 'Market stats.' },
+    },
+  },
+
+  // ── SubApps served from their own deployments ────────────────────────────────
+  // Registered so `service('<name>')` resolves and discovery lists the full
+  // ecosystem; callable actions land here when the gateway proxies them (their
+  // APIs currently run on the SubApp's own subdomain).
+  vision: { baseUrl: '/api/vision', auth: 'apiKey', label: 'BeZhas Vision', external: 'https://vision.bez.digital', actions: {} },
+  purescan: { baseUrl: '/api/purescan', auth: 'apiKey', label: 'BZ PureScan', external: 'https://purescan.bez.digital', actions: {} },
+  sphere: { baseUrl: '/api/sphere', auth: 'apiKey', label: 'BZ Sphere', external: 'https://sphere.bez.digital', actions: {} },
+  prestige: { baseUrl: '/api/prestige', auth: 'apiKey', label: 'BZ Prestige', external: 'https://prestige.bez.digital', actions: {} },
+  edge: { baseUrl: '/api/edge', auth: 'apiKey', label: 'BeZhas Edge', external: 'https://edge.bez.digital', actions: {} },
 };
 
 /**
@@ -156,6 +237,7 @@ export function listCapabilities() {
     subapp,
     label: d.label,
     auth: d.auth,
+    external: d.external || undefined,
     actions: Object.entries(d.actions).map(([action, a]) => ({
       action,
       method: a.method,

@@ -27,11 +27,11 @@ test('service().call routes a GET action to the registry path with x-api-key', a
   const fetch = fakeFetch(() => ({ body: { assets: [] } }));
   const bezhas = new BeZhasConnect({ apiKey: 'sk_test', baseUrl: 'https://api.example', fetch });
 
-  const out = await bezhas.service('energy').call('assets');
+  const out = await bezhas.service('energy').call('nodes');
 
   assert.deepEqual(out, { assets: [] });
   const { url, init } = fetch.calls[0];
-  assert.equal(url, 'https://api.example/api/energy/assets');
+  assert.equal(url, 'https://api.example/api/energy/nodes');
   assert.equal(init.method, 'GET');
   assert.equal(init.headers['x-api-key'], 'sk_test');
 });
@@ -40,10 +40,10 @@ test('GET params land in the query string, not the body', async () => {
   const fetch = fakeFetch();
   const bezhas = new BeZhasConnect({ apiKey: 'sk', baseUrl: 'https://api.example', fetch });
 
-  await bezhas.service('energy').call('price', { zone: 'ES' });
+  await bezhas.service('energy').call('omie', { zone: 'ES' });
 
   const { url, init } = fetch.calls[0];
-  assert.equal(url, 'https://api.example/api/energy/price?zone=ES');
+  assert.equal(url, 'https://api.example/api/energy/market/omie?zone=ES');
   assert.equal(init.body, undefined);
 });
 

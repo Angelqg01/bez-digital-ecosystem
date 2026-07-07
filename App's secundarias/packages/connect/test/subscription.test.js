@@ -44,7 +44,7 @@ test('Entitlements.fromApi accepts subapps | active | addons keys', () => {
 test('without entitlements, service() does NOT gate (backwards compatible)', async () => {
   const fetch = fakeFetch(() => ({ body: { assets: [] } }));
   const bezhas = new BeZhasConnect({ apiKey: 'sk', baseUrl: 'https://api.example', fetch });
-  await bezhas.service('energy').call('assets'); // no throw
+  await bezhas.service('energy').call('nodes'); // no throw
   assert.equal(fetch.calls.length, 1);
 });
 
@@ -55,7 +55,7 @@ test('with entitlements, an un-activated SubApp throws BEFORE any network call',
     entitlements: ['pay'], // energy NOT activated
   });
   assert.throws(
-    () => bezhas.service('energy').call('assets'),
+    () => bezhas.service('energy').call('nodes'),
     (e) => e instanceof BeZhasEntitlementError && e.code === 'ENTITLEMENT_REQUIRED' && e.subapp === 'energy',
   );
   assert.equal(fetch.calls.length, 0);
@@ -66,7 +66,7 @@ test('with entitlements, an activated SubApp passes through', async () => {
   const bezhas = new BeZhasConnect({
     apiKey: 'sk', baseUrl: 'https://api.example', fetch, entitlements: ['energy'],
   });
-  const out = await bezhas.service('energy').call('assets');
+  const out = await bezhas.service('energy').call('nodes');
   assert.deepEqual(out, { assets: [1] });
   assert.equal(fetch.calls.length, 1);
 });
@@ -93,9 +93,9 @@ test('subscription SubApp is never gated (can always read your plan)', async () 
 test('setEntitlements(null) disables gating again', async () => {
   const fetch = fakeFetch(() => ({ body: {} }));
   const bezhas = new BeZhasConnect({ apiKey: 'sk', baseUrl: 'https://api.example', fetch, entitlements: ['pay'] });
-  assert.throws(() => bezhas.service('energy').call('assets'), BeZhasEntitlementError);
+  assert.throws(() => bezhas.service('energy').call('nodes'), BeZhasEntitlementError);
   bezhas.setEntitlements(null);
-  await bezhas.service('energy').call('assets'); // no throw now
+  await bezhas.service('energy').call('nodes'); // no throw now
 });
 
 test('subscription.sync() pulls entitlements and applies them to the client', async () => {
@@ -108,7 +108,7 @@ test('subscription.sync() pulls entitlements and applies them to the client', as
   assert.ok(ent.allows('pay'));
   assert.ok(ent.allows('cargolink'));
   // Now gating is active: energy (not in the synced set) is blocked.
-  assert.throws(() => bezhas.service('energy').call('assets'), BeZhasEntitlementError);
+  assert.throws(() => bezhas.service('energy').call('nodes'), BeZhasEntitlementError);
 });
 
 test('subscription.activate posts the subapp id', async () => {

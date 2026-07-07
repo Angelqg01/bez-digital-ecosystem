@@ -110,10 +110,11 @@ export class ServiceModule {
     if (isWrite && _body === undefined) options.body = remaining;
     if (!isWrite && !_query && Object.keys(remaining).length) options.query = remaining;
 
-    // Auth: roleKey SubApps pass the key as the per-call bearer; apiKey SubApps
-    // rely on the client's x-api-key; public actions send neither.
+    // Auth: roleKey/bearer SubApps pass the key as the per-call bearer (device
+    // key, role key or user JWT); apiKey SubApps rely on the client's
+    // x-api-key; public actions send neither.
     const authMode = spec.auth || this.descriptor.auth;
-    if (authMode === 'roleKey') {
+    if (authMode === 'roleKey' || authMode === 'bearer') {
       options.bearer = roleKey || this.roleKey || undefined;
     }
 
