@@ -28,7 +28,7 @@ jest.mock('../models/pg/ApiKey', () => ({
 
 const TREASURY = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4';
 jest.mock('../services/bezpay.service', () => ({
-  getBezPriceUSD: jest.fn(),
+  getBezPriceEUR: jest.fn(),
   TREASURY_ADDR: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4',
 }));
 
@@ -72,7 +72,7 @@ beforeEach(() => {
   // resetMocks:true limpia las implementaciones → fijarlas aquí.
   const { ethers } = require('ethers');
   ethers.JsonRpcProvider.mockImplementation(() => ({ getTransactionReceipt: mockGetTransactionReceipt }));
-  bezpay.getBezPriceUSD.mockResolvedValue(1.0); // 1 BEZ = 1 USD ≈ 1 EUR (aritmética simple)
+  bezpay.getBezPriceEUR.mockResolvedValue(1.0); // 1 BEZ = 1 EUR (aritmética simple)
   ApiKey.setPlan.mockResolvedValue({ id: 'key-uuid-1' });
   ApiKey.setPendingPlan.mockResolvedValue({ id: 'key-uuid-1' });
   ApiKey.getPendingPlan.mockResolvedValue(null);

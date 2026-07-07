@@ -103,26 +103,38 @@ function getBezContract() {
   return _bezContract;
 }
 
-// ─── PRECIO BEZ (cache simple 60s) ──────────────────────────────────────────
-let _bezPriceCache = { price: 1.24, ts: 0 };
+// ─── PRECIO BEZ (cache simple 60s, USD + EUR en una llamada) ─────────────────
+// Fallback FX si el feed no trae EUR (aprox. conservadora, override por env).
+const EUR_PER_USD_FALLBACK = parseFloat(process.env.EUR_PER_USD_FALLBACK || '0.92');
+let _bezPriceCache = { price: 1.24, eur: null, ts: 0 };
 
-async function getBezPriceUSD() {
+async function refreshBezPrices() {
   const now = Date.now();
-  if (now - _bezPriceCache.ts < 60_000) return _bezPriceCache.price;
+  if (now - _bezPriceCache.ts < 60_000) return _bezPriceCache;
   try {
     const resp = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bez-coin&vs_currencies=usd',
+      'https://api.coingecko.com/api/v3/simple/price?ids=bez-coin&vs_currencies=usd,eur',
       { signal: AbortSignal.timeout(4000) }
     );
     const data = await resp.json();
-    const price = data?.['bez-coin']?.usd;
-    if (price && price > 0) {
-      _bezPriceCache = { price, ts: now };
-      return price;
+    const usd = data?.['bez-coin']?.usd;
+    const eur = data?.['bez-coin']?.eur;
+    if (usd && usd > 0) {
+      _bezPriceCache = { price: usd, eur: eur && eur > 0 ? eur : null, ts: now };
     }
-  } catch (_) { /* fallback */ }
+  } catch (_) { /* fallback: cache anterior */ }
+  return _bezPriceCache;
+}
+
+async function getBezPriceUSD() {
   // Fallback: usar el precio configurado en TokenSale
-  return _bezPriceCache.price;
+  return (await refreshBezPrices()).price;
+}
+
+/** Precio BEZ en EUR — feed real; si el feed no trae EUR, deriva del USD. */
+async function getBezPriceEUR() {
+  const cache = await refreshBezPrices();
+  return cache.eur || cache.price * EUR_PER_USD_FALLBACK;
 }
 
 // Token price fallbacks (para cuando no hay oracle)
@@ -572,6 +584,7 @@ module.exports = {
   getQuote,
   getHotWalletStatus,
   getBezPriceUSD,
+  getBezPriceEUR,
   BEZ_ADDR: ADDRS.BEZ_POLYGON,
   TREASURY_ADDR: ADDRS.TREASURY,
 };

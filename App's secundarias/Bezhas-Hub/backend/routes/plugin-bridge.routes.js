@@ -23,7 +23,7 @@ const express = require('express');
 const router = express.Router();
 
 const { PLANS, calculateSubscription, BEZ_DISCOUNT_RATE, IVA_RATE } = require('../config/plans');
-const { getBezPriceUSD, TREASURY_ADDR } = require('../services/bezpay.service');
+const { getBezPriceEUR, TREASURY_ADDR } = require('../services/bezpay.service');
 
 let getSubappRegistry;
 try {
@@ -178,11 +178,9 @@ router.post('/subscribe', withApiKey, async (req, res) => {
             return res.json({ success: true, plan: planId, status: 'active', persisted, quote });
         }
 
-        // Plan de pago: cotizar el importe en BEZ y dejarlo pendiente.
-        const bezPriceUSD = await getBezPriceUSD();
-        // Aproximación EUR≈USD del feed de precio; la tolerancia de /confirm
-        // absorbe el spread. Sustituir por un feed EUR real al unificar Payments Core.
-        const expectedBez = Math.round((quote.total / bezPriceUSD) * 1e6) / 1e6;
+        // Plan de pago: cotizar el importe en BEZ (feed EUR real) y dejarlo pendiente.
+        const bezPriceEUR = await getBezPriceEUR();
+        const expectedBez = Math.round((quote.total / bezPriceEUR) * 1e6) / 1e6;
 
         let persisted = false;
         if (ApiKey) {
@@ -214,7 +212,7 @@ router.post('/subscribe', withApiKey, async (req, res) => {
                 to: TREASURY_ADDR,
                 amountEUR: quote.total,
                 expectedBez,
-                bezPriceUSD,
+                bezPriceEUR,
                 note: `Transfiere ${expectedBez} $BEZ al Treasury y confirma con POST /api/plugin-bridge/subscribe/confirm { txHash }.`,
             },
         });
