@@ -3,6 +3,26 @@
 All notable changes to the outward-facing BeZhas integration SDK.
 Format: [Keep a Changelog](https://keepachangelog.com/). Versioning: SemVer.
 
+## [0.2.0] — 2026-07-07
+
+Ready to publish (`pnpm publish --access public` desde este directorio; falta
+decidir licencia — hoy `UNLICENSED` — y login npm de la organización @bezhas).
+
+### Added
+- `pay.buy({ idempotencyKey })` — retry-safe orders (Idempotency-Key header).
+- `pay.getPayment(id)` — poll one intent (status, settlement, expiry).
+- `subscription` endpoints now live on the gateway (`/api/gateway/v1/subscription*`).
+- Registry covers the full 13-SubApp ecosystem: verified descriptors for
+  `wallet`, `capital` (DeFi), `gas`, `genesis` (validators), `hub`; `energy`
+  corrected to the real `/api/energy` surface; externally-hosted SubApps
+  (`vision`, `purescan`, `sphere`, `prestige`, `edge`) flagged with their
+  subdomain. New `bearer` auth mode for JWT-backed SubApps.
+- `repository`/`homepage`/`sideEffects` metadata; tarball verified with
+  `pnpm pack` (src + embed + plugins + types only).
+
+### Changed
+- 46 tests (`node --test`), up from 30.
+
 ## [0.1.0] — 2026-06-18
 
 Initial release. Outward-facing ("extension API") layer for embedding BeZhas

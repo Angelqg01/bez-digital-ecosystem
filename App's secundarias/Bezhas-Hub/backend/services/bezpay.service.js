@@ -85,6 +85,19 @@ function getProvider() {
 
 function getHotWallet() {
   if (!_hotWallet) {
+    // Preferencia: firma en GCP KMS (la clave nunca sale del HSM). Fallback:
+    // clave en env (legacy). Ver services/kmsSigner.js.
+    const kmsKeyPath = process.env.HOT_WALLET_KMS_KEY;
+    if (kmsKeyPath) {
+      try {
+        const { GcpKmsSigner } = require('./kmsSigner');
+        _hotWallet = new GcpKmsSigner(kmsKeyPath, getProvider());
+        logger.info('[BezPay] Hot wallet signing via GCP KMS');
+        return _hotWallet;
+      } catch (err) {
+        logger.warn({ err: err.message }, '[BezPay] KMS signer unavailable — falling back to env key');
+      }
+    }
     const key = process.env.HOT_WALLET_PRIVATE_KEY;
     if (!key) {
       logger.warn('[BezPay] HOT_WALLET_PRIVATE_KEY not set — on-chain dispensing disabled');

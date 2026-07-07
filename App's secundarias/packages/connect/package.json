@@ -1,6 +1,13 @@
 {
   "name": "@bezhas/connect",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Angelqg01/BeZhas-Blockchain.git",
+    "directory": "App's secundarias/packages/connect"
+  },
+  "homepage": "https://bez.digital/developers",
+  "sideEffects": false,
   "description": "Outward-facing BeZhas integration SDK — embed Pay & CargoLink into any 3rd-party platform (WooCommerce, Shopify, SAP, custom Node). Zero dependencies, framework-agnostic.",
   "type": "module",
   "main": "src/index.js",
