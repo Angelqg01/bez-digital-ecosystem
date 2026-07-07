@@ -31,6 +31,7 @@ const { BANK_TRANSFER_DETAILS, buildBankTransferInstructions } = require('../con
 const { TOKENOMICS_FEE, calculateFeeBreakdown } = require('../config/tokenomics');
 const { PLANS, CORE_SUBAPPS, ACTIVATABLE_SUBAPPS, calculateSubscription } = require('../config/plans');
 const { settlePayment, refundPayment } = require('../services/paymentSettlement');
+const complianceGate = require('../services/complianceGate');
 const paymentWebhooks = require('../services/paymentWebhooks');
 const { TREASURY: SETTLEMENT_TREASURY } = require('../services/bezSettlementWatcher');
 const logger = require('pino')({ level: 'info', name: 'gateway' });
@@ -1094,6 +1095,19 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
             }
         }
 
+        // Gate KYC/MiCA: el volumen acumulado 12m de la wallet limita la compra.
+        const kyc = await complianceGate.checkBuyAllowed(walletAddress, parseFloat(amountUSD));
+        if (!kyc.allowed) {
+            return res.status(403).json({
+                error: `Cumulative purchase limit reached for KYC level ${kyc.level} (${kyc.limitUSD} USD / 12 months)`,
+                code: 'KYC_REQUIRED',
+                kycLevel: kyc.level,
+                requiredLevel: kyc.requiredLevel,
+                limitUSD: kyc.limitUSD,
+                usedUSD: kyc.usedUSD,
+            });
+        }
+
         const feeBreakdown = calculateFeeBreakdown(amountUSD);
         const platformFeeUSD = feeBreakdown.platformFeeUSD;
         const grossAmountUSD = feeBreakdown.grossAmountUSD;
@@ -1475,6 +1489,61 @@ router.post('/payments/:id(\\d+)/refund', requirePaymentSettlementKey, [
         if (error.code === 'NOT_REFUNDABLE') return res.status(422).json({ error: error.message });
         logger.error(error, 'Payment refund failed');
         res.status(500).json({ error: 'Payment refund failed' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  KYC / COMPLIANCE — tiered volume gates (MiCA)
+// ═══════════════════════════════════════════════════════════
+
+/** GET /kyc/status/:address — level + remaining headroom for a wallet. */
+router.get('/kyc/status/:address', authenticateGateway, requireScope('wallet'), [
+    param('address').isEthereumAddress(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    try {
+        const { level, provider, verifiedAt } = await complianceGate.getKycLevel(req.params.address);
+        const limitUSD = complianceGate.TIER_LIMITS_USD[level];
+        const usedUSD = limitUSD === Infinity ? 0 : await complianceGate.getRollingVolumeUSD(req.params.address);
+        res.json({
+            success: true,
+            walletAddress: req.params.address,
+            level,
+            provider,
+            verifiedAt,
+            limitUSD: limitUSD === Infinity ? null : limitUSD,
+            usedUSD,
+            remainingUSD: limitUSD === Infinity ? null : Math.max(limitUSD - usedUSD, 0),
+        });
+    } catch (error) {
+        logger.error(error, 'KYC status fetch failed');
+        res.status(500).json({ error: 'Failed to fetch KYC status' });
+    }
+});
+
+/**
+ * POST /kyc/status — Internal-only: the KYC provider callback / backoffice
+ * sets a wallet's level. Apps cannot self-upgrade (settlement key boundary).
+ */
+router.post('/kyc/status', requirePaymentSettlementKey, [
+    body('walletAddress').isEthereumAddress(),
+    body('level').isInt({ min: 0, max: 2 }),
+    body('provider').optional().isString().isLength({ min: 1, max: 60 }),
+    body('reference').optional().isString().isLength({ min: 1, max: 160 }),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    try {
+        const updated = await complianceGate.setKycLevel({
+            walletAddress: req.body.walletAddress,
+            level: parseInt(req.body.level, 10),
+            provider: req.body.provider || null,
+            reference: req.body.reference || null,
+        });
+        logger.info({ walletAddress: updated.wallet_address, level: updated.level, provider: updated.provider }, 'KYC level updated');
+        res.json({ success: true, kyc: updated });
+    } catch (error) {
+        logger.error(error, 'KYC level update failed');
+        res.status(500).json({ error: 'Failed to update KYC level' });
     }
 });
 

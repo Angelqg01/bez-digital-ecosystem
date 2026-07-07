@@ -50,6 +50,8 @@ describe('POST /payments/buy — idempotency', () => {
     it('crea la orden y persiste la clave la primera vez', async () => {
         mockAppAuth();
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // lookup por clave: no existe
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // kyc_status: nivel 0
+        mockQuery.mockResolvedValueOnce({ rows: [{ total: '0' }] }); // volumen 12m
         mockQuery.mockResolvedValueOnce({ rows: [{ id: 42, status: 'pending', created_at: 'now' }], rowCount: 1 }); // insert
         const res = await request(app)
             .post('/api/gateway/v1/payments/buy')
@@ -94,6 +96,8 @@ describe('POST /payments/buy — idempotency', () => {
     it('carrera perdida: INSERT no devuelve fila → replay de la orden ganadora', async () => {
         mockAppAuth();
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // lookup inicial: aún no existe
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // kyc_status: nivel 0
+        mockQuery.mockResolvedValueOnce({ rows: [{ total: '0' }] }); // volumen 12m
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // insert: ON CONFLICT DO NOTHING
         mockQuery.mockResolvedValueOnce({ rows: [ORDER_ROW], rowCount: 1 }); // re-lookup
         const res = await request(app)
@@ -108,6 +112,8 @@ describe('POST /payments/buy — idempotency', () => {
 
     it('sin clave: comportamiento actual intacto', async () => {
         mockAppAuth();
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // kyc_status: nivel 0
+        mockQuery.mockResolvedValueOnce({ rows: [{ total: '0' }] }); // volumen 12m
         mockQuery.mockResolvedValueOnce({ rows: [{ id: 43, status: 'pending', created_at: 'now' }], rowCount: 1 }); // insert directo
         const res = await request(app)
             .post('/api/gateway/v1/payments/buy')
