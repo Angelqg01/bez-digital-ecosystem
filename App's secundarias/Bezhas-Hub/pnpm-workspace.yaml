@@ -15,7 +15,10 @@ overrides:
   ws: '>=8.21.0'
   mongoose: '>=8.22.1'
   express-rate-limit: '>=8.2.2'
-  path-to-regexp: '>=0.1.10'
+  # OJO: un override sin selector reemplaza el rango del dependiente por completo
+  # (">=0.1.10" resolvía a 8.x y rompía express, cuyo router usa la API 0.1.x).
+  # El selector "@<0.2" limita el parche del CVE ReDoS a la línea 0.1.
+  'path-to-regexp@<0.2': '>=0.1.12 <0.2'
   nodemailer: '>=7.0.11'
   minimatch: '>=3.1.3'
   picomatch: '>=2.3.2'
