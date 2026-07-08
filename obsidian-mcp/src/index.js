@@ -6,6 +6,12 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { z } from 'zod';
+import chokidar from 'chokidar';
+import { VaultIndex, NOTE_RE, extractLinks } from './vaultIndex.js';
+import { SemanticIndex } from './semanticIndex.js';
+import { consolidateEpisodes, vaultFingerprint } from './brainOps.js';
+import { UsageTracker } from './usageTracker.js';
+import { BRAIN_UI_HTML } from './ui.js';
 
 const app = express();
 const port = Number(process.env.MCP_PORT || process.env.OBSIDIAN_MCP_PORT || 4007);
@@ -24,6 +30,10 @@ const folders = {
   sectors: '04-Sectors',
   inbox: '99-Inbox',
 };
+
+const index = new VaultIndex(vaultRoot, { maxBytes });
+const semantic = new SemanticIndex(index);
+const usage = new UsageTracker(path.join(vaultRoot, '.obsidian', 'bezhas-usage.json'));
 
 function nowIso() {
   return new Date().toISOString();
@@ -44,7 +54,7 @@ function assertSafeRelativePath(relativePath) {
   if (!normalized || normalized.includes('..') || path.isAbsolute(normalized)) {
     throw new Error('Unsafe note path');
   }
-  if (!normalized.toLowerCase().endsWith('.md') && !normalized.toLowerCase().endsWith('.canvas') && !normalized.toLowerCase().endsWith('.json')) {
+  if (!NOTE_RE.test(normalized)) {
     throw new Error('Only .md, .canvas and .json files are allowed');
   }
   return normalized;
@@ -53,10 +63,16 @@ function assertSafeRelativePath(relativePath) {
 function resolveVaultPath(relativePath) {
   const safe = assertSafeRelativePath(relativePath);
   const absolute = path.resolve(vaultRoot, safe);
-  if (!absolute.startsWith(vaultRoot)) {
+  if (absolute !== vaultRoot && !absolute.startsWith(vaultRoot + path.sep)) {
     throw new Error('Path escapes vault');
   }
   return { safe, absolute };
+}
+
+function assertWriteSize(bytes) {
+  if (bytes > maxBytes) {
+    throw new Error(`Write exceeds max note size ${maxBytes} bytes`);
+  }
 }
 
 async function ensureVault() {
@@ -116,21 +132,6 @@ async function ensureVault() {
   }
 }
 
-async function walkFiles(dir = vaultRoot) {
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const absolute = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === '.obsidian') continue;
-      files.push(...await walkFiles(absolute));
-    } else if (/\.(md|canvas|json)$/i.test(entry.name)) {
-      files.push(absolute);
-    }
-  }
-  return files;
-}
-
 async function readTextFile(absolute) {
   const stat = await fs.stat(absolute);
   if (stat.size > maxBytes) {
@@ -146,36 +147,10 @@ function frontmatter(metadata = {}) {
   return clean.length ? `---\n${clean.join('\n')}\n---\n\n` : '';
 }
 
-function extractLinks(content) {
-  const links = new Set();
-  const wiki = content.matchAll(/\[\[([^\]|#]+)(?:[#|][^\]]*)?\]\]/g);
-  for (const match of wiki) links.add(match[1].trim());
-  const md = content.matchAll(/\[[^\]]+\]\(([^)]+\.md)\)/g);
-  for (const match of md) links.add(path.basename(match[1], '.md'));
-  return [...links];
-}
-
-function noteTitleFromPath(absolute) {
-  return path.basename(absolute).replace(/\.(md|canvas|json)$/i, '');
-}
-
-async function noteSummary(absolute) {
-  const relativePath = path.relative(vaultRoot, absolute).replaceAll(path.sep, '/');
-  const content = await readTextFile(absolute);
-  return {
-    path: relativePath,
-    title: noteTitleFromPath(absolute),
-    links: extractLinks(content),
-    bytes: Buffer.byteLength(content),
-    preview: content.replace(/^---[\s\S]*?---\s*/m, '').trim().slice(0, 300),
-  };
-}
-
 const toolHandlers = {
   async list_notes(params = {}) {
     const limit = Number(params.limit || 100);
-    const files = await walkFiles();
-    const notes = await Promise.all(files.slice(0, limit).map(noteSummary));
+    const notes = index.list(limit);
     return { notes, count: notes.length, vaultRoot };
   },
 
@@ -183,21 +158,11 @@ const toolHandlers = {
     const schema = z.object({
       query: z.string().min(1),
       limit: z.number().int().min(1).max(50).optional(),
+      folder: z.string().optional(),
+      tags: z.array(z.string()).optional(),
     });
-    const { query, limit = 10 } = schema.parse(params);
-    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-    const files = await walkFiles();
-    const scored = [];
-    for (const file of files) {
-      const content = await readTextFile(file);
-      const haystack = `${noteTitleFromPath(file)}\n${content}`.toLowerCase();
-      const score = terms.reduce((total, term) => total + (haystack.match(new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'))?.length || 0), 0);
-      if (score > 0) {
-        scored.push({ ...(await noteSummary(file)), score });
-      }
-    }
-    scored.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
-    return { results: scored.slice(0, limit), query };
+    const { query, limit = 10, folder, tags } = schema.parse(params);
+    return { results: index.search(query, { limit, folder, tags }), query };
   },
 
   async get_note(params = {}) {
@@ -220,7 +185,9 @@ const toolHandlers = {
     const { safe, absolute } = resolveVaultPath(relativePath);
     await fs.mkdir(path.dirname(absolute), { recursive: true });
     const body = `${frontmatter({ ...metadata, created: nowIso() })}# ${title}\n\n${content.trim()}\n`;
+    assertWriteSize(Buffer.byteLength(body));
     await fs.writeFile(absolute, body, { flag: 'wx' });
+    await index.refreshFile(absolute);
     return { path: safe.replaceAll(path.sep, '/'), created: true };
   },
 
@@ -233,30 +200,109 @@ const toolHandlers = {
     const { path: notePath, content, mode } = schema.parse(params);
     const { safe, absolute } = resolveVaultPath(notePath);
     if (mode === 'replace') {
+      assertWriteSize(Buffer.byteLength(content));
       await fs.writeFile(absolute, content);
     } else {
+      const stat = await fs.stat(absolute).catch(() => ({ size: 0 }));
+      assertWriteSize(stat.size + Buffer.byteLength(content) + 2);
       await fs.appendFile(absolute, `\n\n${content.trim()}\n`);
     }
+    await index.refreshFile(absolute);
     return { path: safe.replaceAll(path.sep, '/'), updated: true, mode };
   },
 
   async get_related_notes(params = {}) {
     const schema = z.object({ path: z.string().min(1), limit: z.number().int().min(1).max(50).optional() });
     const { path: notePath, limit = 20 } = schema.parse(params);
-    const { absolute } = resolveVaultPath(notePath);
-    const content = await readTextFile(absolute);
-    const title = noteTitleFromPath(absolute);
-    const outgoing = extractLinks(content);
-    const files = await walkFiles();
-    const incoming = [];
-    for (const file of files) {
-      if (file === absolute) continue;
-      const item = await readTextFile(file);
-      if (extractLinks(item).includes(title) || item.includes(`[[${title}`)) {
-        incoming.push(await noteSummary(file));
-      }
+    const { safe } = resolveVaultPath(notePath);
+    return index.related(safe.replaceAll(path.sep, '/'), limit);
+  },
+
+  async get_recent_notes(params = {}) {
+    const schema = z.object({
+      limit: z.number().int().min(1).max(50).optional(),
+      folder: z.string().optional(),
+    });
+    const { limit = 10, folder } = schema.parse(params);
+    return { notes: index.recent(limit, folder || null) };
+  },
+
+  async get_tags() {
+    return { tags: index.tags() };
+  },
+
+  async semantic_search(params = {}) {
+    const schema = z.object({
+      query: z.string().min(1),
+      limit: z.number().int().min(1).max(50).optional(),
+      minScore: z.number().min(0).max(1).optional(),
+    });
+    const { query, limit = 10, minScore } = schema.parse(params);
+    try {
+      const { results, model } = await semantic.search(query, { limit, minScore });
+      return { results, query, mode: 'semantic', model };
+    } catch (error) {
+      // Ollama down or model missing: degrade to lexical so agents never block
+      return {
+        results: index.search(query, { limit }),
+        query,
+        mode: 'lexical-fallback',
+        reason: error.message,
+      };
     }
-    return { outgoing, incoming: incoming.slice(0, limit) };
+  },
+
+  async consolidate_episodes(params = {}) {
+    const schema = z.object({
+      olderThanDays: z.number().int().min(1).max(3650).optional(),
+      dryRun: z.boolean().optional(),
+    });
+    const { olderThanDays = 30, dryRun = true } = schema.parse(params);
+    const result = await consolidateEpisodes(vaultRoot, { olderThanDays, dryRun });
+    if (!dryRun && result.archived > 0) await index.build();
+    return result;
+  },
+
+  async get_vault_fingerprint() {
+    return vaultFingerprint(vaultRoot, [...index.notes.keys()]);
+  },
+
+  async get_usage_stats(params = {}) {
+    const schema = z.object({ limit: z.number().int().min(1).max(50).optional() });
+    const { limit = 10 } = schema.parse(params);
+    return usage.summary({ limit });
+  },
+
+  async record_anchor(params = {}) {
+    const schema = z.object({
+      root: z.string().regex(/^0x[0-9a-f]{64}$/i),
+      txHash: z.string().optional(),
+      chainId: z.number().int().optional(),
+      network: z.string().optional(),
+      notes: z.number().int().optional(),
+    });
+    const anchor = schema.parse(params);
+    const stamp = nowIso();
+    return toolHandlers.create_note({
+      title: `Anchor ${stamp.slice(0, 19).replace(/[:T]/g, '-')}`,
+      folder: folders.decisions,
+      content: [
+        `Merkle root del vault publicado como evidencia inmutable.`,
+        '',
+        `- **Root:** \`${anchor.root}\``,
+        anchor.txHash ? `- **Tx:** \`${anchor.txHash}\`` : null,
+        anchor.chainId ? `- **Chain ID:** ${anchor.chainId}` : null,
+        anchor.network ? `- **Red:** ${anchor.network}` : null,
+        anchor.notes ? `- **Notas cubiertas:** ${anchor.notes}` : null,
+        '',
+        '[[ADR-0002-Brain-Index-Optimization]]',
+      ].filter(Boolean).join('\n'),
+      metadata: { type: 'anchor', tags: ['audit', 'on-chain'] },
+    });
+  },
+
+  async get_graph() {
+    return index.graph();
   },
 
   async record_episode(params = {}) {
@@ -309,6 +355,7 @@ const toolHandlers = {
       last_update_agent: agent,
     };
     await fs.writeFile(absolute, JSON.stringify(updated, null, 2));
+    await index.refreshFile(absolute);
     return { path: relative.replaceAll(path.sep, '/'), updated: true, self_model: updated };
   },
 
@@ -334,6 +381,7 @@ const toolHandlers = {
     });
     const relative = path.join(folders.maps, 'BeZhas-Autonomy-Loop.canvas');
     const { absolute } = resolveVaultPath(relative);
+    await index.refreshFile(absolute);
     const canvas = JSON.parse(await readTextFile(absolute));
     return {
       rebuilt: true,
@@ -347,12 +395,22 @@ const toolHandlers = {
 
 app.get('/health', async (_req, res) => {
   try {
-    await ensureVault();
-    const files = await walkFiles();
-    res.json({ status: 'ok', service: 'bezhas-obsidian-mcp', vaultRoot, notes: files.length, uptime: process.uptime() });
+    const reachable = await semantic.isReachable();
+    res.json({
+      status: 'ok',
+      service: 'bezhas-obsidian-mcp',
+      vaultRoot,
+      ...index.stats(),
+      semantic: { reachable, model: semantic.model, host: semantic.ollamaHost, cached: semantic.vectors.size },
+      uptime: process.uptime(),
+    });
   } catch (error) {
     res.status(500).json({ status: 'error', error: error.message });
   }
+});
+
+app.get(['/', '/ui'], (_req, res) => {
+  res.type('html').send(BRAIN_UI_HTML);
 });
 
 app.get('/tools', (_req, res) => {
@@ -367,14 +425,96 @@ app.post('/tools/:tool', async (req, res) => {
   }
   try {
     const data = await handler(req.body || {});
+    // toda llamada de un agente al Brain queda en la telemetría del mapa
+    if (req.params.tool !== 'get_usage_stats') {
+      usage.record({
+        source: req.get('x-bezhas-agent') || req.body?.agent || 'agent-runtime',
+        target: 'Obsidian-Brain',
+        fn: `obsidian:${req.params.tool}`,
+      });
+    }
     res.json({ success: true, data });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
 });
 
+// Ingesta de telemetría desde el resto de la red (API :3001, gateway, SubApps):
+// POST /telemetry/usage  { source, target, fn, tokens?, bez? }  o  { events: [...] }
+const usageEventSchema = z.object({
+  source: z.string().min(1).max(80),
+  target: z.string().min(1).max(80),
+  fn: z.string().min(1).max(160),
+  tokens: z.number().min(0).optional(),
+  bez: z.number().min(0).optional(),
+});
+app.post('/telemetry/usage', (req, res) => {
+  try {
+    const events = Array.isArray(req.body?.events) ? req.body.events : [req.body];
+    const parsed = events.map((event) => usageEventSchema.parse(event));
+    for (const event of parsed) usage.record(event);
+    res.json({ success: true, recorded: parsed.length });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/telemetry/summary', (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 10, 50);
+  res.json(usage.summary({ limit }));
+});
+
 await ensureVault();
+await index.build();
+await usage.load();
+
+// External edits (Obsidian desktop, git pull, canvas builder --watch) land in
+// the index without a restart. Writes through the HTTP tools refresh eagerly,
+// so the watcher only has to cover out-of-band changes.
+const watcher = chokidar.watch(vaultRoot, {
+  ignored: (watchedPath) => watchedPath.includes('.obsidian') || watchedPath.includes('.trash'),
+  ignoreInitial: true,
+  awaitWriteFinish: { stabilityThreshold: 300, pollInterval: 100 },
+});
+watcher
+  .on('add', (file) => index.refreshFile(file))
+  .on('change', (file) => index.refreshFile(file))
+  .on('unlink', (file) => index.removeFile(file));
+
+// Autopilot: la parte mecánica del brain-daily corre sola cada 24h dentro del
+// contenedor (consolidación + embeddings). La parte con criterio (huérfanas,
+// links muertos, anclaje) la cubre el skill /brain-daily.
+if (process.env.BRAIN_AUTOPILOT !== '0') {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const autopilot = setInterval(async () => {
+    try {
+      const result = await consolidateEpisodes(vaultRoot, { olderThanDays: 30, dryRun: false });
+      if (result.archived > 0) await index.build();
+      if (await semantic.isReachable()) await semantic.sync();
+      console.log(`[ObsidianMCP] autopilot: ${result.archived} episodios archivados, ${index.stats().notes} notas`);
+    } catch (error) {
+      console.error(`[ObsidianMCP] autopilot error: ${error.message}`);
+    }
+  }, Number(process.env.BRAIN_AUTOPILOT_INTERVAL_MS || DAY_MS));
+  autopilot.unref();
+}
+
+async function shutdown() {
+  await watcher.close().catch(() => {});
+  process.exit(0);
+}
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, shutdown);
+}
+// Windows no entrega señales a procesos hijos: los tests cierran por HTTP
+if (process.env.ALLOW_TEST_SHUTDOWN === '1') {
+  app.post('/shutdown', (_req, res) => {
+    res.json({ bye: true });
+    setTimeout(shutdown, 50);
+  });
+}
+
 app.listen(port, process.env.MCP_HOST || '0.0.0.0', () => {
   console.log(`[ObsidianMCP] HTTP tools on :${port}`);
-  console.log(`[ObsidianMCP] Vault: ${vaultRoot}`);
+  console.log(`[ObsidianMCP] Vault: ${vaultRoot} (${index.stats().notes} notes indexed)`);
 });

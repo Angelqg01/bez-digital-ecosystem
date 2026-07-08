@@ -48,6 +48,7 @@ const { startConsumer } = require('./services/eventConsumer');
 // ── Middleware ────────────────────────────────────────────────────────────────
 const { authenticateToken, auditLog, enterpriseRateLimit } = require('./middleware/security');
 const { metricsMiddleware, metricsHandler } = require('./middleware/metrics');
+const { brainTelemetryMiddleware } = require('./services/brainTelemetry');
 
 // ── Route modules ─────────────────────────────────────────────────────────────
 const authRoutes = require('./routes/auth');
@@ -199,6 +200,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ═══════════════════════════════════════════════════════════════════════════════
 
 app.use(metricsMiddleware);
+app.use(brainTelemetryMiddleware);
 app.use(auditLog);
 
 // ═══════════════════════════════════════════════════════════════════════════════

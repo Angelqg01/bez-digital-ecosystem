@@ -8,6 +8,11 @@
     "canvas:build": "node scripts/bezhasCanvasBuilder.cjs",
     "canvas:watch": "node scripts/bezhasCanvasBuilder.cjs --watch",
     "start": "node src/index.js",
+    "dev": "node scripts/dev-local.mjs",
+    "daily": "node scripts/brainDaily.mjs",
+    "map": "node scripts/buildPlatformMap.mjs",
+    "sim": "node scripts/simulateUsage.mjs",
+    "test": "node scripts/smoke.mjs",
     "health": "node -e \"fetch('http://localhost:4007/health').then(r=>r.json()).then(console.log)\""
   },
   "dependencies": {

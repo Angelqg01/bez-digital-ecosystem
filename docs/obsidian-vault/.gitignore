@@ -1,0 +1,6 @@
+# Runtime state del Brain (no es memoria versionable, es cache local por máquina)
+.obsidian/bezhas-usage.json
+.obsidian/bezhas-embeddings.json
+.obsidian/workspace*.json
+.obsidian/cache
+.trash/

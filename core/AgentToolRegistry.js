@@ -62,7 +62,7 @@ export const MCP_SERVERS = {
   'obsidian': {
     url: 'http://localhost:4007',
     description: 'Knowledge ops: vault Markdown, backlinks, episodios, auto-modelo y decisiones',
-    tools: ['search_vault','get_note','create_note','update_note','list_notes','get_related_notes','record_episode','update_self_model','rebuild_canvas']
+    tools: ['search_vault','semantic_search','get_note','create_note','update_note','list_notes','get_related_notes','get_recent_notes','get_tags','get_graph','record_episode','update_self_model','rebuild_canvas','consolidate_episodes','get_vault_fingerprint','record_anchor','get_usage_stats']
   },
   'compliance': {
     url: 'http://localhost:4008',
@@ -88,7 +88,7 @@ export const AGENT_REGISTRY = {
       'trading':      null,   // todas
       'payment':      ['swap_tokens','get_exchange_rate','get_payment_status'],
       'messaging':    ['send_trade_alert','send_system_alert','request_human_confirmation','send_telegram_document'],
-      'obsidian':     ['search_vault','get_note','get_related_notes','record_episode']
+      'obsidian':     ['search_vault','semantic_search','get_note','get_related_notes','get_recent_notes','record_episode']
     },
     requireHumanApproval: ['place_order','close_position','close_all_positions'],
     blocked: [],
@@ -164,7 +164,7 @@ export const AGENT_REGISTRY = {
     allowedTools: {
       'payment':     null,
       'blockchain':  ['check_wallet_balance','get_token_balance','get_tx_status'],
-      'obsidian':    ['search_vault','get_note','create_note','record_episode'],
+      'obsidian':    ['search_vault','semantic_search','get_note','create_note','get_recent_notes','record_episode'],
       'messaging':   ['send_telegram_message','send_system_alert'],
       'bezhas-core': ['get_bez_price','get_network_stats','system_health']
     },
@@ -202,7 +202,7 @@ export const AGENT_REGISTRY = {
     allowedTools: {
       'bezhas-core': ['system_health','get_network_stats','analyze_gas_strategy'],
       'messaging':   ['send_system_alert','send_telegram_message'],
-      'obsidian':    ['search_vault','get_note','create_note','record_episode','rebuild_canvas']
+      'obsidian':    ['search_vault','semantic_search','get_note','create_note','get_recent_notes','get_graph','record_episode','rebuild_canvas','consolidate_episodes','get_vault_fingerprint','get_usage_stats']
     },
     requireHumanApproval: ['revoke_access','delete_entity'],
     blocked: ['place_order','deploy_contract','create_payment'],
@@ -220,7 +220,7 @@ export const AGENT_REGISTRY = {
     allowedTools: {
       'bezhas-core': ['system_health','get_bez_price','get_network_stats','analyze_sentiment'],
       'messaging':   ['send_telegram_message','send_telegram_document','send_system_alert'],
-      'obsidian':    ['search_vault','get_note','create_note','update_note','list_notes','get_related_notes','record_episode','update_self_model','rebuild_canvas']
+      'obsidian':    ['search_vault','semantic_search','get_note','create_note','update_note','list_notes','get_related_notes','get_recent_notes','get_tags','get_graph','record_episode','update_self_model','rebuild_canvas','consolidate_episodes','get_vault_fingerprint','record_anchor','get_usage_stats']
     },
     requireHumanApproval: [],
     blocked: ['place_order','deploy_contract','create_payment','send_outreach'],
