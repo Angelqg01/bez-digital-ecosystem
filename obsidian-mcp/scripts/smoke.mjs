@@ -174,6 +174,34 @@ try {
   const after = (await fetch(`${BASE}/telemetry/summary`).then((r) => r.json())).totals.calls;
   assert.ok(after > before, 'tool calls should be tracked');
 
+  // ingest: raw layer immutable + source note + log entry
+  const ingest = await tool('ingest_source', {
+    title: 'MiCA Reglamento Resumen',
+    summary: 'Resumen del reglamento MiCA aplicable a BEZ-Coin: clasificación de tokens, obligaciones de emisor y gates de volumen KYC.',
+    raw_filename: 'mica-resumen.md',
+    raw_content: '# MiCA\n\nTexto fuente original inmutable.',
+    key_points: ['BEZ es utility token', 'KYC por tramos de volumen'],
+    entities: ['Staking Strategy'],
+    contradictions: ['La nota Treasury-Policy dice X pero MiCA exige Y'],
+    tags: ['compliance'],
+  });
+  assert.ok(ingest.created && ingest.logged);
+  assert.equal(ingest.source_file, 'raw/mica-resumen.md');
+  const srcNote = await tool('get_note', { path: ingest.path });
+  assert.ok(srcNote.content.includes('⚠️'));
+  // raw is write-once
+  await assert.rejects(tool('ingest_source', {
+    title: 'Dup', summary: 'duplicado de fuente cruda no permitido',
+    raw_filename: 'mica-resumen.md', raw_content: 'overwrite attempt',
+  }), /EEXIST|file already exists/i);
+  // raw layer must NOT be in the graph
+  const g2 = await tool('get_graph');
+  assert.ok(!g2.nodes.some((n) => n.id.startsWith('07-Sources/raw/')), 'raw layer must stay out of the graph');
+  assert.ok(g2.nodes.some((n) => n.id === ingest.path), 'source note must be in the graph');
+  // log.md is parseable
+  const log = await tool('get_note', { path: 'log.md' });
+  assert.ok(/## \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}\] ingest \| MiCA Reglamento Resumen/.test(log.content));
+
   // UI is served and wires the telemetry poller
   const ui = await fetch(`${BASE}/ui`).then((r) => r.text());
   assert.ok(ui.includes('BeZhas Brain Console'));

@@ -12,7 +12,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { VaultIndex, normalizeLinkKey } from '../src/vaultIndex.js';
 import { SemanticIndex } from '../src/semanticIndex.js';
-import { consolidateEpisodes, vaultFingerprint } from '../src/brainOps.js';
+import { consolidateEpisodes, vaultFingerprint, appendLog } from '../src/brainOps.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const vaultRoot = path.resolve(process.env.OBSIDIAN_VAULT_PATH || path.join(here, '..', '..', 'docs', 'obsidian-vault'));
@@ -138,6 +138,9 @@ if (!dryRun) {
     `## Result\n${stats.notes} notas · ${consolidation.archived} archivados · ${orphans.length} huérfanas · ${deadLinks.length} links muertos · root ${fp.root.slice(0, 18)}…`, '',
     '## Links', '[[Brain-Daily-Report]]', '',
   ].join('\n'));
+  await appendLog(vaultRoot, 'daily',
+    `${stats.notes} notas`,
+    `${consolidation.archived} archivados · ${orphans.length} huérfanas · ${deadLinks.length} links muertos · root ${fp.root.slice(0, 18)}…`);
 }
 
 console.log(mapOut);

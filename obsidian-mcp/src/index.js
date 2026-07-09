@@ -9,7 +9,7 @@ import { z } from 'zod';
 import chokidar from 'chokidar';
 import { VaultIndex, NOTE_RE, extractLinks } from './vaultIndex.js';
 import { SemanticIndex } from './semanticIndex.js';
-import { consolidateEpisodes, vaultFingerprint } from './brainOps.js';
+import { consolidateEpisodes, vaultFingerprint, appendLog } from './brainOps.js';
 import { UsageTracker } from './usageTracker.js';
 import { BRAIN_UI_HTML } from './ui.js';
 
@@ -28,6 +28,7 @@ const folders = {
   decisions: '02-Decisions',
   maps: '03-Maps',
   sectors: '04-Sectors',
+  sources: '07-Sources',
   inbox: '99-Inbox',
 };
 
@@ -111,6 +112,20 @@ async function ensureVault() {
       },
       last_self_update: nowIso(),
     }, null, 2));
+  }
+
+  await fs.mkdir(path.join(vaultRoot, folders.sources, 'raw'), { recursive: true });
+
+  const logPath = path.join(vaultRoot, 'log.md');
+  try {
+    await fs.access(logPath);
+  } catch {
+    await fs.writeFile(logPath, [
+      '---', 'type: log', 'summary: Registro cronologico append-only del Brain (ingests, dailies, anclajes).', '---',
+      '', '# Brain Log', '',
+      'Registro del wiki [[BeZhas-Platform-Master]] — convenciones en [[_SCHEMA]].',
+      'Formato: `## [fecha] op | titulo`. Parseable: `grep "^## \\[" log.md | tail -5`.', '', '',
+    ].join('\n'));
   }
 
   const indexPath = path.join(vaultRoot, 'README.md');
@@ -259,7 +274,10 @@ const toolHandlers = {
     });
     const { olderThanDays = 30, dryRun = true } = schema.parse(params);
     const result = await consolidateEpisodes(vaultRoot, { olderThanDays, dryRun });
-    if (!dryRun && result.archived > 0) await index.build();
+    if (!dryRun && result.archived > 0) {
+      await index.build();
+      await appendLog(vaultRoot, 'consolidate', `${result.consolidated} digests`, `${result.archived} episodios archivados`);
+    }
     return result;
   },
 
@@ -283,6 +301,7 @@ const toolHandlers = {
     });
     const anchor = schema.parse(params);
     const stamp = nowIso();
+    await appendLog(vaultRoot, 'anchor', anchor.root.slice(0, 18), anchor.txHash ? `tx ${anchor.txHash}` : 'sin tx');
     return toolHandlers.create_note({
       title: `Anchor ${stamp.slice(0, 19).replace(/[:T]/g, '-')}`,
       folder: folders.decisions,
@@ -303,6 +322,58 @@ const toolHandlers = {
 
   async get_graph() {
     return index.graph();
+  },
+
+  async ingest_source(params = {}) {
+    const schema = z.object({
+      title: z.string().min(1),
+      summary: z.string().min(10),
+      raw_filename: z.string().regex(/^[\w][\w .()-]{0,120}\.\w{1,8}$/).optional(),
+      raw_content: z.string().optional(),
+      source_file: z.string().optional(),
+      key_points: z.array(z.string()).optional(),
+      entities: z.array(z.string()).optional(),
+      contradictions: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      agent: z.string().default('director-agent'),
+    });
+    const src = schema.parse(params);
+
+    // capa cruda inmutable: se escribe una vez (flag wx), nunca se sobreescribe
+    let sourceFile = src.source_file || null;
+    if (src.raw_content && src.raw_filename) {
+      const rawAbs = path.join(vaultRoot, folders.sources, 'raw', src.raw_filename);
+      await fs.writeFile(rawAbs, src.raw_content, { flag: 'wx' });
+      sourceFile = `raw/${src.raw_filename}`;
+    }
+
+    const body = [
+      `> Fuente ingerida al wiki. Original inmutable en \`07-Sources/${sourceFile || 'n/a'}\`.`,
+      '',
+      '## Resumen',
+      '',
+      src.summary.trim(),
+      ...(src.key_points?.length ? ['', '## Puntos clave', '', ...src.key_points.map((k) => `- ${k}`)] : []),
+      ...(src.entities?.length ? ['', '## Entidades relacionadas', '', ...src.entities.map((e) => `- [[${e}]]`)] : []),
+      ...(src.contradictions?.length ? ['', '## Contradicciones detectadas (resolver en lint)', '', ...src.contradictions.map((c) => `- ⚠️ ${c}`)] : []),
+      '',
+      '[[BeZhas-Platform-Master]]',
+    ].join('\n');
+
+    const note = await toolHandlers.create_note({
+      title: src.title,
+      folder: folders.sources,
+      content: body,
+      metadata: {
+        type: 'source',
+        agent: src.agent,
+        source_file: sourceFile,
+        tags: ['source', ...(src.tags || [])],
+      },
+    });
+    await appendLog(vaultRoot, 'ingest', src.title,
+      `${src.entities?.length || 0} entidades enlazadas · ${src.contradictions?.length || 0} contradicciones · ${note.path}`);
+    return { ...note, source_file: sourceFile, logged: true };
   },
 
   async record_episode(params = {}) {

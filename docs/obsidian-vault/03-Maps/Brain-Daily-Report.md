@@ -1,23 +1,23 @@
 ---
 type: report
-created: "2026-07-08T07:19:00.681Z"
+created: "2026-07-09T19:25:23.505Z"
 tags: ["brain-daily", "maintenance"]
-summary: "Brain daily: 49 notas, 0 huérfanas, 0 links muertos, 0 episodios archivados."
+summary: "Brain daily: 53 notas, 0 huérfanas, 0 links muertos, 0 episodios archivados."
 ---
 
 # Brain Daily Report
 
-> Última ejecución: 2026-07-08T07:19:00.681Z
+> Última ejecución: 2026-07-09T19:25:23.505Z
 
 | Métrica | Valor |
 | --- | --- |
-| Notas | 49 (47.1 KB) |
+| Notas | 53 (52.9 KB) |
 | Semántica | OFF (Ollama no disponible) |
 | Digests creados | 0 |
 | Episodios archivados | 0 |
 | Huérfanas | 0 |
 | Links muertos | 0 |
-| Merkle root | `0x6a02773994e083866764edd567cf32ee4257f977483c76a53275475700611084` |
+| Merkle root | `0x711be81760d17b551840277fb63439a1cf49b4dcdaa6b4abcfb2fdde03565c93` |
 
 ## Huérfanas (conectar o archivar)
 

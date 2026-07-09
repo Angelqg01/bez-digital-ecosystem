@@ -169,7 +169,7 @@ const api = (tool, params={}) => fetch('/tools/'+tool, {
 
 const FOLDER_COLORS = {
   '00-Episodic-Memory':'#00D4AA','01-Self-Model':'#FFD700','02-Decisions':'#FF6B9D',
-  '03-Maps':'#a78bfa','04-Sectors':'#38bdf8','99-Inbox':'#94a3b8','':'#e6e9ef',
+  '03-Maps':'#a78bfa','04-Sectors':'#38bdf8','07-Sources':'#f97316','99-Inbox':'#94a3b8','':'#e6e9ef',
   'actor':'#FF6B9D'
 };
 const color = f => FOLDER_COLORS[f] || '#94a3b8';

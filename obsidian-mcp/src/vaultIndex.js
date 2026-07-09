@@ -72,6 +72,8 @@ export class VaultIndex {
       const absolute = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (entry.name === '.obsidian' || entry.name === '.trash') continue;
+        // 07-Sources/raw es la capa inmutable de fuentes: se lee, no se indexa
+        if (this.toRelative(absolute) === '07-Sources/raw') continue;
         files.push(...await this.#walk(absolute));
       } else if (NOTE_RE.test(entry.name)) {
         files.push(absolute);
@@ -137,6 +139,8 @@ export class VaultIndex {
 
   async refreshFile(absolute) {
     if (!NOTE_RE.test(absolute)) return;
+    // la capa cruda tampoco entra por el watcher ni por escrituras directas
+    if (this.toRelative(absolute).startsWith('07-Sources/raw/')) return;
     try {
       await this.#indexFile(absolute);
     } catch {

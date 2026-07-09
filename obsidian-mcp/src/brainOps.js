@@ -11,6 +11,16 @@ function sha256(data) {
   return crypto.createHash('sha256').update(data).digest('hex');
 }
 
+/**
+ * log.md: registro cronológico append-only del wiki. Prefijo uniforme
+ * `## [fecha] op | título` — parseable con grep/Select-String.
+ */
+export async function appendLog(vaultRoot, op, title, detail = '') {
+  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  const entry = `## [${stamp}] ${op} | ${title}\n${detail ? `${detail}\n` : ''}\n`;
+  await fs.appendFile(path.join(vaultRoot, 'log.md'), entry);
+}
+
 function extractSection(body, heading) {
   const match = body.match(new RegExp(`##\\s*${heading}\\s*\\n([\\s\\S]*?)(?=\\n##\\s|$)`, 'i'));
   return match ? match[1].trim().replace(/\s+/g, ' ').slice(0, 240) : '';

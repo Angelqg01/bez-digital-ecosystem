@@ -62,7 +62,7 @@ export const MCP_SERVERS = {
   'obsidian': {
     url: 'http://localhost:4007',
     description: 'Knowledge ops: vault Markdown, backlinks, episodios, auto-modelo y decisiones',
-    tools: ['search_vault','semantic_search','get_note','create_note','update_note','list_notes','get_related_notes','get_recent_notes','get_tags','get_graph','record_episode','update_self_model','rebuild_canvas','consolidate_episodes','get_vault_fingerprint','record_anchor','get_usage_stats']
+    tools: ['search_vault','semantic_search','get_note','create_note','update_note','list_notes','get_related_notes','get_recent_notes','get_tags','get_graph','record_episode','update_self_model','rebuild_canvas','consolidate_episodes','get_vault_fingerprint','record_anchor','get_usage_stats','ingest_source']
   },
   'compliance': {
     url: 'http://localhost:4008',
@@ -220,7 +220,7 @@ export const AGENT_REGISTRY = {
     allowedTools: {
       'bezhas-core': ['system_health','get_bez_price','get_network_stats','analyze_sentiment'],
       'messaging':   ['send_telegram_message','send_telegram_document','send_system_alert'],
-      'obsidian':    ['search_vault','semantic_search','get_note','create_note','update_note','list_notes','get_related_notes','get_recent_notes','get_tags','get_graph','record_episode','update_self_model','rebuild_canvas','consolidate_episodes','get_vault_fingerprint','record_anchor','get_usage_stats']
+      'obsidian':    ['search_vault','semantic_search','get_note','create_note','update_note','list_notes','get_related_notes','get_recent_notes','get_tags','get_graph','record_episode','update_self_model','rebuild_canvas','consolidate_episodes','get_vault_fingerprint','record_anchor','get_usage_stats','ingest_source']
     },
     requireHumanApproval: [],
     blocked: ['place_order','deploy_contract','create_payment','send_outreach'],
