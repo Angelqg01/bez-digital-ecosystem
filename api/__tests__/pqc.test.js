@@ -1,6 +1,6 @@
 /**
  * api/__tests__/pqc.test.js
- * Tests para apiPQC.js — singleton PQC del servidor API.
+ * Tests para apiPQC.js — singleton PQC del servidor API (out-of-band).
  * Sin dependencias de BD ni servidor: prueba el módulo de forma aislada.
  */
 
@@ -8,14 +8,14 @@
 
 const assert = require('assert');
 
-// Forzar re-require limpio entre bloques sin seed
 function freshPQC() {
   delete require.cache[require.resolve('../lib/apiPQC')];
   return require('../lib/apiPQC');
 }
 
+// Token JWT estándar (sin modificar) para simular lo que jwt.sign() produce
 function makeJwt(payload = {}) {
-  const h = Buffer.from(JSON.stringify({ alg: 'ES256', typ: 'JWT' })).toString('base64url');
+  const h = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const b = Buffer.from(JSON.stringify({
     sub: 'user-1', userId: 42, role: 'user',
     exp: Math.floor(Date.now() / 1000) + 3600,
@@ -44,12 +44,13 @@ function test(name, fn) {
 console.log('\n[apiPQC] Inicialización');
 
 test('getInfo() devuelve campos requeridos', () => {
-  const pqc = freshPQC();
+  const pqc  = freshPQC();
   const info = pqc.getInfo();
   assert.strictEqual(info.algorithm, 'ML-DSA-65');
   assert.strictEqual(info.standard,  'NIST FIPS 204 (ML-DSA)');
   assert.ok(info.publicKey.length > 64, 'publicKey debe tener longitud significativa');
   assert.ok(info.initAt, 'initAt debe estar presente');
+  assert.strictEqual(info.transport, 'out-of-band');
 });
 
 test('getInfo().persistent = false sin BEZHAS_PQC_SEED', () => {
@@ -73,167 +74,183 @@ test('seed determinista produce misma clave pública', () => {
   delete process.env.BEZHAS_PQC_SEED;
 });
 
-test('seed inválida (long < 64) lanza error descriptivo', () => {
+test('seed inválida (len < 64) lanza error descriptivo', () => {
   process.env.BEZHAS_PQC_SEED = 'abc';
   assert.throws(() => freshPQC().getInfo(), /32 bytes/);
   delete process.env.BEZHAS_PQC_SEED;
 });
 
-// ─── Suite 2: signJwt ─────────────────────────────────────────────────────────
+// ─── Suite 2: signToken ───────────────────────────────────────────────────────
 
-console.log('\n[apiPQC] signJwt');
+console.log('\n[apiPQC] signToken');
 
-test('signJwt() añade claim pqc al payload', () => {
+test('signToken() devuelve { sig, pub }', () => {
   const pqc    = freshPQC();
   const jwt    = makeJwt();
-  const signed = pqc.signJwt(jwt);
-  const parts  = signed.split('.');
-  const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+  const result = pqc.signToken(jwt);
 
-  assert.ok(payload.pqc,                       'Debe existir claim pqc');
-  assert.strictEqual(payload.pqc.alg, 'ML-DSA-65');
-  assert.ok(payload.pqc.sig,                   'Debe tener firma');
-  assert.ok(payload.pqc.pub,                   'Debe tener clave pública');
+  assert.ok(result.sig, 'Debe tener campo sig');
+  assert.ok(result.pub, 'Debe tener campo pub');
+  assert.ok(result.sig.length > 100, 'Firma Dilithium3 debe ser larga');
+  assert.ok(result.pub.length > 64,  'Clave pública debe ser larga');
 });
 
-test('signJwt() preserva la 3ª parte (firma ECDSA) intacta', () => {
-  const pqc    = freshPQC();
-  const jwt    = makeJwt();
-  const signed = pqc.signJwt(jwt);
-  assert.strictEqual(jwt.split('.')[2], signed.split('.')[2]);
-});
-
-test('signJwt() con JWT malformado lanza error', () => {
+test('signToken() NO modifica el JWT original', () => {
   const pqc = freshPQC();
-  assert.throws(() => pqc.signJwt('no-dots-here'), /malformado/);
+  const jwt = makeJwt();
+  pqc.signToken(jwt);
+  // El JWT permanece idéntico — signToken es puro
+  assert.strictEqual(jwt, makeJwt(JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString())));
 });
 
-test('signJwt() preserva todos los claims originales', () => {
-  const pqc     = freshPQC();
-  const payload = { sub: 'u-999', userId: 99, role: 'admin', bezhas_id: 'BEZ-TEST', exp: 9999999999 };
-  const signed  = pqc.signJwt(makeJwt(payload));
-  const decoded = JSON.parse(Buffer.from(signed.split('.')[1], 'base64url').toString());
-
-  assert.strictEqual(decoded.userId,    99);
-  assert.strictEqual(decoded.role,      'admin');
-  assert.strictEqual(decoded.bezhas_id, 'BEZ-TEST');
+test('signToken() con string vacío lanza error', () => {
+  const pqc = freshPQC();
+  assert.throws(() => pqc.signToken(''), /token debe ser/);
+  assert.throws(() => pqc.signToken(null), /token debe ser/);
 });
 
-// ─── Suite 3: verifyJwt ──────────────────────────────────────────────────────
+test('signToken() distintos tokens producen distintas firmas', () => {
+  const pqc  = freshPQC();
+  const r1   = pqc.signToken(makeJwt({ userId: 1 }));
+  const r2   = pqc.signToken(makeJwt({ userId: 2 }));
+  assert.notStrictEqual(r1.sig, r2.sig, 'Tokens distintos → firmas distintas');
+  assert.strictEqual(r1.pub, r2.pub, 'Misma instancia → misma clave pública');
+});
 
-console.log('\n[apiPQC] verifyJwt');
+// ─── Suite 3: verifyToken ─────────────────────────────────────────────────────
 
-test('verifyJwt() valida JWT auto-firmado', () => {
-  const pqc    = freshPQC();
-  const signed = pqc.signJwt(makeJwt());
-  const result = pqc.verifyJwt(signed);
+console.log('\n[apiPQC] verifyToken');
+
+test('verifyToken() válida JWT auto-firmado', () => {
+  const pqc   = freshPQC();
+  const jwt   = makeJwt();
+  const { sig, pub } = pqc.signToken(jwt);
+  const result = pqc.verifyToken(jwt, sig, pub);
   assert.strictEqual(result.valid, true);
   assert.strictEqual(result.alg,   'ML-DSA-65');
 });
 
-test('verifyJwt() rechaza JWT sin claim pqc', () => {
+test('verifyToken() falla sin sig', () => {
   const pqc    = freshPQC();
-  const result = pqc.verifyJwt(makeJwt());
-  assert.strictEqual(result.valid, false);
-  assert.ok(result.reason.includes('PQC'));
+  const jwt    = makeJwt();
+  const { pub } = pqc.signToken(jwt);
+  const result  = pqc.verifyToken(jwt, null, pub);
+  assert.strictEqual(result.valid,  false);
+  assert.strictEqual(result.reason, 'no-pqc-sig');
 });
 
-test('verifyJwt() rechaza JWT con payload alterado post-firma', () => {
+test('verifyToken() falla sin pub', () => {
   const pqc    = freshPQC();
-  const signed = pqc.signJwt(makeJwt());
-  const parts  = signed.split('.');
+  const jwt    = makeJwt();
+  const { sig } = pqc.signToken(jwt);
+  const result  = pqc.verifyToken(jwt, sig, null);
+  assert.strictEqual(result.valid,  false);
+  assert.strictEqual(result.reason, 'no-pqc-pub');
+});
 
-  // Cambiar el rol de 'user' a 'admin' en el payload
-  const p      = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-  p.role       = 'admin';
+test('verifyToken() falla con firma corrupta', () => {
+  const pqc   = freshPQC();
+  const jwt   = makeJwt();
+  const { pub } = pqc.signToken(jwt);
+  const result  = pqc.verifyToken(jwt, Buffer.from('firma-basura').toString('base64url'), pub);
+  assert.strictEqual(result.valid, false);
+});
+
+test('verifyToken() falla si el token fue modificado post-firma', () => {
+  const pqc   = freshPQC();
+  const jwt   = makeJwt({ role: 'user' });
+  const { sig, pub } = pqc.signToken(jwt);
+
+  // Alterar el JWT (cambiar un byte al final del payload)
+  const parts = jwt.split('.');
+  const p = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+  p.role  = 'admin';
   const tampered = `${parts[0]}.${Buffer.from(JSON.stringify(p)).toString('base64url')}.${parts[2]}`;
 
-  const result = pqc.verifyJwt(tampered);
-  assert.strictEqual(result.valid, false, 'Payload alterado debe fallar verificación PQC');
+  const result = pqc.verifyToken(tampered, sig, pub);
+  assert.strictEqual(result.valid, false, 'Token modificado debe fallar PQC');
 });
 
-test('verifyJwt() rechaza firma corrupta', () => {
-  const pqc    = freshPQC();
-  const signed = pqc.signJwt(makeJwt());
-  const parts  = signed.split('.');
-  const p      = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-
-  p.pqc.sig    = Buffer.from('firma-falsa').toString('base64url');
-  const bad    = `${parts[0]}.${Buffer.from(JSON.stringify(p)).toString('base64url')}.${parts[2]}`;
-
-  const result = pqc.verifyJwt(bad);
-  assert.strictEqual(result.valid, false);
-});
-
-test('verifyJwt() rechaza algoritmo PQC desconocido', () => {
-  const pqc    = freshPQC();
-  const signed = pqc.signJwt(makeJwt());
-  const parts  = signed.split('.');
-  const p      = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-
-  p.pqc.alg = 'FUTURE-ALG-999';
-  const bad  = `${parts[0]}.${Buffer.from(JSON.stringify(p)).toString('base64url')}.${parts[2]}`;
-
-  const result = pqc.verifyJwt(bad);
-  assert.strictEqual(result.valid, false);
-  assert.ok(result.reason.includes('desconocido'));
-});
-
-test('verifyJwt() verifica con clave pública embebida — no depende del singleton', () => {
-  // Firmado con seed A
+test('verifyToken() verifica con pub embebida — no depende del singleton', () => {
+  // Firma con seed A
   process.env.BEZHAS_PQC_SEED = '1'.repeat(64);
-  const pqcA  = freshPQC();
-  const signed = pqcA.signJwt(makeJwt());
+  const pqcA = freshPQC();
+  const jwt  = makeJwt();
+  const { sig, pub } = pqcA.signToken(jwt);
 
-  // Verificado con seed B (clave distinta) — debe usar la pub embebida en el token
+  // Verifica con singleton de seed B — usa la pub pasada como parámetro
   process.env.BEZHAS_PQC_SEED = '2'.repeat(64);
   const pqcB  = freshPQC();
-  const result = pqcB.verifyJwt(signed);
-
-  assert.strictEqual(result.valid, true, 'Debe verificar con la pub embebida, no la del singleton');
+  const result = pqcB.verifyToken(jwt, sig, pub);
+  assert.strictEqual(result.valid, true, 'Debe verificar con pub pasada, no la del singleton');
   delete process.env.BEZHAS_PQC_SEED;
 });
 
-// ─── Suite 4: Integración con flujo completo ─────────────────────────────────
+// ─── Suite 4: helpers extractFrom* ───────────────────────────────────────────
+
+console.log('\n[apiPQC] Helpers de extracción');
+
+test('extractFromHeaders extrae sig y pub correctamente', () => {
+  const pqc = freshPQC();
+  const h = { 'x-pqc-signature': 'mySig', 'x-pqc-pubkey': 'myPub', authorization: 'Bearer tok' };
+  const r = pqc.extractFromHeaders(h);
+  assert.strictEqual(r.sig, 'mySig');
+  assert.strictEqual(r.pub, 'myPub');
+});
+
+test('extractFromHeaders devuelve null si faltan headers', () => {
+  const pqc = freshPQC();
+  const r = pqc.extractFromHeaders({ authorization: 'Bearer tok' });
+  assert.strictEqual(r.sig, null);
+  assert.strictEqual(r.pub, null);
+});
+
+test('extractFromQuery extrae pqcSig y pqcPub', () => {
+  const pqc = freshPQC();
+  const r = pqc.extractFromQuery({ token: 'jwt', pqcSig: 'mySig', pqcPub: 'myPub' });
+  assert.strictEqual(r.sig, 'mySig');
+  assert.strictEqual(r.pub, 'myPub');
+});
+
+test('extractFromQuery devuelve null si faltan params', () => {
+  const pqc = freshPQC();
+  const r = pqc.extractFromQuery({ token: 'jwt' });
+  assert.strictEqual(r.sig, null);
+  assert.strictEqual(r.pub, null);
+});
+
+// ─── Suite 5: flujo completo round-trip ─────────────────────────────────────
 
 console.log('\n[apiPQC] Flujo completo sign → verify');
 
-test('sign/verify round-trip con payload real de usuario', () => {
-  const pqc   = freshPQC();
-  const userPayload = {
-    address:    '0x1234567890abcdef1234567890abcdef12345678',
-    userId:     7,
-    role:       'manager',
-    bezhas_id:  'BEZ-ABCD-1234',
-    exp:        Math.floor(Date.now() / 1000) + 86400,
-  };
-  const signed = pqc.signJwt(makeJwt(userPayload));
-  const result = pqc.verifyJwt(signed);
-
+test('round-trip con payload real de usuario', () => {
+  const pqc = freshPQC();
+  const jwt = makeJwt({
+    address:   '0x1234567890abcdef1234567890abcdef12345678',
+    userId:    7,
+    role:      'manager',
+    bezhas_id: 'BEZ-ABCD-1234',
+  });
+  const { sig, pub } = pqc.signToken(jwt);
+  const result = pqc.verifyToken(jwt, sig, pub);
   assert.strictEqual(result.valid, true);
-
-  // Confirmar que los datos del usuario siguen intactos
-  const decoded = JSON.parse(Buffer.from(signed.split('.')[1], 'base64url').toString());
-  assert.strictEqual(decoded.userId,    7);
-  assert.strictEqual(decoded.role,      'manager');
-  assert.strictEqual(decoded.bezhas_id, 'BEZ-ABCD-1234');
+  assert.strictEqual(result.alg,   'ML-DSA-65');
 });
 
 test('tokens consecutivos son independientes', () => {
   const pqc  = freshPQC();
-  const t1   = pqc.signJwt(makeJwt({ userId: 1 }));
-  const t2   = pqc.signJwt(makeJwt({ userId: 2 }));
+  const jwt1 = makeJwt({ userId: 1 });
+  const jwt2 = makeJwt({ userId: 2 });
+  const r1   = pqc.signToken(jwt1);
+  const r2   = pqc.signToken(jwt2);
 
-  assert.strictEqual(pqc.verifyJwt(t1).valid, true);
-  assert.strictEqual(pqc.verifyJwt(t2).valid, true);
+  assert.strictEqual(pqc.verifyToken(jwt1, r1.sig, r1.pub).valid, true);
+  assert.strictEqual(pqc.verifyToken(jwt2, r2.sig, r2.pub).valid, true);
 
-  // Mezclar firmas: sig de t1 en t2 debe fallar
-  const p1 = JSON.parse(Buffer.from(t1.split('.')[1], 'base64url').toString());
-  const p2 = JSON.parse(Buffer.from(t2.split('.')[1], 'base64url').toString());
-  p2.pqc.sig = p1.pqc.sig;
-  const mixed = `${t2.split('.')[0]}.${Buffer.from(JSON.stringify(p2)).toString('base64url')}.${t2.split('.')[2]}`;
-
-  assert.strictEqual(pqc.verifyJwt(mixed).valid, false, 'Firma de otro token debe fallar');
+  // Firma de jwt1 no verifica jwt2
+  assert.strictEqual(pqc.verifyToken(jwt2, r1.sig, r1.pub).valid, false);
+  // Firma de jwt2 no verifica jwt1
+  assert.strictEqual(pqc.verifyToken(jwt1, r2.sig, r2.pub).valid, false);
 });
 
 // ─── Resumen ──────────────────────────────────────────────────────────────────

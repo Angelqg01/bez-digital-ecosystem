@@ -76,14 +76,14 @@ router.post('/login', [
         }
     }
 
-    const rawToken = jwt.sign(
+    const token  = jwt.sign(
         { address: user.wallet_address, userId: user.id, role: user.role, bezhas_id: user.bezhas_id },
         JWT_SECRET,
         { expiresIn: '24h' }
     );
-    const token = apiPQC.signJwt(rawToken);
+    const pqcSig = apiPQC.signToken(token);
 
-    res.json({ success: true, token, user });
+    res.json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' }, user });
 });
 
 // ── FIAT-first registration: creates a managed wallet inside the profile ──
@@ -122,14 +122,14 @@ router.post('/fiat/register', [
             [rows[0].id]
         );
         const user = refreshed.rows[0];
-        const rawToken = jwt.sign(
+        const token  = jwt.sign(
             { address: user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
-        const token = apiPQC.signJwt(rawToken);
+        const pqcSig = apiPQC.signToken(token);
 
-        res.status(201).json({ success: true, token, user, safeWallet });
+        res.status(201).json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' }, user, safeWallet });
     } catch (error) {
         if (error.code === '23505') {
             return res.status(409).json({ error: 'Email or wallet already registered' });
@@ -173,14 +173,14 @@ router.post('/fiat/login', [
         }
 
         const safeWallet = await walletService.ensureFiatSafeWalletForUser(user.id);
-        const rawToken = jwt.sign(
+        const token  = jwt.sign(
             { address: safeWallet.ownerAddress || user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
-        const token = apiPQC.signJwt(rawToken);
+        const pqcSig = apiPQC.signToken(token);
 
-        res.json({ success: true, token, user: { ...user, primary_wallet_address: safeWallet.ownerAddress }, safeWallet });
+        res.json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' }, user: { ...user, primary_wallet_address: safeWallet.ownerAddress }, safeWallet });
     } catch (error) {
         res.status(500).json({ error: 'FIAT login failed', details: error.message });
     }
@@ -198,13 +198,13 @@ router.post('/safe-wallet/ensure', authenticateToken, async (req, res) => {
 
 // ── Refresh token ──
 router.post('/refresh', authenticateToken, (req, res) => {
-    const rawToken = jwt.sign(
+    const token  = jwt.sign(
         { address: req.user.address, userId: req.user.userId, role: req.user.role },
         JWT_SECRET,
         { expiresIn: '24h' }
     );
-    const token = apiPQC.signJwt(rawToken);
-    res.json({ success: true, token });
+    const pqcSig = apiPQC.signToken(token);
+    res.json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' } });
 });
 
 // ── PQC public key (sin autenticación — es información pública) ──

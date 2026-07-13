@@ -23,7 +23,7 @@
  * @version 1.1.0
  */
 
-import { getTokenPqcStatus, parsePqcClaim } from './bezhas-pqc.js';
+import { getSessionPqcStatus, makeAuthHeaders, makeWsUrl } from './bezhas-pqc.js';
 
 // ── Constants (from CLAUDE.md / project memory) ──────────────────────────────
 export const BEZ_TOKEN_POLYGON = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8'; // BEZ V1 = moneda de cambio
@@ -117,14 +117,16 @@ export function buildSiweMessage({ domain, address, statement, uri, chainId, non
 export function saveSession(session) {
   if (typeof localStorage === 'undefined') return;
 
-  // Añadir metadatos PQC sincrónicos (claim parsing, sin criptografía)
+  // La respuesta de login es { token, pqc: { sig, pub, alg } }.
+  // Aplanar para facilitar acceso desde cualquier SubApp.
   const enriched = { ...session };
-  if (session.token) {
-    enriched.pqcClaim = parsePqcClaim(session.token);
+  if (session.pqc) {
+    enriched.pqcSig = session.pqc.sig;
+    enriched.pqcPub = session.pqc.pub;
   }
 
   localStorage.setItem(SESSION_KEY, JSON.stringify(enriched));
-  // Mirror to the legacy keys consumed by existing AuthProviders for cross-app SSO.
+  // Mirror para legacy AuthProviders (solo el JWT, sin firma PQC en JWT)
   if (session.token) localStorage.setItem(JWT_KEY, session.token);
   localStorage.setItem(USER_KEY, JSON.stringify(session.user || {
     username: shortAddress(session.address),
@@ -132,18 +134,39 @@ export function saveSession(session) {
     walletAddress: session.address,
   }));
 
-  // Verificación criptográfica completa en background (async, no bloquea el login)
+  // Verificación criptográfica PQC en background (async, no bloquea el login)
   if (session.token) {
-    getTokenPqcStatus(session.token).then(pqcStatus => {
+    getSessionPqcStatus(enriched).then(pqcStatus => {
       try {
         const stored = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
         stored.pqcStatus = pqcStatus;
         localStorage.setItem(SESSION_KEY, JSON.stringify(stored));
-        // Notificar a la app del resultado (para que el badge se actualice)
-        window.dispatchEvent(new CustomEvent('bezhas:pqc-verified', { detail: pqcStatus }));
-      } catch { /* storage lleno u otro error — ignorar */ }
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('bezhas:pqc-verified', { detail: pqcStatus }));
+        }
+      } catch { /* storage lleno u otro error */ }
     });
   }
+}
+
+/**
+ * Devuelve los headers HTTP para peticiones fetch autenticadas con JWT+PQC.
+ * Ejemplo: fetch(url, { headers: getAuthHeaders() })
+ */
+export function getAuthHeaders() {
+  const session = getSession();
+  if (!session?.token) return {};
+  return makeAuthHeaders(session.token, session.pqcSig, session.pqcPub);
+}
+
+/**
+ * Construye la URL de un WebSocket con token JWT y parámetros PQC en el query.
+ * @param {string} baseUrl — e.g. 'wss://api.bez.digital:3001/agent-runtime'
+ */
+export function getPqcWsUrl(baseUrl) {
+  const session = getSession();
+  if (!session?.token) return baseUrl;
+  return makeWsUrl(baseUrl, session.token, session.pqcSig, session.pqcPub);
 }
 
 export function getSession() {
@@ -333,6 +356,7 @@ export function onWalletEvent(handler) {
 export default {
   isWalletAvailable, connectWallet, siweLogin, siweSubscribe,
   subscribeWithBEZ, saveSession, getSession, clearSession,
+  getAuthHeaders, getPqcWsUrl,
   shortAddress, onWalletEvent, buildSiweMessage,
   BEZ_TOKEN_POLYGON, BEZ_TREASURY, POLYGON_CHAIN_ID,
 };

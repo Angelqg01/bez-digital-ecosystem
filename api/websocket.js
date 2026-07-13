@@ -16,44 +16,118 @@
 const { WebSocketServer } = require('ws');
 const { createServer }    = require('http');
 const url                 = require('url');
+const jwt                 = require('jsonwebtoken');
+const { JWT_SECRET, AUTH_BYPASS } = require('./config/secrets');
+const apiPQC              = require('./lib/apiPQC');
+
+// ─── Requisitos de rol por room ────────────────────────────────────────────
+// null = cualquier usuario autenticado
+const ROOM_ROLES = {
+  '/agent-runtime': ['admin', 'manager', 'operator'],
+  '/tokenomics':    null,
+  '/aegis':         ['admin', 'manager'],
+  '/compliance':    ['admin', 'manager', 'compliance'],
+};
+
+// ─── Verificación JWT + PQC para el handshake WebSocket ───────────────────
+function verifyWsToken(token, pqcSig, pqcPub) {
+  if (!token) return { ok: false, reason: 'no-token' };
+
+  let user;
+  try {
+    user = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return { ok: false, reason: `jwt-invalid: ${err.message}` };
+  }
+
+  // Verificación PQC out-of-band: sig en query ?pqcSig=&pqcPub= (opcional, legacy pasa)
+  const pqcResult = pqcSig && pqcPub
+    ? apiPQC.verifyToken(token, pqcSig, pqcPub)
+    : { valid: false, reason: 'no-pqc-params' };
+
+  if (pqcSig && pqcPub && !pqcResult.valid) {
+    return { ok: false, reason: `pqc-invalid: ${pqcResult.reason}` };
+  }
+
+  return { ok: true, user, pqcVerified: pqcResult.valid };
+}
 
 class BeZhasWebSocketServer {
   constructor(httpServer, manager) {
     this.manager = manager;
-    this._wss    = new WebSocketServer({ server: httpServer });
-    this._rooms  = new Map(); // room → Set<ws>
-    this._rooms.set('/agent-runtime', new Set());
-    this._rooms.set('/tokenomics',    new Set());
-    this._rooms.set('/aegis',         new Set());
-    this._rooms.set('/compliance',    new Set());
+    this._rooms  = new Map();
+    for (const room of Object.keys(ROOM_ROLES)) this._rooms.set(room, new Set());
+
+    this._wss = new WebSocketServer({
+      server: httpServer,
+      // ── Autenticación en el handshake HTTP Upgrade ─────────────────────
+      verifyClient: ({ req }, cb) => {
+        // Dev bypass: aceptar sin token (solo si AUTH_BYPASS activo)
+        if (AUTH_BYPASS) {
+          req._wsUser = { address: '0xDev', userId: 0, role: 'admin' };
+          req._wsPqcVerified = false;
+          return cb(true);
+        }
+
+        const parsed = url.parse(req.url, true);
+        const token  = parsed.query.token
+          || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+        const { sig: pqcSig, pub: pqcPub } = apiPQC.extractFromQuery(parsed.query);
+
+        const result = verifyWsToken(token, pqcSig, pqcPub);
+        if (!result.ok) {
+          console.warn(`[WebSocket] Conexión rechazada: ${result.reason} — ${req.socket?.remoteAddress}`);
+          return cb(false, 401, result.reason);
+        }
+
+        // Verificar rol para la room solicitada
+        const path     = parsed.pathname || '/agent-runtime';
+        const roomKey  = path in ROOM_ROLES ? path : '/agent-runtime';
+        const required = ROOM_ROLES[roomKey];
+        if (required !== null && !required.includes(result.user.role)) {
+          console.warn(`[WebSocket] Acceso denegado a ${path} — rol '${result.user.role}' insuficiente`);
+          return cb(false, 403, `role-required: ${required.join('|')}`);
+        }
+
+        req._wsUser       = result.user;
+        req._wsPqcVerified = result.pqcVerified;
+        cb(true);
+      },
+    });
 
     this._wss.on('connection', (ws, req) => this._onConnection(ws, req));
     this._wireManagerEvents();
-    console.log('[WebSocket] 🔌 Server iniciado');
+    console.log('[WebSocket] Server iniciado con autenticación JWT+PQC');
   }
 
   // ─── CONEXIÓN ─────────────────────────────────────────────────────────────
 
   _onConnection(ws, req) {
-    const path = url.parse(req.url).pathname || '/agent-runtime';
-    const room = this._rooms.has(path) ? path : '/agent-runtime';
+    const parsed = url.parse(req.url);
+    const path   = parsed.pathname || '/agent-runtime';
+    const room   = this._rooms.has(path) ? path : '/agent-runtime';
+
+    // Adjuntar identidad al socket
+    ws.user        = req._wsUser;
+    ws.pqcVerified = req._wsPqcVerified;
+    ws.room        = room;
 
     this._rooms.get(room).add(ws);
-    console.log(`[WebSocket] ✅ Cliente conectado → ${room} (total: ${this._rooms.get(room).size})`);
+    console.log(`[WebSocket] Conectado → ${room} | user:${ws.user?.userId} pqc:${ws.pqcVerified} (total: ${this._rooms.get(room).size})`);
 
     // Enviar estado inicial al conectarse
     this._sendInitialState(ws, room);
 
     ws.on('close', () => {
       this._rooms.get(room)?.delete(ws);
-      console.log(`[WebSocket] 🔌 Cliente desconectado (${room})`);
+      console.log(`[WebSocket] Desconectado (${room}) | user:${ws.user?.userId}`);
     });
 
     ws.on('error', (err) => {
       console.error('[WebSocket] Error de cliente:', err.message);
     });
 
-    // Ping/pong keepalive cada 30s
+    // Ping/pong keepalive
     ws.isAlive = true;
     ws.on('pong', () => { ws.isAlive = true; });
   }

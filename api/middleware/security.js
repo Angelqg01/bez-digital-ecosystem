@@ -26,11 +26,14 @@ function authenticateToken(req, res, next) {
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) return res.status(403).json({ error: 'Invalid or expired token' });
 
-        // Verificación híbrida post-cuántica (si el token tiene claim pqc)
-        const pqcResult = apiPQC.verifyJwt(token);
-        if (!pqcResult.valid && pqcResult.reason !== 'Sin claim PQC en JWT') {
-            // Rechazar solo si tiene claim PQC pero la firma es inválida.
-            // Tokens legacy (sin claim pqc) pasan sin error durante la migración.
+        // Verificación PQC out-of-band: firma viaja en headers X-PQC-*.
+        // Tokens sin headers PQC pasan durante la migración (legacy).
+        const { sig: pqcSig, pub: pqcPub } = apiPQC.extractFromHeaders(req.headers);
+        const pqcResult = pqcSig && pqcPub
+          ? apiPQC.verifyToken(token, pqcSig, pqcPub)
+          : { valid: false, reason: 'no-pqc-headers' };
+
+        if (pqcSig && pqcPub && !pqcResult.valid) {
             return res.status(401).json({ error: 'Firma post-cuántica inválida', code: 'PQC_INVALID', reason: pqcResult.reason });
         }
 

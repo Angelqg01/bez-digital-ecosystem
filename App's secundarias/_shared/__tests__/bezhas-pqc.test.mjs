@@ -1,44 +1,47 @@
 /**
- * __tests__/bezhas-pqc.test.mjs
- * Tests para bezhas-pqc.js (módulo ESM browser-safe).
+ * bezhas-pqc.test.mjs — Tests de bezhas-pqc.js (diseño out-of-band)
  *
- * Ejecutar: node "_shared/__tests__/bezhas-pqc.test.mjs"
+ * Diseño: la firma PQC viaja fuera del JWT (no dentro del payload).
+ * La función verifyTokenPqc(token, sig, pub) verifica Dilithium3 sobre el JWT completo.
+ *
+ * ESM puro — Node 18+ (usa atob/btoa nativos)
  */
 
-import assert from 'node:assert';
+import assert from 'assert';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
-import {
-  decodeJwtPayload,
-  parsePqcClaim,
-  verifyPqcClaim,
-  getTokenPqcStatus,
-} from '../bezhas-pqc.js';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Import del módulo bajo test
+const { verifyTokenPqc, getSessionPqcStatus, makeAuthHeaders, makeWsUrl,
+        getTokenPqcStatus, parsePqcClaim } = await import('../bezhas-pqc.js');
 
-function b64url(data) {
-  return Buffer.from(data).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const SEED_AB = new Uint8Array(32).fill(0xab);
+const KEYS_AB = ml_dsa65.keygen(SEED_AB);
+
+function b64url(bytes) {
+  return Buffer.from(bytes).toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+/** Simula lo que hace el servidor: firma el JWT completo con Dilithium3 */
+function serverSign(jwt, sk = KEYS_AB.secretKey, pk = KEYS_AB.publicKey) {
+  const msg = new TextEncoder().encode(jwt);
+  const sig = ml_dsa65.sign(msg, sk);
+  return { sig: b64url(sig), pub: Buffer.from(pk).toString('hex') };
 }
 
 function makeJwt(payload = {}) {
-  const h = b64url(JSON.stringify({ alg: 'ES256', typ: 'JWT' }));
-  const b = b64url(JSON.stringify({ sub: 'u1', userId: 1, role: 'user', exp: 9999999999, ...payload }));
-  return `${h}.${b}.ecdsa-sig`;
+  const h = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const b = Buffer.from(JSON.stringify({
+    sub: 'user-1', userId: 7, role: 'user',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    ...payload,
+  })).toString('base64url');
+  return `${h}.${b}.ecdsa-sig-placeholder`;
 }
 
-function signJwtPqc(jwt, sk, pk) {
-  const parts   = jwt.split('.');
-  const message = Buffer.from(`${parts[0]}.${parts[1]}`, 'utf8');
-  const sig     = ml_dsa65.sign(message, sk);
-  const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-  payload.pqc   = { alg: 'ML-DSA-65', sig: b64url(sig), pub: Buffer.from(pk).toString('hex') };
-  return `${parts[0]}.${b64url(JSON.stringify(payload))}.${parts[2]}`;
-}
-
-const SEED = new Uint8Array(32).fill(0xab);
-const { publicKey, secretKey } = ml_dsa65.keygen(SEED);
-
-// ─── Runner ──────────────────────────────────────────────────────────────────
+// ─── Test runner ─────────────────────────────────────────────────────────────
 
 const tests = [];
 const reg = (name, fn) => tests.push({ name, fn });
@@ -46,6 +49,7 @@ const reg = (name, fn) => tests.push({ name, fn });
 async function runAll() {
   let passed = 0;
   let failed = 0;
+
   for (const { name, fn } of tests) {
     try {
       await fn();
@@ -57,170 +61,168 @@ async function runAll() {
       failed++;
     }
   }
+
   console.log(`\n${'─'.repeat(50)}`);
   console.log(`Resultados: ${passed} pasados, ${failed} fallados`);
   console.log('─'.repeat(50));
+
   if (failed > 0) process.exitCode = 1;
 }
 
-// ─── Suite 1: decodeJwtPayload ───────────────────────────────────────────────
+// ─── Suite 1: verifyTokenPqc ─────────────────────────────────────────────────
 
-console.log('\n[bezhas-pqc] decodeJwtPayload');
+console.log('\n[bezhas-pqc] verifyTokenPqc — básico');
 
-reg('decodifica payload estándar', () => {
-  const p = decodeJwtPayload(makeJwt({ role: 'admin', bezhas_id: 'BEZ-TEST' }));
-  assert.strictEqual(p.role,      'admin');
-  assert.strictEqual(p.bezhas_id, 'BEZ-TEST');
-});
-
-reg('devuelve null con token malformado', () => {
-  assert.strictEqual(decodeJwtPayload('no-dots'), null);
-  assert.strictEqual(decodeJwtPayload(''),         null);
-  assert.strictEqual(decodeJwtPayload(null),       null);
-});
-
-reg('decodifica token con claim pqc', () => {
-  const p = decodeJwtPayload(signJwtPqc(makeJwt(), secretKey, publicKey));
-  assert.ok(p.pqc);
-  assert.strictEqual(p.pqc.alg, 'ML-DSA-65');
-});
-
-// ─── Suite 2: parsePqcClaim ──────────────────────────────────────────────────
-
-console.log('\n[bezhas-pqc] parsePqcClaim');
-
-reg('devuelve { present: false } sin claim pqc', () => {
-  assert.strictEqual(parsePqcClaim(makeJwt()).present, false);
-});
-
-reg('devuelve metadatos truncados con claim pqc', () => {
-  const r = parsePqcClaim(signJwtPqc(makeJwt(), secretKey, publicKey));
-  assert.strictEqual(r.present, true);
-  assert.strictEqual(r.alg,     'ML-DSA-65');
-  assert.ok(r.sig.endsWith('…'));
-  assert.ok(r.pub.endsWith('…'));
-});
-
-// ─── Suite 3: verifyPqcClaim ─────────────────────────────────────────────────
-
-console.log('\n[bezhas-pqc] verifyPqcClaim');
-
-reg('verifica JWT correctamente firmado', async () => {
-  const r = await verifyPqcClaim(signJwtPqc(makeJwt(), secretKey, publicKey));
+reg('verifica firma válida', async () => {
+  const jwt = makeJwt();
+  const { sig, pub } = serverSign(jwt);
+  const r = await verifyTokenPqc(jwt, sig, pub);
   assert.strictEqual(r.verified, true);
   assert.strictEqual(r.alg,      'ML-DSA-65');
-});
-
-reg('rechaza JWT sin claim pqc', async () => {
-  const r = await verifyPqcClaim(makeJwt());
-  assert.strictEqual(r.verified, false);
-  assert.strictEqual(r.reason,   'no-claim');
-});
-
-reg('rechaza payload alterado post-firma (escalada de rol)', async () => {
-  const signed = signJwtPqc(makeJwt({ role: 'user' }), secretKey, publicKey);
-  const parts  = signed.split('.');
-  const p      = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-  p.role       = 'admin';
-  const tampered = `${parts[0]}.${b64url(JSON.stringify(p))}.${parts[2]}`;
-
-  const r = await verifyPqcClaim(tampered);
-  assert.strictEqual(r.verified, false);
+  assert.strictEqual(r.reason,   undefined);
 });
 
 reg('rechaza firma corrupta', async () => {
-  const signed = signJwtPqc(makeJwt(), secretKey, publicKey);
-  const parts  = signed.split('.');
-  const p      = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-  p.pqc.sig    = b64url(Buffer.from('firma-basura'));
-  const r      = await verifyPqcClaim(`${parts[0]}.${b64url(JSON.stringify(p))}.${parts[2]}`);
+  const jwt = makeJwt();
+  const { pub } = serverSign(jwt);
+  const r = await verifyTokenPqc(jwt, b64url(new Uint8Array(32)), pub);
   assert.strictEqual(r.verified, false);
 });
 
-reg('rechaza algoritmo PQC desconocido', async () => {
-  const signed = signJwtPqc(makeJwt(), secretKey, publicKey);
-  const parts  = signed.split('.');
-  const p      = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-  p.pqc.alg    = 'KYBER-768';
-  const r      = await verifyPqcClaim(`${parts[0]}.${b64url(JSON.stringify(p))}.${parts[2]}`);
+reg('rechaza sig=null', async () => {
+  const r = await verifyTokenPqc(makeJwt(), null, 'pub');
   assert.strictEqual(r.verified, false);
-  assert.ok(r.reason.startsWith('alg-unknown'));
+  assert.strictEqual(r.reason,   'no-sig');
 });
 
-reg('rechaza claim sin campo sig', async () => {
-  const signed = signJwtPqc(makeJwt(), secretKey, publicKey);
-  const parts  = signed.split('.');
-  const p      = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-  delete p.pqc.sig;
-  const r      = await verifyPqcClaim(`${parts[0]}.${b64url(JSON.stringify(p))}.${parts[2]}`);
+reg('rechaza pub=null', async () => {
+  const jwt = makeJwt();
+  const { sig } = serverSign(jwt);
+  const r = await verifyTokenPqc(jwt, sig, null);
   assert.strictEqual(r.verified, false);
-  assert.strictEqual(r.reason,   'claim-incomplete');
+  assert.strictEqual(r.reason,   'no-pub');
 });
 
-// ─── Suite 4: getTokenPqcStatus ──────────────────────────────────────────────
+reg('rechaza token=null', async () => {
+  const r = await verifyTokenPqc(null, 'sig', 'pub');
+  assert.strictEqual(r.verified, false);
+  assert.strictEqual(r.reason,   'no-token');
+});
 
-console.log('\n[bezhas-pqc] getTokenPqcStatus');
+reg('rechaza token modificado post-firma', async () => {
+  const jwt = makeJwt({ role: 'user' });
+  const { sig, pub } = serverSign(jwt);
+  const modified = jwt.slice(0, -5) + 'XXXXX';
+  const r = await verifyTokenPqc(modified, sig, pub);
+  assert.strictEqual(r.verified, false);
+});
 
-reg('token null → level classical', async () => {
-  const s = await getTokenPqcStatus(null);
-  assert.strictEqual(s.hasClaim, false);
+reg('verifica con par de claves alternativo', async () => {
+  const SEED_CD = new Uint8Array(32).fill(0xcd);
+  const KEYS_CD = ml_dsa65.keygen(SEED_CD);
+  const jwt     = makeJwt({ role: 'admin' });
+  const { sig, pub } = serverSign(jwt, KEYS_CD.secretKey, KEYS_CD.publicKey);
+  const r = await verifyTokenPqc(jwt, sig, pub);
+  assert.strictEqual(r.verified, true);
+});
+
+// ─── Suite 2: getSessionPqcStatus ────────────────────────────────────────────
+
+console.log('\n[bezhas-pqc] getSessionPqcStatus');
+
+reg('sin sesión → classical', async () => {
+  const s = await getSessionPqcStatus(null);
+  assert.strictEqual(s.hasPqc,   false);
+  assert.strictEqual(s.verified, false);
   assert.strictEqual(s.level,    'classical');
 });
 
-reg('token sin claim → level classical, label menciona ECDSA', async () => {
-  const s = await getTokenPqcStatus(makeJwt());
-  assert.strictEqual(s.hasClaim, false);
+reg('sesión sin firma PQC → classical', async () => {
+  const s = await getSessionPqcStatus({ token: makeJwt() });
+  assert.strictEqual(s.hasPqc,   false);
   assert.strictEqual(s.level,    'classical');
-  assert.ok(s.label.includes('ECDSA'));
 });
 
-reg('token PQC válido → quantum-safe, verified true', async () => {
-  const s = await getTokenPqcStatus(signJwtPqc(makeJwt(), secretKey, publicKey));
-  assert.strictEqual(s.hasClaim, true);
+reg('sesión con firma válida → quantum-safe', async () => {
+  const token = makeJwt({ userId: 99 });
+  const { sig, pub } = serverSign(token);
+  const s = await getSessionPqcStatus({ token, pqcSig: sig, pqcPub: pub });
+  assert.strictEqual(s.hasPqc,   true);
   assert.strictEqual(s.verified, true);
   assert.strictEqual(s.level,    'quantum-safe');
-  assert.ok(s.label.includes('ML-DSA-65'));
-  assert.ok(s.pubSnippet?.endsWith('…'));
 });
 
-reg('token PQC inválido → level invalid con reason', async () => {
-  const signed = signJwtPqc(makeJwt(), secretKey, publicKey);
-  const parts  = signed.split('.');
-  const p      = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-  p.pqc.sig    = b64url(Buffer.from('bad'));
-  const bad    = `${parts[0]}.${b64url(JSON.stringify(p))}.${parts[2]}`;
-
-  const s = await getTokenPqcStatus(bad);
-  assert.strictEqual(s.hasClaim, true);
+reg('sesión con firma inválida → invalid', async () => {
+  const token = makeJwt();
+  const { pub } = serverSign(token);
+  const s = await getSessionPqcStatus({ token, pqcSig: b64url(new Uint8Array(32)), pqcPub: pub });
+  assert.strictEqual(s.hasPqc,   true);
   assert.strictEqual(s.verified, false);
   assert.strictEqual(s.level,    'invalid');
-  assert.ok(s.reason);
+  assert.ok(s.reason,           'Debe incluir razón del fallo');
 });
 
-reg('status incluye exp del JWT', async () => {
-  const exp    = Math.floor(Date.now() / 1000) + 3600;
-  const s      = await getTokenPqcStatus(signJwtPqc(makeJwt({ exp }), secretKey, publicKey));
-  assert.strictEqual(s.exp, exp);
-});
-
-reg('tokens consecutivos son independientes', async () => {
-  const t1 = signJwtPqc(makeJwt({ userId: 1 }), secretKey, publicKey);
-  const t2 = signJwtPqc(makeJwt({ userId: 2 }), secretKey, publicKey);
-
-  const s1 = await verifyPqcClaim(t1);
-  const s2 = await verifyPqcClaim(t2);
+reg('normaliza { pqc: { sig, pub } } y { pqcSig, pqcPub }', async () => {
+  const token = makeJwt();
+  const { sig, pub } = serverSign(token);
+  const s1 = await getSessionPqcStatus({ token, pqcSig: sig, pqcPub: pub });
+  const s2 = await getSessionPqcStatus({ token, pqc: { sig, pub, alg: 'ML-DSA-65' } });
   assert.strictEqual(s1.verified, true);
   assert.strictEqual(s2.verified, true);
+  assert.strictEqual(s1.level,    s2.level);
+});
 
-  // Cruzar firmas: sig de t1 en t2 debe fallar
-  const parts2 = t2.split('.');
-  const p2     = JSON.parse(Buffer.from(parts2[1], 'base64url').toString());
-  const p1     = JSON.parse(Buffer.from(t1.split('.')[1], 'base64url').toString());
-  p2.pqc.sig   = p1.pqc.sig;
-  const mixed  = `${parts2[0]}.${b64url(JSON.stringify(p2))}.${parts2[2]}`;
+reg('exp del JWT está presente en el status', async () => {
+  const expTs = Math.floor(Date.now() / 1000) + 7200;
+  const token = makeJwt({ exp: expTs });
+  const s = await getSessionPqcStatus({ token });
+  assert.strictEqual(s.exp, expTs);
+});
 
-  const sx = await verifyPqcClaim(mixed);
-  assert.strictEqual(sx.verified, false, 'Firma cruzada debe fallar');
+// ─── Suite 3: makeAuthHeaders / makeWsUrl ────────────────────────────────────
+
+console.log('\n[bezhas-pqc] makeAuthHeaders / makeWsUrl');
+
+reg('makeAuthHeaders sin PQC incluye solo Authorization', () => {
+  const h = makeAuthHeaders('my-jwt', null, null);
+  assert.strictEqual(h.Authorization, 'Bearer my-jwt');
+  assert.ok(!h['X-PQC-Signature']);
+  assert.ok(!h['X-PQC-Pubkey']);
+});
+
+reg('makeAuthHeaders con PQC incluye headers X-PQC-*', () => {
+  const h = makeAuthHeaders('my-jwt', 'mySig', 'myPub');
+  assert.strictEqual(h['Authorization'],    'Bearer my-jwt');
+  assert.strictEqual(h['X-PQC-Signature'], 'mySig');
+  assert.strictEqual(h['X-PQC-Pubkey'],    'myPub');
+});
+
+reg('makeWsUrl sin PQC solo incluye token', () => {
+  const url = makeWsUrl('wss://api.bez.digital/agent-runtime', 'tok', null, null);
+  assert.ok(url.includes('token=tok'));
+  assert.ok(!url.includes('pqcSig'));
+  assert.ok(!url.includes('pqcPub'));
+});
+
+reg('makeWsUrl con PQC incluye los tres params', () => {
+  const url = makeWsUrl('wss://api.bez.digital/agent-runtime', 'tok', 'sig1', 'pub1');
+  assert.ok(url.includes('token=tok'));
+  assert.ok(url.includes('pqcSig=sig1'));
+  assert.ok(url.includes('pqcPub=pub1'));
+});
+
+// ─── Suite 4: legacy shims ────────────────────────────────────────────────────
+
+console.log('\n[bezhas-pqc] Legacy shims (compatibilidad v1.0.0)');
+
+reg('parsePqcClaim con JWT sin claim pqc → present=false', () => {
+  const r = parsePqcClaim(makeJwt());
+  assert.strictEqual(r.present, false);
+});
+
+reg('getTokenPqcStatus llama a getSessionPqcStatus → classical sin PQC', async () => {
+  const s = await getTokenPqcStatus(makeJwt());
+  assert.strictEqual(s.level, 'classical');
 });
 
 // ─── Ejecutar ─────────────────────────────────────────────────────────────────

@@ -1,15 +1,29 @@
 /**
- * api/lib/apiPQC.js
- * Singleton PQC (ML-DSA-65 / Dilithium3) para el servidor API.
+ * api/lib/apiPQC.js — Singleton PQC (ML-DSA-65 / Dilithium3) para el servidor API.
  *
- * Se inicializa UNA vez al arrancar el proceso. La seed puede venir de
- * la variable de entorno BEZHAS_PQC_SEED (hex 64 chars). Si no se provee,
- * se genera aleatoria en memoria — todos los tokens son verificables durante
- * la vida del proceso pero no entre reinicios (rotación automática).
+ * Diseño out-of-band: el JWT nunca se modifica.
+ * Dilithium3 firma el JWT completo como bytes UTF-8.
+ * La firma viaja junto al JWT (no dentro de él), preservando ECDSA intacta.
  *
- * Para persistencia entre reinicios: generar seed con `node -e
- * "console.log(require('crypto').randomBytes(32).toString('hex'))"` y
- * añadir BEZHAS_PQC_SEED al entorno/secreto de producción.
+ * Flujo de login:
+ *   const token = jwt.sign(payload, JWT_SECRET);
+ *   const { sig, pub } = apiPQC.signToken(token);
+ *   res.json({ token, pqc: { sig, pub, alg: 'ML-DSA-65' } });
+ *
+ * Flujo de verificación REST:
+ *   jwt.verify(token, JWT_SECRET)                        ← ECDSA
+ *   apiPQC.verifyToken(token, pqcSig, pqcPub)           ← Dilithium3
+ *
+ * Flujo WebSocket:
+ *   ws://host/room?token=JWT&pqcSig=SIG&pqcPub=PUB
+ *
+ * Flujo cliente (SubApps):
+ *   Authorization: Bearer <token>
+ *   X-PQC-Signature: <sig>        ← base64url
+ *   X-PQC-Pubkey: <pub>           ← hex
+ *
+ * NUNCA persiste a disco — seed opcional vía BEZHAS_PQC_SEED (hex 64 chars).
+ * Estándar: NIST FIPS 204 (ML-DSA-65 / Dilithium3).
  */
 
 'use strict';
@@ -19,9 +33,9 @@ const crypto       = require('crypto');
 
 // ─── Estado singleton ────────────────────────────────────────────────────────
 
-let _publicKey  = null;
-let _privateKey = null;
-let _initAt     = null;
+let _publicKey = null;
+let _secretKey = null;
+let _initAt    = null;
 
 function _ensureInit() {
   if (_publicKey) return;
@@ -36,9 +50,9 @@ function _ensureInit() {
     seed = crypto.randomBytes(32);
   }
 
-  const keys  = ml_dsa65.keygen(seed);
+  const keys = ml_dsa65.keygen(seed);
   _publicKey  = keys.publicKey;
-  _privateKey = keys.secretKey;
+  _secretKey  = keys.secretKey;
   _initAt     = new Date().toISOString();
 
   const mode = seedHex ? 'determinista (BEZHAS_PQC_SEED)' : 'aleatoria (efímera)';
@@ -48,70 +62,84 @@ function _ensureInit() {
 // ─── API pública ─────────────────────────────────────────────────────────────
 
 /**
- * Firma el par header.payload de un JWT con Dilithium3.
- * Inserta el claim `pqc` en el payload y devuelve el JWT resultante.
- * La firma ECDSA original queda intacta (3ª parte del JWT).
+ * Firma el JWT completo (los 3 segmentos como string UTF-8) con Dilithium3.
+ * El JWT NO se modifica — solo se produce una firma externa.
+ *
+ * @param {string} token — JWT estándar (header.payload.ecdsaSig)
+ * @returns {{ sig: string, pub: string }}
+ *   sig — firma Dilithium3 en base64url
+ *   pub — clave pública en hex (para que el receptor verifique sin estado)
  */
-function signJwt(jwt) {
+function signToken(token) {
   _ensureInit();
-  const parts = jwt.split('.');
-  if (parts.length < 2) throw new Error('PQC.signJwt: JWT malformado');
+  if (!token || typeof token !== 'string') throw new Error('signToken: token debe ser un string no vacío');
 
-  // Mensaje firmado = header.payload originales
-  const message  = Buffer.from(`${parts[0]}.${parts[1]}`, 'utf8');
-  const sigBytes = ml_dsa65.sign(message, _privateKey);
-  const sig      = _b64url(sigBytes);
-  const pub      = Buffer.from(_publicKey).toString('hex');
+  const message = Buffer.from(token, 'utf8');
+  const sig     = ml_dsa65.sign(message, _secretKey);
 
-  // Decodificar payload, añadir claim pqc, re-codificar
-  const payloadObj = JSON.parse(Buffer.from(_unb64url(parts[1]), 'base64').toString('utf8'));
-  payloadObj.pqc   = { alg: 'ML-DSA-65', sig, pub };
-
-  const newPayload = _b64url(Buffer.from(JSON.stringify(payloadObj)));
-  return `${parts[0]}.${newPayload}.${parts[2] || ''}`;
+  return {
+    sig: _b64url(sig),
+    pub: Buffer.from(_publicKey).toString('hex'),
+  };
 }
 
 /**
- * Verifica el claim PQC dentro de un JWT.
+ * Verifica la firma Dilithium3 sobre el JWT.
+ * La clave pública del firmante viene embebida en los parámetros (sin estado).
+ *
+ * @param {string} token  — JWT original (no modificado)
+ * @param {string} sig    — Firma en base64url
+ * @param {string} pub    — Clave pública del firmante en hex
  * @returns {{ valid: boolean, alg?: string, reason?: string }}
  */
-function verifyJwt(jwt) {
+function verifyToken(token, sig, pub) {
   _ensureInit();
+  if (!token) return { valid: false, reason: 'no-token' };
+  if (!sig)   return { valid: false, reason: 'no-pqc-sig' };
+  if (!pub)   return { valid: false, reason: 'no-pqc-pub' };
+
   try {
-    const parts = jwt.split('.');
-    if (parts.length < 2) return { valid: false, reason: 'JWT malformado' };
+    const message  = Buffer.from(token, 'utf8');
+    const sigBytes = Buffer.from(_unb64url(sig), 'base64');
+    const pubBytes = Buffer.from(pub, 'hex');
 
-    const payload = JSON.parse(Buffer.from(_unb64url(parts[1]), 'base64').toString('utf8'));
-    if (!payload.pqc) return { valid: false, reason: 'Sin claim PQC en JWT' };
-
-    const { sig, pub, alg } = payload.pqc;
-    if (alg !== 'ML-DSA-65') return { valid: false, reason: `Algoritmo PQC desconocido: ${alg}` };
-    if (!sig)                  return { valid: false, reason: 'Firma PQC vacía' };
-
-    // Reconstruir el mensaje original (header + payload SIN claim pqc)
-    const clean = { ...payload };
-    delete clean.pqc;
-    const cleanPayloadB64 = _b64url(Buffer.from(JSON.stringify(clean)));
-    const message = Buffer.from(`${parts[0]}.${cleanPayloadB64}`, 'utf8');
-
-    const sigBuf    = Buffer.from(_unb64url(sig), 'base64');
-    const pubKeyBuf = Buffer.from(pub, 'hex');
-
-    // Verificar con la clave pública embebida en el token (permite rotación de keys)
-    const ok = ml_dsa65.verify(sigBuf, message, pubKeyBuf);
-    return { valid: ok, alg };
+    // API @noble/post-quantum v0.6.x: verify(sig, msg, publicKey)
+    const ok = ml_dsa65.verify(sigBytes, message, pubBytes);
+    return { valid: ok, alg: 'ML-DSA-65' };
   } catch (err) {
     return { valid: false, reason: err.message };
   }
 }
 
-/** Devuelve la clave pública en hex (para distribución pública) */
+/**
+ * Extrae los parámetros PQC de los headers HTTP de una request.
+ * @returns {{ sig: string|null, pub: string|null }}
+ */
+function extractFromHeaders(headers) {
+  return {
+    sig: headers['x-pqc-signature'] || null,
+    pub: headers['x-pqc-pubkey']    || null,
+  };
+}
+
+/**
+ * Extrae los parámetros PQC de los query params de una URL (para WebSocket).
+ * @returns {{ sig: string|null, pub: string|null }}
+ */
+function extractFromQuery(query) {
+  return {
+    sig: query.pqcSig || null,
+    pub: query.pqcPub || null,
+  };
+}
+
+/** Devuelve la clave pública del servidor en hex */
 function getPublicKeyHex() {
   _ensureInit();
   return Buffer.from(_publicKey).toString('hex');
 }
 
-/** Info para el endpoint /auth/pqc-pubkey y health checks */
+/** Info para el endpoint GET /auth/pqc-pubkey y health checks */
 function getInfo() {
   _ensureInit();
   return {
@@ -120,6 +148,7 @@ function getInfo() {
     publicKey:  getPublicKeyHex(),
     persistent: !!process.env.BEZHAS_PQC_SEED,
     initAt:     _initAt,
+    transport:  'out-of-band',
   };
 }
 
@@ -134,4 +163,4 @@ function _unb64url(str) {
   return str.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat(pad ? 4 - pad : 0);
 }
 
-module.exports = { signJwt, verifyJwt, getPublicKeyHex, getInfo };
+module.exports = { signToken, verifyToken, extractFromHeaders, extractFromQuery, getPublicKeyHex, getInfo };
