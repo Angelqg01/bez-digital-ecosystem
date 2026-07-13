@@ -10,9 +10,10 @@
 
 'use strict';
 
-const https = require('https');
-const http  = require('http');
+const https  = require('https');
+const http   = require('http');
 const config = require('./ConfigManager');
+const pqc    = require('./PQCManager');
 
 // ─── Estado ───────────────────────────────────────────────────────────────────
 let _token         = null;    // JWT activo en memoria
@@ -23,6 +24,11 @@ let _refreshing    = null;    // Promise en vuelo (evita refrescos paralelos)
 const REFRESH_MARGIN_MS  = 5 * 60 * 1000;   // refrescar 5 min antes de expirar
 const MAX_RETRIES        = 3;
 const RETRY_BASE_MS      = 500;
+
+// ─── PQC: inicializar Dilithium3 al arrancar ──────────────────────────────────
+// La seed puede venir de ENV (hex 64 chars). Si no, se genera aleatoria en memoria.
+// NUNCA se persiste a disco — solo vive en este proceso.
+pqc.init(process.env.BEZHAS_PQC_SEED || undefined);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -220,25 +226,39 @@ async function verifyToken(token) {
   }
 }
 
+/**
+ * Verifica la firma PQC (Dilithium3) del token activo o del token provisto.
+ * Complementa a verifyToken() que verifica la firma ECDSA vía API.
+ * Ambas deben ser válidas para considerar el token íntegro.
+ */
+function verifyPqc(token) {
+  const t = token || _token;
+  if (!t) return { valid: false, reason: 'Sin token' };
+  return pqc.verifyJwt(t);
+}
+
 /** Estado actual del token (para health checks) */
 function getStatus() {
   const payload = _token ? decodeJwtPayload(_token) : null;
   return {
-    hasToken:   !!_token,
-    expiresAt:  _tokenExp ? new Date(_tokenExp).toISOString() : null,
-    expiresIn:  _tokenExp ? Math.round((_tokenExp - Date.now()) / 1000) + 's' : null,
+    hasToken:    !!_token,
+    expiresAt:   _tokenExp ? new Date(_tokenExp).toISOString() : null,
+    expiresIn:   _tokenExp ? Math.round((_tokenExp - Date.now()) / 1000) + 's' : null,
     needsRefresh: _needsRefresh(),
-    roles:      payload?.roles    || [],
-    platforms:  payload?.platforms || [],
-    sub:        payload?.sub      || null,
+    roles:       payload?.roles    || [],
+    platforms:   payload?.platforms || [],
+    sub:         payload?.sub      || null,
+    pqc:         pqc.getStatus(),
   };
 }
 
 // ─── Internals ────────────────────────────────────────────────────────────────
 
 function _setToken(jwt) {
-  _token    = jwt;
-  const payload = decodeJwtPayload(jwt);
+  // Añadir firma Dilithium3 al JWT antes de guardarlo en memoria
+  const signedJwt = pqc.signJwt(jwt);
+  _token    = signedJwt;
+  const payload = decodeJwtPayload(signedJwt);
   _tokenExp = payload?.exp ? payload.exp * 1000 : Date.now() + 24 * 3600 * 1000;
   _scheduleRefresh();
 }
@@ -272,4 +292,4 @@ function _scheduleRefresh() {
   if (_refreshTimer.unref) _refreshTimer.unref();
 }
 
-module.exports = { getToken, refreshToken, login, logout, verifyToken, getStatus };
+module.exports = { getToken, refreshToken, login, logout, verifyToken, verifyPqc, getStatus };

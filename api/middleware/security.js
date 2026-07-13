@@ -1,12 +1,13 @@
 /**
  * Security middleware — RBAC, audit logging, per-enterprise rate limiting.
  */
-const jwt = require('jsonwebtoken');
+const jwt    = require('jsonwebtoken');
 const { ethers } = require('ethers');
 const { query } = require('../db/pool');
 const { checkRateLimit } = require('../cache/redis');
 const { JWT_SECRET, AUTH_BYPASS } = require('../config/secrets');
 const { consumeNonce, extractNonce } = require('../utils/walletNonce');
+const apiPQC = require('../lib/apiPQC');
 
 // ── JWT authentication ──
 function authenticateToken(req, res, next) {
@@ -24,7 +25,17 @@ function authenticateToken(req, res, next) {
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) return res.status(403).json({ error: 'Invalid or expired token' });
+
+        // Verificación híbrida post-cuántica (si el token tiene claim pqc)
+        const pqcResult = apiPQC.verifyJwt(token);
+        if (!pqcResult.valid && pqcResult.reason !== 'Sin claim PQC en JWT') {
+            // Rechazar solo si tiene claim PQC pero la firma es inválida.
+            // Tokens legacy (sin claim pqc) pasan sin error durante la migración.
+            return res.status(401).json({ error: 'Firma post-cuántica inválida', code: 'PQC_INVALID', reason: pqcResult.reason });
+        }
+
         req.user = user;
+        req.pqcVerified = pqcResult.valid;
         next();
     });
 }

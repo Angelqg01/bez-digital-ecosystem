@@ -53,11 +53,21 @@ async function requireManager(req, res, next) {
     return res.status(401).json({ error: 'Token inválido o expirado', reason: status.reason });
   }
 
+  // Verificación híbrida: ECDSA ya validada arriba + Dilithium3 PQC
+  const pqcResult = token.verifyPqc(incomingToken);
+  if (!pqcResult.valid) {
+    return res.status(401).json({
+      error:  'Firma post-cuántica inválida',
+      reason: pqcResult.reason,
+      code:   'PQC_INVALID',
+    });
+  }
+
   if (!status.roles?.includes('manager') && !status.roles?.includes('admin')) {
     return res.status(403).json({ error: 'Rol Manager requerido', roles: status.roles });
   }
 
-  req.openClawManager = status;
+  req.openClawManager = { ...status, pqcVerified: true };
   next();
 }
 

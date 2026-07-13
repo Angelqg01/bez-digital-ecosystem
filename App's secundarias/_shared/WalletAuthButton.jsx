@@ -29,6 +29,7 @@ import {
   isWalletAvailable, siweLogin, siweSubscribe, subscribeWithBEZ,
   getSession, clearSession, shortAddress, onWalletEvent,
 } from './bezhas-wallet-auth.js';
+import PQCBadge from './PQCBadge.jsx';
 
 export default function WalletAuthButton({
   accent = '#00D4AA',
@@ -44,15 +45,27 @@ export default function WalletAuthButton({
   const [menu, setMenu] = useState(false);         // logged-out choices menu
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [pqcStatus, setPqcStatus] = useState(() => getSession()?.pqcStatus ?? null);
 
   const fire = useCallback((s) => { onAuthChange?.(s); }, [onAuthChange]);
 
   // Re-sync if the wallet account changes externally.
   useEffect(() => onWalletEvent(({ type, accounts }) => {
     if (type === 'accountsChanged' && (!accounts || !accounts.length)) {
-      clearSession(); setSession(null); fire(null);
+      clearSession(); setSession(null); setPqcStatus(null); fire(null);
     }
   }), [fire]);
+
+  // Escuchar verificación PQC asíncrona completada en saveSession()
+  useEffect(() => {
+    const handler = (e) => {
+      setPqcStatus(e.detail);
+      // Actualizar también la sesión en state para que los consumidores de onAuthChange lo vean
+      setSession(prev => prev ? { ...prev, pqcStatus: e.detail } : prev);
+    };
+    window.addEventListener('bezhas:pqc-verified', handler);
+    return () => window.removeEventListener('bezhas:pqc-verified', handler);
+  }, []);
 
   const pad = compact ? '6px 12px' : '8px 18px';
 
@@ -112,6 +125,7 @@ export default function WalletAuthButton({
             ? <BadgeCheck size={15} />
             : <ShieldAlert size={15} color="#f59e0b" title="Sesión demo (sin backend)" />}
           <span style={{ fontFamily: 'monospace' }}>{shortAddress(session.address)}</span>
+          <PQCBadge token={session.token} size="sm" />
           <ChevronDown size={14} />
         </button>
 
@@ -120,6 +134,12 @@ export default function WalletAuthButton({
             <div style={{ padding: '8px 12px', fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               {verified ? 'Wallet verificada' : 'Sesión demo (sin backend)'}
             </div>
+            {/* Estado PQC detallado en el menú */}
+            {session.token && (
+              <div style={{ padding: '0 8px 6px' }}>
+                <PQCBadge token={session.token} size="md" showDetails />
+              </div>
+            )}
             {subscribePlan && (
               <button style={itemStyle} disabled={busy} onClick={handlePay}>
                 {busy === 'pay' ? <Loader2 size={15} className="bz-spin" /> : <CreditCard size={15} />}

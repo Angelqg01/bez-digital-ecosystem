@@ -11,6 +11,8 @@ const { JWT_SECRET } = require('../config/secrets');
 const { issueNonce, NONCE_TTL_SECONDS } = require('../utils/walletNonce');
 const walletService = require('../services/walletService');
 
+const apiPQC = require('../lib/apiPQC');
+
 const router = Router();
 
 // ── Nonce challenge (anti-replay) ──
@@ -74,11 +76,12 @@ router.post('/login', [
         }
     }
 
-    const token = jwt.sign(
+    const rawToken = jwt.sign(
         { address: user.wallet_address, userId: user.id, role: user.role, bezhas_id: user.bezhas_id },
         JWT_SECRET,
         { expiresIn: '24h' }
     );
+    const token = apiPQC.signJwt(rawToken);
 
     res.json({ success: true, token, user });
 });
@@ -119,11 +122,12 @@ router.post('/fiat/register', [
             [rows[0].id]
         );
         const user = refreshed.rows[0];
-        const token = jwt.sign(
+        const rawToken = jwt.sign(
             { address: user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
+        const token = apiPQC.signJwt(rawToken);
 
         res.status(201).json({ success: true, token, user, safeWallet });
     } catch (error) {
@@ -169,11 +173,12 @@ router.post('/fiat/login', [
         }
 
         const safeWallet = await walletService.ensureFiatSafeWalletForUser(user.id);
-        const token = jwt.sign(
+        const rawToken = jwt.sign(
             { address: safeWallet.ownerAddress || user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
+        const token = apiPQC.signJwt(rawToken);
 
         res.json({ success: true, token, user: { ...user, primary_wallet_address: safeWallet.ownerAddress }, safeWallet });
     } catch (error) {
@@ -193,12 +198,18 @@ router.post('/safe-wallet/ensure', authenticateToken, async (req, res) => {
 
 // ── Refresh token ──
 router.post('/refresh', authenticateToken, (req, res) => {
-    const token = jwt.sign(
+    const rawToken = jwt.sign(
         { address: req.user.address, userId: req.user.userId, role: req.user.role },
         JWT_SECRET,
         { expiresIn: '24h' }
     );
+    const token = apiPQC.signJwt(rawToken);
     res.json({ success: true, token });
+});
+
+// ── PQC public key (sin autenticación — es información pública) ──
+router.get('/pqc-pubkey', (_req, res) => {
+    res.json({ success: true, ...apiPQC.getInfo() });
 });
 
 module.exports = router;

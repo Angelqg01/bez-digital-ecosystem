@@ -17,9 +17,13 @@
  *   4. session helpers          — saveSession / getSession / clearSession. Also mirrors
  *                                 to `bezhas-jwt` + `bezhas-user` for cross-app SSO
  *                                 compatibility with existing AuthProviders.
+ *   5. PQC verification         — verifica automáticamente el claim ML-DSA-65 al guardar
+ *                                 sesión. Resultado disponible en session.pqcStatus.
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
+
+import { getTokenPqcStatus, parsePqcClaim } from './bezhas-pqc.js';
 
 // ── Constants (from CLAUDE.md / project memory) ──────────────────────────────
 export const BEZ_TOKEN_POLYGON = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8'; // BEZ V1 = moneda de cambio
@@ -112,7 +116,14 @@ export function buildSiweMessage({ domain, address, statement, uri, chainId, non
 
 export function saveSession(session) {
   if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+  // Añadir metadatos PQC sincrónicos (claim parsing, sin criptografía)
+  const enriched = { ...session };
+  if (session.token) {
+    enriched.pqcClaim = parsePqcClaim(session.token);
+  }
+
+  localStorage.setItem(SESSION_KEY, JSON.stringify(enriched));
   // Mirror to the legacy keys consumed by existing AuthProviders for cross-app SSO.
   if (session.token) localStorage.setItem(JWT_KEY, session.token);
   localStorage.setItem(USER_KEY, JSON.stringify(session.user || {
@@ -120,6 +131,19 @@ export function saveSession(session) {
     role: session.authMethod === 'siwe' ? 'Wallet Verified' : 'Wallet (Demo)',
     walletAddress: session.address,
   }));
+
+  // Verificación criptográfica completa en background (async, no bloquea el login)
+  if (session.token) {
+    getTokenPqcStatus(session.token).then(pqcStatus => {
+      try {
+        const stored = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+        stored.pqcStatus = pqcStatus;
+        localStorage.setItem(SESSION_KEY, JSON.stringify(stored));
+        // Notificar a la app del resultado (para que el badge se actualice)
+        window.dispatchEvent(new CustomEvent('bezhas:pqc-verified', { detail: pqcStatus }));
+      } catch { /* storage lleno u otro error — ignorar */ }
+    });
+  }
 }
 
 export function getSession() {
