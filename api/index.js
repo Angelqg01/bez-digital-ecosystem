@@ -192,7 +192,12 @@ app.use(compression({                             // gzip respuestas > 1 KB
   },
 }));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  // Keep the exact bytes: inbound HMAC verification (CargoLink /v1/ingest/:providerId)
+  // must run over what the sender signed, not a re-serialization.
+  verify: (req, _res, buf) => { req.rawBody = buf; },
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -590,6 +595,18 @@ async function startServer() {
       .catch(err => gcpLogger.warning('[STARTUP] VPP MQTT broker unavailable — running in mock mode', { error: err.message }));
   } catch (err) {
     gcpLogger.warning('[STARTUP] vppMqttBroker module not found — VPP in mock mode', { error: err.message });
+  }
+
+  // CargoLink MQTT ingestion (trackers, e-seals, reefer loggers) — opt-in via CARGO_MQTT_URL.
+  // Devices publish to bezhas/cargo/<deviceId>/telemetry; same pipeline as POST /v1/iot/telemetry.
+  try {
+    const cargoMqtt = require('./services/cargoMqttIngest');
+    cargoMqtt
+      .connect()
+      .then((ok) => { if (ok) gcpLogger.info('[STARTUP] CargoLink MQTT ingestion connected'); })
+      .catch((err) => gcpLogger.warning('[STARTUP] CargoLink MQTT unavailable', { error: err.message }));
+  } catch (err) {
+    gcpLogger.warning('[STARTUP] cargoMqttIngest module not found', { error: err.message });
   }
 
   // ── PASO 7: OMIE/ESIOS feed pre-caché ────────────────────────────────────────

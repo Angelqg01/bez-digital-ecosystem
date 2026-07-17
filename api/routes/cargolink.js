@@ -1,10 +1,15 @@
 'use strict';
 
+const express = require('express');
 const { Router } = require('express');
 const cargoLinkService = require('../services/cargoLinkService');
 const lifecycle = require('../services/cargoLinkLifecycle');
 const posConnector = require('../services/cargoLinkPosConnector');
 const iot = require('../services/cargoLinkIot');
+const geofence = require('../services/cargoGeofence');
+const ingestHub = require('../services/cargoIngestHub');
+const disputeOracle = require('../services/cargoDisputeOracle');
+const telemetryAnchor = require('../services/cargoTelemetryAnchor');
 const { authenticateToken } = require('../middleware/security');
 const { requireRole } = require('../middleware/rbac');
 
@@ -239,6 +244,113 @@ router.post('/v1/iot/telemetry', async (req, res) => {
 router.get('/v1/iot/telemetry', async (req, res) => {
   try {
     res.json(await iot.getTelemetry(req, req.query || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Geofences (authorized zones + route corridors) ────────────────────────
+
+router.post('/v1/geofences', async (req, res) => {
+  try {
+    res.status(201).json(await geofence.createGeofence(req, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/geofences', async (req, res) => {
+  try {
+    res.json(await geofence.listGeofences(req, req.query || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.delete('/v1/geofences/:id', async (req, res) => {
+  try {
+    res.json(await geofence.deleteGeofence(req, req.params.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Third-party ingestion hub (API-First) ─────────────────────────────────
+
+// Owner registers an external provider (returns the HMAC secret once).
+router.post('/v1/providers', async (req, res) => {
+  try {
+    res.status(201).json(await ingestHub.registerProvider(req, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/providers', async (req, res) => {
+  try {
+    res.json(await ingestHub.listProviders(req));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// Inbound provider webhook. The HMAC covers the EXACT bytes sent: req.rawBody
+// is captured by the app-level express.json verify hook; express.raw covers
+// standalone mounts where no json parser ran before this router.
+router.post('/v1/ingest/:providerId', express.raw({ type: '*/*', limit: '256kb' }), async (req, res) => {
+  try {
+    const rawBody = req.rawBody
+      ? req.rawBody.toString('utf8')
+      : Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body || {});
+    res.json(await ingestHub.ingestFromProvider({
+      providerId: req.params.providerId,
+      rawBody,
+      headers: req.headers,
+    }));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Disputes (severity-matrix verdicts on the escrow) ─────────────────────
+
+router.get('/v1/disputes', async (req, res) => {
+  try {
+    res.json(await disputeOracle.listDisputes(req, req.query || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post('/v1/disputes/:id/resolve', async (req, res) => {
+  try {
+    res.json(await disputeOracle.resolveDispute(req, req.params.id, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Telemetry merkle anchors (cryptographic proof of an unaltered route) ──
+
+router.post('/v1/iot/anchor/:bUid', async (req, res) => {
+  try {
+    res.status(201).json(await telemetryAnchor.anchorBatch(req, req.params.bUid));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/iot/anchors', async (req, res) => {
+  try {
+    res.json(await telemetryAnchor.listAnchors(req, req.query || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/iot/proof', async (req, res) => {
+  try {
+    res.json(await telemetryAnchor.getProof(req, req.query || {}));
   } catch (error) {
     sendError(res, error);
   }

@@ -81,6 +81,7 @@ import {ClearanceCertificateNFT} from "../src/supplychain/ClearanceCertificateNF
 import {CustomsClearanceOracle} from "../src/supplychain/CustomsClearanceOracle.sol";
 import {TrackingIntegrationGateway} from "../src/supplychain/TrackingIntegrationGateway.sol";
 import {TrackingToCustomsGateway} from "../src/supplychain/TrackingToCustomsGateway.sol";
+import {TelemetryAnchor} from "../src/supplychain/TelemetryAnchor.sol";
 
 // ── Government ──
 import {CitizenIdentityNFT} from "../src/government/CitizenIdentityNFT.sol";
@@ -277,8 +278,9 @@ contract DeployAll is Script {
         _logSector("legal", legal,
             "SmartLegalContract", "EvidenceVault", "ArbitrationDAO", "IPRegistryNFT");
 
-        // SupplyChain (8 contracts)
+        // SupplyChain (9 contracts)
         address scSupplyTracker = address(new SupplyTracker());
+        address scTelemetryAnchor = address(new TelemetryAnchor());
         address scProcurement = address(new ProcurementNFT());
         address scWarehouse = address(new WarehouseManager());
         address scSupplierScore = address(new SupplierScoreOracle());
@@ -289,6 +291,7 @@ contract DeployAll is Script {
 
         console.log("--- supplychain ---");
         console.log("  SupplyTracker:", scSupplyTracker);
+        console.log("  TelemetryAnchor:", scTelemetryAnchor);
         console.log("  ProcurementNFT:", scProcurement);
         console.log("  WarehouseManager:", scWarehouse);
         console.log("  SupplierScoreOracle:", scSupplierScore);

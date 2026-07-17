@@ -62,6 +62,20 @@ export const cargoLinkApi = {
   registerDevice: (apiKey, body) => call('POST', '/v1/iot/devices', { apiKey, body }),
   ingestTelemetry: (deviceKey, body) => call('POST', '/v1/iot/telemetry', { apiKey: deviceKey, body }),
   getTelemetry: (apiKey, query) => call('GET', '/v1/iot/telemetry', { apiKey, query }),
+  // Geofences (authorized zones + route corridors)
+  listGeofences: (apiKey, query) => call('GET', '/v1/geofences', { apiKey, query }),
+  createGeofence: (apiKey, body) => call('POST', '/v1/geofences', { apiKey, body }),
+  deleteGeofence: (apiKey, id) => call('DELETE', `/v1/geofences/${encodeURIComponent(id)}`, { apiKey }),
+  // Third-party ingestion providers (API-First hub)
+  listProviders: (apiKey) => call('GET', '/v1/providers', { apiKey }),
+  registerProvider: (apiKey, body) => call('POST', '/v1/providers', { apiKey, body }),
+  // Disputes (severity-matrix verdicts on the escrow)
+  listDisputes: (apiKey, query) => call('GET', '/v1/disputes', { apiKey, query }),
+  resolveDispute: (apiKey, id, body) => call('POST', `/v1/disputes/${encodeURIComponent(id)}/resolve`, { apiKey, body }),
+  // Telemetry merkle anchors (cryptographic route proofs)
+  anchorTelemetry: (apiKey, bUid) => call('POST', `/v1/iot/anchor/${encodeURIComponent(bUid)}`, { apiKey }),
+  listAnchors: (apiKey, query) => call('GET', '/v1/iot/anchors', { apiKey, query }),
+  getProof: (apiKey, query) => call('GET', '/v1/iot/proof', { apiKey, query }),
 }
 
 // Lifecycle stages in order — used by the UI to render progress.

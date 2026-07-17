@@ -9,6 +9,13 @@
 const assert = require('assert');
 
 function freshPQC() {
+  // Bajo jest, require.cache es emulado y borrar entradas no resetea el módulo:
+  // usar isolateModules para obtener un singleton limpio en ambos entornos.
+  if (typeof jest !== 'undefined') {
+    let mod;
+    jest.isolateModules(() => { mod = require('../lib/apiPQC'); });
+    return mod;
+  }
   delete require.cache[require.resolve('../lib/apiPQC')];
   return require('../lib/apiPQC');
 }
@@ -260,3 +267,12 @@ console.log(`Resultados: ${passed} pasados, ${failed} fallados`);
 console.log('─'.repeat(50));
 
 if (failed > 0) process.exitCode = 1;
+
+// Bajo jest (testMatch incluye este archivo), registrar el resultado agregado
+// como un test real — el runner casero de arriba sigue sirviendo standalone:
+//   node __tests__/pqc.test.js
+if (typeof it === 'function') {
+  it(`apiPQC suite standalone: ${passed} asserts pasan, 0 fallan`, () => {
+    assert.strictEqual(failed, 0, `${failed} asserts fallaron (ver consola)`);
+  });
+}

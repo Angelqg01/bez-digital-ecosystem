@@ -54,6 +54,8 @@
     "winston": "^3.11.0"
   },
   "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/plugin-transform-modules-commonjs": "^8.0.1",
     "@eslint/js": "^8.55.0",
     "aedes": "^1.0.2",
     "eslint": "^8.55.0",

@@ -17,6 +17,7 @@ import { cargoLinkAdmin } from '../services/cargoLinkApi'
 import { cargoGateway } from '../services/cargoGateway'
 import { blockchainStatusText } from '../utils/blockchainDisplay'
 import PosNetworkPanel from '../components/PosNetworkPanel'
+import IotHubPanel from '../components/IotHubPanel'
 
 const SDK_INSTALL_COMMAND = 'pnpm add @bezhas/cargolink-sdk'
 
@@ -205,6 +206,9 @@ const DeveloperIntegration = () => {
       {/* POS network + B-UID transaction feed */}
       <PosNetworkPanel />
 
+      {/* IoT devices + third-party providers + geofences (unified ingestion hub) */}
+      <IotHubPanel />
+
       {/* API Keys — real from backend */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -272,6 +276,9 @@ const DeveloperIntegration = () => {
           <WebhookEvent name="ON_DELIVERY_PROOF" desc="Transporte/Última Milla: POD generado y firmado por el cliente." active={selectedEvents.includes('ON_DELIVERY_PROOF')} onSubscribe={subscribeEvent} />
           <WebhookEvent name="ON_COLD_CHAIN_BREACH" desc="IoT: Temperatura fuera de rango detectada por sensor vinculado al B-UID." active={selectedEvents.includes('ON_COLD_CHAIN_BREACH')} onSubscribe={subscribeEvent} />
           <WebhookEvent name="ON_SHOCK_ALERT" desc="IoT: Impacto/aceleración excesiva detectada por acelerómetro del contenedor." active={selectedEvents.includes('ON_SHOCK_ALERT')} onSubscribe={subscribeEvent} />
+          <WebhookEvent name="ON_TELEMETRY_ALERT" desc="IoT: Brecha leve de telemetría (luz, humedad, geocerca) sin retención de escrow." active={selectedEvents.includes('ON_TELEMETRY_ALERT')} onSubscribe={subscribeEvent} />
+          <WebhookEvent name="ON_DISPUTE_OPENED" desc="Oráculo: brecha moderada/crítica — escrow BEZ retenido (DISPUTED) con propuesta de settlement." active={selectedEvents.includes('ON_DISPUTE_OPENED')} onSubscribe={subscribeEvent} />
+          <WebhookEvent name="ON_DISPUTE_RESOLVED" desc="Oráculo: disputa resuelta (release / refund / partial) — escrow liquidado." active={selectedEvents.includes('ON_DISPUTE_RESOLVED')} onSubscribe={subscribeEvent} />
         </div>
       </div>
 

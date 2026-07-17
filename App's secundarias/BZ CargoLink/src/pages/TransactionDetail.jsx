@@ -187,7 +187,9 @@ const TransactionDetail = () => {
       {/* Escrow */}
       {tx.escrow_status !== 'NONE' && (() => {
         const isReleased = tx.escrow_status === 'RELEASED'
-        const color = isReleased ? 'var(--bz-secondary)' : '#f59e0b'
+        const isDisputed = tx.escrow_status === 'DISPUTED'
+        const isRefunded = tx.escrow_status === 'REFUNDED'
+        const color = isReleased ? 'var(--bz-secondary)' : isDisputed ? '#f87171' : isRefunded ? '#a855f7' : '#f59e0b'
         const EscrowIcon = isReleased ? Unlock : Lock
         const lockAnchor = history.find(h => h.payload?.anchor?.escrow?.anchored)?.payload?.anchor?.escrow
         const releaseAnchor = history.find(h => h.to_status === 'DELIVERED' && h.payload?.anchor?.escrow?.anchored)?.payload?.anchor?.escrow
@@ -203,10 +205,15 @@ const TransactionDetail = () => {
               </div>
               <span style={{
                 fontSize: 10, fontWeight: 900, padding: '4px 10px', borderRadius: 12,
-                background: isReleased ? 'rgba(47,248,1,0.1)' : 'rgba(245,158,11,0.1)',
+                background: isReleased ? 'rgba(47,248,1,0.1)' : isDisputed ? 'rgba(248,113,113,0.1)' : isRefunded ? 'rgba(168,85,247,0.1)' : 'rgba(245,158,11,0.1)',
                 color,
               }}>{tx.escrow_status}</span>
             </div>
+            {isDisputed && (
+              <p style={{ marginTop: 8, fontSize: 10, color: '#f87171' }}>
+                Escrow retenido por el oráculo de disputas — resuélvela desde Telemetría.
+              </p>
+            )}
             {lockAnchor?.txHash && (
               <div style={{ marginTop: 8, fontSize: 10, color: 'var(--bz-text-muted)' }}>
                 <span style={{ fontWeight: 700 }}>Lock tx: </span>

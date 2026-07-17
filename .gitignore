@@ -100,3 +100,4 @@ status/*.json
 build-log.txt
 docker-build-output.log
 .claude/
+api/scripts/.cargolink-sim.json

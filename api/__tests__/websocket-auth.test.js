@@ -291,3 +291,11 @@ console.log(`Resultados: ${passed} pasados, ${failed} fallados`);
 console.log('─'.repeat(50));
 
 if (failed > 0) process.exitCode = 1;
+
+// Bajo jest, registrar el resultado agregado como un test real — el runner
+// casero sigue sirviendo standalone: node __tests__/websocket-auth.test.js
+if (typeof it === 'function') {
+  it(`ws-auth suite standalone: ${passed} asserts pasan, 0 fallan`, () => {
+    assert.strictEqual(failed, 0, `${failed} asserts fallaron (ver consola)`);
+  });
+}

@@ -41,7 +41,8 @@ async function createApiServer(manager, engine = null, bridgeMgr = null) {
 
   // ── Middleware ─────────────────────────────────────────────────────────
   app.use(cors({ origin: ORIGINS, credentials: true }));
-  app.use(express.json({ limit: '2mb' }));
+  // verify: keep exact bytes for inbound HMAC (CargoLink /v1/ingest/:providerId)
+  app.use(express.json({ limit: '2mb', verify: (req, _res, buf) => { req.rawBody = buf; } }));
   app.use(express.urlencoded({ extended: true }));
 
   // Request logger

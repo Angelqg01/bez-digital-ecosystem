@@ -10,6 +10,13 @@ import {
   CheckCircle2,
   RefreshCw,
   Tag,
+  Sun,
+  Gauge,
+  Lock,
+  Bluetooth,
+  ShieldCheck,
+  Anchor,
+  Scale,
 } from 'lucide-react'
 import { useTransactions } from '../hooks/useTransaction'
 import { cargoLinkApi } from '../services/cargoLinkApi'
@@ -24,6 +31,10 @@ const METRIC_ICON = {
   shock: Zap,
   gps: MapPin,
   rfid: Tag,
+  light: Sun,
+  pressure: Gauge,
+  seal: Lock,
+  ble_zone: Bluetooth,
 }
 
 const METRIC_COLOR = {
@@ -32,13 +43,34 @@ const METRIC_COLOR = {
   shock: '#f59e0b',
   gps: '#a855f7',
   rfid: '#10b981',
+  light: '#facc15',
+  pressure: '#818cf8',
+  seal: '#f87171',
+  ble_zone: '#38bdf8',
 }
+
+const EVENT_LABEL = {
+  COLD_CHAIN_BREACH: 'COLD CHAIN BREACH',
+  SHOCK_ALERT: 'SHOCK ALERT',
+  CONTAINER_UNSEALED: 'CONTENEDOR ABIERTO',
+  LIGHT_BREACH: 'INTRUSIÓN DE LUZ',
+  PRESSURE_LOSS: 'PÉRDIDA DE PRESIÓN',
+  GEOFENCE_EXIT: 'FUERA DE RUTA',
+  HUMIDITY_BREACH: 'HUMEDAD FUERA DE RANGO',
+}
+
+const SEVERITY_LABEL = ['Conforme', 'Leve', 'Moderado', 'Crítico']
+const SEVERITY_COLOR = ['#39ff14', '#facc15', '#fb923c', '#f87171']
 
 const Telemetry = () => {
   const navigate = useNavigate()
   const { transactions, loading: txLoading } = useTransactions()
   const [selected, setSelected] = useState('')
   const [telemetry, setTelemetry] = useState([])
+  const [disputes, setDisputes] = useState([])
+  const [anchors, setAnchors] = useState([])
+  const [anchoring, setAnchoring] = useState(false)
+  const [resolving, setResolving] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [autoRefresh, setAutoRefresh] = useState(false)
@@ -52,12 +84,45 @@ const Telemetry = () => {
     try {
       const data = await cargoLinkApi.getTelemetry(key, { bUid: selected, limit: 100 })
       setTelemetry(data.telemetry || [])
+      // Disputes + merkle anchors of the same B-UID (best-effort side panels).
+      const [disp, anch] = await Promise.allSettled([
+        cargoLinkApi.listDisputes(key, { bUid: selected }),
+        cargoLinkApi.listAnchors(key, { bUid: selected }),
+      ])
+      setDisputes(disp.status === 'fulfilled' ? disp.value.disputes || [] : [])
+      setAnchors(anch.status === 'fulfilled' ? anch.value.anchors || [] : [])
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
   }, [selected])
+
+  const anchorNow = useCallback(async () => {
+    if (!selected || anchoring) return
+    setAnchoring(true)
+    try {
+      await cargoLinkApi.anchorTelemetry(authKey(), selected)
+      await load()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setAnchoring(false)
+    }
+  }, [selected, anchoring, load])
+
+  const resolve = useCallback(async (disputeId, resolution) => {
+    if (resolving) return
+    setResolving(true)
+    try {
+      await cargoLinkApi.resolveDispute(authKey(), disputeId, { resolution })
+      await load()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setResolving(false)
+    }
+  }, [resolving, load])
 
   useEffect(() => { load() }, [load])
 
@@ -144,7 +209,9 @@ const Telemetry = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <AlertTriangle size={18} color="#ef4444" />
             <span style={{ fontSize: 14, fontWeight: 900, color: '#ef4444' }}>
-              {breaches.some(b => b.metric === 'temperature') ? 'COLD CHAIN BREACH' : 'SHOCK ALERT'}
+              {breaches.some(b => b.tamper)
+                ? 'TAMPER DETECTADO'
+                : EVENT_LABEL[breaches[0]?.event_type] || 'ALERTA DE TELEMETRÍA'}
             </span>
             <span style={{ fontSize: 11, color: 'var(--bz-text-muted)', marginLeft: 'auto' }}>
               {breaches.length} alerta{breaches.length > 1 ? 's' : ''}
@@ -217,17 +284,113 @@ const Telemetry = () => {
                       {t.breach && (
                         <span style={{ fontSize: 8, fontWeight: 900, background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: 4 }}>BREACH</span>
                       )}
+                      {t.tamper && (
+                        <span style={{ fontSize: 8, fontWeight: 900, background: '#7c2d12', color: '#fdba74', padding: '1px 6px', borderRadius: 4 }}>TAMPER</span>
+                      )}
+                      {t.event_type && t.event_type !== 'READING' && (
+                        <span style={{ fontSize: 8, fontWeight: 800, border: '1px solid var(--bz-border)', color: 'var(--bz-text-muted)', padding: '1px 6px', borderRadius: 4 }}>
+                          {t.event_type}
+                        </span>
+                      )}
+                      {t.trust_level === 'signed' && (
+                        <ShieldCheck size={11} color="#39ff14" title="Payload firmado (secp256k1)" />
+                      )}
+                      {t.geofence_verified === false && (
+                        <span style={{ fontSize: 8, fontWeight: 800, color: '#fb923c' }} title="Fuera de todas las geocercas">GEO ✗</span>
+                      )}
                     </div>
                     {t.reason && <p style={{ fontSize: 9, color: 'var(--bz-text-muted)', marginTop: 2 }}>{t.reason}</p>}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontSize: 9, color: 'var(--bz-text-muted)' }}>{t.device_id}</p>
+                    <p style={{ fontSize: 9, color: 'var(--bz-text-muted)' }}>{t.provider && t.provider !== 'PROPRIETARY_DEVICE' ? t.provider : t.device_id}</p>
                     <p style={{ fontSize: 8, color: 'var(--bz-text-muted)' }}>{new Date(t.recorded_at).toLocaleString()}</p>
                   </div>
                 </div>
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* Open disputes (severity matrix verdicts holding the escrow) */}
+      {selected && disputes.length > 0 && (
+        <div className="card" style={{ padding: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <Scale size={16} color="var(--bz-primary)" />
+            <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase' }}>Disputas del escrow</span>
+          </div>
+          {disputes.map(d => (
+            <div key={d.id} style={{ padding: '10px 0', borderTop: '1px solid var(--bz-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{
+                  fontSize: 9, fontWeight: 900, padding: '2px 8px', borderRadius: 4,
+                  background: `${SEVERITY_COLOR[d.severity]}22`, color: SEVERITY_COLOR[d.severity],
+                }}>
+                  {SEVERITY_LABEL[d.severity] || d.severity} · {d.action}
+                </span>
+                <span style={{ fontSize: 9, color: 'var(--bz-text-muted)' }}>
+                  {new Date(d.created_at).toLocaleString()} · {d.status === 'open' ? 'ABIERTA' : `resuelta (${d.resolution})`}
+                </span>
+              </div>
+              {(Array.isArray(d.reasons) ? d.reasons : []).slice(0, 3).map((r, i) => (
+                <p key={i} style={{ fontSize: 10, color: 'var(--bz-text-muted)', marginTop: 4 }}>{r}</p>
+              ))}
+              {d.settlement && (
+                <p style={{ fontSize: 10, marginTop: 4 }}>
+                  Propuesta: <strong style={{ color: '#f87171' }}>{d.settlement.refundToBuyerBEZ} BEZ</strong> comprador ·{' '}
+                  <strong style={{ color: '#39ff14' }}>{d.settlement.payToSellerBEZ} BEZ</strong> vendedor
+                  {d.settlement.discountPct > 0 ? ` (${d.settlement.discountPct}% dto.)` : ''}
+                </p>
+              )}
+              {d.status === 'open' && (
+                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  <button className="btn" disabled={resolving} onClick={() => resolve(d.id, 'release')}
+                    style={{ flex: 1, fontSize: 10, border: '1px solid #39ff1444', color: '#39ff14' }}>
+                    Liberar al vendedor
+                  </button>
+                  <button className="btn" disabled={resolving} onClick={() => resolve(d.id, 'partial')}
+                    style={{ flex: 1, fontSize: 10, border: '1px solid var(--bz-border)' }}>
+                    Aceptar propuesta
+                  </button>
+                  <button className="btn" disabled={resolving} onClick={() => resolve(d.id, 'refund')}
+                    style={{ flex: 1, fontSize: 10, border: '1px solid #f8717144', color: '#f87171' }}>
+                    Reembolsar
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Merkle anchors — cryptographic proof of an unaltered route */}
+      {selected && (
+        <div className="card" style={{ padding: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <Anchor size={16} color="var(--bz-primary)" />
+            <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase' }}>Anclaje criptográfico</span>
+            <button className="btn" disabled={anchoring || telemetry.length === 0} onClick={anchorNow}
+              style={{ marginLeft: 'auto', fontSize: 10, border: '1px solid var(--bz-border)', padding: '6px 12px' }}>
+              {anchoring ? 'Anclando…' : 'Anclar lote'}
+            </button>
+          </div>
+          {anchors.length === 0 ? (
+            <p style={{ fontSize: 10, color: 'var(--bz-text-muted)' }}>
+              Sin anclajes. Consolida la telemetría en un merkle root verificable on-chain.
+            </p>
+          ) : anchors.map(a => (
+            <div key={a.id} style={{ padding: '8px 0', borderTop: '1px solid var(--bz-border)', fontSize: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {a.anchored
+                  ? <CheckCircle2 size={12} color="#39ff14" />
+                  : <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#facc15' }} title="Root calculado; pendiente de on-chain" />}
+                <code style={{ color: 'var(--bz-text-muted)' }}>{a.merkle_root.slice(0, 18)}…</code>
+                <span style={{ color: 'var(--bz-text-muted)' }}>{a.leaf_count} lecturas</span>
+                <span style={{ marginLeft: 'auto', color: 'var(--bz-text-muted)' }}>{new Date(a.created_at).toLocaleString()}</span>
+              </div>
+              {a.tx_hash && <p style={{ color: 'var(--bz-text-muted)', marginTop: 2 }}>tx: <code>{a.tx_hash.slice(0, 22)}…</code> · chain {a.chain_id}</p>}
+            </div>
+          ))}
         </div>
       )}
 
