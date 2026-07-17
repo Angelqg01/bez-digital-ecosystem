@@ -39,15 +39,11 @@ import ROICalculator from '../components/vip/ROICalculator';
 import GlobalStatsBar from '../components/GlobalStatsBar';
 import toast from 'react-hot-toast';
 import vipService from '../services/vipService';
-import { STRIPE_PAYMENT_LINKS } from '../config/bezhasPaymentConfig';
+import { getVipStripeLink } from '../config/bezhasPaymentConfig';
 
-const VIP_STRIPE_LINKS_BY_TIER = {
-    creator: STRIPE_PAYMENT_LINKS.subscriptions.starter,
-    business: STRIPE_PAYMENT_LINKS.subscriptions.pro,
-    enterprise: STRIPE_PAYMENT_LINKS.subscriptions.enterprise,
-};
-
-const getVipStripeCheckoutLink = (tierId) => VIP_STRIPE_LINKS_BY_TIER[String(tierId || '').toLowerCase()] || STRIPE_PAYMENT_LINKS.vip;
+// getVipStripeLink resuelve tier legacy → plan canónico (creator→creator_pro,
+// business→business, enterprise→enterprise_vip) y adjunta client_reference_id.
+const getVipStripeCheckoutLink = (tierId) => getVipStripeLink(tierId);
 const buildVipBankReference = (tierId, address) => `VIP-${tierId || 'plan'}-${address ? address.slice(0, 8) : Date.now().toString(36).toUpperCase()}`;
 
 // ============================================

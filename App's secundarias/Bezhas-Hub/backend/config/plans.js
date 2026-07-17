@@ -18,18 +18,39 @@ const PLANS = [
     priceEUR: 0, priceIVA: 0, yearlyEUR: 0, bezPerMonth: 0,
     aiActions: 150, gasSubsidy: 0, apy: 12.5, roiPercent: null,
     recommended: false, badge: null, valueLine: 'Reducción de barrera de entrada Web3',
+    // Pago por uso: 15 días gratis, después consumo real API-SDK +25% margen.
+    billingModel: 'payg', trialDays: 15,
+    stripe: {
+      productId: 'prod_UtiGhSbf1HDIIi',
+      meteredPriceId: 'price_1TtuplFomr6oeXVgt8XVUQDW',
+      meterEventName: 'bezhas_api_credits',
+    },
   },
   {
     id: 'creator_pro', name: 'Creator Pro', profile: 'Pymes / Creadores',
     priceEUR: 99, priceIVA: 119.79, yearlyEUR: 990, bezPerMonth: 200,
     aiActions: 1500, gasSubsidy: 25, apy: 18.75, roiPercent: 343,
     recommended: true, badge: 'POPULAR', valueLine: '+343% ahorro en gestión manual',
+    stripe: {
+      productId: 'prod_UOS89liy2MjObG',
+      monthlyPriceId: 'price_1TPfDyFomr6oeXVgBxoyUJwn',
+      annualPriceId: 'price_1TtuE7Fomr6oeXVgHjQ5AkXT',
+      monthlyLink: 'https://buy.stripe.com/8x2aEXgqY2q29bEeqTew807',
+      annualLink: 'https://buy.stripe.com/6oU9ATa2A6Gi0F83Mfew80a',
+    },
   },
   {
     id: 'business', name: 'Business', profile: 'Empresas en Crecimiento',
     priceEUR: 499, priceIVA: 603.79, yearlyEUR: 4990, bezPerMonth: 1000,
     aiActions: 15000, gasSubsidy: 50, apy: 25, roiPercent: 654,
     recommended: false, badge: null, valueLine: '+654% eficiencia operativa',
+    stripe: {
+      productId: 'prod_UOSDVEzpPuxHux',
+      monthlyPriceId: 'price_1TPfJUFomr6oeXVgMfB321Hf',
+      annualPriceId: 'price_1TtuE9Fomr6oeXVguKlDbScU',
+      monthlyLink: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+      annualLink: 'https://buy.stripe.com/8x228r8YwfcO87A4Qjew80b',
+    },
   },
   {
     id: 'enterprise_vip', name: 'Enterprise VIP', profile: 'Holdings / Instituciones',
@@ -37,6 +58,13 @@ const PLANS = [
     aiActions: null, gasSubsidy: 100, apy: 31.25, roiPercent: 909,
     recommended: false, badge: 'WHITE LABEL', valueLine: '+909% optimización global',
     partnerCommission: HOLDING_COMMISSION, subCompanies: 50,
+    stripe: {
+      productId: 'prod_UOSJJi93dIuZ7q',
+      monthlyPriceId: 'price_1TPfPMFomr6oeXVgjrKzeAmm',
+      annualPriceId: 'price_1TtuECFomr6oeXVgMGz8gK9v',
+      monthlyLink: 'https://buy.stripe.com/aFa4gzb6E4ya1Jc4Qjew809',
+      annualLink: 'https://buy.stripe.com/fZufZhgqY8Oq73w2Ibew80c',
+    },
   },
 ];
 

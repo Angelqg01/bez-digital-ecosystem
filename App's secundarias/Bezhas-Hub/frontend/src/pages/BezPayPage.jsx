@@ -18,7 +18,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import { useBezPay, SUBSCRIPTION_PLANS, FARMING_POOLS } from '../context/BezPayContext';
-import { STRIPE_PAYMENT_LINKS } from '../config/bezhasPaymentConfig';
+import { STRIPE_PAYMENT_LINKS, buildStripeCheckoutUrl } from '../config/bezhasPaymentConfig';
 import { ExternalLink, Wallet, TrendingUp, Shield, Zap, Activity, Crown, ChevronRight, Info, BarChart2 } from 'lucide-react';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
@@ -88,39 +88,41 @@ const BEZ_COIN_PACKAGES = [
   { id:'whale', name:'Whale', tokens:25000, bonus:7500, price:2500, color:'#06B6D4', icon:'💎' },
 ];
 
+// Planes definitivos (config/plans.js). Los href se resuelven con
+// buildStripeCheckoutUrl para adjuntar client_reference_id al checkout.
 const ENTERPRISE_SUBSCRIPTION_PLANS = [
   {
-    id:'starter',
-    name:'BeZhas Starter',
-    price:'29€',
+    id:'creator_pro',
+    name:'Creator Pro',
+    price:'99€',
     period:'/mes',
-    icon:'🌱',
+    icon:'⚡',
     color:'#2563EB',
-    href:STRIPE_PAYMENT_LINKS.subscriptions.starter,
-    badge:'Inicio empresa',
-    features:['Acceso profesional inicial', 'Pagos BEZ Pay y fiat', 'Panel operativo BeZhas Hub', 'Soporte estandar'],
+    href:buildStripeCheckoutUrl('creator_pro'),
+    badge:'Recomendado',
+    features:['1.500 acciones IA/mes', 'Smart Escrows', 'Subsidio 25% de gas', 'Staking 18,75% APY'],
   },
   {
-    id:'pro',
-    name:'BeZhas Pro',
-    price:'79€',
+    id:'business',
+    name:'Business',
+    price:'499€',
     period:'/mes',
     icon:'🚀',
     color:'#00C896',
-    href:STRIPE_PAYMENT_LINKS.subscriptions.pro,
-    badge:'Recomendado',
-    features:['Funciones Pro', 'Automatizaciones y analitica', 'Mayor capacidad de uso', 'Prioridad en soporte'],
+    href:buildStripeCheckoutUrl('business'),
+    badge:'Empresas en crecimiento',
+    features:['15.000 acciones IA/mes', 'Universal Bridge API', 'Subsidio 50% de gas', 'Soporte 24/7 dedicado'],
   },
   {
-    id:'enterprise',
-    name:'BeZhas Enterprise',
-    price:'299€',
+    id:'enterprise_vip',
+    name:'Enterprise VIP',
+    price:'2.499€',
     period:'/mes',
     icon:'🏛️',
     color:'#FFB800',
-    href:STRIPE_PAYMENT_LINKS.subscriptions.enterprise,
-    badge:'Empresa',
-    features:['Cuenta empresarial', 'White label y API institucional', 'Soporte dedicado', 'Escalado para equipos'],
+    href:buildStripeCheckoutUrl('enterprise_vip'),
+    badge:'White Label',
+    features:['Cómputo IA ilimitado', 'Gas 100% gratis (Paymaster)', 'White-Label SDK + 50 sub-empresas', 'Staking 31,25% APY'],
   },
 ];
 
@@ -305,8 +307,8 @@ function OverviewTab({ prices, M, openBuyBez, openSubscription, openFarming, C }
       color:C.gold, action:() => window.open(STRIPE_PAYMENT_LINKS.tokenPurchase, '_blank', 'noopener,noreferrer'),
     },
     {
-      icon:'📋', title:'Suscripción empresarial', desc:'Starter, Pro y Enterprise con checkout real de Stripe',
-      color:C.primary, action:() => window.open(STRIPE_PAYMENT_LINKS.subscriptions.pro, '_blank', 'noopener,noreferrer'),
+      icon:'📋', title:'Suscripción empresarial', desc:'Creator Pro, Business y Enterprise VIP con checkout real de Stripe',
+      color:C.primary, action:() => window.open(buildStripeCheckoutUrl('business'), '_blank', 'noopener,noreferrer'),
     },
     {
       icon:'🌾', title:'Liquidity Farming', desc:'APY hasta 38.2% con multiplicadores por lock',
@@ -547,7 +549,8 @@ function SubscriptionTab({ M, openSubscription, isConnected, C }) {
       </div>
       <div style={{ display:'grid', gridTemplateColumns: M?'1fr':'repeat(2,1fr)', gap:12 }}>
         {[
-          { name:'Be-VIP', href:STRIPE_PAYMENT_LINKS.vip, color:C.violet, icon:'👑', desc:'Acceso Be-VIP y funciones premium para suscriptores.' },
+          // El link Be-VIP básico fue desactivado en Stripe (redirigía al
+          // WordPress muerto); queda solo Be-VIP Plus hasta redefinirlo.
           { name:'Be-VIP Plus', href:STRIPE_PAYMENT_LINKS.vipPlus, color:C.primary, icon:'💎', desc:'Niveles superiores de suscriptor y ventajas ampliadas.' },
         ].map(plan => (
           <a key={plan.name} href={plan.href} target="_blank" rel="noopener noreferrer" style={{

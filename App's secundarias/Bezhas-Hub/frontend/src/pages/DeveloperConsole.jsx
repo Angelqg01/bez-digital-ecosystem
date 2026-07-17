@@ -20,7 +20,7 @@ import EmbedWidgetsTab from '../components/developer-console/EmbedWidgetsTab';
 import DocumentationTab from '../components/developer-console/DocumentationTab';
 import LoyaltyMetricsTab from '../components/developer-console/LoyaltyMetricsTab';
 import { EmptyState, ApiKeyCard, CreateKeyModal, KeyRevealModal, KeyDetailsModal } from '../components/developer-console/ApiKeyManagement';
-import BeZhasLogisticsSimulator from '../components/logistics/BeZhasLogisticsSimulator';
+const LogisticsSimulator360 = React.lazy(() => import('../components/logistics/simulator/LogisticsSimulator360'));
 import OpenClawTab from '../components/developer-console/OpenClawTab';
 import OrgApiKeysTab from '../components/developer-console/OrgApiKeysTab';
 import ScrollableTabBar from '../components/developer-console/ScrollableTabBar';
@@ -186,7 +186,9 @@ const DeveloperConsole = () => {
                             {/* TAB: SIMULATOR */}
                             {activeTab === 'simulator' && (
                                 <div className="mb-6">
-                                    <BeZhasLogisticsSimulator />
+                                    <React.Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div></div>}>
+                                        <LogisticsSimulator360 />
+                                    </React.Suspense>
                                 </div>
                             )}
 

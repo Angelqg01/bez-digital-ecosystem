@@ -21,6 +21,7 @@
 const { Router } = require('express');
 const { body, param, validationResult } = require('express-validator');
 const { authenticateGateway, requireScope, authenticateSSOToken } = require('../middleware/gateway-auth');
+const { meterUsage } = require('../middleware/gateway-metering');
 const ssoService = require('../services/ssoService');
 const walletService = require('../services/walletService');
 const contractService = require('../services/contractService');
@@ -37,6 +38,13 @@ const { TREASURY: SETTLEMENT_TREASURY } = require('../services/bezSettlementWatc
 const logger = require('pino')({ level: 'info', name: 'gateway' });
 
 const router = Router();
+
+// Medición de uso API-SDK para apps en plan Starter (pago por uso).
+// No-op para cualquier request sin req.registeredApp (SSO, internal-key,
+// checkout público) — meterUsage lee req.registeredApp de forma perezosa
+// en res.on('finish'), así que da igual que corra antes que authenticateGateway
+// en la cadena de cada ruta: para entonces el auth ya habrá poblado el request.
+router.use(meterUsage('api_call'));
 
 // BEZ Token resolution: v1 (LIVE on BSC) vs v2 (not deployed)
 const BEZ_COIN_V1_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
@@ -1837,6 +1845,53 @@ router.post('/subscription/activate', authenticateGateway, requireRegisteredApp,
     } catch (error) {
         logger.error(error, 'Subscription activate failed');
         res.status(500).json({ error: 'Failed to activate SubApp' });
+    }
+});
+
+/**
+ * POST /subscription/starter/subscribe — Alta en el plan Starter (pago por
+ * uso). Crea customer + suscripción Stripe con precio medido y 15 días de
+ * prueba gratis. El consumo se factura por créditos API (usage-pricing.js).
+ */
+router.post('/subscription/starter/subscribe', authenticateGateway, requireRegisteredApp, [
+    body('email').isEmail(),
+    body('name').optional().isString(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    try {
+        const { subscribeStarter } = require('../services/usageBilling');
+        const result = await subscribeStarter({
+            appId: req.registeredApp.id,
+            email: req.body.email,
+            name: req.body.name,
+        });
+        res.json({ success: true, plan: 'starter', billing: 'payg', ...result });
+    } catch (error) {
+        if (error.code === 'STARTER_PRICE_MISSING') {
+            return res.status(503).json({ error: 'Starter pay-per-use price not configured yet' });
+        }
+        logger.error(error, 'Starter subscribe failed');
+        res.status(500).json({ error: 'Failed to subscribe to Starter plan' });
+    }
+});
+
+/**
+ * GET /subscription/usage — Consumo del ciclo actual (ledger local).
+ */
+router.get('/subscription/usage', authenticateGateway, requireRegisteredApp, async (req, res) => {
+    try {
+        const { rows } = await query(
+            `SELECT COUNT(*)::int AS calls, COALESCE(SUM(credits),0)::int AS credits,
+                    COALESCE(SUM(billable_eur),0)::numeric AS billable_eur
+             FROM gateway_usage_ledger
+             WHERE app_id = $1 AND created_at >= date_trunc('month', NOW())`,
+            [req.registeredApp.id]
+        );
+        const u = rows[0] || { calls: 0, credits: 0, billable_eur: 0 };
+        res.json({ success: true, period: 'current_month', calls: u.calls, credits: u.credits, billableEUR: Number(u.billable_eur) });
+    } catch (error) {
+        logger.error(error, 'Usage fetch failed');
+        res.status(500).json({ error: 'Failed to fetch usage' });
     }
 });
 

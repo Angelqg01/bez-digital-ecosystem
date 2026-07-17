@@ -25,6 +25,8 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { ethers } = require('ethers');
 const crypto = require('crypto');
 const fxService = require('../services/fxService');
+const { query } = require('../db/pool');
+const { getPlan } = require('../config/plans');
 
 // ═══════════════════════════════════════════════
 // LOGGER ESTRUCTURADO [LOG-1]
@@ -442,6 +444,45 @@ async function mintBezTokens(walletAddress, amountUsdCents, eventId) {
 }
 
 // ═══════════════════════════════════════════════
+// PLAN PROVISIONING — checkout de suscripción (Payment Links con
+// metadata.plan_id). NO minta BEZ: activa el plan en gateway_subscriptions.
+// El Hub añade ?client_reference_id=<app_id> al Payment Link para que
+// el webhook sepa a qué app registrada pertenece la compra.
+// ═══════════════════════════════════════════════
+async function provisionPlanSubscription(session, eventId) {
+  const planId = session.metadata?.plan_id;
+  const billing = session.metadata?.billing === 'annual' ? 'annual' : 'monthly';
+  const appId = session.client_reference_id;
+
+  const plan = getPlan(planId);
+  if (!plan) {
+    log.error('Stripe', 'Unknown plan_id in session metadata', { sessionId: session.id, planId });
+    return;
+  }
+  if (!appId) {
+    // Sin app_id no podemos asociar la suscripción — queda para reconciliación
+    // manual vía customer email en el dashboard de Stripe.
+    log.warn('Stripe', 'Plan checkout without client_reference_id — manual reconciliation needed', {
+      sessionId: session.id, planId, customerEmail: session.customer_details?.email,
+    });
+    return;
+  }
+
+  const renewInterval = billing === 'annual' ? "INTERVAL '1 year'" : "INTERVAL '1 month'";
+  await query(
+    `INSERT INTO gateway_subscriptions (app_id, plan_id, status, renews_at)
+     VALUES ($1, $2, 'active', NOW() + ${renewInterval})
+     ON CONFLICT (app_id) DO UPDATE
+       SET plan_id = $2, status = 'active',
+           renews_at = NOW() + ${renewInterval}, updated_at = NOW()`,
+    [appId, planId]
+  );
+  log.info('Stripe', 'Plan subscription provisioned', {
+    eventId, appId, planId, billing, stripeCustomer: session.customer,
+  });
+}
+
+// ═══════════════════════════════════════════════
 // ROUTE: POST /webhooks/stripe
 // ═══════════════════════════════════════════════
 router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -467,6 +508,19 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
           sessionId: session.id,
           payment_status: session.payment_status,
         });
+        break;
+      }
+
+      // Suscripción de plan (Payment Link con metadata.plan_id): provisionar
+      // el plan, nunca mintear BEZ por el importe de la cuota.
+      if (session.metadata?.plan_id) {
+        try {
+          await provisionPlanSubscription(session, event.id);
+        } catch (err) {
+          log.error('Stripe', 'Plan provisioning failed', {
+            sessionId: session.id, error: err.message,
+          });
+        }
         break;
       }
 

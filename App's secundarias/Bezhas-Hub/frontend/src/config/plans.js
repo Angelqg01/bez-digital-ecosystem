@@ -47,13 +47,17 @@ export const PLANS = [
     apy: 12.5,
     roiPercent: null,
     recommended: false,
-    badge: null,
-    valueLine: 'Reducción de barrera de entrada Web3',
+    badge: '15 DÍAS GRATIS',
+    valueLine: 'Prueba gratis 15 días, luego solo pagas lo que usas',
+    // Pago por uso: tras el trial, cada llamada API-SDK se factura a coste
+    // real (Claude + cómputo BeZhas) +25%. 1 crédito = 0,001 €.
+    billingModel: 'payg',
+    trialDays: 15,
     features: [
+      '15 días de prueba gratis',
+      'Después, pago por uso real de API-SDK (coste +25%)',
       'Acceso Core a la plataforma',
-      'Dashboard de lectura',
       'DAO básica (participación en votaciones)',
-      '150 acciones IA/mes',
       'Staking $BEZ 12,5% APY',
       'Wallet corporativa BeZhas',
     ],

@@ -1,11 +1,31 @@
+// bezhasPaymentConfig.js — enlaces Stripe reales (cuenta BeZhas, livemode).
+//
+// Sincronizado 2026-07-16 con el catálogo de Stripe y con
+// backend/config/plans.js (fuente canónica). Cada Payment Link de plan lleva
+// en Stripe metadata { plan_id, billing } y redirige tras el pago a
+// hub.bez.digital/onboarding. El webhook del gateway provisiona el plan
+// usando client_reference_id como identificador de la app/organización:
+// SIEMPRE abrir los links de plan vía buildStripeCheckoutUrl() para
+// adjuntarlo — sin él, la compra requiere reconciliación manual.
+
 export const STRIPE_PAYMENT_LINKS = {
   subscriptions: {
-    starter: 'https://buy.stripe.com/8x2aEXgqY2q29bEeqTew807',
-    pro: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
-    enterprise: 'https://buy.stripe.com/aFa4gzb6E4ya1Jc4Qjew809',
+    creator_pro: {
+      monthly: 'https://buy.stripe.com/8x2aEXgqY2q29bEeqTew807',
+      annual: 'https://buy.stripe.com/6oU9ATa2A6Gi0F83Mfew80a',
+    },
+    business: {
+      monthly: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+      annual: 'https://buy.stripe.com/8x228r8YwfcO87A4Qjew80b',
+    },
+    enterprise_vip: {
+      monthly: 'https://buy.stripe.com/aFa4gzb6E4ya1Jc4Qjew809',
+      annual: 'https://buy.stripe.com/fZufZhgqY8Oq73w2Ibew80c',
+    },
   },
   tokenPurchase: 'https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806',
-  vip: 'https://buy.stripe.com/3cIdR9a2A3u673waaDew804',
+  // vip (buy.stripe.com/3cIdR9…804) desactivado en Stripe: redirigía al
+  // WordPress muerto. vipPlus sigue activo.
   vipPlus: 'https://buy.stripe.com/bJe3cveiQ1lY3Rkgz1ew805',
 };
 
@@ -29,28 +49,51 @@ export function buildBankTransferInstructions(reference) {
   };
 }
 
-// Normaliza los IDs de plan (esquema definitivo y esquema legacy de /be-vip) a
-// su enlace Stripe. Así /pay (ids: starter, creator_pro, business, enterprise_vip)
-// y /be-vip (ids: starter, creator, business, enterprise) enrutan correctamente.
-const PLAN_ID_TO_STRIPE = {
-  starter: STRIPE_PAYMENT_LINKS.subscriptions.starter,
-  creator: STRIPE_PAYMENT_LINKS.subscriptions.pro,
-  creator_pro: STRIPE_PAYMENT_LINKS.subscriptions.pro,
-  pro: STRIPE_PAYMENT_LINKS.subscriptions.pro,
-  business: STRIPE_PAYMENT_LINKS.vipPlus,
-  enterprise: STRIPE_PAYMENT_LINKS.subscriptions.enterprise,
-  enterprise_vip: STRIPE_PAYMENT_LINKS.subscriptions.enterprise,
+// Normaliza IDs de plan (esquema definitivo + legacy de /be-vip) al plan
+// canónico. `starter` es gratis: NO tiene checkout Stripe (devuelve null).
+const PLAN_ALIASES = {
+  creator: 'creator_pro',
+  creator_pro: 'creator_pro',
+  pro: 'business', // el antiguo "Pro" (499€) es el Business actual
+  business: 'business',
+  enterprise: 'enterprise_vip',
+  enterprise_vip: 'enterprise_vip',
 };
 
+/** Devuelve el id del org/app activo para atribuir la compra (o null). */
+function activeClientReferenceId() {
+  try {
+    return localStorage.getItem('bezhas-org-id') || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * URL de checkout Stripe para un plan de pago.
+ * @param {string} planId — id de plan (definitivo o legacy)
+ * @param {{annual?:boolean, clientReferenceId?:string|null}} [opts]
+ * @returns {string|null} null si el plan no tiene checkout (starter/desconocido)
+ */
+export function buildStripeCheckoutUrl(planId, { annual = false, clientReferenceId } = {}) {
+  const canonical = PLAN_ALIASES[String(planId || '').toLowerCase()];
+  const link = canonical && STRIPE_PAYMENT_LINKS.subscriptions[canonical];
+  if (!link) return null;
+  const url = new URL(annual ? link.annual : link.monthly);
+  const ref = clientReferenceId !== undefined ? clientReferenceId : activeClientReferenceId();
+  if (ref) url.searchParams.set('client_reference_id', ref);
+  return url.toString();
+}
+
+/** Compat: mismo contrato que antes pero con el mapeo corregido. */
 export function getStripePaymentLink(useCase = 'tokenPurchase') {
   const key = String(useCase || '').toLowerCase();
-  if (PLAN_ID_TO_STRIPE[key]) return PLAN_ID_TO_STRIPE[key];
-  if (key === 'vip') return STRIPE_PAYMENT_LINKS.vip;
-  if (key === 'vipplus') return STRIPE_PAYMENT_LINKS.vipPlus;
+  const planUrl = buildStripeCheckoutUrl(key);
+  if (planUrl) return planUrl;
+  if (key === 'vipplus' || key === 'vip') return STRIPE_PAYMENT_LINKS.vipPlus;
   return STRIPE_PAYMENT_LINKS.tokenPurchase;
 }
 
 export function getVipStripeLink(tierId) {
-  const tier = String(tierId || '').toLowerCase();
-  return PLAN_ID_TO_STRIPE[tier] || STRIPE_PAYMENT_LINKS.vip;
+  return buildStripeCheckoutUrl(tierId) || STRIPE_PAYMENT_LINKS.vipPlus;
 }

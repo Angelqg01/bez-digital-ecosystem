@@ -9,11 +9,11 @@ import { PLANS as DEFINITIVE_PLANS, BEZ_DISCOUNT_RATE } from '../../config/plans
 
 const PLANS = DEFINITIVE_PLANS.map((p) => ({
     name: p.name,
-    price: p.priceEUR === 0 ? 'Gratis' : `${p.priceEUR} €`,
-    period: p.priceEUR === 0 ? '' : '/ mes',
+    price: p.billingModel === 'payg' ? 'Pago por uso' : p.priceEUR === 0 ? 'Gratis' : `${p.priceEUR} €`,
+    period: p.billingModel === 'payg' ? `· ${p.trialDays} días gratis` : p.priceEUR === 0 ? '' : '/ mes',
     tagline: `${p.profile}${p.valueLine ? ` · ${p.valueLine}` : ''}`,
     features: p.features,
-    cta: p.priceEUR === 0 ? 'Empezar gratis' : `Elegir ${p.name}`,
+    cta: p.billingModel === 'payg' ? `Probar ${p.trialDays} días gratis` : p.priceEUR === 0 ? 'Empezar gratis' : `Elegir ${p.name}`,
     ctaHref: '/be-vip',
     recommended: !!p.recommended,
     accent: p.recommended
