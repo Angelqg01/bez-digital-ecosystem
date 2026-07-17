@@ -10,8 +10,10 @@ import {
   Code2,
   Users,
   Radio,
+  Settings as SettingsIcon,
 } from 'lucide-react'
 import EcosystemBar from './components/EcosystemBar'
+import GuidedTour, { TourButton } from './components/GuidedTour'
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen } from './context/AuthProvider'
 
 // Pages
@@ -24,6 +26,7 @@ import DeveloperIntegration from './pages/DeveloperIntegration'
 import Operators from './pages/Operators'
 import TransactionDetail from './pages/TransactionDetail'
 import Telemetry from './pages/Telemetry'
+import Settings from './pages/Settings'
 
 const App = () => {
   const { token, user } = useAuth()
@@ -45,7 +48,12 @@ const App = () => {
               VALIDATOR_TERMINAL
             </h1>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <TourButton compact />
+            <Link to="/settings" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--bz-text)', background: 'var(--bz-surface-container)', padding: '6px 12px', borderRadius: 6, border: '1px solid var(--bz-border)', textDecoration: 'none' }} title="Configuración y sensores">
+              <SettingsIcon size={16} color="var(--bz-primary)" />
+              <span style={{ fontSize: 10, fontWeight: 800 }}>CONFIG</span>
+            </Link>
             <Link to="/integration" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--bz-text)', background: 'var(--bz-surface-container)', padding: '6px 12px', borderRadius: 6, border: '1px solid var(--bz-border)', textDecoration: 'none' }}>
               <Code2 size={16} color="var(--bz-primary)" />
               <span style={{ fontSize: 10, fontWeight: 800 }}>API HUB</span>
@@ -67,6 +75,7 @@ const App = () => {
               <Route path="/operators" element={<Operators />} />
               <Route path="/integration" element={<DeveloperIntegration />} />
               <Route path="/telemetry" element={<Telemetry />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/tx/:bUid" element={<TransactionDetail />} />
             </Routes>
           )}
@@ -109,6 +118,7 @@ const App = () => {
       </div>
 
       <EcosystemBar appName="BZ CargoLink" />
+      <GuidedTour />
     </>
   )
 }
