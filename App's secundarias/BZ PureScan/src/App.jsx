@@ -15,9 +15,9 @@ import {
   Database,
   User,
   QrCode,
-  CreditCard,  // FIX #6: icono correcto para Billing
+  CreditCard,
+  Cpu,
   X,
-  // Menu — FIX #7: import eliminado, no se usaba
 } from 'lucide-react'
 
 // Wallet login / subscribe (shared)
@@ -39,27 +39,45 @@ const ROUTE_META = [
   { path: '/profile', title: 'Profile — Food Oracle Scan' },
 ]
 
-// ─── FIX #3: Panel de Settings real ──────────────────────────────────────────
-const SettingsPanel = ({ onClose }) => (
+const SETTINGS_ITEMS = [
+  { icon: Cpu, label: 'Sensores', path: '/scan', action: 'sensors' },
+  { icon: User, label: 'Profile', path: '/profile' },
+  { icon: Database, label: 'Storage', path: '/storage' },
+  { icon: CreditCard, label: 'Billing', path: '/billing' },
+]
+
+const SettingsPanel = ({ onClose, onItem }) => (
   <div
     role="dialog"
     aria-modal="true"
-    aria-label="Settings"
-    className="absolute top-14 right-4 z-50 w-64 bg-bz-surface border border-bz-primary/30
-      rounded-xl shadow-2xl p-4 flex flex-col gap-3"
+    aria-label="Configuración"
+    className="absolute top-14 right-4 z-50 w-56 bg-bz-surface border border-bz-primary/30
+      rounded-xl shadow-2xl p-2 flex flex-col"
   >
-    <div className="flex justify-between items-center mb-1">
-      <h2 className="font-bold text-sm">Settings</h2>
+    <div className="flex justify-between items-center px-2 py-1.5 mb-1">
+      <h2 className="font-bold text-sm">Configuración</h2>
       <button
         onClick={onClose}
-        aria-label="Close settings"
+        aria-label="Cerrar"
         className="p-1 rounded hover:bg-bz-primary/20 transition-colors"
       >
         <X size={16} aria-hidden="true" />
       </button>
     </div>
-    {/* Aquí irán las opciones reales de configuración */}
-    <p className="text-bz-text-muted text-xs">App version 1.0.0</p>
+    {SETTINGS_ITEMS.map(({ icon: Icon, label, path, action }) => (
+      <button
+        key={label}
+        onClick={() => onItem(path, action)}
+        className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-sm font-medium
+          text-bz-text hover:bg-bz-primary/10 transition-colors text-left"
+      >
+        <Icon size={18} className="text-bz-text-muted flex-shrink-0" aria-hidden="true" />
+        {label}
+      </button>
+    ))}
+    <div className="mt-1 border-t border-bz-ghost-border pt-2 px-3 pb-1">
+      <p className="text-bz-text-muted text-[11px]">BZ PureScan v1.0.0</p>
+    </div>
   </div>
 )
 
@@ -91,6 +109,14 @@ const AppShell = () => {
 
   const toggleSettings = useCallback(() => setShowSettings(v => !v), [])
   const closeSettings = useCallback(() => setShowSettings(false), [])
+
+  const handleSettingsItem = useCallback((path, action) => {
+    closeSettings()
+    navigate(path)
+    if (action === 'sensors') {
+      setTimeout(() => window.dispatchEvent(new CustomEvent('open-sensors')), 120)
+    }
+  }, [navigate, closeSettings])
 
   // Ocultar botón back en la ruta raíz
   const isRoot = location.pathname === '/'
@@ -131,7 +157,7 @@ const AppShell = () => {
             }
           </button>
 
-          {showSettings && <SettingsPanel onClose={closeSettings} />}
+          {showSettings && <SettingsPanel onClose={closeSettings} onItem={handleSettingsItem} />}
         </div>
         </div>
       </header>

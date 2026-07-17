@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Camera,
   CheckCircle2,
+  Cpu,
   Eye,
   Image as ImageIcon,
   Loader,
@@ -26,6 +27,43 @@ import {
   videoFileToCaptures,
 } from '../utils/visualEvidence'
 import { syncIntegrationBridge } from '../services/integrationBridge'
+import { buildSensorPayload } from '../services/sensorHub'
+import { evaluateDispute } from '../services/disputeOracle'
+import SensorPanel from '../components/SensorPanel'
+
+// Contrato de EJEMPLO (demo) para el Oráculo. Es editable y borrable desde el
+// panel de sensores: sirve para que un usuario nuevo aprenda a usar la app.
+// En producción estos valores vendrían del escrow real del lote escaneado.
+const EXAMPLE_CONTRACT = {
+  idealMaxC: 6,
+  criticalHours: 5,
+  tripHours: 12,
+  orderValueBEZ: 10,
+  riderStakeBEZ: 25,
+  isExample: true,
+}
+
+const EMPTY_CONTRACT = {
+  idealMaxC: '',
+  criticalHours: '',
+  tripHours: '',
+  orderValueBEZ: '',
+  riderStakeBEZ: '',
+  isExample: false,
+}
+
+// Convierte los campos editables ('' o número) en un contrato limpio; los
+// vacíos caen a los valores por defecto del propio Oráculo (?? interno).
+const sanitizeContract = (contract) => {
+  const clean = {}
+  for (const key of ['idealMaxC', 'criticalHours', 'tripHours', 'orderValueBEZ', 'riderStakeBEZ']) {
+    const raw = contract?.[key]
+    if (raw !== '' && raw !== null && raw !== undefined && !Number.isNaN(Number(raw))) {
+      clean[key] = Number(raw)
+    }
+  }
+  return clean
+}
 
 const OBJECT_TYPES = [
   { id: 'food', label: 'Comida' },
@@ -47,6 +85,7 @@ const PHASE_LABELS = {
 }
 
 const emptyCaptures = { before: null, after: null }
+const emptySensors = { optical: null, cold_chain: null, chemical: null, provenance: null }
 
 const Scanner = () => {
   const videoRef = useRef(null)
@@ -68,6 +107,15 @@ const Scanner = () => {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState(null)
   const [uploadingMedia, setUploadingMedia] = useState(false)
+  const [sensors, setSensors] = useState(emptySensors)
+  const [showSensors, setShowSensors] = useState(false)
+  const [contract, setContract] = useState(EXAMPLE_CONTRACT)
+
+  const handleSensorReading = useCallback((categoryId, reading) => {
+    setSensors((current) => ({ ...current, [categoryId]: reading }))
+  }, [])
+
+  const activeSensorCount = Object.values(sensors).filter(Boolean).length
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop())
@@ -128,6 +176,12 @@ const Scanner = () => {
   useEffect(() => {
     startCamera()
     return stopCamera
+  }, [])
+
+  useEffect(() => {
+    const handler = () => setShowSensors(true)
+    window.addEventListener('open-sensors', handler)
+    return () => window.removeEventListener('open-sensors', handler)
   }, [])
 
   useEffect(() => {
@@ -207,6 +261,8 @@ const Scanner = () => {
       const edgeData = await runEdgeInference(captures.after.blob)
       setShowDetections(true)
 
+      const sensorPayload = buildSensorPayload(sensors)
+
       const evidence = buildEvidencePayload({
         objectType,
         before: captures.before,
@@ -214,8 +270,17 @@ const Scanner = () => {
         comparison,
         edge: edgeData,
       })
+      evidence.sensors = sensorPayload
 
-      setResults({ edge: edgeData, evidence, comparison, captures })
+      // Oráculo MCP: matriz de severidad → propuesta de liquidación (Smart Settlement)
+      const dispute = evaluateDispute({
+        comparison,
+        sensors: sensorPayload,
+        contract: sanitizeContract(contract),
+        objectType,
+      })
+
+      setResults({ edge: edgeData, evidence, comparison, captures, sensors: sensorPayload, dispute })
 
       setPhase('gemini')
       setProgress(60)
@@ -237,6 +302,7 @@ const Scanner = () => {
         comparison,
         edge: edgeData,
         gemini: geminiData,
+        dispute,
       })
 
       setResults((prev) => ({ ...prev, integrations }))
@@ -248,6 +314,8 @@ const Scanner = () => {
         evidence,
         comparison,
         integrations,
+        dispute,
+        settlement: dispute.settlement,
       })
 
       setResults((prev) => ({ ...prev, tx }))
@@ -265,6 +333,7 @@ const Scanner = () => {
 
   const handleRetry = () => {
     setCaptures(emptyCaptures)
+    setSensors(emptySensors)
     setResults(null)
     setShowDetections(false)
     setShowResults(false)
@@ -339,14 +408,28 @@ const Scanner = () => {
               <p className="text-label-sm uppercase tracking-wider text-bz-text-muted">Modo evidencia</p>
               <p className="font-bold">{selectedTypeLabel} antes/despues</p>
             </div>
-            <button
-              className="btn btn-secondary px-3 py-2 text-xs"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={scanning || uploadingMedia}
-            >
-              <Upload size={16} />
-              {uploadingMedia ? 'Leyendo' : 'Subir'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className={`btn relative px-3 py-2 text-xs ${activeSensorCount ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setShowSensors(true)}
+                disabled={scanning}
+                title="Sensores IoT de campo"
+              >
+                <Cpu size={16} />
+                Sensores
+                {activeSensorCount > 0 && (
+                  <span className="ml-1 rounded-full bg-black/30 px-1.5 text-[10px] font-black">{activeSensorCount}</span>
+                )}
+              </button>
+              <button
+                className="btn btn-secondary px-3 py-2 text-xs"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={scanning || uploadingMedia}
+              >
+                <Upload size={16} />
+                {uploadingMedia ? 'Leyendo' : 'Subir'}
+              </button>
+            </div>
           </div>
 
           <div className="mt-3 grid grid-cols-4 gap-2">
@@ -502,6 +585,22 @@ const Scanner = () => {
       </div>
 
       <AnimatePresence>
+        {showSensors && (
+          <SensorPanel
+            readings={sensors}
+            onReading={handleSensorReading}
+            objectType={objectType}
+            contract={contract}
+            onContractChange={setContract}
+            onClearExample={() => setContract(EMPTY_CONTRACT)}
+            onLoadExample={() => setContract(EXAMPLE_CONTRACT)}
+            buid={results?.integrations?.bUid || null}
+            onClose={() => setShowSensors(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {showResults && results && (
           <ResultsModal
             results={results}
@@ -619,6 +718,10 @@ const ResultsModal = ({ results, objectType, onClose, onRetry }) => (
         </div>
       </div>
 
+      {results.dispute && <OracleVerdict dispute={results.dispute} />}
+
+      {results.sensors?.sensor_count > 0 && <SensorTelemetry sensors={results.sensors} />}
+
       <div className="mb-6 grid grid-cols-2 gap-3">
         <ResultItem label="Cambio visual" value={`${results.comparison.changeScore}%`} />
         <ResultItem label="Riesgo" value={results.comparison.riskLevel} />
@@ -707,6 +810,103 @@ const ResultsModal = ({ results, objectType, onClose, onRetry }) => (
       </div>
     </motion.div>
   </motion.div>
+)
+
+const OracleVerdict = ({ dispute }) => {
+  const s = dispute.settlement
+  const msg = dispute.sphereMessage
+  return (
+    <div className="mb-6 rounded-xl border p-4" style={{ borderColor: `${dispute.color}55`, background: `${dispute.color}12` }}>
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <p className="text-label-sm font-bold text-bz-text-muted">ORÁCULO MCP · SMART SETTLEMENT</p>
+          <p className="text-lg font-black" style={{ color: dispute.color }}>
+            Nivel {dispute.severity} — {dispute.severityLabel}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-3xl font-black" style={{ color: dispute.color }}>{dispute.damagePct}%</p>
+          <p className="text-label-sm text-bz-text-muted">daño estimado</p>
+        </div>
+      </div>
+
+      {/* Mensaje automático en BZ Sphere */}
+      <div className="mb-3 rounded-lg border border-bz-ghost-border bg-black/30 p-3">
+        <p className="mb-1 text-body-sm font-bold">{msg.icon} {msg.title}</p>
+        <p className="text-body-sm text-bz-text-muted">{msg.body}</p>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="rounded-lg border border-bz-primary/30 bg-bz-primary/10 px-3 py-2 text-center text-label-sm font-bold text-bz-primary">
+            🛒 {msg.buyerCta}
+          </div>
+          <div className="rounded-lg border border-bz-neon/30 bg-bz-neon/10 px-3 py-2 text-center text-label-sm font-bold text-bz-neon">
+            🌱 {msg.sellerCta}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 text-body-sm">
+        <ResultItem label="Acción escrow" value={s.action} />
+        <ResultItem label="Función on-chain" value={s.contractFn} />
+        <ResultItem label="Reembolso comprador" value={`${s.refundToBuyerBEZ} BEZ`} />
+        <ResultItem label="Pago vendedor" value={`${s.payToSellerBEZ} BEZ`} />
+        {s.slashedFromRiderBEZ > 0 && <ResultItem label="Slashing repartidor" value={`${s.slashedFromRiderBEZ} BEZ`} />}
+        {s.burnRwaToken && <ResultItem label="Token RWA" value="QUEMADO · lote bloqueado" />}
+      </div>
+
+      {dispute.reasons?.length > 0 && (
+        <ul className="mt-3 space-y-1 text-body-sm text-bz-text-muted">
+          {dispute.reasons.map((reason, i) => (
+            <li key={i} className="flex gap-2">
+              <span style={{ color: dispute.color }}>•</span>
+              <span>{reason}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+const SENSOR_META = {
+  optical: {
+    label: 'Multiespectral',
+    summary: (r) => {
+      if (r.readings.brix != null) return `${r.readings.brix} °Bx · madurez ${r.readings.ripenessIndex}/10`
+      if (r.readings.tempC != null) return `${r.readings.tempC}°C`
+      return r.device || 'Conectado'
+    },
+  },
+  cold_chain: {
+    label: 'Cadena de frío',
+    summary: (r) => {
+      if (r.readings.tempC == null) return r.device || 'Conectado'
+      return r.breach?.detected ? `⚠ ${r.breach.maxTempC}°C sobre umbral` : `${r.readings.tempC}°C OK`
+    },
+  },
+  chemical: {
+    label: 'Etileno',
+    summary: (r) => r.readings.ppm != null ? `${r.readings.ppm} ppm · ${r.readings.level}` : 'Conectado',
+  },
+  provenance: {
+    label: 'Sello NFC',
+    summary: (r) => (r.readings.proofOfOrigin ? 'Origen válido' : '⛔ Manipulado'),
+  },
+}
+
+const SensorTelemetry = ({ sensors }) => (
+  <div className="mb-6 rounded-lg border border-bz-primary/20 bg-bz-primary/10 p-4">
+    <p className="mb-3 text-label-sm font-bold text-bz-primary">
+      TELEMETRÍA IoT · {sensors.sensor_count} sensor(es)
+    </p>
+    <div className="grid grid-cols-2 gap-2 text-body-sm">
+      {['optical', 'cold_chain', 'chemical', 'provenance'].map((id) => {
+        const reading = sensors[id]
+        if (!reading) return null
+        const meta = SENSOR_META[id]
+        return <ResultItem key={id} label={meta.label} value={meta.summary(reading)} />
+      })}
+    </div>
+  </div>
 )
 
 const ErrorPanel = ({ error, onClose, onRetry }) => (

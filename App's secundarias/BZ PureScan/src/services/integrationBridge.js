@@ -45,12 +45,23 @@ const resolveCargoStatus = (comparison) => {
   return 'VERIFIED'
 }
 
-const buildCargoPayload = ({ bUid, objectType, evidence, comparison, hashes, gemini }) => ({
+const buildCargoPayload = ({ bUid, objectType, evidence, comparison, hashes, gemini, dispute }) => ({
   bUid,
   source: 'BZ PureScan',
   captureMode: evidence.capture_mode,
   objectType,
-  cargoStatus: resolveCargoStatus(comparison),
+  cargoStatus: dispute?.settlement?.cargoStatus || resolveCargoStatus(comparison),
+  settlement: dispute
+    ? {
+        severity: dispute.severity,
+        action: dispute.settlement.action,
+        contractFn: dispute.settlement.contractFn,
+        discountPct: dispute.settlement.discountPct,
+        refundToBuyerBEZ: dispute.settlement.refundToBuyerBEZ,
+        slashedFromRiderBEZ: dispute.settlement.slashedFromRiderBEZ,
+        burnRwaToken: dispute.settlement.burnRwaToken,
+      }
+    : null,
   visualFingerprint: hashes.visualFingerprint,
   beforeHash: hashes.beforeHash,
   afterHash: hashes.afterHash,
@@ -140,6 +151,7 @@ export const syncIntegrationBridge = async ({
   comparison,
   edge,
   gemini,
+  dispute,
 }) => {
   const [beforeHash, afterHash] = await Promise.all([
     hashBlob(captures.before.blob),
@@ -155,7 +167,7 @@ export const syncIntegrationBridge = async ({
 
   const hashes = { beforeHash, afterHash, visualFingerprint }
   const bUid = resolveBuid({ evidence, edge, objectType })
-  const cargoPayload = buildCargoPayload({ bUid, objectType, evidence, comparison, hashes, gemini })
+  const cargoPayload = buildCargoPayload({ bUid, objectType, evidence, comparison, hashes, gemini, dispute })
   const rwaPayload = buildRwaPayload({ bUid, objectType, evidence, comparison, hashes, gemini })
 
   const [cargoLink, rwa] = await Promise.allSettled([
