@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@bezhas/guided-tour':
+        specifier: file:../packages/guided-tour
+        version: file:../packages/guided-tour(react@18.3.1)
       axios:
         specifier: ^1.6.7
         version: 1.16.0
@@ -133,6 +136,15 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@bezhas/guided-tour@file:../packages/guided-tour':
+    resolution: {directory: ../packages/guided-tour, type: directory}
+    hasBin: true
+    peerDependencies:
+      react: '>=17'
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -906,6 +918,10 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
+
+  '@bezhas/guided-tour@file:../packages/guided-tour(react@18.3.1)':
+    optionalDependencies:
+      react: 18.3.1
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true

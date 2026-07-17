@@ -5,86 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Cómo usar BZ CargoLink — Recorrido animado</title>
 <style>
-  :root {
-    --primary: #00F0FF;
-    --secondary: #79ff5b;
-    --gold: #FFD700;
-    --pink: #FF6B9D;
-    --purple: #a855f7;
-    --bg: #0A0A0C;
-    --surface: #131316;
-    --card: #17171b;
-    --border: #2a2a30;
-    --text: #e9e6e4;
-    --muted: #9aa4a6;
-    --danger: #f87171;
-  }
+  :root { --primary: #00F0FF; --secondary: #79ff5b; --gold: #FFD700; --pink: #FF6B9D; --purple: #a855f7; --bg: #0A0A0C; --surface: #131316; --card: #17171b; --border: #2a2a30; --text: #e9e6e4; --muted: #9aa4a6; --danger: #f87171; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Space Grotesk', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    overflow: hidden;
-  }
-  body {
-    display: flex; align-items: center; justify-content: center;
-    background:
-      radial-gradient(1100px 600px at 78% -10%, rgba(0,240,255,0.10), transparent 60%),
-      radial-gradient(900px 600px at 10% 110%, rgba(168,85,247,0.10), transparent 55%),
-      var(--bg);
-  }
-  .stage {
-    width: min(960px, 96vw);
-    height: min(620px, 94vh);
-    background: linear-gradient(160deg, #101015, #0b0b0e);
-    border: 1px solid var(--border);
-    border-radius: 22px;
-    box-shadow: 0 30px 90px rgba(0,0,0,0.6);
-    display: flex; flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
-
-  /* Top bar */
-  .topbar {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 20px; border-bottom: 1px solid var(--border);
-    background: rgba(255,255,255,0.015);
-  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(1100px 600px at 78% -10%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 60%), radial-gradient(900px 600px at 10% 110%, color-mix(in srgb, var(--purple) 10%, transparent), transparent 55%), var(--bg); }
+  .stage { width: min(960px, 96vw); height: min(620px, 94vh); background: linear-gradient(160deg, color-mix(in srgb, var(--surface) 92%, #fff 0%), var(--bg)); border: 1px solid var(--border); border-radius: 22px; box-shadow: 0 30px 90px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.015); }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .logo {
-    width: 30px; height: 30px; border-radius: 9px;
-    background: conic-gradient(from 210deg, var(--primary), var(--purple), var(--pink), var(--primary));
-    display: grid; place-items: center; color: #04121a; font-weight: 900; font-size: 15px;
-    box-shadow: 0 0 22px rgba(0,240,255,0.35);
-  }
+  .logo { width: 30px; height: 30px; border-radius: 9px; background: conic-gradient(from 210deg, var(--primary), var(--purple), var(--pink), var(--primary)); display: grid; place-items: center; color: #04121a; font-weight: 900; font-size: 15px; box-shadow: 0 0 22px color-mix(in srgb, var(--primary) 35%, transparent); }
   .brand b { font-size: 14px; letter-spacing: 1px; }
   .brand span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
-  .step-pill {
-    margin-left: auto; font-size: 11px; font-weight: 800; color: var(--primary);
-    background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.25);
-    padding: 5px 12px; border-radius: 20px;
-  }
-
-  /* Progress */
+  .step-pill { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); padding: 5px 12px; border-radius: 20px; }
   .progress { display: flex; gap: 6px; padding: 12px 20px 4px; }
-  .progress i {
-    flex: 1; height: 4px; border-radius: 3px; background: #23232a; overflow: hidden; position: relative; cursor: pointer;
-  }
+  .progress i { flex: 1; height: 4px; border-radius: 3px; background: #23232a; overflow: hidden; position: relative; cursor: pointer; }
   .progress i > b { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, var(--primary), var(--purple)); border-radius: 3px; }
   .progress i.done > b { width: 100%; }
   .progress i.active > b { animation: fill var(--dur) linear forwards; }
   @keyframes fill { from { width: 0; } to { width: 100%; } }
-
-  /* Scene area */
   .scenes { flex: 1; position: relative; }
-  .scene {
-    position: absolute; inset: 0;
-    display: grid; grid-template-columns: 1.05fr 1fr; gap: 8px;
-    padding: 22px 26px; opacity: 0; transform: translateY(14px) scale(0.99);
-    pointer-events: none; transition: opacity .5s ease, transform .5s ease;
-  }
+  .scene { position: absolute; inset: 0; display: grid; grid-template-columns: 1.05fr 1fr; gap: 8px; padding: 22px 26px; opacity: 0; transform: translateY(14px) scale(0.99); pointer-events: none; transition: opacity .5s ease, transform .5s ease; }
   .scene.active { opacity: 1; transform: none; pointer-events: auto; }
   .copy { align-self: center; padding-right: 8px; }
   .kicker { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); margin-bottom: 12px; }
@@ -92,19 +32,12 @@
   .scene h2 { font-size: clamp(22px, 3.2vw, 30px); font-weight: 900; line-height: 1.08; margin-bottom: 12px; }
   .scene p { font-size: 13.5px; color: var(--muted); line-height: 1.65; max-width: 40ch; }
   .scene .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
-  .tag { font-size: 10.5px; font-weight: 700; color: var(--text); background: #1c1c22; border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px; }
-  .tag.g { color: var(--secondary); border-color: rgba(121,255,91,0.3); }
-  .tag.c { color: var(--primary); border-color: rgba(0,240,255,0.3); }
-  .tag.p { color: var(--pink); border-color: rgba(255,107,157,0.3); }
-
-  /* Visual (mock device) */
+  .tag { font-size: 10.5px; font-weight: 700; color: var(--text); background: color-mix(in srgb, var(--card) 80%, #fff 0%); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px; }
+  .tag.g { color: var(--secondary); border-color: color-mix(in srgb, var(--secondary) 30%, transparent); }
+  .tag.c { color: var(--primary); border-color: color-mix(in srgb, var(--primary) 30%, transparent); }
+  .tag.p { color: var(--pink); border-color: color-mix(in srgb, var(--pink) 30%, transparent); }
   .visual { position: relative; display: grid; place-items: center; }
-  .phone {
-    width: 300px; max-width: 100%; height: 400px; border-radius: 24px;
-    background: linear-gradient(180deg, #17171c, #0e0e12);
-    border: 1px solid #2c2c34; box-shadow: 0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04);
-    padding: 14px; overflow: hidden; position: relative;
-  }
+  .phone { width: 300px; max-width: 100%; height: 400px; border-radius: 24px; background: linear-gradient(180deg, var(--card), var(--bg)); border: 1px solid #2c2c34; box-shadow: 0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); padding: 14px; overflow: hidden; position: relative; }
   .phone .bar { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
   .phone .bar b { font-size: 10px; letter-spacing: 1px; color: var(--primary); font-weight: 800; }
   .phone .bar .rt { margin-left: auto; font-size: 9px; color: var(--muted); }
@@ -113,21 +46,16 @@
   .mini .s { font-size: 9px; color: var(--muted); margin-top: 3px; }
   .row { display: flex; align-items: center; gap: 8px; }
   .chip { font-size: 8.5px; font-weight: 800; padding: 2px 7px; border-radius: 6px; }
-  .chip.red { background: rgba(248,113,113,0.15); color: var(--danger); }
-  .chip.green { background: rgba(121,255,91,0.15); color: var(--secondary); }
-  .chip.amber { background: rgba(255,215,0,0.14); color: var(--gold); }
-  .chip.cyan { background: rgba(0,240,255,0.14); color: var(--primary); }
-  .svgico { width: 16px; height: 16px; display: inline-block; }
-
-  /* animated accents (only run in active scene) */
-  .scene .float { animation: none; }
+  .chip.red { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+  .chip.green { background: color-mix(in srgb, var(--secondary) 15%, transparent); color: var(--secondary); }
+  .chip.amber { background: color-mix(in srgb, var(--gold) 14%, transparent); color: var(--gold); }
+  .chip.cyan { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
+  .icon { width: 16px; height: 16px; display: inline-block; }
   .scene.active .float { animation: floaty 3s ease-in-out infinite; }
   @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
   .scene.active .pop { animation: pop .6s cubic-bezier(.2,1.2,.3,1) both; }
-  .scene.active .pop.d1 { animation-delay: .15s; }
-  .scene.active .pop.d2 { animation-delay: .3s; }
-  .scene.active .pop.d3 { animation-delay: .45s; }
-  .scene.active .pop.d4 { animation-delay: .6s; }
+  .scene.active .pop.d1 { animation-delay: .15s; } .scene.active .pop.d2 { animation-delay: .3s; }
+  .scene.active .pop.d3 { animation-delay: .45s; } .scene.active .pop.d4 { animation-delay: .6s; }
   @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
   .scene.active .draw { stroke-dasharray: 260; stroke-dashoffset: 260; animation: draw 2s ease forwards .3s; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
@@ -135,30 +63,14 @@
   @keyframes ping { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.4); opacity: 0; } }
   .bars b { display:block; height:6px; border-radius:4px; background:linear-gradient(90deg,var(--primary),var(--purple)); margin-top:6px; }
   .scene.active .bars b { animation: grow 1.2s ease forwards; transform-origin:left; transform:scaleX(0); }
-  .scene.active .bars b.b2 { animation-delay:.2s; } .scene.active .bars b.b3 { animation-delay:.4s; }
   @keyframes grow { to { transform: scaleX(1); } }
-
-  /* Controls */
-  .controls {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 20px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.015);
-  }
-  .controls button {
-    background: #1b1b21; border: 1px solid var(--border); color: var(--text);
-    border-radius: 10px; padding: 9px 14px; font-size: 12px; font-weight: 800; cursor: pointer;
-    display: inline-flex; align-items: center; gap: 7px; transition: .15s;
-  }
+  .controls { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.015); }
+  .controls button { background: color-mix(in srgb, var(--card) 85%, #fff 0%); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 9px 14px; font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: .15s; }
   .controls button:hover { border-color: var(--primary); color: var(--primary); }
   .controls .primary { background: linear-gradient(135deg, var(--primary), var(--purple)); color: #05121a; border: none; }
   .controls .spacer { flex: 1; }
   .controls .label { font-size: 11px; color: var(--muted); }
-  .icon { width: 15px; height: 15px; }
-
-  @media (max-width: 720px) {
-    .scene { grid-template-columns: 1fr; padding: 16px; }
-    .visual { display: none; }
-    .scene h2 { font-size: 22px; }
-  }
+  @media (max-width: 720px) { .scene { grid-template-columns: 1fr; padding: 16px; } .visual { display: none; } .scene h2 { font-size: 22px; } }
 </style>
 </head>
 <body>
@@ -166,228 +78,46 @@
     <div class="topbar">
       <div class="brand">
         <div class="logo">⚓</div>
-        <div>
-          <b>BZ CargoLink</b><br><span>Cómo funciona</span>
-        </div>
+        <div><b>BZ CargoLink</b><br><span>Cómo funciona</span></div>
       </div>
       <div class="step-pill" id="stepPill">1 / 9</div>
     </div>
-
     <div class="progress" id="progress"></div>
-
     <div class="scenes" id="scenes"></div>
-
     <div class="controls">
       <button id="prevBtn" title="Anterior">‹ Anterior</button>
       <button id="playBtn" class="primary">⏸ Pausa</button>
       <button id="nextBtn" title="Siguiente">Siguiente ›</button>
       <div class="spacer"></div>
-      <span class="label" id="sceneLabel">Introducción</span>
+      <span class="label" id="sceneLabel"></span>
       <button id="replayBtn" title="Reiniciar">↻ Reiniciar</button>
     </div>
   </div>
-
 <script>
-const DUR = 7000; // ms por escena
-
-// SVG icon helper (inline, self-contained)
-const svg = (paths, extra='') => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra}>${paths}</svg>`;
-const I = {
-  map: '<path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3Z"/><path d="M9 3v15"/><path d="M15 6v15"/>',
-  finger: '<path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/>',
-  box: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
-  globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20"/><path d="M2 12h20"/>',
-  radio: '<path d="M4.9 19.1A10 10 0 0 1 4.9 4.9"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4"/><path d="M19.1 4.9a10 10 0 0 1 0 14.2"/>',
-  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z"/><path d="m9 12 2 2 4-4"/>',
-  scale: '<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
-  anchor: '<path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/>',
-  wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
-  cpu: '<rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/>',
-  pin: '<path d="M20 10c0 4.4-8 12-8 12s-8-7.6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
-  code: '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
-  play: '<polygon points="6 3 20 12 6 21 6 3"/>',
-};
-
-const SCENES = [
-  {
-    label: 'Introducción', kicker: 'BZ CargoLink', ico: I.anchor,
-    title: 'El validador irrefutable de tu logística',
-    body: 'Tokeniza cada evento físico de la carga (RWA) y automatiza aduanas, estiba y pagos sobre una L2. Los sensores son tus oráculos físicos; el token BEZ es el combustible.',
-    tags: [['c','Capa 2 · Polygon'],['g','Escrow en BEZ'],['p','Anti-manipulación']],
-    visual: `
-      <div class="phone">
-        <div class="bar">${svg(I.anchor)}<b>VALIDATOR_TERMINAL</b><span class="rt">live</span></div>
-        <div class="mini pop"><div class="h">${svg(I.map)} Ruta activa</div><div class="s">Algeciras → Frankfurt · pharma</div></div>
-        <div class="mini pop d1"><div class="h">${svg(I.radio)} 4 sensores vinculados</div><div class="s">temp · humedad · e-seal · GPS</div></div>
-        <div class="mini pop d2"><div class="h">${svg(I.scale)} Escrow</div><div class="row" style="margin-top:6px"><span class="chip cyan">100 BEZ</span><span class="chip green">LOCKED</span></div></div>
-        <div class="mini pop d3" style="text-align:center"><div class="float">${svg(I.shield, 'width="34" height="34" style="color:var(--secondary)"')}</div><div class="s">Prueba on-chain a cada paso</div></div>
-      </div>`
-  },
-  {
-    label: 'Ruta Activa', kicker: 'Pestaña · Active', ico: I.map,
-    title: 'Sigue la ruta y genera la prueba de entrega',
-    body: 'La pantalla principal muestra la red global de puertos, el progreso de entrega del B-UID y el botón para generar la Prueba de Entrega (POD) firmada al cerrar el ciclo.',
-    tags: [['c','Mapa de puertos'],['','Progreso por etapas'],['g','POD firmado']],
-    visual: `
-      <div class="phone">
-        <div class="bar">${svg(I.map)}<b>RED GLOBAL DE PUERTOS</b></div>
-        <div class="mini" style="height:150px;position:relative;overflow:hidden">
-          <svg viewBox="0 0 240 120" style="position:absolute;inset:0;width:100%;height:100%">
-            <path class="draw" d="M30 90 C 90 20, 150 100, 210 34" stroke="var(--primary)" stroke-width="2.5" fill="none"/>
-            <circle cx="30" cy="90" r="5" fill="var(--secondary)"/>
-            <circle cx="210" cy="34" r="5" fill="var(--pink)"/>
-            <g><circle cx="210" cy="34" r="9" fill="none" stroke="var(--pink)" stroke-width="2" class="ping"/></g>
-          </svg>
-        </div>
-        <div class="mini pop d1"><div class="h">Progreso de entrega</div><div class="bars"><b class="b1" style="width:78%"></b></div><div class="s" style="margin-top:6px">IN_TRANSIT · 4/6 etapas</div></div>
-        <div class="mini pop d2 float" style="text-align:center;color:var(--secondary)"><div class="h" style="justify-content:center">${svg(I.finger)} GENERAR PRUEBA DE ENTREGA</div></div>
-      </div>`
-  },
-  {
-    label: 'Cargo Fingerprint', kicker: 'Pestaña · Audit', ico: I.finger,
-    title: 'Huella fotogramétrica anclada en la L2',
-    body: 'Registra el hash forense de la carga (Cargo Fingerprint). Cualquier discrepancia posterior es detectable: la integridad queda sellada de forma inmutable en la cadena.',
-    tags: [['c','Hash forense'],['g','Inmutable'],['','Integrity Module v2.4']],
-    visual: `
-      <div class="phone">
-        <div class="bar">${svg(I.finger)}<b>CARGO FINGERPRINT</b></div>
-        <div class="mini pop" style="text-align:center;padding:22px"><div class="float">${svg(I.finger,'width="52" height="52" style="color:var(--primary)"')}</div><div class="s" style="margin-top:10px">Escaneando activo físico…</div></div>
-        <div class="mini pop d1"><div class="s" style="font-family:monospace;color:var(--secondary);word-break:break-all">0x7a6b…3f2c ✓ anclado</div></div>
-        <div class="mini pop d2 row"><span class="chip green">SELLADO EN L2</span><span class="chip cyan">bloque #48210</span></div>
-      </div>`
-  },
-  {
-    label: 'Smart Stowage', kicker: 'Pestaña · Stowage', ico: I.box,
-    title: 'Estiba segura: centro de gravedad validado',
-    body: 'Calcula y valida el centro de gravedad (COG) del contenedor en el buque antes de zarpar. Solo avanza a DEPARTED si la distribución de peso es segura.',
-    tags: [['c','COG en tiempo real'],['g','Bloquea si es inseguro'],['','Physical Layout v1.0']],
-    visual: `
-      <div class="phone">
-        <div class="bar">${svg(I.box)}<b>SMART STOWAGE</b></div>
-        <div class="mini" style="height:140px;position:relative">
-          <svg viewBox="0 0 220 120" style="width:100%;height:100%">
-            <rect x="20" y="70" width="180" height="34" rx="4" fill="#1f1f26" stroke="var(--border)"/>
-            <rect x="30" y="52" width="40" height="18" rx="2" fill="rgba(0,240,255,0.25)" stroke="var(--primary)"/>
-            <rect x="78" y="44" width="40" height="26" rx="2" fill="rgba(168,85,247,0.25)" stroke="var(--purple)"/>
-            <rect x="126" y="56" width="40" height="14" rx="2" fill="rgba(121,255,91,0.25)" stroke="var(--secondary)"/>
-            <line x1="110" y1="30" x2="110" y2="112" stroke="var(--gold)" stroke-dasharray="4 3" class="draw"/>
-            <circle cx="110" cy="88" r="5" fill="var(--gold)" class="float"/>
-          </svg>
-        </div>
-        <div class="mini pop d1 row"><div class="h">COG</div><span class="chip amber" style="margin-left:auto">x 45.8 · y 36.4</span></div>
-        <div class="mini pop d2 row"><span class="chip green">DISTRIBUCIÓN SEGURA</span><span class="chip cyan">1.270 t</span></div>
-      </div>`
-  },
-  {
-    label: 'Customs Sync', kicker: 'Pestaña · Customs', ico: I.globe,
-    title: 'Despacho aduanero automatizado',
-    body: 'Sincroniza el manifiesto con la autoridad aduanera (formato UBL 2.1) y dispara el evento ON_CUSTOMS_CLEARED. El paso de aduana deja de ser papeleo manual.',
-    tags: [['c','UBL 2.1'],['g','Ventanilla única'],['','Webhook firmado']],
-    visual: `
-      <div class="phone">
-        <div class="bar">${svg(I.globe)}<b>CUSTOMS SYNC</b></div>
-        <div class="mini pop"><div class="h">${svg(I.globe)} Manifiesto → ASYCUDA</div><div class="s">enviado · UBL 2.1</div></div>
-        <div class="mini pop d1" style="text-align:center;padding:18px"><div class="float">${svg(I.shield,'width="42" height="42" style="color:var(--secondary)"')}</div><div class="s" style="margin-top:8px">Despacho aprobado</div></div>
-        <div class="mini pop d2 row"><span class="chip green">CUSTOMS_CLEARED</span><span class="chip cyan">ON_CUSTOMS_CLEARED</span></div>
-      </div>`
-  },
-  {
-    label: 'Sensores IoT', kicker: 'Config › Sensores · Telemetría', ico: I.radio,
-    title: 'Sensores en vivo: el oráculo físico',
-    body: 'Registra dispositivos (e-seal, reefer, GPS, luz, presión, BLE) desde Configuración › Sensores. La telemetría llega en tiempo real y detecta brechas: cadena de frío, impacto, intrusión de luz o apertura del precinto.',
-    tags: [['c','Feed en vivo'],['p','Brechas automáticas'],['g','Firma edge secp256k1']],
-    visual: `
-      <div class="phone">
-        <div class="bar">${svg(I.radio)}<b>TELEMETRÍA</b><span class="rt">LIVE ●</span></div>
-        <div class="mini pop row"><div class="h">${svg(I.radio)} Temp</div><b style="margin-left:auto;color:var(--secondary)">4.8°C</b></div>
-        <div class="mini pop d1 row"><div class="h" style="color:var(--danger)">Temp</div><b style="margin-left:auto;color:var(--danger)">14.0°C</b><span class="chip red">BREACH</span></div>
-        <div class="mini pop d2 row"><div class="h" style="color:var(--danger)">${svg(I.shield)} E-seal</div><span class="chip red" style="margin-left:auto">TAMPER</span><span class="chip green">signed</span></div>
-        <div class="mini pop d3" style="border-color:rgba(248,113,113,0.4);background:rgba(248,113,113,0.05)"><div class="h" style="color:var(--danger)">⚠ TAMPER DETECTADO</div><div class="s">e-seal abierto fuera de zona autorizada</div></div>
-      </div>`
-  },
-  {
-    label: 'Geocercas & Terceros', kicker: 'Config › Sensores', ico: I.pin,
-    title: 'Geocercas e ingesta de terceros',
-    body: 'Define zonas aduaneras autorizadas y corredores de ruta. Un precinto abierto fuera de zona = manipulación. Además, carriers y aduanas (DHL, autoridad portuaria, LoRaWAN) entran por webhook HMAC al mismo pipeline.',
-    tags: [['c','Zonas + corredores'],['p','Fuera de zona = tamper'],['g','Webhook HMAC']],
-    visual: `
-      <div class="phone">
-        <div class="bar">${svg(I.pin)}<b>GEOCERCAS</b></div>
-        <div class="mini" style="height:150px;position:relative">
-          <svg viewBox="0 0 220 130" style="width:100%;height:100%">
-            <circle cx="70" cy="70" r="42" fill="rgba(0,240,255,0.08)" stroke="var(--primary)" stroke-dasharray="4 3"/>
-            <text x="70" y="70" fill="var(--primary)" font-size="9" text-anchor="middle">Aduana</text>
-            <circle cx="70" cy="70" r="4" fill="var(--secondary)"/>
-            <circle cx="176" cy="40" r="4" fill="var(--danger)" class="float"/>
-            <circle cx="176" cy="40" r="10" fill="none" stroke="var(--danger)" stroke-width="2" class="ping"/>
-            <text x="176" y="60" fill="var(--danger)" font-size="8" text-anchor="middle">fuera</text>
-          </svg>
-        </div>
-        <div class="mini pop d1 row"><div class="h">${svg(I.globe)} DHL_API</div><span class="chip cyan" style="margin-left:auto">HMAC ✓</span></div>
-        <div class="mini pop d2 row"><span class="chip green">PROPRIETARY_DEVICE</span><span class="chip cyan">CHECKPOINT</span></div>
-      </div>`
-  },
-  {
-    label: 'Disputas & Escrow', kicker: 'Oráculo de disputas', ico: I.scale,
-    title: 'La brecha retiene el pago automáticamente',
-    body: 'El oráculo gradúa cada brecha (leve→crítica). Una brecha grave pone el escrow BEZ en DISPUTED y propone la liquidación: liberar al vendedor, reembolsar al comprador o un acuerdo parcial. Tú decides con un clic.',
-    tags: [['p','Escrow DISPUTED'],['g','Propuesta de settlement'],['','release / refund / partial']],
-    visual: `
-      <div class="phone">
-        <div class="bar">${svg(I.scale)}<b>DISPUTAS DEL ESCROW</b></div>
-        <div class="mini pop" style="border-color:rgba(248,113,113,0.4)"><div class="row"><span class="chip red">Crítico · AUTO_CLAIM</span></div><div class="s" style="margin-top:6px">CONTAINER_UNSEALED · fuera de zona</div><div class="row" style="margin-top:8px"><span class="chip red">100 BEZ ↩ comprador</span></div></div>
-        <div class="mini pop d1" style="border-color:rgba(255,215,0,0.35)"><div class="row"><span class="chip amber">Moderado · HOLD_ESCROW</span></div><div class="row" style="margin-top:8px"><span class="chip amber">30 BEZ</span><span class="chip green">70 BEZ vendedor</span></div></div>
-        <div class="mini pop d2 row" style="gap:6px"><span class="chip green">Liberar</span><span class="chip cyan">Parcial</span><span class="chip red">Reembolsar</span></div>
-      </div>`
-  },
-  {
-    label: 'Anclaje & Wallet', kicker: 'Prueba on-chain · Wallet · API', ico: I.anchor,
-    title: 'Prueba criptográfica de una ruta sin alteraciones',
-    body: 'La telemetría se consolida en un merkle root anclado en la L2: cualquier lectura se prueba on-chain. En Wallet ves tus saldos y escrows en BEZ; en API HUB integras todo en tu ERP con webhooks y el SDK.',
-    tags: [['c','Merkle on-chain'],['g','Wallet · BEZ'],['','API & Webhooks']],
-    visual: `
-      <div class="phone">
-        <div class="bar">${svg(I.anchor)}<b>ANCLAJE CRIPTOGRÁFICO</b></div>
-        <div class="mini pop"><div class="h">${svg(I.anchor)} Merkle root</div><div class="s" style="font-family:monospace;color:var(--secondary);word-break:break-all;margin-top:4px">0x098b43dc… · 13 lecturas</div></div>
-        <div class="mini pop d1 row"><div class="h">${svg(I.wallet)} Wallet</div><b style="margin-left:auto;color:var(--gold)">1.240 BEZ</b></div>
-        <div class="mini pop d2 row"><div class="h">${svg(I.code)} API HUB</div><span class="chip cyan" style="margin-left:auto">SDK + Webhooks</span></div>
-        <div class="mini pop d3 float" style="text-align:center;color:var(--secondary)"><div class="h" style="justify-content:center">${svg(I.shield)} Verificable por terceros</div></div>
-      </div>`
-  },
-];
-
-// ── Render ──
+const DUR = 7000;
+const SCENES = [{"label":"Introducción","kicker":"BZ CargoLink","title":"El validador irrefutable de tu logística","body":"Tokeniza cada evento físico de la carga (RWA) y automatiza aduanas, estiba y pagos sobre una L2. Los sensores son tus oráculos físicos; el token BEZ es el combustible.","tags":[["c","Capa 2 · Polygon"],["g","Escrow en BEZ"],["p","Anti-manipulación"]],"visual":"\n        <div class=\"phone\">\n          <div class=\"bar\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 22V8\"/><path d=\"M5 12H2a10 10 0 0 0 20 0h-3\"/><circle cx=\"12\" cy=\"5\" r=\"3\"/></svg><b>VALIDATOR_TERMINAL</b><span class=\"rt\">live</span></div>\n          <div class=\"mini pop\"><div class=\"h\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3Z\"/><path d=\"M9 3v15\"/><path d=\"M15 6v15\"/></svg> Ruta activa</div><div class=\"s\">Algeciras → Frankfurt · pharma</div></div>\n          <div class=\"mini pop d1\"><div class=\"h\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.9 19.1A10 10 0 0 1 4.9 4.9\"/><path d=\"M7.8 16.2a6 6 0 0 1 0-8.4\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/><path d=\"M16.2 7.8a6 6 0 0 1 0 8.4\"/><path d=\"M19.1 4.9a10 10 0 0 1 0 14.2\"/></svg> 4 sensores vinculados</div><div class=\"s\">temp · humedad · e-seal · GPS</div></div>\n          <div class=\"mini pop d2\"><div class=\"h\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z\"/><path d=\"m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z\"/><path d=\"M7 21h10\"/><path d=\"M12 3v18\"/><path d=\"M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2\"/></svg> Escrow</div><div class=\"row\" style=\"margin-top:6px\"><span class=\"chip cyan\">100 BEZ</span><span class=\"chip green\">LOCKED</span></div></div>\n          <div class=\"mini pop d3\" style=\"text-align:center\"><div class=\"float\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z\"/><path d=\"m9 12 2 2 4-4\"/></svg></div><div class=\"s\">Prueba on-chain a cada paso</div></div>\n        </div>"},{"label":"Ruta Activa","kicker":"Pestaña · Active","title":"Sigue la ruta y genera la prueba de entrega","body":"La pantalla principal muestra la red global de puertos, el progreso de entrega del B-UID y el botón para generar la Prueba de Entrega (POD) firmada al cerrar el ciclo.","tags":[["c","Mapa de puertos"],["","Progreso por etapas"],["g","POD firmado"]],"visual":"\n        <div class=\"phone\">\n          <div class=\"bar\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3Z\"/><path d=\"M9 3v15\"/><path d=\"M15 6v15\"/></svg><b>RED GLOBAL DE PUERTOS</b></div>\n          <div class=\"mini\" style=\"height:150px;position:relative;overflow:hidden\">\n            <svg viewBox=\"0 0 240 120\" style=\"position:absolute;inset:0;width:100%;height:100%\">\n              <path class=\"draw\" d=\"M30 90 C 90 20, 150 100, 210 34\" stroke=\"var(--primary)\" stroke-width=\"2.5\" fill=\"none\"/>\n              <circle cx=\"30\" cy=\"90\" r=\"5\" fill=\"var(--secondary)\"/>\n              <circle cx=\"210\" cy=\"34\" r=\"5\" fill=\"var(--pink)\"/>\n              <circle cx=\"210\" cy=\"34\" r=\"9\" fill=\"none\" stroke=\"var(--pink)\" stroke-width=\"2\" class=\"ping\"/>\n            </svg>\n          </div>\n          <div class=\"mini pop d1\"><div class=\"h\">Progreso de entrega</div><div class=\"bars\"><b class=\"b1\" style=\"width:78%\"></b></div><div class=\"s\" style=\"margin-top:6px\">IN_TRANSIT · 4/6 etapas</div></div>\n          <div class=\"mini pop d2 float\" style=\"text-align:center;color:var(--secondary)\"><div class=\"h\" style=\"justify-content:center\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4\"/><path d=\"M14 13.12c0 2.38 0 6.38-1 8.88\"/><path d=\"M17.29 21.02c.12-.6.43-2.3.5-3.02\"/><path d=\"M2 12a10 10 0 0 1 18-6\"/><path d=\"M2 16h.01\"/><path d=\"M21.8 16c.2-2 .131-5.354 0-6\"/></svg> GENERAR PRUEBA DE ENTREGA</div></div>\n        </div>"},{"label":"Cargo Fingerprint","kicker":"Pestaña · Audit","title":"Huella fotogramétrica anclada en la L2","body":"Registra el hash forense de la carga (Cargo Fingerprint). Cualquier discrepancia posterior es detectable: la integridad queda sellada de forma inmutable en la cadena.","tags":[["c","Hash forense"],["g","Inmutable"],["","Integrity Module v2.4"]],"visual":"\n        <div class=\"phone\">\n          <div class=\"bar\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4\"/><path d=\"M14 13.12c0 2.38 0 6.38-1 8.88\"/><path d=\"M17.29 21.02c.12-.6.43-2.3.5-3.02\"/><path d=\"M2 12a10 10 0 0 1 18-6\"/><path d=\"M2 16h.01\"/><path d=\"M21.8 16c.2-2 .131-5.354 0-6\"/></svg><b>CARGO FINGERPRINT</b></div>\n          <div class=\"mini pop\" style=\"text-align:center;padding:22px\"><div class=\"float\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4\"/><path d=\"M14 13.12c0 2.38 0 6.38-1 8.88\"/><path d=\"M17.29 21.02c.12-.6.43-2.3.5-3.02\"/><path d=\"M2 12a10 10 0 0 1 18-6\"/><path d=\"M2 16h.01\"/><path d=\"M21.8 16c.2-2 .131-5.354 0-6\"/></svg></div><div class=\"s\" style=\"margin-top:10px\">Escaneando activo físico…</div></div>\n          <div class=\"mini pop d1\"><div class=\"s\" style=\"font-family:monospace;color:var(--secondary);word-break:break-all\">0x7a6b…3f2c ✓ anclado</div></div>\n          <div class=\"mini pop d2 row\"><span class=\"chip green\">SELLADO EN L2</span><span class=\"chip cyan\">bloque #48210</span></div>\n        </div>"},{"label":"Smart Stowage","kicker":"Pestaña · Stowage","title":"Estiba segura: centro de gravedad validado","body":"Calcula y valida el centro de gravedad (COG) del contenedor en el buque antes de zarpar. Solo avanza a DEPARTED si la distribución de peso es segura.","tags":[["c","COG en tiempo real"],["g","Bloquea si es inseguro"],["","Physical Layout v1.0"]],"visual":"\n        <div class=\"phone\">\n          <div class=\"bar\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z\"/><path d=\"m3.3 7 8.7 5 8.7-5\"/><path d=\"M12 22V12\"/></svg><b>SMART STOWAGE</b></div>\n          <div class=\"mini\" style=\"height:140px;position:relative\">\n            <svg viewBox=\"0 0 220 120\" style=\"width:100%;height:100%\">\n              <rect x=\"20\" y=\"70\" width=\"180\" height=\"34\" rx=\"4\" fill=\"#1f1f26\" stroke=\"var(--border)\"/>\n              <rect x=\"30\" y=\"52\" width=\"40\" height=\"18\" rx=\"2\" fill=\"rgba(0,240,255,0.25)\" stroke=\"var(--primary)\"/>\n              <rect x=\"78\" y=\"44\" width=\"40\" height=\"26\" rx=\"2\" fill=\"rgba(168,85,247,0.25)\" stroke=\"var(--purple)\"/>\n              <rect x=\"126\" y=\"56\" width=\"40\" height=\"14\" rx=\"2\" fill=\"rgba(121,255,91,0.25)\" stroke=\"var(--secondary)\"/>\n              <line x1=\"110\" y1=\"30\" x2=\"110\" y2=\"112\" stroke=\"var(--gold)\" stroke-dasharray=\"4 3\" class=\"draw\"/>\n              <circle cx=\"110\" cy=\"88\" r=\"5\" fill=\"var(--gold)\" class=\"float\"/>\n            </svg>\n          </div>\n          <div class=\"mini pop d1 row\"><div class=\"h\">COG</div><span class=\"chip amber\" style=\"margin-left:auto\">x 45.8 · y 36.4</span></div>\n          <div class=\"mini pop d2 row\"><span class=\"chip green\">DISTRIBUCIÓN SEGURA</span><span class=\"chip cyan\">1.270 t</span></div>\n        </div>"},{"label":"Customs Sync","kicker":"Pestaña · Customs","title":"Despacho aduanero automatizado","body":"Sincroniza el manifiesto con la autoridad aduanera (formato UBL 2.1) y dispara el evento ON_CUSTOMS_CLEARED. El paso de aduana deja de ser papeleo manual.","tags":[["c","UBL 2.1"],["g","Ventanilla única"],["","Webhook firmado"]],"visual":"\n        <div class=\"phone\">\n          <div class=\"bar\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20\"/><path d=\"M2 12h20\"/></svg><b>CUSTOMS SYNC</b></div>\n          <div class=\"mini pop\"><div class=\"h\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20\"/><path d=\"M2 12h20\"/></svg> Manifiesto → ASYCUDA</div><div class=\"s\">enviado · UBL 2.1</div></div>\n          <div class=\"mini pop d1\" style=\"text-align:center;padding:18px\"><div class=\"float\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z\"/><path d=\"m9 12 2 2 4-4\"/></svg></div><div class=\"s\" style=\"margin-top:8px\">Despacho aprobado</div></div>\n          <div class=\"mini pop d2 row\"><span class=\"chip green\">CUSTOMS_CLEARED</span><span class=\"chip cyan\">ON_CUSTOMS_CLEARED</span></div>\n        </div>"},{"label":"Sensores IoT","kicker":"Config › Sensores · Telemetría","title":"Sensores en vivo: el oráculo físico","body":"Registra dispositivos (e-seal, reefer, GPS, luz, presión, BLE) desde Configuración › Sensores. La telemetría llega en tiempo real y detecta brechas: cadena de frío, impacto, intrusión de luz o apertura del precinto.","tags":[["c","Feed en vivo"],["p","Brechas automáticas"],["g","Firma edge secp256k1"]],"visual":"\n        <div class=\"phone\">\n          <div class=\"bar\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.9 19.1A10 10 0 0 1 4.9 4.9\"/><path d=\"M7.8 16.2a6 6 0 0 1 0-8.4\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/><path d=\"M16.2 7.8a6 6 0 0 1 0 8.4\"/><path d=\"M19.1 4.9a10 10 0 0 1 0 14.2\"/></svg><b>TELEMETRÍA</b><span class=\"rt\">LIVE ●</span></div>\n          <div class=\"mini pop row\"><div class=\"h\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.9 19.1A10 10 0 0 1 4.9 4.9\"/><path d=\"M7.8 16.2a6 6 0 0 1 0-8.4\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/><path d=\"M16.2 7.8a6 6 0 0 1 0 8.4\"/><path d=\"M19.1 4.9a10 10 0 0 1 0 14.2\"/></svg> Temp</div><b style=\"margin-left:auto;color:var(--secondary)\">4.8°C</b></div>\n          <div class=\"mini pop d1 row\"><div class=\"h\" style=\"color:var(--danger)\">Temp</div><b style=\"margin-left:auto;color:var(--danger)\">14.0°C</b><span class=\"chip red\">BREACH</span></div>\n          <div class=\"mini pop d2 row\"><div class=\"h\" style=\"color:var(--danger)\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z\"/><path d=\"m9 12 2 2 4-4\"/></svg> E-seal</div><span class=\"chip red\" style=\"margin-left:auto\">TAMPER</span><span class=\"chip green\">signed</span></div>\n          <div class=\"mini pop d3\" style=\"border-color:rgba(248,113,113,0.4);background:rgba(248,113,113,0.05)\"><div class=\"h\" style=\"color:var(--danger)\">⚠ TAMPER DETECTADO</div><div class=\"s\">e-seal abierto fuera de zona autorizada</div></div>\n        </div>"},{"label":"Geocercas & Terceros","kicker":"Config › Sensores","title":"Geocercas e ingesta de terceros","body":"Define zonas aduaneras autorizadas y corredores de ruta. Un precinto abierto fuera de zona = manipulación. Además, carriers y aduanas (DHL, autoridad portuaria, LoRaWAN) entran por webhook HMAC al mismo pipeline.","tags":[["c","Zonas + corredores"],["p","Fuera de zona = tamper"],["g","Webhook HMAC"]],"visual":"\n        <div class=\"phone\">\n          <div class=\"bar\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 10c0 4.4-8 12-8 12s-8-7.6-8-12a8 8 0 0 1 16 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg><b>GEOCERCAS</b></div>\n          <div class=\"mini\" style=\"height:150px;position:relative\">\n            <svg viewBox=\"0 0 220 130\" style=\"width:100%;height:100%\">\n              <circle cx=\"70\" cy=\"70\" r=\"42\" fill=\"rgba(0,240,255,0.08)\" stroke=\"var(--primary)\" stroke-dasharray=\"4 3\"/>\n              <text x=\"70\" y=\"70\" fill=\"var(--primary)\" font-size=\"9\" text-anchor=\"middle\">Aduana</text>\n              <circle cx=\"70\" cy=\"70\" r=\"4\" fill=\"var(--secondary)\"/>\n              <circle cx=\"176\" cy=\"40\" r=\"4\" fill=\"var(--danger)\" class=\"float\"/>\n              <circle cx=\"176\" cy=\"40\" r=\"10\" fill=\"none\" stroke=\"var(--danger)\" stroke-width=\"2\" class=\"ping\"/>\n              <text x=\"176\" y=\"60\" fill=\"var(--danger)\" font-size=\"8\" text-anchor=\"middle\">fuera</text>\n            </svg>\n          </div>\n          <div class=\"mini pop d1 row\"><div class=\"h\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20\"/><path d=\"M2 12h20\"/></svg> DHL_API</div><span class=\"chip cyan\" style=\"margin-left:auto\">HMAC ✓</span></div>\n          <div class=\"mini pop d2 row\"><span class=\"chip green\">PROPRIETARY_DEVICE</span><span class=\"chip cyan\">CHECKPOINT</span></div>\n        </div>"},{"label":"Disputas & Escrow","kicker":"Oráculo de disputas","title":"La brecha retiene el pago automáticamente","body":"El oráculo gradúa cada brecha (leve→crítica). Una brecha grave pone el escrow BEZ en DISPUTED y propone la liquidación: liberar al vendedor, reembolsar al comprador o un acuerdo parcial. Tú decides con un clic.","tags":[["p","Escrow DISPUTED"],["g","Propuesta de settlement"],["","release / refund / partial"]],"visual":"\n        <div class=\"phone\">\n          <div class=\"bar\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z\"/><path d=\"m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z\"/><path d=\"M7 21h10\"/><path d=\"M12 3v18\"/><path d=\"M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2\"/></svg><b>DISPUTAS DEL ESCROW</b></div>\n          <div class=\"mini pop\" style=\"border-color:rgba(248,113,113,0.4)\"><div class=\"row\"><span class=\"chip red\">Crítico · AUTO_CLAIM</span></div><div class=\"s\" style=\"margin-top:6px\">CONTAINER_UNSEALED · fuera de zona</div><div class=\"row\" style=\"margin-top:8px\"><span class=\"chip red\">100 BEZ ↩ comprador</span></div></div>\n          <div class=\"mini pop d1\" style=\"border-color:rgba(255,215,0,0.35)\"><div class=\"row\"><span class=\"chip amber\">Moderado · HOLD_ESCROW</span></div><div class=\"row\" style=\"margin-top:8px\"><span class=\"chip amber\">30 BEZ</span><span class=\"chip green\">70 BEZ vendedor</span></div></div>\n          <div class=\"mini pop d2 row\" style=\"gap:6px\"><span class=\"chip green\">Liberar</span><span class=\"chip cyan\">Parcial</span><span class=\"chip red\">Reembolsar</span></div>\n        </div>"},{"label":"Anclaje & Wallet","kicker":"Prueba on-chain · Wallet · API","title":"Prueba criptográfica de una ruta sin alteraciones","body":"La telemetría se consolida en un merkle root anclado en la L2: cualquier lectura se prueba on-chain. En Wallet ves tus saldos y escrows en BEZ; en API HUB integras todo en tu ERP con webhooks y el SDK.","tags":[["c","Merkle on-chain"],["g","Wallet · BEZ"],["","API & Webhooks"]],"visual":"\n        <div class=\"phone\">\n          <div class=\"bar\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 22V8\"/><path d=\"M5 12H2a10 10 0 0 0 20 0h-3\"/><circle cx=\"12\" cy=\"5\" r=\"3\"/></svg><b>ANCLAJE CRIPTOGRÁFICO</b></div>\n          <div class=\"mini pop\"><div class=\"h\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 22V8\"/><path d=\"M5 12H2a10 10 0 0 0 20 0h-3\"/><circle cx=\"12\" cy=\"5\" r=\"3\"/></svg> Merkle root</div><div class=\"s\" style=\"font-family:monospace;color:var(--secondary);word-break:break-all;margin-top:4px\">0x098b43dc… · 13 lecturas</div></div>\n          <div class=\"mini pop d1 row\"><div class=\"h\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1\"/><path d=\"M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4\"/></svg> Wallet</div><b style=\"margin-left:auto;color:var(--gold)\">1.240 BEZ</b></div>\n          <div class=\"mini pop d2 row\"><div class=\"h\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m16 18 6-6-6-6\"/><path d=\"m8 6-6 6 6 6\"/></svg> API HUB</div><span class=\"chip cyan\" style=\"margin-left:auto\">SDK + Webhooks</span></div>\n          <div class=\"mini pop d3 float\" style=\"text-align:center;color:var(--secondary)\"><div class=\"h\" style=\"justify-content:center\"><svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z\"/><path d=\"m9 12 2 2 4-4\"/></svg> Verificable por terceros</div></div>\n        </div>"}];
+document.documentElement.style.setProperty('--dur', DUR + 'ms');
 const scenesEl = document.getElementById('scenes');
 const progressEl = document.getElementById('progress');
 SCENES.forEach((s, i) => {
   const el = document.createElement('div');
   el.className = 'scene';
-  el.innerHTML = `
-    <div class="copy">
-      <div class="kicker"><span class="dot"></span>${s.kicker}</div>
-      <h2>${s.title}</h2>
-      <p>${s.body}</p>
-      <div class="tags">${s.tags.map(t => `<span class="tag ${t[0]}">${t[1]}</span>`).join('')}</div>
-    </div>
-    <div class="visual">${s.visual}</div>`;
+  el.innerHTML = '<div class="copy"><div class="kicker"><span class="dot"></span>' + s.kicker + '</div>' +
+    '<h2>' + s.title + '</h2><p>' + s.body + '</p>' +
+    '<div class="tags">' + s.tags.map(t => '<span class="tag ' + t[0] + '">' + t[1] + '</span>').join('') + '</div></div>' +
+    '<div class="visual">' + s.visual + '</div>';
   scenesEl.appendChild(el);
-
   const p = document.createElement('i');
   p.innerHTML = '<b></b>';
   p.addEventListener('click', () => goTo(i));
   progressEl.appendChild(p);
 });
-
 const sceneEls = [...scenesEl.children];
 const progEls = [...progressEl.children];
-document.querySelectorAll('.scene .float, .scene').forEach(()=>{});
-document.documentElement.style.setProperty('--dur', DUR + 'ms');
-
 let idx = 0, playing = true, timer = null;
 const stepPill = document.getElementById('stepPill');
 const sceneLabel = document.getElementById('sceneLabel');
 const playBtn = document.getElementById('playBtn');
-
 function render() {
   sceneEls.forEach((el, i) => el.classList.toggle('active', i === idx));
   progEls.forEach((el, i) => {
@@ -395,20 +125,12 @@ function render() {
     el.classList.toggle('active', i === idx && playing);
     if (i !== idx) el.querySelector('b').style.width = i < idx ? '100%' : '0';
   });
-  stepPill.textContent = `${idx + 1} / ${SCENES.length}`;
+  stepPill.textContent = (idx + 1) + ' / ' + SCENES.length;
   sceneLabel.textContent = SCENES[idx].label;
 }
-function schedule() {
-  clearTimeout(timer);
-  if (playing) timer = setTimeout(() => goTo((idx + 1) % SCENES.length), DUR);
-}
+function schedule() { clearTimeout(timer); if (playing) timer = setTimeout(() => goTo((idx + 1) % SCENES.length), DUR); }
 function goTo(i) { idx = (i + SCENES.length) % SCENES.length; render(); schedule(); }
-function setPlaying(v) {
-  playing = v;
-  playBtn.innerHTML = playing ? '⏸ Pausa' : '▶ Reproducir';
-  render(); schedule();
-}
-
+function setPlaying(v) { playing = v; playBtn.innerHTML = playing ? '⏸ Pausa' : '▶ Reproducir'; render(); schedule(); }
 document.getElementById('nextBtn').onclick = () => goTo(idx + 1);
 document.getElementById('prevBtn').onclick = () => goTo(idx - 1);
 document.getElementById('replayBtn').onclick = () => { setPlaying(true); goTo(0); };
@@ -418,9 +140,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft') goTo(idx - 1);
   else if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
 });
-// pause when tab hidden (keeps sync when re-shown)
 document.addEventListener('visibilitychange', () => { if (document.hidden) clearTimeout(timer); else schedule(); });
-
 render(); schedule();
 </script>
 </body>

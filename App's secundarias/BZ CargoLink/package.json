@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 3016",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "pnpm tour:build && vite build",
+    "preview": "vite preview",
+    "tour:build": "node \"../packages/guided-tour/bin/generate.mjs\" tour.config.mjs public/como-usar.html"
   },
   "dependencies": {
+    "@bezhas/guided-tour": "file:../packages/guided-tour",
     "axios": "^1.6.7",
     "ethers": "^6.16.0",
     "framer-motion": "^11.0.8",

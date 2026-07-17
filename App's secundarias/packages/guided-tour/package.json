@@ -1,0 +1,49 @@
+{
+  "name": "@bezhas/guided-tour",
+  "version": "1.0.0",
+  "description": "Recorrido animado 'Cómo usar' reutilizable para las SubApps de BeZhas — motor autónomo (genera public/como-usar.html) + launcher in-app framework-agnóstico + bindings React. Cero dependencias en el core.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Angelqg01/BeZhas-Blockchain.git",
+    "directory": "App's secundarias/packages/guided-tour"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "bin": {
+    "bezhas-tour": "bin/generate.mjs"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./engine": "./src/engine.js",
+    "./launcher": "./src/launcher.js",
+    "./react": "./src/react.js",
+    "./generate": "./bin/generate.mjs"
+  },
+  "files": [
+    "src",
+    "bin",
+    "tour.config.example.mjs",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "peerDependencies": {
+    "react": ">=17"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "bezhas",
+    "onboarding",
+    "guided-tour",
+    "walkthrough",
+    "animation"
+  ],
+  "license": "MIT"
+}
