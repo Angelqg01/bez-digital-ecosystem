@@ -8,6 +8,24 @@
 -- Uses a TimescaleDB hypertable when the extension is available (high-frequency
 -- time-series); falls back to a plain partition-free table on vanilla Postgres.
 
+-- ── Legacy collision guard ──
+-- The initial schema shipped an enterprise-IoT `telemetry_logs` (edge_node /
+-- shipment_id shape, no node_id). If that legacy table is present, move it
+-- aside so the energy time-series table below can be created. Idempotent.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'telemetry_logs')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'telemetry_logs'
+                          AND column_name = 'node_id') THEN
+        ALTER TABLE public.telemetry_logs RENAME TO telemetry_logs_legacy;
+        ALTER INDEX IF EXISTS idx_telemetry_created RENAME TO idx_telemetry_legacy_created;
+        ALTER INDEX IF EXISTS idx_telemetry_edge    RENAME TO idx_telemetry_legacy_edge;
+        RAISE NOTICE 'Legacy telemetry_logs renamed to telemetry_logs_legacy';
+    END IF;
+END$$;
+
 -- ── Telemetry samples (one row per node per published reading) ──
 CREATE TABLE IF NOT EXISTS telemetry_logs (
     node_id        TEXT        NOT NULL,

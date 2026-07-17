@@ -11,7 +11,7 @@
 
 CREATE TABLE IF NOT EXISTS gateway_subscriptions (
     id         SERIAL PRIMARY KEY,
-    app_id     INTEGER     NOT NULL UNIQUE REFERENCES app_registry(id) ON DELETE CASCADE,
+    app_id     UUID        NOT NULL UNIQUE REFERENCES app_registry(id) ON DELETE CASCADE,
     plan_id    VARCHAR(40) NOT NULL DEFAULT 'starter',
     subapps    JSONB       NOT NULL DEFAULT '[]'::jsonb,  -- activated SubApp ids (add-ons)
     status     VARCHAR(20) NOT NULL DEFAULT 'active',     -- active | past_due | canceled

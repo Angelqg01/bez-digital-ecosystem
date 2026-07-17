@@ -11,12 +11,12 @@
 -- Orders remember which registered app created them so payment events are
 -- delivered only to that app's webhooks (tenant isolation).
 ALTER TABLE payment_transactions
-    ADD COLUMN IF NOT EXISTS app_id INTEGER REFERENCES app_registry(id) ON DELETE SET NULL;
+    ADD COLUMN IF NOT EXISTS app_id UUID REFERENCES app_registry(id) ON DELETE SET NULL;
 
 -- ── Webhook endpoints registered per app ──
 CREATE TABLE IF NOT EXISTS payment_webhooks (
     id         SERIAL PRIMARY KEY,
-    app_id     INTEGER NOT NULL REFERENCES app_registry(id) ON DELETE CASCADE,
+    app_id     UUID    NOT NULL REFERENCES app_registry(id) ON DELETE CASCADE,
     url        TEXT NOT NULL,
     secret     VARCHAR(120) NOT NULL,
     events     JSONB NOT NULL DEFAULT '["payment.settled"]'::jsonb,
