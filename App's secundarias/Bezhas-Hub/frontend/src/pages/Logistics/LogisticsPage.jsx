@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogisticsDashboard } from '../../components/logistics/LogisticsDashboard';
 import { LogisticsHub } from '../../components/logistics/LogisticsHub';
 import { LogisticsStandards } from '../../components/logistics/LogisticsStandards';
-import BeZhasLogisticsSimulator from '../../components/logistics/BeZhasLogisticsSimulator';
 import { FaTruck, FaCode } from 'react-icons/fa';
+
+// Simulador 360°: ZF Cádiz -> tránsito internacional -> distribuidor final (lazy: incluye 3D)
+const LogisticsSimulator360 = lazy(() => import('../../components/logistics/simulator/LogisticsSimulator360'));
+
+const SimulatorFallback = () => (
+    <div className="w-full h-[620px] rounded-2xl border border-slate-800 bg-slate-950 flex flex-col items-center justify-center gap-3 text-teal-400">
+        <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-400 rounded-full animate-spin" />
+        <span className="text-[10px] font-mono uppercase tracking-[0.3em]">Cargando simulador 360°...</span>
+    </div>
+);
 
 const LogisticsPage = () => {
     const navigate = useNavigate();
@@ -84,7 +93,11 @@ const LogisticsPage = () => {
 
                 {/* Content Area */}
                 <div className="min-h-[600px]">
-                    {activeTab === 'simulator' && <BeZhasLogisticsSimulator />}
+                    {activeTab === 'simulator' && (
+                        <Suspense fallback={<SimulatorFallback />}>
+                            <LogisticsSimulator360 />
+                        </Suspense>
+                    )}
                     {activeTab === 'dashboard' && <LogisticsDashboard />}
                     {activeTab === 'operations' && <LogisticsHub />}
                     {activeTab === 'standards' && <LogisticsStandards />}
