@@ -130,7 +130,7 @@ router.post('/:orgId/members', tenancy({ required: true }), requireRole('org_adm
 // UNA sola vez; en BD se guarda sólo su hash.
 router.post('/:orgId/api-keys', tenancy({ required: true }), requireRole('org_admin'), async (req, res, next) => {
   try {
-    const { name, sector, environment, siteId, description } = req.body || {};
+    const { name, sector, environment, siteId, description, scopes, signatureRequired } = req.body || {};
     if (!name) return res.status(400).json({ error: 'Bad Request', message: 'El nombre de la clave es obligatorio.', code: 'NO_NAME' });
 
     if (siteId) {
@@ -142,6 +142,9 @@ router.post('/:orgId/api-keys', tenancy({ required: true }), requireRole('org_ad
     const sec = sector || 'general';
     const plain = ApiKey.generateKey(getActor(req).userId || 'org', sec, env);
     const keyHash = ApiKey.hashKey(plain);
+    // Secreto de firma: el cliente firma cada petición con él (HMAC + nonce),
+    // de modo que una clave filtrada no basta por sí sola para operar.
+    const signingSecret = ApiKey.generateSigningSecret();
 
     const record = await ApiKey.create({
       userId: getActor(req).userId || null,
@@ -153,12 +156,22 @@ router.post('/:orgId/api-keys', tenancy({ required: true }), requireRole('org_ad
       keyHash,
       sector: sec,
       environment: env,
+      // Scopes explícitos (p.ej. ['wallet:read','cargolink:*']). Sin scopes la
+      // clave queda en modo legado hasta que se active API_STRICT_SCOPES.
+      permissions: Array.isArray(scopes) ? scopes : [],
+      signingSecret,
+      signatureRequired: signatureRequired === true,
     });
 
     res.status(201).json({
-      message: 'Guarda esta clave: no se volverá a mostrar.',
+      message: 'Guarda estas credenciales: no se volverán a mostrar.',
       apiKey: plain,
-      key: { id: record.id, name: record.name, sector: record.sector, environment: record.environment, orgId: record.org_id, siteId: record.site_id, status: record.status },
+      signingSecret,
+      key: {
+        id: record.id, name: record.name, sector: record.sector, environment: record.environment,
+        orgId: record.org_id, siteId: record.site_id, status: record.status,
+        scopes: record.permissions || [], signatureRequired: record.signature_required === true,
+      },
     });
   } catch (err) { next(err); }
 });

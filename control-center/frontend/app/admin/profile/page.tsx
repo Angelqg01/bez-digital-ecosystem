@@ -12,8 +12,9 @@ import TabGovernance from './components/TabGovernance';
 import TabSkills from './components/TabSkills';
 import TabObsidian from './components/TabObsidian';
 import TabBrainLive from './components/TabBrainLive';
+import TabWatchdog from './components/TabWatchdog';
 
-import { Shield, Landmark, Box, BrainCircuit, Scale, LogOut, Activity, BookOpen, Map, Radar } from 'lucide-react';
+import { Shield, Landmark, Box, BrainCircuit, Scale, LogOut, Activity, BookOpen, Map, Radar, HeartPulse } from 'lucide-react';
 
 const TABS = [
     { id: 'identity',    label: 'Identity & Security', icon: Shield,       desc: 'DID & Secrets' },
@@ -22,6 +23,7 @@ const TABS = [
     { id: 'intelligence',label: 'MCP Intelligence',    icon: BrainCircuit, desc: 'OpenClaw Brain' },
     { id: 'obsidian',     label: 'Obsidian Map',       icon: Map,          desc: 'Vault & Feedback' },
     { id: 'brainlive',   label: 'Brain Live',         icon: Radar,        desc: 'API Nodes & Usage' },
+    { id: 'watchdog',    label: 'Watchdog',            icon: HeartPulse,   desc: 'SubApps & Sync ABI' },
     { id: 'governance',  label: 'DAO Governance',      icon: Scale,        desc: 'Audit & RBAC' },
     { id: 'skills',      label: 'SKILL Memory',        icon: BookOpen,     desc: 'Agent Interactions' },
 ];
@@ -101,6 +103,7 @@ export default function HybridControlCenter() {
                         {activeTab === 'intelligence' && <TabIntelligence />}
                         {activeTab === 'obsidian'     && <TabObsidian />}
                         {activeTab === 'brainlive'    && <TabBrainLive />}
+                        {activeTab === 'watchdog'     && <TabWatchdog />}
                         {activeTab === 'governance'   && <TabGovernance />}
                         {activeTab === 'skills'       && <TabSkills />}
                     </div>

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { ethers } from 'ethers';
-import { requireAuth } from './auth.js';
+import { requireAuth, requireScope } from './auth.js';
 
 const router = Router();
 
 /** POST /api/contracts/read — Read from a contract */
-router.post('/read', async (req, res) => {
+router.post('/read', requireScope('contracts:read'), async (req, res) => {
   const { contractAddress, abi, functionName, args = [] } = req.body;
 
   if (!contractAddress || !abi || !functionName) {
@@ -29,7 +29,7 @@ router.post('/read', async (req, res) => {
 });
 
 /** POST /api/contracts/write — Write to a contract (via Paymaster) */
-router.post('/write', requireAuth, async (req, res) => {
+router.post('/write', requireScope('contracts:write'), async (req, res) => {
   const { contractAddress, abi, functionName, args = [], value = '0' } = req.body;
 
   if (!contractAddress || !abi || !functionName) {

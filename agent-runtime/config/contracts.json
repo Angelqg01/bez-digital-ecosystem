@@ -1,0 +1,39 @@
+{
+  "BeZhasPayment": {
+    "address": null,
+    "bytecodeHash": "4507894663e088c7",
+    "abiPath": "./config/abis/BeZhasPayment.json",
+    "syncedAt": "2026-07-29T17:34:25.766Z",
+    "compiler": "0.8.34+commit.80d5c536"
+  },
+  "_lastSync": "2026-07-29T17:34:26.511Z",
+  "_contracts": 5,
+  "BEZCoinV2": {
+    "address": null,
+    "bytecodeHash": "b123b5a0f2aef573",
+    "abiPath": "./config/abis/BEZCoinV2.json",
+    "syncedAt": "2026-07-29T17:34:25.804Z",
+    "compiler": "0.8.34+commit.80d5c536"
+  },
+  "ValidatorRegistry": {
+    "address": null,
+    "bytecodeHash": "b546cdb9a8e2beb7",
+    "abiPath": "./config/abis/ValidatorRegistry.json",
+    "syncedAt": "2026-07-29T17:34:25.827Z",
+    "compiler": "0.8.34+commit.80d5c536"
+  },
+  "EdgeNodeRewards": {
+    "address": null,
+    "bytecodeHash": "51b57fc7d1fdff31",
+    "abiPath": "./config/abis/EdgeNodeRewards.json",
+    "syncedAt": "2026-07-29T17:34:25.834Z",
+    "compiler": "0.8.34+commit.80d5c536"
+  },
+  "QualityEscrow": {
+    "address": null,
+    "bytecodeHash": "f4ef15e8faddb08f",
+    "abiPath": "./config/abis/QualityEscrow.json",
+    "syncedAt": "2026-07-29T17:34:26.509Z",
+    "compiler": "0.8.34+commit.80d5c536"
+  }
+}

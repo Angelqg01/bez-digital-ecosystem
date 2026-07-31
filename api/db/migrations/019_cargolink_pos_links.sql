@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS cargolink_pos_links (
     provider VARCHAR(48) NOT NULL DEFAULT 'generic',  -- square | toast | sap | shopify | generic
     base_url TEXT NOT NULL,
     orders_path VARCHAR(160) NOT NULL DEFAULT '/orders',
-    api_key TEXT,                                      -- POS API credential (TODO: encrypt at rest)
+    api_key TEXT,                                      -- POS API credential, encrypted at rest (AES-256-GCM, services/secretVault.js)
     status VARCHAR(24) NOT NULL DEFAULT 'active',
     last_sync_at TIMESTAMPTZ,
     last_sync_count INTEGER NOT NULL DEFAULT 0,

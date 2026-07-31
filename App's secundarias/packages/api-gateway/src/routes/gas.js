@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from './auth.js';
+import { requireAuth, requireScope } from './auth.js';
 
 const router = Router();
 
@@ -20,7 +20,7 @@ function getTank(address) {
 }
 
 /** GET /api/gas/balance — Current gas tank balance */
-router.get('/balance', requireAuth, (req, res) => {
+router.get('/balance', requireScope('gas:read'), (req, res) => {
   const tank = getTank(req.user.sub);
   const costPerTx = 0.005;
   res.json({
@@ -33,7 +33,7 @@ router.get('/balance', requireAuth, (req, res) => {
 });
 
 /** POST /api/gas/recharge — Recharge via Stripe (stub) */
-router.post('/recharge', requireAuth, (req, res) => {
+router.post('/recharge', requireScope('gas:write'), (req, res) => {
   const { amount, paymentMethodId } = req.body;
   if (!amount || amount < 10 || amount > 500) {
     return res.status(400).json({ error: 'Amount must be between $10 and $500' });
@@ -59,7 +59,7 @@ router.post('/recharge', requireAuth, (req, res) => {
 });
 
 /** POST /api/gas/consume — Deduct gas for a transaction */
-router.post('/consume', requireAuth, (req, res) => {
+router.post('/consume', requireScope('gas:write'), (req, res) => {
   const { app, operation, gasUsed } = req.body;
   const tank = getTank(req.user.sub);
   const costUsd = (gasUsed || 1) * 0.005;
@@ -79,7 +79,7 @@ router.post('/consume', requireAuth, (req, res) => {
 });
 
 /** GET /api/gas/predict — Aegis ML gas prediction */
-router.get('/predict', requireAuth, async (req, res) => {
+router.get('/predict', requireScope('gas:read'), async (req, res) => {
   // In production: call Aegis FastAPI endpoint
   const aegisUrl = process.env.AEGIS_BASE_URL;
 
@@ -106,7 +106,7 @@ router.get('/predict', requireAuth, async (req, res) => {
 });
 
 /** GET /api/gas/usage — Usage analytics */
-router.get('/usage', requireAuth, (req, res) => {
+router.get('/usage', requireScope('gas:read'), (req, res) => {
   const { period = '7d' } = req.query;
   // In production: query usage database
   res.json({

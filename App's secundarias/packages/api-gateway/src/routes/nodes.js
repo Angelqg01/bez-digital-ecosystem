@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ethers } from 'ethers';
-import { requireAuth, requireNodeHeartbeat } from './auth.js';
+import { requireAuth, requireScope, requireNodeHeartbeat } from './auth.js';
 
 const router = Router();
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
@@ -25,13 +25,13 @@ router.get('/network', (req, res) => {
 });
 
 /** GET /api/nodes/mine — User's nodes */
-router.get('/mine', requireAuth, (req, res) => {
+router.get('/mine', requireScope('nodes:read'), (req, res) => {
   const userNodes = Array.from(nodeRegistry.values()).filter(n => n.owner === req.user.sub);
   res.json({ nodes: userNodes, count: userNodes.length });
 });
 
 /** POST /api/nodes/register — Register a new edge node */
-router.post('/register', requireAuth, async (req, res) => {
+router.post('/register', requireScope('nodes:write'), async (req, res) => {
   const { name, region, tier } = req.body;
 
   if (!name || !region || !tier) {
@@ -89,7 +89,7 @@ router.patch('/:nodeId/metrics', requireNodeHeartbeat, (req, res) => {
 });
 
 /** POST /api/nodes/:nodeId/claim — Claim node rewards */
-router.post('/:nodeId/claim', requireAuth, async (req, res) => {
+router.post('/:nodeId/claim', requireScope('nodes:write'), async (req, res) => {
   const { nodeId } = req.params;
   const node = nodeRegistry.get(nodeId);
 

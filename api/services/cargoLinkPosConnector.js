@@ -13,6 +13,7 @@
 
 const { query } = require('../db/pool');
 const lifecycle = require('./cargoLinkLifecycle');
+const { encryptSecret, decryptSecret, maskSecret } = require('./secretVault');
 
 function httpError(message, status) {
   const error = new Error(message);
@@ -20,15 +21,20 @@ function httpError(message, status) {
   return error;
 }
 
-function maskKey(key) {
-  if (!key) return null;
-  return key.length <= 8 ? '****' : `${key.slice(0, 4)}…${key.slice(-4)}`;
-}
-
+// La credencial del POS se guarda CIFRADA (AES-256-GCM, ver secretVault).
+// Aquí se descifra sólo para enmascararla; el valor nunca sale en la respuesta.
 function publicLink(row) {
   if (!row) return null;
   const { api_key, ...rest } = row;
-  return { ...rest, apiKeyMasked: maskKey(api_key) };
+  let masked = null;
+  if (api_key) {
+    try {
+      masked = maskSecret(decryptSecret(api_key));
+    } catch {
+      masked = '****'; // credencial ilegible (clave de vault rotada): no rompas la lectura
+    }
+  }
+  return { ...rest, apiKeyMasked: masked };
 }
 
 /** Link (or update) the POS adapter for the authenticated BeZhas_ID. */
@@ -53,7 +59,7 @@ async function linkPos(req, body = {}) {
            status = 'active',
            updated_at = NOW()
      RETURNING *`,
-    [identity.bezhasId, provider, baseUrl, ordersPath, apiKey || null]
+    [identity.bezhasId, provider, baseUrl, ordersPath, encryptSecret(apiKey) || null]
   );
   return { success: true, posLink: publicLink(rows[0]) };
 }
@@ -105,10 +111,17 @@ async function syncOrders(req) {
   const link = rows[0];
 
   const url = `${link.base_url.replace(/\/$/, '')}${link.orders_path}`;
+  // Se descifra en memoria justo antes de la llamada; nunca se persiste ni se loguea.
+  let posApiKey;
+  try {
+    posApiKey = decryptSecret(link.api_key);
+  } catch {
+    throw httpError('Credencial del POS ilegible: vuelve a enlazarlo con /v1/pos/link.', 400);
+  }
   let orders;
   try {
     const res = await fetch(url, {
-      headers: { ...(link.api_key ? { Authorization: `Bearer ${link.api_key}` } : {}) },
+      headers: { ...(posApiKey ? { Authorization: `Bearer ${posApiKey}` } : {}) },
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) throw httpError(`POS API ${res.status} at ${url}`, 502);

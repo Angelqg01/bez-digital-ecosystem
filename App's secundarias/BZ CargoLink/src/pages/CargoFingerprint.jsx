@@ -10,7 +10,11 @@ import {
 } from 'lucide-react'
 import { useTransactions } from '../hooks/useTransaction'
 import { cargoGateway } from '../services/cargoGateway'
-import PermissionPrime from '../components/PermissionPrime'
+import PermissionPrime from '../../../_shared/PermissionPrime.jsx'
+
+// Captura de cámara para huella de integridad es una función de plan de
+// pago: sin suscripción Profesional/Enterprise, no se pide el permiso.
+const REQUIRED_TIERS = ['professional', 'enterprise']
 
 function authKey() {
   return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
@@ -123,6 +127,7 @@ const CargoFingerprint = () => {
         onGranted={handleCameraGranted}
         onCancel={() => setShowPrime(false)}
         onDenied={handleCameraDenied}
+        requiredTiers={REQUIRED_TIERS}
       />
 
       <header style={{ marginBottom: 24 }}>

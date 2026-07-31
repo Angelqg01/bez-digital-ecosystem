@@ -12,6 +12,8 @@ export const BEZ_DISCOUNT_RATE = 0.20;      // −20% pagando con $BEZ nativo
 export const ANNUAL_FREE_MONTHS = 2;        // facturación anual: 2 meses gratis
 export const STAKING_APY_MAX = 31.25;       // % APY máx. staking corporativo $BEZ
 export const HOLDING_COMMISSION = 20;       // % comisiones de sub-empresas (Enterprise)
+export const PLATFORM_FEE_BPS = 250;        // 2.5% — comisión plataforma BeZhas (no negociable)
+export const MAX_TOTAL_BURDEN_BPS = 2500;   // 25% máx. total (plataforma + cascada combinada)
 export const SEED_CREDIT_USD = 0.0075;      // precio crédito fase semilla
 export const ADMIN_SAVINGS_PCT = 85;        // % ahorro conciliación/auditoría
 
@@ -106,6 +108,14 @@ export const PLANS = [
     recommended: false,
     badge: null,
     valueLine: '+654% eficiencia operativa',
+    hierarchyEnabled: true,
+    subCompanies: 5,
+    partnerCommission: 10,
+    commissionCascadeDepth: 1,
+    treasuryTransfers: true,
+    policyEngine: true,
+    dataAggregation: true,
+    whiteLabelResale: false,
     features: [
       'Todo lo de Creator Pro',
       '15.000 acciones IA/mes',
@@ -115,6 +125,9 @@ export const PLANS = [
       'DeFi Copilot (tesorería en tiempo real)',
       '×2.0 staking → 25% APY',
       'Soporte 24/7 dedicado',
+      'Jerarquía de organizaciones: hasta 5 sub-empresas',
+      '10% de comisión por validación de transacciones de tus sub-empresas',
+      'Tesorería interna + motor de políticas de gasto',
     ],
   },
   {
@@ -135,6 +148,12 @@ export const PLANS = [
     badge: 'WHITE LABEL',
     partnerCommission: HOLDING_COMMISSION, // 20% comisiones de sub-empresas
     subCompanies: 50,
+    hierarchyEnabled: true,
+    commissionCascadeDepth: 3,
+    treasuryTransfers: true,
+    policyEngine: true,
+    dataAggregation: true,
+    whiteLabelResale: true,
     valueLine: '+909% optimización global',
     features: [
       'Todo lo de Business',
@@ -146,6 +165,8 @@ export const PLANS = [
       'API Institucional',
       'Gobernanza de Protocolo (voto DAO)',
       '20% de comisiones de tus sub-empresas',
+      'Comisión en cascada hasta 3 niveles (sub-empresas de tus sub-empresas)',
+      'Reventa white-label de acceso API a tu red',
       '×2.5 staking → 31,25% APY',
     ],
   },
@@ -181,6 +202,21 @@ export function calcSubscription({ planId, payWithBez = false, annual = false })
 
 export function getPlan(planId) {
   return PLANS.find((p) => p.id === planId) || null;
+}
+
+/** Config de jerarquía derivada del plan (o null si el plan no la habilita). */
+export function getHierarchyConfig(planId) {
+  const plan = getPlan(planId);
+  if (!plan || !plan.hierarchyEnabled) return null;
+  return {
+    maxSubOrgs: plan.subCompanies ?? 0,
+    commissionRatePercent: plan.partnerCommission || 0,
+    cascadeDepth: plan.commissionCascadeDepth || 1,
+    treasuryTransfers: !!plan.treasuryTransfers,
+    policyEngine: !!plan.policyEngine,
+    dataAggregation: !!plan.dataAggregation,
+    whiteLabelResale: !!plan.whiteLabelResale,
+  };
 }
 
 export default PLANS;

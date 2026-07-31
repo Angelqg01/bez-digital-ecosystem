@@ -49,7 +49,7 @@ mockConfig.webhooks.id = jest.fn((id) => mockConfig.webhooks.find(w => w._id ===
 mockConfig.aiModels.forEach(m => { m.deleteOne = jest.fn(); });
 mockConfig.webhooks.forEach(w => { w.deleteOne = jest.fn(); });
 
-jest.mock('../../models/SDKConfig.model', () => ({
+jest.mock('../../models/pg/SDKConfig', () => ({
     getConfig: jest.fn(() => Promise.resolve(mockConfig)),
     updateConfig: jest.fn((updates, adminId) => {
         Object.assign(mockConfig, updates, { updatedBy: adminId });

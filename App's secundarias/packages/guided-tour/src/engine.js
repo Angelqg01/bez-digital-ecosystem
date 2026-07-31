@@ -43,6 +43,10 @@ const DEFAULT_THEME = {
   danger: '#f87171',
 };
 
+// Inline noise texture (SVG fractal noise as a data: URI — no network request,
+// CSP-safe). Same technique used by the BeZhas Hub landing (`.bez-noise`).
+const NOISE_DATA_URI = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
+
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** SVG markup for a shared/custom icon name. */
@@ -117,26 +121,62 @@ export function renderTourHTML(cfg = {}) {
   html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; overflow: hidden; }
   body { display: flex; align-items: center; justify-content: center;
     background: radial-gradient(1100px 600px at 78% -10%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 60%), radial-gradient(900px 600px at 10% 110%, color-mix(in srgb, var(--purple) 10%, transparent), transparent 55%), var(--bg); }
-  .stage { width: min(960px, 96vw); height: min(620px, 94vh); background: linear-gradient(160deg, color-mix(in srgb, var(--surface) 92%, #fff 0%), var(--bg)); border: 1px solid var(--border); border-radius: 22px; box-shadow: 0 30px 90px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow: hidden; position: relative; }
-  .topbar { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.015); }
+
+  .stage { --mx: 50%; --my: 50%; width: min(960px, 96vw); height: min(640px, 94vh); background: linear-gradient(160deg, color-mix(in srgb, var(--surface) 92%, #fff 0%), var(--bg)); border: 1px solid var(--border); border-radius: 22px; box-shadow: 0 30px 90px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+  /* Animated mesh-gradient backdrop, same language as the Hub landing hero */
+  .mesh { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .mesh i { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .5; }
+  .mesh .m1 { width: 320px; height: 320px; left: -70px; top: -110px; background: var(--primary); animation: meshA 17s ease-in-out infinite; }
+  .mesh .m2 { width: 300px; height: 300px; right: -90px; top: 36%; background: var(--purple); animation: meshB 21s ease-in-out infinite; }
+  .mesh .m3 { width: 260px; height: 260px; left: 28%; bottom: -130px; background: var(--pink); animation: meshC 19s ease-in-out infinite; }
+  @keyframes meshA { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(46px,32px) scale(1.15); } }
+  @keyframes meshB { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-34px,22px) scale(.9); } }
+  @keyframes meshC { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(22px,-30px) scale(1.1); } }
+
+  /* Subtle noise texture over the whole card, like GlassCard's .bez-noise */
+  .noise { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: .05; mix-blend-mode: overlay; background-image: url("${NOISE_DATA_URI}"); }
+
+  /* Cursor-tracked spotlight border glow (mask-composite ring trick) */
+  .stage::after { content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: 22px; padding: 1px;
+    background: radial-gradient(240px circle at var(--mx) var(--my), color-mix(in srgb, var(--primary) 60%, transparent), transparent 70%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: 0; transition: opacity .3s ease; }
+  .stage:hover::after { opacity: 1; }
+
+  .topbar { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.015); }
   .brand { display: flex; align-items: center; gap: 10px; }
   .logo { width: 30px; height: 30px; border-radius: 9px; background: conic-gradient(from 210deg, var(--primary), var(--purple), var(--pink), var(--primary)); display: grid; place-items: center; color: #04121a; font-weight: 900; font-size: 15px; box-shadow: 0 0 22px color-mix(in srgb, var(--primary) 35%, transparent); }
   .brand b { font-size: 14px; letter-spacing: 1px; }
   .brand span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
-  .step-pill { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); padding: 5px 12px; border-radius: 20px; }
-  .progress { display: flex; gap: 6px; padding: 12px 20px 4px; }
+  .step-pill { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); padding: 5px 12px; border-radius: 20px; box-shadow: 0 0 18px color-mix(in srgb, var(--primary) 22%, transparent); }
+
+  .progress { position: relative; z-index: 1; display: flex; gap: 6px; padding: 12px 20px 4px; }
   .progress i { flex: 1; height: 4px; border-radius: 3px; background: #23232a; overflow: hidden; position: relative; cursor: pointer; }
   .progress i > b { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, var(--primary), var(--purple)); border-radius: 3px; }
   .progress i.done > b { width: 100%; }
   .progress i.active > b { animation: fill var(--dur) linear forwards; }
+  .stage:hover .progress i.active > b { animation-play-state: paused; }
   @keyframes fill { from { width: 0; } to { width: 100%; } }
-  .scenes { flex: 1; position: relative; }
-  .scene { position: absolute; inset: 0; display: grid; grid-template-columns: 1.05fr 1fr; gap: 8px; padding: 22px 26px; opacity: 0; transform: translateY(14px) scale(0.99); pointer-events: none; transition: opacity .5s ease, transform .5s ease; }
-  .scene.active { opacity: 1; transform: none; pointer-events: auto; }
+
+  /* Clickable scene rail — jump straight to any step, doubles as a mini table of contents */
+  .rail { position: relative; z-index: 1; display: flex; gap: 7px; padding: 2px 20px 12px; overflow-x: auto; scrollbar-width: none; }
+  .rail::-webkit-scrollbar { display: none; }
+  .railItem { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; color: var(--muted); background: color-mix(in srgb, var(--card) 85%, transparent); border: 1px solid var(--border); padding: 6px 11px; border-radius: 20px; cursor: pointer; white-space: nowrap; transition: color .15s, border-color .15s, background .15s, transform .15s; }
+  .railItem:hover { color: var(--text); border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); transform: translateY(-1px); }
+  .railItem.active { color: #04121a; background: linear-gradient(120deg, var(--primary), var(--purple)); border-color: transparent; }
+  .railItem .n { font-size: 9px; opacity: .7; }
+
+  .scenes { position: relative; z-index: 1; flex: 1; }
+  .scene { position: absolute; inset: 0; display: grid; grid-template-columns: 1.05fr 1fr; gap: 8px; padding: 22px 26px; opacity: 0; transform: translateY(14px) scale(0.99); filter: blur(6px); pointer-events: none; transition: opacity .5s ease, transform .5s ease, filter .5s ease; }
+  .scene.active { opacity: 1; transform: none; filter: blur(0); pointer-events: auto; }
   .copy { align-self: center; padding-right: 8px; }
   .kicker { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); margin-bottom: 12px; }
   .kicker .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 10px var(--primary); }
-  .scene h2 { font-size: clamp(22px, 3.2vw, 30px); font-weight: 900; line-height: 1.08; margin-bottom: 12px; }
+  .scene h2 { font-size: clamp(22px, 3.2vw, 30px); font-weight: 900; line-height: 1.08; margin-bottom: 12px;
+    background: linear-gradient(120deg, var(--secondary), var(--primary) 45%, var(--purple) 85%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
   .scene p { font-size: 13.5px; color: var(--muted); line-height: 1.65; max-width: 40ch; }
   .scene .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
   .tag { font-size: 10.5px; font-weight: 700; color: var(--text); background: color-mix(in srgb, var(--card) 80%, #fff 0%); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px; }
@@ -171,17 +211,21 @@ export function renderTourHTML(cfg = {}) {
   .bars b { display:block; height:6px; border-radius:4px; background:linear-gradient(90deg,var(--primary),var(--purple)); margin-top:6px; }
   .scene.active .bars b { animation: grow 1.2s ease forwards; transform-origin:left; transform:scaleX(0); }
   @keyframes grow { to { transform: scaleX(1); } }
-  .controls { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.015); }
-  .controls button { background: color-mix(in srgb, var(--card) 85%, #fff 0%); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 9px 14px; font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: .15s; }
+
+  .controls { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.015); }
+  .controls button { background: color-mix(in srgb, var(--card) 85%, #fff 0%); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 9px 14px; font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: transform .15s ease, border-color .15s, color .15s; }
   .controls button:hover { border-color: var(--primary); color: var(--primary); }
   .controls .primary { background: linear-gradient(135deg, var(--primary), var(--purple)); color: #05121a; border: none; }
   .controls .spacer { flex: 1; }
   .controls .label { font-size: 11px; color: var(--muted); }
-  @media (max-width: 720px) { .scene { grid-template-columns: 1fr; padding: 16px; } .visual { display: none; } .scene h2 { font-size: 22px; } }
+  .hint { position: relative; z-index: 1; text-align: center; font-size: 9.5px; color: var(--muted); opacity: .55; padding: 0 20px 10px; }
+  @media (max-width: 720px) { .scene { grid-template-columns: 1fr; padding: 16px; } .visual { display: none; } .scene h2 { font-size: 22px; } .rail { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .mesh i { animation: none; } .scene { transition: opacity .3s ease; filter: none; } .scene.active .float, .scene.active .pop, .scene.active .draw, .scene.active .ping, .scene.active .bars b { animation: none; } }
 </style>
 </head>
 <body>
-  <div class="stage">
+  <div class="stage" id="stage">
+    <div class="mesh" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i></div>
     <div class="topbar">
       <div class="brand">
         <div class="logo">${esc(logo)}</div>
@@ -190,6 +234,7 @@ export function renderTourHTML(cfg = {}) {
       <div class="step-pill" id="stepPill">1 / ${baked.length}</div>
     </div>
     <div class="progress" id="progress"></div>
+    <div class="rail" id="rail"></div>
     <div class="scenes" id="scenes"></div>
     <div class="controls">
       <button id="prevBtn" title="Anterior">‹ Anterior</button>
@@ -199,13 +244,17 @@ export function renderTourHTML(cfg = {}) {
       <span class="label" id="sceneLabel"></span>
       <button id="replayBtn" title="Reiniciar">↻ Reiniciar</button>
     </div>
+    <div class="hint">Pasa el cursor para pausar · ← → para navegar · espacio para pausar · clic en un paso para saltar</div>
+    <div class="noise" aria-hidden="true"></div>
   </div>
 <script>
 const DUR = ${Number(durationMs) || 7000};
 const SCENES = ${JSON.stringify(baked)};
 document.documentElement.style.setProperty('--dur', DUR + 'ms');
+const stageEl = document.getElementById('stage');
 const scenesEl = document.getElementById('scenes');
 const progressEl = document.getElementById('progress');
+const railEl = document.getElementById('rail');
 SCENES.forEach((s, i) => {
   const el = document.createElement('div');
   el.className = 'scene';
@@ -214,14 +263,28 @@ SCENES.forEach((s, i) => {
     '<div class="tags">' + s.tags.map(t => '<span class="tag ' + t[0] + '">' + t[1] + '</span>').join('') + '</div></div>' +
     '<div class="visual">' + s.visual + '</div>';
   scenesEl.appendChild(el);
+
   const p = document.createElement('i');
   p.innerHTML = '<b></b>';
   p.addEventListener('click', () => goTo(i));
   progressEl.appendChild(p);
+
+  const r = document.createElement('div');
+  r.className = 'railItem';
+  const n = document.createElement('span');
+  n.className = 'n';
+  n.textContent = String(i + 1).padStart(2, '0');
+  const label = document.createElement('span');
+  label.textContent = s.label; // textContent, never innerHTML — labels may contain raw "&"
+  r.appendChild(n);
+  r.appendChild(label);
+  r.addEventListener('click', () => goTo(i));
+  railEl.appendChild(r);
 });
 const sceneEls = [...scenesEl.children];
 const progEls = [...progressEl.children];
-let idx = 0, playing = true, timer = null;
+const railEls = [...railEl.children];
+let idx = 0, playing = true, hovering = false, timer = null;
 const stepPill = document.getElementById('stepPill');
 const sceneLabel = document.getElementById('sceneLabel');
 const playBtn = document.getElementById('playBtn');
@@ -232,10 +295,14 @@ function render() {
     el.classList.toggle('active', i === idx && playing);
     if (i !== idx) el.querySelector('b').style.width = i < idx ? '100%' : '0';
   });
+  railEls.forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+    if (i === idx) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  });
   stepPill.textContent = (idx + 1) + ' / ' + SCENES.length;
   sceneLabel.textContent = SCENES[idx].label;
 }
-function schedule() { clearTimeout(timer); if (playing) timer = setTimeout(() => goTo((idx + 1) % SCENES.length), DUR); }
+function schedule() { clearTimeout(timer); if (playing && !hovering) timer = setTimeout(() => goTo((idx + 1) % SCENES.length), DUR); }
 function goTo(i) { idx = (i + SCENES.length) % SCENES.length; render(); schedule(); }
 function setPlaying(v) { playing = v; playBtn.innerHTML = playing ? '⏸ Pausa' : '▶ Reproducir'; render(); schedule(); }
 document.getElementById('nextBtn').onclick = () => goTo(idx + 1);
@@ -248,6 +315,25 @@ document.addEventListener('keydown', e => {
   else if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) clearTimeout(timer); else schedule(); });
+// Pause autoplay while the cursor is over the stage — resumes automatically on leave.
+stageEl.addEventListener('mouseenter', () => { hovering = true; clearTimeout(timer); });
+stageEl.addEventListener('mouseleave', () => { hovering = false; schedule(); });
+// Cursor-tracked spotlight border glow.
+stageEl.addEventListener('mousemove', (e) => {
+  const r = stageEl.getBoundingClientRect();
+  stageEl.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+  stageEl.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+});
+// Subtle magnetic hover on the control buttons.
+[...document.querySelectorAll('.controls button')].forEach((btn) => {
+  btn.addEventListener('mousemove', (e) => {
+    const r = btn.getBoundingClientRect();
+    const x = (e.clientX - r.left - r.width / 2) * 0.25;
+    const y = (e.clientY - r.top - r.height / 2) * 0.35;
+    btn.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+  });
+  btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+});
 render(); schedule();
 </script>
 </body>

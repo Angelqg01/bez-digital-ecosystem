@@ -107,6 +107,12 @@ const PAGE_SEO: Record<string, PageSEO> = {
         path: '/support',
         keywords: ['blockchain support', 'Web3 help', 'BeZhas FAQ', 'enterprise support'],
     },
+    '/privacy': {
+        title: 'Política de Privacidad | BeZhas',
+        description: 'Cómo BeZhas trata tus datos: qué recogemos, con qué base legal, cuánto lo conservamos, tus derechos RGPD y los permisos de cámara/geolocalización de las SubApps.',
+        path: '/privacy',
+        keywords: ['política de privacidad', 'RGPD', 'GDPR', 'protección de datos blockchain'],
+    },
 };
 
 /**

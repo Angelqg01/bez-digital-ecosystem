@@ -285,7 +285,7 @@ export default function EnterprisePage() {
                     </div>
                     <div className="flex gap-8 text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400">
                         <a className="hover:text-primary transition-colors" href="/network">System Status</a>
-                        <a className="hover:text-primary transition-colors" href="/learn">Privacy Lex</a>
+                        <a className="hover:text-primary transition-colors" href="/privacy">Privacy Lex</a>
                         <a className="hover:text-primary transition-colors" href="/validators">Governance</a>
                         <a className="hover:text-primary transition-colors" href="/developers">Developer Portal</a>
                     </div>

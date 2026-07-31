@@ -2,9 +2,22 @@
  * ============================================================================
  * HTTPS ENFORCEMENT MIDDLEWARE
  * ============================================================================
- * 
+ *
  * Fuerza todas las conexiones a HTTPS en producción
  */
+
+// Permissions-Policy: una sola fuente de verdad, definida en securityHeaders.js.
+// Antes este fichero tenía su propia cadena hardcodeada que bloqueaba cámara/
+// geolocalización por completo, en conflicto directo con la config de
+// securityHeaders.js (que sí las permite en 'self') — ninguna de las dos
+// "ganaba" a propósito, dependía de qué middleware corriera último.
+const { PERMISSIONS_POLICY } = require('./securityHeaders');
+
+function permissionsPolicyHeader() {
+    return Object.entries(PERMISSIONS_POLICY)
+        .map(([feature, allowlist]) => `${feature}=(${allowlist.join(' ')})`)
+        .join(', ');
+}
 
 /**
  * Middleware para forzar HTTPS
@@ -48,10 +61,8 @@ function securityHeaders(req, res, next) {
     // Referrer Policy
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-    // Permissions Policy
-    res.setHeader('Permissions-Policy',
-        'geolocation=(), microphone=(), camera=(), payment=()'
-    );
+    // Permissions Policy (fuente única: PERMISSIONS_POLICY en securityHeaders.js)
+    res.setHeader('Permissions-Policy', permissionsPolicyHeader());
 
     // Content Security Policy (básico)
     if (process.env.ENABLE_CSP === 'true') {

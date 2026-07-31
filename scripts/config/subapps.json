@@ -1,0 +1,20 @@
+{
+  "_comment": "Canonical SubApp registry — single source of truth for the watchdog and for Cloud Run start/stop control. Mirrors SUBAPP_URLS in control-center/frontend/app/(landing)/developers/page.tsx and App's secundarias/Bezhas-Hub/frontend/src/config/subappUrls.ts. Update all three together when a URL changes. `service`/`project`/`region` match scripts/deploy-subapp.sh so start/stop hits the same Cloud Run service that script deploys.",
+  "project": "totemic-bonus-479312-c6",
+  "region": "europe-west1",
+  "apps": [
+    { "name": "BeZhas Hub", "url": "https://bezhas-hub-o5xep6gbwq-ew.a.run.app", "healthPath": "/health", "service": "bezhas-hub" },
+    { "name": "BEZ Wallet", "url": "https://bezhas-wallet-o5xep6gbwq-ew.a.run.app", "service": "bezhas-wallet" },
+    { "name": "Gas Tank Manager", "url": "https://bezhas-gas-o5xep6gbwq-ew.a.run.app", "service": "bezhas-gas" },
+    { "name": "Edge Node Manager", "url": "https://bezhas-edge-o5xep6gbwq-ew.a.run.app", "service": "bezhas-edge" },
+    { "name": "BEZ Vision Scan", "url": "https://bezhas-vision-o5xep6gbwq-ew.a.run.app", "service": "bezhas-vision" },
+    { "name": "BZ Capital", "url": "https://bezhas-capital-o5xep6gbwq-ew.a.run.app/defi", "service": "bezhas-capital" },
+    { "name": "BZ Prestige", "url": "https://bezhas-prestige-o5xep6gbwq-ew.a.run.app", "service": "bezhas-prestige" },
+    { "name": "BZ CargoLink", "url": "https://bezhas-cargolink-o5xep6gbwq-ew.a.run.app", "service": "bezhas-cargolink" },
+    { "name": "BeZhas Pay Manager", "url": "https://bezhas-pay-o5xep6gbwq-ew.a.run.app", "service": "bezhas-pay" },
+    { "name": "BZ PureScan", "url": "https://bezhas-purescan-o5xep6gbwq-ew.a.run.app", "service": "bezhas-purescan" },
+    { "name": "BZ Sphere", "url": "https://bezhas-sphere-o5xep6gbwq-ew.a.run.app", "service": "bezhas-sphere" },
+    { "name": "BEZ Energy", "url": "https://bezhas-energy-o5xep6gbwq-ew.a.run.app", "service": "bezhas-energy" },
+    { "name": "BZ Genesis", "url": "https://bezhas-genesis-o5xep6gbwq-ew.a.run.app", "service": "bezhas-genesis" }
+  ]
+}

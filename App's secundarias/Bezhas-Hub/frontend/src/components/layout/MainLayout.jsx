@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import SidebarDrawer from '../SidebarDrawer';
 import Header from './Header';
 import HealthStatus from '../HealthStatus';
+import GuidedTour from '../GuidedTour';
 // import RightSidebar from '../../layouts/components/RightSidebar'; // DISABLED: Pantalla completa
 // import RightSidebarToggle from '../RightSidebarToggle'; // DISABLED: Pantalla completa
 // import { RightSidebarProvider, useRightSidebar } from '../../context/RightSidebarContext'; // DISABLED: Pantalla completa
@@ -40,6 +41,9 @@ const MainLayout = ({ children }) => {
 
       {/* Mobile Menu - Visible en todas las páginas en modo móvil */}
       <MobileMenu notificationsCount={notificationsCount} />
+
+      {/* Recorrido animado "Cómo usar" — fuera del gate de auth de las páginas */}
+      <GuidedTour />
     </div>
   );
 };

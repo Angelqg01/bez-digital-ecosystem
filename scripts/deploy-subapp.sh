@@ -92,6 +92,14 @@ server {
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
+    # Lightweight liveness endpoint for the watchdog (scripts/subapp-watchdog.cjs)
+    # and Cloud Run health checks — answers instantly without serving the SPA
+    # bundle, so a broken JS build still reports "container is up" separately
+    # from "app actually renders".
+    location = /health {
+        default_type text/plain;
+        return 200 'ok';
+    }
     location / { try_files $uri $uri/ /index.html; }
     location /assets/ { expires 1y; add_header Cache-Control "public, immutable"; }
 }

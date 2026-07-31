@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "vite",
     "start": "serve -s dist -l 8080 --no-etag",
-    "build": "node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build",
+    "tour:build": "node \"../../packages/guided-tour/bin/generate.mjs\" tour.config.mjs public/como-usar.html",
+    "build": "node ../../packages/guided-tour/bin/generate.mjs tour.config.mjs public/como-usar.html && node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
@@ -23,6 +24,7 @@
     "analyze": "vite build --mode analyze"
   },
   "dependencies": {
+    "@bezhas/guided-tour": "file:../../packages/guided-tour",
     "@bezhas/sdk": "file:../../../sdk",
     "@coinbase/wallet-sdk": "~4.3.6",
     "@octokit/rest": "^22.0.1",

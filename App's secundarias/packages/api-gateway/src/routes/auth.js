@@ -13,14 +13,31 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET is required in production');
 }
 
+// Scopes granulares por recurso, tal y como los publica la documentación
+// (wallet:read, billing:write…). Se mapean sobre los roles que YA existían para
+// que los JWT emitidos antes de esta capa sigan funcionando sin cambios.
+const USER_SCOPES = [
+  'subapp:user',
+  'wallet:read', 'contracts:read',
+  'billing:read', 'billing:write',
+  'purescan:read', 'purescan:analyze',
+  'sphere:chat',
+  'gas:read', 'gas:write',
+];
+const ENTERPRISE_SCOPES = [
+  ...USER_SCOPES,
+  'subapp:enterprise',
+  'cargolink:*', 'energy:*', 'vision:*', 'nodes:read',
+];
+
 const roleScopes = {
   SUPER_ADMIN: ['*'],
-  ADMIN: ['core:admin', 'core:developer', 'core:security', 'developer:api', 'subapp:enterprise', 'subapp:user', 'mcp:invoke'],
-  DEVELOPER: ['core:developer', 'developer:api', 'subapp:user', 'mcp:invoke'],
-  DEVOPS: ['core:developer', 'core:security', 'mcp:invoke'],
+  ADMIN: ['core:admin', 'core:developer', 'core:security', 'developer:api', 'mcp:invoke', ...ENTERPRISE_SCOPES, 'nodes:*', 'contracts:*'],
+  DEVELOPER: ['core:developer', 'developer:api', 'mcp:invoke', 'contracts:*', 'nodes:*', ...USER_SCOPES],
+  DEVOPS: ['core:developer', 'core:security', 'mcp:invoke', 'nodes:*'],
   SECURITY: ['core:security', 'mcp:invoke'],
-  ENTERPRISE: ['subapp:enterprise', 'subapp:user'],
-  USER: ['subapp:user'],
+  ENTERPRISE: ENTERPRISE_SCOPES,
+  USER: USER_SCOPES,
 };
 
 function getScopes(user = {}) {
@@ -192,17 +209,35 @@ export function requireAuth(req, res, next) {
   }
 }
 
+/**
+ * ¿Un scope concedido cubre el requerido?
+ * Soporta comodín total (`*`) y de recurso (`billing:*` cubre `billing:write`).
+ * No hay herencia implícita: `x:write` NO concede `x:read`.
+ */
+function scopeSatisfies(granted, needed) {
+  const g = String(granted).toLowerCase();
+  const n = String(needed).toLowerCase();
+  if (g === '*' || g === n) return true;
+  return g.endsWith(':*') && n.startsWith(g.slice(0, -1));
+}
+
 export function requireScope(scope) {
   return (req, res, next) => {
     requireAuth(req, res, () => {
       const scopes = getScopes(req.user);
-      if (!scopes.has('*') && !scopes.has(scope)) {
-        return res.status(403).json({ error: `Missing required scope: ${scope}` });
+      for (const granted of scopes) {
+        if (scopeSatisfies(granted, scope)) return next();
       }
-      next();
+      return res.status(403).json({
+        error: `Missing required scope: ${scope}`,
+        code: 'SCOPE_DENIED',
+        requiredScope: scope,
+      });
     });
   };
 }
+
+export { scopeSatisfies, getScopes };
 
 export function requireNodeHeartbeat(req, res, next) {
   const key = req.headers['x-node-api-key'] || req.headers['x-api-key'];

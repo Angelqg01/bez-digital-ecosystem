@@ -8,12 +8,14 @@ class ApiKeyPG {
                 user_id, name, description, key, key_hash, sector,
                 permissions, status, rate_limit, usage, achievements,
                 environment, ip_whitelist, webhooks, metadata,
-                last_rotated, expires_at, org_id, site_id
+                last_rotated, expires_at, org_id, site_id,
+                signing_secret, signature_required
             ) VALUES (
                 $1, $2, $3, $4, $5, $6,
                 $7::jsonb, $8, $9::jsonb, $10::jsonb, $11::jsonb,
                 $12, $13::jsonb, $14::jsonb, $15::jsonb,
-                $16, $17, $18::uuid, $19::uuid
+                $16, $17, $18::uuid, $19::uuid,
+                $20, $21
             ) RETURNING *;
         `;
         const values = [
@@ -35,7 +37,9 @@ class ApiKeyPG {
             data.lastRotated || null,
             data.expiresAt || null,
             data.orgId || null,
-            data.siteId || null
+            data.siteId || null,
+            data.signingSecret || null,
+            data.signatureRequired === true
         ];
 
         const result = await pool.query(query, values);
@@ -185,6 +189,15 @@ class ApiKeyPG {
 
     static hashKey(key) {
         return crypto.createHash('sha256').update(key).digest('hex');
+    }
+
+    /**
+     * Secreto HMAC con el que el cliente firma cada petición (middleware
+     * apiSecurity.verifySignature). Se entrega UNA vez al emitir la clave:
+     * así una API key filtrada no basta por sí sola para operar.
+     */
+    static generateSigningSecret() {
+        return `whsec_${crypto.randomBytes(32).toString('base64url')}`;
     }
 
     static verifyKey(keyHash, key) {

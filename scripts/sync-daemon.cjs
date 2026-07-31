@@ -22,12 +22,16 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const ROOT = path.resolve(__dirname);
+// This file lives in scripts/, one level below the repo root — every
+// destination below is relative to the repo root, not to scripts/.
+const ROOT = path.resolve(__dirname, '..');
 const ARTIFACTS_DIR = path.join(ROOT, 'smart-contracts', 'out');
 const DEPLOYMENTS_DIR = path.join(ROOT, 'smart-contracts', 'deployments');
+const SYNC_LOG_PATH = path.join(__dirname, 'status', 'sync.log');
 
 /** Contracts to sync (name → Foundry artifact path within out/) */
 const CORE_CONTRACTS = [
@@ -62,6 +66,10 @@ const DESTINATIONS = [
         name: 'Frontend ABI (Next.js)',
         dir: path.join(ROOT, 'control-center', 'frontend', 'lib', 'abi'),
         type: 'json',
+        // control-center/frontend/lib/{validator-hooks,wallet-hooks}.ts pass this
+        // file straight into `new ethers.Contract(addr, abi, provider)` — it must
+        // stay a bare ABI array, not the {contractName, abi, ...} wrapper.
+        bareAbi: true,
         enabled: true,
     },
     {
@@ -75,7 +83,15 @@ const DESTINATIONS = [
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function log(icon, msg) {
-    console.log(`[sync-daemon] ${icon}  ${msg}`);
+    const line = `[sync-daemon] ${icon}  ${msg}`;
+    console.log(line);
+    // Sync rule #3 (CLAUDE.md): loggear todo en sync.log.
+    try {
+        fs.mkdirSync(path.dirname(SYNC_LOG_PATH), { recursive: true });
+        fs.appendFileSync(SYNC_LOG_PATH, `${new Date().toISOString()} ${line}\n`, 'utf-8');
+    } catch {
+        // best-effort logging only — never crash the sync over a log write
+    }
 }
 
 function ensureDir(dir) {
@@ -83,6 +99,43 @@ function ensureDir(dir) {
         fs.mkdirSync(dir, { recursive: true });
         log('📁', `Created: ${path.relative(ROOT, dir)}`);
     }
+}
+
+function hashOf(obj) {
+    return crypto.createHash('sha256').update(JSON.stringify(obj)).digest('hex');
+}
+
+/**
+ * Writes `data` to `targetFile` unless it's unchanged from what's already on
+ * disk (sync rule #1: never overwrite an ABI whose hash hasn't changed).
+ * When content *has* changed, the previous file is preserved as `.bak`
+ * before being overwritten (sync rule #2).
+ *
+ * `data` is normally the {contractName, abi, ..., _sig} wrapper, compared via
+ * its embedded `_sig`. With `{ bareArray: true }` (consumers that need a
+ * plain ABI array with no wrapper — a JS array can't carry a `_sig` prop and
+ * round-trip through JSON), `data` is written as-is and compared by hashing
+ * both the incoming and on-disk array directly.
+ */
+function writeIfChanged(targetFile, data, { bareArray = false } = {}) {
+    if (fs.existsSync(targetFile)) {
+        try {
+            const existing = JSON.parse(fs.readFileSync(targetFile, 'utf-8'));
+            const unchanged = bareArray
+                ? hashOf(existing) === hashOf(data)
+                : existing._sig && existing._sig === data._sig;
+            if (unchanged) return { written: false };
+        } catch {
+            // unreadable/corrupt existing file — fall through and overwrite
+        }
+        try {
+            fs.copyFileSync(targetFile, `${targetFile}.bak`);
+        } catch (err) {
+            log('⚠️', `Could not write .bak for ${path.relative(ROOT, targetFile)}: ${err.message}`);
+        }
+    }
+    fs.writeFileSync(targetFile, JSON.stringify(data, null, 2), 'utf-8');
+    return { written: true };
 }
 
 /**
@@ -159,18 +212,25 @@ function syncContract(contractName, opts = {}) {
 
     const deployment = readDeployment(contractName, opts.network || 'localhost');
 
+    const bytecodeHash = artifact.bytecode?.object
+        ? crypto.createHash('sha256').update(artifact.bytecode.object).digest('hex').slice(0, 16)
+        : null;
+    const compiler = artifact.metadata?.compiler?.version || 'unknown';
+
     const output = {
         contractName,
         abi,
-        bytecodeHash: artifact.bytecode?.object
-            ? require('crypto').createHash('sha256').update(artifact.bytecode.object).digest('hex').slice(0, 16)
-            : null,
+        bytecodeHash,
         address: deployment,
         syncedAt: new Date().toISOString(),
-        compiler: artifact.metadata?.compiler?.version || 'unknown',
+        compiler,
+        // Content signature over the fields that actually matter (excludes
+        // syncedAt) — this is what writeIfChanged() compares run-to-run.
+        _sig: hashOf({ contractName, abi, bytecodeHash, address: deployment, compiler }),
     };
 
     let synced = 0;
+    let unchanged = 0;
 
     for (const dest of DESTINATIONS) {
         if (!dest.enabled) continue;
@@ -179,8 +239,11 @@ function syncContract(contractName, opts = {}) {
         const targetFile = path.join(dest.dir, `${contractName}.json`);
 
         try {
-            fs.writeFileSync(targetFile, JSON.stringify(output, null, 2), 'utf-8');
-            synced++;
+            const result = dest.bareAbi
+                ? writeIfChanged(targetFile, abi, { bareArray: true })
+                : writeIfChanged(targetFile, output);
+            if (result.written) synced++;
+            else unchanged++;
         } catch (err) {
             log('❌', `Failed to write to ${dest.name}: ${err.message}`);
         }
@@ -189,8 +252,13 @@ function syncContract(contractName, opts = {}) {
     // Write to agent-runtime contract registry
     updateAgentRuntimeRegistry(contractName, output);
 
-    log('✅', `${contractName} → ${synced} destinations ${deployment ? `@ ${deployment.slice(0, 8)}...` : '(no deploy)'}`);
-    return { name: contractName, synced, skipped: 0, error: null };
+    const suffix = deployment ? `@ ${deployment.slice(0, 8)}...` : '(no deploy)';
+    if (synced === 0 && unchanged > 0) {
+        log('⏭️', `${contractName} unchanged — skipped ${unchanged} destination(s) ${suffix}`);
+    } else {
+        log('✅', `${contractName} → ${synced} written, ${unchanged} unchanged ${suffix}`);
+    }
+    return { name: contractName, synced, unchanged, skipped: 0, error: null };
 }
 
 /**
@@ -221,12 +289,16 @@ function updateAgentRuntimeRegistry(contractName, output) {
     registry._lastSync = new Date().toISOString();
     registry._contracts = Object.keys(registry).filter(k => !k.startsWith('_')).length;
 
+    // The aggregate index always rewrites (it carries _lastSync on purpose).
     fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), 'utf-8');
 
-    // Also write ABI to agent-runtime/config/abis/
+    // Also write ABI to agent-runtime/config/abis/ — hash-skipped like the
+    // other destinations so an unrelated contract's sync doesn't touch this.
     const abiDir = path.join(registryDir, 'abis');
     ensureDir(abiDir);
-    fs.writeFileSync(path.join(abiDir, `${contractName}.json`), JSON.stringify({ abi: output.abi, address: output.address }, null, 2));
+    const abiEntry = { abi: output.abi, address: output.address };
+    abiEntry._sig = hashOf(abiEntry);
+    writeIfChanged(path.join(abiDir, `${contractName}.json`), abiEntry);
 }
 
 /**
@@ -237,6 +309,7 @@ function writeSyncReport(results) {
         timestamp: new Date().toISOString(),
         totalContracts: results.length,
         synced: results.filter(r => r.synced > 0).length,
+        unchanged: results.filter(r => r.synced === 0 && !r.error).length,
         skipped: results.filter(r => r.error).length,
         destinations: DESTINATIONS.filter(d => d.enabled).map(d => ({
             name: d.name,
@@ -279,8 +352,9 @@ async function runSync(contractFilter = null) {
     const report = writeSyncReport(results);
 
     console.log('\n─────────────────────────────────────────────────────');
-    console.log(`  ✅ Synced:  ${report.synced}/${report.totalContracts} contracts`);
-    console.log(`  ⚠️  Skipped: ${report.skipped} (artifacts missing — run forge build)`);
+    console.log(`  ✅ Synced:    ${report.synced}/${report.totalContracts} contracts (files written)`);
+    console.log(`  ⏭️  Unchanged: ${report.unchanged} (hash identical — write skipped)`);
+    console.log(`  ⚠️  Skipped:   ${report.skipped} (artifacts missing — run forge build)`);
     console.log('─────────────────────────────────────────────────────\n');
 
     return report;

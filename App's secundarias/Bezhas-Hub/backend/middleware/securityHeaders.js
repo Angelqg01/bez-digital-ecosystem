@@ -86,8 +86,16 @@ const HSTS_CONFIG = {
 /**
  * Configuración de Permissions-Policy (anteriormente Feature-Policy)
  */
+// Fuente ÚNICA de verdad para Permissions-Policy en todo el backend del Hub.
+// httpsEnforcement.js reutiliza este mismo objeto — antes tenía su propia
+// cadena hardcodeada ('geolocation=(), microphone=(), camera=(), payment=()')
+// que bloqueaba cámara/geolocalización por completo y pisaba esta config sin
+// que nadie lo hubiera decidido así (los dos middlewares nunca se pusieron
+// de acuerdo). camera/geolocation en 'self' porque las SubApps (BZ CargoLink,
+// BZ PureScan) las usan legítimamente en su propio origen, con priming ético
+// y gate de suscripción antes de pedirlas (ver App's secundarias/_shared/).
 const PERMISSIONS_POLICY = {
-    camera: ['none'],
+    camera: ['self'],
     microphone: ['none'],
     geolocation: ['self'],
     payment: ['self'],

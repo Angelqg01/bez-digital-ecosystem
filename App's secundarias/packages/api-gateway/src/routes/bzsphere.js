@@ -7,7 +7,7 @@ const router = express.Router();
  * POST /api/sphere/chat/process
  * NLP Listener for demand/offer detection
  */
-router.post('/chat/process', (req, res) => {
+router.post('/chat/process', requireScope('sphere:chat'), (req, res) => {
   const { text } = req.body;
   
   let tag = null;

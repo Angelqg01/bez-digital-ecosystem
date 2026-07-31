@@ -3,7 +3,7 @@
  * Verifica las métricas del PDF: precios, −20% en $BEZ, IVA 21%, anual.
  */
 const {
-  PLANS, calculateSubscription, getPlan,
+  PLANS, calculateSubscription, getPlan, getHierarchyConfig,
   BEZ_DISCOUNT_RATE, IVA_RATE, STAKING_APY_MAX, HOLDING_COMMISSION,
 } = require('../../config/plans');
 
@@ -30,6 +30,25 @@ describe('PLANS — catálogo definitivo (4 niveles)', () => {
     expect(STAKING_APY_MAX).toBe(31.25);
     expect(HOLDING_COMMISSION).toBe(20);
     expect(getPlan('enterprise_vip').partnerCommission).toBe(20);
+  });
+});
+
+describe('getHierarchyConfig — jerarquía de organizaciones por plan', () => {
+  test('starter y creator_pro no la incluyen (null)', () => {
+    expect(getHierarchyConfig('starter')).toBeNull();
+    expect(getHierarchyConfig('creator_pro')).toBeNull();
+  });
+  test('business: 5 sub-empresas, 10%, 1 nivel de cascada', () => {
+    expect(getHierarchyConfig('business')).toEqual({
+      maxSubOrgs: 5, commissionRateBps: 1000, cascadeDepth: 1,
+      treasuryTransfers: true, policyEngine: true, dataAggregation: true, whiteLabelResale: false,
+    });
+  });
+  test('enterprise_vip: 50 sub-empresas, 20%, 3 niveles, reventa white-label', () => {
+    expect(getHierarchyConfig('enterprise_vip')).toEqual({
+      maxSubOrgs: 50, commissionRateBps: 2000, cascadeDepth: 3,
+      treasuryTransfers: true, policyEngine: true, dataAggregation: true, whiteLabelResale: true,
+    });
   });
 });
 

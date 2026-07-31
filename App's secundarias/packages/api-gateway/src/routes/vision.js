@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { requireAuth } from './auth.js';
+import { requireAuth, requireScope } from './auth.js';
 
 const router = Router();
 
 /** POST /api/vision/analyze — Run Gemini Vision analysis */
-router.post('/analyze', requireAuth, async (req, res) => {
+router.post('/analyze', requireScope('vision:analyze'), async (req, res) => {
   const { image, mode = 'quality', sector = 'Logistics' } = req.body;
 
   if (!image) {
@@ -74,7 +74,7 @@ router.post('/analyze', requireAuth, async (req, res) => {
 });
 
 /** POST /api/vision/fingerprint — Generate SIFT fingerprint */
-router.post('/fingerprint', requireAuth, async (req, res) => {
+router.post('/fingerprint', requireScope('vision:analyze'), async (req, res) => {
   const { image, goldenImageHash } = req.body;
 
   if (!image) {
@@ -109,7 +109,7 @@ router.post('/fingerprint', requireAuth, async (req, res) => {
 });
 
 /** GET /api/vision/history — Scan history */
-router.get('/history', requireAuth, (req, res) => {
+router.get('/history', requireScope('vision:read'), (req, res) => {
   const { page = 1, limit = 20, verdict } = req.query;
   // In production: query from database
   res.json({

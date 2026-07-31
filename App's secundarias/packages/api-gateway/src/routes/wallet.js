@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { ethers } from 'ethers';
-import { requireAuth } from './auth.js';
+import { requireAuth, requireScope } from './auth.js';
 
 const router = Router();
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
 
 /** GET /api/wallet/balance/:address — BEZ + ETH balance */
-router.get('/balance/:address', async (req, res) => {
+router.get('/balance/:address', requireScope('wallet:read'), async (req, res) => {
   const { address } = req.params;
   if (!ethers.isAddress(address)) {
     return res.status(400).json({ error: 'Invalid address' });
@@ -37,7 +37,7 @@ router.get('/balance/:address', async (req, res) => {
 });
 
 /** GET /api/wallet/nfts/:address — RWA NFTs owned */
-router.get('/nfts/:address', async (req, res) => {
+router.get('/nfts/:address', requireScope('wallet:read'), async (req, res) => {
   const { address } = req.params;
 
   try {
@@ -70,7 +70,7 @@ router.get('/nfts/:address', async (req, res) => {
 });
 
 /** GET /api/wallet/transactions/:address — Transaction history */
-router.get('/transactions/:address', async (req, res) => {
+router.get('/transactions/:address', requireScope('wallet:read'), async (req, res) => {
   const { address } = req.params;
   const { page = 1, limit = 20 } = req.query;
 
@@ -95,7 +95,7 @@ router.get('/transactions/:address', async (req, res) => {
 });
 
 /** GET /api/wallet/staking/:address — Staking position */
-router.get('/staking/:address', async (req, res) => {
+router.get('/staking/:address', requireScope('wallet:read'), async (req, res) => {
   const { address } = req.params;
 
   try {

@@ -30,6 +30,11 @@ import { syncIntegrationBridge } from '../services/integrationBridge'
 import { buildSensorPayload } from '../services/sensorHub'
 import { evaluateDispute } from '../services/disputeOracle'
 import SensorPanel from '../components/SensorPanel'
+import PermissionPrime from '../../../_shared/PermissionPrime.jsx'
+
+// Escaneo de evidencia visual es una función de plan de pago: sin
+// suscripción Profesional/Enterprise, no se pide el permiso de cámara.
+const REQUIRED_TIERS = ['professional', 'enterprise']
 
 // Contrato de EJEMPLO (demo) para el Oráculo. Es editable y borrable desde el
 // panel de sensores: sirve para que un usuario nuevo aprenda a usar la app.
@@ -110,6 +115,7 @@ const Scanner = () => {
   const [sensors, setSensors] = useState(emptySensors)
   const [showSensors, setShowSensors] = useState(false)
   const [contract, setContract] = useState(EXAMPLE_CONTRACT)
+  const [showCameraPrime, setShowCameraPrime] = useState(false)
 
   const handleSensorReading = useCallback((categoryId, reading) => {
     setSensors((current) => ({ ...current, [categoryId]: reading }))
@@ -173,10 +179,15 @@ const Scanner = () => {
     }
   }, [loadDevices, selectedDeviceId, stopCamera])
 
-  useEffect(() => {
-    startCamera()
-    return stopCamera
-  }, [])
+  // GDPR art. 5 (minimización): la cámara ya NO se activa sola al montar el
+  // componente. Se pide solo cuando el usuario pulsa "Activar cámara" y pasa
+  // por el priming + gate de suscripción (ver handleActivateCamera abajo).
+  useEffect(() => stopCamera, [])
+
+  const handleActivateCamera = () => {
+    setCameraError(null)
+    setShowCameraPrime(true)
+  }
 
   useEffect(() => {
     const handler = () => setShowSensors(true)
@@ -348,6 +359,16 @@ const Scanner = () => {
 
   return (
     <div className="scanner-viewport">
+      <PermissionPrime
+        tool="camera"
+        open={showCameraPrime}
+        requiredTiers={REQUIRED_TIERS}
+        onAllow={() => startCamera()}
+        onGranted={() => setShowCameraPrime(false)}
+        onCancel={() => setShowCameraPrime(false)}
+        onDenied={() => setShowCameraPrime(false)}
+      />
+
       <video
         ref={videoRef}
         className="absolute inset-0 h-full w-full object-cover"
@@ -364,7 +385,7 @@ const Scanner = () => {
             <p className="mt-2 text-body-sm text-bz-text-muted">
               {cameraError || 'Puedes iniciar camara o subir dos imagenes para comparar.'}
             </p>
-            <button onClick={() => startCamera()} className="btn btn-primary mt-4">
+            <button onClick={handleActivateCamera} className="btn btn-primary mt-4">
               Activar camara
             </button>
           </div>

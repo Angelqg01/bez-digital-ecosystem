@@ -11,6 +11,9 @@
  *   3. ESTADO REAL: leemos el estado con navigator.permissions.query() en vez
  *      de re-solicitar a ciegas. Si ya está 'denied', no insistimos.
  *   4. SIN DARK PATTERNS: una sola solicitud por gesto del usuario.
+ *   5. SUSCRIPCIÓN: la SubApp que llama a este hook decide, vía
+ *      useSubscriptionTier(), si el usuario tiene el plan requerido ANTES de
+ *      montar el priming — este hook no sabe nada de planes de pago.
  *
  * Estados expuestos: 'unknown' | 'prompt' | 'granted' | 'denied' | 'unsupported'
  *
@@ -19,6 +22,11 @@
  *   // 1. el componente muestra el priming propio …
  *   // 2. al confirmar el usuario:
  *   const stream = await cam.request()  // dispara el prompt nativo
+ *
+ * Compartido entre SubApps (BZ CargoLink, BZ PureScan, …) — un solo sitio
+ * donde vive la lógica de permisos evita que cada app la reimplemente
+ * distinto (que es justo lo que pasaba antes: PureScan pedía cámara sin
+ * ningún aviso previo mientras CargoLink sí lo hacía bien).
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -29,8 +37,8 @@ import { useCallback, useEffect, useState } from 'react'
 export const CLIENT_TOOLS = {
   camera: {
     label: 'Cámara',
-    purpose: 'Capturar un fotograma de la carga para generar su huella de integridad (SIFT/SHA-256).',
-    dataHandling: 'La imagen NO sale del dispositivo. Solo el hash resultante se ancla en BeZhas L2.',
+    purpose: 'Capturar un fotograma para generar evidencia/huella de integridad (hash SHA-256 / SIFT).',
+    dataHandling: 'La imagen NO sale del dispositivo salvo que la subas explícitamente. Solo el hash resultante se ancla en BeZhas L2.',
     permissionName: 'camera',
   },
   geolocation: {

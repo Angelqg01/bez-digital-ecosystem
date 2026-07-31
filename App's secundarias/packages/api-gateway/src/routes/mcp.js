@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from './auth.js';
+import { requireAuth, requireScope } from './auth.js';
 
 const router = Router();
 
@@ -31,7 +31,7 @@ router.get('/tools', (req, res) => {
 });
 
 /** POST /api/mcp/invoke — Invoke an MCP tool (JSON-RPC style) */
-router.post('/invoke', requireAuth, async (req, res) => {
+router.post('/invoke', requireScope('mcp:invoke'), async (req, res) => {
   const { toolId, params = {} } = req.body;
 
   if (!toolId || !MCP_TOOLS[toolId]) {

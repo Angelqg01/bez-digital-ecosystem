@@ -16,6 +16,10 @@
 - **FRAMEWORK / ROUTER**: `<React + react-router | React sin router | Vue | vanilla — averígualo>`
 - **OBJETIVO DE NEGOCIO EN UNA FRASE**: `<qué resuelve para el usuario>`
 - **EVENTO / FLAG** (deriva del slug): evento `‹slug›:start-tour`, flag localStorage `‹slug›_tour_seen_v1`
+- **¿EXPONE API B2B?**: `<sí/no — si la SubApp tiene Developer Console, API Keys u onboarding B2B, marca sí>`
+  - Si es sí, rellena también:
+    - **SECTORES DE USO**: `<lista real, p. ej. Logística, Aduanas, RWA, Fintech, Energía·VPP, Industria, Legal/Compliance>`
+    - **MODELO ORGANIZATIVO**: `<cómo se estructura el acceso — org/sede/membership, API Key por sede, scope por SubApp, etc. Mira OrgContext / OrgApiKeysTab si existen>`
 
 ---
 
@@ -42,6 +46,9 @@ animación: solo **define las escenas reales** de esta SubApp y **cablea** el re
 3. Localiza los **tokens de tema** (CSS vars `--bz-*` en `src/index.css` u otro) — paleta.
 4. Detecta **dónde está la cabecera** y cómo se añade un botón; y si hay **gate de auth**.
 5. Detecta el framework (React/Vue/vanilla). Si el install falla por el workspace, usa `pnpm install --ignore-workspace`.
+6. **Si ‹EXPONE API B2B› = sí**: localiza el Developer Console / panel de API Keys real
+   (p. ej. `OrgApiKeysTab`, `DeveloperConsole`) y su backend (`plugin-bridge`, `apiKeyTenant`,
+   `OrgContext`). Extrae de ahí — no inventes — qué scopes/sedes/planes existen de verdad.
 
 El recorrido debe reflejar **estas pantallas reales**: una escena por función principal (6–10), en el orden en que un usuario las usa.
 
@@ -70,6 +77,22 @@ Copia `tour.config.example.mjs` y créalo con las **escenas reales** de la SubAp
   - Iconos con tokens `{{ico:NAME}}` (map finger box globe radio shield scale anchor wallet cpu
     pin code play scan zap coins users chart lock gift; añade propios en `icons`).
 - Genera el HTML: `pnpm tour:build` → crea `public/como-usar.html` (autónomo, CSP-safe).
+
+#### Si ‹EXPONE API B2B› = sí — escenas prioritarias de API (mínimo 2, al principio del bloque final)
+
+Estas escenas van **antes** del cierre del recorrido y explican el modelo de negocio B2B, no solo la UI:
+
+1. **Escena "Sectores donde opera la API"** — `visual` tipo grid/chips con los ‹SECTORES DE USO›
+   reales (Logística, Aduanas, RWA, Fintech, Energía·VPP, Industria, Legal/Compliance, Holdings...).
+   `body`: en 1–2 frases, qué resuelve la API en esos sectores (trazabilidad, pagos, certificación...).
+2. **Escena "Gestión desde una empresa core / holding / consorcio"** — explica cómo una empresa
+   matriz gestiona el acceso de sus filiales o red de socios: una API Key por sede/filial con scope
+   propio, planes y permisos que la matriz asigna, uso agregado visible desde la consola central.
+   Usa el ‹MODELO ORGANIZATIVO› real detectado en el Paso 0 (no inventes conceptos que no existan
+   en `OrgContext`/`OrgApiKeysTab`/`plugin-bridge`). `visual`: maqueta con la jerarquía
+   matriz → sede/filial → API Key, o el panel real de "API & Sedes" si existe.
+
+Si la SubApp no tiene API B2B real, omite esta subsección por completo — no la inventes.
 
 ### 3. Cablea el reproductor
 
@@ -109,6 +132,8 @@ Solo si la SubApp tiene ajustes de dominio propios: replica el patrón de
 - Textos en **español**, claros y comerciales; describe **cómo usar** cada pantalla.
 - Usa el **tema real** de la SubApp (no los colores de CargoLink).
 - El recorrido debe verse aunque el usuario **no** haya iniciado sesión (overlay fuera del gate).
+- **Si ‹EXPONE API B2B› = sí**, las escenas de sectores + gestión core/holding→filiales son
+  **prioritarias**: van antes que detalles menores de UI, con datos reales (no genéricos).
 
 ## Verificación (obligatoria antes de terminar)
 
@@ -136,6 +161,7 @@ Solo si la SubApp tiene ajustes de dominio propios: replica el patrón de
 - [ ] Botón "CÓMO USAR" en la cabecera; auto-show en 1ª visita.
 - [ ] `pnpm build` verde y recorrido verificado en navegador (sin errores de consola).
 - [ ] (Si aplica) página Configuración con sección de dominio.
+- [ ] (Si EXPONE API B2B = sí) escenas de "sectores de uso" y "gestión core/holding → filiales" presentes y con datos reales.
 
 ---
 

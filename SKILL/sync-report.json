@@ -1,0 +1,94 @@
+{
+  "timestamp": "2026-07-29T17:34:26.579Z",
+  "totalContracts": 11,
+  "synced": 5,
+  "unchanged": 0,
+  "skipped": 6,
+  "destinations": [
+    {
+      "name": "API ABI Registry",
+      "dir": "api\\config\\abis"
+    },
+    {
+      "name": "SDK ABI Pack",
+      "dir": "sdk\\src\\abi"
+    },
+    {
+      "name": "Frontend ABI (Next.js)",
+      "dir": "control-center\\frontend\\lib\\abi"
+    }
+  ],
+  "contracts": [
+    {
+      "name": "BeZhasPayment",
+      "synced": 1,
+      "unchanged": 2,
+      "skipped": 0,
+      "error": null
+    },
+    {
+      "name": "BEZCoinV2",
+      "synced": 1,
+      "unchanged": 2,
+      "skipped": 0,
+      "error": null
+    },
+    {
+      "name": "ValidatorRegistry",
+      "synced": 1,
+      "unchanged": 2,
+      "skipped": 0,
+      "error": null
+    },
+    {
+      "name": "EdgeNodeRewards",
+      "synced": 1,
+      "unchanged": 2,
+      "skipped": 0,
+      "error": null
+    },
+    {
+      "name": "BeZhastreasury",
+      "synced": 0,
+      "skipped": 1,
+      "error": "not_found"
+    },
+    {
+      "name": "BeZhasBridge",
+      "synced": 0,
+      "skipped": 1,
+      "error": "not_found"
+    },
+    {
+      "name": "BeZhasGovernance",
+      "synced": 0,
+      "skipped": 1,
+      "error": "not_found"
+    },
+    {
+      "name": "BeZhasMarketplace",
+      "synced": 0,
+      "skipped": 1,
+      "error": "not_found"
+    },
+    {
+      "name": "QualityEscrow",
+      "synced": 1,
+      "unchanged": 2,
+      "skipped": 0,
+      "error": null
+    },
+    {
+      "name": "BeZhasStaking",
+      "synced": 0,
+      "skipped": 1,
+      "error": "not_found"
+    },
+    {
+      "name": "BeZhasVesting",
+      "synced": 0,
+      "skipped": 1,
+      "error": "not_found"
+    }
+  ]
+}

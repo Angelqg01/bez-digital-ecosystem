@@ -962,6 +962,7 @@ const SUBAPP_URLS = getSubappRegistry().reduce((acc, subapp) => {
 
 app.use('/api/control-plane', controlPlaneRoutes);
 app.use('/api/organizations', require('./routes/organizations.routes')); // Multi-tenant B2B: Org → Sedes → Membresías
+app.use('/api/organizations', require('./routes/hierarchy.routes')); // Jerarquía + comisiones + políticas + tesorería (Business+)
 app.use('/api/plans', require('./routes/plans.routes')); // Planes de suscripción definitivos + calculadora
 app.use('/api/identity', require('./routes/identity.routes')); // BeZhas_ID único (email/wallet/OAuth → 1 identidad)
 app.use('/api/rwa', deprecatedSubappRoute('rwa_operations', SUBAPP_URLS.capital));

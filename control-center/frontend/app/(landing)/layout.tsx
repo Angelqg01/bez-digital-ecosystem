@@ -84,6 +84,7 @@ const headerMenus: Record<string, { label: string; href: string; icon: string; d
     { label: 'Email Comercial', href: 'mailto:info.angelqg@gmail.com', icon: 'mail', desc: 'Outreach, pilotos y partnerships' },
     { label: 'Deck Enterprise', href: 'https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view', icon: 'slideshow', desc: 'Presentacion operativa BeZhas' },
     { label: 'Telegram Bot', href: 'https://t.me/BeZhasBot', icon: 'send', desc: 'Soporte 24/7 y comunidad' },
+    { label: 'Política de Privacidad', href: '/privacy', icon: 'gavel', desc: 'RGPD, datos, cookies y permisos' },
   ],
 };
 
@@ -594,7 +595,8 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
                   La plataforma BeZhas utiliza cookies tecnicas para el funcionamiento del sitio y, con su consentimiento, cookies opcionales para analitica y mejora de experiencia, conforme a la normativa de la Union Europea.
                 </p>
                 <p className="text-slate-400 text-[11px] sm:text-xs mt-2">
-                  Puede cambiar su decision en cualquier momento desde el panel de privacidad.
+                  Puede cambiar su decision en cualquier momento desde el{' '}
+                  <a href="/privacy" className="underline hover:text-[#22d3ee] transition-colors">panel de privacidad</a>.
                 </p>
               </div>
             </div>

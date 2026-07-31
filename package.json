@@ -14,7 +14,11 @@
     "linkedin:messages": "node scripts/linkedin-prospecting-runner.js --mode messages",
     "generate:subapp-credentials": "node scripts/generate_subapp_credentials.js",
     "security:scan-secrets": "node scripts/security/scan-secrets.cjs",
-    "audit:production": "node scripts/production-readiness-audit.cjs"
+    "audit:production": "node scripts/production-readiness-audit.cjs",
+    "watchdog:subapps": "node scripts/subapp-watchdog.cjs",
+    "watchdog:subapps:once": "node scripts/subapp-watchdog.cjs --once",
+    "sync:abi": "node scripts/sync-daemon.cjs --once",
+    "sync:abi:watch": "node scripts/sync-daemon.cjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

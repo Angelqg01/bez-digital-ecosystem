@@ -606,8 +606,8 @@ export default function DevelopersPage() {
                     <div className="space-y-2">
                         <div className="text-[10px] tracking-[0.3em] font-bold text-primary uppercase mb-4">Legal</div>
                         <div className="flex flex-col space-y-2">
-                            <a className="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase" href="/learn">Legal</a>
-                            <a className="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase" href="/learn">Privacy Policy</a>
+                            <a className="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase" href="/privacy">Legal</a>
+                            <a className="text-white/30 hover:text-[#0d33f2] transition-colors font-['Space_Grotesk'] tracking-widest text-[10px] uppercase" href="/privacy">Privacy Policy</a>
                         </div>
                     </div>
                 </div>

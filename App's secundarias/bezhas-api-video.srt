@@ -1,0 +1,35 @@
+1
+00:00:00,300 --> 00:00:04,400
+Tu empresa es una isla. BeZhas es el puerto común que lo conecta todo.
+
+2
+00:00:04,900 --> 00:00:09,800
+Empezar no requiere reescribir nada: cero dependencias, una clave, y ya estás operando.
+
+3
+00:00:10,300 --> 00:00:16,200
+Cobrar, o enlazar tu punto de venta, es una sola llamada. Y cada evento vuelve firmado.
+
+4
+00:00:16,700 --> 00:00:21,800
+Un holding no gestiona una API: gestiona un árbol de APIs. La matriz lo ve todo.
+
+5
+00:00:22,300 --> 00:00:27,400
+Y gana control y dinero: datos, políticas de gasto, tesorería y comisión en cascada.
+
+6
+00:00:27,900 --> 00:00:34,000
+Un operador de 800 millones recupera más de 17 al año. 700 € de valor por cada euro invertido.
+
+7
+00:00:34,500 --> 00:00:40,000
+Cuatro planes. La jerarquía se activa en Business y se despliega en Enterprise VIP.
+
+8
+00:00:40,500 --> 00:00:45,600
+La misma clave y el mismo SDK ya viven en 13 aplicaciones del ecosistema.
+
+9
+00:00:46,100 --> 00:00:50,800
+Empieza gratis hoy. Convierte tu gasto operativo en un activo que trabaja para ti.

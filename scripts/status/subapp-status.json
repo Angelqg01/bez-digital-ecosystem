@@ -1,0 +1,143 @@
+{
+  "timestamp": "2026-07-29T17:13:43.909Z",
+  "intervalMs": 120000,
+  "failureThreshold": 2,
+  "summary": {
+    "total": 13,
+    "up": 0,
+    "down": 13,
+    "flaky": 0
+  },
+  "apps": [
+    {
+      "name": "BeZhas Hub",
+      "url": "https://bezhas-hub-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 500,
+      "latencyMs": 378,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BEZ Wallet",
+      "url": "https://bezhas-wallet-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 159,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "Gas Tank Manager",
+      "url": "https://bezhas-gas-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 164,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "Edge Node Manager",
+      "url": "https://bezhas-edge-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 200,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BEZ Vision Scan",
+      "url": "https://bezhas-vision-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 151,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BZ Capital",
+      "url": "https://bezhas-capital-o5xep6gbwq-ew.a.run.app/defi",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 114,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BZ Prestige",
+      "url": "https://bezhas-prestige-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 149,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BZ CargoLink",
+      "url": "https://bezhas-cargolink-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 126,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BeZhas Pay Manager",
+      "url": "https://bezhas-pay-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 136,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BZ PureScan",
+      "url": "https://bezhas-purescan-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 235,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BZ Sphere",
+      "url": "https://bezhas-sphere-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 128,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BEZ Energy",
+      "url": "https://bezhas-energy-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 135,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    },
+    {
+      "name": "BZ Genesis",
+      "url": "https://bezhas-genesis-o5xep6gbwq-ew.a.run.app",
+      "status": "down",
+      "httpStatus": 503,
+      "latencyMs": 131,
+      "error": null,
+      "consecutiveFailures": 3,
+      "checkedAt": "2026-07-29T17:13:43.909Z"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import express from 'express';
+import { requireScope } from './auth.js';
 
 const router = express.Router();
 
@@ -6,7 +7,7 @@ const router = express.Router();
  * POST /api/purescan/analyze
  * Gemini 1.5 Pro integration for Food Oracle
  */
-router.post('/analyze', async (req, res) => {
+router.post('/analyze', requireScope('purescan:analyze'), async (req, res) => {
   const { detections, metrics } = req.body;
   
   console.log('[PURESCAN] Analyzing with Gemini 1.5 Pro...');
@@ -35,7 +36,7 @@ router.post('/analyze', async (req, res) => {
  * GET /api/purescan/stats
  * Stats for Dashboard
  */
-router.get('/stats', (req, res) => {
+router.get('/stats', requireScope('purescan:read'), (req, res) => {
   res.json({
     totalScans: 128,
     accuracy: 0.992,

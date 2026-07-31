@@ -1,0 +1,80 @@
+{
+  "BeZhas Hub": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BEZ Wallet": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "Gas Tank Manager": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "Edge Node Manager": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BEZ Vision Scan": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BZ Capital": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BZ Prestige": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BZ CargoLink": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BeZhas Pay Manager": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BZ PureScan": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BZ Sphere": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BEZ Energy": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  },
+  "BZ Genesis": {
+    "consecutiveFailures": 3,
+    "consecutiveSuccesses": 0,
+    "downAlertSent": true,
+    "lastStatus": "down"
+  }
+}

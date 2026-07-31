@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ethers } from 'ethers';
+import { requireScope } from './auth.js';
 
 const router = Router();
 
@@ -109,7 +110,7 @@ router.get('/packages', (_req, res) => {
  * POST /api/billing/packages/:id/checkout
  * Starts checkout for a predefined BEZ-Coin package through BeZhas-Hub billing.
  */
-router.post('/packages/:id/checkout', (req, res) => {
+router.post('/packages/:id/checkout', requireScope('billing:write'), (req, res) => {
   const pack = BEZ_CREDIT_PACKAGES.find((item) => item.id === req.params.id);
   if (!pack) return res.status(404).json({ error: 'BEZ credit package not found' });
 
@@ -128,7 +129,7 @@ router.post('/packages/:id/checkout', (req, res) => {
  * GET /api/billing/core/balance/:address
  * Reads BEZ-Coin directly from BeZhas-Blockchain Core.
  */
-router.get('/core/balance/:address', async (req, res) => {
+router.get('/core/balance/:address', requireScope('billing:read'), async (req, res) => {
   const { address } = req.params;
   if (!ethers.isAddress(address)) return res.status(400).json({ error: 'Invalid address' });
 
@@ -162,15 +163,15 @@ router.get('/core/balance/:address', async (req, res) => {
   }
 });
 
-router.get('/balance', (req, res) => proxyToHub(req, res, '/api/billing/balance'));
-router.get('/history', (req, res) => {
+router.get('/balance', requireScope('billing:read'), (req, res) => proxyToHub(req, res, '/api/billing/balance'));
+router.get('/history', requireScope('billing:read'), (req, res) => {
   const qs = new URLSearchParams(req.query).toString();
   return proxyToHub(req, res, `/api/billing/history${qs ? `?${qs}` : ''}`);
 });
-router.get('/ai/summary', (req, res) => proxyToHub(req, res, '/api/billing/ai/summary'));
-router.post('/ai/estimate', (req, res) => proxyToHub(req, res, '/api/billing/ai/estimate'));
-router.post('/ai/charge', (req, res) => proxyToHub(req, res, '/api/billing/ai/charge'));
-router.post('/add-fiat-funds', (req, res) => proxyToHub(req, res, '/api/billing/add-fiat-funds'));
-router.post('/add-bez-funds', (req, res) => proxyToHub(req, res, '/api/billing/add-bez-funds'));
+router.get('/ai/summary', requireScope('billing:read'), (req, res) => proxyToHub(req, res, '/api/billing/ai/summary'));
+router.post('/ai/estimate', requireScope('billing:read'), (req, res) => proxyToHub(req, res, '/api/billing/ai/estimate'));
+router.post('/ai/charge', requireScope('billing:write'), (req, res) => proxyToHub(req, res, '/api/billing/ai/charge'));
+router.post('/add-fiat-funds', requireScope('billing:write'), (req, res) => proxyToHub(req, res, '/api/billing/add-fiat-funds'));
+router.post('/add-bez-funds', requireScope('billing:write'), (req, res) => proxyToHub(req, res, '/api/billing/add-bez-funds'));
 
 export { router as billingRouter };

@@ -7,7 +7,7 @@ const router = express.Router();
  * @route   GET /api/energy/telemetry
  * @desc    Get real-time telemetry for energy nodes (DePIN)
  */
-router.get('/telemetry', (req, res) => {
+router.get('/telemetry', requireScope('energy:read'), (req, res) => {
   const telemetry = {
     timestamp: new Date().toISOString(),
     nodes: [
@@ -92,7 +92,7 @@ router.post('/control', requireScope('subapp:enterprise'), (req, res) => {
  * @route   GET /api/energy/alerts
  * @desc    Get active Aegis alerts & AI Predictions
  */
-router.get('/alerts', (req, res) => {
+router.get('/alerts', requireScope('energy:read'), (req, res) => {
   const alerts = [
     {
       id: 'ERR-402-V',
@@ -120,7 +120,7 @@ router.get('/alerts', (req, res) => {
  * @route   GET /api/energy/wallet/stats
  * @desc    Tokenomics & L2 Ledger Sync
  */
-router.get('/wallet/stats', (req, res) => {
+router.get('/wallet/stats', requireScope('energy:read'), (req, res) => {
   res.json({
     balance: 1248592.42,
     yield: 12.4,

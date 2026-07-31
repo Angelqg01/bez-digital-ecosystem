@@ -9,7 +9,11 @@ import {
 } from 'lucide-react'
 import { useTransactions, stageProgress } from '../hooks/useTransaction'
 import { cargoLinkApi } from '../services/cargoLinkApi'
-import PermissionPrime from '../components/PermissionPrime'
+import PermissionPrime from '../../../_shared/PermissionPrime.jsx'
+
+// Ubicación en tiempo real es una función de plan de pago: sin suscripción
+// Profesional/Enterprise, ni siquiera se le pide el permiso al navegador.
+const REQUIRED_TIERS = ['professional', 'enterprise']
 import PortsMap from '../components/PortsMap'
 import { PORTS } from '../data/ports'
 
@@ -75,6 +79,7 @@ const ActiveRoute = () => {
         onGranted={handleGeoGranted}
         onCancel={() => setShowPrime(false)}
         onDenied={handleGeoDenied}
+        requiredTiers={REQUIRED_TIERS}
       />
 
       {/* Status Bar */}
