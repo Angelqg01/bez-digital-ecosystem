@@ -7,6 +7,11 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 //  mirrors _shared/bezhas-wallet-auth.js into the app tree).
 import { siweLogin, subscribeWithBEZ, shortAddress } from '../lib/bezhas-wallet-auth.js';
 
+// API core (login/registro fiat y wallet). Sin `/api` final: las rutas ya lo llevan.
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'https://api.bez.digital')
+  .replace(/\/+$/, '')
+  .replace(/\/api$/, '');
+
 const AuthContext = createContext<any>(null);
 
 export const useAuth = () => useContext(AuthContext);
@@ -167,7 +172,12 @@ function LoginRegisterModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  // login/register llaman al backend, así que hay que esperarlos y enseñar el
+  // error: antes se invocaban sin await y un fallo se perdía en silencio,
+  // dejando el modal abierto sin explicación.
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -175,15 +185,23 @@ function LoginRegisterModal({ onClose }: { onClose: () => void }) {
       setError('Por favor completa todos los campos.');
       return;
     }
+    if (!isLogin && password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
+    if (!isLogin && password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
 
-    if (isLogin) {
-      login(username, password);
-    } else {
-      if (password !== confirmPassword) {
-        setError('Las contraseñas no coinciden.');
-        return;
-      }
-      register(username, role, password);
+    setSubmitting(true);
+    try {
+      if (isLogin) await login(username, password);
+      else await register(username, role, password);
+    } catch (err: any) {
+      setError(err?.message || 'Error de autenticación.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -409,6 +427,7 @@ function LoginRegisterModal({ onClose }: { onClose: () => void }) {
 
           <button
             type="submit"
+            disabled={submitting}
             style={{
               width: '100%',
               background: isLogin ? 'linear-gradient(135deg, #00f0ff, #6366f1)' : 'linear-gradient(135deg, #a855f7, #6366f1)',
@@ -418,12 +437,13 @@ function LoginRegisterModal({ onClose }: { onClose: () => void }) {
               padding: '12px',
               fontSize: '13px',
               fontWeight: 900,
-              cursor: 'pointer',
+              cursor: submitting ? 'wait' : 'pointer',
+              opacity: submitting ? 0.7 : 1,
               marginTop: '10px',
               boxShadow: isLogin ? '0 4px 15px rgba(0, 240, 255, 0.2)' : '0 4px 15px rgba(168, 85, 247, 0.2)'
             }}
           >
-            {isLogin ? 'Acceder al Ecosistema' : 'Registrar e Iniciar Sesión'}
+            {submitting ? 'Procesando…' : (isLogin ? 'Acceder al Ecosistema' : 'Registrar e Iniciar Sesión')}
           </button>
         </form>
 
@@ -517,34 +537,52 @@ export const SSOProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  const login = (usernameOrEmail: string, password: string) => {
-    const mockToken = `mock-jwt-${Date.now()}`;
-    const loggedUser = {
-      username: usernameOrEmail.split('@')[0],
-      role: 'Inversor Especial',
-      email: usernameOrEmail.includes('@') ? usernameOrEmail : `${usernameOrEmail}@bezhas.net`
-    };
-
-    localStorage.setItem('bezhas-jwt', mockToken);
-    localStorage.setItem('bezhas-user', JSON.stringify(loggedUser));
-    setToken(mockToken);
-    setUser(loggedUser);
+  // Persiste una sesión real: el JWT lo firma el servidor, nunca este cliente.
+  const applySession = (jwt: string, backendUser: any) => {
+    localStorage.setItem('bezhas-jwt', jwt);
+    localStorage.setItem('bezhas-user', JSON.stringify(backendUser));
+    if (backendUser?.bezhas_id) localStorage.setItem('bezhas-id', backendUser.bezhas_id);
+    setToken(jwt);
+    setUser(backendUser);
     setIsLoginModalOpen(false);
   };
 
-  const register = (username: string, profile: string, password: string) => {
-    const mockToken = `mock-jwt-${Date.now()}`;
-    const loggedUser = {
-      username,
-      role: profile,
-      email: `${username}@bezhas.net`
-    };
+  /**
+   * Login contra la API core.
+   *
+   * Antes esto fabricaba un `mock-jwt-${Date.now()}` sin llamar a ningún
+   * backend: se entraba con cualquier contraseña y el token no lo firmaba
+   * nadie, así que la app quedaba "autenticada" pero cualquier endpoint real
+   * devolvía 401. Ahora es una sesión de verdad.
+   */
+  const login = async (usernameOrEmail: string, password: string) => {
+    const email = usernameOrEmail.includes('@')
+      ? usernameOrEmail.toLowerCase()
+      : `${usernameOrEmail.toLowerCase()}@bezhas.net`;
+    const res = await fetch(`${API_BASE}/api/auth/fiat/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.token) throw new Error(data.error || 'Credenciales inválidas');
+    applySession(data.token, data.user || { username: email.split('@')[0], role: 'user', email });
+  };
 
-    localStorage.setItem('bezhas-jwt', mockToken);
-    localStorage.setItem('bezhas-user', JSON.stringify(loggedUser));
-    setToken(mockToken);
-    setUser(loggedUser);
-    setIsLoginModalOpen(false);
+  /** Registro contra la API core. `profile` es solo una etiqueta de display: el
+   *  rol efectivo lo asigna el backend (por defecto 'user'). */
+  const register = async (username: string, profile: string, password: string) => {
+    const email = username.includes('@')
+      ? username.toLowerCase()
+      : `${username.toLowerCase()}@bezhas.net`;
+    const res = await fetch(`${API_BASE}/api/auth/fiat/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, username: email.split('@')[0] }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.token) throw new Error(data.error || 'No se pudo registrar');
+    applySession(data.token, data.user || { username: email.split('@')[0], role: 'user', email });
   };
 
   // Login / sign-up with a Web3 wallet (SIWE, with demo fallback).

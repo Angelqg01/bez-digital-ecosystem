@@ -6,12 +6,13 @@
  *
  * Capabilities:
  *   1. connectWallet()          — request injected wallet accounts (MetaMask / bez-wallet)
- *   2. siweLogin()              — Sign-In With Ethereum (EIP-4361) against the Hub
- *                                 backend (/api/auth/siwe/nonce + /verify). First
- *                                 successful verify upserts the user → login == sign-up.
- *                                 Falls back to a clearly-labelled local DEMO session
- *                                 when the backend is unreachable (several SubApp
- *                                 backends are still mocked).
+ *   2. siweLogin()              — Sign-In With Ethereum contra la API core
+ *                                 (GET /api/auth/nonce + POST /api/auth/login).
+ *                                 El primer login hace upsert del usuario, así que
+ *                                 iniciar sesión y registrarse son lo mismo, y
+ *                                 devuelve un JWT real firmado por el servidor.
+ *                                 Si el backend no responde cae a una sesión DEMO
+ *                                 claramente etiquetada y solo local.
  *   3. subscribeWithBEZ()       — pay a subscription in BEZ-Coin (Polygon) via a raw
  *                                 ERC-20 transfer (no ethers needed).
  *   4. session helpers          — saveSession / getSession / clearSession. Also mirrors
@@ -33,6 +34,16 @@ export const POLYGON_CHAIN_ID = 137;
 const SESSION_KEY = 'bezhas_wallet_session';
 const JWT_KEY = 'bezhas-jwt';   // read by existing AuthProviders (CargoLink / Prestige)
 const USER_KEY = 'bezhas-user';
+
+/**
+ * Deja el base URL en la RAÍZ del servicio, sin `/api` ni barra final.
+ * Las SubApps configuran VITE_API_URL de las dos formas (unas con `/api`, otras
+ * sin él) y las rutas de este módulo ya incluyen el prefijo; sin normalizar,
+ * media docena de apps acababan pidiendo `/api/api/auth/...`.
+ */
+export function normalizeApiBase(base) {
+  return String(base || '').replace(/\/+$/, '').replace(/\/api$/, '');
+}
 
 function envApiBase() {
   // Vite (import.meta.env) — guarded so this file is safe under Next/SSR too.
@@ -204,6 +215,7 @@ export async function siweLogin({
   appOrigin = 'subapp',
   mode = 'login',
 } = {}) {
+  apiBase = normalizeApiBase(apiBase);
   const { chainId } = await connectWallet();
   const eth = getInjected();
   const [rawAddress] = await eth.request({ method: 'eth_accounts' });
@@ -213,38 +225,39 @@ export async function siweLogin({
   const uri = typeof window !== 'undefined' ? window.location.origin : `https://${domain}`;
 
   try {
-    // 1. Nonce (cookie-session bound on the backend → credentials must be included).
-    const nonceRes = await fetch(`${apiBase}/api/auth/siwe/nonce`, {
-      credentials: 'include',
+    // 1. Nonce de un solo uso, ligado a ESTA dirección. El backend devuelve
+    //    además el mensaje exacto que hay que firmar: hay que firmar ese, no uno
+    //    construido aquí, porque la verificación extrae el nonce del mensaje
+    //    recibido y lo consume atómicamente (anti-replay).
+    const nonceRes = await fetch(`${apiBase}/api/auth/nonce?address=${encodeURIComponent(address)}`, {
       signal: AbortSignal.timeout(12000),
     });
     if (!nonceRes.ok) throw new Error(`nonce ${nonceRes.status}`);
-    const { nonce } = await nonceRes.json();
+    const { message } = await nonceRes.json();
+    if (!message) throw new Error('nonce sin mensaje');
 
-    // 2. Build + sign the EIP-4361 message.
-    const message = buildSiweMessage({
-      domain, address, statement, uri,
-      chainId: chainId || POLYGON_CHAIN_ID,
-      nonce,
-      issuedAt: new Date().toISOString(),
-    });
+    // 2. Firmar el reto del servidor.
     const signature = await personalSign(rawAddress, message);
 
-    // 3. Verify on the backend (upserts the user).
-    const verifyRes = await fetch(`${apiBase}/api/auth/siwe/verify`, {
+    // 3. Verificar. El backend recupera la dirección de la firma, consume el
+    //    nonce y hace upsert del usuario, devolviendo un JWT real + firma PQC.
+    const verifyRes = await fetch(`${apiBase}/api/auth/login`, {
       method: 'POST',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, signature, appOrigin, mode }),
+      body: JSON.stringify({ address, signature, message, appOrigin, mode }),
       signal: AbortSignal.timeout(12000),
     });
     if (!verifyRes.ok) throw new Error(`verify ${verifyRes.status}`);
+    const data = await verifyRes.json();
+    if (!data.token) throw new Error('login sin token');
 
     const session = {
       address, chainId: chainId || POLYGON_CHAIN_ID,
       authMethod: 'siwe',
-      token: 'siwe-session', // real auth is the httpOnly session cookie
-      user: { username: shortAddress(address), role: 'Wallet Verified', walletAddress: address },
+      token: data.token,
+      pqc: data.pqc || null,
+      bezhasId: data.user?.bezhas_id || null,
+      user: data.user || { username: shortAddress(address), role: 'Wallet Verified', walletAddress: address },
       signedAt: Date.now(),
     };
     saveSession(session);

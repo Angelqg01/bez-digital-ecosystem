@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 
 // Wallet login / subscribe (shared)
-import WalletAuthButton from './WalletAuthButton.jsx'
+import { HeaderAuthButton } from '../../_shared/BezhasAuthProvider.jsx'
 
 // Pages
 import Dashboard from './pages/Dashboard'
@@ -141,7 +141,7 @@ const AppShell = () => {
         </div>
 
         <div className="flex items-center gap-3">
-        <WalletAuthButton accent="#00D4AA" statement="Inicia sesión en BZ PureScan." subscribePlan={{ amountBEZ: 25, label: 'PureScan Pro' }} />
+        <HeaderAuthButton />
         {/* ─── FIX #3: Botón de settings con panel real ──────────────── */}
         <div className="relative">
           <button

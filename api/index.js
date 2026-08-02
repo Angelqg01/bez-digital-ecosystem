@@ -132,10 +132,35 @@ app.use(helmet({
   hidePoweredBy: true,
 }));
 
+// ── CORS: quién puede llamar a esta API desde un navegador ──
+// Las SubApps (Sphere, PureScan, Energy, Genesis, Pay…) autentican contra
+// /api/auth/* desde su propio origen. La lista anterior sólo cubría 4 dominios
+// y 5 puertos locales, así que el login de cualquier SubApp moría en el
+// preflight — sin error visible en el servidor, sólo un "Failed to fetch" en el
+// navegador. Se resuelve por patrón (cualquier subdominio de bez.digital) y con
+// CORS_EXTRA_ORIGINS para lo que no encaje, en vez de enumerar a mano.
+const EXTRA_ORIGINS = (process.env.CORS_EXTRA_ORIGINS || '')
+  .split(',').map(o => o.trim()).filter(Boolean);
+
+const PROD_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)*bez\.digital$/;
+// En desarrollo cada SubApp levanta su propio puerto de Vite; enumerarlos
+// obligaba a tocar este archivo cada vez que nace una app.
+const DEV_ORIGIN_RE = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+function isAllowedOrigin(origin) {
+  if (EXTRA_ORIGINS.includes(origin)) return true;
+  if (PROD_ORIGIN_RE.test(origin)) return true;
+  return !IS_PROD && DEV_ORIGIN_RE.test(origin);
+}
+
 app.use(cors({
-  origin: IS_PROD
-    ? ['https://bez.digital', 'https://app.bez.digital', 'https://defi.bez.digital', 'https://web3.bez.digital']
-    : ['http://localhost:3000', 'http://localhost:3016', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+  origin(origin, callback) {
+    // Sin Origin = misma máquina (curl, health checks, SSR): no es una petición
+    // de navegador, así que CORS no aplica.
+    if (!origin) return callback(null, true);
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    return callback(new Error(`Origen no permitido por CORS: ${origin}`));
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   exposedHeaders: ['X-Request-Id'],   // exponer requestId al cliente para correlación

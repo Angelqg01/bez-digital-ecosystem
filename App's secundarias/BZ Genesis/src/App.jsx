@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { BeZhasPlatform } from './lib/bezhas-sdk';
 
 // Wallet login / subscribe (shared)
-import WalletAuthButton from './WalletAuthButton.jsx';
+import { HeaderAuthButton } from '../../_shared/BezhasAuthProvider.jsx';
 
 const useBeZhasPlatform = () => {
   const [status, setStatus] = useState('disconnected');
@@ -161,7 +161,7 @@ const BZGenesisApp = () => {
             ) : (
               <button className="bz-btn primary" onClick={connect}>Connect PureScan Wallet</button>
             )}
-            <WalletAuthButton accent="#7c3aed" statement="Inicia sesión en BZ Genesis." subscribePlan={{ amountBEZ: 75, label: 'Bio-Agent Access' }} />
+            <HeaderAuthButton />
           </div>
         </header>
 

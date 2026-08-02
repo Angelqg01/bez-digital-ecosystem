@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { CreditCard, CheckCircle, Clock, ShieldCheck, Zap, ArrowRight, ArrowLeft } from 'lucide-react';
-import WalletAuthButton from './WalletAuthButton.jsx';
+import { HeaderAuthButton } from '../../_shared/BezhasAuthProvider.jsx';
 
 const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
@@ -141,7 +141,7 @@ export default function App() {
   return (
     <div className="pay-app-wrapper">
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px' }}>
-        <WalletAuthButton accent="#FFD700" statement="Inicia sesión en BeZhas Pay Manager." subscribePlan={{ amountBEZ: 10, label: 'Merchant Plan' }} />
+        <HeaderAuthButton />
       </div>
       <Routes>
         <Route path="/" element={<Gateway />} />
