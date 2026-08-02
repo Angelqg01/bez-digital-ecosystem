@@ -33,10 +33,26 @@ if (IS_PRODUCTION && (JWT_SECRET === 'dev-only-secret' || INTERNAL_API_KEY === '
     throw new Error('FATAL: refusing to start in production with development secrets. Set strong JWT_SECRET and INTERNAL_API_KEY.');
 }
 
+// ── Vida de los tokens: UN solo valor para todo el ecosistema ──
+// Antes cada backend elegía el suyo (24h aquí, 7d en el gateway, 30d en el Hub),
+// así que la duración de una sesión dependía de qué servicio hubiera emitido el
+// token — impredecible en cuanto hay SSO entre SubApps. Ahora todos leen
+// JWT_ACCESS_TTL; cambiarlo en un sitio lo cambia en todos.
+const JWT_ACCESS_TTL = process.env.JWT_ACCESS_TTL || '24h';
+const JWT_REFRESH_TTL = process.env.JWT_REFRESH_TTL || '30d';
+
 // Loud, unmissable warning when auth is bypassed.
 if (AUTH_BYPASS) {
     // eslint-disable-next-line no-console
     console.warn('[41m[37m  AUTH_BYPASS ENABLED — all requests run as an admin dev user. NEVER use in production.  [0m');
 }
 
-module.exports = { JWT_SECRET, INTERNAL_API_KEY, DEV_MODE, IS_PRODUCTION, AUTH_BYPASS };
+module.exports = {
+    JWT_SECRET,
+    INTERNAL_API_KEY,
+    DEV_MODE,
+    IS_PRODUCTION,
+    AUTH_BYPASS,
+    JWT_ACCESS_TTL,
+    JWT_REFRESH_TTL,
+};

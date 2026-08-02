@@ -1,11 +1,12 @@
 const jwt = require('jsonwebtoken');
 const db = require('../database/inMemoryDB');
+const { JWT_SECRET } = require('../config/authSecrets');
 
+// El secreto sale de config/authSecrets.js, común a todo el ecosistema. Antes
+// esta función tenía su propio fallback ('bezhas-local-dev-only-secret'), así
+// que un token de admin emitido aquí no verificaba en el resto de rutas.
 function getJwtSecret() {
-    if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
-        throw new Error('JWT_SECRET is required in production');
-    }
-    return process.env.JWT_SECRET || 'bezhas-local-dev-only-secret';
+    return JWT_SECRET;
 }
 
 const CORE_ADMIN_ROLES = new Set([

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { findUserByEmail, verifyPassword } from '@/lib/demo-users';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'bezhas_secret_key';
+import { JWT_SECRET, JWT_ACCESS_TTL, JWT_ACCESS_TTL_SECONDS } from '@/lib/auth-secrets';
 
 export async function POST(req: Request) {
     try {
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         const token = jwt.sign(
             { userId: user.id, email: user.email, role: user.role },
             JWT_SECRET,
-            { expiresIn: '24h', issuer: 'bezhas-control-center' },
+            { expiresIn: JWT_ACCESS_TTL, issuer: 'bezhas-control-center' },
         );
 
         const userPayload = {
@@ -59,14 +59,14 @@ export async function POST(req: Request) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 60 * 60 * 24,
+            maxAge: JWT_ACCESS_TTL_SECONDS,
         });
 
         response.cookies.set('bezhas_token', token, {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 60 * 60 * 24,
+            maxAge: JWT_ACCESS_TTL_SECONDS,
         });
 
         return response;

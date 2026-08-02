@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/pg/User');
 const { UserRole } = require('../models/mockModels');
 const mongoose = require('mongoose');
+const { JWT_SECRET } = require('../config/authSecrets');
 
 // Load Super Admin Wallets from environment
 const SUPER_ADMIN_WALLETS = (process.env.SUPER_ADMIN_WALLETS || '')
@@ -73,84 +74,113 @@ async function ensureSuperAdminRole(user) {
   return user;
 }
 
+/** ¿Está activo el bypass de auth de desarrollo? Nunca en producción. */
+function isDevBypassEnabled() {
+  return process.env.NODE_ENV === 'development' && process.env.AUTH_BYPASS_ENABLED === 'true';
+}
+
+/** Usuario ficticio del bypass. `__devBypass` lo marca para poder distinguirlo. */
+function buildDevBypassUser(req) {
+  const message = 'Bypassing authentication for development. A mock admin user is being used.';
+  if (req.log && req.log.warn) req.log.warn(message);
+  else console.warn(message);
+
+  return {
+    // Un ObjectId válido para que las consultas de mongoose no lancen CastError.
+    _id: new mongoose.Types.ObjectId(),
+    walletAddress: '0xDeAdBeEf00000000000000000000000000000001',
+    username: 'dev_admin',
+    roles: ['ADMIN', 'USER'],
+    role: UserRole.ADMIN,
+    __devBypass: true,
+  };
+}
+
+/**
+ * Resuelve el usuario autenticado a partir del `Authorization: Bearer`.
+ * Devuelve null si no hay token, es inválido o el usuario ya no existe — quien
+ * llama decide el código de error. Es el ÚNICO sitio del middleware que
+ * establece identidad, para que `protect` y `requireAuth` no puedan divergir.
+ */
+async function authenticateFromJwt(req) {
+  if (isDevBypassEnabled()) return buildDevBypassUser(req);
+
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer')) return null;
+
+  const token = header.split(' ')[1];
+  if (!token) return null;
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    // req.log no siempre existe (rutas montadas antes del logger), así que no
+    // se puede llamar directamente: hacerlo convertía un 401 en un 500.
+    const log = req.log && req.log.warn ? req.log.warn.bind(req.log) : console.warn;
+    log({ err: error }, 'Token verification failed');
+    return null;
+  }
+
+  const user = await User.findById(decoded.id).select('-password');
+  if (!user) return null;
+
+  // Auto-Upgrade VIP/Admin for whitelisted accounts
+  return ensureSuperAdminRole(user);
+}
+
 const protect = async (req, res, next) => {
-  // Check for auth bypass in development environment
-  if (process.env.NODE_ENV === 'development' && process.env.AUTH_BYPASS_ENABLED === 'true') {
-    // Use a valid ObjectId for mongoose queries to avoid CastError
-    const devObjectId = new mongoose.Types.ObjectId();
-    if (req.log && req.log.warn) {
-      req.log.warn('Bypassing authentication for development. A mock admin user is being used.');
-    } else {
-      console.warn('Bypassing authentication for development. A mock admin user is being used.');
+  try {
+    const user = await authenticateFromJwt(req);
+    if (!user) {
+      return res.status(401).json({ error: 'Not authorized, token failed or missing' });
     }
-    req.user = {
-      _id: devObjectId,
-      walletAddress: '0xDeAdBeEf00000000000000000000000000000001',
-      username: 'dev_admin',
-      roles: ['ADMIN', 'USER'],
-      role: UserRole.ADMIN
-    };
-    return next();
-  }
-
-  let token;
-
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      // Get token from header
-      token = req.headers.authorization.split(' ')[1];
-
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-      // Get user from the token
-      req.user = await User.findById(decoded.id).select('-password');
-
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authorized, user not found' });
-      }
-
-      // Auto-Upgrade VIP/Admin for whitelisted accounts
-      req.user = await ensureSuperAdminRole(req.user);
-
-      next();
-    } catch (error) {
-      req.log.error({ err: error }, 'Token verification failed');
-      res.status(401).json({ error: 'Not authorized, token failed' });
-    }
-  }
-
-  if (!token) {
-    res.status(401).json({ error: 'Not authorized, no token' });
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    res.status(500).json({ error: 'Internal authentication error' });
   }
 };
 
 /**
- * Alternative auth using wallet address (for Web3)
+ * Auth para rutas Web3.
+ *
+ * SEGURIDAD — este middleware autenticaba SÓLO con la cabecera
+ * `X-Wallet-Address`: buscaba ese wallet en la BD y, si existía, daba por
+ * autenticado a su dueño. La cabecera la pone el cliente, así que cualquiera que
+ * conociera una dirección (son públicas: están en el explorador de bloques)
+ * podía hacerse pasar por ella. Y como `admin.users.routes.js` monta
+ * `requireAuth, requireAdmin`, bastaba con enviar la dirección de un admin para
+ * banear usuarios, cambiar contraseñas o listar toda la base de usuarios.
+ *
+ * Ahora la identidad viene SIEMPRE de un JWT firmado. La cabecera se conserva
+ * únicamente como pista y debe coincidir con el usuario autenticado; si no
+ * coincide se rechaza, en vez de creerle. El frontend ya mandaba el
+ * `Authorization: Bearer` en todas las llamadas (ver interceptor de
+ * services/http.js), así que no cambia nada para el cliente legítimo.
  */
 async function requireAuth(req, res, next) {
   try {
-    const walletAddress = req.headers['x-wallet-address'] || req.body.walletAddress;
-
-    if (!walletAddress) {
-      return res.status(401).json({
-        success: false,
-        error: 'Unauthorized: Wallet address required'
-      });
-    }
-
-    // Find user by wallet address
-    let user = await User.findByWallet(walletAddress.toLowerCase());
+    const user = await authenticateFromJwt(req);
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        error: 'Unauthorized: User not found'
+        error: 'Unauthorized: valid authentication token required'
       });
     }
 
-    // Ensure Super Admin role if wallet is in whitelist
-    user = await ensureSuperAdminRole(user);
+    // La cabecera ya no autentica; sólo se comprueba que no contradiga al token.
+    // Un desajuste significa una sesión cruzada o un intento de suplantación.
+    const claimedWallet = req.headers['x-wallet-address'] || req.body?.walletAddress;
+    if (!user.__devBypass && claimedWallet && user.walletAddress
+      && String(claimedWallet).toLowerCase() !== String(user.walletAddress).toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: wallet address does not match the authenticated session'
+      });
+    }
 
     // Check if user is banned (Super Admins cannot be banned)
     if (user.isBanned && !isSuperAdmin(user.walletAddress)) {
@@ -160,7 +190,6 @@ async function requireAuth(req, res, next) {
       });
     }
 
-    // Attach user to request
     req.user = user;
     next();
   } catch (error) {
@@ -260,6 +289,7 @@ function requireOwnership(req, res, next) {
 
 module.exports = {
   protect,
+  authenticateFromJwt,
   requireAuth,
   requireAdmin,
   requireModerator,

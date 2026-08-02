@@ -1,5 +1,6 @@
 const pool = require('../../db/pool');
 const crypto = require('crypto');
+const { generateBezhasId, toCanonical } = require('../../lib/bezhasId');
 
 /**
  * Identity — BeZhas_ID: identidad única y portable (email + wallet + OAuth → 1 id).
@@ -7,13 +8,13 @@ const crypto = require('crypto');
  * services/identity.service.js para poder testearse sin BD.
  */
 class IdentityPG {
-  /** Genera un BeZhas_ID canónico: BZ-XXXXXXXXXX (Crockford base32, sin ambigüedad). */
+  /**
+   * Genera un BeZhas_ID canónico: BZ-XXXXXXXXXX (Crockford base32).
+   * La implementación vive en lib/bezhasId.js, compartida con la API core para
+   * que ambos servicios emitan exactamente el mismo formato.
+   */
   static generateBezhasId() {
-    const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // sin I,L,O,U
-    const bytes = crypto.randomBytes(10);
-    let out = '';
-    for (let i = 0; i < 10; i++) out += alphabet[bytes[i] % alphabet.length];
-    return `BZ-${out}`;
+    return generateBezhasId();
   }
 
   /** Hash de email (minúsculas) para emparejar sin almacenar el email en claro. */
@@ -42,8 +43,15 @@ class IdentityPG {
     return rows[0];
   }
 
+  /**
+   * Acepta el canónico y también un `BEZ-…` legacy o un ID tecleado con
+   * ambigüedades (O por 0, I por 1): `toCanonical` lo reduce al canónico antes
+   * de consultar, así los IDs impresos en documentos antiguos siguen resolviendo.
+   */
   static async findByBezhasId(bezhasId) {
-    const { rows } = await pool.query('SELECT * FROM identities WHERE bezhas_id = $1', [bezhasId]);
+    const id = toCanonical(bezhasId);
+    if (!id) return null;
+    const { rows } = await pool.query('SELECT * FROM identities WHERE bezhas_id = $1', [id]);
     return rows[0] || null;
   }
 

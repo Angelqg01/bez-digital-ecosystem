@@ -3,7 +3,9 @@
  */
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'bezhas-secret-key';
+// Mismo fallback que config/secrets.js: si divergen, los tokens que firma
+// makeToken() no verifican contra la app y todo falla con un 401 opaco.
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret';
 
 // ─── DB mock ───
 const mockQuery = jest.fn().mockResolvedValue({ rows: [], rowCount: 0 });

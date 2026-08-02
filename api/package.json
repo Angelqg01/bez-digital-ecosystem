@@ -60,7 +60,7 @@
     "aedes": "^1.0.2",
     "eslint": "^8.55.0",
     "jest": "^29.7.0",
-    "lru-cache": "^5.1.1",
+    "lru-cache": "11.5.2",
     "nodemon": "^3.0.2",
     "supertest": "^6.3.3"
   },

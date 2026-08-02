@@ -10,8 +10,8 @@ const getUserRole = (address: string) => {
     return 'RETAIL';
 };
 
-// Clave secreta para firmar el JWT (en producción, usar variable de entorno segura)
-const JWT_SECRET = process.env.JWT_SECRET || 'bezhas_secret_key';
+// Secreto y TTL comunes a todo el ecosistema — ver lib/auth-secrets.ts.
+import { JWT_SECRET, JWT_ACCESS_TTL, JWT_ACCESS_TTL_SECONDS } from '@/lib/auth-secrets';
 
 export async function POST(req: Request) {
     const { message, signature, address } = await req.json();
@@ -27,9 +27,11 @@ export async function POST(req: Request) {
         // 2. Asignar el rol
         const role = getUserRole(address);
 
-        // 3. Crear JWT seguro (expira en 1h)
+        // 3. Crear JWT seguro. El TTL es el común del ecosistema: antes eran 1h
+        //    aquí y 24h en el login por email, así que la sesión duraba una cosa
+        //    u otra según con qué pestaña hubieras entrado.
         const token = jwt.sign({ address, role }, JWT_SECRET, {
-            expiresIn: '1h',
+            expiresIn: JWT_ACCESS_TTL,
             issuer: 'bezhas-control-center',
         });
 
@@ -48,13 +50,13 @@ export async function POST(req: Request) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 60 * 60, // 1 hora
+            maxAge: JWT_ACCESS_TTL_SECONDS,
         });
         response.cookies.set('bezhas_token', token, {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 60 * 60, // 1 hora
+            maxAge: JWT_ACCESS_TTL_SECONDS,
         });
         return response;
     } catch (error) {

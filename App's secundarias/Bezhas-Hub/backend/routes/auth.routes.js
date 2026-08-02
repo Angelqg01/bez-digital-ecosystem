@@ -9,6 +9,7 @@ const User = require('../models/pg/User');
 const { AffiliateEvent } = require('../models/mockModels');
 const { grantReferralReward } = require('../services/rewards.service');
 const { ensureSuperAdminRole, protect } = require('../middleware/auth.middleware');
+const { JWT_SECRET, JWT_ACCESS_TTL } = require('../config/authSecrets');
 const bridge = require('../bridge'); // Dynamic ecosystem sync
 const emailService = require('../services/email.service');
 const totpService = require('../services/totp.service');
@@ -21,11 +22,14 @@ const verificationCodes = new Map();
 // In-memory storage for nonces (en producción usa Redis con TTL)
 const nonces = new Map();
 
-// Helper to generate JWT
+// Helper to generate JWT.
+// El TTL sale de config/authSecrets.js (24h por defecto, igual que la API core y
+// el gateway). Antes eran 30 días fijos aquí: una sesión duraba una cosa u otra
+// según qué servicio hubiera emitido el token, lo cual con SSO entre SubApps
+// hacía la caducidad impredecible. Para no obligar a re-loguear cada día, el
+// cliente renueva contra POST /api/auth/renew (ver interceptor de http.js).
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'default-secret-key', {
-    expiresIn: '30d', // Token expires in 30 days
-  });
+  return jwt.sign({ id }, JWT_SECRET, { expiresIn: JWT_ACCESS_TTL });
 };
 
 // Helper to generate random 6-digit code
@@ -1293,6 +1297,25 @@ router.post('/refresh', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/renew
+ * Reemite el access token a partir de uno todavía válido, sin volver a pedir
+ * credenciales. Existe porque el TTL bajó de 30 días a 24h al unificarlo con el
+ * resto del ecosistema: el cliente lo llama cuando recibe un 401 y así la sesión
+ * sigue siendo continua sin tokens de un mes de vida.
+ *
+ * A diferencia de /refresh, no necesita un refreshToken aparte — que el flujo de
+ * login nunca ha llegado a emitir.
+ */
+router.post('/renew', protect, async (req, res) => {
+  try {
+    const token = generateToken(req.user._id || req.user.id);
+    res.json({ success: true, token, expiresIn: JWT_ACCESS_TTL });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Token renewal failed' });
+  }
+});
+
+/**
  * POST /api/auth/logout
  * Logout de la sesión actual
  */
@@ -1700,7 +1723,7 @@ router.post('/link-wallet', [
 
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret-key');
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     const { walletAddress, signature, message } = req.body;
 
@@ -1766,7 +1789,7 @@ router.get('/wallet-reminder', async (req, res) => {
 
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret-key');
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     const user = await User.findById(decoded.id).select('email walletAddress walletLinkedAt createdAt');
     if (!user) {

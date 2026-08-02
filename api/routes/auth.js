@@ -7,9 +7,10 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { query } = require('../db/pool');
 const { verifyWalletSignature, authenticateToken } = require('../middleware/security');
-const { JWT_SECRET } = require('../config/secrets');
+const { JWT_SECRET, JWT_ACCESS_TTL } = require('../config/secrets');
 const { issueNonce, NONCE_TTL_SECONDS } = require('../utils/walletNonce');
 const walletService = require('../services/walletService');
+const { generateBezhasId } = require('../lib/bezhasId');
 
 const apiPQC = require('../lib/apiPQC');
 
@@ -45,7 +46,7 @@ router.post('/login', [
     let user;
 
     if (findUser.rows.length === 0) {
-        const bezhasId = 'BEZ-' + require('crypto').randomBytes(4).toString('hex').toUpperCase() + '-' + require('crypto').randomBytes(4).toString('hex').toUpperCase();
+        const bezhasId = generateBezhasId();
         const { rows } = await query(
             `INSERT INTO users (wallet_address, primary_wallet_address, bezhas_id, last_login) VALUES ($1, $1, $2, NOW())
              RETURNING id, wallet_address, username, role, avatar_url, bezhas_id, created_at`,
@@ -55,7 +56,7 @@ router.post('/login', [
     } else {
         user = findUser.rows[0];
         if (!user.bezhas_id) {
-            const bezhasId = 'BEZ-' + require('crypto').randomBytes(4).toString('hex').toUpperCase() + '-' + require('crypto').randomBytes(4).toString('hex').toUpperCase();
+            const bezhasId = generateBezhasId();
             const { rows } = await query(
                 `UPDATE users SET bezhas_id = $1, last_login = NOW(),
                                   primary_wallet_address = COALESCE(primary_wallet_address, wallet_address)
@@ -79,7 +80,7 @@ router.post('/login', [
     const token  = jwt.sign(
         { address: user.wallet_address, userId: user.id, role: user.role, bezhas_id: user.bezhas_id },
         JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: JWT_ACCESS_TTL }
     );
     const pqcSig = apiPQC.signToken(token);
 
@@ -98,7 +99,7 @@ router.post('/fiat/register', [
     try {
         const email = String(req.body.email).trim().toLowerCase();
         const passwordHash = await bcrypt.hash(req.body.password, 12);
-        const bezhasId = 'BEZ-' + require('crypto').randomBytes(4).toString('hex').toUpperCase() + '-' + require('crypto').randomBytes(4).toString('hex').toUpperCase();
+        const bezhasId = generateBezhasId();
 
         // Temporary wallet_address is replaced by ensureFiatSafeWalletForUser after the user row exists.
         const provisionalAddress = `0x${require('crypto').createHash('sha256').update(`fiat:${email}:${Date.now()}`).digest('hex').slice(0, 40)}`;
@@ -125,7 +126,7 @@ router.post('/fiat/register', [
         const token  = jwt.sign(
             { address: user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
             JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: JWT_ACCESS_TTL }
         );
         const pqcSig = apiPQC.signToken(token);
 
@@ -165,7 +166,7 @@ router.post('/fiat/login', [
         delete user.password_hash;
 
         if (!user.bezhas_id) {
-            const bezhasId = 'BEZ-' + require('crypto').randomBytes(4).toString('hex').toUpperCase() + '-' + require('crypto').randomBytes(4).toString('hex').toUpperCase();
+            const bezhasId = generateBezhasId();
             await query('UPDATE users SET bezhas_id = $1, last_login = NOW() WHERE id = $2', [bezhasId, user.id]);
             user.bezhas_id = bezhasId;
         } else {
@@ -176,7 +177,7 @@ router.post('/fiat/login', [
         const token  = jwt.sign(
             { address: safeWallet.ownerAddress || user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
             JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: JWT_ACCESS_TTL }
         );
         const pqcSig = apiPQC.signToken(token);
 
@@ -197,14 +198,45 @@ router.post('/safe-wallet/ensure', authenticateToken, async (req, res) => {
 });
 
 // ── Refresh token ──
-router.post('/refresh', authenticateToken, (req, res) => {
-    const token  = jwt.sign(
-        { address: req.user.address, userId: req.user.userId, role: req.user.role },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-    );
-    const pqcSig = apiPQC.signToken(token);
-    res.json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' } });
+// El payload se reconstruye desde la BD, no se copia del token entrante: así el
+// renovado incluye `bezhas_id` y `auth_type` (antes se perdían, y una sesión
+// larga acababa con un token sin identidad canónica, invisible para las
+// SubApps) y además recoge cambios de rol o de identidad hechos entretanto, en
+// vez de arrastrar los del momento del login.
+router.post('/refresh', authenticateToken, async (req, res) => {
+    try {
+        const { rows } = await query(
+            `SELECT id, wallet_address, primary_wallet_address, role, auth_type, bezhas_id
+             FROM users WHERE id = $1 LIMIT 1`,
+            [req.user.userId]
+        );
+        if (rows.length === 0) return res.status(401).json({ error: 'User no longer exists' });
+
+        const user = rows[0];
+
+        // Una fila antigua puede no tener BeZhas_ID todavía; emitirlo aquí evita
+        // que el usuario se quede sin identidad canónica hasta su próximo login.
+        if (!user.bezhas_id) {
+            user.bezhas_id = generateBezhasId();
+            await query('UPDATE users SET bezhas_id = $1 WHERE id = $2', [user.bezhas_id, user.id]);
+        }
+
+        const token = jwt.sign(
+            {
+                address: user.primary_wallet_address || user.wallet_address,
+                userId: user.id,
+                role: user.role,
+                auth_type: user.auth_type,
+                bezhas_id: user.bezhas_id,
+            },
+            JWT_SECRET,
+            { expiresIn: JWT_ACCESS_TTL }
+        );
+        const pqcSig = apiPQC.signToken(token);
+        res.json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' } });
+    } catch (error) {
+        res.status(500).json({ error: 'Token refresh failed', details: error.message });
+    }
 });
 
 // ── PQC public key (sin autenticación — es información pública) ──

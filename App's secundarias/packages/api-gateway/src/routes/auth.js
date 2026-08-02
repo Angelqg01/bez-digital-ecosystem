@@ -3,15 +3,12 @@ import jwt from 'jsonwebtoken';
 import { ethers } from 'ethers';
 import crypto from 'crypto';
 import { query } from '../db.js';
+import { JWT_SECRET, JWT_ACCESS_TTL } from '../config/authSecrets.js';
 
 const router = Router();
-const DEFAULT_DEV_SECRET = 'bezhas-dev-secret-change-in-production';
-const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : DEFAULT_DEV_SECRET);
-const JWT_EXPIRY = '7d';
 
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET is required in production');
-}
+// Secreto y TTL compartidos con la API core y el Hub — ver src/config/authSecrets.js.
+const JWT_EXPIRY = JWT_ACCESS_TTL;
 
 // Scopes granulares por recurso, tal y como los publica la documentación
 // (wallet:read, billing:write…). Se mapean sobre los roles que YA existían para

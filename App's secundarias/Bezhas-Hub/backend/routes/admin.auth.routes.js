@@ -9,14 +9,13 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
+const { JWT_SECRET } = require('../config/authSecrets');
 const adminNonces = new Map();
 const ADMIN_SESSION_ROLES = ['SUPER_ADMIN', 'ADMIN', 'DEVELOPER', 'DEVOPS', 'SECURITY', 'HUMAN_RESOURCES'];
 
+// Secreto común a todo el ecosistema — ver config/authSecrets.js.
 function getJwtSecret() {
-    if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
-        throw new Error('JWT_SECRET is required in production');
-    }
-    return process.env.JWT_SECRET || 'bezhas-local-dev-only-secret';
+    return JWT_SECRET;
 }
 
 function verifyAdminJwt(req, res, next) {
