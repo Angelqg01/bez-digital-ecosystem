@@ -52,9 +52,15 @@ function coreApiBase() {
   );
 }
 
-/** Hub: resolución del BeZhas_ID canónico. */
-function hubApiBase() {
-  return normalizeApiBase(envVar('VITE_HUB_API') || coreApiBase());
+/**
+ * Hub: resolución del BeZhas_ID canónico. Si la app no declara VITE_HUB_API cae
+ * al mismo base que la API core — incluido el que llegue por prop, para que una
+ * SubApp que va por proxy de Vite (apiBase='') no se salte el proxy justo aquí.
+ */
+function hubApiBase(coreFallback) {
+  const hub = envVar('VITE_HUB_API');
+  if (hub) return normalizeApiBase(hub);
+  return coreFallback != null ? coreFallback : normalizeApiBase(coreApiBase());
 }
 
 async function postJson(url, body, timeoutMs = 12000) {
@@ -86,7 +92,10 @@ export function BezhasAuthProvider({
   apiBase,
   subscribePlan = null,
 }) {
-  const CORE = normalizeApiBase(apiBase || coreApiBase());
+  // `apiBase=''` es legítimo: significa "rutas relativas", que es lo que usan
+  // las SubApps con proxy de Vite. Por eso se compara con undefined y no con
+  // un booleano, que lo convertiría en el dominio de producción.
+  const CORE = normalizeApiBase(apiBase !== undefined ? apiBase : coreApiBase());
 
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
@@ -108,7 +117,7 @@ export function BezhasAuthProvider({
     if (!Object.keys(payload).length) return null;
 
     try {
-      const data = await postJson(`${hubApiBase()}/api/identity/resolve`, payload, 8000);
+      const data = await postJson(`${hubApiBase(CORE)}/api/identity/resolve`, payload, 8000);
       if (data.bezhasId) {
         localStorage.setItem(BEZHAS_ID_KEY, data.bezhasId);
         setBezhasId(data.bezhasId);
@@ -116,7 +125,7 @@ export function BezhasAuthProvider({
       }
     } catch { /* el Hub puede no estar desplegado todavía */ }
     return null;
-  }, []);
+  }, [CORE]);
 
   /** Persiste una sesión real: JWT firmado por el servidor + usuario de BD. */
   const applySession = useCallback((jwt, backendUser, extra = {}) => {
