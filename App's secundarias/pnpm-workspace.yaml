@@ -5,8 +5,12 @@
 packages:
   - 'packages/*'
   - 'bez-vision-scan/frontend'
-  # bez-wallet declara @bezhas/contracts, platform-sdk y ui-components como
-  # `workspace:*`, así que TIENE que estar aquí: fuera del workspace no se puede
-  # instalar de ninguna de las dos formas (con --ignore-workspace pnpm no sabe
-  # resolver el protocolo `workspace:`, y un install desde la raíz lo ignoraba).
+  # Estas cuatro declaran @bezhas/contracts, platform-sdk y ui-components como
+  # `workspace:*`, así que TIENEN que estar aquí: fuera del workspace no se
+  # pueden instalar de ninguna de las dos formas (con --ignore-workspace pnpm no
+  # sabe resolver el protocolo `workspace:`, y un install desde la raíz las
+  # ignoraba). Si añades una SubApp que consuma un @bezhas/*, añádela también.
   - 'bez-wallet'
+  - 'edge-node-manager'
+  - 'gas-tank-manager'
+  - 'BZ Prestige'

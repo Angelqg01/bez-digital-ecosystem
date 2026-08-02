@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom'
+// useLocation se usaba sin importarlo, así que la app entera reventaba con un
+// ReferenceError en el primer render.
+import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom'
 import { Diamond, Scan, Store, BarChart3, Code2 } from 'lucide-react'
 import EcosystemBar from './components/EcosystemBar'
 import DevHubPanel from './components/DevHubPanel'
