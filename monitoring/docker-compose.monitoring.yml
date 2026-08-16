@@ -141,4 +141,12 @@ volumes:
 networks:
   bezhas-net:
     external: true
-    name: bezhas-blockchain_default
+    # Apuntaba a `bezhas-blockchain_default`, una red que NO existe: parecía el
+    # nombre autogenerado de un proyecto llamado bezhas-blockchain, pero el
+    # compose principal declara la suya con `name: bezhas-network`.
+    #
+    # Con `external: true` y un nombre inexistente, el stack de monitorización
+    # ni siquiera arranca ("network declared as external, but could not be
+    # found"). Y de haber arrancado habría quedado en otra red que todo lo que
+    # debe raspar, así que Prometheus estaba ciego de las dos maneras.
+    name: bezhas-network

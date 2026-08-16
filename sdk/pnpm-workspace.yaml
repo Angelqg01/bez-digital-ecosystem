@@ -1,0 +1,13 @@
+# Marca sdk/ como raíz de instalación propia.
+#
+# Sin este fichero pnpm subía al pnpm-workspace.yaml de la raíz del repositorio
+# —que a propósito no declara `packages:`— y acababa instalando ESE proyecto en
+# lugar de este, respondiendo "Already up to date" y dejando sdk/node_modules
+# vacío. El resultado es que `pnpm install` dentro de sdk/ no instalaba nada y
+# `pnpm build` fallaba por falta de webpack.
+#
+# api/, agent-lib/, control-center/frontend/ y scripts/ ya tenían el suyo;
+# sdk/ era el único que faltaba.
+
+# Sin `packages:`: sdk es un paquete suelto, no un monorepo.
+ignoredBuiltDependencies: []

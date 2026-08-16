@@ -52,7 +52,7 @@ test('SDK Module Instantiation', () => {
 
 // 3. Agent Runtime Check
 test('Agent Runtime Exports', () => {
-    const runtimePath = path.resolve(__dirname, '../agent-runtime/index.js');
+    const runtimePath = path.resolve(__dirname, '../agent-lib/index.js');
     const runtime = require(runtimePath);
     
     assert.ok(runtime.createRuntime, 'createRuntime should be exported');
@@ -62,7 +62,7 @@ test('Agent Runtime Exports', () => {
 
 // 4. Runtime Initialization (Agents & Connectors)
 test('Runtime Logic & Agent Registration', () => {
-    const { createRuntime } = require('../agent-runtime/index');
+    const { createRuntime } = require('../agent-lib/index');
     
     // We mock the environment to avoid connecting to real chain/redis
     process.env.WS_URL = 'ws://localhost:8546';
@@ -84,8 +84,8 @@ test('File System Integrity', () => {
     const criticalFiles = [
         '../sdk/tokenomics-engine.js',
         '../sdk/bridge-manager.js',
-        '../agent-runtime/connectors/TokenomicsConnector.js',
-        '../agent-runtime/agents/TokenomicsAgent.js',
+        '../agent-lib/connectors/TokenomicsConnector.js',
+        '../agent-lib/agents/TokenomicsAgent.js',
     ];
 
     criticalFiles.forEach(relPath => {

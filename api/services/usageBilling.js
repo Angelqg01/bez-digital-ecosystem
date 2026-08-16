@@ -15,7 +15,19 @@
 
 'use strict';
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Perezoso a proposito: construirlo al importar tumbaba TODA la API cuando
+// faltaba STRIPE_SECRET_KEY ("Neither apiKey nor config.authenticator
+// provided"), aunque nada del resto de la plataforma dependa de los pagos.
+// Asi el fallo se queda en la facturacion, que es de quien es.
+let _stripe = null;
+function getStripe() {
+  if (_stripe) return _stripe;
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('Stripe no configurado: falta STRIPE_SECRET_KEY');
+  }
+  _stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  return _stripe;
+}
 const { query } = require('../db/pool');
 const { calculateCallCost, STARTER_TRIAL_DAYS } = require('../config/usage-pricing');
 
@@ -41,13 +53,13 @@ async function subscribeStarter({ appId, email, name }) {
     let customerId = existing.rows[0]?.stripe_customer_id || null;
 
     if (!customerId) {
-        const customer = await stripe.customers.create({
+        const customer = await getStripe().customers.create({
             email, name, metadata: { app_id: appId, plan_id: 'starter' },
         });
         customerId = customer.id;
     }
 
-    const subscription = await stripe.subscriptions.create({
+    const subscription = await getStripe().subscriptions.create({
         customer: customerId,
         items: [{ price: STARTER_PRICE_ID }],
         trial_period_days: STARTER_TRIAL_DAYS,
@@ -99,7 +111,7 @@ async function recordUsage(appId, usage = {}) {
     if (!customerId) return { ...cost, reported: false, reason: 'no_starter_subscription' };
 
     try {
-        await stripe.billing.meterEvents.create({
+        await getStripe().billing.meterEvents.create({
             event_name: METER_EVENT_NAME,
             payload: {
                 stripe_customer_id: customerId,

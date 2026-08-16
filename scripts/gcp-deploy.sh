@@ -52,7 +52,7 @@ declare -A SERVICES=(
   [api]="bezhas-api"
   [aegis]="bezhas-aegis"
   [ai-gateway]="bezhas-ai-gateway"
-  [agent-runtime]="bezhas-agent-runtime"
+  [agent-lib]="bezhas-agent-runtime"
   [bezhas-edge-node]="bezhas-edge-node"
   [control-center]="bezhas-control-center"
 )
@@ -292,17 +292,17 @@ build_and_push() {
   ok "Pushed: ${image}"
 }
 
-log "Synchronizing agent-runtime for API build..."
-rm -rf "api/agent-runtime"
-mkdir -p "api/agent-runtime"
-tar -cf - --exclude=node_modules --exclude=.git agent-runtime | (cd api && tar -xf -)
+log "Synchronizing agent-lib for API build..."
+rm -rf "api/agent-lib"
+mkdir -p "api/agent-lib"
+tar -cf - --exclude=node_modules --exclude=.git agent-lib | (cd api && tar -xf -)
 
 build_and_push "api"                       "bezhas-api"
 
-rm -rf "api/agent-runtime"
+rm -rf "api/agent-lib"
 build_and_push "aegis"                     "bezhas-aegis"
 build_and_push "ai-engine"                 "bezhas-ai-gateway"
-build_and_push "agent-runtime"             "bezhas-agent-runtime"
+build_and_push "agent-lib"             "bezhas-agent-runtime"
 build_and_push "bezhas-edge-node"          "bezhas-edge-node"
 log "Synchronizing shared modules for control-center build..."
 rm -rf "control-center/frontend/modules" "control-center/frontend/sdk"
@@ -420,10 +420,10 @@ gcloud run deploy bezhas-agent-runtime \
 AGENT_RUNTIME_URL=$(gcloud run services describe bezhas-agent-runtime --region "${GCP_REGION}" --format "value(status.url)")
 ok "Agent Runtime: ${AGENT_RUNTIME_URL}"
 
-# ── Service-to-service auth: the private backends (aegis/ai-gateway/agent-runtime)
+# ── Service-to-service auth: the private backends (aegis/ai-gateway/agent-lib)
 #    were deployed with --no-allow-unauthenticated. Grant the runtime service
 #    account run.invoker on each so authenticated callers (api/ai-engine/
-#    agent-runtime/edge-node) can reach them via OIDC ID tokens. Public ingress
+#    agent-lib/edge-node) can reach them via OIDC ID tokens. Public ingress
 #    stays open; only the IAM auth gate changes. Idempotent.
 for _priv in bezhas-aegis bezhas-ai-gateway bezhas-agent-runtime; do
   gcloud run services add-iam-policy-binding "${_priv}" \

@@ -9,7 +9,7 @@
  *   2. sdk/src/abi/                       → TypeScript-ready ABI JSON files
  *   3. bezhas-web3/src/abi/ (if exists)  → Frontend ABI copy
  *   4. control-center/frontend/lib/abi/  → Next.js frontend ABI copy
- *   5. agent-runtime/config/contracts.json → Runtime contract registry
+ *   5. agent-lib/config/contracts.json → Runtime contract registry
  *
  * Usage:
  *   node sync-daemon.js              — Watch mode (auto-detect changes)
@@ -249,7 +249,7 @@ function syncContract(contractName, opts = {}) {
         }
     }
 
-    // Write to agent-runtime contract registry
+    // Write to agent-lib contract registry
     updateAgentRuntimeRegistry(contractName, output);
 
     const suffix = deployment ? `@ ${deployment.slice(0, 8)}...` : '(no deploy)';
@@ -262,11 +262,11 @@ function syncContract(contractName, opts = {}) {
 }
 
 /**
- * Update the agent-runtime contract registry JSON.
+ * Update the agent-lib contract registry JSON.
  * This is a single JSON file that the AI agent uses to look up contracts.
  */
 function updateAgentRuntimeRegistry(contractName, output) {
-    const registryDir = path.join(ROOT, 'agent-runtime', 'config');
+    const registryDir = path.join(ROOT, 'agent-lib', 'config');
     const registryPath = path.join(registryDir, 'contracts.json');
 
     ensureDir(registryDir);
@@ -292,7 +292,7 @@ function updateAgentRuntimeRegistry(contractName, output) {
     // The aggregate index always rewrites (it carries _lastSync on purpose).
     fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), 'utf-8');
 
-    // Also write ABI to agent-runtime/config/abis/ — hash-skipped like the
+    // Also write ABI to agent-lib/config/abis/ — hash-skipped like the
     // other destinations so an unrelated contract's sync doesn't touch this.
     const abiDir = path.join(registryDir, 'abis');
     ensureDir(abiDir);

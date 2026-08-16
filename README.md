@@ -128,7 +128,7 @@ Claude Sonnet 4 → Claude Haiku 4.5 → Gemini 2.0 Flash
 node scripts/ollama-status.js
 
 # Ver logs del agente runtime
-docker compose logs -f agent-runtime
+docker compose logs -f agent-lib
 
 # Reconstruir Docker
 pnpm run docker:rebuild
@@ -137,7 +137,7 @@ pnpm run docker:rebuild
 pnpm run test:contracts
 
 # Ver todos los agentes disponibles
-node -e "import('./agent-runtime/src/registry/AgentToolRegistry.js').then(m => console.log(m.agentRegistry.summary()))"
+node -e "import('./agent-lib/src/registry/AgentToolRegistry.js').then(m => console.log(m.agentRegistry.summary()))"
 ```
 
 ---
@@ -159,7 +159,7 @@ OLLAMA_MAX_LOADED_MODELS=2  → Ollama gestiona el swap automáticamente
 ```
 BeZhas Blockchain/
 ├── aegis/              ← Seguridad, RBAC, audit, compliance
-├── agent-runtime/      ← Orquestador, agentes, HIL, memory
+├── agent-lib/      ← Orquestador, agentes, HIL, memory
 ├── ai-engine/          ← XGBoost, LightGBM, IBKR, ML
 ├── openclaw/           ← Multi-model provider, ModelRouter
 ├── messaging-mcp/      ← Telegram MCP server (8 tools)

@@ -23,7 +23,7 @@ const { authenticateToken } = require('../middleware/security');
 let _runtime = null;
 function getRuntime() {
     if (!_runtime) {
-        const { createRuntime } = require('../../agent-runtime');
+        const { createRuntime } = require('../../agent-lib');
         _runtime = createRuntime();
     }
     return _runtime;
@@ -74,7 +74,7 @@ router.post('/invoke',
 
         const { tool, params = {}, sessionId } = req.body;
         const { registry, permissions, sessions, eventBus } = getRuntime();
-        const { invokeWithPermissions } = require('../../agent-runtime');
+        const { invokeWithPermissions } = require('../../agent-lib');
 
         const user = {
             role: req.user?.role || 'viewer',

@@ -50,7 +50,7 @@ BeZhas is a multi-sector Enterprise Web3 platform built on a sovereign L2 (OP St
                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │              LAYER 3: AGENT RUNTIME                                 │
-│  agent-runtime/                                                     │
+│  agent-lib/                                                     │
 │  ├─ Agents: Security, Compliance, Tokenomics, Trading, Workflow     │
 │  ├─ Tools: blockchain-validator, gas-analytics, bridge-health, etc. │
 │  ├─ Core: ToolRegistry, PermissionEngine, CircuitBreaker            │
@@ -161,7 +161,7 @@ BeZhas-Blockchain/                     ← MONOREPO ROOT
 ├── ai-engine/                         ← MCP SERVER (Node.js :3002)
 │   └── server.js                      ← 12 AI tools
 │
-├── agent-runtime/                     ← AGENT SYSTEM
+├── agent-lib/                     ← AGENT SYSTEM
 │   ├── agents/ (5)                    ← Security, Compliance, Tokenomics, Trading, Workflow
 │   ├── tools/ (10)                    ← Blockchain, gas, bridge, sector tools
 │   ├── core/ (14)                     ← UnifiedAgent, ToolRegistry, Permissions, CircuitBreaker
@@ -283,7 +283,7 @@ C:\Users\yoela\.foundry\bin\forge.exe test -vvv
 cd api && pnpm test
 
 # Agent Runtime tests
-cd agent-runtime && pnpm test
+cd agent-lib && pnpm test
 
 # PowerShell exit code 1 is EXPECTED (nightly Solc warning on stderr)
 # Check for "Compiler run successful" or "tests passed" in output text

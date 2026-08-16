@@ -30,7 +30,7 @@ on:
             - "aegis/**"
             - "api/services/agentService.js"
             - "api/services/contractService.js"
-            - "agent-runtime/**"
+            - "agent-lib/**"
     pull_request:
         branches: [main]
         paths:

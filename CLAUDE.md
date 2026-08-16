@@ -40,7 +40,14 @@ BeZhas es un ecosistema blockchain empresarial B2B con:
 
 ## 📁 ESTRUCTURA DE DIRECTORIOS
 
-D:\\Documentos D\\Documentos Yoe\\BeZhas\\
+> **Entorno de desarrollo: Linux.** El proyecto vive en
+> `/home/amaliacr/Documentos/BeZhas-Blockchain` (NVMe, btrfs). Se movió el
+> 2026-08-10 desde el disco externo NTFS `/run/media/amaliacr/Nuevo vol`, cuyo
+> montaje FUSE corrompía el store de pnpm, impedía los hardlinks y hacía que git
+> marcase 3.849 ficheros como modificados por finales de línea y permisos.
+> No trabajar sobre el disco externo: se conserva sólo como copia de seguridad.
+
+/home/amaliacr/Documentos/BeZhas-Blockchain/
 
 │
 
@@ -151,6 +158,12 @@ POLYGON\_MUMBAI: { chainId: 80001, rpc: 'https://rpc-mumbai.maticvigil.com' }
 - GPU: **RTX 4090** (GPU passthrough para Ollama/Docker)  
 - RAM: 128 GB  
 - OS: Windows 11 \+ WSL2 / Ubuntu
+
+> **Nota (2026-08-10):** la máquina de desarrollo actual es Fedora 44 y no tiene
+> driver NVIDIA cargado (`nvidia-smi` no responde), así que Ollama con GPU no
+> está operativo en ella. Si el servidor de la RTX 4090 pasa a Linux, usar
+> Ubuntu LTS: en Fedora el driver propietario y `nvidia-container-toolkit` con
+> Secure Boot dan bastante más guerra.
 
 ### Ollama — Modo actual
 
@@ -341,11 +354,11 @@ Disponibles para operaciones externas:
 
 cd smart-contracts
 
-C:\\Users\\yoela\\.foundry\\bin\\forge.exe build --sizes
+forge build --sizes
 
 \# Test contratos
 
-C:\\Users\\yoela\\.foundry\\bin\\forge.exe test -vvv
+forge test -vvv
 
 \# Deploy local (Anvil)
 
@@ -357,11 +370,11 @@ cd api && pnpm test
 
 \# Agent Runtime tests
 
-cd agent-runtime && pnpm test
+cd agent-lib && pnpm test
 
 \# Levantar stack completo (Docker)
 
-docker-compose up -d
+docker compose up -d
 
 \# Levantar frontend dev
 

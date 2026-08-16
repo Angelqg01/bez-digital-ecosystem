@@ -13,49 +13,71 @@ alerting:
 
 scrape_configs:
   # ── API (Node.js / Express) ─────────────────
+  # El servicio se llama `bezhas-api` en docker-compose.yml, no `api`. Con el
+  # nombre viejo la resolución fallaba y el objetivo salía permanentemente
+  # `down`, que es indistinguible de una API caída de verdad.
   - job_name: bezhas-api
     metrics_path: /api/metrics
     static_configs:
-      - targets: ['api:3001']
+      - targets: ['bezhas-api:3001']
         labels:
           service: api
 
-  # ── Aegis AI (FastAPI / Python) ─────────────
-  - job_name: bezhas-aegis
+  # Plano de operación de empresa (OPERANT): tareas, llamadas al modelo,
+  # tokens, HITL y errores, por tenant y departamento. El propio servicio ya
+  # publica en formato Prometheus, así que se raspa directo en vez de pasar
+  # por el exportador OTLP.
+  - job_name: business-ops
     metrics_path: /metrics
     static_configs:
-      - targets: ['aegis:8001']
+      - targets: ['business-ops:4000']
         labels:
-          service: aegis
+          # Estaba etiquetado `service: api`, así que las métricas de OPERANT
+          # se mezclaban con las de la API en cualquier consulta por esa
+          # etiqueta y los paneles sumaban dos servicios distintos como uno.
+          service: business-ops
 
-  # ── Edge Node (BeZhas DePIN) ────────────────
-  - job_name: bezhas-edge-node
-    metrics_path: /health
-    scrape_interval: 30s
-    static_configs:
-      - targets: ['bezhas-edge-node:4000']
-        labels:
-          service: edge-node
-
-  # ── Blockchain RPC (geth/op-geth) ──────────
-  - job_name: bezhas-geth
-    metrics_path: /debug/metrics/prometheus
-    scrape_interval: 30s
-    static_configs:
-      - targets: ['geth:6060']
-        labels:
-          service: geth
-          chain: bezhas-l2
-
-  # ── op-node (L2 consensus) ─────────────────
-  - job_name: bezhas-op-node
-    metrics_path: /metrics
-    scrape_interval: 30s
-    static_configs:
-      - targets: ['op-node:7300']
-        labels:
-          service: op-node
-          chain: bezhas-l2
+  # ── Objetivos sin servicio que los sirva ────────────────────────────────
+  #
+  # Comentados, no borrados: describen lo que se quiere monitorizar cuando
+  # existan. Ninguno de estos nombres corresponde hoy a un servicio del
+  # compose principal, así que aparecían permanentemente `down` — ruido que
+  # además entrena a ignorar los objetivos caídos, que es justo lo contrario
+  # de para lo que sirve esto.
+  #
+  #   aegis            → aegis/ existe con Dockerfile, pero no hay servicio.
+  #   bezhas-edge-node → definido solo en docker-compose.dev.yml.
+  #   geth / op-node   → viven en enterprise-node/, otro proyecto de compose.
+  #
+  # Para reactivar cualquiera: añadir antes el servicio al compose principal
+  # (misma condición que los bloques comentados de docker-compose.prod.yml).
+  #
+  # - job_name: bezhas-aegis
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ['aegis:8001']
+  #       labels: { service: aegis }
+  #
+  # - job_name: bezhas-edge-node
+  #   metrics_path: /health
+  #   scrape_interval: 30s
+  #   static_configs:
+  #     - targets: ['bezhas-edge-node:4000']
+  #       labels: { service: edge-node }
+  #
+  # - job_name: bezhas-geth
+  #   metrics_path: /debug/metrics/prometheus
+  #   scrape_interval: 30s
+  #   static_configs:
+  #     - targets: ['geth:6060']
+  #       labels: { service: geth, chain: bezhas-l2 }
+  #
+  # - job_name: bezhas-op-node
+  #   metrics_path: /metrics
+  #   scrape_interval: 30s
+  #   static_configs:
+  #     - targets: ['op-node:7300']
+  #       labels: { service: op-node, chain: bezhas-l2 }
 
   # ── Prometheus self-monitoring ──────────────
   - job_name: prometheus

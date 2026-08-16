@@ -100,7 +100,7 @@ router.post('/skills/:name', async (req, res) => {
 
     // Try unified agent path first
     try {
-        const { createRuntime } = require('../../agent-runtime');
+        const { createRuntime } = require('../../agent-lib');
         const runtime = createRuntime();
         const toolName = `openclaw:${name}`;
         if (runtime.tools?.has(toolName)) {

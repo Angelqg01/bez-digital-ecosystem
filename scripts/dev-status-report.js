@@ -7,7 +7,7 @@ console.log('==================================================\n');
 
 const modules = [
     { name: 'Core API', path: 'api' },
-    { name: 'Agent Runtime', path: 'agent-runtime' },
+    { name: 'Agent Runtime', path: 'agent-lib' },
     { name: 'AI Engine', path: 'ai-engine' },
     { name: 'Aegis Security', path: 'aegis' },
     { name: 'DeFi Backend', path: 'bezhas-defi/backend' },
@@ -44,8 +44,8 @@ console.log('--------------------------------------------------');
 
 const criticalFiles = [
     'api/index.js',
-    'agent-runtime/index.js',
-    'agent-runtime/core/ToolRegistry.js',
+    'agent-lib/index.js',
+    'agent-lib/core/ToolRegistry.js',
     'sdk/index.js',
     'smart-contracts/src/core/BeZhasPayment.sol',
     'smart-contracts/src/core/BeZhasWorkflowRegistry.sol',

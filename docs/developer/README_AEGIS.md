@@ -146,7 +146,7 @@ npm run test:contracts
 
 \# Ver todos los agentes disponibles
 
-node \-e "import('./agent-runtime/src/registry/AgentToolRegistry.js').then(m \=\> console.log(m.agentRegistry.summary()))"
+node \-e "import('./agent-lib/src/registry/AgentToolRegistry.js').then(m \=\> console.log(m.agentRegistry.summary()))"
 
 ---
 

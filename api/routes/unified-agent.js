@@ -48,12 +48,12 @@ function startChannels() {
 
 function getAgent(options = {}) {
     if (!_agent) {
-        const { createRuntime } = require('../../agent-runtime');
-        const UnifiedAgent = require('../../agent-runtime/core/UnifiedAgent');
-        const ChannelManager = require('../../agent-runtime/channels');
+        const { createRuntime } = require('../../agent-lib');
+        const UnifiedAgent = require('../../agent-lib/core/UnifiedAgent');
+        const ChannelManager = require('../../agent-lib/channels');
         // Lazy-required (like the modules above) so the api container boots even
-        // when agent-runtime is not bundled; only this route needs it.
-        const MemoryManager = require('../../agent-runtime/MemoryManager');
+        // when agent-lib is not bundled; only this route needs it.
+        const MemoryManager = require('../../agent-lib/MemoryManager');
 
         // Pass Redis client to Runtime so SessionManager gets persistence
         const runtime = createRuntime({
@@ -650,7 +650,7 @@ router.patch('/edge-confirm/:requestId', authenticateToken, async (req, res) => 
  */
 router.get('/skills', authenticateToken, requireRole('admin'), async (req, res) => {
     try {
-        const SkillWriter = require('../../agent-runtime/core/SkillWriter');
+        const SkillWriter = require('../../agent-lib/core/SkillWriter');
         const limit  = Math.min(parseInt(req.query.limit) || 50, 200);
         const skills = SkillWriter.listRecent(limit);
 
@@ -674,7 +674,7 @@ router.get('/skills/:id', authenticateToken, requireRole('admin'), async (req, r
     try {
         const path = require('path');
         const fs   = require('fs');
-        const SkillWriter = require('../../agent-runtime/core/SkillWriter');
+        const SkillWriter = require('../../agent-lib/core/SkillWriter');
 
         const { id } = req.params;
         // Sanitize id — only allow alphanumeric, underscore, hyphen
@@ -702,7 +702,7 @@ router.delete('/skills/:id', authenticateToken, requireRole('admin'), (req, res)
     try {
         const path = require('path');
         const fs   = require('fs');
-        const SkillWriter = require('../../agent-runtime/core/SkillWriter');
+        const SkillWriter = require('../../agent-lib/core/SkillWriter');
 
         const { id } = req.params;
         if (!/^[\w-]+$/.test(id)) {

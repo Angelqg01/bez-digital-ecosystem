@@ -1,0 +1,12 @@
+# business-ops se instala por su cuenta, como api/, agent-lib/ y
+# control-center/frontend/: lockfile propio y `pnpm install` en su directorio.
+# La raíz del monorepo no declara `packages:` a propósito, así que sin este
+# fichero pnpm subiría a buscar el workspace de arriba.
+
+# Overrides de seguridad heredados de la raíz. Se repiten aquí porque pnpm 11
+# los lee del workspace del proyecto que se instala, no del de la raíz.
+overrides:
+  axios: '^1.16.0'
+  fast-uri: '^3.1.2'
+  form-data@<2.5.4: '^2.5.5'
+  form-data@>=3.0.0 <3.0.4: '^3.0.4'

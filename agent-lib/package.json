@@ -1,5 +1,5 @@
 {
-  "name": "@bezhas/agent-runtime",
+  "name": "@bezhas/agent-lib",
   "version": "0.1.0",
   "description": "BeZhas Agent Runtime — tool orchestration, commands, permissions, and plugin system",
   "main": "index.js",

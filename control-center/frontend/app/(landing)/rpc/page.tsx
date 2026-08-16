@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import CopyButton from '@/components/CopyButton';
 import { usePublicStats } from '@/lib/public-hooks';
 
@@ -8,7 +9,7 @@ export default function RPCPage() {
   const net = data?.network;
 
   const uptime = net ? `${net.uptime}%` : '—';
-  const clusters = net ? net.validatorsActive.toLocaleString() : '—';
+  const clusters = net?.validatorsActive?.toLocaleString() ?? '—';
 
   return (
     <>
@@ -112,9 +113,9 @@ export default function RPCPage() {
                     respondan antes de conectar testnet, mainnet o servicios de produccion.
                   </p>
                 </div>
-                <a href="/docs#api-sdk-nodes-rpc" className="inline-flex items-center justify-center gap-2 bg-primary text-white px-5 py-3 text-[10px] font-bold tracking-widest uppercase hover:scale-[1.02] transition-transform">
+                <Link href="/docs#api-sdk-nodes-rpc" className="inline-flex items-center justify-center gap-2 bg-primary text-white px-5 py-3 text-[10px] font-bold tracking-widest uppercase hover:scale-[1.02] transition-transform">
                   Guia completa <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                </a>
+                </Link>
               </div>
               <div className="space-y-4">
                 {[

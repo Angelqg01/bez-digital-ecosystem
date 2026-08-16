@@ -16,8 +16,8 @@ import { Redis } from 'ioredis';
 
 // ── Módulos internos (se importan desde sus carpetas una vez fusionados) ───────
 // import { TelegramClient }      from '../messaging-mcp/src/telegram.js';
-// import { RedisMemoryManager }  from '../agent-runtime/src/memory/RedisMemoryManager.js';
-// import { HumanInLoopManager }  from '../agent-runtime/src/humanInLoop/HumanInLoopManager.js';
+// import { RedisMemoryManager }  from '../agent-lib/src/memory/RedisMemoryManager.js';
+// import { HumanInLoopManager }  from '../agent-lib/src/humanInLoop/HumanInLoopManager.js';
 // import { OpenClawOrchestrator} from '../openclaw/src/OpenClawOrchestrator.js';
 // import { OllamaProvider }      from '../openclaw/src/providers/OllamaProvider.js';
 // import { ModelRouter }         from '../openclaw/src/router/ModelRouter.js';

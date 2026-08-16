@@ -1,20 +1,38 @@
 # ─────────────────────────────────────────────────────
 #  BeZhas Production Compose
-#  Extends base docker-compose.yml with:
-#    - Nginx reverse proxy (TLS)
-#    - Resource limits
-#    - Restart policies
-#    - Log rotation
-#    - No exposed internal ports
+#  Extiende docker-compose.yml con:
+#    - Nginx de borde (TLS)
+#    - Límites de recursos
+#    - Políticas de reinicio
+#    - Rotación de logs
+#    - Sin puertos internos publicados
 #
-#  Usage:
+#  Uso:
 #    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #    docker compose -f monitoring/docker-compose.monitoring.yml up -d
+#
+#  ── Por qué cambió este fichero ─────────────────────────────────────────
+#
+#  Estaba ROTO: el par base+prod ni siquiera producía un proyecto válido.
+#
+#      service "bezhas-batcher" has neither an image nor a build context
+#      specified: invalid compose project
+#
+#  La causa: sobreescribía ocho servicios que no existen en el base. Compose
+#  no distingue entre "ajustar un servicio" y "declarar uno nuevo" — un
+#  override huérfano se convierte en un servicio sin imagen, y todo el
+#  proyecto deja de parsear. Como `scripts/deploy-prod.sh` invoca justo ese
+#  par, el despliegue de producción abortaba en el primer comando.
+#
+#  Concretamente: el base define `bezhas-api`, no `api`; y `ai-gateway`,
+#  `control-center`, `bezhas-node` y `bezhas-batcher` no estaban definidos en
+#  ningún compose del repositorio, solo aquí. Ver el bloque comentado del
+#  final: se conserva la intención en vez de borrarla.
 # ─────────────────────────────────────────────────────
 
 services:
 
-  # ── Nginx (public edge) ────────────────────────────
+  # ── Nginx (borde público) ──────────────────────────
   nginx:
     build: ./nginx
     container_name: bezhas-nginx
@@ -22,13 +40,14 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+    # Antes esperaba a `api` y `control-center`. El primero se llama
+    # `bezhas-api` en el base; el segundo no existe como servicio, así que
+    # esperarlo dejaba nginx bloqueado para siempre.
     depends_on:
-      api:
+      bezhas-api:
         condition: service_healthy
-      control-center:
-        condition: service_started
+    networks:
+      - bezhas-net
     deploy:
       resources:
         limits:
@@ -40,7 +59,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ── Overrides for base services ────────────────────
+  # ── Ajustes sobre los servicios del base ───────────
 
   postgres:
     ports: !override []
@@ -71,17 +90,11 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  api:
+  bezhas-api:
     ports: !override []
     restart: always
     environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - JWT_SECRET=${JWT_SECRET}
-      - AEGIS_API_URL=http://aegis:8001/api/aegis
-      - BEZHAS_L2_RPC_URL=http://bezhas-geth:8545
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:6379
+      NODE_ENV: production
     deploy:
       resources:
         limits:
@@ -93,8 +106,12 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  aegis:
-    ports: !override []
+  # ── OPERANT (plano de operación de empresa) ────────
+  #
+  # Su Postgres es SEPARADO del de la plataforma a propósito: OPERANT aplica
+  # RLS y se conecta con el rol `operant_app` (sin BYPASSRLS). Meterlo en la
+  # misma instancia que la API mezclaría dos modelos de aislamiento distintos.
+  operant-postgres:
     restart: always
     deploy:
       resources:
@@ -105,90 +122,107 @@ services:
       driver: json-file
       options:
         max-size: "10m"
-        max-file: "5"
-
-  ai-gateway:
-    ports: !override []
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
         max-file: "3"
 
-  bezhas-edge-node:
-    ports: !override []
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  control-center:
+  business-ops:
     ports: !override []
     restart: always
     environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=/api
-      - NEXT_PUBLIC_RPC_URL=http://bezhas-geth:8545
+      NODE_ENV: production
+    # Margen mayor que el resto: aquí viven los 10 departamentos y sus
+    # especialistas, y el embedding de memoria vectorial es lo que más come.
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "1.5"
+          memory: 1G
     logging:
       driver: json-file
       options:
         max-size: "10m"
-        max-file: "3"
+        max-file: "5"
 
-  bezhas-geth:
+  # ── MCPs internos ──────────────────────────────────
+  messaging-mcp:
     ports: !override []
     restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 4G
-    logging:
-      driver: json-file
-      options:
-        max-size: "20m"
-        max-file: "5"
-
-  bezhas-node:
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 2G
-    logging:
-      driver: json-file
-      options:
-        max-size: "20m"
-        max-file: "5"
-
-  bezhas-batcher:
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+
+  obsidian-mcp:
+    ports: !override []
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  bezhas-core-mcp:
+    ports: !override []
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ── Servicios que este fichero esperaba y que NO existen ──────────────────
+#
+# Se conservan comentados en vez de borrarse: describen una topología de
+# producción que se quiso tener, y perderla sería peor que tenerla inerte.
+# Para reactivar cualquiera de ellos hace falta ANTES definirlo en
+# docker-compose.yml con su `build` o `image`; solo entonces el bloque de
+# aquí pasa a ser un ajuste válido.
+#
+# Estado de cada uno, comprobado en el repositorio:
+#
+#   aegis            → aegis/ existe y tiene Dockerfile. Falta el servicio en
+#                      el base. Es el candidato más cercano a poder volver.
+#   control-center   → control-center/ existe y tiene Dockerfile. Igual.
+#   bezhas-geth      → definido en enterprise-node/docker-compose.yml, que es
+#                      un proyecto de compose aparte, no este base.
+#   ai-gateway       → el directorio ai-gateway/ NO existe. Nunca se construyó.
+#   bezhas-node      → sin definición en ningún compose del repositorio.
+#   bezhas-batcher   → sin definición en ningún compose del repositorio.
+#   bezhas-edge-node → definido en docker-compose.dev.yml, no en el base.
+#
+#   aegis:
+#     ports: !override []
+#     restart: always
+#     deploy: { resources: { limits: { cpus: "1", memory: 1G } } }
+#
+#   control-center:
+#     ports: !override []
+#     restart: always
+#     environment:
+#       - NODE_ENV=production
+#       - NEXT_PUBLIC_API_URL=/api
+#       - NEXT_PUBLIC_RPC_URL=http://bezhas-geth:8545
+#     deploy: { resources: { limits: { cpus: "0.5", memory: 512M } } }
+#
+#   bezhas-geth:
+#     ports: !override []
+#     restart: always
+#     deploy: { resources: { limits: { cpus: "2", memory: 4G } } }
+#
+#   bezhas-node:
+#     restart: always
+#     deploy: { resources: { limits: { cpus: "1", memory: 2G } } }
+#
+#   bezhas-batcher:
+#     restart: always
+#     deploy: { resources: { limits: { cpus: "0.5", memory: 512M } } }
+#
+#   ai-gateway:
+#     ports: !override []
+#     restart: always
+#     deploy: { resources: { limits: { cpus: "0.5", memory: 512M } } }
+#
+#   bezhas-edge-node:
+#     ports: !override []
+#     restart: always
+#     deploy: { resources: { limits: { cpus: "0.5", memory: 256M } } }

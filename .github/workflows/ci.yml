@@ -106,16 +106,10 @@ jobs:
       #    e2e/integration suites need a live chain (Anvil) + Postgres + Redis and
       #    run in a separate workflow/job, not in this fast unit gate.
       # ==========================================
-      - name: Install agent-runtime dependencies
-        working-directory: ./agent-runtime
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Run agent-runtime tests (unit)
-        working-directory: ./agent-runtime
-        run: pnpm run test:ci
-        env:
-          NODE_ENV: test
-
+      # `agent-lib` ya no tiene job propio: la Fase 5 lo absorbió en el
+      # proceso de la API (api/services/agentRuntime.js). Sus agentes se
+      # ejercitan ahora desde las suites de ./api, que son las que cubren el
+      # contrato HTTP de /api/agents — el que de verdad consume el frontend.
       - name: Run Backend API Tests (unit)
         working-directory: ./api
         run: pnpm run test:unit
@@ -142,6 +136,15 @@ jobs:
         working-directory: ./control-center/frontend
         run: pnpm run lint
 
+      # Jest sobre auth y pagos del Control Center: contextos y hooks en jsdom,
+      # y los route handlers de app/api/auth en runtime Node. Va antes del build
+      # porque es mucho más rápido y falla por causas más claras.
+      - name: Run frontend tests (unit)
+        working-directory: ./control-center/frontend
+        run: pnpm run test
+        env:
+          NODE_ENV: test
+
       - name: Build frontend
         working-directory: ./control-center/frontend
         run: pnpm run build
@@ -155,3 +158,78 @@ jobs:
           path: |
             control-center/frontend/.next
             control-center/frontend/dist
+
+  # ==========================================
+  # business-ops (OPERANT) — plano de operación de empresa
+  #
+  # Job aparte, y no un paso más del anterior, por dos motivos: necesita un
+  # servicio Postgres (que en Actions es por job) y sus evals protegen el
+  # COMPORTAMIENTO de los agentes, no el código. Regla heredada del proyecto:
+  # ningún cambio de prompt entra sin pasar las evals.
+  # ==========================================
+  business-ops:
+    name: business-ops (tests + evals + smoke)
+    runs-on: ubuntu-latest
+    needs: secret-scan
+
+    # Postgres real para la batería de contrato del Store. Sin él, las pruebas
+    # de PostgresStore se saltan y el adaptador de producción viaja sin red:
+    # así se coló en su día que le faltaban métodos y que la RLS no aislaba.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: operant
+          POSTGRES_PASSWORD: operant
+          POSTGRES_DB: operant
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U operant -d operant"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # El contenedor de servicio no ejecuta el initdb con las migraciones
+      # montadas (eso solo pasa con docker-compose), así que las aplica el runner.
+      OWNER_DATABASE_URL: postgres://operant:operant@localhost:5432/operant
+      PG_APP_PASSWORD: ci-app-password
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Enable Corepack (pnpm from packageManager)
+        run: corepack enable
+
+      - name: Install business-ops dependencies
+        working-directory: ./business-ops
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Migrar el esquema (con el rol dueño)
+        working-directory: ./business-ops
+        run: DATABASE_URL="$OWNER_DATABASE_URL" pnpm run db:migrate
+
+      - name: Tests (sin Postgres — ruta por defecto de un despliegue pequeño)
+        working-directory: ./business-ops
+        run: pnpm test
+
+      # La aplicación se conecta con operant_app, NUNCA con el dueño: un rol
+      # superusuario se salta la RLS y el aislamiento entre tenants dejaría de
+      # existir. PostgresStore se niega a arrancar si detecta ese caso.
+      - name: Tests (contra Postgres, con el rol de aplicación)
+        working-directory: ./business-ops
+        run: DATABASE_URL="postgres://operant_app:${PG_APP_PASSWORD}@localhost:5432/operant" pnpm test
+
+      - name: Evals de comportamiento (simulado, determinista)
+        working-directory: ./business-ops
+        run: pnpm run evals
+
+      - name: Smoke end-to-end
+        working-directory: ./business-ops
+        run: pnpm run smoke

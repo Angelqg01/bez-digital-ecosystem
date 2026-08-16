@@ -11,7 +11,7 @@ if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
 
 # 2. Construir imágenes locales
 Write-Host "`n📦 Construyendo Agent Runtime..." -ForegroundColor Yellow
-docker compose build agent-runtime
+docker compose build business-ops
 
 # 3. Levantar servicios
 Write-Host "`n⚡ Levantando infraestructura (Redis, Postgres, Ollama, Runtime)..." -ForegroundColor Yellow
@@ -47,4 +47,4 @@ Write-Host "║  • Open WebUI (LLM):    http://localhost:3000       ║" -Fore
 Write-Host "║  • Redis:               localhost:6379              ║" -ForegroundColor Green
 Write-Host "║  • Postgres:            localhost:5432              ║" -ForegroundColor Green
 Write-Host "╚══════════════════════════════════════════════════════╝" -ForegroundColor Green
-Write-Host "`nUsa 'docker compose logs -f agent-runtime' para ver la actividad."
+Write-Host "`nUsa 'docker compose logs -f business-ops' para ver la actividad."

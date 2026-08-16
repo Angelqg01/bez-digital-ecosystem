@@ -31,7 +31,7 @@
         "slash_check"
       ]
     },
-    "agent-runtime": {
+    "agent-lib": {
       "url": "http://localhost:3003",
       "tools": [
         "dispatch_task",

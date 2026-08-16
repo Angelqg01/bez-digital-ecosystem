@@ -266,7 +266,7 @@ Write-Step "7/9" "Instalando dependencias Node.js"
 
 if (-not $SkipNodeDeps) {
     $nodePkgs = @(
-        "$PROJECT_ROOT\agent-runtime",
+        "$PROJECT_ROOT\agent-lib",
         "$PROJECT_ROOT\messaging-mcp",
         "$PROJECT_ROOT\openclaw",
         "$PROJECT_ROOT\ai-engine",
@@ -371,7 +371,7 @@ $desktopPath = [System.Environment]::GetFolderPath("Desktop")
 $WshShell = New-Object -comObject WScript.Shell
 $shortcut = $WshShell.CreateShortcut("$desktopPath\BeZhas Start.lnk")
 $shortcut.TargetPath = "powershell.exe"
-$shortcut.Arguments = "-NoExit -Command `"cd '$PROJECT_ROOT'; docker compose up -d redis postgres; node agent-runtime/src/index.js`""
+$shortcut.Arguments = "-NoExit -Command `"cd '$PROJECT_ROOT'; docker compose up -d redis postgres; node agent-lib/src/index.js`""
 $shortcut.WorkingDirectory = $PROJECT_ROOT
 $shortcut.Description = "Arrancar BeZhas Blockchain"
 $shortcut.Save()
@@ -400,7 +400,7 @@ Write-Host @"
 ║                                                          ║
 ║  Siguiente paso 3: Arrancar agentes                      ║
 ║    cd '$PROJECT_ROOT'
-║    node agent-runtime/src/index.js                       ║
+║    node agent-lib/src/index.js                       ║
 ║                                                          ║
 ║  Siguiente paso 4: OpenCode IDE                         ║
 ║    ollama launch opencode --model qwen3.6                ║

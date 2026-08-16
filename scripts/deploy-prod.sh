@@ -81,8 +81,17 @@ echo "  Waiting for PostgreSQL to be ready..."
 sleep 10
 
 docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-  run --rm api node db/migrate.js 2>&1 | tail -3 || true
+  run --rm bezhas-api node db/migrate.js 2>&1 | tail -3 || true
 ok "Database migrated"
+
+# OPERANT lleva su propia base y su propio migrador. Las migraciones se
+# aplican con el rol DUENO (crean operant_app y la RLS) y el servidor arranca
+# despues con el rol de aplicacion: son dos identidades distintas a proposito,
+# porque un superusuario se salta la RLS y el aislamiento entre tenants
+# desaparece. El propio `command` del servicio ya encadena ambas cosas.
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d operant-postgres
+sleep 5
+ok "OPERANT database ready"
 
 # ── Step 6: Start all services ─────────────────────
 step 6 "Start all services"
@@ -93,7 +102,7 @@ ok "Services started"
 # ── Step 7: Wait for health checks ────────────────
 step 7 "Health check (waiting up to 60s)"
 
-SERVICES=("api:3001/api/health" "aegis:8001/aegis/v1/health")
+SERVICES=("bezhas-api:3001/api/health" "business-ops:4000/healthz")
 MAX_WAIT=60
 WAITED=0
 

@@ -7,7 +7,7 @@
  *   WebSocket: ws.bez.digital:3002   (WS sobre el mismo servidor)
  *
  * Depende de:
- *   AgentManager      (agent-runtime)
+ *   AgentManager      (agent-lib)
  *   TokenomicsEngine  (sdk/tokenomics-engine)
  *   BridgeManager     (sdk/bridge-manager)
  *   BeZhasWebSocketServer (api/websocket)
@@ -116,50 +116,15 @@ async function createApiServer(manager, engine = null, bridgeMgr = null) {
 async function start() {
   console.log('\n[API] 🚀 Iniciando BeZhas API Server...\n');
 
-  // Importar dependencias del runtime
-  const AgentManager   = require('../agent-runtime/AgentManager');
-  const SecurityAgent  = require('../agent-runtime/agents/SecurityAgent');
-  const TradingAgent   = require('../agent-runtime/agents/TradingAgent');
-  const WorkflowAgent  = require('../agent-runtime/agents/WorkflowAgent');
-  const ComplianceAgent= require('../agent-runtime/agents/ComplianceAgent');
-  const TokenomicsAgent= require('../agent-runtime/agents/TokenomicsAgent');
-  const TokenomicsConnector = require('../agent-runtime/connectors/TokenomicsConnector');
+  // El cableado del runtime vive en services/agentRuntime.js — una sola copia,
+  // compartida con el arranque real (index.js). Antes estaba duplicado aquí y
+  // en scripts/wire-agents.js, y las tres versiones podían divergir.
+  const agentRuntime = require('./services/agentRuntime');
 
-  // Config
-  const config = {
-    rpcUrl:      process.env.RPC_URL     || 'http://localhost:8545',
-    wsUrl:       process.env.WS_URL      || 'ws://localhost:8546',
-    redisUrl:    process.env.REDIS_URL   || 'redis://localhost:6379',
-    openclawUrl: process.env.OPENCLAW_URL|| 'http://localhost:8080',
-    hitlEnabled: process.env.HITL_ENABLED !== 'false',
-    hitlCallbackUrl: process.env.HITL_CALLBACK_URL || 'http://localhost:3001/api/hitl',
-    // Contratos
-    bezAddress:        process.env.BEZ_TOKEN_ADDRESS,
-    stakingAddress:    process.env.STAKING_POOL_ADDRESS,
-    farmingAddress:    process.env.FARMING_POOL_ADDRESS,
-    validatorsAddress: process.env.VALIDATOR_REGISTRY_ADDRESS,
-    slashingAddress:   process.env.SLASHING_MANAGER_ADDRESS,
-    openClawAgentAddress:    process.env.OPENCLAW_AGENT_ADDRESS,
-    aegisProviderAddress:    process.env.AEGIS_PROVIDER_ADDRESS,
-    workflowRegistryAddress: process.env.WORKFLOW_REGISTRY_ADDRESS,
-  };
-
-  // Agent Manager
-  const manager = new AgentManager(config);
-  manager.registerAgent(SecurityAgent,   {});
-  manager.registerAgent(TradingAgent,    {});
-  manager.registerAgent(WorkflowAgent,   {});
-  manager.registerAgent(ComplianceAgent, {});
-
-  // Tokenomics Connector + Agent
-  const tc = new TokenomicsConnector(config);
-  await tc.connect().catch(e => console.warn('[API] TokenomicsConnector:', e.message));
-
-  manager.registerAgent(TokenomicsAgent, { tokenomicsConnector: tc });
-  manager._tokenomicsConnector = tc;
-
-  // Arrancar AgentManager
-  await manager.start().catch(e => console.warn('[API] AgentManager.start:', e.message));
+  const manager = await agentRuntime.init();
+  if (!manager) {
+    console.warn('[API] Agent runtime no cableado:', agentRuntime.status().motivo);
+  }
 
   // TokenomicsEngine (opcional — requiere contratos en .env)
   let engine = null;

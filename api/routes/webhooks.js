@@ -10,7 +10,13 @@
  *  [PERF-3] Nonce manager     → cola serializada evita nonce collision en concurrencia
  *  [REL-1]  tx.wait() timeout → Promise.race() a 3 min, no cuelga forever
  *  [REL-2]  EIP-1559 gas      → getFeeData() dinámico en lugar de gasLimit fijo solo
- *  [REL-3]  Retry queue       → cola en memoria con backoff exponencial (stub BullMQ)
+ *  [REL-3]  Retry queue       → cola PERSISTENTE en Postgres con backoff exponencial
+ *                               (services/webhookRetryQueue.js, migración 034).
+ *                               Antes era un array del proceso: cada redespliegue
+ *                               de Cloud Run perdía los pagos cobrados sin entregar.
+ *  [LED-1]  Libro mayor       → los cobros de Stripe entran en payment_transactions,
+ *                               lo que permite marcar fallidos y reembolsar (antes
+ *                               eran dos TODO sin tabla donde escribir).
  *  [MEM-1]  TTL idempotency   → Map con timestamp + limpieza cada hora (antes: Set infinito)
  *  [CFG-1]  MINT_GAS_LIMIT    → parseado con try/catch (antes: BigInt() en module scope)
  *  [CFG-2]  contractAddress   → validado con ethers.isAddress() antes de instanciar
@@ -21,12 +27,29 @@
 
 const express = require('express');
 const router = express.Router();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Perezoso a propósito. Construir el cliente aquí arriba con
+// `require('stripe')(process.env.STRIPE_SECRET_KEY)` hacía que TODA la API
+// muriese al importar si faltaba la clave —"Neither apiKey nor
+// config.authenticator provided"—, aunque el resto de la plataforma no tenga
+// nada que ver con los pagos. Ahora falta la clave => falla el webhook de
+// Stripe, y solo ese.
+let _stripe = null;
+function getStripe() {
+  if (_stripe) return _stripe;
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('Stripe no configurado: falta STRIPE_SECRET_KEY');
+  }
+  _stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  return _stripe;
+}
 const { ethers } = require('ethers');
 const crypto = require('crypto');
 const fxService = require('../services/fxService');
 const { query } = require('../db/pool');
 const { getPlan } = require('../config/plans');
+const retryQueue = require('../services/webhookRetryQueue');
+const ledger = require('../services/providerPaymentLedger');
+const { refundPayment, SettlementError } = require('../services/paymentSettlement');
 
 // ═══════════════════════════════════════════════
 // LOGGER ESTRUCTURADO [LOG-1]
@@ -240,53 +263,66 @@ _cleanupTimer.unref();
 //   mintQueue.add('mint', payload, { attempts: 5, backoff: { type: 'exponential', delay: 2000 } });
 // ═══════════════════════════════════════════════
 const RetryQueue = (() => {
-  const _pending = [];
-  let _running = false;
+  // La cola vive ahora en Postgres (services/webhookRetryQueue.js, migración 034).
+  // Antes era un array de este proceso: cada redespliegue de Cloud Run perdía en
+  // silencio los pagos ya cobrados a los que faltaba entregar el BEZ.
+  //
+  // Se conserva esta fachada para no cambiar los puntos de llamada, que siguen
+  // haciendo `RetryQueue.enqueue(wallet, cents, eventId)`.
+  retryQueue.registerHandler('mint', async ({ walletAddress, amountUsdCents, eventId }) => {
+    const result = await _executeMint(walletAddress, amountUsdCents, eventId);
+    await recordMintInLedger({ walletAddress, amountUsdCents, eventId, result });
+    return result;
+  });
 
-  async function _processNext() {
-    if (_running || _pending.length === 0) return;
-    _running = true;
+  // La cola de memoria se procesaba sola al encolar. La persistente necesita que
+  // alguien mire la tabla, así que el tick arranca aquí: sin esto los trabajos
+  // quedarían guardados y nadie los reintentaría nunca. El temporizador está
+  // unref'd, de modo que no mantiene vivo el proceso por sí solo.
+  retryQueue.start();
 
-    const job = _pending[0];
-    const delay = CONFIG.retryBaseDelayMs * (2 ** job.attempt);
-
-    log.info('RetryQueue', `Retrying mint in ${delay}ms`, {
-      eventId: job.eventId,
-      attempt: job.attempt + 1,
-      maxAttempts: CONFIG.retryMaxAttempts,
-    });
-
-    await new Promise((r) => setTimeout(r, delay));
-
-    try {
-      await _executeMint(job.walletAddress, job.amountUsdCents, job.eventId);
-      _pending.shift();
-      log.info('RetryQueue', 'Retry succeeded', { eventId: job.eventId });
-    } catch (err) {
-      job.attempt++;
-      if (job.attempt >= CONFIG.retryMaxAttempts) {
-        _pending.shift();
-        log.error('RetryQueue', 'Max retries exceeded — mint permanently failed', {
-          eventId: job.eventId,
-          wallet: job.walletAddress,
-          error: err.message,
-          // ALERT: integrate PagerDuty / Sentry / SNS here for critical failures
+  function enqueue(walletAddress, amountUsdCents, eventId, lastError = null) {
+    return retryQueue
+      .enqueue({ kind: 'mint', eventId, walletAddress, amountUsdCents, lastError })
+      .then((job) => {
+        log.info('RetryQueue', 'Job persisted', { eventId, jobId: job && job.id });
+        return job;
+      })
+      .catch((err) => {
+        // Si ni siquiera se puede encolar, hay que gritarlo: es un pago cobrado
+        // que se queda sin entregar y sin registro de reintento.
+        log.error('RetryQueue', 'No se pudo persistir el reintento', {
+          eventId, wallet: walletAddress, error: err.message,
         });
-      }
-    } finally {
-      _running = false;
-      _processNext();
-    }
+        return null;
+      });
   }
 
-  function enqueue(walletAddress, amountUsdCents, eventId) {
-    _pending.push({ walletAddress, amountUsdCents, eventId, attempt: 0 });
-    log.info('RetryQueue', 'Job enqueued', { eventId, queueLength: _pending.length });
-    _processNext();
-  }
-
-  return { enqueue };
+  return { enqueue, processDueJobs: retryQueue.processDueJobs, start: retryQueue.start };
 })();
+
+/**
+ * Deja constancia del minteo en payment_transactions. Un fallo aquí no puede
+ * tumbar el webhook: el BEZ ya está en la cadena y Stripe reintentaría el evento
+ * entero, así que se registra el problema y se sigue.
+ */
+async function recordMintInLedger({ walletAddress, amountUsdCents, eventId, result, chargeId = null }) {
+  try {
+    await ledger.recordCompletedPurchase({
+      provider: 'stripe',
+      eventId,
+      chargeId,
+      walletAddress,
+      amountUsd: (Number(amountUsdCents) / 100).toFixed(2),
+      amountBez: result && result.bezDisplay ? result.bezDisplay : null,
+      txHash: result && result.txHash ? result.txHash : null,
+    });
+  } catch (err) {
+    log.error('Ledger', 'No se pudo registrar la compra en payment_transactions', {
+      eventId, error: err.message,
+    });
+  }
+}
 
 // ═══════════════════════════════════════════════
 // HELPERS
@@ -490,7 +526,7 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, CONFIG.stripeWebhookSecret);
+    event = getStripe().webhooks.constructEvent(req.body, sig, CONFIG.stripeWebhookSecret);
   } catch (err) {
     log.error('Stripe', 'Signature verification failed', { error: err.message });
     return res.status(400).json({ error: `Webhook signature error: ${err.message}` });
@@ -541,6 +577,25 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
             txHash: result.txHash,
             wallet: walletAddress,
           });
+
+          // El pago entra en payment_transactions. Sin esta fila, un reembolso
+          // posterior no tendría ninguna orden que revertir y la compra no
+          // aparecería en el histórico del usuario.
+          await recordMintInLedger({
+            walletAddress,
+            amountUsdCents,
+            eventId: event.id,
+            result,
+            chargeId: session.payment_intent || null,
+          });
+
+          await ledger.notifyWalletOwner({
+            walletAddress,
+            type: 'transaction',
+            title: 'Compra de BEZ completada',
+            message: `Se han acreditado ${result.bezDisplay} BEZ en tu wallet.`,
+            metadata: { txHash: result.txHash, amountUsdCents, provider: 'stripe' },
+          }).catch(() => { /* la notificación nunca bloquea el cobro */ });
         }
       } catch (err) {
         log.error('Stripe', 'Mint failed — enqueuing retry', {
@@ -554,19 +609,90 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
 
     case 'payment_intent.payment_failed': {
       const pi = event.data.object;
-      log.warn('Stripe', 'Payment intent failed', {
-        intentId: pi.id,
-        reason: pi.last_payment_error?.message,
-      });
-      // TODO: notify user via email/notification service; update order in DB
+      const reason = pi.last_payment_error?.message || 'unknown';
+      const failedWallet = pi.metadata?.walletAddress || null;
+
+      log.warn('Stripe', 'Payment intent failed', { intentId: pi.id, reason });
+
+      // Queda registrado como orden 'failed' en lugar de morir en un log: es
+      // información que el usuario y soporte necesitan poder consultar.
+      try {
+        await ledger.recordFailedPurchase({
+          provider: 'stripe',
+          eventId: event.id,
+          chargeId: pi.id,
+          walletAddress: failedWallet,
+          amountUsd: pi.amount != null ? (Number(pi.amount) / 100).toFixed(2) : null,
+          reason,
+        });
+      } catch (err) {
+        log.error('Stripe', 'No se pudo registrar el pago fallido', {
+          intentId: pi.id, error: err.message,
+        });
+      }
+
+      if (failedWallet) {
+        await ledger.notifyWalletOwner({
+          walletAddress: failedWallet,
+          type: 'alert',
+          title: 'Tu pago no se ha podido completar',
+          message: `El cobro fue rechazado (${reason}). No se ha emitido ningún BEZ.`,
+          metadata: { intentId: pi.id, provider: 'stripe' },
+        }).catch((err) => log.warn('Stripe', 'Notificación no entregada', { error: err.message }));
+      }
       break;
     }
 
     case 'charge.refunded': {
-      // TODO: implement token burn / balance freeze on refund
-      log.warn('Stripe', 'Charge refunded — token reversal not yet implemented', {
-        chargeId: event.data.object.id,
-      });
+      const charge = event.data.object;
+      const paymentIntentId = charge.payment_intent || charge.id;
+
+      // El reembolso completo (estado, nota y webhook payment.refunded a la app
+      // creadora) ya lo implementa refundPayment(); aquí sólo hay que resolver el
+      // cargo de Stripe a la orden del libro mayor, que es lo que faltaba.
+      //
+      // ALCANCE: se revierte el estado en la plataforma, NO se toca la cadena. La
+      // quema del BEZ ya minteado exige decidir contrato y operación (burn desde
+      // tesorería contra un holder que puede haberlo movido ya), y eso no se
+      // decide aquí. La orden queda en 'refunded' con la nota del reembolso, que
+      // es el estado correcto para conciliarlo después.
+      try {
+        const order = await ledger.findByChargeId(paymentIntentId, 'stripe');
+
+        if (!order) {
+          log.warn('Stripe', 'Reembolso sin orden asociada — nada que revertir', {
+            chargeId: charge.id, paymentIntentId,
+          });
+          break;
+        }
+
+        await refundPayment({
+          paymentId: order.id,
+          reason: `stripe:charge.refunded:${charge.id}`,
+          requestedBy: 'stripe-webhook',
+        });
+
+        log.info('Stripe', 'Orden marcada como reembolsada', {
+          paymentId: order.id, chargeId: charge.id,
+        });
+
+        await ledger.notifyWalletOwner({
+          walletAddress: order.wallet_address,
+          type: 'transaction',
+          title: 'Reembolso procesado',
+          message: 'Tu compra ha sido reembolsada. El BEZ asociado queda pendiente de regularizar.',
+          metadata: { paymentId: order.id, chargeId: charge.id, provider: 'stripe' },
+        }).catch(() => { /* la notificación nunca bloquea el reembolso */ });
+      } catch (err) {
+        // ALREADY_REFUNDED es esperable: Stripe reenvía el evento hasta el 2xx.
+        if (err instanceof SettlementError && err.code === 'ALREADY_REFUNDED') {
+          log.info('Stripe', 'Reembolso ya aplicado — evento repetido', { chargeId: charge.id });
+          break;
+        }
+        log.error('Stripe', 'Fallo al aplicar el reembolso', {
+          chargeId: charge.id, error: err.message,
+        });
+      }
       break;
     }
 

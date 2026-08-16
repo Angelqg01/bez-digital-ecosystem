@@ -1,13 +1,18 @@
 # BeZhas — Docker Compose Unificado v2.0
 # ─────────────────────────────────────────────────────────────────────────────
-# Servicios P0 (ACTIVOS):    redis, agent-runtime, messaging-mcp
+# Servicios P0 (ACTIVOS):    redis, messaging-mcp, business-ops
 # Servicios P1 (Planificados): lead-mcp, open-webui
 # Servicios existentes:      api (3001), mcp-core (4001), postgres, ...
 #
+# `agent-lib` ya NO es un servicio: la Fase 5 de la fusión lo absorbió en
+# el proceso de la API (api/services/agentRuntime.js), donde los 5 agentes se
+# cablean una sola vez. Levantarlo aparte duplicaba el runtime y dejaba dos
+# fuentes de verdad para /api/agents. Ver docs/PLAN-FUSION-OPERANT.md.
+#
 # Uso:
 #   docker compose up -d                    → arranca todo
-#   docker compose up -d redis agent-runtime → solo P0
-#   docker compose logs -f agent-runtime    → ver logs
+#   docker compose up -d redis business-ops → solo P0
+#   docker compose logs -f business-ops     → ver logs
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
@@ -21,7 +26,9 @@ services:
     volumes:
       - redis-data:/data
     ports:
-      - "6379:6379"
+      # Mismo caso que el Postgres de arriba: el 6379 del anfitrión lo ocupa el
+      # Redis del proyecto operant. Dentro de la red sigue siendo el 6379.
+      - "${REDIS_HOST_PORT:-6380}:6379"
     networks:
       - bezhas-net
     healthcheck:
@@ -32,7 +39,15 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: bezhas-postgres
+    # `bezhas-postgres` a secas chocaba con el contenedor homónimo del proyecto
+    # bezhas-hub (App-nativas/Bezhas-Hub/docker-compose.full.yml): un
+    # container_name es global al demonio Docker, no del proyecto, y levantar
+    # este compose moría con "Conflict. The container name /bezhas-postgres is
+    # already in use". El nombre lleva ahora el proyecto delante.
+    #
+    # No afecta a la resolución entre servicios: esa usa el nombre de SERVICIO
+    # (`postgres`), que es lo que aparece en DATABASE_URL, no el del contenedor.
+    container_name: bezhas-blockchain-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB:       bezhas
@@ -41,7 +56,11 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # El 5432 del anfitrión ya lo ocupa el Postgres del proyecto bezhas-hub,
+      # y el arranque moría con "Bind for 0.0.0.0:5432 failed: port is already
+      # allocated". Dentro de la red sigue siendo el 5432 de siempre; esto solo
+      # cambia por dónde se entra desde fuera. Ajustable con POSTGRES_HOST_PORT.
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     networks:
       - bezhas-net
     healthcheck:
@@ -80,50 +99,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # ── P0: AGENT RUNTIME (OpenClaw + Orchestrator) ───────────────────────────
-  agent-runtime:
-    build:
-      context: ./agent-runtime
-      dockerfile: Dockerfile
-    container_name: bezhas-agent-runtime
-    restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
-      messaging-mcp:
-        condition: service_healthy
-      obsidian-mcp:
-        condition: service_healthy
-    environment:
-      NODE_ENV:                  ${NODE_ENV:-production}
-      # Redis
-      REDIS_URL:                 redis://redis:6379
-      REDIS_PREFIX:              "bezhas:mem:"
-      # Telegram
-      TELEGRAM_BOT_TOKEN:        ${TELEGRAM_BOT_TOKEN}
-      TELEGRAM_ALERT_CHAT_ID:    ${TELEGRAM_ALERT_CHAT_ID}
-      TELEGRAM_AUTHORIZED_USERS: ${TELEGRAM_AUTHORIZED_USERS}
-      BEZHAS_PUBLIC_URL:         ${BEZHAS_PUBLIC_URL:-https://mcp.bez.digital}
-      # LLM Cloud (cascade)
-      ANTHROPIC_API_KEY:         ${ANTHROPIC_API_KEY}
-      GEMINI_API_KEY:            ${GEMINI_API_KEY:-}
-      KIMI_API_KEY:              ${KIMI_API_KEY:-}
-      OPENAI_API_KEY:            ${OPENAI_API_KEY:-}
-      DEEPSEEK_API_KEY:          ${DEEPSEEK_API_KEY:-}
-      # Ollama local (apunta al host)
-      OLLAMA_HOST:               http://host.docker.internal:11434
-      # Human-in-loop
-      HIL_TIMEOUT_SECS:          120
-      # Memory settings
-      MEM_HISTORY_MAX:           100
-      MEM_STM_TTL:               3600
-      MEM_EPISODE_TTL:           604800
-      OBSIDIAN_MCP_URL:          http://obsidian-mcp:4007
-    extra_hosts:
-      - "host.docker.internal:host-gateway"   # acceso a Ollama en el host
-    networks:
-      - bezhas-net
 
   # ── P0: OBSIDIAN MCP (Knowledge Ops + memoria documental) ────────────────
   obsidian-mcp:
@@ -167,6 +142,20 @@ services:
       REDIS_URL:        redis://redis:6379
       JWT_SECRET:       ${JWT_SECRET}
       BEZHAS_API_KEY:   ${BEZHAS_API_KEY}
+      # config/secrets.js aborta el arranque en producción sin esta variable, y
+      # el compose solo pasaba BEZHAS_API_KEY, que es OTRA cosa. Resultado: la
+      # API no llegaba a levantar nunca desde este compose —moría en bucle con
+      # "FATAL: INTERNAL_API_KEY environment variable is required in
+      # production"— y como el contenedor reinicia, se veía como un servicio
+      # que "no acaba de arrancar" en vez de como una variable ausente.
+      #
+      # Es la MISMA clave que usa business-ops para hablar con la API, asi que
+      # comparten variable: si divergen, las llamadas internas dan 401.
+      INTERNAL_API_KEY: ${OPERANT_ADMIN_KEY:-operant-admin}
+      # Pagos. Sin estas, la facturación por consumo y el webhook de Stripe
+      # fallan al usarse — pero la API arranca igual, que antes no era el caso.
+      STRIPE_SECRET_KEY:     ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       PORT:             3001
     ports:
       - "3001:3001"
@@ -177,6 +166,111 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # ── BUSINESS-OPS / OPERANT ────────────────────────────────────────────────
+  # Plano de operación de empresa: los 10 departamentos de agentes.
+  #
+  # Base de datos PROPIA, y no por gusto: el rol dueño de la base de BeZhas se
+  # salta la Row-Level Security, y con él no habría aislamiento entre tenants.
+  # OPERANT se niega a arrancar si detecta ese caso. Además necesita pgvector
+  # para su memoria semántica, que la imagen alpine de arriba no trae.
+  operant-postgres:
+    image: pgvector/pgvector:pg16
+    container_name: operant-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       operant
+      POSTGRES_USER:     operant
+      POSTGRES_PASSWORD: ${OPERANT_POSTGRES_PASSWORD:-operant_secure_2026}
+    volumes:
+      - operant-postgres-data:/var/lib/postgresql/data
+    networks:
+      - bezhas-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U operant -d operant"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  business-ops:
+    build:
+      context: ./business-ops
+      dockerfile: Dockerfile
+    container_name: bezhas-business-ops
+    restart: unless-stopped
+    depends_on:
+      operant-postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      # La aplicación se conecta con operant_app, NUNCA con el dueño: un rol
+      # superusuario se salta la RLS y el aislamiento entre tenants desaparece.
+      DATABASE_URL: postgresql://operant_app:${OPERANT_APP_PASSWORD:-operant_app_2026}@operant-postgres:5432/operant
+      OWNER_DATABASE_URL: postgresql://operant:${OPERANT_POSTGRES_PASSWORD:-operant_secure_2026}@operant-postgres:5432/operant
+      PG_APP_PASSWORD: ${OPERANT_APP_PASSWORD:-operant_app_2026}
+      # Mismo secreto que firma la API: es lo que hace funcionar el puente de
+      # auth (una sesión de BeZhas vale aquí, sin repartir otra credencial).
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_API_KEY: ${OPERANT_ADMIN_KEY:-operant-admin}
+      # Lectura del stack de BeZhas (solo GET, endpoints públicos).
+      BEZHAS_API_URL: http://bezhas-api:3001
+      BEZHAS_TENANT_ID: bezhas
+      # Avisos por departamento. Sin chat, el aviso se construye y no sale: la
+      # aprobación se queda esperando en el panel.
+      TELEGRAM_ENABLED: ${TELEGRAM_ENABLED:-true}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_TOKEN_DIRECTOR: ${TELEGRAM_TOKEN_DIRECTOR}
+      TELEGRAM_TOKEN_FINANCE: ${TELEGRAM_TOKEN_FINANCE}
+      TELEGRAM_TOKEN_MARKETING: ${TELEGRAM_TOKEN_MARKETING}
+      TELEGRAM_TOKEN_DEVOPS: ${TELEGRAM_TOKEN_DEVOPS}
+      TELEGRAM_TOKEN_LEGAL: ${TELEGRAM_TOKEN_LEGAL}
+      TELEGRAM_CHAT_GENERAL: ${TELEGRAM_CHAT_GENERAL}
+      TELEGRAM_CHAT_CEO: ${TELEGRAM_CHAT_CEO}
+      TELEGRAM_CHAT_CFO: ${TELEGRAM_CHAT_CFO}
+      TELEGRAM_CHAT_CMO: ${TELEGRAM_CHAT_CMO}
+      TELEGRAM_CHAT_DEVOPS: ${TELEGRAM_CHAT_DEVOPS}
+      TELEGRAM_CHAT_LEGAL: ${TELEGRAM_CHAT_LEGAL}
+      HITL_TELEGRAM_CHAT_ID: ${HITL_TELEGRAM_CHAT_ID}
+      # Motor de razonamiento. Sin clave ni Ollama arranca en simulado y lo dice.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Ollama corre en el ANFITRIÓN, no en la red de compose: desde el
+      # contenedor, localhost es el propio contenedor. De ahí host.docker.internal
+      # y el extra_hosts de abajo.
+      OLLAMA_URL: ${OLLAMA_URL_CONTAINER:-http://host.docker.internal:11434}
+      # Modelos explícitos: el mapa por defecto pide qwen2.5:14b y solo están
+      # descargados el 7b y el 3b. Apuntar a un modelo ausente mata el tier.
+      TIER_FRONTIER_PROVIDER: ${TIER_FRONTIER_PROVIDER:-ollama}
+      TIER_FRONTIER_MODEL: ${TIER_FRONTIER_MODEL:-qwen2.5:7b}
+      TIER_MID_PROVIDER: ${TIER_MID_PROVIDER:-ollama}
+      TIER_MID_MODEL: ${TIER_MID_MODEL:-qwen2.5:7b}
+      TIER_FAST_PROVIDER: ${TIER_FAST_PROVIDER:-ollama}
+      TIER_FAST_MODEL: ${TIER_FAST_MODEL:-qwen2.5:3b}
+      # Correo propio (Stalwart). Con SMTP_HOST puesto el conector sale de
+      # simulado; si el servidor no responde queda `degradado` y /healthz lo
+      # dice — nunca da por enviado lo que no salió. Mientras Stalwart siga en
+      # modo bootstrap, dejar SMTP_HOST vacío: un simulado honesto es mejor que
+      # un modo smtp que falla en cada intento.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      # Métricas a Prometheus/Grafana, que ya viven en este compose.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Las migraciones se aplican con el rol DUEÑO (crean operant_app y la RLS);
+    # el servidor arranca después con el rol de aplicación. Son dos identidades
+    # distintas a propósito.
+    command: >
+      sh -c "DATABASE_URL=\"$$OWNER_DATABASE_URL\" node src/db/migrate.js &&
+             node src/server.js"
+    ports:
+      - "4000:4000"
+    networks:
+      - bezhas-net
 
   # ── BEZHAS CORE MCP (existente) ───────────────────────────────────────────
   bezhas-core-mcp:
@@ -266,6 +360,7 @@ networks:
 volumes:
   redis-data:
   postgres-data:
+  operant-postgres-data:
   open-webui-data:
   prometheus-data:
   grafana-data:

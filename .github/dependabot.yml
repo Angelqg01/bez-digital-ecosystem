@@ -32,13 +32,13 @@ updates:
 
   # ── Agent runtime ───────────────────────────────────────────────
   - package-ecosystem: npm
-    directory: /agent-runtime
+    directory: /agent-lib
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
     labels: [dependencies, security]
     groups:
-      agent-runtime-all:
+      agent-lib-all:
         update-types: [minor, patch]
 
   # ── SDK ─────────────────────────────────────────────────────────

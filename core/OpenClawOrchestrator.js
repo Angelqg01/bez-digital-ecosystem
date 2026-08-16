@@ -18,7 +18,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import axios from 'axios';
 import { agentRegistry } from './AgentToolRegistry.js';
-import GeminiClient from '../agent-runtime/core/GeminiClient.js';
+import GeminiClient from '../agent-lib/core/GeminiClient.js';
 
 // ─── Cascade de modelos cloud ─────────────────────────────────────────────────
 const CLOUD_MODELS = [
