@@ -552,6 +552,21 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:3001/api/energ
 cd api && pnpm test:unit && pnpm test:e2e
 ```
 
+> **`test:e2e` necesita cadena.** `live-chain.test.js` es la única suite que no
+> levanta su propia Anvil: mide el despliegue real de `DeployAll.s.sol`. Sin cadena
+> reventaba con 31 `AggregateError` vacíos —ECONNREFUSED envuelto por ethers— en cada
+> ejecución. Ahora se **salta** diciendo qué falta, porque 31 rojos que solo significan
+> "no había cadena" enseñan a ignorar los rojos justo en la suite que vigila los
+> contratos. Para ejecutarla de verdad:
+>
+> ```bash
+> anvil --port 8545 --silent &
+> cd smart-contracts && forge script script/DeployAll.s.sol --rpc-url http://localhost:8545 --broadcast
+> cd ../api && pnpm test:e2e     # 95/95, las 8 suites
+> ```
+>
+> El puerto se puede cambiar con `LIVE_CHAIN_RPC_URL`.
+
 Además, por fase: `GET /healthz` de `business-ops` en verde (store + modelo), y el digest
 del CEO generándose con KPIs reales en vez de simulados.
 

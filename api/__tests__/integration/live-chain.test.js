@@ -15,8 +15,11 @@
 const { ethers } = require('ethers');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
-const RPC_URL = 'http://localhost:8545';
+// Puerto 8545 por defecto (el de `anvil` a secas), pero configurable: quien
+// levante la cadena en otro sitio no debería tener que editar el test.
+const RPC_URL = process.env.LIVE_CHAIN_RPC_URL || 'http://localhost:8545';
 const CHAIN_ID = 31337;
 const DEPLOYER_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 const EDGE_NODE_KEY = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d';
@@ -34,12 +37,60 @@ function getContract(name, address, signerOrProvider) {
     return new ethers.Contract(address, loadABI(name), signerOrProvider);
 }
 
+// ── Requisitos previos ──
+//
+// Esta suite es la ÚNICA que no levanta su propia Anvil: mide el despliegue
+// real de DeployAll.s.sol, así que necesita una cadena ya en marcha y el
+// fichero de deployments. Antes, sin esos requisitos, reventaba con 31
+// `AggregateError` vacíos (ECONNREFUSED envuelto por ethers) cada vez que se
+// corría `pnpm test:e2e` sin cadena.
+//
+// 31 rojos que solo dicen "no había cadena" no son un fallo, son ruido — y
+// enseñan a ignorar los rojos, que es justo lo que no debe pasar en la suite
+// que vigila los contratos. Ahora se SALTA, diciendo por qué.
+//
+// La comprobación es síncrona a propósito: el cuerpo de `describe` se evalúa
+// antes de que corra ningún hook, así que un `beforeAll` asíncrono llegaría
+// tarde para decidir si registrar los tests o no.
+function cadenaViva() {
+    if (!fs.existsSync(DEPLOYMENTS_FILE)) return false;
+    const { hostname, port } = new URL(RPC_URL);
+    try {
+        // Sondeo TCP con el propio Node en un subproceso. Se evita `nc` a
+        // posta: es un binario externo que puede no estar en el runner de CI,
+        // y entonces la suite se saltaria por falta de netcat en vez de por
+        // falta de cadena — un falso motivo es peor que ninguno.
+        execFileSync(
+            process.execPath,
+            ['-e', `const s=require('net').connect(${Number(port) || 8545},${JSON.stringify(hostname)});` +
+                   `s.setTimeout(2000);` +
+                   `s.on('connect',()=>{s.destroy();process.exit(0)});` +
+                   `s.on('error',()=>process.exit(1));` +
+                   `s.on('timeout',()=>{s.destroy();process.exit(1)});`],
+            { stdio: 'ignore' },
+        );
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+const HAY_CADENA = cadenaViva();
+const describeSiCadena = HAY_CADENA ? describe : describe.skip;
+
+if (!HAY_CADENA) {
+    console.warn(
+        `[live-chain] SALTADA: hace falta una cadena en ${RPC_URL} con los contratos ` +
+        `de DeployAll.s.sol desplegados y ${path.basename(DEPLOYMENTS_FILE)} presente.\n` +
+        `[live-chain] Para ejecutarla:  anvil &  y  forge script script/DeployAll.s.sol ` +
+        `--rpc-url ${RPC_URL} --broadcast`,
+    );
+}
+
 // ── Setup ──
 
 beforeAll(async () => {
-    if (!fs.existsSync(DEPLOYMENTS_FILE)) {
-        throw new Error('Deployment file not found. Run forge deploy first.');
-    }
+    if (!HAY_CADENA) return;
     deployments = JSON.parse(fs.readFileSync(DEPLOYMENTS_FILE, 'utf8'));
 
     provider = new ethers.JsonRpcProvider(RPC_URL, undefined, { cacheTimeout: -1 });
@@ -55,7 +106,7 @@ beforeAll(async () => {
 //  Core Contract Reads
 // ═══════════════════════════════════════════════
 
-describe('Core contracts — BEZCoinV2', () => {
+describeSiCadena('Core contracts — BEZCoinV2', () => {
     let bez;
 
     beforeAll(() => {
@@ -95,7 +146,7 @@ describe('Core contracts — BEZCoinV2', () => {
     });
 });
 
-describe('Core contracts — BeZhasLogisticsNFT', () => {
+describeSiCadena('Core contracts — BeZhasLogisticsNFT', () => {
     let nft;
 
     beforeAll(() => {
@@ -119,7 +170,7 @@ describe('Core contracts — BeZhasLogisticsNFT', () => {
     });
 });
 
-describe('Core contracts — StakingPool', () => {
+describeSiCadena('Core contracts — StakingPool', () => {
     test('bezToken points to BEZCoinV2', async () => {
         const staking = getContract('StakingPool', deployments.core.StakingPool, provider);
         const bezToken = await staking.bezToken();
@@ -127,7 +178,7 @@ describe('Core contracts — StakingPool', () => {
     });
 });
 
-describe('Core contracts — LiquidityFarming', () => {
+describeSiCadena('Core contracts — LiquidityFarming', () => {
     test('bez token points to BEZCoinV2', async () => {
         const farming = getContract('LiquidityFarming', deployments.core.LiquidityFarming, provider);
         const bezToken = await farming.bez();
@@ -135,7 +186,7 @@ describe('Core contracts — LiquidityFarming', () => {
     });
 });
 
-describe('Core contracts — BeZhasBridgeL2', () => {
+describeSiCadena('Core contracts — BeZhasBridgeL2', () => {
     test('bezToken points to BEZCoinV2', async () => {
         const bridge = getContract('BeZhasBridgeL2', deployments.core.BeZhasBridgeL2, provider);
         const bezToken = await bridge.bezToken();
@@ -143,7 +194,7 @@ describe('Core contracts — BeZhasBridgeL2', () => {
     });
 });
 
-describe('Core contracts — QualityEscrow', () => {
+describeSiCadena('Core contracts — QualityEscrow', () => {
     test('edge node has EDGE_NODE_ROLE', async () => {
         const escrow = getContract('QualityEscrow', deployments.core.QualityEscrow, provider);
         const role = await escrow.EDGE_NODE_ROLE();
@@ -167,7 +218,7 @@ describe('Core contracts — QualityEscrow', () => {
 //  Sector Contract Verification — Bytecode Check
 // ═══════════════════════════════════════════════
 
-describe('Sector contracts — all 60 deployed', () => {
+describeSiCadena('Sector contracts — all 60 deployed', () => {
     const SECTORS = [
         'health', 'energy', 'automotive', 'manufacturing',
         'agriculture', 'insurance', 'education', 'entertainment',
@@ -189,7 +240,7 @@ describe('Sector contracts — all 60 deployed', () => {
 //  Blockchain Stats
 // ═══════════════════════════════════════════════
 
-describe('Blockchain stats', () => {
+describeSiCadena('Blockchain stats', () => {
     test('block number > 0', async () => {
         const block = await provider.getBlockNumber();
         expect(block).toBeGreaterThan(0);
@@ -210,7 +261,7 @@ describe('Blockchain stats', () => {
 //  Cross-Contract Integration
 // ═══════════════════════════════════════════════
 
-describe('Cross-contract integration', () => {
+describeSiCadena('Cross-contract integration', () => {
     test('approve + stake BEZ tokens', async () => {
         const bez = getContract('BEZCoinV2', deployments.core.BEZCoinV2, edgeNode);
         const stakingAddr = deployments.core.StakingPool;
