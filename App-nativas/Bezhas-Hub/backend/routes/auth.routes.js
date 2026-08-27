@@ -1819,25 +1819,55 @@ router.get('/wallet-reminder', async (req, res) => {
 
 /**
  * @route   POST /api/auth/linkedin
- * @desc    Login/Register with LinkedIn OAuth
+ * @desc    Login/Register with LinkedIn OAuth (Authorization Code flow, OIDC)
  * @access  Public
+ *
+ * El frontend solo tiene el `code` que LinkedIn devuelve en el redirect — nunca
+ * un access_token, que solo puede obtenerse intercambiando ese `code` con el
+ * client_secret, y eso tiene que pasar aquí, en el servidor. Antes esta ruta
+ * esperaba directamente un `accessToken` que nadie llegaba a generar: el
+ * frontend reenviaba el `code` sin más, LinkedIn lo rechazaba como Bearer token
+ * inválido y el login fallaba siempre en producción (solo "funcionaba" en el
+ * modo simulación sin keys configuradas).
  */
 router.post('/linkedin', [
-  body('accessToken').isString().notEmpty().withMessage('LinkedIn Access Token requerido')
+  body('code').isString().notEmpty().withMessage('LinkedIn authorization code requerido'),
+  body('redirectUri').isString().notEmpty().withMessage('redirectUri requerido'),
 ], async (req, res) => {
-  const { accessToken, referralCode } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { code, redirectUri, referralCode } = req.body;
 
   try {
     let userData;
 
     // Verificar si hay configuración real de LinkedIn
     const linkedinClientId = process.env.LINKEDIN_CLIENT_ID;
-    const isConfigured = linkedinClientId && !linkedinClientId.includes('YOUR_LINKEDIN_CLIENT_ID');
+    const linkedinClientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+    const isConfigured = linkedinClientId && linkedinClientSecret && !linkedinClientId.includes('YOUR_LINKEDIN_CLIENT_ID');
 
     if (isConfigured) {
-      // En producción: verificar token con LinkedIn API
       const axios = require('axios');
-      // 1. Obtener User Profile
+
+      // 1. Intercambiar el code por un access_token (requiere el client_secret,
+      //    por eso este paso no puede hacerse en el navegador).
+      const tokenResponse = await axios.post(
+        'https://www.linkedin.com/oauth/v2/accessToken',
+        new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: redirectUri,
+          client_id: linkedinClientId,
+          client_secret: linkedinClientSecret,
+        }),
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      );
+      const accessToken = tokenResponse.data.access_token;
+
+      // 2. Obtener el perfil (OpenID Connect userinfo)
       const profileResponse = await axios.get('https://api.linkedin.com/v2/userinfo', {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
@@ -1913,7 +1943,7 @@ router.post('/linkedin', [
     });
 
   } catch (error) {
-    console.error('Error en LinkedIn Auth:', error);
+    console.error('Error en LinkedIn Auth:', error.response?.data || error.message);
     res.status(500).json({ error: 'Error en autenticación con LinkedIn' });
   }
 });

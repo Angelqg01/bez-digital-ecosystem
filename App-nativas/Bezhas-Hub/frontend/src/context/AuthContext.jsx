@@ -225,10 +225,10 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const loginWithLinkedIn = async (code) => {
+    const loginWithLinkedIn = async (code, redirectUri) => {
         setLoading(true);
         try {
-            const data = await authService.loginWithLinkedIn(code);
+            const data = await authService.loginWithLinkedIn(code, redirectUri);
             setUser(data.user);
             setToken(data.token);
             localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));

@@ -2,7 +2,7 @@ import React, { Suspense, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Code2 } from 'lucide-react';
 
-import { AuthProvider, useAuth, HeaderAuthButton, LockScreen } from './context/AuthProvider';
+import { AuthProvider, useAuth, HeaderAuthButton, LockScreen, OrganizationBar, OrganizationSettingsPage } from './context/AuthProvider';
 import { useGasTank } from '@bezhas/platform-sdk/gas';
 
 import EcosystemBar from './components/EcosystemBar';
@@ -66,9 +66,16 @@ const ROUTES = Object.freeze({
   validators: '/validators',
   governance: '/governance',
   gasTank: '/gas-tank',
+  organization: '/organization',
 });
 
 const NAV_GROUPS = Object.freeze([
+  {
+    title: 'Empresa',
+    items: [
+      { path: ROUTES.organization, icon: '🏢', label: 'Organización' },
+    ],
+  },
   {
     title: 'Wallet',
     items: [
@@ -291,6 +298,7 @@ function AppRoutes() {
         <Route path={ROUTES.governance} element={<Governance />} />
         <Route path={ROUTES.validators} element={<Validators />} />
         <Route path={ROUTES.gasTank} element={<GasTank />} />
+        <Route path={ROUTES.organization} element={<OrganizationSettingsPage />} />
 
         <Route path="/bez-scaner" element={<Navigate to={ROUTES.scanner} replace />} />
         <Route path="*" element={<NotFound />} />
@@ -334,7 +342,10 @@ function App() {
               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#00f0ff' }}>🌐 BeZhas L2 Network</span>
               <span style={{ fontSize: '10px', background: 'rgba(0, 240, 255, 0.1)', color: '#00f0ff', padding: '2px 8px', borderRadius: '12px', fontWeight: 800 }}>TESTNET ACTIVE</span>
             </div>
-            <HeaderAuthButton />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <OrganizationBar />
+              <HeaderAuthButton />
+            </div>
           </div>
         )}
 

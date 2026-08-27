@@ -1,10 +1,11 @@
 import React from 'react';
-import SafeGoogleLogin from './SafeGoogleLogin';
-import http from '../../services/http';
 
 /**
  * OAuthButtons
- * Renders Google, GitHub and LinkedIn sign-in buttons in a unified style.
+ * Renders GitHub and LinkedIn sign-in buttons in a unified style.
+ *
+ * Google y Facebook se retiraron a propósito del login: decisión de producto,
+ * no un ajuste técnico — solo quedan email/contraseña, wallet y LinkedIn.
  *
  * Props
  *  onSuccess(authData)  – called when any provider succeeds (receives { user, token })
@@ -13,22 +14,6 @@ import http from '../../services/http';
  *  mode                 – 'register' | 'login' (cosmetic only)
  */
 export default function OAuthButtons({ onSuccess, onError, mode = 'login' }) {
-    /* ── Google ──────────────────────────────────────── */
-    const handleGoogleSuccess = async (credentialResponse) => {
-        try {
-            const { data } = await http.post('/api/auth/google', {
-                idToken: credentialResponse.credential,
-            });
-            if (data.token) {
-                onSuccess(data);
-            } else {
-                onError && onError(data.error || 'Error con Google');
-            }
-        } catch (err) {
-            onError && onError('Error de conexión con Google');
-        }
-    };
-
     /* ── GitHub ──────────────────────────────────────── */
     const handleGitHub = () => {
         const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
@@ -56,21 +41,6 @@ export default function OAuthButtons({ onSuccess, onError, mode = 'login' }) {
 
     return (
         <div className="space-y-2 w-full">
-            {/* Google — uses the official GSI button */}
-            <div className="flex justify-center">
-                <SafeGoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => onError && onError('Error con Google')}
-                    useOneTap={false}
-                    type="standard"
-                    theme="filled_black"
-                    size="large"
-                    text={mode === 'register' ? 'signup_with' : 'signin_with'}
-                    shape="rectangular"
-                    logo_alignment="left"
-                />
-            </div>
-
             {/* GitHub */}
             <button
                 type="button"

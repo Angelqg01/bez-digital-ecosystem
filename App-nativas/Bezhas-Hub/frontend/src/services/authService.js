@@ -78,8 +78,8 @@ export async function loginWithGitHub(code) {
     return res.data;
 }
 
-export async function loginWithLinkedIn(accessToken) {
-    const res = await axios.post(`${API_URL}/auth/linkedin`, { accessToken });
+export async function loginWithLinkedIn(code, redirectUri) {
+    const res = await axios.post(`${API_URL}/auth/linkedin`, { code, redirectUri });
     return res.data;
 }
 

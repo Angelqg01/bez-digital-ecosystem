@@ -7,24 +7,41 @@ export default function LinkedInCallback() {
     const { loginWithLinkedIn } = useAuth();
     const navigate = useNavigate();
     const code = searchParams.get('code');
+    const returnedState = searchParams.get('state');
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (code) {
-            loginWithLinkedIn(code)
-                .then(() => {
-                    // Success - navigate to feed
-                    setTimeout(() => navigate('/feed'), 500);
-                })
-                .catch((err) => {
-                    console.error('LinkedIn Login Error:', err);
-                    setError(err.message || 'Error en autenticación con LinkedIn');
-                    setTimeout(() => navigate('/login?error=linkedin_failed'), 2000);
-                });
-        } else {
+        if (!code) {
             navigate('/login');
+            return;
         }
-    }, [code, loginWithLinkedIn, navigate]);
+
+        // El `state` viaja y vuelve para que un callback lanzado por otro origen
+        // (CSRF) no pueda colarse como si fuera esta sesión — se guardó en
+        // sessionStorage justo antes de salir hacia LinkedIn (ver OAuthButtons).
+        const expectedState = sessionStorage.getItem('linkedin_oauth_state');
+        sessionStorage.removeItem('linkedin_oauth_state');
+        if (!expectedState || returnedState !== expectedState) {
+            setError('El estado de la sesión de LinkedIn no coincide. Vuelve a intentarlo.');
+            setTimeout(() => navigate('/login?error=linkedin_failed'), 2000);
+            return;
+        }
+
+        // Debe ser byte a byte el mismo valor que se envió en la petición de
+        // autorización — LinkedIn rechaza el intercambio si no coincide.
+        const redirectUri = `${window.location.origin}/auth/linkedin/callback`;
+
+        loginWithLinkedIn(code, redirectUri)
+            .then(() => {
+                // Success - navigate to feed
+                setTimeout(() => navigate('/feed'), 500);
+            })
+            .catch((err) => {
+                console.error('LinkedIn Login Error:', err);
+                setError(err.message || 'Error en autenticación con LinkedIn');
+                setTimeout(() => navigate('/login?error=linkedin_failed'), 2000);
+            });
+    }, [code, returnedState, loginWithLinkedIn, navigate]);
 
     if (error) {
         return (

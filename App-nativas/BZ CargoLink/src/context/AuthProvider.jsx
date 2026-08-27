@@ -17,7 +17,9 @@ import {
   HeaderAuthButton,
   LockScreen,
   AuthModal,
+  OrganizationBar,
 } from '../../../_shared/BezhasAuthProvider.jsx';
+import { OrganizationSettingsPage } from '../../../_shared/OrganizationSettings.jsx';
 
 /**
  * Esta app no proxya `/api`, asi que necesita la URL absoluta de la API core.
@@ -34,5 +36,5 @@ export function AuthProvider({ children }) {
   );
 }
 
-export { useAuth, HeaderAuthButton, LockScreen, AuthModal };
+export { useAuth, HeaderAuthButton, LockScreen, AuthModal, OrganizationBar, OrganizationSettingsPage };
 export default AuthProvider;

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import EcosystemBar from './components/EcosystemBar'
 import GuidedTour, { TourButton } from './components/GuidedTour'
-import { AuthProvider, useAuth, HeaderAuthButton, LockScreen } from './context/AuthProvider'
+import { AuthProvider, useAuth, HeaderAuthButton, LockScreen, OrganizationBar, OrganizationSettingsPage } from './context/AuthProvider'
 
 // Pages
 import ActiveRoute from './pages/ActiveRoute'
@@ -58,6 +58,10 @@ const App = () => {
               <Code2 size={16} color="var(--bz-primary)" />
               <span style={{ fontSize: 10, fontWeight: 800 }}>API HUB</span>
             </Link>
+            <Link to="/organization" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--bz-text)', background: 'var(--bz-surface-container)', padding: '6px 12px', borderRadius: 6, border: '1px solid var(--bz-border)', textDecoration: 'none' }} title="Organización: KYB, blockchain, facturación">
+              <span style={{ fontSize: 10, fontWeight: 800 }}>ORG</span>
+            </Link>
+            <OrganizationBar />
             <HeaderAuthButton />
           </div>
         </header>
@@ -76,6 +80,7 @@ const App = () => {
               <Route path="/integration" element={<DeveloperIntegration />} />
               <Route path="/telemetry" element={<Telemetry />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/organization" element={<OrganizationSettingsPage />} />
               <Route path="/tx/:bUid" element={<TransactionDetail />} />
             </Routes>
           )}

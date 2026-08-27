@@ -23,7 +23,11 @@ function authenticateToken(req, res, next) {
 
     if (!token) return res.status(401).json({ error: 'Access token required' });
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    // `algorithms` fijado a propósito: sin él, la librería acepta cualquier
+    // algoritmo compatible con la clave y se abre la puerta a la confusión de
+    // algoritmo. Los tokens se firman con HS256 (secreto simétrico), así que
+    // ese es el único que debe validarse.
+    jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }, (err, user) => {
         if (err) return res.status(403).json({ error: 'Invalid or expired token' });
 
         // Verificación PQC out-of-band: firma viaja en headers X-PQC-*.
@@ -104,6 +108,49 @@ function requireRole(...roles) {
     };
 }
 
+// ── Role-based access control, scoped to an organization ──
+// A user's role in `users.role` is platform-wide (admin/enterprise/...); their
+// role *inside a given company* (owner/admin/developer/auditor/financial/
+// operator) lives in `organization_members` instead, since the same person
+// can hold different roles in different organizations. Expects the route to
+// carry the org id as `req.params.orgId`. Platform admins always pass, so
+// support can act on any organization without needing a membership row.
+function requireOrgRole(...roles) {
+    return async (req, res, next) => {
+        if (!req.user || !req.user.userId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        const orgId = req.params.orgId;
+        if (!orgId) {
+            return res.status(400).json({ error: 'Organization id required' });
+        }
+
+        if (req.user.role === 'admin') {
+            req.orgRole = 'admin';
+            return next();
+        }
+
+        const { rows } = await query(
+            `SELECT role FROM organization_members
+             WHERE organization_id = $1 AND user_id = $2 AND status = 'active'`,
+            [orgId, req.user.userId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(403).json({ error: 'Not a member of this organization' });
+        }
+
+        const orgRole = rows[0].role;
+        if (!roles.includes(orgRole)) {
+            return res.status(403).json({ error: `Role '${orgRole}' not authorized. Required: ${roles.join(', ')}` });
+        }
+
+        req.orgRole = orgRole;
+        next();
+    };
+}
+
 // ── Per-enterprise Redis rate limiting ──
 function enterpriseRateLimit(limit = 100, windowSec = 60) {
     return async (req, res, next) => {
@@ -157,6 +204,7 @@ module.exports = {
     authenticateToken,
     verifyWalletSignature,
     requireRole,
+    requireOrgRole,
     enterpriseRateLimit,
     auditLog,
 };

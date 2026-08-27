@@ -32,14 +32,27 @@ import {
   Factory
 } from 'lucide-react'
 import { NotificationProvider } from './components/NotificationSystem'
-import { HeaderAuthButton } from '../../_shared/BezhasAuthProvider.jsx'
+import { HeaderAuthButton, OrganizationBar } from '../../_shared/BezhasAuthProvider.jsx'
+import { OrganizationSettingsPage } from '../../_shared/OrganizationSettings.jsx'
 
 const App = () => {
   return (
     <NotificationProvider>
       <Router>
         <div className="app-shell">
-          <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 200 }}>
+          <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 200, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <NavLink
+              to="/organization"
+              title="Organización: KYB, blockchain, facturación"
+              style={{
+                display: 'flex', alignItems: 'center', padding: '6px 14px', borderRadius: 20,
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#94a3b8', fontSize: 11, fontWeight: 700, textDecoration: 'none',
+              }}
+            >
+              🏢 Org
+            </NavLink>
+            <OrganizationBar />
             <HeaderAuthButton />
           </div>
           <Routes>
@@ -57,6 +70,7 @@ const App = () => {
             <Route path="/investor" element={<InvestorDashboard />} />
             <Route path="/energy" element={<EnergyModule />} />
             <Route path="/identity" element={<IdentityModule />} />
+            <Route path="/organization" element={<OrganizationSettingsPage />} />
             <Route path="/industrial" element={<IndustrialModule />} />
           </Routes>
 

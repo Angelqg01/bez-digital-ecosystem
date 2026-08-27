@@ -27,6 +27,7 @@ import {
 const JWT_KEY = 'bezhas-jwt';
 const USER_KEY = 'bezhas-user';
 const BEZHAS_ID_KEY = 'bezhas-id';
+const ACTIVE_ORG_KEY = 'bezhas-active-org';
 
 const AuthContext = createContext(null);
 
@@ -63,13 +64,24 @@ function hubApiBase(coreFallback) {
   return coreFallback != null ? coreFallback : normalizeApiBase(coreApiBase());
 }
 
-async function postJson(url, body, timeoutMs = 12000) {
+async function postJson(url, body, timeoutMs = 12000, extraHeaders = {}) {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(timeoutMs),
   });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error || data.message || `Error ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+async function getJson(url, extraHeaders = {}, timeoutMs = 10000) {
+  const res = await fetch(url, { headers: extraHeaders, signal: AbortSignal.timeout(timeoutMs) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data.error || data.message || `Error ${res.status}`);
@@ -102,6 +114,48 @@ export function BezhasAuthProvider({
   const [bezhasId, setBezhasId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [organizations, setOrganizations] = useState([]);
+  const [activeOrgId, setActiveOrgId] = useState(null);
+
+  /**
+   * Empresas del usuario, con su rol en cada una (`my_role`, ver
+   * routes/organizations.js). Es la base de las pestañas de Settings
+   * (KYB, Blockchain, Facturación, Seguridad): cada una decide si mostrarse
+   * comprobando `hasOrgRole(...)` contra la organización activa.
+   */
+  const fetchOrganizations = useCallback(async (jwt) => {
+    if (!jwt) return;
+    try {
+      const data = await getJson(`${CORE}/api/organizations/mine`, { Authorization: `Bearer ${jwt}` });
+      const orgs = data.organizations || [];
+      setOrganizations(orgs);
+
+      const storedOrgId = (() => {
+        try { return localStorage.getItem(ACTIVE_ORG_KEY); } catch { return null; }
+      })();
+      if (storedOrgId && orgs.some((o) => o.id === storedOrgId)) {
+        setActiveOrgId(storedOrgId);
+      } else if (orgs.length) {
+        setActiveOrgId(orgs[0].id);
+      }
+    } catch { /* API/organizaciones caída no debe impedir el login */ }
+  }, [CORE]);
+
+  const activeOrganization = useMemo(
+    () => organizations.find((o) => o.id === activeOrgId) || organizations[0] || null,
+    [organizations, activeOrgId],
+  );
+
+  const switchOrganization = useCallback((orgId) => {
+    setActiveOrgId(orgId);
+    try { localStorage.setItem(ACTIVE_ORG_KEY, orgId); } catch { /* localStorage bloqueado */ }
+  }, []);
+
+  /** ¿Tiene el usuario alguno de estos roles en la organización activa? */
+  const hasOrgRole = useCallback(
+    (...roles) => Boolean(activeOrganization && roles.includes(activeOrganization.my_role)),
+    [activeOrganization],
+  );
 
   /**
    * Pide al Hub el BeZhas_ID canónico (BZ-XXXXXXXXXX) y lo persiste. Es lo que
@@ -134,6 +188,7 @@ export function BezhasAuthProvider({
     setToken(jwt);
     setUser(backendUser);
     setModalOpen(false);
+    fetchOrganizations(jwt);
 
     if (extra.pqc || extra.address) {
       saveSession({
@@ -157,7 +212,7 @@ export function BezhasAuthProvider({
         userId: backendUser.id,
       });
     }
-  }, [resolveBezhasId]);
+  }, [resolveBezhasId, fetchOrganizations]);
 
   // Arranque: token por SSO en la URL → localStorage → sesión de wallet previa.
   useEffect(() => {
@@ -189,6 +244,7 @@ export function BezhasAuthProvider({
         if (storedId) setBezhasId(storedId);
         else resolveBezhasId({ email: ssoUser.email, walletAddress: ssoUser.walletAddress, userId: ssoUser.id });
 
+        fetchOrganizations(ssoToken);
         setIsLoading(false);
         return;
       }
@@ -199,6 +255,7 @@ export function BezhasAuthProvider({
         try { setUser(JSON.parse(localStorage.getItem(USER_KEY) || 'null')); } catch { setUser(null); }
         const storedId = localStorage.getItem(BEZHAS_ID_KEY);
         if (storedId) setBezhasId(storedId);
+        fetchOrganizations(localToken);
       } else {
         // Sesión de wallet guardada por WalletAuthButton sin pasar por aquí.
         const walletSession = getSession();
@@ -206,11 +263,12 @@ export function BezhasAuthProvider({
           setToken(walletSession.token);
           setUser(walletSession.user || null);
           if (walletSession.bezhasId) setBezhasId(walletSession.bezhasId);
+          fetchOrganizations(walletSession.token);
         }
       }
     } catch { /* localStorage bloqueado (modo incógnito estricto) */ }
     setIsLoading(false);
-  }, [resolveBezhasId]);
+  }, [resolveBezhasId, fetchOrganizations]);
 
   // ── Acciones ──────────────────────────────────────────────────────────────
 
@@ -264,24 +322,41 @@ export function BezhasAuthProvider({
     localStorage.removeItem(JWT_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(BEZHAS_ID_KEY);
+    localStorage.removeItem(ACTIVE_ORG_KEY);
     setToken(null);
     setUser(null);
     setBezhasId(null);
+    setOrganizations([]);
+    setActiveOrgId(null);
   }, []);
 
   /** Cabeceras para llamar a la API con la sesión actual. */
   const authHeaders = useCallback(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
+  /** Crea una empresa nueva y la deja como organización activa. */
+  const createOrganization = useCallback(async (name) => {
+    const data = await postJson(`${CORE}/api/organizations`, { name }, 12000, authHeaders());
+    await fetchOrganizations(token);
+    if (data.organization?.id) switchOrganization(data.organization.id);
+    return data;
+  }, [CORE, authHeaders, fetchOrganizations, token, switchOrganization]);
+
+  const refreshOrganizations = useCallback(() => fetchOrganizations(token), [fetchOrganizations, token]);
+
   const value = useMemo(() => ({
     token, user, bezhasId, isLoading,
     isAuthenticated: Boolean(token),
-    appName, accent, subscribePlan,
+    appName, accent, subscribePlan, apiBase: CORE,
     login, register, loginWithWallet, subscribeWithBEZPlan, logout, authHeaders,
     isLoginModalOpen: modalOpen,
     openLoginModal: () => setModalOpen(true),
     closeLoginModal: () => setModalOpen(false),
-  }), [token, user, bezhasId, isLoading, appName, accent, subscribePlan,
-    login, register, loginWithWallet, subscribeWithBEZPlan, logout, authHeaders, modalOpen]);
+    // Organizaciones (empresas) del usuario y RBAC por rol dentro de cada una.
+    organizations, activeOrganization, switchOrganization,
+    hasOrgRole, createOrganization, refreshOrganizations,
+  }), [token, user, bezhasId, isLoading, appName, accent, subscribePlan, CORE,
+    login, register, loginWithWallet, subscribeWithBEZPlan, logout, authHeaders, modalOpen,
+    organizations, activeOrganization, switchOrganization, hasOrgRole, createOrganization, refreshOrganizations]);
 
   return (
     <AuthContext.Provider value={value}>
@@ -570,6 +645,172 @@ export function AuthModal({ onClose }) {
           Sign-In With Ethereum · firma criptográfica, sin contraseña
         </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * OrganizationBar — alta y cambio de empresa activa. Se coloca junto a
+ * <HeaderAuthButton /> en el layout de cada SubApp.
+ *
+ * Sin organizaciones: un pill "+ Crear empresa" que abre el formulario.
+ * Con una o más: un pill con el nombre + rol de la organización activa que
+ * despliega el resto para cambiar, más "+ Nueva empresa".
+ *
+ * Es deliberadamente mínimo (solo nombre) — los datos legales/fiscales (KYB),
+ * la config técnica/cripto y la facturación se completan después en Settings,
+ * ya con `organization_id` y el rol del usuario en esa empresa.
+ */
+export function OrganizationBar() {
+  const {
+    isAuthenticated, isLoading, accent,
+    organizations, activeOrganization, switchOrganization, createOrganization,
+  } = useAuth();
+  const [formOpen, setFormOpen] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  if (!isAuthenticated || isLoading) return null;
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!name.trim()) return setError('Escribe un nombre.');
+    setBusy(true);
+    try {
+      await createOrganization(name.trim());
+      setName('');
+      setFormOpen(false);
+    } catch (err) {
+      setError(err?.message || 'No se pudo crear la empresa.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const pillStyle = {
+    display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px',
+    background: 'rgba(255,255,255,0.05)', border: `1px solid ${accent}55`,
+    borderRadius: 20, color: accent, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {organizations.length === 0 ? (
+        <button onClick={() => setFormOpen(true)} style={pillStyle}>+ Crear empresa</button>
+      ) : (
+        <button onClick={() => setSwitcherOpen((v) => !v)} style={pillStyle}>
+          🏢 {activeOrganization?.name}
+          <span style={{ fontSize: 9, color: '#94a3b8', textTransform: 'uppercase' }}>
+            {activeOrganization?.my_role}
+          </span>
+        </button>
+      )}
+
+      {switcherOpen && organizations.length > 0 && (
+        <>
+          <div
+            onClick={() => setSwitcherOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+          />
+          <div style={{
+            position: 'absolute', top: '110%', right: 0, minWidth: 200, zIndex: 50,
+            background: '#090d16', border: `1px solid ${accent}33`, borderRadius: 12,
+            padding: 6, boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+          }}>
+            {organizations.map((o) => (
+              <button
+                key={o.id}
+                onClick={() => { switchOrganization(o.id); setSwitcherOpen(false); }}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', width: '100%',
+                  background: o.id === activeOrganization?.id ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  border: 'none', borderRadius: 8, color: '#fff', padding: '8px 10px',
+                  fontSize: 12, cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <span>{o.name}</span>
+                <span style={{ fontSize: 9, color: '#64748b', textTransform: 'uppercase' }}>{o.my_role}</span>
+              </button>
+            ))}
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
+            <button
+              onClick={() => { setSwitcherOpen(false); setFormOpen(true); }}
+              style={{
+                width: '100%', background: 'transparent', border: 'none', color: accent,
+                padding: '8px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              + Nueva empresa
+            </button>
+          </div>
+        </>
+      )}
+
+      {formOpen && (
+        <div
+          onClick={(e) => e.target === e.currentTarget && setFormOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(4,7,15,0.85)',
+            backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', padding: 16,
+          }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 380, background: '#090d16',
+            border: `1px solid ${accent}33`, borderRadius: 24, padding: 28,
+          }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', margin: '0 0 6px' }}>
+              Registra tu empresa
+            </h3>
+            <p style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, marginBottom: 18 }}>
+              Necesitas una organización para gestionar datos fiscales (KYB), wallets corporativas,
+              facturación y los roles de tu equipo.
+            </p>
+            {error && (
+              <div style={{
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                color: '#ef4444', padding: '10px 14px', borderRadius: 10,
+                fontSize: 11, marginBottom: 14, fontWeight: 600,
+              }}>
+                {error}
+              </div>
+            )}
+            <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
+              <input
+                autoFocus placeholder="Nombre de la empresa" value={name}
+                onChange={(e) => setName(e.target.value)}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12,
+                  padding: '10px 14px', color: '#fff', fontSize: 13, outline: 'none',
+                }}
+              />
+              <button
+                type="submit" disabled={busy}
+                style={{
+                  width: '100%', background: accent, border: 'none', borderRadius: 12,
+                  color: '#04070f', padding: 12, fontSize: 13, fontWeight: 800,
+                  cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.7 : 1,
+                }}
+              >
+                {busy ? 'Creando…' : 'Crear empresa'}
+              </button>
+            </form>
+            <button
+              onClick={() => setFormOpen(false)}
+              style={{
+                width: '100%', background: 'none', border: 'none', color: '#64748b',
+                fontSize: 11, marginTop: 12, cursor: 'pointer',
+              }}
+            >
+              {organizations.length === 0 ? 'Ahora no' : 'Cerrar'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

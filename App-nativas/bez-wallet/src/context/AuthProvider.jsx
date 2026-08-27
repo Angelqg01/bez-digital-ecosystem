@@ -17,7 +17,9 @@ import {
   HeaderAuthButton,
   LockScreen,
   AuthModal,
+  OrganizationBar,
 } from '../../../_shared/BezhasAuthProvider.jsx';
+import { OrganizationSettingsPage } from '../../../_shared/OrganizationSettings.jsx';
 
 /**
  * En dev, vite.config proxya `/api` a la API core (localhost:3001), así que la
@@ -34,5 +36,5 @@ export function AuthProvider({ children }) {
   );
 }
 
-export { useAuth, HeaderAuthButton, LockScreen, AuthModal };
+export { useAuth, HeaderAuthButton, LockScreen, AuthModal, OrganizationBar, OrganizationSettingsPage };
 export default AuthProvider;

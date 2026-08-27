@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
-const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 const ADMIN_WALLETS = [
     '0x52Df82920CBAE522880dD7657e43d1A754eD044E',
@@ -47,48 +45,6 @@ export default function AdminLogin() {
             grantWalletAdminAccess(address, navigate);
         }
     }, [address, navigate]);
-
-    const handleGoogleSuccess = async (credentialResponse) => {
-        setLoading(true);
-        setError('');
-        try {
-            const res = await fetch(`${API_BASE_URL}/admin-auth/oauth/google`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: credentialResponse.credential })
-            });
-            const data = await readApiResponse(res);
-            
-            if (!res.ok) throw new Error(data.error || 'Error en autenticación');
-            
-            setTempToken(data.tempToken);
-
-            if (data.requiresSetup2FA) {
-                // Fetch 2FA Setup data
-                const setupRes = await fetch(`${API_BASE_URL}/admin-auth/2fa/setup`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${data.tempToken}` }
-                });
-                const setupData = await readApiResponse(setupRes);
-                if (!setupRes.ok) throw new Error(setupData.error || 'Error configurando 2FA');
-
-                setQrCodeUrl(setupData.qrCodeUrl);
-                setBackupCodes(setupData.backupCodes);
-                setStep('SETUP_2FA');
-            } else if (data.requires2FA) {
-                setStep('VERIFY_2FA');
-            } else {
-                // If 2FA is totally disabled for some reason
-                localStorage.setItem('adminToken', data.token);
-                localStorage.setItem('bezhas-jwt', data.token);
-                navigate('/admin');
-            }
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleVerify2FA = async (e) => {
         e.preventDefault();
@@ -176,7 +132,6 @@ export default function AdminLogin() {
 
 
     return (
-        <GoogleOAuthProvider clientId={clientId}>
             <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
                 <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md">
                     <div className="text-center mb-6">
@@ -202,19 +157,7 @@ export default function AdminLogin() {
                                 <p className="text-gray-500">Autenticando...</p>
                             ) : (
                                 <>
-                                    <GoogleLogin
-                                        onSuccess={handleGoogleSuccess}
-                                        onError={() => setError('Google Login Falló')}
-                                        useOneTap={false}
-                                    />
-                                    
-                                    <div className="flex items-center w-full my-2">
-                                        <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
-                                        <span className="px-3 text-sm text-gray-500 font-medium">O</span>
-                                        <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
-                                    </div>
-                                    
-                                    <button 
+                                    <button
                                         onClick={handleWalletLogin}
                                         disabled={isWalletLoging}
                                         className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded shadow transition-all"
@@ -301,6 +244,5 @@ export default function AdminLogin() {
                     </div>
                 </div>
             </div>
-        </GoogleOAuthProvider>
     );
 }

@@ -24,6 +24,7 @@
 
 const express = require('express');
 const cors = require('cors');
+const { makeCorsOriginFn, parseExtraOrigins } = require('./config/cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
@@ -65,7 +66,8 @@ const notificationRoutes = require('./routes/notifications');
 const marketRoutes = require('./routes/market');
 const walletRoutes = require('./routes/wallet');
 const configRoutes = require('./routes/config');
-const agentRoutes = require('./routes/agents');          // factory fn: agentRoutes()
+const agentRoutes = require('./routes/agents');
+const agentRuntime = require('./services/agentRuntime');          // factory fn: agentRoutes()
 const contractsAbiRoutes = require('./routes/contracts-abi');
 const blockchainRoutes = require('./routes/blockchain');
 const validatorRoutes = require('./routes/validators');
@@ -77,15 +79,20 @@ const channelRoutes = require('./routes/channels');
 const gatewayRoutes = require('./routes/gateway');
 const cargoLinkRoutes = require('./routes/cargolink');
 const openclawRoutes = require('./routes/openclaw');
+const monitorRoutes = require('./routes/monitor');
 const adminAuthRoutes = require('./routes/admin-auth');
 const runtimeRoutes = require('./routes/runtime');
 const aiBillingRoutes = require('./routes/ai-billing');
 const unifiedAgentRoutes = require('./routes/unified-agent');
 const identityRoutes = require('./routes/identity');
+const organizationsRoutes = require('./routes/organizations');
+const organizationTechRoutes = require('./routes/organization-tech');
+const organizationBillingRoutes = require('./routes/organization-billing');
 const adminConfigRoutes = require('./routes/admin-config');
 const webhookRoutes = require('./routes/webhooks');
 const energyRoutes = require('./routes/energy');          // ← VPP Energy Layer
 const mtfcRoutes = require('./routes/mtfc');
+const operantRoutes = require('./routes/operant');   // ← OPERANT (gestión empresarial autónoma)
 
 // ─────────────────────────────────────────────────────────────────────────────
 const app = express();
@@ -133,34 +140,12 @@ app.use(helmet({
 }));
 
 // ── CORS: quién puede llamar a esta API desde un navegador ──
-// Las SubApps (Sphere, PureScan, Energy, Genesis, Pay…) autentican contra
-// /api/auth/* desde su propio origen. La lista anterior sólo cubría 4 dominios
-// y 5 puertos locales, así que el login de cualquier SubApp moría en el
-// preflight — sin error visible en el servidor, sólo un "Failed to fetch" en el
-// navegador. Se resuelve por patrón (cualquier subdominio de bez.digital) y con
-// CORS_EXTRA_ORIGINS para lo que no encaje, en vez de enumerar a mano.
-const EXTRA_ORIGINS = (process.env.CORS_EXTRA_ORIGINS || '')
-  .split(',').map(o => o.trim()).filter(Boolean);
-
-const PROD_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)*bez\.digital$/;
-// En desarrollo cada SubApp levanta su propio puerto de Vite; enumerarlos
-// obligaba a tocar este archivo cada vez que nace una app.
-const DEV_ORIGIN_RE = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
-
-function isAllowedOrigin(origin) {
-  if (EXTRA_ORIGINS.includes(origin)) return true;
-  if (PROD_ORIGIN_RE.test(origin)) return true;
-  return !IS_PROD && DEV_ORIGIN_RE.test(origin);
-}
-
+// La lógica vive en config/cors.js para poder testearla sin arrancar la app.
 app.use(cors({
-  origin(origin, callback) {
-    // Sin Origin = misma máquina (curl, health checks, SSR): no es una petición
-    // de navegador, así que CORS no aplica.
-    if (!origin) return callback(null, true);
-    if (isAllowedOrigin(origin)) return callback(null, true);
-    return callback(new Error(`Origen no permitido por CORS: ${origin}`));
-  },
+  origin: makeCorsOriginFn({
+    isProduction: IS_PROD,
+    extraOrigins: parseExtraOrigins(process.env.CORS_EXTRA_ORIGINS),
+  }),
   credentials: true,
   optionsSuccessStatus: 200,
   exposedHeaders: ['X-Request-Id'],   // exponer requestId al cliente para correlación
@@ -273,9 +258,38 @@ app.get('/api/health', async (_req, res) => {
 
   const [dbResult, redisResult] = checks;
 
+  // Indexador: un listener con suscripciones caídas responde igual de bien que
+  // uno sano, pero deja huecos en los datos. Sin exponerlo aquí, la avería se
+  // descubre semanas después por la vía de echar de menos eventos que nunca
+  // llegaron. Por eso 'degraded' y no 'up'.
+  let indexer = 'unknown';
+  let chain = 'unknown';
+  const detail = {};
+  try {
+    const ls = require('./services/eventListener').getListenerStats();
+    const failed = ls.failedSubscriptions || [];
+
+    // La cadena y el indexador se informan por separado a propósito: "el nodo
+    // no responde" y "el indexador tiene suscripciones rotas" son averías
+    // distintas, con responsables distintos, y mezclarlas en un solo semáforo
+    // obliga a ir al log para saber cuál de las dos es.
+    chain = ls.chainReachable === null ? 'unknown' : (ls.chainReachable ? 'up' : 'down');
+    indexer = !ls.active ? 'down' : (failed.length ? 'degraded' : (ls.chainReachable === false ? 'degraded' : 'up'));
+
+    if (failed.length) detail.indexer_failed_subscriptions = failed.map((f) => f.eventName);
+    if (ls.chainReachable === false) {
+      detail.chain_error = ls.lastChainError;
+      detail.chain_reconnect_attempts = ls.reconnectAttempts;
+      detail.chain_next_retry_ms = ls.nextReconnectInMs;
+    }
+  } catch { /* el indexador es opcional según despliegue */ }
+
   const services = {
     database: dbResult.status === 'fulfilled' ? 'up' : 'down',
     redis: redisResult.status === 'fulfilled' ? 'up' : 'down',
+    chain,
+    indexer,
+    ...detail,
     // omie_feed: 'up' / 'down'  — activar en producción
     // vpp_agent: openclaw?.isReady('energy-agent') ? 'up' : 'degraded'
   };
@@ -299,6 +313,9 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/identity', identityRoutes);
+app.use('/api/organizations', organizationsRoutes);
+app.use('/api/organizations', organizationTechRoutes);
+app.use('/api/organizations', organizationBillingRoutes);
 app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);
 
@@ -332,6 +349,11 @@ app.use('/api/runtime', runtimeRoutes);
 app.use('/api/openclaw', openclawRoutes);
 app.use('/api/ai-billing', aiBillingRoutes);
 app.use('/api/mtfc', mtfcRoutes);
+
+// ── 🏢 OPERANT — Gestión empresarial autónoma ────────────────────────────────
+// 10 departamentos de agentes IA servidos por suscripción: entitlements por
+// plan, cuota + pago por uso, y anclaje merkle de la auditoría en L2.
+app.use('/api/operant', operantRoutes);
 
 // ── Seguridad / Aegis ─────────────────────────────────────────────────────────
 app.use('/api/ai-control', aegisRoutes);        // alias legacy
@@ -376,6 +398,9 @@ app.get('/api/enterprises/by-key', async (req, res) => {
     res.status(500).json({ error: 'Lookup failed', code: 'ENTERPRISE_LOOKUP_ERROR' });
   }
 });
+
+// ── Monitor (War Room aggregator) ────────────────────────────────────────────
+app.use('/api/monitor', monitorRoutes);
 
 // ── Legacy telemetry alias ────────────────────────────────────────────────────
 /**
@@ -536,6 +561,17 @@ async function startServer() {
     .then(() => gcpLogger.info('[STARTUP] Redis event consumer started'))
     .catch(err => gcpLogger.warning('[STARTUP] EventConsumer skipped', { error: err.message }));
 
+  // ── PASO 3c: Agent runtime (los 5 agentes, dentro de este proceso) ───────────
+  // No bloqueante y a prueba de fallos: si no levanta, la API sigue sirviendo
+  // pagos, cadena y energía, y /api/agents responde 503 con el motivo.
+  agentRuntime.init()
+    .then((m) => {
+      const s = agentRuntime.status();
+      if (m) gcpLogger.info('[STARTUP] Agent runtime cableado', { agentes: s.agentes });
+      else gcpLogger.warning('[STARTUP] Agent runtime no cableado', { motivo: s.motivo });
+    })
+    .catch(err => gcpLogger.warning('[STARTUP] Agent runtime error', { error: err.message }));
+
   // ── PASO 4: Gas monitor daemon ────────────────────────────────────────────────
   gasMonitor.startDaemon(60_000);
   gcpLogger.info('[STARTUP] Gas monitor daemon started (60s interval)');
@@ -632,6 +668,49 @@ async function startServer() {
       .catch((err) => gcpLogger.warning('[STARTUP] CargoLink MQTT unavailable', { error: err.message }));
   } catch (err) {
     gcpLogger.warning('[STARTUP] cargoMqttIngest module not found', { error: err.message });
+  }
+
+  // Batching de eventos logísticos — opt-in vía CARGOLINK_BATCH_MODE=evidence.
+  // Agrupa las transiciones de evidencia en una raíz merkle y ancla una sola
+  // transacción por lote. Medido: 199.676 gas por evento suelto frente a 6.251
+  // dentro de un lote — el factor que separa un techo de 75 ev/s de uno de
+  // ~2.400 ev/s. Los eventos que mueven escrow siguen anclándose uno a uno.
+  try {
+    const cargoBatcher = require('./services/cargoLinkBatcher');
+    if (cargoBatcher.start()) {
+      gcpLogger.info('[STARTUP] CargoLink event batching enabled', { mode: cargoBatcher.MODE });
+    }
+  } catch (err) {
+    gcpLogger.warning('[STARTUP] cargoLinkBatcher no disponible', { error: err.message });
+  }
+
+  // Ancla en Ethereum L1 — opt-in vía L1_BATCHER_ENABLED.
+  // Publica el compromiso de estado de la L2 con fianza. Lo que hace que el
+  // ancla valga como evidencia no es publicarla, sino que sea refutable:
+  // BeZhasL1Commitment verifica en L1 tres pruebas de fraude deterministas.
+  try {
+    const l1Batcher = require('./services/l1Batcher');
+    if (l1Batcher.start()) {
+      gcpLogger.info('[STARTUP] L1 commitment batcher enabled');
+    }
+  } catch (err) {
+    gcpLogger.warning('[STARTUP] l1Batcher no disponible', { error: err.message });
+  }
+
+  // Vigilante de fraude — opt-in vía L1_WATCHER_ENABLED.
+  //
+  // ADVERTENCIA DE DISEÑO: ejecutar el vigilante DENTRO de la propia API de
+  // BeZhas sirve para detectar errores de nuestro software, y para poco más.
+  // La garantía institucional exige que lo levante un tercero — un cliente, un
+  // auditor, una aseguradora — con su propio RPC y su propia cuenta. No
+  // necesita permisos nuestros: sólo mirar la cadena y cobrar si nos pilla.
+  try {
+    const l1Watcher = require('./services/l1FraudProver');
+    if (l1Watcher.start()) {
+      gcpLogger.info('[STARTUP] L1 fraud watcher enabled (self-audit; third-party watchers are the real guarantee)');
+    }
+  } catch (err) {
+    gcpLogger.warning('[STARTUP] l1FraudProver no disponible', { error: err.message });
   }
 
   // ── PASO 7: OMIE/ESIOS feed pre-caché ────────────────────────────────────────

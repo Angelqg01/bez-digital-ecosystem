@@ -4,7 +4,6 @@ import { useSoundEffects } from '../hooks/useSoundEffects';
 import { useNavigate, Link } from 'react-router-dom';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useAccount } from 'wagmi';
-import SafeGoogleLogin from '../components/common/SafeGoogleLogin';
 import OAuthButtons from '../components/common/OAuthButtons';
 import {
     ShieldCheck, Coins, Globe2, BrainCircuit, ArrowRight,
