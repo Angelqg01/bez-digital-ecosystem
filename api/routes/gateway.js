@@ -1441,6 +1441,161 @@ router.post('/payments/settle', requirePaymentSettlementKey, [
 //  TOKEN PRICE — Live or cached BEZ price
 // ═══════════════════════════════════════════════════════════
 
+/**
+ * GET /oracle/token-prices — Precios públicos del oráculo. SIN autenticación.
+ *
+ * La landing y las páginas públicas necesitan el precio para pintarlo, y el
+ * hook que lo consume (`useOracleTokenPrices`) no lleva credenciales: el único
+ * endpoint de precio que había, `/token/price`, exige API key o JWT, así que la
+ * landing recibía un 404 y mostraba "Oraculo pendiente".
+ *
+ * Solo expone dato de mercado agregado (símbolo, precio, variación 24 h). Nada
+ * ligado a un usuario, ni saldos, ni nada que no esté ya publicado en cualquier
+ * listado del token. `/token/price` se mantiene tal cual para quien ya lo usa.
+ */
+const publicPriceLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: parseInt(process.env.ORACLE_PRICE_RATE_LIMIT, 10) || 120,
+    message: { error: 'Too many price requests.', code: 'ORACLE_PRICE_RATE_LIMIT' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Memo corto en proceso: el precio cambia por minutos, no por petición, y así
+// una ráfaga de visitas no se traduce en una consulta a la base por visita.
+// El TTL se lee en cada petición, no al cargar el módulo, para poder ajustarlo
+// sin reiniciar (y para que un test pueda desactivarlo).
+const priceTtlMs = () => {
+    const v = parseInt(process.env.ORACLE_PRICE_TTL_MS, 10);
+    return Number.isFinite(v) ? v : 15_000;
+};
+const SEED_PRICE_USD = 0.10;
+let priceMemo = { at: 0, body: null };
+
+// Ventana de frescura publicada junto al precio. La landing la usa para marcar
+// la lectura como OBSOLETA en vez de pintarla como vigente — la misma regla
+// fail-closed que aplican los contratos a las escrituras de oraculo.
+const freshnessWindowS = () => {
+    const v = parseInt(process.env.ORACLE_FRESHNESS_WINDOW_S, 10);
+    return Number.isFinite(v) && v > 0 ? v : 900;
+};
+
+// Mercados por cadena. Mientras no exista pool de liquidez se publican en
+// `pending` con liquidez 0: es el estado real, y el consumidor ya sabe pintarlo
+// ("Pendiente de pool") sin inventarse una cotizacion que no existe.
+const BEZ_MARKETS = [
+    { chainId: 137, pool: 'QuickSwap V3', address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
+    { chainId: 56, pool: 'PancakeSwap V3', address: '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55' },
+];
+
+const MARKET_STATUSES = new Set(['active', 'paused', 'pending']);
+
+/**
+ * Construye `markets[]` desde `token_market_cache` (migración 047).
+ *
+ * Se recorre `BEZ_MARKETS`, no las filas: la lista de cadenas que publica este
+ * endpoint la fija el código, y la base solo puede rellenar los datos de una
+ * cadena ya declarada. Así una fila inesperada en la tabla no puede añadir un
+ * mercado a una respuesta pública.
+ *
+ * Si la tabla no existe todavía (base sin migrar) se responde con los mercados
+ * en `pending`. Eso no es un error: es el estado real mientras no haya pool.
+ */
+async function readMarkets() {
+    const { rows } = await query(
+        'SELECT chain_id, pool, price_usd, liquidity_usd, status FROM token_market_cache'
+    ).catch(() => ({ rows: [] }));
+
+    const byChain = new Map(rows.map((r) => [String(r.chain_id), r]));
+
+    return BEZ_MARKETS.map((m) => {
+        const row = byChain.get(String(m.chainId));
+        const base = { chainId: m.chainId, address: m.address, pool: m.pool };
+
+        if (!row) {
+            return { ...base, price: null, liquidityUsd: 0, status: 'pending' };
+        }
+
+        const price = row.price_usd === null || row.price_usd === undefined
+            ? NaN
+            : parseFloat(row.price_usd);
+        const liquidity = parseFloat(row.liquidity_usd);
+        // Un estado que no reconocemos se degrada a `pending` en vez de viajar
+        // hasta la portada: preferimos decir "pendiente" a decir algo que no
+        // sabemos interpretar.
+        const status = MARKET_STATUSES.has(row.status) ? row.status : 'pending';
+
+        return {
+            ...base,
+            pool: row.pool || m.pool,
+            price: Number.isFinite(price) ? price : null,
+            liquidityUsd: Number.isFinite(liquidity) ? liquidity : 0,
+            status,
+        };
+    });
+}
+
+router.get('/oracle/token-prices', publicPriceLimiter, async (req, res) => {
+    const ttl = priceTtlMs();
+    res.set('Cache-Control', `public, max-age=${Math.max(0, Math.floor(ttl / 1000))}`);
+
+    if (priceMemo.body && Date.now() - priceMemo.at < ttl) {
+        return res.json(priceMemo.body);
+    }
+
+    const { rows } = await query(
+        'SELECT symbol, price_usd, change_24h, updated_at FROM token_price_cache'
+    ).catch(() => ({ rows: [] }));
+
+    const tokens = {};
+    for (const row of rows) {
+        tokens[row.symbol] = {
+            symbol: row.symbol,
+            priceUSD: parseFloat(row.price_usd),
+            change24h: parseFloat(row.change_24h || 0),
+            updatedAt: row.updated_at,
+        };
+    }
+
+    // Sin fila en caché seguimos respondiendo con el precio semilla: un 500 aquí
+    // rompería la portada por no tener un dato meramente informativo.
+    //
+    // `updatedAt` va a null y NO a la hora actual. El semilla es un valor de
+    // configuración, no una lectura del oráculo: sellarlo con la hora de ahora
+    // lo haría pasar por fresco y la portada lo pintaría "En vivo". Con null, el
+    // consumidor no puede calcular antigüedad, lo trata como fuera de ventana y
+    // lo muestra obsoleto — que es exactamente lo que es. Misma regla
+    // fail-closed que aplica el resto de la red.
+    if (!tokens.BEZ) {
+        tokens.BEZ = {
+            symbol: 'BEZ',
+            priceUSD: SEED_PRICE_USD,
+            change24h: 0,
+            updatedAt: null,
+            seed: true,
+        };
+    }
+
+    const body = {
+        success: true,
+        tokens,
+        // El consumidor también acepta estas claves planas como alternativa.
+        bezCoinPriceUSD: tokens.BEZ.priceUSD,
+        bezCoinChange24h: tokens.BEZ.change24h,
+        updatedAt: tokens.BEZ.updatedAt,
+        // Campos aditivos para el panel de oráculo de la landing. Se añaden sin
+        // tocar los de arriba: `readOracleToken` en la Home sigue leyendo igual.
+        price: tokens.BEZ.priceUSD,
+        change24h: tokens.BEZ.change24h,
+        freshnessWindow: freshnessWindowS(),
+        source: tokens.BEZ.seed ? 'seed' : 'bezhas-oracle',
+        markets: await readMarkets(),
+    };
+
+    priceMemo = { at: Date.now(), body };
+    res.json(body);
+});
+
 router.get('/token/price', authenticateGateway, requireScope('token'), async (req, res) => {
     try {
         // Check cached price first
