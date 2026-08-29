@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter, Space_Grotesk, Syne, Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
@@ -9,6 +9,28 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: '--font-space-grotesk',
   weight: ['300', '400', '500', '600', '700']
+});
+
+// ── Sistema tipografico de la Landing Home ──
+// Syne = display / Archivo = texto corrido / JetBrains Mono = datos y direcciones.
+// Se autoalojan con next/font para evitar CLS y una peticion extra a Google.
+const syne = Syne({
+  subsets: ["latin"],
+  variable: '--font-syne',
+  weight: ['600', '700', '800'],
+  display: 'swap',
+});
+const archivo = Archivo({
+  subsets: ["latin"],
+  variable: '--font-archivo',
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: '--font-mono-data',
+  weight: ['400', '500', '700'],
+  display: 'swap',
 });
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bez.digital';
@@ -79,9 +101,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={spaceGrotesk.variable} suppressHydrationWarning>
+    <html
+      lang="es"
+      className={`${spaceGrotesk.variable} ${syne.variable} ${archivo.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+        {/*
+          Anti-flash de tema: fija data-bz-theme en <html> ANTES de pintar.
+          Sin esto, el primer frame usa el tema por defecto y salta al del usuario.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('bezhas_theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-bz-theme',t);}catch(e){document.documentElement.setAttribute('data-bz-theme','dark');}})();`,
+          }}
+        />
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <GoogleAnalytics />

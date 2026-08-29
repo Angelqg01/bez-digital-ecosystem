@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import ThemeToggle from '@/components/ThemeToggle';
 
 // ── Sidebar Navigation: Grouped by logical sections ──
 const sidebarSections = [
@@ -154,14 +155,14 @@ function DropdownMenu({ label, items, isOpen, onToggle, onClose }: {
     <div ref={ref} className="relative">
       <button
         onClick={onToggle}
-        className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-2 transition-all ${isOpen ? 'text-[#0d33f2]' : 'text-gray-400 hover:text-white'
+        className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-2 transition-all ${isOpen ? 'text-[#0d33f2]' : 'text-[var(--bz-chrome-text-dim)] hover:text-[var(--bz-chrome-text)]'
           }`}
       >
         {label}
         <span className={`material-symbols-outlined text-[14px] transition-transform ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
       </button>
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-72 bg-[#0c0d17]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl shadow-blue-900/30 overflow-hidden z-50">
+        <div className="absolute top-full left-0 mt-2 w-72 bg-[var(--bz-chrome-panel)] backdrop-blur-xl border border-[var(--bz-chrome-line)] rounded-xl shadow-2xl shadow-blue-900/30 overflow-hidden z-50">
           {items.map((item) => (
             <Link
               key={item.href}
@@ -169,12 +170,12 @@ function DropdownMenu({ label, items, isOpen, onToggle, onClose }: {
               target={item.href.startsWith('http') ? '_blank' : undefined}
               rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
               onClick={onClose}
-              className="flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-all group"
+              className="flex items-start gap-3 px-4 py-3 hover:bg-[var(--bz-chrome-hover)] transition-all group"
             >
               <span className="material-symbols-outlined text-[#0d33f2] text-lg mt-0.5 group-hover:scale-110 transition-transform">{item.icon}</span>
               <div>
-                <span className="text-white text-xs font-bold uppercase tracking-wider block">{item.label}</span>
-                <span className="text-gray-500 text-[10px]">{item.desc}</span>
+                <span className="text-[var(--bz-chrome-text)] text-xs font-bold uppercase tracking-wider block">{item.label}</span>
+                <span className="text-[var(--bz-chrome-text-mut)] text-[10px]">{item.desc}</span>
               </div>
             </Link>
           ))}
@@ -326,10 +327,16 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="bg-[#080911] font-['Space_Grotesk'] text-[#f5f6f8] min-h-screen relative overflow-x-hidden">
+    /*
+      `overflow-x-clip` y no `overflow-x-hidden`: `hidden` en un eje obliga al
+      otro a `auto`, lo que convierte a este div en contenedor de scroll y deja
+      inservible el `position: sticky` de los paneles ancla de la Home. `clip`
+      recorta igual el desbordamiento lateral sin crear contexto de scroll.
+    */
+    <div className="bg-[var(--bz-chrome)] font-['Space_Grotesk'] text-[var(--bz-chrome-text)] min-h-screen relative overflow-x-clip">
       {/* ── TopAppBar / Header ── */}
-      <header className="bg-[#080911]/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/10 shadow-[0_0_20px_rgba(13,51,242,0.15)] flex justify-between items-center px-6 h-16 transition-all">
-        <Link href="/" className="flex flex-shrink-0 items-center gap-3 text-2xl font-black italic tracking-tighter text-white font-['Space_Grotesk'] uppercase">
+      <header className="bg-[var(--bz-chrome-veil)] backdrop-blur-xl fixed top-0 w-full z-50 border-b border-[var(--bz-chrome-line)] shadow-[var(--bz-chrome-glow)] flex justify-between items-center px-6 h-16 transition-all">
+        <Link href="/" className="flex flex-shrink-0 items-center gap-3 text-2xl font-black italic tracking-tighter text-[var(--bz-chrome-text)] font-['Space_Grotesk'] uppercase">
           <img src="/bezhas-token-logo.png" alt="BEZ-Coin token logo" className="h-9 w-9 rounded-full object-cover shadow-[0_0_18px_rgba(245,190,60,0.32)]" />
           BEZHAS
         </Link>
@@ -390,12 +397,13 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
           )}
           */}
 
-          <div className="flex items-center space-x-2 pl-2 border-l border-white/10">
+          <div className="flex items-center space-x-2 pl-2 border-l border-[var(--bz-chrome-line)]">
+            <ThemeToggle />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden"
             >
-              <span className="material-symbols-outlined text-[#c5c5da] cursor-pointer hover:text-white transition-all text-xl">
+              <span className="material-symbols-outlined text-[var(--bz-chrome-text-dim)] cursor-pointer hover:text-[var(--bz-chrome-text)] transition-all text-xl">
                 {mobileMenuOpen ? 'close' : 'menu'}
               </span>
             </button>
@@ -405,7 +413,7 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[45] bg-[#080911]/95 backdrop-blur-lg pt-20 px-6 overflow-y-auto lg:hidden">
+        <div className="fixed inset-0 z-[45] bg-[var(--bz-chrome-veil)] backdrop-blur-lg pt-20 px-6 overflow-y-auto lg:hidden">
           <nav className="space-y-6">
             {Object.entries(headerMenus).map(([section, items]) => (
               <div key={section}>
@@ -418,7 +426,7 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
                       target={item.href.startsWith('http') ? '_blank' : undefined}
                       rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                      className="flex items-center gap-3 px-4 py-3 text-[var(--bz-chrome-text-dim)] hover:text-[var(--bz-chrome-text)] hover:bg-[var(--bz-chrome-hover)] rounded-lg transition-all"
                     >
                       <span className="material-symbols-outlined text-[#0d33f2] text-lg">{item.icon}</span>
                       <span className="text-xs font-bold uppercase tracking-wider">{item.label}</span>
@@ -427,7 +435,7 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
                 </div>
               </div>
             ))}
-            <div className="pt-4 border-t border-white/10 space-y-3">
+            <div className="pt-4 border-t border-[var(--bz-chrome-line)] space-y-3">
               {/* Entry buttons commented out for security restructuring. Access restricted from core infrastructure page. */}
               {/*
               {!isAuthenticated ? (
@@ -468,7 +476,7 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* ── Sidebar: Grouped Navigation ── */}
-      <aside className={`fixed left-0 top-0 hidden flex-col pt-20 pb-8 z-40 h-screen border-r border-white/5 bg-[#0c0d17] shadow-2xl shadow-blue-900/20 transition-all duration-300 lg:flex ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
+      <aside className={`fixed left-0 top-0 hidden flex-col pt-20 pb-8 z-40 h-screen border-r border-[var(--bz-chrome-line)] bg-[var(--bz-chrome-panel)] shadow-2xl shadow-blue-900/20 transition-all duration-300 lg:flex ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
 
         {/* Toggle Button */}
         <button
@@ -482,9 +490,9 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
 
         <div className={`px-6 mb-6 flex flex-col transition-all overflow-hidden ${isSidebarOpen ? 'opacity-100' : 'opacity-0 h-0 hidden'}`}>
           <Link href="/">
-            <div className="text-white font-bold italic font-['Space_Grotesk'] text-lg hover:text-[#0d33f2] transition-colors whitespace-nowrap">BEZHAS PROTOCOL</div>
+            <div className="text-[var(--bz-chrome-text)] font-bold italic font-['Space_Grotesk'] text-lg hover:text-[#0d33f2] transition-colors whitespace-nowrap">BEZHAS PROTOCOL</div>
           </Link>
-          <div className="text-gray-500 text-[10px] tracking-[0.3em] uppercase whitespace-nowrap">V2.0.4-BETA · Chain 2708</div>
+          <div className="text-[var(--bz-chrome-text-mut)] text-[10px] tracking-[0.3em] uppercase whitespace-nowrap">V2.0.4-BETA · Chain 2708</div>
         </div>
 
         {/* Collapsed Logo */}
@@ -531,7 +539,7 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
                     href={item.path}
                     target={item.path.startsWith('http') ? '_blank' : undefined}
                     rel={item.path.startsWith('http') ? 'noopener noreferrer' : undefined}
-                    className={`flex items-center text-gray-500 py-3 hover:text-white hover:bg-white/5 hover:translate-x-1 transition-transform group ${isSidebarOpen ? 'px-6 space-x-4' : 'px-0 justify-center'}`}
+                    className={`flex items-center text-[var(--bz-chrome-text-mut)] py-3 hover:text-[var(--bz-chrome-text)] hover:bg-[var(--bz-chrome-hover)] hover:translate-x-1 transition-transform group ${isSidebarOpen ? 'px-6 space-x-4' : 'px-0 justify-center'}`}
                   >
                     <span className="material-symbols-outlined group-hover:shadow-[0_0_15px_rgba(13,51,242,0.3)]">
                       {item.icon}
@@ -546,8 +554,8 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
 
         <div className={`mt-auto space-y-2 transition-all ${isSidebarOpen ? 'px-6' : 'px-4'}`}>
           <Link href="/support">
-            <button className={`w-full bg-white/5 border border-white/10 text-gray-400 hover:text-white font-bold tracking-widest hover:bg-white/10 transition-all uppercase italic flex justify-center items-center ${isSidebarOpen ? 'p-3 text-[10px]' : 'p-3 text-[10px] rounded-lg'}`}>
-              {isSidebarOpen ? 'SOPORTE' : <span className="material-symbols-outlined text-white text-[18px]">support_agent</span>}
+            <button className={`w-full bg-[var(--bz-chrome-hover)] border border-[var(--bz-chrome-line)] text-[var(--bz-chrome-text-dim)] hover:text-[var(--bz-chrome-text)] font-bold tracking-widest transition-all uppercase italic flex justify-center items-center ${isSidebarOpen ? 'p-3 text-[10px]' : 'p-3 text-[10px] rounded-lg'}`}>
+              {isSidebarOpen ? 'SOPORTE' : <span className="material-symbols-outlined text-[var(--bz-chrome-text)] text-[18px]">support_agent</span>}
             </button>
           </Link>
           {/* Empezar button commented out for security restructuring. Access restricted from core infrastructure page. */}
@@ -584,17 +592,17 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
           role="dialog"
           aria-live="polite"
           aria-label="Aviso de cookies"
-          className="fixed z-[70] bottom-4 left-4 right-4 sm:right-auto sm:left-6 sm:bottom-6 sm:max-w-xl rounded-2xl border border-white/15 bg-[#0b0d1a]/95 backdrop-blur-xl shadow-2xl shadow-[0_0_30px_rgba(13,51,242,0.25)]"
+          className="fixed z-[70] bottom-4 left-4 right-4 sm:right-auto sm:left-6 sm:bottom-6 sm:max-w-xl rounded-2xl border border-[var(--bz-chrome-line)] bg-[var(--bz-chrome-panel)] backdrop-blur-xl shadow-2xl shadow-[0_0_30px_rgba(13,51,242,0.25)]"
         >
           <div className="p-5 sm:p-6 space-y-4">
             <div className="flex items-start gap-3">
               <span className="material-symbols-outlined text-[#22d3ee] mt-0.5">cookie</span>
               <div>
-                <h2 className="text-white text-sm sm:text-base font-bold uppercase tracking-[0.15em]">Uso de Cookies</h2>
-                <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mt-2">
+                <h2 className="text-[var(--bz-chrome-text)] text-sm sm:text-base font-bold uppercase tracking-[0.15em]">Uso de Cookies</h2>
+                <p className="text-[var(--bz-chrome-text-dim)] text-xs sm:text-sm leading-relaxed mt-2">
                   La plataforma BeZhas utiliza cookies tecnicas para el funcionamiento del sitio y, con su consentimiento, cookies opcionales para analitica y mejora de experiencia, conforme a la normativa de la Union Europea.
                 </p>
-                <p className="text-slate-400 text-[11px] sm:text-xs mt-2">
+                <p className="text-[var(--bz-chrome-text-mut)] text-[11px] sm:text-xs mt-2">
                   Puede cambiar su decision en cualquier momento desde el{' '}
                   <a href="/privacy" className="underline hover:text-[#22d3ee] transition-colors">panel de privacidad</a>.
                 </p>
@@ -603,7 +611,7 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
               <button
                 onClick={() => saveCookieConsent('necessary')}
-                className="h-11 px-4 rounded-lg border border-white/20 text-slate-200 text-[11px] sm:text-xs font-bold uppercase tracking-[0.12em] hover:bg-white/10 transition-all"
+                className="h-11 px-4 rounded-lg border border-[var(--bz-chrome-line)] text-[var(--bz-chrome-text-dim)] text-[11px] sm:text-xs font-bold uppercase tracking-[0.12em] hover:bg-[var(--bz-chrome-hover)] transition-all"
               >
                 Solo necesarias
               </button>

@@ -12,6 +12,48 @@
   --bezhas-emerald: #10B981;
 }
 
+/* ── Tema de la capa publica (chrome del layout de (landing)) ────────────
+   El atributo `data-bz-theme` lo fija el script anti-flash de app/layout.tsx
+   antes del primer pintado, y lo cambia <ThemeToggle> via lib/theme-context.
+   Aqui solo viven los tokens del CHROME (cabecera, sidebar, banner de cookies).
+   El sistema de la Home vive aparte, en app/(landing)/home.module.css.
+
+   Sin `data-bz-theme` el sitio se ve oscuro, que es como estaba antes: ningun
+   despliegue queda a medias si el script no llega a ejecutarse. */
+:root,
+[data-bz-theme='dark'] {
+  --bz-chrome:          #080911;
+  --bz-chrome-veil:     rgba(8, 9, 17, 0.80);
+  --bz-chrome-panel:    rgba(12, 13, 23, 0.95);
+  --bz-chrome-line:     rgba(255, 255, 255, 0.10);
+  --bz-chrome-text:     #f5f6f8;
+  --bz-chrome-text-dim: #c5c5da;
+  --bz-chrome-text-mut: #6b7280;
+  --bz-chrome-hover:    rgba(255, 255, 255, 0.05);
+  --bz-chrome-glow:     0 0 20px rgba(13, 51, 242, 0.15);
+  --bz-chrome-scheme:   dark;
+}
+
+[data-bz-theme='light'] {
+  --bz-chrome:          #F2F5F5;
+  --bz-chrome-veil:     rgba(242, 245, 245, 0.86);
+  --bz-chrome-panel:    rgba(255, 255, 255, 0.97);
+  --bz-chrome-line:     #D8E0E1;
+  --bz-chrome-text:     #08161A;
+  --bz-chrome-text-dim: #46595E;
+  --bz-chrome-text-mut: #7A8B8F;
+  --bz-chrome-hover:    rgba(4, 108, 122, 0.07);
+  --bz-chrome-glow:     0 1px 3px rgba(8, 22, 26, 0.07);
+  --bz-chrome-scheme:   light;
+}
+
+html[data-bz-theme] { color-scheme: var(--bz-chrome-scheme); }
+
+/* El cambio de tema se anima salvo que el usuario pida lo contrario. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-bz-theme] body { transition: background-color .28s ease, color .28s ease; }
+}
+
 /* ── Base Styles ────────────────────────────────────────────────────────── */
 body {
   color: rgb(var(--foreground-rgb));
@@ -20,6 +62,14 @@ body {
     transparent,
     rgb(var(--background-end-rgb))
   ) rgb(var(--background-start-rgb));
+}
+
+/* Con tema activo el <body> sigue al chrome. Sin esto queda un fondo claro
+   fijo detras de todo: no se ve en reposo, pero asoma al rebote de scroll y
+   en el frame que va entre navegaciones. */
+[data-bz-theme] body {
+  background: var(--bz-chrome);
+  color: var(--bz-chrome-text);
 }
 
 /* ── Input Styles ───────────────────────────────────────────────────────── */

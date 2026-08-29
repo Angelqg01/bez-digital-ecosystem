@@ -69,7 +69,11 @@ const config: Config = {
       fontFamily: {
         "headline": ["var(--font-space-grotesk)", "sans-serif"],
         "body": ["var(--font-space-grotesk)", "sans-serif"],
-        "label": ["var(--font-space-grotesk)", "sans-serif"]
+        "label": ["var(--font-space-grotesk)", "sans-serif"],
+        // Sistema de la Landing Home (ver app/(landing)/home.module.css)
+        "display": ["var(--font-syne)", "var(--font-space-grotesk)", "sans-serif"],
+        "prose": ["var(--font-archivo)", "Helvetica Neue", "Arial", "sans-serif"],
+        "data": ["var(--font-mono-data)", "ui-monospace", "monospace"]
       },
       backgroundImage: {
         'glass-gradient': 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',

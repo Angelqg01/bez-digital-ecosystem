@@ -1,6 +1,7 @@
 'use client';
 
 import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { ThemeProvider } from '@/lib/theme-context';
 import { Toaster } from 'sonner';
 import { useEffect } from 'react';
 import LoginRegisterModal from '@/components/LoginRegisterModal';
@@ -26,10 +27,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <AuthProvider>
-            {children}
-            <ModalContainer />
-            <Toaster position="top-right" richColors closeButton />
-        </AuthProvider>
+        <ThemeProvider>
+            <AuthProvider>
+                {children}
+                <ModalContainer />
+                <Toaster position="top-right" richColors closeButton />
+            </AuthProvider>
+        </ThemeProvider>
     );
 }
