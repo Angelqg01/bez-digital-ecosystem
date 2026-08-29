@@ -5,7 +5,36 @@ import Link from 'next/link';
 import { STRIPE_PAYMENT_LINKS } from '@/lib/stripe-payment-links';
 import { useOracleTokenPrices } from '@/lib/public-hooks';
 
-const BEZ_POLYGON_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
+import s from './home.module.css';
+import Reveal from './_components/Reveal';
+import ScrollProgress from './_components/ScrollProgress';
+import NetworkTicker from './_components/NetworkTicker';
+import AnchorPanel from './_components/AnchorPanel';
+import EvidenceChain from './_components/EvidenceChain';
+import StatGrid from './_components/StatGrid';
+import VerticalProtocols from './_components/VerticalProtocols';
+import SecurityControls from './_components/SecurityControls';
+import IntegrationsWall from './_components/IntegrationsWall';
+import OraclePanel from './_components/OraclePanel';
+import ResourceCards from './_components/ResourceCards';
+import HeroNetCanvas from './_components/HeroNetCanvas';
+import {
+    tickerItems,
+    missionPills,
+    aegisPills,
+    chainSteps,
+    chainStats,
+    verticals,
+    securityControls,
+    securityStats,
+    integrationGroups,
+    tokenFacts,
+    tokenUses,
+    oracleContracts,
+    resources,
+    BEZ_POLYGON_ADDRESS,
+} from './_components/home-content';
+
 const BEZ_POLYGONSCAN_URL = `https://polygonscan.com/token/${BEZ_POLYGON_ADDRESS}`;
 const DEFI_TOKENOMICS_URL = process.env.NEXT_PUBLIC_BEZHAS_DEFI_URL || '/financial';
 
@@ -22,28 +51,24 @@ const ecosystemCards = [
     icon: 'local_shipping',
     title: 'Logistica tokenizada',
     desc: 'Trazabilidad, liquidacion y pruebas de entrega conectadas a contratos inteligentes.',
-    accent: 'cyan',
   },
   {
     href: '/network',
     icon: 'psychology',
     title: 'AI Oracles',
     desc: 'Validacion de sensores, rutas, inventarios y riesgo operativo en tiempo real.',
-    accent: 'violet',
   },
   {
     href: '/enterprise',
     icon: 'domain',
     title: 'Activos reales',
     desc: 'Hubs industriales, almacenes y maquinaria listos para modelos RWA y B2B.',
-    accent: 'rose',
   },
   {
     href: '/validators',
     icon: 'verified_user',
     title: 'Red y validadores',
     desc: 'Gobernanza, nodos, RPC y seguridad para la infraestructura del protocolo.',
-    accent: 'emerald',
   },
 ];
 
@@ -82,7 +107,7 @@ const tokenMarkets = [
   },
 ];
 
-const subApps = [
+const nativeApps = [
   {
     name: 'BeZhas-Hub',
     status: 'Creada',
@@ -112,7 +137,7 @@ const subApps = [
   },
 ];
 
-// Apps secundarias del ecosistema con enlace directo a su propia SubApp (subdominios bez.digital).
+// Apps secundarias del ecosistema con enlace directo a su propia App Nativa (subdominios bez.digital).
 // Para cambiar un destino, edita solo el campo `href` de la tarjeta correspondiente.
 const secondaryApps = [
   {
@@ -156,13 +181,6 @@ const secondaryApps = [
     desc: 'Logistica y aduanas on-chain: tracking de cargas, NFTs de envio, escrow de entrega y despacho aduanero verificable.',
   },
 ];
-
-const accentClasses: Record<string, string> = {
-  cyan: 'border-cyan-400/20 text-cyan-300 shadow-cyan-950/20',
-  violet: 'border-violet-400/20 text-violet-300 shadow-violet-950/20',
-  rose: 'border-rose-400/20 text-rose-300 shadow-rose-950/20',
-  emerald: 'border-emerald-400/20 text-emerald-300 shadow-emerald-950/20',
-};
 
 type OracleTokenRecord = {
   priceUSD?: number | string;
@@ -213,24 +231,24 @@ export default function Home() {
   const v2PriceLabel = typeof v2Price === 'number' ? `$${v2Price.toFixed(3)}` : 'Pre-mainnet';
   const v2ChangeLabel = typeof v2Price === 'number' ? 'Oracle V2' : 'Sin precio activo';
 
-  const [subAppsList, setSubAppsList] = useState(subApps);
+  const [nativeAppsList, setNativeAppsList] = useState(nativeApps);
 
   useEffect(() => {
     // Commented out local Vite bypasses to enforce unified portal routes across all environments.
     /*
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (isLocal) {
-      setSubAppsList([
+      setNativeAppsList([
         {
-          ...subApps[0],
+          ...nativeApps[0],
           href: 'http://127.0.0.1:5173',
         },
         {
-          ...subApps[1],
+          ...nativeApps[1],
           href: 'http://127.0.0.1:5174',
         },
         {
-          ...subApps[2],
+          ...nativeApps[2],
           href: 'http://127.0.0.1:3013',
         },
       ]);
@@ -239,7 +257,10 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="space-y-20 pb-12">
+    <div className={s.bzHome}>
+      <ScrollProgress />
+
+      {/* ═══ 1 · HERO — se mantiene oscuro en ambos temas: es la firma de marca ═══ */}
       <section className="relative min-h-[calc(100vh-7rem)] overflow-hidden rounded-2xl border border-white/10 bg-[#050711]">
         <div className="absolute inset-0">
           <img
@@ -249,6 +270,7 @@ export default function Home() {
             alt="Puerto industrial conectado por red BeZhas"
           />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,#050711_0%,rgba(5,7,17,0.82)_42%,rgba(5,7,17,0.35)_100%)]" />
+          <HeroNetCanvas className="absolute inset-0 h-full w-full opacity-70" />
           <div className="bezhas-grid absolute inset-0 opacity-45" />
           <div className="bezhas-scanline absolute inset-x-0 top-0 h-32" />
         </div>
@@ -268,10 +290,10 @@ export default function Home() {
             </div>
 
             <h1 className="max-w-5xl text-5xl font-black uppercase leading-[0.92] tracking-normal text-white md:text-7xl lg:text-8xl">
-              BeZhas conecta logistica, pagos y activos reales en Web3.
+              Creando el estandar digital entre la empresa y la cadena de bloques.
             </h1>
             <p className="mt-7 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
-              Infraestructura B2B para cadenas de suministro globales: oraculos IA, trazabilidad industrial, tokenizacion RWA y liquidacion con BEZ-Coin.
+              Una L2 sobre Ethereum donde los eventos de tu ERP se convierten en evidencia firmada, auditable e irreversible — sin sacar de tu casa ni un solo dato sensible.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -323,260 +345,548 @@ export default function Home() {
             </div>
 
             <div className="relative rounded-2xl border border-white/10 bg-black/35 p-5 shadow-2xl backdrop-blur-xl">
-            <div className="mb-5 flex items-center justify-between border-b border-white/10 pb-4">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-slate-500">Network feed</p>
-                <h2 className="mt-2 text-xl font-black uppercase italic text-white">Terminal BeZhas</h2>
+              <div className="mb-5 flex items-center justify-between border-b border-white/10 pb-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-slate-500">Network feed</p>
+                  <h2 className="mt-2 text-xl font-black uppercase italic text-white">Terminal BeZhas</h2>
+                </div>
+                <span className="material-symbols-outlined text-cyan-300">hub</span>
               </div>
-              <span className="material-symbols-outlined text-cyan-300">hub</span>
-            </div>
-            <div className="space-y-3">
-              {networkStats.map((stat) => (
-                <div key={stat.label} className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">{stat.label}</p>
-                    <p className="text-lg font-black text-white">{stat.value}</p>
+              <div className="space-y-3">
+                {networkStats.map((stat) => (
+                  <div key={stat.label} className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">{stat.label}</p>
+                      <p className="text-lg font-black text-white">{stat.value}</p>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">{stat.detail}</p>
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">{stat.detail}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 2 · TICKER ═══ */}
+      <NetworkTicker items={tickerItems} />
+
+      {/* ═══ 3 · MISION — panel ancla ═══ */}
+      <AnchorPanel title="Nuestra mision" pills={missionPills} art="port" bars={24} />
+
+      <div className={s.anchorBody}>
+        <div className={`${s.wrap} ${s.grid12}`}>
+          <Reveal as="p" className={s.anchorKicker}>
+            Nuestra mision
+          </Reveal>
+          <Reveal as="p" index={1} className={s.anchorStatement}>
+            Que un contenedor, una factura, un lote farmaceutico o un kilovatio puedan demostrar por si
+            mismos donde estuvieron y quien los firmo — sin depender de la palabra de ninguna de las
+            partes.
+          </Reveal>
+        </div>
+      </div>
+
+      {/* ═══ 4 · EL PROBLEMA + esquema de atestacion ═══ */}
+      <section className={`${s.slab} ${s.slabWhite}`}>
+        <div className={`${s.wrap} ${s.grid12}`} style={{ alignItems: 'start' }}>
+          <Reveal className={s.problemCol}>
+            <p className={s.eyebrow}>El problema</p>
+            <h2 className={`${s.secTitle} ${s.secTitleSm}`}>
+              Ninguna empresa puede certificar su propia cadena.
+            </h2>
+            <p className={s.lede}>
+              Hoy la trazabilidad vive dentro de cada ERP. Cuando aduanas, un auditor, una aseguradora o
+              el comprador piden pruebas, cada parte presenta su propia version y alguien tiene que
+              conciliarlas a mano. Eso cuesta dias y deja huecos que nadie firma.
+            </p>
+            <p className={s.lede}>
+              BeZhas no sustituye tu ERP: lo ancla. Cada evento operativo sale por un Edge Node, se valida
+              contra el esquema del sector y aterriza en la cadena como un hash firmado con su ventana de
+              frescura. La operacion sigue donde estaba; la prueba se vuelve comun.
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 6 }}>
+              <Link className={`${s.btn} ${s.btnSolid}`} href="/docs">
+                Como funciona <span className={s.arw}>→</span>
+              </Link>
+              <Link className={`${s.btn} ${s.btnGhost}`} href="/validators">
+                Modelo de seguridad
+              </Link>
+            </div>
+          </Reveal>
+
+          <Reveal index={1} className={s.attestCol}>
+            <div className={s.attest}>
+              <div className={s.attestBar}>
+                <span className={s.dot} />
+                Esquema de atestacion
+                <span className={s.attestLive}>ejemplo ilustrativo</span>
+              </div>
+              <div className={s.attestBody}>
+                <pre>
+                  <span className={s.tc}>{'// lo unico que se escribe on-chain'}</span>
+                  {'\n{\n  '}
+                  <span className={s.tk}>&quot;protocol&quot;</span>
+                  {': '}
+                  <span className={s.ts}>&quot;logistics-global-kinetics&quot;</span>
+                  {',\n  '}
+                  <span className={s.tk}>&quot;event&quot;</span>
+                  {': '}
+                  <span className={s.ts}>&quot;customs.clearance&quot;</span>
+                  {',\n  '}
+                  <span className={s.tk}>&quot;evidenceHash&quot;</span>
+                  {': '}
+                  <span className={s.tv}>0x9f3c…a41b</span>
+                  {',\n  '}
+                  <span className={s.tk}>&quot;jurisdiction&quot;</span>
+                  {': '}
+                  <span className={s.ts}>&quot;ES-CA&quot;</span>
+                  {',\n  '}
+                  <span className={s.tk}>&quot;signer&quot;</span>
+                  {': '}
+                  <span className={s.tv}>0x4Bd2…77E0</span>
+                  {',\n  '}
+                  <span className={s.tk}>&quot;schema&quot;</span>
+                  {': '}
+                  <span className={s.ts}>&quot;v2.3&quot;</span>
+                  {',\n  '}
+                  <span className={s.tk}>&quot;freshness&quot;</span>
+                  {': '}
+                  <span className={s.tv}>900</span>
+                  {' '}
+                  <span className={s.tc}>{'// segundos'}</span>
+                  {',\n  '}
+                  <span className={s.tk}>&quot;confidence&quot;</span>
+                  {': '}
+                  <span className={s.tv}>0.97</span>
+                  {'\n}\n'}
+                  <span className={s.tc}>{'// factura, PII y ruta permanecen fuera de la cadena'}</span>
+                </pre>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 5 · CADENA DE EVIDENCIA ═══ */}
+      <section className={`${s.slab} ${s.slabPaper}`} id="arquitectura">
+        <div className={s.wrap}>
+          <Reveal className={s.secHead}>
+            <p className={s.eyebrow}>Arquitectura compartida</p>
+            <h2 className={s.secTitle}>La cadena de evidencia</h2>
+            <p className={s.lede}>
+              Seis pasos identicos para los siete sectores. Cambian los contratos y los oraculos; nunca
+              cambia el orden ni quien puede firmar cada tramo.
+            </p>
+          </Reveal>
+
+          <EvidenceChain steps={chainSteps} />
+          <StatGrid items={chainStats} light />
+        </div>
+      </section>
+
+      {/* ═══ 6 · ECOSISTEMA CHAIN-FLOW (rutas internas existentes) ═══ */}
+      <section className={`${s.slab} ${s.slabWhite}`}>
+        <div className={s.wrap}>
+          <Reveal className={s.secHead}>
+            <p className={s.eyebrow}>Core protocol</p>
+            <h2 className={s.secTitle}>Ecosistema Chain-Flow</h2>
+            <p className={s.lede}>
+              Un mapa de productos publicos para entender BeZhas sin entrar en paneles sensibles: red,
+              comercio, activos reales, validadores y soporte.
+            </p>
+          </Reveal>
+
+          <div className={s.verticals}>
+            {ecosystemCards.map((card, i) => (
+              <Reveal key={card.href} index={i}>
+                <Link href={card.href} className={s.vcard} style={{ height: '100%' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 34, color: 'var(--accent)' }}>
+                    {card.icon}
+                  </span>
+                  <h3>{card.title}</h3>
+                  <p>{card.desc}</p>
+                  <span className={s.vcardGo}>
+                    Abrir <span className={s.arw}>→</span>
+                  </span>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 7 · PROTOCOLOS VERTICALES ═══ */}
+      <section className={`${s.slab} ${s.slabPaper}`} id="protocolos">
+        <div className={s.wrap}>
+          <Reveal className={s.secHead}>
+            <p className={s.eyebrow}>Protocolos sectoriales</p>
+            <h2 className={s.secTitle}>Trabajando juntos para resolver tus necesidades</h2>
+            <p className={s.lede}>
+              Cada vertical llega con su mapa de contratos, sus actores, sus requisitos de oraculo y su
+              suite de tests. No es una plataforma generica esperando a que alguien la configure.
+            </p>
+          </Reveal>
+
+          <VerticalProtocols verticals={verticals} />
+        </div>
+      </section>
+
+      {/* ═══ 8 · AEGIS — panel ancla ═══ */}
+      <AnchorPanel title="AEGIS" pills={aegisPills} art="aegis" bars={30} />
+
+      {/* ═══ 9 · EL PROTOCOLO FALLA CERRADO ═══ */}
+      <section className={`${s.slab} ${s.slabDeep}`} id="seguridad">
+        <div className={s.wrap}>
+          <Reveal className={s.secHead}>
+            <p className={`${s.eyebrow} ${s.onDark}`}>Seguridad y cumplimiento</p>
+            <h2 className={`${s.secTitle} ${s.onDark}`}>El protocolo falla cerrado</h2>
+            <p className={`${s.lede} ${s.onDark}`}>
+              Si un oraculo esta obsoleto o se contradice, los pagos automaticos se detienen y el caso
+              pasa a revision manual. Preferimos una liquidacion bloqueada a una liquidacion equivocada.
+            </p>
+          </Reveal>
+
+          <SecurityControls controls={securityControls} />
+          <StatGrid items={securityStats} />
+        </div>
+      </section>
+
+      {/* ═══ 10 · INTEGRACIONES ═══ */}
+      <section className={`${s.slab} ${s.slabPaper}`} id="integraciones">
+        <div className={s.wrap}>
+          <div className={s.panel}>
+            <Reveal className={s.secHead} style={{ marginBottom: 8 }}>
+              <p className={s.eyebrow}>Interoperabilidad</p>
+              <h2 className={`${s.secTitle} ${s.secTitleSm}`}>Se conecta donde ya trabajas</h2>
+              <p className={s.lede}>
+                Universal Bridge API para los sistemas de gestion, nodos MCP dedicados para aislamiento de
+                datos, y puentes nativos hacia las redes donde ya tienes liquidez.
+              </p>
+            </Reveal>
+
+            <IntegrationsWall groups={integrationGroups} />
+
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 40 }}>
+              <Link className={`${s.btn} ${s.btnSolid}`} href="/bridges">
+                Ver bridges <span className={s.arw}>→</span>
+              </Link>
+              <Link className={`${s.btn} ${s.btnGhost}`} href="/rpc">
+                RPC y nodos
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 11 · BEZ-COIN: ficha, usos y oraculo en vivo ═══ */}
+      <section className={`${s.slab} ${s.slabWhite}`} id="token">
+        <div className={s.wrap}>
+          <Reveal className={s.secHead}>
+            <p className={s.eyebrow}>BEZ-Coin</p>
+            <h2 className={s.secTitle}>El activo de utilidad de la red</h2>
+            <p className={s.lede}>
+              BEZ-Coin es el combustible operativo de BeZhas: paga el gas, liquida entre proveedores,
+              bloquea escrows y da acceso al SDK y a la gobernanza. No es un producto de inversion.
+            </p>
+          </Reveal>
+
+          <div className={`${s.grid12} ${s.tokenGrid}`}>
+            <Reveal as="dl" className={s.tokenFacts}>
+              {tokenFacts.map(([dt, dd]) => (
+                <div key={dt} className={s.tfact}>
+                  <dt>{dt}</dt>
+                  <dd>{dd}</dd>
                 </div>
               ))}
-            </div>
-          </div>
-          </div>
-        </div>
-      </section>
+            </Reveal>
 
-      <section className="grid gap-4 md:grid-cols-4">
-        {networkStats.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">{stat.label}</p>
-            <p className="mt-3 text-2xl font-black text-white">{stat.value}</p>
-            <p className="mt-2 text-sm text-slate-400">{stat.detail}</p>
-          </div>
-        ))}
-      </section>
+            <Reveal index={1} className={s.tokenUse}>
+              <p className={s.eyebrow}>Para que sirve dentro de la red</p>
+              <ul className={s.uselist}>
+                {tokenUses.map((use) => (
+                  <li key={use.title}>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="m4 10 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span>
+                      <b>{use.title}</b> {use.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
 
-      <section className="relative rounded-2xl border border-cyan-300/15 bg-[#07101a] p-6 shadow-2xl shadow-cyan-950/20 md:p-10">
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-300">Venta directa Polygon</span>
-            <h2 className="mt-4 text-3xl font-black uppercase italic text-white md:text-5xl">BEZ-Coin real en mainnet</h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
-              Compra BEZ-Coin usando el contrato verificado actual en Polygon mientras BeZhas despliega sus modulos de red y tokenomics publicos.
-            </p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-[10px] uppercase tracking-widest text-slate-500">Network</p>
-                <p className="font-bold text-white">Polygon 137</p>
-              </div>
-              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-[10px] uppercase tracking-widest text-slate-500">Token</p>
-                <p className="font-bold text-white">BEZ-Coin</p>
-              </div>
-              <a href={BEZ_POLYGONSCAN_URL} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-white/10 bg-white/[0.03] p-4 hover:border-cyan-300/50">
-                <p className="text-[10px] uppercase tracking-widest text-slate-500">Contrato</p>
-                <p className="font-mono text-sm font-bold text-cyan-300">0xEcBa...11A8</p>
-              </a>
-            </div>
-          </div>
-          <div className="rounded-xl border border-violet-300/20 bg-[#11091f] p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-violet-300">Tokenomics publico</p>
-            <h3 className="mt-4 text-2xl font-black uppercase italic text-white">Liquidez, tesoreria y gobernanza</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-400">
-              La informacion publica de staking, farming, liquidez y gobernanza vive en el modulo financiero informativo, sin exponer rutas de dashboard desde la home.
-            </p>
-            <Link href={DEFI_TOKENOMICS_URL} className="mt-8 flex h-12 items-center justify-center rounded-lg bg-violet-500 px-5 text-xs font-bold uppercase tracking-widest text-white hover:bg-violet-600">
-              Ver tokenomics
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div className="mb-10 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-[0.3em] text-[#0d33f2]">Core protocol</span>
-            <h2 className="mt-4 text-4xl font-black uppercase italic text-white md:text-6xl">Ecosistema Chain-Flow</h2>
-          </div>
-          <p className="max-w-xl text-sm leading-7 text-slate-400">
-            Un mapa de productos publicos para entender BeZhas sin entrar en paneles sensibles: red, comercio, activos reales, validadores y soporte.
-          </p>
-        </div>
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {ecosystemCards.map((card) => (
-            <Link key={card.href} href={card.href} className={`group min-h-72 rounded-xl border bg-white/[0.03] p-7 shadow-2xl transition hover:-translate-y-1 hover:bg-white/[0.055] ${accentClasses[card.accent]}`}>
-              <span className="material-symbols-outlined text-4xl">{card.icon}</span>
-              <h3 className="mt-8 text-2xl font-black uppercase italic text-white">{card.title}</h3>
-              <p className="mt-4 text-sm leading-7 text-slate-400">{card.desc}</p>
-              <div className="mt-8 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] opacity-70 transition group-hover:opacity-100">
-                Abrir <span className="material-symbols-outlined text-sm">arrow_forward</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8">
-          <span className="text-xs font-bold uppercase tracking-[0.3em] text-rose-300">Para quien es</span>
-          <h2 className="mt-4 text-4xl font-black uppercase italic text-white">Tres caminos de entrada</h2>
-          <p className="mt-5 text-sm leading-7 text-slate-400">
-            La home debe convertir rapido: quien compra, quien construye y quien necesita soporte encuentran su siguiente paso sin pasar por dashboard.
-          </p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {audienceTracks.map((track) => (
-            <Link key={track.title} href={track.href} className="rounded-xl border border-white/10 bg-[#0b0d17] p-6 transition hover:border-cyan-300/30 hover:bg-white/[0.05]">
-              <span className="material-symbols-outlined text-cyan-300">{track.icon}</span>
-              <h3 className="mt-6 text-xl font-black uppercase italic text-white">{track.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-400">{track.text}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-white/10 bg-[#070913] p-6 md:p-10">
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Que esta pasando</span>
-            <h2 className="mt-4 text-4xl font-black uppercase italic text-white">Feed del ecosistema</h2>
-          </div>
-          <Link href="/support" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-cyan-200">
-            Contacto y soporte <span className="material-symbols-outlined text-sm">arrow_forward</span>
-          </Link>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {liveFeed.map((item) => (
-            <Link key={item.title} href={item.href} className="rounded-xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#0d33f2]/40 hover:bg-white/[0.05]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#0d33f2]">{item.tag}</p>
-              <h3 className="mt-4 text-lg font-black uppercase italic text-white">{item.title}</h3>
-              <p className="mt-5 text-xs text-slate-500">{item.meta}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-8 rounded-2xl border border-[#0d33f2]/20 bg-gradient-to-br from-[#071022] to-[#050711] p-8 md:p-12 lg:grid-cols-[1fr_0.9fr]">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-[0.3em] text-[#0d33f2]">Contacto</span>
-          <h2 className="mt-4 text-4xl font-black uppercase italic text-white md:text-6xl">Construye, integra o pregunta.</h2>
-          <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-400">
-            Centralizamos los canales publicos para soporte, comunidad, partnerships e integraciones tecnicas.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {contactLinks.map((link) => (
-            <a key={link.label} href={link.href} target={link.href.startsWith('http') ? '_blank' : undefined} rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-5 text-white transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
-              <span className="text-sm font-black uppercase tracking-[0.18em]">{link.label}</span>
-              <span className="material-symbols-outlined text-cyan-300">{link.icon}</span>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#f5f7fb] p-6 text-[#050711] md:p-10">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(13,51,242,0.08),transparent_32%,rgba(245,190,60,0.16)_100%)]" />
-        <div className="relative z-10 mb-10 grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
-          <div>
-            <span className="text-xs font-black uppercase tracking-[0.32em] text-[#0d33f2]">SubApps BeZhas</span>
-            <h2 className="mt-4 text-4xl font-black uppercase italic leading-none md:text-6xl">Creadas y en desarrollo</h2>
-          </div>
-          <p className="max-w-2xl text-sm leading-7 text-slate-600">
-            La capa publica se organiza en tres experiencias: Hub para comunidad y marketplace, DeFi para servicios financieros Web3, y Nexus para IA, trazabilidad y oraculos de datos verificables.
-          </p>
-        </div>
-
-        <div className="relative z-10 grid gap-4 lg:grid-cols-3">
-          {subAppsList.map((app) => (
-            <div
-              key={app.name}
-              className="app-orbit-card group min-h-72 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#0d33f2]/30 hover:shadow-2xl hover:shadow-blue-950/10 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#0d33f2] text-white">
-                    <span className="material-symbols-outlined">{app.icon}</span>
-                  </div>
-                  <span className="rounded-full border border-slate-200 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                    {app.status}
-                  </span>
-                </div>
-                <p className="mt-7 text-[10px] font-black uppercase tracking-[0.24em] text-[#0d33f2]">{app.label}</p>
-                <h3 className="mt-3 text-2xl font-black uppercase italic text-slate-950">{app.name}</h3>
-                <p className="mt-4 text-sm leading-6 text-slate-600">{app.desc}</p>
-              </div>
-
-              <div className="mt-7 flex items-center justify-between">
-                <Link
-                  href={app.href}
-                  className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-950 hover:text-[#0d33f2]"
-                >
-                  Abrir App <span className="material-symbols-outlined text-sm transition group-hover:translate-x-1">arrow_forward</span>
-                </Link>
-                {app.docsHref && (
-                  <Link
-                    href={app.docsHref}
-                    className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#0d33f2] hover:underline"
-                  >
-                    API Docs <span className="material-symbols-outlined text-[12px]">link</span>
-                  </Link>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Galeria vertical auto-scroll de las SubApps secundarias (enlaces directos) */}
-        <div className="relative z-10 mt-10">
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#0d33f2]">Accesos directos</p>
-              <h3 className="mt-1 text-2xl font-black uppercase italic text-slate-950 md:text-3xl">Galeria de SubApps</h3>
-            </div>
-            <span className="hidden items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 md:flex">
-              <span className="material-symbols-outlined text-sm">pan_tool</span>
-              Pasa el raton para pausar
-            </span>
-          </div>
-
-          <div className="subapp-marquee group relative w-full overflow-hidden py-2">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-[#f5f7fb] to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-[#f5f7fb] to-transparent" />
-            <div className="subapp-marquee-track flex">
-              {[...secondaryApps, ...secondaryApps].map((app, index) => (
+              <div className={s.tokenActions}>
                 <a
-                  key={`${app.name}-${index}`}
+                  className={`${s.btn} ${s.btnSolid}`}
+                  href={STRIPE_PAYMENT_LINKS.tokenPurchase}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Comprar BEZ-Coin <span className={s.arw}>→</span>
+                </a>
+                <Link className={`${s.btn} ${s.btnGhost}`} href={DEFI_TOKENOMICS_URL}>
+                  Ver tokenomics
+                </Link>
+              </div>
+
+              <div className={s.addr}>
+                <span className={s.addrLbl}>Contrato Polygon</span>
+                <code>{BEZ_POLYGON_ADDRESS}</code>
+                <a
+                  className={`${s.btn} ${s.btnGhost}`}
+                  style={{ padding: '8px 16px', fontSize: 13 }}
+                  href={BEZ_POLYGONSCAN_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Polygonscan <span className={s.arw}>↗</span>
+                </a>
+              </div>
+            </Reveal>
+          </div>
+
+          <OraclePanel contracts={oracleContracts} />
+        </div>
+      </section>
+
+      {/* ═══ 12 · TRES CAMINOS DE ENTRADA ═══ */}
+      <section className={`${s.slab} ${s.slabPaper}`}>
+        <div className={s.wrap}>
+          <Reveal className={s.secHead}>
+            <p className={s.eyebrow}>Para quien es</p>
+            <h2 className={s.secTitle}>Tres caminos de entrada</h2>
+            <p className={s.lede}>
+              Quien compra, quien construye y quien necesita soporte encuentran su siguiente paso sin
+              pasar por dashboard.
+            </p>
+          </Reveal>
+
+          <div className={s.apps}>
+            {audienceTracks.map((track, i) => (
+              <Reveal key={track.title} index={i}>
+                <Link href={track.href} className={s.app} style={{ height: '100%' }}>
+                  <span className="material-symbols-outlined" style={{ color: 'var(--accent)' }}>
+                    {track.icon}
+                  </span>
+                  <span className={s.appN}>{track.title}</span>
+                  <span className={s.appD}>{track.text}</span>
+                  <span className={s.appS}>
+                    Entrar <span className={s.arw}>→</span>
+                  </span>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 13 · APLICACIONES SOBRE EL ESTANDAR (SubApps desplegadas) ═══ */}
+      <section className={`${s.slab} ${s.slabWhite}`} id="ecosistema">
+        <div className={s.wrap}>
+          <Reveal className={s.secHead}>
+            <p className={s.eyebrow}>Ecosistema</p>
+            <h2 className={s.secTitle}>Aplicaciones sobre el estandar</h2>
+            <p className={s.lede}>
+              Cinco aplicaciones ya desplegadas que consumen los mismos contratos y el mismo modelo de
+              roles. Lo que aprende una, lo hereda el resto.
+            </p>
+          </Reveal>
+
+          <div className={s.apps}>
+            {secondaryApps.map((app, i) => (
+              <Reveal key={app.name} index={i}>
+                <a
+                  className={s.app}
                   href={app.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Abrir ${app.name}`}
-                  className="app-orbit-card group/card mr-4 flex w-[22rem] shrink-0 flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#0d33f2]/30 hover:shadow-2xl hover:shadow-blue-950/10"
+                  style={{ height: '100%' }}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#0d33f2] text-white">
-                      <span className="material-symbols-outlined">{app.icon}</span>
-                    </div>
-                    <span className="rounded-full border border-slate-200 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                      {app.status}
-                    </span>
-                  </div>
-                  <p className="mt-7 text-[10px] font-black uppercase tracking-[0.24em] text-[#0d33f2]">{app.label}</p>
-                  <h3 className="mt-3 text-2xl font-black uppercase italic text-slate-950">{app.name}</h3>
-                  <p className="mt-4 text-sm leading-6 text-slate-600">{app.desc}</p>
-                  <span className="mt-6 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-950 group-hover/card:text-[#0d33f2]">
-                    Abrir App <span className="material-symbols-outlined text-sm transition group-hover/card:translate-x-1">arrow_forward</span>
+                  <span className="material-symbols-outlined" style={{ color: 'var(--accent)' }}>
+                    {app.icon}
+                  </span>
+                  <span className={s.appN}>{app.name}</span>
+                  <span className={s.appD}>{app.desc}</span>
+                  <span className={s.appS}>
+                    <span className={s.pulse} />
+                    {app.status === 'Online' ? 'En produccion' : app.status}
                   </span>
                 </a>
-              ))}
+              </Reveal>
+            ))}
+          </div>
+
+          {/* Apps Nativas del portal unificado (rutas internas + API docs) */}
+          <Reveal className={s.secHead} style={{ marginTop: 'clamp(48px, 6vw, 88px)', marginBottom: 24 }}>
+            <p className={s.eyebrow}>App Nativas</p>
+            <h2 className={`${s.secTitle} ${s.secTitleSm}`}>Dentro del portal unificado</h2>
+            <p className={s.lede}>
+              Hub para comunidad y marketplace, DeFi para servicios financieros Web3, y Vision Scan para
+              IA, trazabilidad y oraculos de datos verificables.
+            </p>
+          </Reveal>
+
+          <div className={s.apps}>
+            {nativeAppsList.map((app, i) => (
+              <Reveal key={app.name} index={i}>
+                <div className={s.app} style={{ height: '100%' }}>
+                  <span className="material-symbols-outlined" style={{ color: 'var(--accent)' }}>
+                    {app.icon}
+                  </span>
+                  <span className={s.appN}>{app.name}</span>
+                  <span className={s.appD}>{app.desc}</span>
+                  <span className={s.appS} style={{ gap: 16 }}>
+                    <Link href={app.href} style={{ color: 'var(--accent)' }}>
+                      Abrir App →
+                    </Link>
+                    {app.docsHref && (
+                      <Link href={app.docsHref} style={{ color: 'var(--ink-3)' }}>
+                        API Docs
+                      </Link>
+                    )}
+                  </span>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 14 · FEED DEL ECOSISTEMA ═══ */}
+      <section className={`${s.slab} ${s.slabPaper}`}>
+        <div className={s.wrap}>
+          <Reveal className={s.secHead}>
+            <p className={s.eyebrow}>Que esta pasando</p>
+            <h2 className={s.secTitle}>Feed del ecosistema</h2>
+          </Reveal>
+
+          <div className={s.res}>
+            {liveFeed.map((item, i) => (
+              <Reveal key={item.title} index={i}>
+                <Link href={item.href} className={s.rcard} style={{ height: '100%' }}>
+                  <span className={s.rcardType}>{item.tag}</span>
+                  <h4>{item.title}</h4>
+                  <p>{item.meta}</p>
+                  <span className={s.rcardGo}>
+                    Ver <span className={s.arw}>→</span>
+                  </span>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 15 · RECURSOS ═══ */}
+      <section className={`${s.slab} ${s.slabWhite}`} id="recursos">
+        <div className={s.wrap}>
+          <Reveal className={s.secHead}>
+            <p className={s.eyebrow}>Documentacion</p>
+            <h2 className={s.secTitle}>Ultimos recursos</h2>
+          </Reveal>
+
+          <ResourceCards resources={resources} />
+        </div>
+      </section>
+
+      {/* ═══ 16 · CONTACTO / PILOTO ═══ */}
+      <section className={`${s.slab} ${s.slabPaper}`} id="contacto">
+        <div className={s.wrap}>
+          <div className={s.panel}>
+            <div className={`${s.grid12} ${s.ctaGrid}`}>
+              <Reveal className={s.ctaCopy}>
+                <p className={s.eyebrow}>Unete a la red</p>
+                <h2 className={`${s.secTitle} ${s.secTitleSm}`}>
+                  Un estandar solo vale lo que vale su lista de firmantes
+                </h2>
+                <p className={s.lede}>
+                  Buscamos operadores logisticos, plantas industriales, aseguradoras e integradores de ERP
+                  dispuestos a anclar un proceso real. Empezamos por un flujo, con datos propios y
+                  evidencia exportable desde el primer dia.
+                </p>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 6 }}>
+                  <a
+                    className={`${s.btn} ${s.btnSolid}`}
+                    href="mailto:info.angelqg@gmail.com?subject=BeZhas%20—%20Piloto%20empresarial"
+                  >
+                    Solicitar un piloto <span className={s.arw}>→</span>
+                  </a>
+                  <a
+                    className={`${s.btn} ${s.btnGhost}`}
+                    href="https://t.me/BeZhasBot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Hablar por Telegram
+                  </a>
+                </div>
+                <p style={{ fontSize: 13.5, color: 'var(--ink-3)', marginTop: 8 }}>
+                  Perfiles abiertos: miembro industrial · partner integrador · validador de red · nodo edge
+                </p>
+
+                <div className={s.res} style={{ marginTop: 26 }}>
+                  {contactLinks.map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      target={link.href.startsWith('http') ? '_blank' : undefined}
+                      rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                      className={s.rcard}
+                      style={{ minHeight: 0, padding: '16px 18px', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: 14.5 }}>{link.label}</span>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--accent)', fontSize: 20 }}>
+                        {link.icon}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </Reveal>
+
+              <Reveal index={1} className={s.ctaArt}>
+                <div className={s.mosaic} aria-hidden="true">
+                  <i className={s.m1} />
+                  <i className={s.m2} />
+                  <i className={s.m3} />
+                  <i className={s.m4} />
+                  <i className={s.m5} />
+                  <i className={s.m6} />
+                </div>
+              </Reveal>
             </div>
           </div>
         </div>
+      </section>
 
-        <div className="relative z-10 mt-8 rounded-xl border border-slate-200 bg-slate-950 p-5 text-white">
-          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-200">Ruta de expansion</p>
-          <p className="mt-2 text-sm leading-7 text-slate-300">
-            BeZhas Vision Scan (anteriormente Nexus/Scaner) ha sido unificada como una SubApp integral conectada directamente a los Smart Contracts. Esta capa se encarga del Food Oracle, firmas SIFT y gemelos digitales, mientras que Hub y DeFi mantienen separadas las experiencias consumer y financiera.
+      {/* ═══ 17 · DISCLAIMER MiCA ═══ */}
+      <section className={s.legal}>
+        <div className={`${s.wrap} ${s.legalInner}`}>
+          <p className={s.disclaimer}>
+            <b>BEZ-Coin es un token de utilidad de la red BeZhas.</b> No constituye una oferta de
+            inversion ni un producto financiero regulado, y esta pagina no proporciona asesoramiento
+            financiero. El valor de los activos digitales puede fluctuar y no esta garantizado.
+            Cumplimiento del Reglamento MiCA (UE) 2023/1114 y de las obligaciones informativas de la AEAT
+            (Espana), incluida la directiva DAC8.
           </p>
+          <div className={s.legalLinks}>
+            <Link href="/privacy">Privacidad</Link>
+            <Link href="/support">Soporte</Link>
+            <Link href="/token">BEZ-Coin</Link>
+            <a href="https://t.me/BeZhasBot" target="_blank" rel="noopener noreferrer">
+              Telegram
+            </a>
+            <span>© 2026 BeZhas</span>
+          </div>
         </div>
       </section>
     </div>

@@ -18,10 +18,14 @@ interface PageSEO {
 
 const PAGE_SEO: Record<string, PageSEO> = {
     '/': {
-        title: 'BeZhas | Web3 Global Engine for B2B Logistics',
-        description: 'BeZhas is the enterprise blockchain L2 for global supply chains — AI Oracles, industrial tokenization, DePIN mining, and real-time logistics.',
+        title: 'BeZhas | El estandar digital entre la empresa y la cadena de bloques',
+        description: 'L2 empresarial sobre Ethereum: los eventos de tu ERP se convierten en evidencia firmada, auditable e irreversible. Siete protocolos sectoriales, seguridad AEGIS fail-closed y cumplimiento MiCA, DAC8 y AEAT — sin sacar de tu casa un solo dato sensible.',
         path: '/',
-        keywords: ['blockchain logistics', 'supply chain blockchain', 'L2 blockchain', 'DePIN', 'BEZ coin'],
+        keywords: [
+            'blockchain empresarial', 'trazabilidad blockchain', 'L2 Ethereum', 'ERP blockchain',
+            'Edge Node', 'evidencia auditable', 'RWA', 'tokenizacion industrial', 'AEGIS',
+            'MiCA', 'DAC8', 'AEAT', 'oraculo IA', 'DePIN', 'BEZ coin', 'supply chain blockchain',
+        ],
     },
     '/solutions': {
         title: 'Solutions | Tokenization, DePIN & AI Oracles',
