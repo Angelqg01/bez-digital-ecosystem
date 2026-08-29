@@ -1,16 +1,62 @@
+# Ninguno de los dos scripts de instalacion hace falta aqui, y dejarlos sin
+# decidir hacia que pnpm 11 abortase el install con ERR_PNPM_IGNORED_BUILDS en
+# cuanto cambiaba la version de protobufjs — y ese error tumba el install
+# implicito que precede a CUALQUIER script (`pnpm test` incluido).
+#   @scarf/scarf: telemetria de instalacion, nada funcional.
+#   protobufjs:   su postinstall solo regenera los wrappers CJS/ESM ya incluidos
+#                 en el tarball publicado; grpc-js lo consume igual sin ellos.
 allowBuilds:
-  '@scarf/scarf': set this to true or false
-  protobufjs: set this to true or false
+  '@scarf/scarf': false
+  protobufjs: false
+
+# Devuelve "hay builds ignorados" a su condicion de aviso. La decision ya esta
+# tomada arriba; sin esto, el aviso es un error que aborta el install.
+strictDepBuilds: false
 
 # Security overrides: force transitive deps to patched versions.
 # Kept within the same major as the consuming libraries (e.g. google-cloud)
 # to avoid breaking changes while clearing the advisories.
 overrides:
-  axios: '^1.16.0'
+  axios: '^1.20.0'
   fast-xml-builder: '^1.2.0'
   fast-xml-parser: '^5.8.0'
   ws: '^8.21.0'
   qs: '^6.15.2'
   follow-redirects: '^1.16.0'
-  protobufjs: '^7.5.8'
-  brace-expansion: '5.0.6'
+  protobufjs: '^7.6.5'
+  '@grpc/grpc-js': '^1.14.4'
+  # Solo la rama 7: el aviso cubre <=7.29.0 y aqui hay instalado un 8.x que
+  # ya esta sano. Sin acotar, el override lo degradaba de 8 a 7.
+  '@babel/core@7': '^7.29.1'
+  '@tootallnate/once': '^2.0.1'
+  body-parser: '^1.20.6'
+  ip-address: '^10.3.1'
+
+  # brace-expansion va acotado POR MAJOR a proposito.
+  #
+  # El override anterior era `brace-expansion: '5.0.6'` a secas, y forzaba la v5
+  # a TODOS los consumidores. minimatch@3 —que sigue instalado aqui— hace
+  # `var expand = require('brace-expansion')` y lo llama como funcion; la v5
+  # exporta un objeto { EXPANSION_MAX, expand }, asi que cualquier patron con
+  # llaves reventaba con `TypeError: expand is not a function`. No saltaba en los
+  # tests porque ninguno pasa por ese camino, pero estaba ahi.
+  #
+  # El ReDoS esta parcheado en 1.1.12, 2.0.2 y 5.0.9, asi que cada rama se lleva
+  # su version corregida y cada consumidor conserva la API que espera.
+  brace-expansion@1: '^1.1.12'
+  brace-expansion@2: '^2.0.2'
+  brace-expansion@5: '^5.0.9'
+
+  # js-yaml tambien por rama: la 3 y la 4 conviven (eslint arrastra una, los
+  # clientes de google-cloud la otra) y la 4 no es compatible hacia atras.
+  js-yaml@3: '^3.15.1'
+  js-yaml@4: '^4.3.1'
+
+  # uuid acotado a la rama vulnerable: el paquete declara uuid@13 como dep
+  # directa y un override global la degradaria a la 11.
+  uuid@<11.1.1: '^11.1.1'
+
+  # form-data por ramas. La 4 llega tambien via supertest > superagent (que esta
+  # deprecado y pinnea una version vieja), asi que no basta con la dep directa.
+  form-data@2: '^2.5.6'
+  'form-data@>=4.0.0 <4.0.6': '^4.0.6'
