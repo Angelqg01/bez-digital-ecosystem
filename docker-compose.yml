@@ -52,7 +52,7 @@ services:
     environment:
       POSTGRES_DB:       bezhas
       POSTGRES_USER:     bezhas
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bezhas_secure_2026}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
@@ -138,7 +138,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV:         ${NODE_ENV:-production}
-      DATABASE_URL:     postgresql://bezhas:${POSTGRES_PASSWORD:-bezhas_secure_2026}@postgres:5432/bezhas
+      DATABASE_URL:     postgresql://bezhas:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}@postgres:5432/bezhas
       REDIS_URL:        redis://redis:6379
       JWT_SECRET:       ${JWT_SECRET}
       BEZHAS_API_KEY:   ${BEZHAS_API_KEY}
@@ -151,7 +151,7 @@ services:
       #
       # Es la MISMA clave que usa business-ops para hablar con la API, asi que
       # comparten variable: si divergen, las llamadas internas dan 401.
-      INTERNAL_API_KEY: ${OPERANT_ADMIN_KEY:-operant-admin}
+      INTERNAL_API_KEY: ${OPERANT_ADMIN_KEY:?define OPERANT_ADMIN_KEY en .env}
       # Pagos. Sin estas, la facturación por consumo y el webhook de Stripe
       # fallan al usarse — pero la API arranca igual, que antes no era el caso.
       STRIPE_SECRET_KEY:     ${STRIPE_SECRET_KEY:-}
@@ -181,7 +181,7 @@ services:
       # el servicio de abajo): el puente autentica con ella. Si divergen, todas
       # las rutas /api/operant/* devuelven 503 "puente no autorizado".
       OPERANT_API_URL:      http://bezhas-business-ops:4000
-      OPERANT_INTERNAL_KEY: ${OPERANT_ADMIN_KEY:-operant-admin}
+      OPERANT_INTERNAL_KEY: ${OPERANT_ADMIN_KEY:?define OPERANT_ADMIN_KEY en .env}
       # Firma las anclas merkle de la auditoría de los agentes. Sin ella la raíz
       # se calcula y se guarda igual (tx_hash nulo) y se reintenta: el tramo no
       # se pierde, solo queda pendiente de notarizar.
@@ -256,7 +256,7 @@ services:
     environment:
       POSTGRES_DB:       operant
       POSTGRES_USER:     operant
-      POSTGRES_PASSWORD: ${OPERANT_POSTGRES_PASSWORD:-operant_secure_2026}
+      POSTGRES_PASSWORD: ${OPERANT_POSTGRES_PASSWORD:?define OPERANT_POSTGRES_PASSWORD en .env}
     volumes:
       - operant-postgres-data:/var/lib/postgresql/data
     networks:
@@ -281,16 +281,16 @@ services:
       PORT: 4000
       # La aplicación se conecta con operant_app, NUNCA con el dueño: un rol
       # superusuario se salta la RLS y el aislamiento entre tenants desaparece.
-      DATABASE_URL: postgresql://operant_app:${OPERANT_APP_PASSWORD:-operant_app_2026}@operant-postgres:5432/operant
-      OWNER_DATABASE_URL: postgresql://operant:${OPERANT_POSTGRES_PASSWORD:-operant_secure_2026}@operant-postgres:5432/operant
-      PG_APP_PASSWORD: ${OPERANT_APP_PASSWORD:-operant_app_2026}
+      DATABASE_URL: postgresql://operant_app:${OPERANT_APP_PASSWORD:?define OPERANT_APP_PASSWORD en .env}@operant-postgres:5432/operant
+      OWNER_DATABASE_URL: postgresql://operant:${OPERANT_POSTGRES_PASSWORD:?define OPERANT_POSTGRES_PASSWORD en .env}@operant-postgres:5432/operant
+      PG_APP_PASSWORD: ${OPERANT_APP_PASSWORD:?define OPERANT_APP_PASSWORD en .env}
       # Mismo secreto que firma la API: es lo que hace funcionar el puente de
       # auth (una sesión de BeZhas vale aquí, sin repartir otra credencial).
       JWT_SECRET: ${JWT_SECRET}
       # Con esta clave definida, OPERANT monta el puente /bridge que consume el
       # Gateway de BeZhas (entitlements, cuota, auditoría anclable). Es la misma
       # que OPERANT_INTERNAL_KEY en bezhas-api: si divergen, el puente da 401.
-      INTERNAL_API_KEY: ${OPERANT_ADMIN_KEY:-operant-admin}
+      INTERNAL_API_KEY: ${OPERANT_ADMIN_KEY:?define OPERANT_ADMIN_KEY en .env}
       BRIDGE_TASK_TIMEOUT_MS: ${BRIDGE_TASK_TIMEOUT_MS:-60000}
       # Lectura del stack de BeZhas (solo GET, endpoints públicos).
       BEZHAS_API_URL: http://bezhas-api:3001
@@ -382,7 +382,7 @@ services:
       - redis
     environment:
       OLLAMA_BASE_URL:  http://host.docker.internal:11434
-      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-bezhas_webui_2026}
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:?define WEBUI_SECRET_KEY en .env}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -421,7 +421,7 @@ services:
     profiles:
       - monitoring
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-bezhas_2026}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?define GRAFANA_PASSWORD en .env}
     volumes:
       - grafana-data:/var/lib/grafana
     ports:

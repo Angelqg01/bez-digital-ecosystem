@@ -9,10 +9,10 @@ services:
     environment:
       - PORT=3001
       - NODE_ENV=development
-      - JWT_SECRET=${JWT_SECRET:-dev-secret-key}
+      - JWT_SECRET=${JWT_SECRET:?define JWT_SECRET en .env}
       - AEGIS_API_URL=http://aegis:8001/api/aegis
       - BEZHAS_L2_RPC_URL=${BEZHAS_L2_RPC_URL:-http://host.docker.internal:8545}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-TuPasswordSeguro}@postgres:5432/${POSTGRES_DB:-bezhas_control}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}@postgres:5432/${POSTGRES_DB:-bezhas_control}
       - REDIS_URL=redis://redis:6379
     depends_on:
       postgres:
