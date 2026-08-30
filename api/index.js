@@ -28,6 +28,7 @@ const { makeCorsOriginFn, parseExtraOrigins } = require('./config/cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
+const cookieParser = require('cookie-parser');
 const { randomUUID } = require('crypto');
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 
@@ -89,6 +90,7 @@ const organizationsRoutes = require('./routes/organizations');
 const organizationTechRoutes = require('./routes/organization-tech');
 const organizationBillingRoutes = require('./routes/organization-billing');
 const adminConfigRoutes = require('./routes/admin-config');
+const adminGovernanceRoutes = require('./routes/admin-governance');
 const webhookRoutes = require('./routes/webhooks');
 const energyRoutes = require('./routes/energy');          // ← VPP Energy Layer
 const mtfcRoutes = require('./routes/mtfc');
@@ -210,6 +212,13 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// cookie-parser faltaba: admin-auth.js emite el JWT de SUPER_ADMIN en una
+// cookie HttpOnly y luego lee `req.cookies.bezhas_admin_token` para validarla.
+// Sin este parser ese objeto es siempre undefined, así que la sesión del panel
+// no se podía verificar por cookie y el único camino que quedaba era mandar el
+// token a mano — que es justo lo que la cookie HttpOnly viene a evitar.
+app.use(cookieParser());
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  SECCIÓN 5: OBSERVABILIDAD (Metrics + Audit Log)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -318,6 +327,7 @@ app.use('/api/organizations', organizationTechRoutes);
 app.use('/api/organizations', organizationBillingRoutes);
 app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);
+app.use('/api/admin/governance', adminGovernanceRoutes);
 
 // ── Blockchain / Contratos / Tokens ──────────────────────────────────────────
 app.use('/api/contracts', contractsAbiRoutes);  // ABI/deploy/agent (específico primero)

@@ -6,13 +6,15 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken, requireRole } = require('../middleware/security');
+const { requireSuperAdmin } = require('../middleware/admin-auth');
 const aegisService = require('../services/aegisService');
 const { query } = require('../db/pool');
+const { cacheGet, cacheSet } = require('../cache/redis');
+
+const { JWT_SECRET, AUTH_BYPASS } = require('../config/secrets');
 
 const router = Router();
 const AEGIS_URL = process.env.AEGIS_API_URL || 'http://localhost:8001/api/aegis';
-const DEV_MODE = process.env.NODE_ENV !== 'production';
-const JWT_SECRET = process.env.JWT_SECRET || (DEV_MODE ? 'dev-only-secret' : null);
 
 function parseJsonSafe(value) {
     if (!value) return {};
@@ -43,20 +45,25 @@ async function logAdminAction(req, action, payload = {}, status = 'ok') {
 }
 
 function authenticateSse(req, res, next) {
-    if (DEV_MODE) {
+    // Antes bastaba con que NODE_ENV no fuese 'production' para entrar como
+    // admin sin token: un NODE_ENV mal puesto en un despliegue dejaba este SSE
+    // abierto de par en par. Ahora se exige la misma opción explícita que el
+    // resto de la API (AUTH_BYPASS=true, imposible en producción).
+    if (AUTH_BYPASS) {
         req.user = { address: '0xDev0000000000000000000000000000000000001', role: 'admin' };
         return next();
     }
 
     const authHeader = req.headers['authorization'];
     const headerToken = authHeader && authHeader.split(' ')[1];
-    const token = req.query.token || headerToken;
+    // EventSource no permite cabeceras propias, de ahí el token por query.
+    const token = headerToken || req.query.token;
 
     if (!token) {
         return res.status(401).json({ error: 'Access token required for SSE' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }, (err, user) => {
         if (err) return res.status(403).json({ error: 'Invalid or expired token' });
         req.user = user;
         next();
@@ -433,6 +440,82 @@ router.post('/retrain', authenticateToken, requireRole('admin'), async (req, res
     } catch (error) {
         await logAdminAction(req, 'retrain_model', { error: error.message }, 'error');
         res.status(500).json({ error: 'Failed to start retrain', details: error.message });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CONFIG DEL ORÁCULO AEGIS (panel SuperAdmin → pestaña Ecosystem & RWA)
+//
+//  Distinto de /config/telemetry y /threshold, que empujan al servicio Aegis
+//  por HTTP: esto es la configuración que el panel edita y que debe sobrevivir
+//  aunque el servicio esté caído. Se guarda en el mismo espacio de claves que
+//  el resto de la config de administración.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const AEGIS_CONFIG_KEY = 'admin:config:aegis-oracle';
+const AEGIS_CONFIG_DEFAULTS = {
+    confidence_threshold: 85,
+    vision_model: 'gemini-2.0-flash',
+    auto_pause_on_failure: true,
+};
+
+// Lista cerrada. Un modelo libre aquí acaba en una llamada a un proveedor que
+// no existe y en un Aegis que falla en silencio.
+const ALLOWED_VISION_MODELS = new Set([
+    'gemini-2.0-flash',
+    'gpt-4o',
+    'claude-3-5-sonnet',
+    'llava-1.5-7b',
+]);
+
+router.get('/aegis-config', requireSuperAdmin, async (_req, res) => {
+    try {
+        const stored = await cacheGet(AEGIS_CONFIG_KEY);
+        res.json({ config: { ...AEGIS_CONFIG_DEFAULTS, ...(stored || {}) } });
+    } catch (error) {
+        res.status(500).json({ error: 'No se pudo leer la configuración de Aegis' });
+    }
+});
+
+router.put('/aegis-config', requireSuperAdmin, async (req, res) => {
+    const incoming = req.body?.config;
+    if (!incoming || typeof incoming !== 'object') {
+        return res.status(400).json({ error: 'Falta el objeto `config`' });
+    }
+
+    const threshold = Number(incoming.confidence_threshold);
+    if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100) {
+        return res.status(400).json({ error: '`confidence_threshold` debe ser un número entre 0 y 100' });
+    }
+    if (!ALLOWED_VISION_MODELS.has(incoming.vision_model)) {
+        // gemini-1.5-flash está deprecado y prohibido en el proyecto: si llega
+        // aquí, es mejor un 400 explícito que una config guardada que romperá
+        // la primera inferencia.
+        return res.status(400).json({
+            error: `Modelo de visión no admitido: ${incoming.vision_model}`,
+            allowed: [...ALLOWED_VISION_MODELS],
+        });
+    }
+    if (typeof incoming.auto_pause_on_failure !== 'boolean') {
+        return res.status(400).json({ error: '`auto_pause_on_failure` debe ser booleano' });
+    }
+
+    const config = {
+        confidence_threshold: threshold,
+        vision_model: incoming.vision_model,
+        auto_pause_on_failure: incoming.auto_pause_on_failure,
+    };
+
+    try {
+        const persisted = await cacheSet(AEGIS_CONFIG_KEY, config);
+        if (!persisted) {
+            return res.status(503).json({ error: 'No se pudo persistir: almacén de configuración no disponible' });
+        }
+        await logAdminAction(req, 'set_aegis_oracle_config', config, 'ok');
+        res.json({ success: true, config });
+    } catch (error) {
+        await logAdminAction(req, 'set_aegis_oracle_config', { ...config, error: error.message }, 'error');
+        res.status(500).json({ error: 'No se pudo guardar la configuración de Aegis' });
     }
 });
 

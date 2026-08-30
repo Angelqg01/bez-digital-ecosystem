@@ -6,8 +6,15 @@
  */
 const { Router } = require('express');
 const redisClient = require('../cache/redis').client;
+const { requireSuperAdmin } = require('../middleware/admin-auth');
 
 const router = Router();
+
+// La guarda va aquí, en el router, y no en el `app.use()` de index.js: montado
+// allí es una línea que se puede reordenar o duplicar sin que nada falle, y
+// este módulo escribe wallets de Treasury y límites de gasto. Al colgarla del
+// propio router, cualquier sitio donde se monte queda cerrado por defecto.
+router.use(requireSuperAdmin);
 
 async function getConfig(key, defaultVal) {
     if (!redisClient) return defaultVal;

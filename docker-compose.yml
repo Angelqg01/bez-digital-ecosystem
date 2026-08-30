@@ -156,13 +156,88 @@ services:
       # fallan al usarse — pero la API arranca igual, que antes no era el caso.
       STRIPE_SECRET_KEY:     ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      # Nodo de la cadena. SIN esto la API caía al valor por defecto
+      # `http://localhost:8545`, que DENTRO del contenedor es el propio
+      # contenedor — donde no escucha nadie. De ahí que el indexador nunca
+      # alcanzara ningún nodo por mucho que hubiera uno en el host.
+      #
+      # `host.docker.internal` es el host desde dentro del contenedor; mismo
+      # patrón que docker-compose.dev.yml. Apúntalo a la L2 real en producción.
+      # Variable PROPIA del contenedor, y no `BEZHAS_L2_RPC_URL` a secas: esa
+      # vale `http://localhost:8545` en el .env, que es correcto para procesos
+      # del host y erróneo aquí dentro, donde `localhost` es este contenedor.
+      # Usándola como valor por defecto nunca se aplicaba, porque la variable
+      # existe. Con un nombre distinto, host y contenedor pueden discrepar sin
+      # pisarse.
+      BEZHAS_L2_RPC_URL: ${BEZHAS_L2_RPC_URL_DOCKER:-http://host.docker.internal:8545}
+      RPC_URL:           ${BEZHAS_L2_RPC_URL_DOCKER:-http://host.docker.internal:8545}
+      BEZHAS_CHAIN_ID:   ${BEZHAS_CHAIN_ID:-31337}
+      # ── OPERANT (SubApp de gestión empresarial autónoma) ──────────────────
+      # La API no ejecuta agentes: aprovisiona el tenant, aplica entitlements y
+      # cuota, mide el consumo y ancla la auditoría. La ejecución vive en
+      # business-ops, al que llama por el puente interno /bridge.
+      #
+      # La clave es la MISMA que INTERNAL_API_KEY de business-ops (arriba, y en
+      # el servicio de abajo): el puente autentica con ella. Si divergen, todas
+      # las rutas /api/operant/* devuelven 503 "puente no autorizado".
+      OPERANT_API_URL:      http://bezhas-business-ops:4000
+      OPERANT_INTERNAL_KEY: ${OPERANT_ADMIN_KEY:-operant-admin}
+      # Firma las anclas merkle de la auditoría de los agentes. Sin ella la raíz
+      # se calcula y se guarda igual (tx_hash nulo) y se reintenta: el tramo no
+      # se pierde, solo queda pendiente de notarizar.
+      OPERANT_OPERATOR_KEY: ${OPERANT_OPERATOR_KEY:-}
+
+      # ── Panel SuperAdmin y War Room ──
+      # El compose no pasaba ninguna de estas, así que dentro del contenedor no
+      # existían: el proceso de la API sólo ve lo que se declara aquí, no el
+      # .env del host.
+      #
+      # Credenciales de arranque del SuperAdmin. Son la semilla: en cuanto
+      # existe la fila admin_credentials, manda la base de datos.
+      ADMIN_USERNAME:      ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
+      ADMIN_WALLET:        ${ADMIN_WALLET:-}
+      ADMIN_2FA_REQUIRED:  ${ADMIN_2FA_REQUIRED:-false}
+      # Clave del almacén cifrado (identity_secrets y el secreto TOTP). Sin
+      # ella el código genera una clave efímera POR ARRANQUE: en un contenedor,
+      # que reinicia solo, eso significa perder lo cifrado en cada reinicio.
+      VAULT_KEY:           ${VAULT_KEY:-}
+      # Dominio de la cookie de sesión admin. Vacío mientras API y panel
+      # comparten host; en producción, .bez.digital.
+      COOKIE_DOMAIN:       ${COOKIE_DOMAIN:-}
+      # NODE_ENV aquí es production por defecto, y en producción /api/monitor
+      # responde 503 sin este token. Sin pasarlo, el War Room queda muerto.
+      MONITOR_ACCESS_TOKEN: ${MONITOR_ACCESS_TOKEN:-}
+
       PORT:             3001
     ports:
       - "3001:3001"
     networks:
       - bezhas-net
+    # Direcciones y ABIs de los contratos.
+    #
+    # La API los lee de `../../smart-contracts`, que queda FUERA del contexto de
+    # build (`./api`), así que dentro del contenedor esa ruta no existía. El
+    # efecto era total y silencioso: sin direcciones no hay contratos, sin
+    # contratos no hay suscripciones, y todo el anclaje devolvía
+    # `not_configured` sin una sola queja. El indexador arrancaba con CERO
+    # suscripciones y el contenedor se declaraba sano.
+    #
+    # Se monta `abi/` (1,8 MB) y no `out/` (36 MB): loadABI cae al primero, y
+    # el segundo son artefactos de compilación que aquí no pintan nada.
+    # En sólo lectura: el contenedor los consume, no los produce.
+    volumes:
+      - ./smart-contracts/deployments:/smart-contracts/deployments:ro
+      - ./smart-contracts/abi:/smart-contracts/abi:ro
+    # En Linux `host.docker.internal` no existe por defecto; esto lo resuelve.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      # /health NO EXISTE en esta API: la ruta es /api/health. El healthcheck
+      # sondeaba un 404, así que el contenedor salía `unhealthy` de forma
+      # permanente aunque la base de datos, Redis y la API estuvieran bien. Se
+      # veía como un servicio averiado cuando lo único averiado era la sonda.
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -212,7 +287,11 @@ services:
       # Mismo secreto que firma la API: es lo que hace funcionar el puente de
       # auth (una sesión de BeZhas vale aquí, sin repartir otra credencial).
       JWT_SECRET: ${JWT_SECRET}
+      # Con esta clave definida, OPERANT monta el puente /bridge que consume el
+      # Gateway de BeZhas (entitlements, cuota, auditoría anclable). Es la misma
+      # que OPERANT_INTERNAL_KEY en bezhas-api: si divergen, el puente da 401.
       INTERNAL_API_KEY: ${OPERANT_ADMIN_KEY:-operant-admin}
+      BRIDGE_TASK_TIMEOUT_MS: ${BRIDGE_TASK_TIMEOUT_MS:-60000}
       # Lectura del stack de BeZhas (solo GET, endpoints públicos).
       BEZHAS_API_URL: http://bezhas-api:3001
       BEZHAS_TENANT_ID: bezhas

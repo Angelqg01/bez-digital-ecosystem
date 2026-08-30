@@ -5,6 +5,7 @@ const { Router } = require('express');
 const { query } = require('../db/pool');
 const { cacheGet, cacheSet } = require('../cache/redis');
 const { authenticateToken } = require('../middleware/security');
+const { requireSuperAdmin } = require('../middleware/admin-auth');
 const { getBlockchainStats } = require('../services/contractService');
 
 const router = Router();
@@ -398,6 +399,69 @@ router.get('/user/:address', async (req, res) => {
         staking: staking.rows[0],
         farming: farming.rows[0],
     });
+});
+
+// ── GET /ai-logs — Traza de auditoría del panel SuperAdmin ──
+//
+// La pestaña DAO Governance ya consumía este endpoint; al no existir, caía a
+// una lista vacía y el panel de auditoría salía siempre en blanco.
+//
+// Va detrás de requireSuperAdmin y no de authenticateToken porque el panel se
+// autentica con la cookie de admin, que authenticateToken no mira. Y el
+// contenido lo justifica: ai_logs guarda los intentos de login con IP y
+// user-agent, además de la entrada y salida de cada decisión de los agentes.
+router.get('/ai-logs', requireSuperAdmin, async (req, res) => {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 20, 200);
+    const { module: moduleFilter, severity } = req.query;
+
+    // Filtros opcionales construidos con parámetros, nunca interpolados.
+    const conditions = [];
+    const params = [];
+    if (moduleFilter) {
+        params.push(moduleFilter);
+        conditions.push(`module = $${params.length}`);
+    }
+    if (severity) {
+        params.push(severity);
+        conditions.push(`severity = $${params.length}`);
+    }
+    params.push(limit);
+
+    try {
+        const { rows } = await query(
+            `SELECT id, module, action, severity, input_data, output_data, confidence,
+                    processing_ms, created_at
+               FROM ai_logs
+              ${conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''}
+              ORDER BY created_at DESC
+              LIMIT $${params.length}`,
+            params
+        );
+
+        res.json({
+            rows: rows.map(row => ({
+                ...row,
+                // La columna usa el vocabulario de la base
+                // (debug/info/warning/critical) y el panel colorea por
+                // info/warn/error. Se traduce aquí para no tener que tocar el
+                // CHECK de la tabla ni inventar un tercer vocabulario.
+                severity: { warning: 'warn', critical: 'error', debug: 'info' }[row.severity] || row.severity,
+                // ai_logs no tiene columna de wallet: cuando el actor es
+                // conocido viaja dentro de input_data. Se expone plano porque
+                // es lo que el panel pinta, y 'system' cuando no hay actor
+                // humano —que es el caso de la mayoría de los agentes.
+                wallet_address:
+                    row.input_data?.wallet
+                    || row.input_data?.walletAddress
+                    || row.input_data?.address
+                    || 'system',
+            })),
+            count: rows.length,
+            limit,
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'No se pudieron leer los registros de auditoría' });
+    }
 });
 
 module.exports = router;

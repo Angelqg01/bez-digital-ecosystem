@@ -15,12 +15,20 @@ jest.mock('../db/pool', () => ({ query: (...args) => mockQuery(...args) }));
 const mockCacheGet = jest.fn().mockResolvedValue(null);
 const mockCacheSet = jest.fn().mockResolvedValue('OK');
 const mockPublish = jest.fn().mockResolvedValue(1);
+const mockCacheDelete = jest.fn().mockResolvedValue(true);
+const mockCheckRateLimit = jest.fn().mockResolvedValue({
+    allowed: true, count: 1, limit: 5, remaining: 4, resetInSec: 900,
+});
 jest.mock('../cache/redis', () => ({
     connectRedis: jest.fn().mockResolvedValue(true),
     cacheGet: (...args) => mockCacheGet(...args),
     cacheSet: (...args) => mockCacheSet(...args),
     publish: (...args) => mockPublish(...args),
-    checkRateLimit: jest.fn().mockResolvedValue(false),
+    // Forma real de la función (un objeto), no un booleano: los middlewares
+    // hacen `result.allowed`, así que devolver `false` daba undefined y todo
+    // endpoint con limitador respondía 429 en los tests.
+    cacheDelete: (...args) => mockCacheDelete(...args),
+    checkRateLimit: (...args) => mockCheckRateLimit(...args),
 }));
 
 // ─── EventListener / GasMonitor mock ───
@@ -138,7 +146,7 @@ function makeEnterpriseToken() {
 }
 
 module.exports = {
-    mockQuery, mockCacheGet, mockCacheSet, mockPublish,
+    mockQuery, mockCacheGet, mockCacheSet, mockCacheDelete, mockPublish, mockCheckRateLimit,
     mockContractService, mockTxService, mockWalletService, mockAegisService, mockAgentService, mockAxios,
     makeToken, makeAdminToken, makeEnterpriseToken,
 };
