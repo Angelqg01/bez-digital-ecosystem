@@ -5,8 +5,10 @@ import { Factory, Car, Building, Zap, Target, RefreshCw, Pause, Play, Save } fro
 import { api } from '@/lib/api';
 
 interface EcosystemStats {
-    total_rwa_assets: number;
-    locked_liquidity_usd: number;
+    // null = sin fuente de datos, distinto de 0. No hay pool de liquidez RWA
+    // desplegado, así que el backend manda null en vez de inventar una cifra.
+    total_rwa_assets: number | null;
+    locked_liquidity_usd: number | null;
     minting_fee_bez: number;
     is_paused: boolean;
 }
@@ -28,6 +30,7 @@ export default function TabEcosystem() {
     const [stats, setStats] = useState<EcosystemStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [pausing, setPausing] = useState(false);
+    const [statsError, setStatsError] = useState<string | null>(null);
 
     // Aegis Oracle config (persisted via API)
     const [aegis, setAegis] = useState<AegisConfig>({
@@ -43,13 +46,11 @@ export default function TabEcosystem() {
             const res = await api.get<{ stats: EcosystemStats }>('/sectors/rwa-factory-stats');
             setStats(res.stats ?? null);
         } catch {
-            // Non-critical — keep defaults
-            setStats({
-                total_rwa_assets: 12408,
-                locked_liquidity_usd: 4200000,
-                minting_fee_bez: 100,
-                is_paused: false,
-            });
+            // Antes esto pintaba 12.408 activos y 4,2 M$ de liquidez cuando la
+            // llamada fallaba. Eran cifras inventadas presentadas como reales
+            // en el panel de administración; si no hay datos, se dice.
+            setStats(null);
+            setStatsError('No se pudieron cargar las métricas de RWA');
         } finally {
             setLoading(false);
         }
@@ -75,8 +76,12 @@ export default function TabEcosystem() {
         try {
             await api.post('/sectors/rwa-factory-pause', { pause: !stats.is_paused });
             setStats(prev => prev ? { ...prev, is_paused: !prev.is_paused } : prev);
+            setStatsError(null);
         } catch {
-            setStats(prev => prev ? { ...prev, is_paused: !prev.is_paused } : prev);
+            // El estado sólo cambia en pantalla si cambió en el servidor:
+            // invertirlo también al fallar mostraba la factoría "pausada"
+            // mientras seguía admitiendo acuñaciones.
+            setStatsError('No se pudo cambiar el estado de la factoría');
         } finally {
             setPausing(false);
         }
@@ -89,18 +94,25 @@ export default function TabEcosystem() {
             setSavedAegis(true);
             setTimeout(() => setSavedAegis(false), 2500);
         } catch {
-            setSavedAegis(true);
-            setTimeout(() => setSavedAegis(false), 2500);
+            // No marcar como guardado lo que no se guardó.
+            setStatsError('No se pudo guardar la configuración de Aegis');
+            setTimeout(() => setStatsError(null), 4000);
         } finally {
             setSavingAegis(false);
         }
     };
 
-    const formatLiquidity = (usd: number) => {
+    // null → guion. `?? 0` mostraría "$0", que afirma que la liquidez es cero
+    // cuando lo cierto es que no hay ninguna fuente que la mida.
+    const formatLiquidity = (usd: number | null) => {
+        if (usd === null || usd === undefined) return '—';
         if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(1)}M`;
         if (usd >= 1_000) return `$${(usd / 1_000).toFixed(0)}K`;
         return `$${usd}`;
     };
+
+    const formatCount = (value: number | null | undefined) =>
+        value === null || value === undefined ? '—' : value.toLocaleString();
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -128,6 +140,10 @@ export default function TabEcosystem() {
                     </div>
                 </div>
 
+                {statsError && (
+                    <p className="mb-4 text-[10px] text-amber-400/90 uppercase tracking-widest">{statsError}</p>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-black/40 p-4 border border-white/5 text-center">
                         <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Minting Fee</div>
@@ -138,13 +154,13 @@ export default function TabEcosystem() {
                     <div className="bg-black/40 p-4 border border-white/5 text-center">
                         <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Activos RWA (ERC-1155)</div>
                         <div className="text-xl font-mono text-cyan-400 font-bold">
-                            {loading ? '...' : (stats?.total_rwa_assets ?? 0).toLocaleString()}
+                            {loading ? '...' : formatCount(stats?.total_rwa_assets)}
                         </div>
                     </div>
                     <div className="bg-black/40 p-4 border border-white/5 text-center">
                         <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Liquidez Bloqueada</div>
                         <div className="text-xl font-mono text-white">
-                            {loading ? '...' : formatLiquidity(stats?.locked_liquidity_usd ?? 0)}
+                            {loading ? '...' : formatLiquidity(stats?.locked_liquidity_usd ?? null)}
                         </div>
                     </div>
                     <div className="bg-black/40 p-4 border border-white/5 flex items-center justify-center">

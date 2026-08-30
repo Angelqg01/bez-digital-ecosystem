@@ -27,7 +27,13 @@ async function request<T>(endpoint: string, options: ApiOptions = {}): Promise<T
 
     let res: Response;
     try {
-        res = await fetch(`${API_BASE}${endpoint}`, { ...fetchOptions, headers });
+        // `credentials: 'include'` es lo que hace que la cookie HttpOnly de sesión
+        // admin (bezhas_admin_token, puesta por /admin-auth/login) viaje hasta la
+        // API. Sin esto el navegador no la manda —la API está en otro puerto/
+        // subdominio— y el panel se quedaba sin ninguna credencial utilizable:
+        // el login nunca devuelve el token en el body, justo para no guardarlo
+        // en localStorage al alcance de cualquier XSS.
+        res = await fetch(`${API_BASE}${endpoint}`, { credentials: 'include', ...fetchOptions, headers });
     } catch {
         throw new ApiError('API no disponible', 0);
     }

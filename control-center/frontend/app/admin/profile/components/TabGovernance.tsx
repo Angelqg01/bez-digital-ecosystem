@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Users, FileJson, Scale, CheckCircle2, AlertTriangle, ScrollText, RefreshCw, Download, Plus, Clock } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 
 interface AuditLog {
     id: string;
@@ -58,14 +58,23 @@ export default function TabGovernance() {
     const [loadingProposals, setLoadingProposals] = useState(true);
     const [loadingUsers, setLoadingUsers] = useState(true);
     const [votingId, setVotingId] = useState<string | null>(null);
+    const [logsError, setLogsError] = useState<string | null>(null);
+    const [governanceAvailable, setGovernanceAvailable] = useState(true);
+    const [voteError, setVoteError] = useState<string | null>(null);
 
     const fetchLogs = useCallback(async () => {
         try {
             const res = await api.get<{ rows: AuditLog[] }>('/analytics/ai-logs?limit=20');
             setLogs(res.rows ?? []);
-        } catch {
-            // Fallback: use static mock if API not ready
+            setLogsError(null);
+        } catch (error) {
+            // Un fallo de carga se dice, no se pinta como "no hay registros":
+            // un panel de auditoría en blanco por un 401 es indistinguible de
+            // uno en blanco porque no ha pasado nada, y son cosas opuestas.
             setLogs([]);
+            setLogsError(error instanceof ApiError && error.status === 401
+                ? 'Sesión expirada — vuelve a iniciar sesión'
+                : 'No se pudieron cargar los registros de auditoría');
         } finally {
             setLoadingLogs(false);
         }
@@ -73,10 +82,16 @@ export default function TabGovernance() {
 
     const fetchProposals = useCallback(async () => {
         try {
-            const res = await api.get<{ success: boolean; proposals: Proposal[] }>('/gateway/v1/governance/proposals');
+            // Ruta de administración, no la del gateway: aquella exige api-key
+            // de cliente y devolvía 401 a la cookie del panel.
+            const res = await api.get<{ success: boolean; proposals: Proposal[]; available?: boolean }>(
+                '/admin/governance/proposals'
+            );
             setProposals(res.proposals ?? []);
+            setGovernanceAvailable(res.available !== false);
         } catch {
             setProposals([]);
+            setGovernanceAvailable(false);
         } finally {
             setLoadingProposals(false);
         }
@@ -112,15 +127,12 @@ export default function TabGovernance() {
             });
             await fetchProposals();
         } catch {
-            setProposals(prev => prev.map((proposal) => (
-                proposal.id === proposalId
-                    ? {
-                        ...proposal,
-                        votes_for: proposal.votes_for + (vote === 'for' ? 1 : 0),
-                        votes_against: proposal.votes_against + (vote === 'against' ? 1 : 0),
-                    }
-                    : proposal
-            )));
+            // Antes, al fallar el voto se incrementaba el contador en local:
+            // la pantalla mostraba un voto emitido que nunca salió de aquí, y
+            // al recargar desaparecía. Votar exige firma de la wallet, que el
+            // panel todavía no pide — mientras tanto, se dice.
+            setVoteError('El voto no se pudo emitir: requiere firma de la wallet del votante');
+            setTimeout(() => setVoteError(null), 4000);
         } finally {
             setVotingId(null);
         }
@@ -281,8 +293,16 @@ export default function TabGovernance() {
                         )}
                     </div>
 
+                    {voteError && (
+                        <p className="text-[10px] text-amber-400/90 text-center mt-4">{voteError}</p>
+                    )}
+
                     {proposals.length === 0 && !loadingProposals && (
-                        <p className="text-[10px] text-gray-600 text-center mt-4">Governance module pending deployment</p>
+                        <p className="text-[10px] text-gray-600 text-center mt-4">
+                            {governanceAvailable
+                                ? 'No hay propuestas registradas'
+                                : 'Módulo de gobernanza pendiente de despliegue'}
+                        </p>
                     )}
                 </div>
 
@@ -323,12 +343,14 @@ export default function TabGovernance() {
                                 ))}
                             </pre>
                         ) : (
-                            <pre className="text-[9px] font-mono leading-relaxed text-emerald-400/80 w-full break-all whitespace-pre-wrap">
-{`{"timestamp":"2026-03-30T07:12:01Z","agent":"OpenClaw","action":"deploy_contract","target":"BeZhasVault_V2","txHash":"0x8f...21c"}
-{"timestamp":"2026-03-30T07:44:11Z","agent":"OpenClaw","action":"call_mcp","tool":"analyzeGasStrategy","result":"Switch to L2 Rollup"}
-{"timestamp":"2026-03-30T08:01:55Z","agent":"OpenClaw","action":"notify_owner","reason":"Threshold Exceeded (500 USD)","status":"WAITING_SIGNATURE"}
-{"timestamp":"2026-03-30T08:14:22Z","agent":"OpenClaw","warning":"High network traffic","action":"pause_factory_mint"}`}
-                            </pre>
+                            // Aquí había cuatro entradas JSONL inventadas con
+                            // fechas y txHash falsos. En un panel rotulado
+                            // "Auditoría Inmutable" eso es lo último que puede
+                            // aparecer: quien lo mire no tiene forma de
+                            // distinguirlas de registros reales.
+                            <p className="text-[10px] font-mono text-gray-600">
+                                {logsError ?? 'Sin registros de auditoría en la ventana consultada.'}
+                            </p>
                         )}
                     </div>
 

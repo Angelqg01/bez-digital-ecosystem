@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireSuperAdmin } from '@/lib/adminGuard';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -139,6 +140,11 @@ async function buildSummary() {
 }
 
 export async function GET(req: NextRequest) {
+    // Lee y escribe el vault de Obsidian en disco y lanza el canvas builder:
+    // sin guarda, cualquiera podía leer la documentación interna del proyecto.
+    const denied = await requireSuperAdmin();
+    if (denied) return denied;
+
   try {
     const url = new URL(req.url);
     const notePath = url.searchParams.get('path');
@@ -153,6 +159,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    // Lee y escribe el vault de Obsidian en disco y lanza el canvas builder:
+    // sin guarda, cualquiera podía leer la documentación interna del proyecto.
+    const denied = await requireSuperAdmin();
+    if (denied) return denied;
+
   try {
     const body = await req.json();
     const action = body?.action;

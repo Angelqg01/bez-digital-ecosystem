@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireSuperAdmin } from '@/lib/adminGuard';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -7,9 +8,9 @@ export const dynamic = 'force-dynamic';
 
 // control-center/frontend is two levels below the repo root.
 const REPO_ROOT = path.resolve(process.cwd(), '../..');
-const CONFIG_PATH = path.join(REPO_ROOT, 'scripts', 'config', 'subapps.json');
-const SNAPSHOT_PATH = path.join(REPO_ROOT, 'scripts', 'status', 'subapp-status.json');
-const WATCHDOG_SCRIPT = path.join(REPO_ROOT, 'scripts', 'subapp-watchdog.cjs');
+const CONFIG_PATH = path.join(REPO_ROOT, 'scripts', 'config', 'native-apps.json');
+const SNAPSHOT_PATH = path.join(REPO_ROOT, 'scripts', 'status', 'native-app-status.json');
+const WATCHDOG_SCRIPT = path.join(REPO_ROOT, 'scripts', 'native-app-watchdog.cjs');
 const SYNC_SCRIPT = path.join(REPO_ROOT, 'scripts', 'sync-daemon.cjs');
 const SYNC_REPORT_PATH = path.join(REPO_ROOT, 'SKILL', 'sync-report.json');
 
@@ -36,7 +37,7 @@ async function loadConfig() {
 
 // Cloud Run "start/stop": Cloud Run has no native power switch, so this toggles
 // maxInstances between 0 (no instance may ever run — effectively off) and a
-// normal ceiling (matches --max-instances 5 in scripts/deploy-subapp.sh).
+// normal ceiling (matches --max-instances 5 in scripts/deploy-native-app.sh).
 const RUNNING_MAX_INSTANCES = 5;
 
 // Tried in order — the machine has had its system gcloud installation get
@@ -62,7 +63,7 @@ function runGcloud(args: string[], timeoutMs = 30_000) {
       const bin = GCLOUD_CANDIDATES[i];
       // shell:true is required on Windows to exec a .cmd wrapper. Safe here because
       // every arg we pass is either a fixed flag or a value pre-validated against
-      // the subapps.json service whitelist — never raw request input.
+      // the native-apps.json service whitelist — never raw request input.
       const child = spawn(bin, args, { windowsHide: true, timeout: timeoutMs, shell: true });
       let stdout = '';
       let stderr = '';
@@ -217,11 +218,11 @@ async function buildStatus() {
       status: 'never_run',
       apps: apps.map((a) => ({ name: a.name, url: a.url, service: a.service || null, status: 'unknown' })),
       summary: { total: apps.length, up: 0, down: 0, flaky: 0, unknown: apps.length },
-      message: 'El watchdog nunca se ha ejecutado en este entorno. Usa "Comprobar ahora" o corre `pnpm watchdog:subapps`.',
+      message: 'El watchdog nunca se ha ejecutado en este entorno. Usa "Comprobar ahora" o corre `pnpm watchdog:native-apps`.',
     };
   }
 
-  // The ping snapshot (written by scripts/subapp-watchdog.cjs) doesn't know
+  // The ping snapshot (written by scripts/native-app-watchdog.cjs) doesn't know
   // about Cloud Run service names — merge them in from the config so the
   // client can wire up start/stop without a second round trip.
   const enrichedApps = (snapshot.apps || []).map((a: { name: string }) => ({
@@ -233,6 +234,11 @@ async function buildStatus() {
 }
 
 export async function GET() {
+  // proxy.ts no cubre /api/admin/*, así que la guarda va aquí: esta ruta lista
+  // el estado de los servicios de Cloud Run y la de abajo puede apagarlos.
+  const denied = await requireSuperAdmin();
+  if (denied) return denied;
+
   try {
     return json(await buildStatus());
   } catch (error) {
@@ -241,6 +247,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireSuperAdmin();
+  if (denied) return denied;
+
   try {
     const body = await req.json().catch(() => ({}));
     const action = body?.action;
@@ -260,7 +269,7 @@ export async function POST(req: NextRequest) {
     if (action === 'cloud_run_status_all') {
       const { project, region, apps } = await loadConfig();
       const targets = apps.filter((a) => a.service);
-      if (targets.length === 0) return json({ status: 'error', error: 'No hay servicios Cloud Run configurados en subapps.json' }, { status: 400 });
+      if (targets.length === 0) return json({ status: 'error', error: 'No hay servicios Cloud Run configurados en native-apps.json' }, { status: 400 });
 
       // Preflight: one cheap call first. If gcloud itself is broken (e.g. the
       // corrupted local install), every one of the 13 calls fails identically —

@@ -66,19 +66,18 @@ export default function AdminLogin() {
                     setBackupCodes(Array.isArray(data.backupCodes) ? data.backupCodes : []);
                     setError('');
                 } else {
+                    // bezhas_admin_session es sólo la pista que lee proxy.ts
+                    // para no redirigir al login; la credencial real es la
+                    // cookie HttpOnly bezhas_admin_token que pone la API y que
+                    // este código no puede (ni debe) leer.
                     document.cookie = `bezhas_admin_session=active; path=/; max-age=${data.expiresIn}; SameSite=Lax`;
-                    if (data.token) {
-                        localStorage.setItem('bezhas_admin_token', data.token);
-                        localStorage.setItem('bezhas_token', data.token);
-                        localStorage.setItem('bezhas_user', JSON.stringify({
-                            id: data.walletAddress || 0,
-                            wallet_address: data.walletAddress || '',
-                            username: data.username || username,
-                            role: data.role || 'SUPER_ADMIN',
-                            avatar_url: null,
-                        }));
-                        document.cookie = `bezhas_token=${data.token}; path=/; max-age=${data.expiresIn}; SameSite=Lax`;
-                    }
+                    localStorage.setItem('bezhas_user', JSON.stringify({
+                        id: data.walletAddress || 0,
+                        wallet_address: data.walletAddress || '',
+                        username: data.username || username,
+                        role: data.role || 'SUPER_ADMIN',
+                        avatar_url: null,
+                    }));
                     router.push('/admin/profile');
                 }
             } else if (res.status === 429) {
@@ -116,11 +115,6 @@ export default function AdminLogin() {
             });
             const data = await res.json();
             if (res.ok && data.success) {
-                if (data.token) {
-                    localStorage.setItem('bezhas_admin_token', data.token);
-                    localStorage.setItem('bezhas_token', data.token);
-                    document.cookie = `bezhas_token=${data.token}; path=/; max-age=${data.expiresIn}; SameSite=Lax`;
-                }
                 setMustCompleteBootstrap(false);
                 if (data.requiresSetup2FA) {
                     setBootstrapToken(data.token);
@@ -156,8 +150,12 @@ export default function AdminLogin() {
             });
             const data = await res.json();
             if (res.ok && data.success) {
-                localStorage.setItem('bezhas_admin_token', data.token);
-                localStorage.setItem('bezhas_token', data.token);
+                // La sesión ya viaja en la cookie HttpOnly que acaba de poner
+                // la API. Aquí sólo se guarda el perfil para pintarlo: el JWT
+                // no entra en localStorage, donde cualquier XSS lo leería.
+                // (Antes esto hacía setItem con data.token sin comprobar que
+                // existiera, y como el endpoint no lo devuelve, guardaba
+                // literalmente la cadena "undefined".)
                 localStorage.setItem('bezhas_user', JSON.stringify({
                     id: data.walletAddress || 0,
                     wallet_address: data.walletAddress || '',
@@ -166,7 +164,6 @@ export default function AdminLogin() {
                     avatar_url: null,
                 }));
                 document.cookie = `bezhas_admin_session=active; path=/; max-age=${data.expiresIn}; SameSite=Lax`;
-                document.cookie = `bezhas_token=${data.token}; path=/; max-age=${data.expiresIn}; SameSite=Lax`;
                 setMustVerify2FA(false);
                 router.push('/admin/profile');
             } else {
@@ -232,11 +229,6 @@ export default function AdminLogin() {
 
             if (res.ok && data.success) {
                 document.cookie = `bezhas_admin_session=active; path=/; max-age=${data.expiresIn}; SameSite=Lax`;
-                if (data.token) {
-                    localStorage.setItem('bezhas_admin_token', data.token);
-                    localStorage.setItem('bezhas_token', data.token);
-                    document.cookie = `bezhas_token=${data.token}; path=/; max-age=${data.expiresIn}; SameSite=Lax`;
-                }
                 router.push('/admin/profile');
             } else if (res.status === 429) {
                 setLockoutUntil(Date.now() + 15 * 60 * 1000);

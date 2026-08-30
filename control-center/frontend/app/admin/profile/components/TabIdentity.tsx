@@ -35,7 +35,7 @@ interface QuickAdminStatus {
     last2FAVerifiedAt: string | null;
 }
 
-const SUPERADMIN_SUBAPPS = [
+const SUPERADMIN_NATIVE_APPS = [
     { name: 'BeZhas Wallet', url: 'http://127.0.0.1:3010' },
     { name: 'Gas Tank', url: 'http://127.0.0.1:3011' },
     { name: 'Edge Nodes', url: 'http://127.0.0.1:3012' },
@@ -50,7 +50,7 @@ export default function TabIdentity() {
     // ── State ────────────────────────────────────────────────────────────────
     const [secrets, setSecrets] = useState<IdentitySecret[]>([]);
     const [nodes, setNodes] = useState<IdentityNode[]>([]);
-    const [subAppsLinks, setSubAppsLinks] = useState(SUPERADMIN_SUBAPPS);
+    const [nativeAppsLinks, setNativeAppsLinks] = useState(SUPERADMIN_NATIVE_APPS);
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState<Toast | null>(null);
     const [revealingId, setRevealingId] = useState<string | null>(null);
@@ -82,7 +82,6 @@ export default function TabIdentity() {
         setTimeout(() => setToast(null), 3000);
     };
 
-    const getAdminToken = () => localStorage.getItem('bezhas_admin_token') || localStorage.getItem('bezhas_token');
 
     const apiErrorMessage = (error: unknown, fallback: string) => (
         error instanceof ApiError ? error.message : fallback
@@ -92,12 +91,16 @@ export default function TabIdentity() {
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const token = getAdminToken();
+            // Sin token explícito: la sesión viaja en la cookie HttpOnly
+            // bezhas_admin_token, que lib/api manda con credentials:'include'.
+            // Antes esto leía localStorage, donde el login nunca llegó a
+            // escribir nada, así que el bloque de credenciales SuperAdmin no se
+            // cargaba jamás.
             const [secretsRes, nodesRes, didRes, quickRes] = await Promise.allSettled([
                 api.get<{ data: IdentitySecret[] }>('/identity/secrets'),
                 api.get<{ data: IdentityNode[] }>('/identity/nodes'),
                 api.get<{ data: { did: string; displayName: string; email: string } }>('/identity/did'),
-                token ? api.get<QuickAdminStatus>('/admin-auth/quick-super-admin/status', { token, quiet: true }) : Promise.reject(),
+                api.get<QuickAdminStatus>('/admin-auth/quick-super-admin/status', { quiet: true }),
             ]);
 
             if (secretsRes.status === 'fulfilled') setSecrets(secretsRes.value.data);
@@ -117,7 +120,7 @@ export default function TabIdentity() {
     useEffect(() => {
         const isProd = window.location.hostname === 'bez.digital';
         if (isProd) {
-            setSubAppsLinks([
+            setNativeAppsLinks([
                 { name: 'BeZhas Wallet', url: '/dashboard/wallet' },
                 { name: 'Gas Tank', url: '/dashboard/gas' },
                 { name: 'Edge Nodes', url: '/dashboard/validators' },
@@ -223,18 +226,11 @@ export default function TabIdentity() {
             return;
         }
 
-        const token = getAdminToken();
-        if (!token) {
-            showToast('err', 'Sesión admin no encontrada. Inicia sesión de nuevo.');
-            return;
-        }
-
         setSavingQuickAdmin(true);
         try {
             const res = await api.post<{ success: boolean; username: string; walletAddress: string; message: string }>(
                 '/admin-auth/quick-super-admin/rotate',
                 { username: quickAdmin.username, currentPassword: quickAdmin.currentPassword, newPassword: quickAdmin.newPassword },
-                { token },
             );
             setQuickAdmin({ username: res.username, currentPassword: '', newPassword: '', confirmPassword: '' });
             showToast('ok', 'Usuario y contraseña SuperAdmin actualizados');
@@ -247,17 +243,11 @@ export default function TabIdentity() {
     };
 
     const handleStart2FASetup = async () => {
-        const token = getAdminToken();
-        if (!token) {
-            showToast('err', 'Sesión admin no encontrada. Inicia sesión de nuevo.');
-            return;
-        }
         setSaving2FA(true);
         try {
             const res = await api.post<{ success: boolean; qrCodeUrl: string; otpauthUrl: string; backupCodes: string[] }>(
                 '/admin-auth/quick-super-admin/2fa/setup',
                 {},
-                { token },
             );
             setTwoFactorSetup({ qrCodeUrl: res.qrCodeUrl, otpauthUrl: res.otpauthUrl, backupCodes: res.backupCodes || [] });
             showToast('ok', 'QR 2FA generado. Escanéalo con tu app.');
@@ -269,17 +259,11 @@ export default function TabIdentity() {
     };
 
     const handleVerify2FASetup = async () => {
-        const token = getAdminToken();
-        if (!token) {
-            showToast('err', 'Sesión admin no encontrada. Inicia sesión de nuevo.');
-            return;
-        }
         setSaving2FA(true);
         try {
             const res = await api.post<{ success: boolean; backupCodes: string[] }>(
                 '/admin-auth/quick-super-admin/2fa/verify-setup',
                 { code: twoFactorCode },
-                { token },
             );
             setTwoFactorSetup(prev => prev ? { ...prev, backupCodes: res.backupCodes || prev.backupCodes } : prev);
             setTwoFactorCode('');
@@ -292,13 +276,12 @@ export default function TabIdentity() {
         }
     };
 
-    const openSubApp = (url: string) => {
-        const token = getAdminToken();
-        if (!token) {
-            showToast('err', 'Sesión admin no encontrada. Inicia sesión de nuevo.');
-            return;
-        }
-        window.open(`${url}?token=${encodeURIComponent(token)}`, '_blank', 'noopener,noreferrer');
+    // Sin token en la query: un JWT en la URL acaba en el historial del
+    // navegador, en la cabecera Referer de la primera petición saliente de la
+    // SubApp y en los logs de acceso de cualquier proxy por el que pase. Cada
+    // SubApp autentica por su cuenta.
+    const openNativeApp = (url: string) => {
+        window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -658,14 +641,14 @@ export default function TabIdentity() {
 
                         <div className="mt-6 border-t border-white/10 pt-5">
                             <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-sm font-bold uppercase tracking-widest text-white">SSO SuperAdmin SubApps</h4>
+                                <h4 className="text-sm font-bold uppercase tracking-widest text-white">SSO SuperAdmin Apps Nativas</h4>
                                 <span className="text-[10px] text-gray-500 uppercase tracking-widest">Token con scope *</span>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {subAppsLinks.map(app => (
+                                {nativeAppsLinks.map(app => (
                                     <button
                                         key={app.url}
-                                        onClick={() => openSubApp(app.url)}
+                                        onClick={() => openNativeApp(app.url)}
                                         className="flex items-center justify-between gap-2 bg-black/40 border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-300 hover:text-white hover:border-[#0d33f2]/60 transition-colors"
                                     >
                                         <span>{app.name}</span>
