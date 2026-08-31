@@ -86,7 +86,18 @@ const PATTERNS = [
     },
     {
         name: 'jwt-like-secret-assignment',
-        regex: /\b(?:JWT_SECRET|ADMIN_TOKEN|INTERNAL_API_KEY|API_KEY|WEBHOOK_SECRET|TELEGRAM_WEBHOOK_SECRET)\s*[:=]\s*['"]?([^'"\s#]{16,})/gi
+        // Los paréntesis quedan fuera del valor capturado a propósito. Ningún
+        // formato de secreto real los usa —hex, base64 y JWT se limitan a
+        // [A-Za-z0-9+/=._-]—, mientras que el código sí: esta regla marcaba como
+        // secreto el SQL de api/services/cargoLinkPosConnector.js
+        //
+        //     api_key = COALESCE(EXCLUDED.api_key, cargolink_pos_links.api_key)
+        //
+        // capturando "COALESCE(EXCLUDED.api_key," como si fuera una credencial.
+        // Al excluir `(` y `)` el candidato se queda en "COALESCE", 8 caracteres,
+        // por debajo del mínimo de 16, y deja de saltar. La detección de secretos
+        // de verdad no se ve afectada.
+        regex: /\b(?:JWT_SECRET|ADMIN_TOKEN|INTERNAL_API_KEY|API_KEY|WEBHOOK_SECRET|TELEGRAM_WEBHOOK_SECRET)\s*[:=]\s*['"]?([^'"\s#()]{16,})/gi
     },
     {
         name: 'wallet-private-key',
