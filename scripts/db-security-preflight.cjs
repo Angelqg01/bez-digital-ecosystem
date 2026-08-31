@@ -6,9 +6,26 @@
  * - insecure/default DB secrets
  * - missing DATABASE_URL or weak URL patterns
  * - PostgreSQL listener on localhost:5432
+ *
+ * NOTA (extensión .cjs): scripts/package.json declara `"type": "module"`, así
+ * que con la extensión .js este fichero moría al cargar con
+ * «require is not defined in ES module scope» — nunca llegó a ejecutar ni una
+ * comprobación. Detectaba correctamente la contraseña por defecto
+ * TuPasswordSeguro, que acabó siendo la contraseña real de la base de datos
+ * durante meses, y no pudo avisar porque no arrancaba.
  */
 
 const net = require('net');
+const path = require('path');
+
+// Carga el .env de la raíz si el llamante no lo ha hecho ya. Sin esto el
+// preflight avisaba de «DATABASE_URL is not set» en un entorno donde sí está,
+// y ese falso positivo es la vía más rápida para que alguien deje de mirarlo.
+if (!process.env.DATABASE_URL) {
+    try {
+        require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
+    } catch { /* dotenv no instalado: se sigue con lo que haya en el entorno */ }
+}
 
 const findings = [];
 

@@ -44,6 +44,13 @@ if [ ! -f .env ]; then
 fi
 
 bash scripts/validate-env.sh .env || fail "Environment validation failed"
+
+# Los otros dos guardianes ya existían y nadie los llamaba. Peor: el preflight
+# de base de datos ni siquiera podía arrancar (extensión .js dentro de un
+# paquete con "type": "module"), así que la contraseña por defecto que sabía
+# detectar —TuPasswordSeguro— acabó siendo la contraseña real de la base.
+node scripts/db-security-preflight.cjs || fail "Database security preflight failed"
+node scripts/security/check-compose-defaults.cjs || fail "Compose files contain credential defaults"
 ok "Environment validated"
 
 # ── Step 2: Verify SSL certificates ─────────────────

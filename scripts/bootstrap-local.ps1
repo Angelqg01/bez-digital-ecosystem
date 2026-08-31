@@ -17,6 +17,26 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ROOT = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+
+# Misma fuente de verdad que docker-compose: el .env de la raíz.
+. (Join-Path $ROOT "scripts\lib\DotEnv.ps1")
+Import-DotEnv -Path (Join-Path $ROOT ".env")
+Assert-EnvVars @("DATABASE_URL", "REDIS_URL", "JWT_SECRET")
+
+# Guardianes de credenciales. Sólo los de Node: validate-env.sh es bash y en
+# Windows no se puede dar por hecho. Detectan contraseñas por defecto y
+# credenciales escritas en los ficheros de compose — que es justo cómo
+# TuPasswordSeguro acabó siendo la contraseña real de la base de datos.
+node (Join-Path $ROOT "scripts\db-security-preflight.cjs")
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [ERR] El preflight de base de datos ha fallado. Revisa el .env." -ForegroundColor Red
+    exit 1
+}
+node (Join-Path $ROOT "scripts\security\check-compose-defaults.cjs")
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [ERR] Hay credenciales escritas en los ficheros de compose." -ForegroundColor Red
+    exit 1
+}
 $env:FOUNDRY_DISABLE_NIGHTLY_WARNING = "1"
 $FORGE = Join-Path $env:USERPROFILE ".foundry\bin\forge.exe"
 $ANVIL = Join-Path $env:USERPROFILE ".foundry\bin\anvil.exe"
@@ -120,8 +140,7 @@ else {
 # ── Step 6: Run migrations + seed ──
 Write-Host "[6/8] Running migrations and seeding..." -ForegroundColor Yellow
 Push-Location (Join-Path $ROOT "api")
-$env:DATABASE_URL = "postgresql://admin:TuPasswordSeguro@localhost:5432/bezhas_control"
-$env:REDIS_URL = "redis://localhost:6379"
+# DATABASE_URL y REDIS_URL vienen del .env cargado al principio del script.
 node db/migrate.js
 node db/seed.js
 node db/seed-contracts.js 31337
@@ -135,11 +154,12 @@ Write-Host "  All contracts verified" -ForegroundColor Green
 
 # ── Step 8: Start API ──
 Write-Host "[8/8] Starting API server..." -ForegroundColor Yellow
+# JWT_SECRET sale del .env: escrito aquí, cualquiera que leyera el repositorio
+# podía firmar tokens válidos contra un despliegue que lo usara.
 $env:PORT = "3001"
-$env:NODE_ENV = "development"
-$env:BEZHAS_L2_RPC_URL = "http://localhost:8545"
-$env:BEZHAS_CHAIN_ID = "31337"
-$env:JWT_SECRET = "dev-secret-key-change-in-production"
+if (-not $env:NODE_ENV) { $env:NODE_ENV = "development" }
+if (-not $env:BEZHAS_L2_RPC_URL) { $env:BEZHAS_L2_RPC_URL = "http://localhost:8545" }
+if (-not $env:BEZHAS_CHAIN_ID) { $env:BEZHAS_CHAIN_ID = "31337" }
 Push-Location (Join-Path $ROOT "api")
 Start-Process -FilePath "node" -ArgumentList "index.js" -WindowStyle Hidden
 Pop-Location

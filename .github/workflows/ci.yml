@@ -37,6 +37,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Scan for committed secrets
         run: node scripts/security/scan-secrets.cjs
+      # Un `${VAR:-credencial}` en un compose versionado es una credencial
+      # publicada: quien levante el stack sin .env inicializa los volúmenes con
+      # ella, y Postgres/Grafana la fijan en el primer arranque para siempre.
+      # Así fue como la contraseña real de la base acabó siendo el marcador de
+      # posición de la documentación. No necesita .env: sólo lee el repositorio.
+      - name: Check for credential defaults in compose files
+        run: node scripts/security/check-compose-defaults.cjs
 
   build-and-test:
     name: Build and Test (Node ${{ matrix.node-version }})

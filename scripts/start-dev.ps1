@@ -18,6 +18,27 @@ $ErrorActionPreference = "Continue"
 $ROOT = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $ROOT
 
+# Una sola fuente de verdad para las credenciales: el .env de la raíz, el mismo
+# que usa docker-compose. Sin esto cada script inventaba las suyas.
+. (Join-Path $ROOT "scripts\lib\DotEnv.ps1")
+Import-DotEnv -Path (Join-Path $ROOT ".env")
+Assert-EnvVars @("DATABASE_URL", "REDIS_URL", "JWT_SECRET")
+
+# Guardianes de credenciales. Sólo los de Node: validate-env.sh es bash y en
+# Windows no se puede dar por hecho. Detectan contraseñas por defecto y
+# credenciales escritas en los ficheros de compose — que es justo cómo
+# TuPasswordSeguro acabó siendo la contraseña real de la base de datos.
+node (Join-Path $ROOT "scripts\db-security-preflight.cjs")
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [ERR] El preflight de base de datos ha fallado. Revisa el .env." -ForegroundColor Red
+    exit 1
+}
+node (Join-Path $ROOT "scripts\security\check-compose-defaults.cjs")
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [ERR] Hay credenciales escritas en los ficheros de compose." -ForegroundColor Red
+    exit 1
+}
+
 # -- Colors & helpers --
 function Write-Step($n, $total, $msg) { Write-Host "[$n/$total] $msg" -ForegroundColor Yellow }
 function Write-OK($msg) { Write-Host "  [OK] $msg" -ForegroundColor Green }
@@ -137,13 +158,13 @@ else {
 $step++
 if (Should-Start "api") {
     Write-Step $step $totalSteps "Starting Core API (:3001)..."
-    $env:DATABASE_URL = "postgresql://admin:TuPasswordSeguro@localhost:5432/bezhas_control"
-    $env:REDIS_URL = "redis://localhost:6379"
-    $env:JWT_SECRET = "dev-secret-key-change-in-production"
-    $env:BEZHAS_L2_RPC_URL = "http://localhost:8545"
+    # DATABASE_URL, REDIS_URL y JWT_SECRET salen del .env cargado al principio.
+    # Antes estaban escritos aquí con la contraseña dentro, y apuntaban a una
+    # base (`bezhas_control` en el 5432) que no es la del stack real.
     $env:PORT = "3001"
-    $env:NODE_ENV = "development"
-    $env:AEGIS_API_URL = "http://localhost:8001/api/aegis"
+    if (-not $env:NODE_ENV) { $env:NODE_ENV = "development" }
+    if (-not $env:BEZHAS_L2_RPC_URL) { $env:BEZHAS_L2_RPC_URL = "http://localhost:8545" }
+    if (-not $env:AEGIS_API_URL) { $env:AEGIS_API_URL = "http://localhost:8001/api/aegis" }
     Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "cd /d `"$ROOT\api`" && pnpm run dev" -WindowStyle Hidden
     Wait-ForHealth "Core API" "http://127.0.0.1:3001/api/health" 20 | Out-Null
 }
