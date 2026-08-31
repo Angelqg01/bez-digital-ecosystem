@@ -14,7 +14,7 @@ const { authenticateToken, requireRole } = require('../middleware/security');
 const {
     createDocument, getDocument, getDocumentByHash,
     listDocuments, startValidation, approveDocument,
-    rejectDocument, linkQRToDocument, addSignature,
+    rejectDocument, linkQRToDocument, addSignature, getSigningPayload,
     getSignatures, getDocumentStats, computeFileHash,
 } = require('../services/documentService');
 const { createQR } = require('../services/qrService');
@@ -211,7 +211,10 @@ router.post('/:id/reject', authenticateToken, [
 router.post('/:id/sign', authenticateToken, [
     param('id').isUUID(),
     body('signature').isLength({ min: 1 }),
-    body('messageHash').matches(/^0x[a-fA-F0-9]{64}$/),
+    // Opcional: el hash a firmar lo deriva el servidor del propio documento
+    // (ver documentService.signingMessage). Si el cliente lo manda, se
+    // comprueba que coincida; si no, no hace falta.
+    body('messageHash').optional().matches(/^0x[a-fA-F0-9]{64}$/),
     body('txHash').optional().matches(/^0x[a-fA-F0-9]{64}$/),
 ], asyncRoute(async (req, res) => {
     const errors = validationResult(req);
@@ -227,6 +230,24 @@ router.post('/:id/sign', authenticateToken, [
 
     if (!result.success) return res.status(400).json({ error: result.error });
     res.json(result);
+}));
+
+/**
+ * GET /:id/signing-payload — Mensaje canónico a firmar para este documento.
+ *
+ * El hash lo fija el servidor a partir del documento; el cliente sólo firma lo
+ * que aquí se le entrega. Así una firma queda atada a ESTE documento y no
+ * puede reutilizarse en otro.
+ */
+router.get('/:id/signing-payload', authenticateToken, [
+    param('id').isUUID(),
+], asyncRoute(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const payload = await getSigningPayload(req.params.id);
+    if (!payload) return res.status(404).json({ error: 'Document not found' });
+    res.json(payload);
 }));
 
 /**

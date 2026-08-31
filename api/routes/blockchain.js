@@ -8,6 +8,7 @@
  *  - JSONB event_data is sanitized before returning to the client.
  */
 const { Router } = require('express');
+const { chainCall } = require('../utils/chainCall');
 const { query } = require('../db/pool');
 const { getContract, getBlockchainStats, getBEZTotalSupply } = require('../services/contractService');
 const { cacheGet, cacheSet } = require('../cache/redis');
@@ -108,10 +109,21 @@ router.get('/overview', asyncRoute(async (req, res) => {
         getContract('SequencerRotation').catch(() => null),
     ]);
 
+    // Llamada tolerante: si el método no existe en el ABI, invocarlo lanza un
+    // TypeError SÍNCRONO que un `.catch()` encadenado no llega a atrapar — la
+    // excepción escapa de la ruta y devuelve un 500. Aquí se envuelve la
+    // invocación entera para que el fallback funcione de verdad.
+    const callOr = async (contract, method, fallback, ...args) => {
+        if (!contract || typeof contract[method] !== 'function') return fallback;
+        try { return await contract[method](...args); } catch { return fallback; }
+    };
+
     const [totalStakedRaw, activeCandidates, epochInfo] = await Promise.all([
-        staking ? staking.totalStaked().catch(() => 0n) : Promise.resolve(0n),
-        registry ? registry.getActiveSequencerCandidates().catch(() => []) : Promise.resolve([]),
-        sequencer ? sequencer.getEpochInfo().catch(() => null) : Promise.resolve(null),
+        // StakingPool lleva el total apostado en `totalSupply()`; no expone
+        // ningún `totalStaked()`, y llamarlo tumbaba este endpoint siempre.
+        callOr(staking, 'totalSupply', 0n),
+        callOr(registry, 'getActiveSequencerCandidates', []),
+        callOr(sequencer, 'getEpochInfo', null),
     ]);
 
     const totalSupply = asNumber(rawSupply, 0);
@@ -147,7 +159,8 @@ router.get('/validators', asyncRoute(async (req, res) => {
     const registry = await getContract('ValidatorRegistry').catch(() => null);
     if (!registry) return res.json({ validators: [], total: 0 });
 
-    const candidates = await registry.getActiveSequencerCandidates().catch(() => []);
+    const candidates = await chainCall('ValidatorRegistry.getActiveSequencerCandidates',
+      () => registry.getActiveSequencerCandidates(), []);
 
     const { rows } = await query(
         `SELECT DISTINCT actor_address
@@ -166,7 +179,8 @@ router.get('/validators', asyncRoute(async (req, res) => {
 
     const validators = [];
     for (const operator of operators) {
-        const info = await registry.getValidatorInfo(operator).catch(() => null);
+        const info = await chainCall('ValidatorRegistry.getValidatorInfo',
+      () => registry.getValidatorInfo(operator), null);
         if (!info) continue;
 
         const record = {
@@ -203,15 +217,17 @@ router.get('/sequencer/current', asyncRoute(async (req, res) => {
     if (!sequencer) return res.json({ epoch: 0, sequencer: '', queue_length: 0 });
 
     const [info, queueLength] = await Promise.all([
-        sequencer.getEpochInfo().catch(() => null),
-        sequencer.getSequencerQueueLength().catch(() => 0n),
+        chainCall('SequencerRotation.getEpochInfo', () => sequencer.getEpochInfo(), null),
+        chainCall('SequencerRotation.getSequencerQueueLength',
+      () => sequencer.getSequencerQueueLength(), 0n),
     ]);
 
     if (!info) {
         return res.json({ epoch: 0, sequencer: '', queue_length: asNumber(queueLength, 0) });
     }
 
-    const stats = await sequencer.getSequencerStats(info[1]).catch(() => null);
+    const stats = await chainCall('SequencerRotation.getSequencerStats',
+      () => sequencer.getSequencerStats(info[1]), null);
 
     res.json({
         epoch: asNumber(info[0], 0),

@@ -16,13 +16,79 @@ const ABI_DIR = path.join(SMART_CONTRACTS_DIR, 'abi');
 const DEPLOYMENTS_DIR = path.join(SMART_CONTRACTS_DIR, 'deployments');
 
 // ── Provider ──
+//
+// Tres opciones que no son cosméticas:
+//
+// `staticNetwork` — Sin ella, ethers ejecuta `_detectNetwork()` y, si el nodo no
+//   responde, REINTENTA INDEFINIDAMENTE cada segundo. Ése era el bucle que
+//   dejaba a `bezhas-api` girando en vacío: un `eth_chainId` por segundo contra
+//   un nodo caído, para siempre, llenando el log y sin llegar a nada. Como el
+//   chainId lo sabemos por configuración, no hay nada que detectar: con la red
+//   declarada, ethers deja de sondear y las llamadas fallan rápido y con un
+//   error accionable en vez de colgarse en el descubrimiento.
+//
+// `cacheTimeout: -1` — Desactiva la caché de respuestas. Sin esto, dos
+//   operaciones seguidas pueden leer el mismo nonce y pisarse. Es el mismo
+//   fallo que ya se corrigió en cargoLinkOnChain y en el batcher L1.
+//
+// `pollingInterval` — Configurable. El valor por defecto de ethers está pensado
+//   para bloques de ~12 s; en una L2 con bloques de 2 s se pierde reactividad, y
+//   contra un RPC de pago cada sondeo se paga.
 let provider;
+function buildProvider() {
+    const rpcUrl = process.env.BEZHAS_L2_RPC_URL || 'http://localhost:8545';
+    const chainId = parseInt(process.env.BEZHAS_CHAIN_ID || '31337', 10);
+    const network = Number.isFinite(chainId) && chainId > 0
+        ? new ethers.Network('bezhas-l2', BigInt(chainId))
+        : undefined;
+
+    const p = new ethers.JsonRpcProvider(rpcUrl, network, {
+        staticNetwork: network ?? true,
+        cacheTimeout: -1,
+        pollingInterval: parseInt(process.env.RPC_POLLING_INTERVAL_MS || '4000', 10),
+    });
+    return p;
+}
+
 function getProvider() {
-    if (!provider) {
-        const rpcUrl = process.env.BEZHAS_L2_RPC_URL || 'http://localhost:8545';
-        provider = new ethers.JsonRpcProvider(rpcUrl);
-    }
+    if (!provider) provider = buildProvider();
     return provider;
+}
+
+/** Descarta el provider para que la próxima llamada abra una conexión limpia. */
+function resetProvider() {
+    const old = provider;
+    provider = undefined;
+    signer = undefined;
+
+    if (old) {
+        // Quitar los listeners ANTES de destruir: destroy() cancela las
+        // peticiones en vuelo, y si alguna sigue enganchada su rechazo llega
+        // como unhandledRejection y se lleva el proceso por delante.
+        try { old.removeAllListeners(); } catch { /* ya estaba cerrado */ }
+        try { old.destroy(); } catch { /* ya estaba cerrado */ }
+    }
+    return getProvider();
+}
+
+/** ¿Responde el nodo? Con un plazo, porque un RPC colgado no devuelve error. */
+async function pingChain(timeoutMs = 3000) {
+    try {
+        const blockNumber = await Promise.race([
+            getProvider().getBlockNumber(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('RPC timeout')), timeoutMs)),
+        ]);
+        return { reachable: true, blockNumber };
+    } catch (err) {
+        // `err.message` puede venir VACÍO en errores de red de ethers, y un
+        // diagnóstico en blanco es inútil justo cuando más falta hace: al
+        // arrancar sin nodo. Se recorren las formas hasta dar con algo legible.
+        const error = err?.shortMessage
+            || err?.message
+            || [err?.code, err?.errno, err?.cause?.message].filter(Boolean).join(' ')
+            || String(err);
+        return { reachable: false, error };
+    }
 }
 
 // ── Signer (for write operations) ──
@@ -315,8 +381,7 @@ async function getAllAddresses(chainId) {
 
 // Reset provider/signer (for integration tests)
 async function _resetForTests() {
-    const rpcUrl = process.env.BEZHAS_L2_RPC_URL || 'http://localhost:8545';
-    provider = new ethers.JsonRpcProvider(rpcUrl);
+    provider = buildProvider();
     // Wait for provider to fully connect before returning
     await provider.getBlockNumber();
     const key = process.env.DEPLOYER_PRIVATE_KEY;
@@ -334,6 +399,8 @@ function _setForTests(p, s) {
 
 module.exports = {
     getProvider,
+    resetProvider,
+    pingChain,
     getSigner,
     loadABI,
     getContractAddress,

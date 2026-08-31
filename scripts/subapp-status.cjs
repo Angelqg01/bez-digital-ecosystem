@@ -1,6 +1,6 @@
 const fs = require('fs');
 const p = require('path');
-const dir = p.resolve(__dirname, '..', "App's secundarias");
+const dir = p.resolve(__dirname, '..', "App-nativas");
 const subs = fs.readdirSync(dir).filter(f => fs.statSync(p.join(dir, f)).isDirectory());
 
 console.log('SubApp Status Report');

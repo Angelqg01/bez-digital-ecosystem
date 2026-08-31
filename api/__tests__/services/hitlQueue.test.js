@@ -59,3 +59,45 @@ test('recordAck with an error flips status to FAILED', () => {
   const updated = hitl.recordAck('scada_1', { jobId: 'scada_1', accepted: true, applied: false, error: 'write_failed' });
   expect(updated.status).toBe('FAILED');
 });
+
+// ── Segregación de funciones y aprobaciones de un solo uso ──────────────────
+
+test('quien pide el comando no puede aprobarlo', () => {
+  hitl.submit(job({ requestedBy: 'u1' }));
+  expect(hitl.approve('scada_1', 'u1')).toMatchObject({ error: 'self_approval_forbidden' });
+  expect(hitl.get('scada_1').status).toBe('PENDING');
+});
+
+test('otro operador sí puede aprobarlo', () => {
+  hitl.submit(job({ requestedBy: 'u1' }));
+  expect(hitl.approve('scada_1', 'operator-2').status).toBe('APPROVED');
+});
+
+test('una aprobación se consume una sola vez', () => {
+  hitl.submit(job({ requestedBy: 'u1' }));
+  hitl.approve('scada_1', 'op');
+  expect(hitl.consume('scada_1').status).toBe('CONSUMED');
+  expect(hitl.consume('scada_1')).toMatchObject({ error: 'not_approved:CONSUMED' });
+});
+
+test('no se puede consumir una aprobación que nadie concedió', () => {
+  hitl.submit(job());
+  expect(hitl.consume('scada_1')).toMatchObject({ error: 'not_approved:PENDING' });
+});
+
+test('la aprobación está atada al comando aprobado', () => {
+  hitl.submit(job({ command: 'SHED_LOAD', requestedBy: 'u1' }));
+  hitl.approve('scada_1', 'op');
+  expect(hitl.consume('scada_1', { command: 'DEMAND_RESPONSE' }))
+    .toMatchObject({ error: 'command_mismatch:SHED_LOAD' });
+  // El comando correcto sí pasa.
+  expect(hitl.consume('scada_1', { command: 'SHED_LOAD' }).status).toBe('CONSUMED');
+});
+
+test('una aprobación concedida y no usada caduca', () => {
+  const now = 1_000_000;
+  hitl.submit({ ...job({ requestedBy: 'u1' }), now });
+  hitl.approve('scada_1', 'op', now);
+  const tooLate = now + 16 * 60_000;            // > HITL_APPROVAL_TTL_MS (15 min)
+  expect(hitl.consume('scada_1', {}, tooLate)).toMatchObject({ error: 'not_approved:EXPIRED' });
+});

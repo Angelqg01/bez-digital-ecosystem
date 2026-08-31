@@ -9,7 +9,7 @@ const SECTIONS = [
             <>
                 <p>
                     BeZhas (<a className="text-primary" href="https://bez.digital/">bez.digital</a>) es el responsable del tratamiento de los datos
-                    personales recogidos a través de la Plataforma (dashboard principal, API y las SubApps sectoriales: BZ CargoLink, BZ PureScan,
+                    personales recogidos a través de la Plataforma (dashboard principal, API y las Apps Nativas sectoriales: BZ CargoLink, BZ PureScan,
                     BZ Genesis, BZ Sphere, bez-energy, entre otras).
                 </p>
                 <p className="mt-3">
@@ -84,12 +84,12 @@ const SECTIONS = [
     },
     {
         id: 'permisos',
-        title: 'Permisos de cámara y ubicación en las SubApps',
+        title: 'Permisos de cámara y ubicación en las Apps Nativas',
         icon: 'security',
         body: (
             <>
                 <p>
-                    Algunas SubApps piden permisos del navegador (cámara, ubicación) para funciones concretas. Seguimos estas reglas en todas ellas:
+                    Algunas Apps Nativas piden permisos del navegador (cámara, ubicación) para funciones concretas. Seguimos estas reglas en todas ellas:
                 </p>
                 <ul className="mt-3 space-y-2 list-none">
                     <li className="flex gap-3"><span className="material-symbols-outlined text-primary text-lg">check_circle</span><span><strong className="text-white">Solo cuando hace falta:</strong> el permiso nunca se pide al abrir la app, solo cuando activas la función concreta que lo necesita.</span></li>
@@ -162,7 +162,7 @@ export default function PrivacyPage() {
                     Política de <span className="text-primary">Privacidad</span>
                 </h1>
                 <p className="text-lg text-on-surface-variant max-w-2xl font-light leading-relaxed">
-                    Cómo BeZhas recoge, usa y protege tus datos en la plataforma y en sus SubApps, conforme al Reglamento General de Protección
+                    Cómo BeZhas recoge, usa y protege tus datos en la plataforma y en sus Apps Nativas, conforme al Reglamento General de Protección
                     de Datos (RGPD/GDPR) de la Unión Europea.
                 </p>
             </section>

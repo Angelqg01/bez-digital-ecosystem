@@ -79,12 +79,12 @@ const STATUS_STYLE: Record<AppStatus['status'], string> = {
 
 const ROADMAP = [
   { label: 'Watchdog real (ping paralelo + anti-flapping + alertas Discord/Telegram)', done: true },
-  { label: 'Endpoint /health ligero en nginx de las SubApps estáticas', done: true, note: 'Requiere redeploy de cada SubApp para tomar efecto — hoy hace fallback a "/".' },
+  { label: 'Endpoint /health ligero en nginx de las Apps Nativas estáticas', done: true, note: 'Requiere redeploy de cada App Nativa para tomar efecto — hoy hace fallback a "/".' },
   { label: 'Fix sync-daemon (crasheaba por ESM/CJS + rutas ROOT apuntaban mal)', done: true },
   { label: 'sync-daemon: skip por hash + backup .bak + sync.log (reglas CLAUDE.md nunca implementadas)', done: true },
   { label: 'Panel Admin de monitor en vivo', done: true },
-  { label: 'Encender/Apagar cada SubApp de verdad (Cloud Run maxInstances vía gcloud)', done: true, note: 'Real, no simulado — pero necesita gcloud funcional en este equipo (ver banner si falla).' },
-  { label: 'Cron/scheduled task que corra el watchdog en continuo en producción', done: false, note: 'Hoy es manual: `pnpm watchdog:subapps` o el botón "Comprobar ahora".' },
+  { label: 'Encender/Apagar cada App Nativa de verdad (Cloud Run maxInstances vía gcloud)', done: true, note: 'Real, no simulado — pero necesita gcloud funcional en este equipo (ver banner si falla).' },
+  { label: 'Cron/scheduled task que corra el watchdog en continuo en producción', done: false, note: 'Hoy es manual: `pnpm watchdog:native-apps` o el botón "Comprobar ahora".' },
 ];
 
 async function callAction(action: string, extra?: Record<string, unknown>) {
@@ -200,9 +200,9 @@ export default function TabWatchdog() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
-          <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Watchdog · SubApps</h2>
+          <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Watchdog · Apps Nativas</h2>
           <p className="text-gray-400 text-sm max-w-3xl">
-            Ping en vivo a las 13 SubApps (*.bez.digital / Cloud Run). Marca DOWN tras 2 fallos consecutivos para evitar falsas alarmas,
+            Ping en vivo a las 13 Apps Nativas (*.bez.digital / Cloud Run). Marca DOWN tras 2 fallos consecutivos para evitar falsas alarmas,
             y alerta por Discord/Telegram si hay webhook configurado. Encender/Apagar controla el servicio Cloud Run real.
           </p>
         </div>
@@ -241,7 +241,7 @@ export default function TabWatchdog() {
         <div className="flex items-start gap-3 border border-red-500/40 bg-red-500/10 p-4 text-red-200">
           <AlertTriangle size={20} className="mt-0.5 shrink-0" />
           <div className="text-sm">
-            <strong>Las 13 SubApps están caídas (5xx) ahora mismo.</strong> Coincide con la auditoría previa — ningún proceso las reinicia
+            <strong>Las 13 Apps Nativas están caídas (5xx) ahora mismo.</strong> Coincide con la auditoría previa — ningún proceso las reinicia
             automáticamente todavía. Usa &quot;Estado Cloud Run&quot; y los botones de cada tarjeta para encenderlas, o revisa Cloud Run
             (proyecto <code className="text-red-100">totemic-bonus-479312-c6</code>) manualmente.
           </div>
@@ -471,7 +471,7 @@ function DetailModal({
             )}
 
             {!loading && !app.service && (
-              <p className="py-4 text-xs text-gray-500">Esta SubApp no tiene un servicio Cloud Run mapeado en subapps.json.</p>
+              <p className="py-4 text-xs text-gray-500">Esta App Nativa no tiene un servicio Cloud Run mapeado en native-apps.json.</p>
             )}
 
             {!loading && cr && !cr.ok && (

@@ -13,6 +13,7 @@
  */
 
 const logger = require('../utils/logger');
+const { energy: energyMetrics } = require('../middleware/metrics');
 const energyFeed = require('./energyFeedService');
 const vppBroker = require('./vppMqttBroker');
 const vppChainBridge = require('./vppChainBridge');
@@ -107,6 +108,13 @@ function aegisRecentHigh(nodeId, windowMs = RISK.killSwitchWindowMs) {
 // Rolling decision log for shadow validation / back-test.
 let decisionLog = [];
 function record(d) {
+  // Outcome, not just strategy: a HOLD that was blocked by the kill-switch and
+  // a HOLD the model actually chose are different events operationally.
+  const outcome = d.blocked ? 'blocked'
+    : d.hitlPending ? 'hitl_pending'
+    : d.dispatched ? 'dispatched'
+    : 'recommended';
+  energyMetrics.arbitrage(d.strategy, outcome);
   decisionLog.push({
     ts: new Date().toISOString(), strategy: d.strategy, priceEurMwh: d.priceEurMwh,
     socPct: d.socPct, powerKw: d.powerKw, estimatedEur: d.estimatedEur, mode: d.mode,

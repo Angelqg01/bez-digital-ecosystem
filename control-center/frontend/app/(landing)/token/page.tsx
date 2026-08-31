@@ -23,7 +23,7 @@ export default function TokenPage() {
     const circulatingPct = tk ? ((tk.circulatingSupply / tk.totalSupply) * 100).toFixed(1) : '42.8';
     const totalStaked = stk ? `${(stk.totalStaked / 1_000_000).toFixed(1)}M` : '—';
     const apr = stk ? `${stk.apr.toFixed(2)}%` : '—';
-    const validatorCount = net ? net.validatorsActive.toLocaleString() : '—';
+    const validatorCount = net?.validatorsActive?.toLocaleString() ?? '—';
 
     return (
         <>

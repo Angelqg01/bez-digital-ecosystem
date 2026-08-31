@@ -1,0 +1,16 @@
+{
+  "id": "skill_1786772137210_a084b3",
+  "created_at": "2026-08-15T05:35:37.210Z",
+  "channel": "ollama",
+  "provider": "ollama/qwen2.5:7b",
+  "intent": "general_conversation",
+  "tags": [],
+  "turn": {
+    "user": "ping",
+    "agent": "Pong!"
+  },
+  "context": {
+    "userId": "ollama-local",
+    "role": "agent"
+  }
+}

@@ -4,7 +4,7 @@
 set -uo pipefail
 APP="${1:?}"; SUBDIR="${2:-}"; SIBLING="${3:-}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SEC="${ROOT}/App's secundarias"
+SEC="${ROOT}/App-nativas"
 SRC="${SEC}/${APP}${SUBDIR:+/$SUBDIR}"
 ST="$(mktemp -d)"
 copy_clean(){ mkdir -p "$2"; ( cd "$1" && tar -cf - --exclude=node_modules --exclude=.git ${3:-} . ) | ( cd "$2" && tar -xf - ); }

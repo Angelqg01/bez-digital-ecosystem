@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { DOC_LIBRARY } from '@/lib/docs-library';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bez.digital';
 
@@ -21,8 +22,15 @@ const landingRoutes = [
     { path: '/support', priority: 0.6, changeFrequency: 'monthly' as const },
 ];
 
+// Biblioteca de documentación pública (/docs/[slug])
+const docRoutes = DOC_LIBRARY.map((doc) => ({
+    path: `/docs/${doc.slug}`,
+    priority: 0.6,
+    changeFrequency: 'monthly' as const,
+}));
+
 export default function sitemap(): MetadataRoute.Sitemap {
-    return landingRoutes.map(({ path, priority, changeFrequency }) => ({
+    return [...landingRoutes, ...docRoutes].map(({ path, priority, changeFrequency }) => ({
         url: `${BASE_URL}${path}`,
         lastModified: new Date(),
         changeFrequency,

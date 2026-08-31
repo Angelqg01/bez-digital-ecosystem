@@ -146,7 +146,28 @@
       "Bash(PowerShell -Command \"node -e \\\\\"require\\('./src/pages/DeveloperConsole.jsx'\\)\\\\\"\")",
       "Bash(grep -E \"\\\\.js$|^d\")",
       "mcp__visualize__read_me",
-      "mcp__visualize__show_widget"
+      "mcp__visualize__show_widget",
+      "Bash(cd \"/home/amaliacr/Documentos/Gestión empresarial/operant-saas\" && echo \"=== package.json ===\" && cat package.json && echo && echo \"=== src tree ===\" && find src -type f -name \"*.js\" | sort && echo && echo \"=== connectors ===\" && ls -la src/connectors/)",
+      "Bash(timeout 600 pnpm test:unit)",
+      "Bash(curl -s http://localhost:3001/api/metrics)",
+      "Bash(curl -s http://localhost:4000/metrics)",
+      "Bash(docker exec *)",
+      "Bash(grep -E '^\\\\s{2}[a-zA-Z0-9_-]+:\\\\s*$' docker-compose.yml)",
+      "Bash(awk '/^  bezhas-api:/,/^  [a-zA-Z0-9_-]+:$/' docker-compose.yml)",
+      "Bash(python3 -c ' *)",
+      "Bash(mkdir -p /tmp/claude-1000/-home-amaliacr-Documentos-BeZhas-Blockchain/c06ba647-c06d-4341-a1ef-40facec2b693/scratchpad && ls -la /tmp/claude-1000/-home-amaliacr-Documentos-BeZhas-Blockchain/c06ba647-c06d-4341-a1ef-40facec2b693/)",
+      "Bash(anvil --port 8545 --host 127.0.0.1 --chain-id 31337 --gas-limit 30000000 --block-time 2)",
+      "Bash(curl -s -m 3 -X POST -H 'Content-Type: application/json' --data '{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}' http://localhost:8545)",
+      "Bash(curl -s -m 3 -X POST -H 'Content-Type: application/json' --data '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' http://localhost:8545)",
+      "Bash(pkill -f \"forge script\")",
+      "Bash(pkill -f \"anvil --port 8545\")",
+      "Bash(kill -9 84227 84160)",
+      "Bash(anvil --port 8545 --host 127.0.0.1 --chain-id 31337 --gas-limit 30000000)",
+      "Bash(LIVE_CHAIN_RPC_URL=http://localhost:8545 npx jest __tests__/integration/live-chain.test.js --forceExit)",
+      "Bash(export DEPLOYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80)",
+      "Bash(node scripts/seed-validators.js --chainId 31337 --rpcUrl http://localhost:8545)",
+      "Bash(node /tmp/claude-1000/-home-amaliacr-Documentos-BeZhas-Blockchain/c06ba647-c06d-4341-a1ef-40facec2b693/scratchpad/seed-validators.cjs --chainId 31337 --rpcUrl http://localhost:8545)",
+      "Bash(node scripts/seed-validators.cjs --chainId 31337 --rpcUrl http://localhost:8545)"
     ]
   }
 }

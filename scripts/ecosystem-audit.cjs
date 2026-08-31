@@ -176,7 +176,7 @@ check('API services', serviceFiles.length >= 3, `${serviceFiles.length} services
 // ════════════════════════════════════════════════════
 section('LAYER 4: SUBAPP INTEGRATION');
 
-const appsDir = path.join(ROOT, "App's secundarias");
+const appsDir = path.join(ROOT, "App-nativas");
 const sharedClient = path.join(appsDir, '_shared', 'bezhas-blockchain-client.js');
 check('Shared blockchain client', fs.existsSync(sharedClient));
 
@@ -259,7 +259,7 @@ const tokenFiles = [
     { path: 'api/routes/gateway.js', desc: 'API Gateway' },
     { path: 'openclaw-skills/contract-resolver.js', desc: 'OpenClaw Resolver' },
     { path: 'services/bridge-relay.cjs', desc: 'Bridge Relay' },
-    { path: "App's secundarias/_shared/bezhas-blockchain-client.js", desc: 'Shared Client' },
+    { path: "App-nativas/_shared/bezhas-blockchain-client.js", desc: 'Shared Client' },
 ];
 for (const tf of tokenFiles) {
     const fp = path.join(ROOT, tf.path);

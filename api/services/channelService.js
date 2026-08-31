@@ -15,6 +15,7 @@
  */
 const crypto = require('crypto');
 const { query } = require('../db/pool');
+const { AUTH_BYPASS } = require('../config/secrets');
 const { cacheGet, cacheSet, cacheDelete, publish } = require('../cache/redis');
 
 // ── Message Templates ──
@@ -94,7 +95,11 @@ async function registerChannel(userId, channelType, channelId, displayName) {
     // In production: send verification code through the channel
     // For now, return it in dev mode for testing
     const result = rows[0];
-    if (process.env.NODE_ENV !== 'production') {
+    // Devolver el código de verificación en la respuesta anula la verificación
+    // del canal. Antes bastaba con que NODE_ENV no fuese 'production' — un
+    // NODE_ENV sin configurar lo filtraba en un despliegue real. Ahora exige la
+    // misma opción explícita que el resto de atajos de desarrollo.
+    if (AUTH_BYPASS) {
         result._verificationCode = verificationCode;
     }
 

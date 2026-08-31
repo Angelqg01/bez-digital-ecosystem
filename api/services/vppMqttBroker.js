@@ -21,6 +21,7 @@
 
 const logger = require('../utils/logger');
 const aegis = require('./aegisAnomalyEngine'); // Phase 2 — telemetry anomaly detection
+const { energy: energyMetrics } = require('../middleware/metrics');
 
 const TELEMETRY_TOPIC = 'bezhas/edge/+/telemetry';
 const controlTopic = (nodeId) => `bezhas/edge/${nodeId}/control`;
@@ -63,6 +64,7 @@ function ingest(nodeId, payload) {
   const verdict = aegis.evaluate({ nodeId, payload, lastSeq: prev ? prev._seq : null });
   if (verdict.anomalies.length) aegis.record(verdict.anomalies);
   if (!verdict.accept) {
+    energyMetrics.telemetry(nodeId, { signed: !!payload.sig, accepted: false });
     logger.warn('[VPP][AEGIS] rejected telemetry for %s: %s', nodeId,
       verdict.anomalies.map((a) => a.type).join(','));
     if (telemetrySink) { try { telemetrySink({ nodeId, payload, verdict, accepted: false }); } catch (_) { /* best-effort */ } }
@@ -82,6 +84,7 @@ function ingest(nodeId, payload) {
     _seq: typeof payload.seq === 'number' ? payload.seq : (prev ? prev._seq : null),
   };
   store.set(nodeId, node);
+  energyMetrics.telemetry(nodeId, { signed: !!payload.sig, accepted: true });
   if (telemetrySink) { try { telemetrySink({ nodeId, payload, verdict, accepted: true }); } catch (_) { /* best-effort */ } }
   return node;
 }
@@ -140,6 +143,20 @@ function getNodeTelemetry(nodeId) {
 
 function isConnected() {
   return connected;
+}
+
+/**
+ * Per-node receive ages, for the Prometheus staleness gauge. Exposes `_rxAt`
+ * as an age rather than the raw timestamp so callers cannot accidentally
+ * treat a clock difference as freshness.
+ */
+function getIngestStats() {
+  const now = Date.now();
+  return {
+    connected,
+    staleAfterMs: STALE_MS,
+    nodes: [...store.entries()].map(([id, n]) => ({ id, ageMs: now - n._rxAt })),
+  };
 }
 
 /**
@@ -265,6 +282,7 @@ module.exports = {
   publishControl,
   publishSignedControl,
   isConnected,
+  getIngestStats,
   setTelemetrySink,
   TELEMETRY_TOPIC,
   controlTopic,

@@ -16,6 +16,7 @@
  */
 
 const { verifyPayload, isEnforced } = require('./telemetrySecurity');
+const { energy: energyMetrics } = require('../middleware/metrics');
 
 /** Physically plausible ranges for canonical metrics. */
 const PHYSICAL_LIMITS = {
@@ -99,6 +100,9 @@ function evaluate({ nodeId, payload, lastSeq = null, now = Date.now() }) {
 /** Record events into the ring buffer (called by the broker after evaluate). */
 function record(anomalies) {
   if (!anomalies || !anomalies.length) return;
+  // Counted here and not in evaluate(): evaluate() is pure and gets called
+  // speculatively, record() is the point where an anomaly becomes a fact.
+  for (const a of anomalies) energyMetrics.anomaly(a.node, a.type, a.severity);
   events.push(...anomalies);
   if (events.length > RING_SIZE) events = events.slice(-RING_SIZE);
 }

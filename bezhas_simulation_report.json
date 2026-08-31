@@ -1,0 +1,11 @@
+{
+  "wallet_balance_remaining_bez": 8.9432,
+  "metrics": {
+    "successes": 6,
+    "failures": 0,
+    "duplicates_rejected": 0,
+    "retries": 1,
+    "total_gas_spent_bez": 1.0568,
+    "avg_latency_sec": 0.0575
+  }
+}

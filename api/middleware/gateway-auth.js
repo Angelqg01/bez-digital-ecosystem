@@ -118,7 +118,7 @@ function authenticateSSOToken(req, res, next) {
         return res.status(401).json({ error: 'SSO access token required' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }, (err, decoded) => {
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired SSO token' });
         }
@@ -144,7 +144,7 @@ function authenticateGateway(req, res, next) {
                 const token = authHeader.split(' ')[1];
                 if (token) {
                     try {
-                        req.user = jwt.verify(token, JWT_SECRET);
+                        req.user = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
                     } catch (_) {
                         // API key is enough; JWT is optional bonus context
                     }

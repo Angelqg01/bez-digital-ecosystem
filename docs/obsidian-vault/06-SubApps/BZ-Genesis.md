@@ -3,7 +3,7 @@ type: "subapp"
 layer: 2
 priority: "P2"
 cluster: "identidad-comunidad"
-repo_path: "App's secundarias/BZ Genesis/"
+repo_path: "App-nativas/BZ Genesis/"
 domain: "genesis.bez.digital"
 tags: ["platform-map", "identidad-comunidad", "p2"]
 ---
@@ -14,7 +14,7 @@ tags: ["platform-map", "identidad-comunidad", "p2"]
 
 Onboarding de nuevos socios al ecosistema (génesis de identidad y cuenta).
 
-**Ubicación:** `App's secundarias/BZ Genesis/` · genesis.bez.digital
+**Ubicación:** `App-nativas/BZ Genesis/` · genesis.bez.digital
 
 ## Conexiones
 

@@ -19,6 +19,8 @@
  *   /api/gateway/v1/webhooks/*   — Outbound signed payment events (register, deliveries, retry)
  */
 const { Router } = require('express');
+const { chainCall } = require('../utils/chainCall');
+const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
 const { authenticateGateway, requireScope, authenticateSSOToken } = require('../middleware/gateway-auth');
 const { meterUsage } = require('../middleware/gateway-metering');
@@ -27,6 +29,17 @@ const walletService = require('../services/walletService');
 const contractService = require('../services/contractService');
 const { query } = require('../db/pool');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const { INTERNAL_API_KEY } = require('../config/secrets');
+
+/** Comparación en tiempo constante para secretos compartidos. */
+function timingSafeMatch(provided, expected) {
+    if (typeof provided !== 'string' || typeof expected !== 'string') return false;
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+}
 const { STRIPE_PAYMENT_LINKS, getStripePaymentLink } = require('../config/stripe-payment-links');
 const { BANK_TRANSFER_DETAILS, buildBankTransferInstructions } = require('../config/bank-transfer-details');
 const { TOKENOMICS_FEE, calculateFeeBreakdown } = require('../config/tokenomics');
@@ -96,8 +109,10 @@ function buildBuyReplayResponse(row) {
 
 const requirePaymentSettlementKey = (req, res, next) => {
     const key = req.headers['authorization']?.replace('Bearer ', '') || req.headers['x-internal-key'];
-    const expected = process.env.INTERNAL_API_KEY || (process.env.NODE_ENV !== 'production' ? 'dev-internal-key' : null);
-    if (!expected || !key || key !== expected) {
+    // La clave se toma de config/secrets.js (que se niega a arrancar en
+    // producción con la de desarrollo); resolverla aquí a mano reintroducía
+    // 'dev-internal-key' si NODE_ENV no estaba puesto, y esto liquida pagos.
+    if (!INTERNAL_API_KEY || !key || !timingSafeMatch(key, INTERNAL_API_KEY)) {
         return res.status(401).json({ error: 'Internal settlement auth required' });
     }
     next();
@@ -458,7 +473,8 @@ router.get('/farming/positions/:address', authenticateGateway, requireScope('far
         try {
             const [position, pool] = await Promise.all([
                 contractService.getFarmingInfo(req.params.address, poolId),
-                contractService.getFarmingPool(poolId).catch(() => null),
+                chainCall('contractService.getFarmingPool',
+      () => contractService.getFarmingPool(poolId), null),
             ]);
             const hasPosition = parseFloat(position.lpAmount || '0') > 0 || parseFloat(position.pendingRewards || '0') > 0;
             return res.json({
@@ -2159,8 +2175,10 @@ router.get('/network/stats', async (req, res) => {
  */
 const requireInternalKey = (req, res, next) => {
     const key = req.headers['authorization']?.replace('Bearer ', '') || req.headers['x-internal-key'];
-    const expected = process.env.INTERNAL_API_KEY || 'dev-internal-key';
-    if (!key || key !== expected) {
+    // Antes: `process.env.INTERNAL_API_KEY || 'dev-internal-key'`, sin ninguna
+    // guarda de producción — si la variable faltaba, esta puerta al gateway de
+    // IA quedaba abierta con una clave conocida y publicada en el repositorio.
+    if (!INTERNAL_API_KEY || !key || !timingSafeMatch(key, INTERNAL_API_KEY)) {
         return res.status(401).json({ error: 'Internal auth required' });
     }
     next();

@@ -3,7 +3,7 @@ type: "subapp"
 layer: 2
 priority: "P2"
 cluster: "ia-conocimiento"
-repo_path: "App's secundarias/BeZhas-Docs/"
+repo_path: "App-nativas/BeZhas-Docs/"
 tags: ["platform-map", "ia-conocimiento", "p2"]
 ---
 
@@ -13,7 +13,7 @@ tags: ["platform-map", "ia-conocimiento", "p2"]
 
 Documentación del ecosistema para desarrolladores y partners.
 
-**Ubicación:** `App's secundarias/BeZhas-Docs/`
+**Ubicación:** `App-nativas/BeZhas-Docs/`
 
 ## Conexiones
 

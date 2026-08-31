@@ -34,13 +34,10 @@ require('dotenv').config();
 const http = require('http');
 
 // ── Runtime ────────────────────────────────────────────────────────────────
-const AgentManager        = require('../agent-runtime/AgentManager');
-const SecurityAgent       = require('../agent-runtime/agents/SecurityAgent');
-const TradingAgent        = require('../agent-runtime/agents/TradingAgent');
-const WorkflowAgent       = require('../agent-runtime/agents/WorkflowAgent');
-const ComplianceAgent     = require('../agent-runtime/agents/ComplianceAgent');
-const TokenomicsAgent     = require('../agent-runtime/agents/TokenomicsAgent');
-const TokenomicsConnector = require('../agent-runtime/connectors/TokenomicsConnector');
+// Cableado compartido: una sola copia en api/services/agentRuntime.js. Antes
+// estaba duplicado aquí, en api/server.js y ausente en api/index.js — tres
+// versiones que podían divergir, y de hecho divergían.
+const agentRuntime = require('../api/services/agentRuntime');
 
 // ── Channels ───────────────────────────────────────────────────────────────
 const TelegramChannel = require('../openclaw/channels/TelegramChannel');
@@ -147,23 +144,11 @@ async function main() {
 
   await preflight();
 
-  // ── 1. TOKENOMICS CONNECTOR ───────────────────────────────────────────────
-  console.log('[Wire] 📊 Iniciando TokenomicsConnector...');
-  const tc = new TokenomicsConnector(config);
-  await tc.connect().catch(e => console.warn('[Wire] TokenomicsConnector degraded:', e.message));
-
-  // ── 2. AGENT MANAGER ─────────────────────────────────────────────────────
+  // ── 1-2. AGENT MANAGER (conector de tokenomics incluido) ─────────────────
   console.log('[Wire] 🚀 Iniciando Agent Runtime...');
-  const manager = new AgentManager(config);
-  manager._tokenomicsConnector = tc;
-
-  manager.registerAgent(SecurityAgent,   {});
-  manager.registerAgent(TradingAgent,    {});
-  manager.registerAgent(WorkflowAgent,   {});
-  manager.registerAgent(ComplianceAgent, {});
-  manager.registerAgent(TokenomicsAgent, { tokenomicsConnector: tc });
-
-  await manager.start();
+  const manager = await agentRuntime.init();
+  if (!manager) throw new Error(`Agent runtime no cableado: ${agentRuntime.status().motivo}`);
+  const tc = manager._tokenomicsConnector;
 
   // Inicializar TokenomicsAgent con suscripciones
   await manager.getAgent('tokenomics-agent')

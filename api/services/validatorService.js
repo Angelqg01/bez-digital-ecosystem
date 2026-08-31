@@ -7,6 +7,7 @@
  *  - DB writes use parameterized queries only.
  */
 const { ethers } = require('ethers');
+const { chainCall } = require('../utils/chainCall');
 const { getContract, getSignedContract } = require('./contractService');
 const { query } = require('../db/pool');
 const { cacheGet, cacheSet, cacheDel } = require('../cache/redis');
@@ -46,7 +47,8 @@ async function getValidatorProfile(operatorAddress) {
     const registry = await getContract('ValidatorRegistry').catch(() => null);
     if (!registry) return null;
 
-    const info = await registry.getValidatorInfo(address).catch(() => null);
+    const info = await chainCall('ValidatorRegistry.getValidatorInfo',
+        () => registry.getValidatorInfo(address), null);
     if (!info) return null;
 
     const boostBps = await registry.getRewardBoost(address).catch(() => 10000n);
@@ -110,7 +112,8 @@ async function listValidators({ status = 'all', sortBy = 'stake', limit = 50 } =
     if (!registry) return { validators: [], total: 0, total_staked: 0 };
 
     // Get operator addresses from contract + indexed events
-    const candidates = await registry.getActiveSequencerCandidates().catch(() => []);
+    const candidates = await chainCall('ValidatorRegistry.getActiveSequencerCandidates',
+        () => registry.getActiveSequencerCandidates(), []);
     const { rows: eventRows } = await query(
         `SELECT DISTINCT actor_address FROM blockchain_events
          WHERE contract_name = 'ValidatorRegistry'
@@ -253,8 +256,14 @@ async function getValidatorNetworkStats() {
     if (cached) return cached;
 
     const registry = await getContract('ValidatorRegistry').catch(() => null);
-    const totalCount = registry ? Number(await registry.getValidatorCount().catch(() => 0n)) : 0;
-    const candidates = registry ? await registry.getActiveSequencerCandidates().catch(() => []) : [];
+    const totalCount = registry
+        ? Number(await chainCall('ValidatorRegistry.getValidatorCount',
+            () => registry.getValidatorCount(), 0n))
+        : 0;
+    const candidates = registry
+        ? await chainCall('ValidatorRegistry.getActiveSequencerCandidates',
+            () => registry.getActiveSequencerCandidates(), [])
+        : [];
 
     // Recent events counts (24h)
     const { rows: recentCounts } = await query(
@@ -300,14 +309,17 @@ async function getSequencerStatus() {
     const seq = await getContract('SequencerRotation').catch(() => null);
     if (!seq) return null;
 
-    const epochInfo = await seq.getEpochInfo().catch(() => null);
-    const queueLen = await seq.getSequencerQueueLength().catch(() => 0n);
+    const epochInfo = await chainCall('SequencerRotation.getEpochInfo',
+        () => seq.getEpochInfo(), null);
+    const queueLen = await chainCall('SequencerRotation.getSequencerQueueLength',
+        () => seq.getSequencerQueueLength(), 0n);
 
     if (!epochInfo) return null;
 
     const currentSequencer = String(epochInfo[0] || '');
     const stats = currentSequencer
-        ? await seq.getSequencerStats(currentSequencer).catch(() => null)
+        ? await chainCall('SequencerRotation.getSequencerStats',
+            () => seq.getSequencerStats(currentSequencer), null)
         : null;
 
     const result = {
@@ -347,12 +359,14 @@ async function getSlashingHistory(operatorAddress) {
 
     const slasher = await getContract('SlashingManager').catch(() => null);
     const onChainIds = slasher
-        ? await slasher.getValidatorSlashHistory(address).catch(() => [])
+        ? await chainCall('SlashingManager.getValidatorSlashHistory',
+            () => slasher.getValidatorSlashHistory(address), [])
         : [];
 
     const slashes = [];
     for (const id of onChainIds) {
-        const record = await slasher.getSlashRecord(Number(id)).catch(() => null);
+        const record = await chainCall('SlashingManager.getSlashRecord',
+            () => slasher.getSlashRecord(Number(id)), null);
         if (!record) continue;
         slashes.push({
             slash_id: Number(id),
@@ -374,7 +388,8 @@ async function getSlashingHistory(operatorAddress) {
     ).catch(() => ({ rows: [] }));
 
     const currentPeriod = slasher
-        ? Number(await slasher.getSlashedInCurrentPeriod(address).catch(() => 0n)) / 1e18
+        ? Number(await chainCall('SlashingManager.getSlashedInCurrentPeriod',
+            () => slasher.getSlashedInCurrentPeriod(address), 0n)) / 1e18
         : 0;
 
     const result = {
@@ -457,10 +472,26 @@ async function getRewardsHistory(operatorAddress) {
     const cached = await cacheGet(cacheKey);
     if (cached) return cached;
 
+    // getNodeInfo(node) -> (totalValidations, claimablePoints, totalBEZEarned,
+    //                        pendingBEZ, boostBps, isActive)
+    //
+    // Antes se llamaba a `pendingRewards(address)`, que NO EXISTE en el ABI. El
+    // El catch mudo convertía el fallo en un cero perfectamente creíble, así
+    // que todo validador veía siempre 0 pendiente y nada lo delataba.
+    //
+    // `pendingBEZ` ya viene con el boost del tier aplicado — recalcularlo aquí
+    // duplicaría la lógica del contrato y las dos versiones acabarían divergiendo.
     const edgeRewards = await getContract('EdgeNodeRewards').catch(() => null);
     let pendingRewards = 0;
     if (edgeRewards) {
-        pendingRewards = Number(await edgeRewards.pendingRewards(address).catch(() => 0n)) / 1e18;
+        try {
+            const info = await edgeRewards.getNodeInfo(address);
+            pendingRewards = Number(info[3]) / 1e18;
+        } catch (err) {
+            // Un nodo no registrado devuelve ceros, no lanza: si esto salta es
+            // que la cadena no responde o el ABI cambió. Merece log.
+            console.warn(`[validatorService] getNodeInfo(${address}) falló: ${err.message}`);
+        }
     }
 
     const { rows } = await query(

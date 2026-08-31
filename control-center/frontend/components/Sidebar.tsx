@@ -7,13 +7,14 @@ import {
     ArrowRightLeft, Link2, Sprout, ScrollText, Bot,
     Wallet, User, TrendingUp, LogOut,
     QrCode, FileCheck, MessageSquare, Cpu, ShieldCheck, BrainCircuit, MonitorPlay,
-    Database,
+    Database, Monitor,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/monitor', label: 'War Room', icon: Monitor },
     { href: '/demo', label: 'Demo Clientes', icon: MonitorPlay },
     { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
     { href: '/dashboard/market', label: 'Market', icon: TrendingUp },

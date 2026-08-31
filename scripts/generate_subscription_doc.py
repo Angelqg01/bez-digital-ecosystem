@@ -6,7 +6,7 @@ doc = Document()
 doc.add_heading('BeZhas Hub - Planes de Suscripción', level=1)
 
 doc.add_paragraph('Origen de la información:')
-doc.add_paragraph(' - App: App\'s secundarias/Bezhas-Hub', style='List Bullet')
+doc.add_paragraph(' - App: App-nativas/Bezhas-Hub', style='List Bullet')
 doc.add_paragraph(' - Documentos analizados: Conexión API-Hub — TAREAS.md, Conexión API-Hub .md, BEZHAS_CONEXION_TERCEROS_OPENCLAW_AEGIS.txt, bezhas-pay-system.jsx', style='List Bullet')
 
 doc.add_heading('Resumen de planes de suscripción', level=2)
@@ -120,6 +120,6 @@ for note in [
 
 doc.add_paragraph('Se identificaron dos áreas de suscripción: la oferta de plan de productos/servicios con precios en euros y la experiencia de compra interna con precios en BEZ/USD.', style='Normal')
 
-output_path = r"d:\BeZhas-Blockchain\App's secundarias\Bezhas-Hub\Conexión API-Hub - Planes de Suscripción.docx"
+output_path = r"d:\BeZhas-Blockchain\App-nativas\Bezhas-Hub\Conexión API-Hub - Planes de Suscripción.docx"
 doc.save(output_path)
 print(f"Documento generado en: {output_path}")

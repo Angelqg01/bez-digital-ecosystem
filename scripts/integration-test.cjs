@@ -218,24 +218,24 @@ test('Idempotency protection implemented', () => {
 // ══════════════════════════════════════════════════════════════
 console.log('\n═══ 7. SubApp Integration ═══');
 
-const sharedClient = path.resolve(__dirname, '..', "App's secundarias", '_shared', 'bezhas-blockchain-client.js');
+const sharedClient = path.resolve(__dirname, '..', "App-nativas", '_shared', 'bezhas-blockchain-client.js');
 test('_shared/bezhas-blockchain-client.js exists', () => {
     assert(fs.existsSync(sharedClient), 'Shared client not found');
 });
 
-const bzEnergy = path.resolve(__dirname, '..', "App's secundarias", 'bez-energy', 'src', 'api.js');
+const bzEnergy = path.resolve(__dirname, '..', "App-nativas", 'bez-energy', 'src', 'api.js');
 test('bez-energy imports shared client', () => {
     const code = fs.readFileSync(bzEnergy, 'utf-8');
     assert(code.includes('bezhas-blockchain-client'), 'Not importing shared client');
 });
 
-const bzPureScan = path.resolve(__dirname, '..', "App's secundarias", 'BZ PureScan', 'src', 'api.js');
+const bzPureScan = path.resolve(__dirname, '..', "App-nativas", 'BZ PureScan', 'src', 'api.js');
 test('BZ PureScan imports shared client', () => {
     const code = fs.readFileSync(bzPureScan, 'utf-8');
     assert(code.includes('bezhas-blockchain-client'), 'Not importing shared client');
 });
 
-const bzCargo = path.resolve(__dirname, '..', "App's secundarias", 'BZ CargoLink', 'src', 'services', 'blockchainService.js');
+const bzCargo = path.resolve(__dirname, '..', "App-nativas", 'BZ CargoLink', 'src', 'services', 'blockchainService.js');
 test('BZ CargoLink blockchain service exists', () => {
     assert(fs.existsSync(bzCargo), 'blockchainService.js not found');
 });

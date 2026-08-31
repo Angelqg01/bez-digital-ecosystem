@@ -6,8 +6,8 @@ export default function NetworkPage() {
   const { data } = usePublicStats();
   const net = data?.network;
 
-  const tps = net ? net.totalTransactions.toLocaleString() : '—';
-  const nodes = net ? net.validatorsActive.toLocaleString() : '—';
+  const tps = net?.totalTransactions?.toLocaleString() ?? '—';
+  const nodes = net?.validatorsActive?.toLocaleString() ?? '—';
   const status = net?.status === 'operational' ? 'OPERATIONAL' : (net?.status?.toUpperCase() || '—');
   const uptime = net ? `${net.uptime}%` : '—';
 

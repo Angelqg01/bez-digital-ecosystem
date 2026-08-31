@@ -5,6 +5,11 @@ const { Router } = require('express');
 const cargoLinkService = require('../services/cargoLinkService');
 const lifecycle = require('../services/cargoLinkLifecycle');
 const posConnector = require('../services/cargoLinkPosConnector');
+const events = require('../services/cargoLinkEvents');
+const booking = require('../services/cargoLinkBooking');
+const settlement = require('../services/cargoLinkSettlement');
+const transit = require('../services/cargoLinkTransit');
+const closure = require('../services/cargoLinkClosure');
 const iot = require('../services/cargoLinkIot');
 const geofence = require('../services/cargoGeofence');
 const ingestHub = require('../services/cargoIngestHub');
@@ -188,6 +193,282 @@ router.get('/v1/tx/:bUid', async (req, res) => {
 router.post('/v1/tx/:bUid/advance', async (req, res) => {
   try {
     res.json(await lifecycle.advanceTransaction(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Custodia (TX006) y almacenes (TX004/TX005) ────────────────────────────
+//
+// El cambio de custodia no es una transición del ciclo de vida: ocurre varias
+// veces mientras el envío avanza (almacén → camión → terminal → buque), así
+// que tiene endpoint propio en vez de un estado. La cadena se encadena sola —
+// el emisor sólo puede ceder lo que consta que tiene.
+
+router.post('/v1/tx/:bUid/custody', async (req, res) => {
+  try {
+    res.status(201).json(await lifecycle.registerCustodyTransfer(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/tx/:bUid/custody', async (req, res) => {
+  try {
+    res.json(await lifecycle.getCustodyChain(req, req.params.bUid));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// Alta de almacén. Se registra on-chain de forma perezosa: en el primer
+// gate-in que lo use, para no gastar gas en almacenes que nadie llegue a usar.
+router.post('/v1/warehouses', async (req, res) => {
+  try {
+    res.status(201).json(await lifecycle.registerWarehouse(req, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Huella ESG (TX019), factura (TX016) y obligación de pago (TX017) ──────
+//
+// El certificado guarda los tramos y el factor aplicado a cada uno, no sólo el
+// total: un auditor tiene que poder recomputar la cifra sin fiarse de quien la
+// emitió. La obligación de pago exige un hecho que la origine — sin eso no es
+// automatizable ni defendible.
+
+router.post('/v1/tx/:bUid/carbon', async (req, res) => {
+  try {
+    res.status(201).json(await settlement.issueCarbonCertificate(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/tx/:bUid/carbon', async (req, res) => {
+  try {
+    res.json(await settlement.getCarbonCertificates(req, req.params.bUid));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post('/v1/tx/:bUid/invoice', async (req, res) => {
+  try {
+    res.status(201).json(await settlement.issueInvoice(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post('/v1/tx/:bUid/obligations', async (req, res) => {
+  try {
+    res.status(201).json(await settlement.createObligation(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/tx/:bUid/obligations', async (req, res) => {
+  try {
+    res.json(await settlement.listObligations(req, req.params.bUid));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post('/v1/obligations/:ref/settle', async (req, res) => {
+  try {
+    res.json(await settlement.settleObligation(req, req.params.ref, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Incidencia reportada (TX014) y cierre de operación (TX020) ────────────
+//
+// La incidencia humana va a la MISMA matriz de severidad que la telemetría: dos
+// escalas de gravedad sobre el mismo envío acabarían contradiciéndose, y sería
+// justo cuando haya dinero en disputa.
+//
+// El cierre COMPRUEBA que no queda nada pendiente en vez de creérselo. Un
+// cierre que sólo repite lo que le han dicho no aporta nada sobre el campo
+// booleano de un ERP.
+
+router.post('/v1/tx/:bUid/incidents', async (req, res) => {
+  try {
+    res.status(201).json(await closure.reportIncident(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/tx/:bUid/incidents', async (req, res) => {
+  try {
+    res.json(await closure.listIncidents(req, req.params.bUid));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post('/v1/tx/:bUid/close', async (req, res) => {
+  try {
+    res.status(201).json(await closure.closeOperation(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/tx/:bUid/close', async (req, res) => {
+  try {
+    res.json(await closure.getClosureStatus(req, req.params.bUid));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Tránsito aduanero multipaís ───────────────────────────────────────────
+//
+// Un contenedor Tánger→Frankfurt cruza tres jurisdicciones que despachan por
+// separado. Modelar UN despacho por envío hacía imposible representar el
+// estado real —«libre en España, retenido en Alemania»— justo en la ruta que
+// define el piloto: Algeciras es frontera exterior de la UE.
+
+router.post('/v1/tx/:bUid/transit', async (req, res) => {
+  try {
+    res.status(201).json(await transit.createIntegratedShipment(
+      req, { ...(req.body || {}), bUid: req.params.bUid }
+    ));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post('/v1/tx/:bUid/transit/clear', async (req, res) => {
+  try {
+    res.json(await transit.clearCountry(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/tx/:bUid/transit', async (req, res) => {
+  try {
+    res.json(await transit.getTransitStatus(req, req.params.bUid));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Booking (TX002) y contenedores (TX003) ────────────────────────────────
+//
+// El booking PRECEDE al envío: se reserva capacidad y sólo después se entrega
+// la carga. El contenedor es un activo reutilizable con historial propio, no
+// un campo del envío.
+
+router.post('/v1/bookings', async (req, res) => {
+  try {
+    res.status(201).json(await booking.createBooking(req, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/bookings/:ref', async (req, res) => {
+  try {
+    res.json(await booking.getBooking(req, req.params.ref));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// Consume capacidad del booking. Falla si no queda TEU o si el cut-off pasó.
+router.post('/v1/bookings/:ref/assign', async (req, res) => {
+  try {
+    res.status(201).json(await booking.assignShipmentToBooking(
+      req, req.params.ref, (req.body || {}).bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post('/v1/bookings/:ref/no-show', async (req, res) => {
+  try {
+    res.json(await booking.markNoShow(req, req.params.ref, (req.body || {}).reason));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// Alta de contenedor. El número se valida contra ISO 6346 (dígito de control).
+router.post('/v1/containers', async (req, res) => {
+  try {
+    res.status(201).json(await booking.registerContainer(req, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/containers/:no', async (req, res) => {
+  try {
+    res.json(await booking.getContainerHistory(req, req.params.no));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post('/v1/tx/:bUid/container', async (req, res) => {
+  try {
+    res.status(201).json(await booking.assignContainer(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.delete('/v1/tx/:bUid/container/:no', async (req, res) => {
+  try {
+    res.json(await booking.releaseContainer(req, req.params.bUid, req.params.no));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// ── Inspección (TX010) y cambio de ETA/ruta (TX011) ───────────────────────
+//
+// Ninguno avanza el estado del envío: una inspección puede dejar la mercancía
+// donde estaba, y una ETA puede revisarse varias veces durante el mismo
+// tránsito. Por eso son endpoints propios y no transiciones.
+
+router.post('/v1/tx/:bUid/inspection', async (req, res) => {
+  try {
+    res.status(201).json(await events.registerInspection(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/tx/:bUid/inspection', async (req, res) => {
+  try {
+    res.json(await events.getInspections(req, req.params.bUid));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// El histórico de ETA no se sobrescribe: es lo que un cliente reclama cuando
+// su carga llega tarde. Ver el caso de la rotación EMUSA en cargoLinkEvents.js.
+router.post('/v1/tx/:bUid/eta', async (req, res) => {
+  try {
+    res.status(201).json(await events.registerRouteChange(req, req.params.bUid, req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get('/v1/tx/:bUid/eta', async (req, res) => {
+  try {
+    res.json(await events.getRouteHistory(req, req.params.bUid));
   } catch (error) {
     sendError(res, error);
   }

@@ -3,7 +3,7 @@ type: "subapp"
 layer: 2
 priority: "P1"
 cluster: "energia-iot"
-repo_path: "App's secundarias/bez-energy/"
+repo_path: "App-nativas/bez-energy/"
 port: 3019
 domain: "energy.bez.digital"
 tags: ["platform-map", "energia-iot", "p1"]
@@ -15,7 +15,7 @@ tags: ["platform-map", "energia-iot", "p1"]
 
 VPP: ingesta MQTT (vppMqttBroker.js + simulador), EnergyOracle.sol + EnergyCAEToken.sol + BeZhasVPP.sol (64 tests forge), feed OMIE, agente de arbitraje, bridge SCADA on-chain. NEXT: deploy Amoy + wire frontend.
 
-**Ubicación:** `App's secundarias/bez-energy/` · puerto :3019 · energy.bez.digital
+**Ubicación:** `App-nativas/bez-energy/` · puerto :3019 · energy.bez.digital
 
 ## Conexiones
 

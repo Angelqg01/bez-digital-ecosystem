@@ -1,5 +1,5 @@
 # BeZhas — Master Plan: Ecosistema de Sub-Apps Integrado
-**Ruta base:** `D:\BeZhas-Blockchain\App's secundarias`  
+**Ruta base:** `D:\BeZhas-Blockchain\App-nativas`  
 **Fecha:** Mayo 2026  
 **Versión:** 3.0 (Fusión Optimizada de V1 + V2)  
 **Estado:** Plan de Referencia Único — Implementación Activa
@@ -670,7 +670,7 @@ FASE 4: EXPANSIÓN P3 (Sem 27+)
 ## 5. Estructura de Carpetas — Monorepo Completo
 
 ```
-D:\BeZhas-Blockchain\App's secundarias\
+D:\BeZhas-Blockchain\App-nativas\
 │
 ├── package.json                      # Root (pnpm workspaces)
 ├── turbo.json                        # Turborepo pipeline config
@@ -893,10 +893,10 @@ Todas las apps siguen este sistema de diseño unificado:
 # Ejecutar desde D:\BeZhas-Blockchain\
 
 # 1. Crear directorio si no existe
-if (!(Test-Path "App's secundarias")) {
-  New-Item -ItemType Directory -Name "App's secundarias"
+if (!(Test-Path "App-nativas")) {
+  New-Item -ItemType Directory -Name "App-nativas"
 }
-cd "App's secundarias"
+cd "App-nativas"
 
 # 2. Inicializar pnpm workspaces
 pnpm init
@@ -962,7 +962,7 @@ cd "apps\Bezhas-Hub"
 pnpm create next-app@latest . --typescript --tailwind --app --src-dir --no-git
 
 Write-Host "✅ Monorepo BeZhas Sub-Apps inicializado correctamente" -ForegroundColor Green
-Write-Host "📁 Estructura creada en: D:\BeZhas-Blockchain\App's secundarias" -ForegroundColor Cyan
+Write-Host "📁 Estructura creada en: D:\BeZhas-Blockchain\App-nativas" -ForegroundColor Cyan
 Write-Host "🚀 Próximo paso: cd apps\Bezhas-Hub && pnpm dev" -ForegroundColor Yellow
 ```
 

@@ -5,6 +5,7 @@
  * synchronize registration and payment data with the core blockchain DB.
  */
 const { Router } = require('express');
+const crypto = require('crypto');
 const { query } = require('../db/pool');
 const logger = require('pino')({ level: 'info' });
 
@@ -12,9 +13,19 @@ const router = Router();
 
 // API Key middleware (mejorado para el bridge)
 // Buenas prácticas: Limitar intentos fallidos, registrar accesos y considerar rate limiting en producción.
+/** Comparación en tiempo constante: un `!==` sobre un secreto lo filtra carácter a carácter. */
+const bridgeKeyMatches = (provided) => {
+    const expected = process.env.BRIDGE_API_KEY;
+    if (typeof provided !== 'string' || typeof expected !== 'string' || !expected) return false;
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+};
+
 const bridgeAuth = (req, res, next) => {
     const apiKey = req.headers['x-api-key'];
-    if (!apiKey || apiKey !== process.env.BRIDGE_API_KEY) {
+    if (!bridgeKeyMatches(apiKey)) {
         // Aquí se puede agregar lógica de monitoreo/alerta ante intentos fallidos
         logger.warn({ ip: req.ip }, 'Intento fallido de autenticación en el bridge');
         return res.status(401).json({ error: 'Unauthorized: Invalid Bridge API Key' });

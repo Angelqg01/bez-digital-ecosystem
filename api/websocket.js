@@ -35,7 +35,7 @@ function verifyWsToken(token, pqcSig, pqcPub) {
 
   let user;
   try {
-    user = jwt.verify(token, JWT_SECRET);
+    user = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
   } catch (err) {
     return { ok: false, reason: `jwt-invalid: ${err.message}` };
   }

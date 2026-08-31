@@ -139,7 +139,7 @@ describe('espejo Hub ↔ API core', () => {
         // Están duplicados a propósito (cada servicio se empaqueta aparte), así
         // que este test es lo único que impide que se separen en silencio.
         const mirror = path.join(
-            __dirname, '..', '..', "App's secundarias", 'Bezhas-Hub', 'backend', 'lib', 'bezhasId.js',
+            __dirname, '..', '..', "App-nativas", 'Bezhas-Hub', 'backend', 'lib', 'bezhasId.js',
         );
         if (!fs.existsSync(mirror)) {
             throw new Error(`No se encuentra el espejo del Hub en ${mirror}`);

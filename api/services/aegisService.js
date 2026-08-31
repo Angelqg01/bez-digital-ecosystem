@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { ethers } = require('ethers');
 const { getSignedContract, getContract } = require('./contractService');
+const aegisOnChain = require('./aegisOnChain');
 const { watchTx } = require('./txService');
 const { query } = require('../db/pool');
 const { publish } = require('../cache/redis');
@@ -66,6 +67,11 @@ class AegisService {
         if (circuitBreaker.isOpen()) {
             // Circuit open — reject immediately, do NOT allow fallback bypass
             console.warn('[AEGIS] Circuit breaker OPEN — rejecting telemetry until Aegis recovers');
+            // No se ancla: el circuito abierto significa que NO SABEMOS, no que
+            // haya una amenaza. Ver aegisOnChain.levelFor().
+            await aegisOnChain.signalRejection({
+                containerId, wallet: enterpriseWallet, reason: 'circuit_open',
+            }).catch(() => {});
             return { success: false, reason: 'AEGIS AI temporarily unavailable. Retry later.' };
         }
 
@@ -107,7 +113,21 @@ class AegisService {
         );
 
         if (!aegisApproval) {
-            return { success: false, reason: 'Telemetry rejected by AEGIS AI. Temperature out of range.' };
+            // Deja constancia EN CADENA de que rechazamos. Hasta ahora este
+            // hecho vivía sólo en `ai_logs` — una tabla nuestra, editable por
+            // nosotros — y es justo el que hay que sostener después ante una
+            // aseguradora. Best-effort: si la cadena no está, el rechazo sigue
+            // siendo válido; lo que se pierde es la prueba independiente.
+            const signal = await aegisOnChain.signalRejection({
+                containerId, wallet: enterpriseWallet,
+                reason: 'telemetry_rejected', score: aegisScore, usedFallback,
+            }).catch((err) => ({ signalled: false, mode: 'signal_error', error: err.message }));
+
+            return {
+                success: false,
+                reason: 'Telemetry rejected by AEGIS AI. Temperature out of range.',
+                signal,
+            };
         }
         console.log(`✅ [AEGIS] Telemetría APROBADA.`);
 

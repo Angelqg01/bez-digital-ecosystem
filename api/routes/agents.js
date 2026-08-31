@@ -7,10 +7,42 @@
 
 const { Router } = require('express');
 const agentService = require('../services/agentService');
-const { authenticateToken } = require('../middleware/security');
+const { authenticateToken, requireRole } = require('../middleware/security');
+const hitlMirror = require('../services/hitlMirror');
+const agentRuntime = require('../services/agentRuntime');
 
-module.exports = function agentsRouter(manager, wss) {
+module.exports = function agentsRouter(managerExplicito, wss) {
   const r = Router();
+
+  /**
+   * Enlace tardío con el runtime. Las rutas se montan de forma síncrona, pero
+   * el runtime arranca despues (levanta cinco agentes y toca la cadena), así
+   * que el manager se pide en cada petición en vez de capturarlo al montar.
+   * El argumento explícito sigue mandando: lo usan `api/server.js` y los tests.
+   */
+  const getManager = () => managerExplicito || agentRuntime.getManager();
+
+  /**
+   * Sin runtime cableado, estas rutas devuelven 503 con el motivo, no un 500.
+   *
+   * `api/index.js` monta este router con `agentRoutes()` — sin argumentos —, así
+   * que `manager` llega `undefined` y todo lo que lo tocaba reventaba con
+   * "Cannot read properties of undefined (reading 'memory')". Un error que no
+   * dice qué falta es peor que no tener el endpoint: parece una caída cuando en
+   * realidad el runtime nunca se conectó.
+   *
+   * El cableado vive ahora en `services/agentRuntime.js` y lo arranca
+   * `index.js`. Si falla (RPC caído, contratos sin configurar), la API sigue en
+   * pie y estas rutas responden 503 con el motivo real.
+   */
+  const requiereRuntime = (req, res, next) => {
+    if (getManager()) return next();
+    return res.status(503).json({
+      error: 'Agent runtime no cableado en este proceso',
+      code: 'RUNTIME_NOT_WIRED',
+      detail: `Cableado del runtime: ${agentRuntime.status().estado}${agentRuntime.status().motivo ? ' — ' + agentRuntime.status().motivo : ''}`,
+    });
+  };
   const MCP_TOOL_ALLOWLIST = new Set([
     'get_token_price',
     'system_health',
@@ -29,8 +61,8 @@ module.exports = function agentsRouter(manager, wss) {
 
   async function listAgents(req, res) {
     try {
-      if (manager?.listAgents) {
-        const agents = manager.listAgents();
+      if (getManager()?.listAgents) {
+        const agents = getManager().listAgents();
         return res.json({ agents, count: agents.length, source: 'runtime-manager' });
       }
       const data = await agentService.listAgents();
@@ -125,17 +157,17 @@ module.exports = function agentsRouter(manager, wss) {
   r.post('/agents/mcp/invoke', authenticateToken, invokeMCP);
 
   /** GET /api/agents/:id — estado de un agente concreto */
-  r.get('/agents/:id', (req, res) => {
-    if (!manager?.getAgent) return res.status(404).json({ error: 'Runtime manager unavailable' });
-    const agent = manager.getAgent(req.params.id);
+  r.get('/agents/:id', authenticateToken, requiereRuntime, (req, res) => {
+    if (!getManager()?.getAgent) return res.status(404).json({ error: 'Runtime manager unavailable' });
+    const agent = getManager().getAgent(req.params.id);
     if (!agent) return res.status(404).json({ error: 'Agente no encontrado' });
     res.json(agent.getStats());
   });
 
   /** GET /api/agents/:id/memory — memoria del agente */
-  r.get('/agents/:id/memory', async (req, res) => {
+  r.get('/agents/:id/memory', authenticateToken, requiereRuntime, async (req, res) => {
     try {
-      const memories = await manager.memory.recallAll(req.params.id);
+      const memories = await getManager().memory.recallAll(req.params.id);
       res.json({ agentId: req.params.id, memories });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -143,57 +175,71 @@ module.exports = function agentsRouter(manager, wss) {
   // ─── TASKS ───────────────────────────────────────────────────────────────
 
   /** GET /api/tasks — tareas recientes */
-  r.get('/tasks', async (req, res) => {
+  r.get('/tasks', authenticateToken, requiereRuntime, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit || '20');
-      const tasks = await manager.memory.listRecentTasks(limit);
-      const queue = manager.taskQueue?.getStatus() || {};
+      const tasks = await getManager().memory.listRecentTasks(limit);
+      const queue = getManager().taskQueue?.getStatus() || {};
       res.json({ tasks, queue, count: tasks.length });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   /** GET /api/tasks/:id — estado de una tarea */
-  r.get('/tasks/:id', async (req, res) => {
+  r.get('/tasks/:id', authenticateToken, requiereRuntime, async (req, res) => {
     try {
-      const task = await manager.memory.getTask(req.params.id);
+      const task = await getManager().memory.getTask(req.params.id);
       if (!task) return res.status(404).json({ error: 'Tarea no encontrada' });
       res.json(task);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   /** POST /api/tasks — encolar nueva tarea */
-  r.post('/tasks', async (req, res) => {
+  r.post('/tasks', authenticateToken, requiereRuntime, async (req, res) => {
     try {
       const { type, priority = 'normal', payload = {} } = req.body;
       if (!type) return res.status(400).json({ error: 'type requerido' });
-      const taskId = await manager.dispatch({ type, priority, source: 'api', payload });
+      const taskId = await getManager().dispatch({ type, priority, source: 'api', payload });
       res.json({ ok: true, taskId });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   // ─── HITL ────────────────────────────────────────────────────────────────
 
+  // Estos tres endpoints estaban SIN autenticar: cualquiera que alcanzase la
+  // API podía aprobar o rechazar una confirmación humana pendiente, que es
+  // justo el control que separa a un agente de ejecutar algo irreversible.
+  // Aprobar/rechazar exige además rol operativo, igual que la sala
+  // '/agent-runtime' del WebSocket.
+  const HITL_ROLES = ['admin', 'manager', 'operator'];
+
   /** GET /api/hitl/pending — confirmaciones pendientes */
-  r.get('/hitl/pending', async (req, res) => {
+  r.get('/hitl/pending', authenticateToken, requiereRuntime, requireRole(...HITL_ROLES), async (req, res) => {
     try {
-      const pending = await manager.memory.listPendingHITL();
+      const pending = await getManager().memory.listPendingHITL();
       res.json({ pending, count: pending.length });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   /** POST /api/hitl/approve/:taskId */
-  r.post('/hitl/approve/:taskId', async (req, res) => {
+  r.post('/hitl/approve/:taskId', authenticateToken, requireRole(...HITL_ROLES), requiereRuntime, async (req, res) => {
     try {
-      const ok = await manager.resolveHITL(req.params.taskId, true, req.body.response || 'API approval');
+      const approver = req.user?.address || req.user?.userId || 'unknown';
+      const ok = await getManager().resolveHITL(req.params.taskId, true, req.body.response || `API approval by ${approver}`);
+      // Mismo criterio que la cola SCADA: se refleja en business-ops para que
+      // haya una sola bandeja y una sola auditoría, sin que esta ruta dependa
+      // de que aquel servicio esté vivo.
+      hitlMirror.mirror({ jobId: req.params.taskId, command: 'AGENT_TASK', approvedBy: approver }, 'approved');
       if (wss) wss.broadcastHITL(req.params.taskId, { resolved: true, approved: true });
       res.json({ ok, taskId: req.params.taskId, approved: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   /** POST /api/hitl/reject/:taskId */
-  r.post('/hitl/reject/:taskId', async (req, res) => {
+  r.post('/hitl/reject/:taskId', authenticateToken, requireRole(...HITL_ROLES), requiereRuntime, async (req, res) => {
     try {
-      const ok = await manager.resolveHITL(req.params.taskId, false, req.body.response || 'API rejection');
+      const approver = req.user?.address || req.user?.userId || 'unknown';
+      const ok = await getManager().resolveHITL(req.params.taskId, false, req.body.response || `API rejection by ${approver}`);
+      hitlMirror.mirror({ jobId: req.params.taskId, command: 'AGENT_TASK', approvedBy: approver, reason: req.body.response || null }, 'rejected');
       res.json({ ok, taskId: req.params.taskId, approved: false });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -201,10 +247,10 @@ module.exports = function agentsRouter(manager, wss) {
   // ─── AEGIS ───────────────────────────────────────────────────────────────
 
   /** GET /api/aegis/alerts — historial de alertas */
-  r.get('/aegis/alerts', async (req, res) => {
+  r.get('/aegis/alerts', authenticateToken, requiereRuntime, async (req, res) => {
     try {
       const limit  = parseInt(req.query.limit || '50');
-      const aegis  = manager.aegis;
+      const aegis  = getManager().aegis;
       const alerts = aegis?.getAlertHistory(limit) || [];
       const stats  = aegis?.getStats() || {};
       const last   = aegis?._lastBlock || 0;
@@ -215,17 +261,17 @@ module.exports = function agentsRouter(manager, wss) {
   /** GET /api/aegis/health */
   r.get('/aegis/health', async (req, res) => {
     try {
-      const health = await manager.aegis?.healthCheck() || { status: 'unavailable' };
+      const health = await getManager().aegis?.healthCheck() || { status: 'unavailable' };
       res.json(health);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   // ─── TELEGRAM STATUS ─────────────────────────────────────────────────────
 
-  /** GET /api/telegram/status */
-  r.get('/telegram/status', (req, res) => {
+  /** GET /api/telegram/status — expone allowedUsers, no puede ser público */
+  r.get('/telegram/status', authenticateToken, requiereRuntime, requireRole('admin', 'manager'), (req, res) => {
     try {
-      const tg = manager._telegram;
+      const tg = getManager()._telegram;
       res.json({
         botActive:    !!tg && tg._running,
         botUsername:  tg?._botUsername || null,
@@ -238,18 +284,18 @@ module.exports = function agentsRouter(manager, wss) {
   // ─── SYSTEM ──────────────────────────────────────────────────────────────
 
   /** GET /api/health — health check completo del sistema */
-  r.get('/health', async (req, res) => {
+  r.get('/health', requiereRuntime, async (req, res) => {
     try {
       const [mem, bc, oc] = await Promise.allSettled([
-        manager.memory?.healthCheck(),
-        manager.blockchain?.healthCheck(),
-        manager.openclaw?.healthCheck(),
+        getManager().memory?.healthCheck(),
+        getManager().blockchain?.healthCheck(),
+        getManager().openclaw?.healthCheck(),
       ]);
 
       res.json({
         status:    'ok',
         timestamp: new Date().toISOString(),
-        agents:    manager.listAgents().length,
+        agents:    getManager().listAgents().length,
         memory:    mem.status  === 'fulfilled' ? mem.value  : { status: 'error' },
         blockchain:bc.status   === 'fulfilled' ? bc.value   : { status: 'error' },
         openclaw:  oc.status   === 'fulfilled' ? oc.value   : { status: 'error' },
@@ -259,12 +305,12 @@ module.exports = function agentsRouter(manager, wss) {
   });
 
   /** GET /api/status — resumen del runtime para dashboard */
-  r.get('/status', async (req, res) => {
+  r.get('/status', requiereRuntime, async (req, res) => {
     try {
-      const agents  = manager.listAgents();
-      const queue   = manager.taskQueue?.getStatus() || {};
-      const hitl    = await manager.memory?.listPendingHITL().catch(() => []);
-      const tasks   = await manager.memory?.listRecentTasks(5).catch(() => []);
+      const agents  = getManager().listAgents();
+      const queue   = getManager().taskQueue?.getStatus() || {};
+      const hitl    = await getManager().memory?.listPendingHITL().catch(() => []);
+      const tasks   = await getManager().memory?.listRecentTasks(5).catch(() => []);
 
       res.json({
         agents:  { count: agents.length, list: agents },

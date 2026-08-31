@@ -113,7 +113,7 @@ const PAGE_SEO: Record<string, PageSEO> = {
     },
     '/privacy': {
         title: 'Política de Privacidad | BeZhas',
-        description: 'Cómo BeZhas trata tus datos: qué recogemos, con qué base legal, cuánto lo conservamos, tus derechos RGPD y los permisos de cámara/geolocalización de las SubApps.',
+        description: 'Cómo BeZhas trata tus datos: qué recogemos, con qué base legal, cuánto lo conservamos, tus derechos RGPD y los permisos de cámara/geolocalización de las Apps Nativas.',
         path: '/privacy',
         keywords: ['política de privacidad', 'RGPD', 'GDPR', 'protección de datos blockchain'],
     },

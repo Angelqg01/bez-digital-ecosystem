@@ -288,6 +288,41 @@ Resolución de config en 4 capas (orden de prioridad):
 
 ---
 
+## 🏢 OPERANT — SubApp de gestión empresarial autónoma
+
+OPERANT (`business-ops/`, servicio en :4000) se sirve **por el Gateway** y es una
+SubApp contratable más de la suscripción. Detalle completo, tarifas y decisiones
+de dimensionado: [`docs/OPERANT_SUBAPP.md`](docs/OPERANT_SUBAPP.md).
+
+Reparto: BeZhas pone identidad, entitlements, cuota, facturación y anclaje de la
+auditoría; OPERANT ejecuta los agentes. El cliente nunca llama a OPERANT — usa su
+api-key del Gateway y BeZhas llama al puente interno `/bridge`.
+
+| Plan | Módulo | Departamentos | Tareas/mes | Autonomía | Anclaje |
+| :---- | :---- | :---- | :---- | :---- | :---- |
+| Starter | — (por uso) | 2 (Ventas, Soporte) | pago por uso | borrador | — |
+| Creator Pro | +39 €/mes | 4 | 300 | asistida | semanal |
+| Business | +249 €/mes | 8 | 2.000 | autónoma | diario |
+| Enterprise VIP | +1.199 €/mes | 10 | 9.000 | gobernada por DAO | continuo |
+
+Precio por tarea = (coste Claude + cómputo BeZhas) × 1,25 → 0,1969 € las
+*frontier* (Opus) y 0,1271 € las *mid* (Sonnet). 1 crédito = 0,001 €.
+Al agotar la cuota se factura por créditos; sin customer de Stripe, 402.
+
+El precio del módulo va POR PLAN porque la cuota va por plan, y lleva
+`alwaysBilled`: nunca se comp con los slots gratis del bundle. Es el único
+módulo del catálogo con coste marginal grande — regalarlo en un plan con slots
+libres es servir hasta 1.186 €/mes de cómputo gratis.
+
+**Archivos clave:** `api/config/operant-services.js` (fuente de verdad del
+catálogo y la economía) · `api/routes/operant.js` · `api/services/operantUsage.js`
+· `api/services/operantAnchor.js` · `business-ops/src/bridge/router.js`.
+
+⚠️ Si cambian los precios de Anthropic, tocar SOLO `api/config/usage-pricing.js`:
+los tests de `operant-services.test.js` fallan si el margen de un plan baja del 50%.
+
+---
+
 ## 🧑‍💼 GESTIÓN EMPRESARIAL (12 Departamentos IA)
 
 Stack de automatización:

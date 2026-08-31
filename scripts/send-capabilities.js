@@ -1,9 +1,17 @@
 import TelegramBot from 'node-telegram-bot-api';
 import dotenv from 'dotenv';
-dotenv.config();
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+dotenv.config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '..', '.env') });
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const chatId = '812711473';
+const chatId = process.env.HITL_TELEGRAM_CHAT_ID
+  || process.env.TELEGRAM_CHAT_CEO
+  || process.env.TELEGRAM_CHAT_ID;
+if (!chatId) {
+  console.error('Falta el chat de destino: define HITL_TELEGRAM_CHAT_ID en el .env.');
+  process.exit(1);
+}
 
 const bot = new TelegramBot(token, { polling: false });
 

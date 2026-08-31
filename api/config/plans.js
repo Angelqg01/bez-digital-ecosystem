@@ -68,6 +68,9 @@ const CORE_SUBAPPS = ['hub', 'wallet'];
 const ACTIVATABLE_SUBAPPS = [
     'pay', 'cargolink', 'energy', 'capital', 'prestige', 'purescan',
     'sphere', 'genesis', 'vision', 'gas', 'edge',
+    // OPERANT — gestión empresarial autónoma (agentes IA por departamento).
+    // Lo que desbloquea cada plan vive en config/operant-services.js.
+    'operant',
 ];
 
 const round2 = (n) => Math.round(n * 100) / 100;

@@ -71,6 +71,26 @@ const IntegrationAssistant = require('./modules/bezhas-integration-assistant');
 // Commercial API Client (lead pipeline, pilot provisioning, analytics)
 const CommercialAPIClient = require('./modules/CommercialAPIClient');
 
+// Gobernanza on-chain (GovernanceSystem.sol): propuestas, voto y delegación.
+const { GovernanceClient, PROPOSAL_STATES, VOTE_FOR, VOTE_AGAINST, VOTE_ABSTAIN } =
+    require('./modules/GovernanceClient');
+
+// Sectores Tier 2 y Tier 3. Estaban escritos y probados pero sin salida por
+// index.js, así que un consumidor de @bezhas/sdk no podía alcanzarlos: siete
+// sectores con contratos desplegados en smart-contracts/src y sin SDK utilizable.
+const {
+    EducationModule,
+    InsuranceModule,
+    EntertainmentModule,
+    LegalModule,
+} = require('./modules/Tier2Modules');
+
+const {
+    SupplyChainModule,
+    GovernmentModule,
+    CarbonModule,
+} = require('./modules/Tier3Modules');
+
 module.exports = {
     BeZhas,
     BeZhasUniversal, // alias
@@ -81,6 +101,13 @@ module.exports = {
 
     // Validation SDK
     ValidatorClient,
+
+    // Gobernanza DAO
+    GovernanceClient,
+    PROPOSAL_STATES,
+    VOTE_FOR,
+    VOTE_AGAINST,
+    VOTE_ABSTAIN,
 
     // Platform Services
     VIPSubscriptionManager,
@@ -100,13 +127,23 @@ module.exports = {
 
     // Industry-specific modules
     modules: {
+        // Tier 1
         RealEstateModule,
         HealthcareModule,
         AutomotiveModule,
         ManufacturingModule,
         EnergyModule,
         AgricultureModule,
-        ContactsModule
+        ContactsModule,
+        // Tier 2
+        EducationModule,
+        InsuranceModule,
+        EntertainmentModule,
+        LegalModule,
+        // Tier 3
+        SupplyChainModule,
+        GovernmentModule,
+        CarbonModule
     },
 
     // Smart Contracts ABIs & Addresses

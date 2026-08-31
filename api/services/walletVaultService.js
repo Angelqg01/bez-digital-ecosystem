@@ -11,8 +11,19 @@ const { query } = require('../db/pool');
 const ALGO = 'aes-256-gcm';
 const KEY_VERSION = 1;
 
+const { IS_PRODUCTION } = require('../config/secrets');
+
 function getVaultKey() {
-    const raw = process.env.WALLET_VAULT_SECRET || process.env.JWT_SECRET || 'dev-only-wallet-vault-secret';
+    const raw = process.env.WALLET_VAULT_SECRET || process.env.JWT_SECRET;
+    if (!raw) {
+        // Esta clave cifra claves privadas de usuario. El literal de desarrollo
+        // que había aquí está publicado en el repositorio: cualquiera podría
+        // derivarlo y descifrar el vault entero. En producción se para en seco.
+        if (IS_PRODUCTION) {
+            throw new Error('FATAL: WALLET_VAULT_SECRET (o JWT_SECRET) es obligatorio en producción para cifrar el vault de wallets.');
+        }
+        return crypto.createHash('sha256').update('dev-only-wallet-vault-secret').digest();
+    }
     return crypto.createHash('sha256').update(String(raw)).digest();
 }
 

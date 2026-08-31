@@ -1,5 +1,5 @@
 {
-  "_comment": "Canonical SubApp registry — single source of truth for the watchdog and for Cloud Run start/stop control. Mirrors SUBAPP_URLS in control-center/frontend/app/(landing)/developers/page.tsx and App's secundarias/Bezhas-Hub/frontend/src/config/subappUrls.ts. Update all three together when a URL changes. `service`/`project`/`region` match scripts/deploy-subapp.sh so start/stop hits the same Cloud Run service that script deploys.",
+  "_comment": "Canonical SubApp registry — single source of truth for the watchdog and for Cloud Run start/stop control. Mirrors SUBAPP_URLS in control-center/frontend/app/(landing)/developers/page.tsx and App-nativas/Bezhas-Hub/frontend/src/config/subappUrls.ts. Update all three together when a URL changes. `service`/`project`/`region` match scripts/deploy-subapp.sh so start/stop hits the same Cloud Run service that script deploys.",
   "project": "totemic-bonus-479312-c6",
   "region": "europe-west1",
   "apps": [

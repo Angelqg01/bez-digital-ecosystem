@@ -3,7 +3,7 @@
 .env.*
 !.env.example
 !.env.testnet.example
-# nested env files in any subdir (api/, openclaw/, App's secundarias/, etc.)
+# nested env files in any subdir (api/, openclaw/, App-nativas/, etc.)
 **/.env
 **/.env.*
 !**/.env.example
@@ -101,3 +101,9 @@ build-log.txt
 docker-build-output.log
 .claude/
 api/scripts/.cargolink-sim.json
+
+# Copias de seguridad con marca de tiempo. Las generan los scripts de
+# despliegue y de rotación de credenciales; no describen ningún estado del
+# proyecto y algunas guardan valores que ya se han rotado.
+*.bak-*
+*.bak

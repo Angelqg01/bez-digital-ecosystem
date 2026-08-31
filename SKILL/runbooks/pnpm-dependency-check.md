@@ -27,7 +27,7 @@ pnpm outdated
 ### 2.2 Verificación en Aplicaciones Secundarias (Monorepo de Aplicaciones)
 Comprueba recursivamente todas las aplicaciones en el monorepo de aplicaciones secundarias (Hub, Wallet, Capital, etc.):
 ```bash
-cd "D:\BeZhas-Blockchain\App's secundarias"
+cd "D:\BeZhas-Blockchain\App-nativas"
 pnpm outdated -r
 ```
 

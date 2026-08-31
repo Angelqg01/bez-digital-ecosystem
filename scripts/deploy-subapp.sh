@@ -2,10 +2,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 #  scripts/deploy-subapp.sh — Build & deploy one secondary SPA to Cloud Run.
 #
-#  The SubApps under "App's secundarias/<App>" are pnpm workspace members that:
-#   - share code via relative imports from "App's secundarias/_shared"
+#  The SubApps under "App-nativas/<App>" are pnpm workspace members that:
+#   - share code via relative imports from "App-nativas/_shared"
 #   - depend on internal workspace packages (@bezhas/contracts, @bezhas/platform-sdk,
-#     @bezhas/ui-components) that live in "App's secundarias/packages/*"
+#     @bezhas/ui-components) that live in "App-nativas/packages/*"
 #  so they cannot build in isolation. This script stages the app + _shared + the
 #  internal packages + a minimal pnpm workspace into a space-free build dir,
 #  generates an nginx static Dockerfile, builds via Cloud Build and deploys to
@@ -34,7 +34,7 @@ TAG="$(date +%Y%m%d-%H%M%S)"
 IMAGE="${IMAGE_BASE}/${SERVICE}:${TAG}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SECDIR="${ROOT}/App's secundarias"
+SECDIR="${ROOT}/App-nativas"
 SRC="${SECDIR}/${APP_FOLDER}${SUBDIR:+/$SUBDIR}"
 STAGE="$(mktemp -d)"
 

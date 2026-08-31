@@ -103,8 +103,8 @@ Servicios: `aegisService`, `channelService`, `ipfsService`, `cargoLinkService`, 
 
 Routes completas: auth, agents, tokenomics, cargolink, mtfc, gamification, config, obsidian
 
-### 1.5 Sub-apps (App's secundarias)
-**Ruta:** `D:\BeZhas-Blockchain\App's secundarias\`
+### 1.5 Sub-apps (App-nativas)
+**Ruta:** `D:\BeZhas-Blockchain\App-nativas\`
 
 Apps con código construido:
 - **Bezhas-Hub** — Monorepo completo: frontend (React+Vite), frontend-next (Next.js), backend, api, packages/mcp-server. Con CI/CD en GitHub Actions.

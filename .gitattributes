@@ -1,0 +1,51 @@
+# Normalización de finales de línea.
+#
+# El repositorio se ha trabajado desde Windows, que dejó CRLF en el árbol de
+# trabajo mientras git almacena LF. Sin este fichero, `git status` desde Linux
+# marcaba 3.849 ficheros como modificados y escondía entre ellos los cambios
+# reales — en la última revisión eran 2. Con `text=auto eol=lf` git normaliza al
+# comparar, así que el mismo árbol se ve limpio desde los dos sistemas.
+* text=auto eol=lf
+
+# Estos los ejecuta Windows y necesitan CRLF de verdad.
+*.ps1  text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Shell y ficheros de contenedor: LF siempre, o el intérprete del contenedor
+# falla con un `\r` invisible al final del shebang.
+*.sh          text eol=lf
+Dockerfile*   text eol=lf
+*.yml         text eol=lf
+*.yaml        text eol=lf
+
+# Binarios: git no debe intentar convertir nada aquí.
+#
+# El `!eol` es imprescindible: `binary` desactiva `text`, pero el comodín de
+# arriba deja `eol=lf` puesto, y esa combinación hace que git considere que el
+# fichero necesita conversión y lo marque como modificado para siempre — aunque
+# el hash del árbol de trabajo, el índice y HEAD sean idénticos. `!eol` deja el
+# atributo sin especificar, que es lo que corresponde a un binario.
+*.png   binary !eol
+*.jpg   binary !eol
+*.jpeg  binary !eol
+*.gif   binary !eol
+*.ico   binary !eol
+*.pdf   binary !eol
+*.zip   binary !eol
+*.tgz   binary !eol
+*.gz    binary !eol
+*.xlsx  binary !eol
+*.woff  binary !eol
+*.woff2 binary !eol
+*.ttf   binary !eol
+*.wasm  binary !eol
+
+# Artefactos generados: no ensucian los diffs de las revisiones.
+pnpm-lock.yaml           linguist-generated=true
+smart-contracts/abi/*.json linguist-generated=true
+
+# Estos tres NO son documentos de Office: son texto plano UTF-8 con la extensión
+# equivocada (comprobado: no son ZIP, `file` los reporta como UTF-8 text). Las
+# reglas `binary` de arriba los marcarían como modificados a perpetuidad, así
+# que se les devuelve su naturaleza real. Conviene renombrarlos a .md o .txt.

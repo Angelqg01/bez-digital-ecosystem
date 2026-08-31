@@ -141,9 +141,89 @@ function validateDelivery(tx, payload) {
   };
 }
 
+/**
+ * GATE_IN — entrada física en almacén (TX004 del piloto de Algeciras).
+ *
+ * Exige almacén y peso porque son los dos datos sin los cuales el registro no
+ * sirve para nada: sin almacén no se sabe quién tiene la custodia, y sin peso
+ * no se puede controlar la capacidad ni discutir una merma después.
+ * El precinto es opcional pero se registra si viene: es la prueba de que el
+ * contenedor llegó cerrado.
+ */
+function validateGateIn(tx, payload) {
+  const reasons = [];
+  const warehouseCode = payload.warehouseCode || payload.warehouse;
+  if (!warehouseCode) reasons.push('warehouseCode is required for gate-in');
+
+  const quantity = num(payload.quantityKg ?? tx.cargo?.weight);
+  if (quantity === null || quantity <= 0) reasons.push('quantityKg (or cargo.weight) must be a positive number');
+
+  // Caducidad: obligatoria en perecedero, porque WarehouseManager.receiveLot
+  // la exige mayor que ahora y de ella depende markExpired().
+  const perishable = ['pharma', 'food', 'reefer'].includes(String(tx.cargo?.type || '').toLowerCase());
+  const expiry = payload.expiryDate ? new Date(payload.expiryDate) : null;
+  if (perishable && (!expiry || Number.isNaN(expiry.getTime()))) {
+    reasons.push('expiryDate is required for perishable cargo (pharma/food/reefer)');
+  }
+  if (expiry && !Number.isNaN(expiry.getTime()) && expiry.getTime() <= Date.now()) {
+    reasons.push('expiryDate must be in the future');
+  }
+
+  return {
+    valid: reasons.length === 0,
+    reasons,
+    result: {
+      warehouseCode: warehouseCode || null,
+      quantityKg: quantity,
+      expiryDate: expiry ? expiry.toISOString() : null,
+      sealId: payload.sealId || null,
+      sealIntact: payload.sealIntact !== false,
+      gateRef: payload.gateRef || null,
+    },
+  };
+}
+
+/**
+ * GATE_OUT — salida del almacén (TX005).
+ *
+ * Se comprueba el precinto contra el que se registró en la entrada: si ha
+ * cambiado, la mercancía se abrió mientras estaba bajo custodia del almacén y
+ * eso es exactamente lo que hay que dejar registrado antes de que salga.
+ */
+function validateGateOut(tx, payload) {
+  const reasons = [];
+  const carrierRef = payload.carrierRef || payload.truckPlate || payload.vehicleId;
+  if (!carrierRef) reasons.push('carrierRef (truckPlate/vehicleId) is required for gate-out');
+
+  const quantity = num(payload.quantityKg ?? tx.cargo?.weight);
+  if (quantity === null || quantity <= 0) reasons.push('quantityKg must be a positive number');
+
+  // El precinto de salida se compara con el de entrada cuando ambos existen.
+  const sealIn = tx.cargo?.sealId || payload.sealIdIn || null;
+  const sealOut = payload.sealId || null;
+  const sealChanged = Boolean(sealIn && sealOut && sealIn !== sealOut);
+
+  return {
+    valid: reasons.length === 0,
+    reasons,
+    result: {
+      carrierRef: carrierRef || null,
+      quantityKg: quantity,
+      sealId: sealOut,
+      sealChanged,
+      // No invalida la transición: la mercancía sale igualmente. Pero queda
+      // marcado para que el oráculo de disputas pueda actuar sobre ello.
+      integrityFlag: sealChanged ? 'SEAL_MISMATCH' : 'OK',
+      gateRef: payload.gateRef || null,
+    },
+  };
+}
+
 const VALIDATORS = {
+  GATE_IN: validateGateIn,
   CUSTOMS_CLEARED: validateCustoms,
   STOWED: validateStowage,
+  GATE_OUT: validateGateOut,
   DEPARTED: validateDeparture,
   IN_TRANSIT: validateInTransit,
   DELIVERED: validateDelivery,

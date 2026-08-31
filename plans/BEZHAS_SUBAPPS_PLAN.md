@@ -1,5 +1,5 @@
 # BeZhas — Plan de Desarrollo de Sub-Aplicaciones (Integrado)
-**Ruta base:** `D:\BeZhas-Blockchain\App's secundarias`  
+**Ruta base:** `D:\BeZhas-Blockchain\App-nativas`  
 **Fecha:** Mayo 2026  
 **Versión:** 2.0  
 **Estado:** Evolución de Blueprint a Ecosistema Inteligente
@@ -95,7 +95,7 @@ packages/platform-sdk/
 
 ### APP 01 — BEZ Wallet 🔴 P0
 
-**Ruta:** `App's secundarias/bez-wallet/`  
+**Ruta:** `App-nativas/bez-wallet/`  
 **Descripción:** Wallet no-custodial con UX Web2.5 — el usuario nunca ve claves privadas ni frases semilla.
 
 **Funcionalidades Core:**
@@ -125,7 +125,7 @@ packages/platform-sdk/
 
 ### APP 02 — Edge Node Manager 🔴 P0
 
-**Ruta:** `App's secundarias/edge-node-manager/`  
+**Ruta:** `App-nativas/edge-node-manager/`  
 **Descripción:** Panel de configuración, monitorización y gestión de nodos DePIN para empresas.
 
 **Funcionalidades Core:**
@@ -165,7 +165,7 @@ docker run -d --name bezhas-edge \
 
 ### APP 03 — Corporate Gas Tank Manager 🔴 P0
 
-**Ruta:** `App's secundarias/gas-tank-manager/`  
+**Ruta:** `App-nativas/gas-tank-manager/`  
 **Descripción:** Sistema de gestión de gas empresarial con recarga en Fiat (Stripe). El equipo contable nunca compra crypto directamente.
 
 **Funcionalidades Core:**
@@ -197,7 +197,7 @@ docker run -d --name bezhas-edge \
 
 ### APP 04 — DeFi Hub 🟠 P1
 
-**Ruta:** `App's secundarias/defi-hub/`  
+**Ruta:** `App-nativas/defi-hub/`  
 **Descripción:** Interfaz unificada de DeFi — Staking, Yield Farming, historial de rendimientos y gestión de posiciones.
 
 **Funcionalidades Core:**
@@ -241,7 +241,7 @@ docker run -d --name bezhas-edge \
 
 ### APP 05 — BeZhas Bridge 🟠 P1
 
-**Ruta:** `App's secundarias/bezhas-bridge/`  
+**Ruta:** `App-nativas/bezhas-bridge/`  
 **Descripción:** Puente multi-cadena simplificado: BeZhas L2 ↔ Polygon ↔ Ethereum L1.
 
 **Funcionalidades Core:**
@@ -267,7 +267,7 @@ docker run -d --name bezhas-edge \
 
 ### APP 06 — DAO Governance 🟡 P2
 
-**Ruta:** `App's secundarias/dao-governance/`  
+**Ruta:** `App-nativas/dao-governance/`  
 **Descripción:** Plataforma de gobernanza on-chain para holders de BEZ-Coin.
 
 **Funcionalidades Core:**
@@ -285,7 +285,7 @@ docker run -d --name bezhas-edge \
 
 ### APP 07 — BeZhas Explorer 🟡 P2
 
-**Ruta:** `App's secundarias/bezhas-explorer/`  
+**Ruta:** `App-nativas/bezhas-explorer/`  
 **Descripción:** Explorador de bloques adaptado para usuarios no-técnicos. Sin hashes intimidantes — todo traducido a lenguaje de negocio.
 
 **Funcionalidades Core:**
@@ -300,7 +300,7 @@ docker run -d --name bezhas-edge \
 
 ### APP 08 — Trading & Analytics Platform 🟠 P1
 
-**Ruta:** `App's secundarias/trading-analytics/`  
+**Ruta:** `App-nativas/trading-analytics/`  
 **Descripción:** Plataforma SaaS de análisis de mercado y estrategias de trading para BEZ-Coin y activos tokenizados. Multi-asset (crypto + RWA).
 
 **Módulos:**
@@ -353,7 +353,7 @@ docker run -d --name bezhas-edge \
 
 ### APP 09 — Sector Onboarding Apps (×16) 🟡 P2
 
-**Ruta:** `App's secundarias/sectors/[sector-name]/`  
+**Ruta:** `App-nativas/sectors/[sector-name]/`  
 **Descripción:** Una mini-app por sector que guía a la empresa a automatizar su primer proceso en BeZhas.
 
 **Estructura común (template reusable):**
@@ -377,7 +377,7 @@ sectors/[sector]/
 
 ### APP 10 — Learn-to-Earn 🟢 P3
 
-**Ruta:** `App's secundarias/learn-to-earn/`  
+**Ruta:** `App-nativas/learn-to-earn/`  
 **Descripción:** Plataforma educativa donde los usuarios aprenden a usar BeZhas y ganan BEZ-Coin por completar lecciones y misiones.
 
 **Funcionalidades Core:**
@@ -395,7 +395,7 @@ sectors/[sector]/
 **Objetivo:** Monorepo de sub-apps operativo con autenticación unificada.
 
 ```
-[ ] Inicializar monorepo en D:\BeZhas-Blockchain\App's secundarias\
+[ ] Inicializar monorepo en D:\BeZhas-Blockchain\App-nativas\
 [ ] Configurar Turborepo / pnpm workspaces
 [ ] Crear packages/platform-sdk con auth, gas, wallet hooks
 [ ] Implementar AppSwitcher (navegación cross-apps)
@@ -449,7 +449,7 @@ sectors/[sector]/
 ## 5. Estructura de Carpetas — Monorepo
 
 ```
-D:\BeZhas-Blockchain\App's secundarias\
+D:\BeZhas-Blockchain\App-nativas\
 │
 ├── package.json                    # Root package (pnpm workspaces)
 ├── turbo.json                      # Turborepo config
@@ -523,8 +523,8 @@ NEXT_PUBLIC_APP_ENV=development
 
 ```powershell
 # Desde D:\BeZhas-Blockchain\
-New-Item -ItemType Directory -Name "App's secundarias"
-cd "App's secundarias"
+New-Item -ItemType Directory -Name "App-nativas"
+cd "App-nativas"
 
 # Inicializar con pnpm
 pnpm init

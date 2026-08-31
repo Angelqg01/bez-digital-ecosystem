@@ -7,11 +7,56 @@
  */
 const { spawn, execSync } = require('child_process');
 const path = require('path');
+const net = require('net');
+const crypto = require('crypto');
 const { ethers } = require('ethers');
 
-const ANVIL_PORT = 8546; // use non-default port to avoid conflicts
-const RPC_URL = `http://127.0.0.1:${ANVIL_PORT}`;
 const ARTIFACTS = path.resolve(__dirname, '..', '..', '..', 'smart-contracts', 'out');
+
+// ─── Un puerto por suite ─────────────────────────────────────────────────────
+//
+// Antes todas las suites compartían el 8546. Al encadenarlas, cada una mataba
+// y relevantaba Anvil en ese mismo puerto: si el socket no se había liberado
+// todavía, la siguiente se enganchaba a la cadena de la anterior —con los
+// contratos ya desplegados— y el despliegue reventaba con errores que no
+// apuntaban a nada. En paralelo era peor: dos suites en el mismo puerto a la vez.
+//
+// Ahora el puerto sale de dos datos: el worker de Jest (los workers corren a la
+// vez, así que cada uno recibe un bloque propio y disjunto) y el nombre del
+// fichero de test (dentro del bloque, cada suite cae en su propia ranura).
+const PORT_BASE = 8600;
+const BLOCK_SIZE = 50;
+
+function suiteName() {
+    // El fichero que nos ha requerido. Disponible en tiempo de carga porque
+    // este módulo siempre se importa desde una suite.
+    try {
+        if (typeof expect !== 'undefined' && expect.getState) {
+            const p = expect.getState().testPath;
+            if (p) return path.basename(p);
+        }
+    } catch { /* fuera de Jest */ }
+    return path.basename(module.parent?.filename || 'default');
+}
+
+function slotFor(name) {
+    const digest = crypto.createHash('sha1').update(name).digest();
+    return digest.readUInt16BE(0) % BLOCK_SIZE;
+}
+
+const WORKER = Number(process.env.JEST_WORKER_ID || 1);
+// Puerto propuesto. `startAnvil` lo confirma y, si estuviera ocupado, avanza al
+// siguiente libre — de ahí que se exponga por getter y no como constante.
+let ANVIL_PORT = PORT_BASE + (WORKER - 1) * BLOCK_SIZE + slotFor(suiteName());
+let RPC_URL = `http://127.0.0.1:${ANVIL_PORT}`;
+
+function setPort(port) {
+    ANVIL_PORT = port;
+    RPC_URL = `http://127.0.0.1:${port}`;
+    // Las suites fijan BEZHAS_L2_RPC_URL al cargar el módulo; si el puerto se
+    // desplaza hay que reflejarlo, porque contractService lo lee al recargarse.
+    process.env.BEZHAS_L2_RPC_URL = RPC_URL;
+}
 
 // Anvil default accounts (deterministic)
 const DEPLOYER_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
@@ -20,6 +65,45 @@ const ENTERPRISE_KEY = '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a8
 
 let anvilProcess = null;
 let provider = null;
+
+/**
+ * Mata Anvil de forma portable.
+ *
+ * Antes solo se ejecutaba `taskkill` (Windows): en Linux/macOS el comando no
+ * existe, la excepción se tragaba y el Anvil que lanza esta suite quedaba
+ * huérfano ocupando el puerto. Los procesos se iban acumulando entre
+ * ejecuciones y competían con el Anvil compartido del resto de tests, que
+ * empezaba a responder `request timeout`. De ahí que fallara una suite
+ * distinta en cada vuelta.
+ *
+ * `child` a null = barrido de restos de ejecuciones anteriores de ESTA suite.
+ */
+function killAnvil(child = null) {
+    if (process.platform === 'win32') {
+        try { execSync('taskkill /F /IM anvil.exe', { stdio: 'ignore' }); } catch { /* no-op */ }
+        return;
+    }
+
+    if (child && child.pid) {
+        try { process.kill(child.pid, 'SIGTERM'); } catch { /* ya estaba muerto */ }
+        // Cortesía primero, contundencia después: si sigue vivo, SIGKILL.
+        try { execSync(`kill -0 ${child.pid} 2>/dev/null && sleep 0.3 && kill -9 ${child.pid} 2>/dev/null`, { stdio: 'ignore', shell: '/bin/sh' }); } catch { /* no-op */ }
+        return;
+    }
+
+    // Barrido de restos: `pgrep -x` exige que el proceso se LLAME anvil, y solo
+    // entonces se mira si su línea de órdenes lleva nuestro puerto. Un `pkill -f`
+    // a secas casaría con cualquier proceso que mencione la cadena (el propio
+    // shell que lanza los tests, por ejemplo) y se lo llevaría por delante.
+    try {
+        execSync(
+            `for p in $(pgrep -x anvil 2>/dev/null); do ` +
+            `grep -qa -- "--port ${ANVIL_PORT}" /proc/$p/cmdline 2>/dev/null && kill -9 "$p" 2>/dev/null; ` +
+            `done`,
+            { stdio: 'ignore', shell: '/bin/sh' }
+        );
+    } catch { /* ninguno vivo */ }
+}
 let deployer = null;
 let user = null;
 let enterprise = null;
@@ -29,6 +113,46 @@ const contracts = {};
 
 function loadArtifact(name) {
     return require(path.join(ARTIFACTS, `${name}.sol`, `${name}.json`));
+}
+
+/**
+ * Espera a que el puerto quede realmente libre antes de volver a ocuparlo.
+ *
+ * Las cinco suites de integración comparten el puerto 8546 y cada una levanta
+ * y mata su propio Anvil. Una espera fija de 1 s no garantiza que el sistema
+ * haya soltado el socket, y la siguiente suite arrancaba contra un puerto aún
+ * ocupado. Aquí se comprueba de verdad, con un tope por si acaso.
+ */
+function isPortBusy(port) {
+    return new Promise((resolve) => {
+        const socket = new net.Socket();
+        socket.setTimeout(200);
+        socket.once('connect', () => { socket.destroy(); resolve(true); });
+        socket.once('timeout', () => { socket.destroy(); resolve(false); });
+        socket.once('error', () => { socket.destroy(); resolve(false); });
+        socket.connect(port, '127.0.0.1');
+    });
+}
+
+async function waitForPortFree(port, maxRetries = 40) {
+    for (let i = 0; i < maxRetries; i++) {
+        if (!await isPortBusy(port)) return true;
+        await new Promise(r => setTimeout(r, 250));
+    }
+    return false;
+}
+
+/**
+ * Puerto libre a partir del propuesto. El de la suite debería estarlo siempre;
+ * el barrido es la red de seguridad para que dos suites nunca acaben peleándose
+ * por el mismo socket aunque el reparto colisione o quede algo de otra ejecución.
+ */
+async function resolveFreePort(preferred, span = BLOCK_SIZE) {
+    if (await waitForPortFree(preferred, 8)) return preferred;
+    for (let p = preferred + 1; p < preferred + span; p++) {
+        if (!await isPortBusy(p)) return p;
+    }
+    return null;
 }
 
 async function waitForAnvil(maxRetries = 60) {
@@ -51,9 +175,20 @@ async function waitForAnvil(maxRetries = 60) {
  * Call this in beforeAll().
  */
 async function startAnvil() {
-    // Kill any stale Anvil processes from previous runs
-    try { execSync('taskkill /F /IM anvil.exe', { stdio: 'ignore' }); } catch { /* no-op */ }
-    await new Promise(r => setTimeout(r, 1000)); // give OS time to free port
+    // Restos de esta misma suite en ejecuciones anteriores.
+    killAnvil();
+
+    const port = await resolveFreePort(ANVIL_PORT);
+    if (port === null) {
+        // Arrancar de todos modos haría que el spawn fallase en silencio y que
+        // `waitForAnvil` se enganchase a la cadena AJENA que ocupa el puerto.
+        // Desplegar encima de contratos ya existentes revienta con un
+        // `execution reverted` que no dice nada del problema real.
+        throw new Error(
+            `No hay ningún puerto libre para Anvil entre ${ANVIL_PORT} y ${ANVIL_PORT + BLOCK_SIZE - 1}.`
+        );
+    }
+    setPort(port);
 
     // Locate anvil binary
     const anvilBin = process.env.ANVIL_BIN ||
@@ -80,6 +215,20 @@ async function startAnvil() {
     clearContractServiceCache();
 }
 
+// Gas explícito para las transacciones de montaje.
+//
+// Sin esto, ethers pide una estimación por transacción y la envía como límite
+// exacto. Al encadenar transacciones contra Anvil, la estimación se calcula a
+// veces sobre un estado en el que la ranura de almacenamiento ya está caliente,
+// y al ejecutarse en frío el `mint` cuesta más de lo estimado: la transacción se
+// queda sin gas y revierte con `gasUsed == gasLimit`. Era intermitente (~1 de
+// cada 8 arranques) y se manifestaba como un `execution reverted` sin motivo,
+// que además hacía caer una suite distinta en cada vuelta.
+//
+// El bloque local admite 30M de gas, así que un techo holgado no cuesta nada y
+// saca la estimación del camino.
+const SETUP_TX = { gasLimit: 2_000_000 };
+
 /**
  * Deploy core contracts used in integration tests.
  */
@@ -92,9 +241,9 @@ async function deployContracts() {
     contracts.BEZCoinV2 = { address: await bez.getAddress(), instance: bez };
 
     // Mint tokens to deployer, user, enterprise
-    await (await bez.mint(deployer.address, ethers.parseEther('1000000'))).wait();
-    await (await bez.mint(user.address, ethers.parseEther('10000'))).wait();
-    await (await bez.mint(enterprise.address, ethers.parseEther('50000'))).wait();
+    await (await bez.mint(deployer.address, ethers.parseEther('1000000'), SETUP_TX)).wait();
+    await (await bez.mint(user.address, ethers.parseEther('10000'), SETUP_TX)).wait();
+    await (await bez.mint(enterprise.address, ethers.parseEther('50000'), SETUP_TX)).wait();
 
     // BeZhasLogisticsNFT
     const nftArtifact = loadArtifact('BeZhasLogisticsNFT');
@@ -105,7 +254,7 @@ async function deployContracts() {
 
     // Grant MINTER_ROLE to deployer (for test minting)
     const MINTER_ROLE = await nft.MINTER_ROLE();
-    await (await nft.grantRole(MINTER_ROLE, deployer.address)).wait();
+    await (await nft.grantRole(MINTER_ROLE, deployer.address, SETUP_TX)).wait();
 
     // QualityEscrow
     const escrowArtifact = loadArtifact('QualityEscrow');
@@ -116,7 +265,7 @@ async function deployContracts() {
 
     // Grant EDGE_NODE_ROLE on escrow for IoT data registration
     const EDGE_NODE_ROLE = await escrow.EDGE_NODE_ROLE();
-    await (await escrow.grantRole(EDGE_NODE_ROLE, deployer.address)).wait();
+    await (await escrow.grantRole(EDGE_NODE_ROLE, deployer.address, SETUP_TX)).wait();
 
     return contracts;
 }
@@ -126,8 +275,7 @@ async function deployContracts() {
  */
 async function stopAnvil() {
     if (anvilProcess) {
-        // On Windows SIGTERM doesn't work; use taskkill
-        try { execSync('taskkill /F /IM anvil.exe', { stdio: 'ignore' }); } catch { /* no-op */ }
+        killAnvil(anvilProcess);
         anvilProcess = null;
     }
 }
@@ -202,8 +350,10 @@ function patchContractService() {
 }
 
 module.exports = {
-    ANVIL_PORT,
-    RPC_URL,
+    // Getters: `startAnvil` puede desplazar el puerto si el propuesto no está
+    // libre, y quien lea esto después debe ver el que se está usando de verdad.
+    get ANVIL_PORT() { return ANVIL_PORT; },
+    get RPC_URL() { return RPC_URL; },
     DEPLOYER_KEY,
     USER_KEY,
     ENTERPRISE_KEY,

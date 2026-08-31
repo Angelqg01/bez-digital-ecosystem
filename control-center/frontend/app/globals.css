@@ -131,12 +131,12 @@ body {
     opacity: 1;
 }
 
-/* Galeria horizontal auto-scroll de SubApps secundarias (izquierda -> derecha).
+/* Galeria horizontal auto-scroll de Apps Nativas secundarias (izquierda -> derecha).
    La pista lleva la lista duplicada (x2) y cada tarjeta su margen derecho, de
    modo que un set completo mide exactamente el 50% del ancho. Animar de
    translateX(-50%) a translateX(0) avanza un set entero, asi el bucle es
    continuo y SIEMPRE en el mismo sentido (sin cambios de rumbo). */
-@keyframes subapp-hscroll {
+@keyframes native-app-hscroll {
     from {
         transform: translateX(-50%);
     }
@@ -145,24 +145,24 @@ body {
     }
 }
 
-.subapp-marquee-track {
+.native-app-marquee-track {
     width: max-content;
-    animation: subapp-hscroll 45s linear infinite;
+    animation: native-app-hscroll 45s linear infinite;
     will-change: transform;
 }
 
 /* Pausa al pasar el raton para poder leer y hacer clic */
-.subapp-marquee:hover .subapp-marquee-track {
+.native-app-marquee:hover .native-app-marquee-track {
     animation-play-state: paused;
 }
 
 /* Accesibilidad: sin movimiento si el usuario lo prefiere */
 @media (prefers-reduced-motion: reduce) {
-    .subapp-marquee-track {
+    .native-app-marquee-track {
         animation: none;
     }
 
-    .subapp-marquee {
+    .native-app-marquee {
         overflow-x: auto;
     }
 }
@@ -251,9 +251,12 @@ body {
     100% { transform: translateY(720px); opacity: 0; }
 }
 
+/* La flotación usa `translate`, no `transform`: son propiedades distintas y se
+   componen, así `transform` queda libre para la inclinación con el puntero.
+   Con ambas en `transform` la animación ganaba y la tarjeta no se inclinaba. */
 @keyframes token-float {
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(-10px); }
+    0%, 100% { translate: 0 0; }
+    50%      { translate: 0 -10px; }
 }
 
 @keyframes native-app-rise {
@@ -452,4 +455,374 @@ body {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* ─── Plano de fondo del hero: placas abstractas con fundido ─────────────
+   Sustituye la foto externa que se servía desde lh3.googleusercontent.com
+   (dependencia de terceros en la primera pantalla del sitio).
+
+   Estructura: una placa base siempre visible y dos que se funden encima en
+   un ciclo largo. Se hace así, y no rotando las tres, por dos motivos: no
+   hay destello a negro en la carga, y al desactivarse el movimiento queda
+   la base intacta en vez de un hueco.
+
+   Las placas llevan grano a propósito: un degradado oscuro y liso como este
+   produce bandas visibles en pantallas de 8 bits, y el grano las rompe. */
+.hero-plate {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hero-plate-base { opacity: 0.4; }
+
+/* Cada placa de sector ocupa su turno del ciclo. `--n` es cuántas hay y
+   `--i` cuál es esta: el reparto de fases lo hace el CSS, así que añadir un
+   sector en el TSX no obliga a tocar nada aquí.
+
+   Ciclo por sector = 16s. Con 2 sectores el ciclo total es de 32s. */
+.hero-plate-sector {
+    --n: 2;                                  /* nº de sectores (ver HERO_SECTORS) */
+    --turno: 16s;
+    opacity: 0;
+    animation: hero-plate-breathe calc(var(--turno) * var(--n)) ease-in-out infinite;
+    animation-delay: calc(var(--turno) * var(--i) * -1);
+    will-change: opacity;                    /* solo aquí: es lo único que se mueve */
+}
+
+/* Un turno completo: entra, se mantiene, sale y cede el paso. La segunda
+   mitad en cero es lo que deja hueco al resto de sectores del ciclo. */
+@keyframes hero-plate-breathe {
+    0%, 100%  { opacity: 0; }
+    12%, 38%  { opacity: 0.34; }
+    50%       { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-plate-sector { animation: none; opacity: 0; }
+}
+
+/* ─── Parallax de profundidad del hero ───────────────────────────────────
+   Las capas del hero ya estaban apiladas, pero todas en el mismo plano.
+   Aquí se separan en Z para que el fondo sea un lugar con espacio.
+
+   La escala de cada capa compensa lo que la perspectiva la encoge: con
+   perspectiva P y un desplazamiento -d, la capa se ve a P/(P+d), así que se
+   agranda por (P+d)/P. Con P=1100: -220px → 1.20, -90px → 1.08, -40px → 1.04.
+   Se añade un margen extra para que al inclinarse no asome ningún borde. */
+.hero-depth {
+    perspective: 1100px;
+}
+
+.hero-depth-in {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 400ms cubic-bezier(0.2, 0.7, 0.3, 1);
+    will-change: transform;
+}
+
+.hero-depth-in .hero-plate { transform: translateZ(-220px) scale(1.30); }
+.hero-veil                 { transform: translateZ(-90px)  scale(1.16); }
+.hero-grid-3d              { transform: translateZ(-40px)  scale(1.12); }
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-depth-in { transform: none; transition: none; }
+}
+
+/* ─── Descenso entre secciones ───────────────────────────────────────────
+   Cada bloque entra girando sobre X y saliendo del fondo, como si se bajara
+   por segmentos de la Tubería de Cristal. Es la ÚNICA transición que se
+   repite en toda la página: una repetida da continuidad, cinco distintas dan
+   ruido.
+
+   `.bez-seg` lo añade JS al montar, nunca el CSS de entrada: si lo pusiera el
+   CSS y el observador fallara —o no hubiera JS— la página quedaría invisible. */
+.bez-flow {
+    perspective: 1400px;
+}
+
+/* Sin transición en el estado inicial, a propósito. JS añade `.bez-seg` ya
+   montada la página: si la transición viviera aquí, el navegador animaría de
+   "sin girar" a "girada" —la sección se iría hacia el fondo a la vista— y solo
+   después volvería. La transición vive en `.is-in`, que es el único cambio
+   que debe verse. */
+.bez-seg {
+    transform: rotateX(12deg) translateZ(-120px);
+    transform-origin: 50% 0%;
+    opacity: 0;
+    will-change: transform, opacity;
+}
+
+.bez-seg.is-in {
+    transform: none;
+    opacity: 1;
+    transition: transform 800ms cubic-bezier(0.16, 0.84, 0.36, 1),
+                opacity 550ms ease;
+    will-change: auto;                  /* liberado: ya no se mueve */
+}
+
+/* ─── Chain-Flow: paneles con bisagra ────────────────────────────────────
+   Antes se elevaban un píxel. Girándolas sobre su borde interior, las cuatro
+   se leen como paneles de una superficie de control —que es lo que la sección
+   dice ser— en vez de como cuatro cajas sueltas. */
+.chainflow-grid {
+    perspective: 1000px;
+}
+
+.chainflow-card {
+    transform-origin: left center;
+    transition: transform 350ms cubic-bezier(0.2, 0.8, 0.3, 1),
+                background-color 350ms ease,
+                border-color 350ms ease;
+}
+
+.chainflow-card:hover,
+.chainflow-card:focus-visible {
+    transform: rotateY(-12deg) translateZ(22px);
+}
+
+/* ─── Tarjeta de precio: cristal con brillo que sigue la luz ─────────────
+   La perspectiva va en el propio `transform` para no tener que envolver la
+   tarjeta en un contenedor extra. El reflejo se pinta por encima del
+   contenido (z-20) porque es luz sobre el vidrio, no debajo. */
+.token-price-float {
+    transform: perspective(900px) rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg));
+    transition: transform 200ms ease-out;
+}
+
+.token-price-float::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    background: radial-gradient(220px 220px at var(--mx, 50%) var(--my, 0%),
+                rgba(255, 255, 255, 0.16), transparent 62%);
+    opacity: 0;
+    transition: opacity 220ms ease;
+}
+
+.token-price-float.is-lit::after {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bez-seg { transform: none; opacity: 1; transition: none; }
+    .chainflow-card { transition: none; }
+    .chainflow-card:hover { transform: none; }
+    .token-price-float { transform: none; transition: none; }
+    .token-price-float::after { display: none; }
+}
+
+/* ── Documentación: render de Markdown ──────────────────────────────────── */
+.md-body {
+    color: #c5c5da;
+    font-size: 0.9375rem;
+    line-height: 1.75;
+}
+
+.md-body > :first-child {
+    margin-top: 0;
+}
+
+.md-h1 {
+    font-size: clamp(2.25rem, 5vw, 3.25rem);
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    line-height: 1.05;
+    color: #fff;
+    margin: 0 0 1.5rem;
+}
+
+.md-h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: #fff;
+    margin: 3rem 0 1rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.md-h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 2rem 0 0.75rem;
+}
+
+.md-h4, .md-h5, .md-h6 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #e6e6f0;
+    margin: 1.5rem 0 0.5rem;
+}
+
+.md-p {
+    margin: 0 0 1.125rem;
+}
+
+.md-link {
+    color: #22d3ee;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(34, 211, 238, 0.35);
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.md-link:hover {
+    color: #67e8f9;
+    border-bottom-color: #67e8f9;
+}
+
+.md-body strong {
+    color: #fff;
+    font-weight: 700;
+}
+
+.md-code {
+    font-family: 'Space Mono', ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.8125em;
+    color: #22d3ee;
+    background: rgba(34, 211, 238, 0.09);
+    border: 1px solid rgba(34, 211, 238, 0.16);
+    border-radius: 0.3rem;
+    padding: 0.1em 0.4em;
+    white-space: nowrap;
+}
+
+.md-pre-wrap {
+    position: relative;
+    margin: 0 0 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 0.75rem;
+    background: rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+
+.md-pre-lang {
+    font-family: 'Space Mono', ui-monospace, monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #6b7280;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.md-pre {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+}
+
+.md-pre code {
+    font-family: 'Space Mono', ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    color: #d8d8e8;
+    white-space: pre;
+}
+
+.md-ul, .md-ol {
+    margin: 0 0 1.25rem;
+    padding-left: 1.35rem;
+}
+
+.md-ul { list-style: none; padding-left: 1.1rem; }
+.md-ol { list-style: decimal; }
+
+.md-li {
+    margin: 0 0 0.5rem;
+    position: relative;
+}
+
+.md-ul > .md-li::before {
+    content: '';
+    position: absolute;
+    left: -1.1rem;
+    top: 0.7em;
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: #22d3ee;
+    opacity: 0.7;
+}
+
+.md-ul > .md-li-task::before {
+    display: none;
+}
+
+.md-task {
+    display: inline-block;
+    margin-right: 0.5rem;
+    color: #6b7280;
+}
+
+.md-task.is-done {
+    color: #22d3ee;
+}
+
+.md-quote {
+    margin: 0 0 1.5rem;
+    padding: 1rem 1.25rem;
+    border-left: 2px solid #22d3ee;
+    border-radius: 0 0.5rem 0.5rem 0;
+    background: rgba(34, 211, 238, 0.05);
+    color: #e6e6f0;
+}
+
+.md-hr {
+    margin: 2.5rem 0;
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.md-table-wrap {
+    margin: 0 0 1.5rem;
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 0.75rem;
+}
+
+.md-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    min-width: 32rem;
+}
+
+.md-table th {
+    text-align: left;
+    font-size: 0.625rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #9ca3af;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    white-space: nowrap;
+}
+
+.md-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: top;
+}
+
+.md-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.md-table tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
 }

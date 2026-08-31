@@ -12,7 +12,10 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { query } = require('../db/pool');
 
-const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-only-secret' : null);
+// Igual que en el resto de la API: el secreto viene de config/secrets.js, que
+// se niega a arrancar en producción con secretos de desarrollo. Leerlo aquí a
+// mano dejaba pasar 'dev-only-secret' con un NODE_ENV mal configurado.
+const { JWT_SECRET } = require('../config/secrets');
 const SSO_TOKEN_EXPIRY = process.env.SSO_TOKEN_EXPIRY || '24h';
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || '7d';
 
@@ -83,7 +86,7 @@ class SSOService {
     async refreshToken(refreshToken, appOrigin) {
         let decoded;
         try {
-            decoded = jwt.verify(refreshToken, JWT_SECRET);
+            decoded = jwt.verify(refreshToken, JWT_SECRET, { algorithms: ['HS256'] });
         } catch {
             throw new Error('Invalid or expired refresh token');
         }
@@ -132,7 +135,7 @@ class SSOService {
      * @returns {Object} decoded payload
      */
     validateToken(token) {
-        return jwt.verify(token, JWT_SECRET);
+        return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
     }
 
     /**

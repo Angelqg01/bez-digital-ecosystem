@@ -114,7 +114,7 @@ check('Foundry output exists', hasOut);
 check('ABI export coverage exists', abiCount >= 80, `${abiCount} ABI file(s)`);
 
 // 6. Production env examples for subapps: localhost fallbacks must be backed by production env files.
-const subappsRoot = path.join(ROOT, "App's secundarias");
+const subappsRoot = path.join(ROOT, "App-nativas");
 const appPackageFiles = walk(subappsRoot, filePath => path.basename(filePath) === 'package.json');
 const appDirs = [...new Set(appPackageFiles.map(filePath => path.dirname(filePath)))];
 let missingProductionEnv = 0;

@@ -447,4 +447,40 @@ contract TrackingToCustomsGatewayTest is Test {
             gateway.getCompleteShipmentHistory(10);
         assertEq(history.length, 2);
     }
+
+    // ──── TASAS: el gateway tiene que poder pagarlas ──────────
+    //
+    // `CustomsClearanceOracle.requestClearance` cobra con
+    // `transferFrom(msg.sender, ...)`, y por esta vía `msg.sender` es el
+    // gateway. El resto de pruebas de este fichero resuelven la allowance con
+    // `vm.prank(address(gateway))`, que suplanta al contrato — algo que sólo
+    // existe dentro de Foundry.
+    //
+    // Resultado: diez pruebas en verde sobre un contrato que en una cadena real
+    // revertía SIEMPRE, porque no tenía ninguna forma de conceder esa
+    // allowance. Estas dos pruebas cubren el hueco sin usar el atajo.
+
+    function test_approveCustomsFees_setsAllowanceWithoutImpersonation() public {
+        vm.prank(admin);
+        gateway.approveCustomsFees(500 ether);
+        assertEq(bezCoin.allowance(address(gateway), address(customs)), 500 ether);
+    }
+
+    function test_approveCustomsFees_onlyAdmin() public {
+        vm.prank(provider);
+        vm.expectRevert();
+        gateway.approveCustomsFees(500 ether);
+    }
+
+    /// Reasignar sobre una allowance no nula debe funcionar: hay ERC-20 que
+    /// rechazan pasar de X a Y sin bajar antes a cero.
+    function test_approveCustomsFees_canBeRaisedAndLowered() public {
+        vm.startPrank(admin);
+        gateway.approveCustomsFees(500 ether);
+        gateway.approveCustomsFees(900 ether);
+        assertEq(bezCoin.allowance(address(gateway), address(customs)), 900 ether);
+        gateway.approveCustomsFees(0);
+        assertEq(bezCoin.allowance(address(gateway), address(customs)), 0);
+        vm.stopPrank();
+    }
 }

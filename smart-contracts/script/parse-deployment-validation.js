@@ -8,8 +8,15 @@
  *   node script/parse-deployment-validation.js [chainId]
  *   node script/parse-deployment-validation.js 31337
  */
-const fs = require('fs');
-const path = require('path');
+// ESM, no CommonJS: el package.json de la raíz declara "type": "module", así
+// que con `require` este script no arrancaba en absoluto — fallaba antes de la
+// primera línea útil. Ése es el motivo de que el fichero de despliegue llevara
+// tiempo sin regenerarse y le faltaran contratos.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const chainId = process.argv[2] || '31337';
 const broadcastDir = path.join(__dirname, '..', 'broadcast', 'DeployValidation.s.sol', chainId);

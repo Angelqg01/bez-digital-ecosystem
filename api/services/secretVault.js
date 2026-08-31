@@ -20,11 +20,20 @@ const ALGO = 'aes-256-gcm';
 const KEY_VERSION = 1;
 const PREFIX = `v${KEY_VERSION}`;
 
+const { IS_PRODUCTION } = require('../config/secrets');
+
 function getVaultKey() {
     const raw = process.env.SECRET_VAULT_KEY
         || process.env.WALLET_VAULT_SECRET
-        || process.env.JWT_SECRET
-        || 'dev-only-secret-vault-key';
+        || process.env.JWT_SECRET;
+    if (!raw) {
+        // Mismo motivo que en walletVaultService: el literal de desarrollo está
+        // en el repositorio, así que no puede cifrar nada real.
+        if (IS_PRODUCTION) {
+            throw new Error('FATAL: SECRET_VAULT_KEY (o WALLET_VAULT_SECRET / JWT_SECRET) es obligatorio en producción.');
+        }
+        return crypto.createHash('sha256').update('dev-only-secret-vault-key').digest();
+    }
     return crypto.createHash('sha256').update(String(raw)).digest();
 }
 

@@ -162,11 +162,50 @@ async function linkQRToDocument(documentId, qrCodeId) {
 
 // ── Digital Signatures ──
 
+/**
+ * Mensaje canónico que se firma para un documento.
+ *
+ * Atar la firma al documento es lo que separa "esta persona firmó algo" de
+ * "esta persona firmó ESTE documento". Se incluye el id además del hash del
+ * fichero para que una firma no pueda reutilizarse en otro documento que
+ * comparta contenido (dos copias del mismo PDF son dos documentos distintos
+ * con dos titulares distintos).
+ */
+function signingMessage(documentId, fileHash) {
+    return `BeZhas document signature\ndocument: ${documentId}\nfileHash: ${fileHash}`;
+}
+
 async function addSignature(documentId, signerAddress, signature, messageHash, txHash) {
+    // El documento tiene que existir: sin él no hay nada a lo que atar la firma.
+    const { rows: docRows } = await query(
+        'SELECT id, file_hash, status FROM documents WHERE id = $1', [documentId]
+    );
+    if (docRows.length === 0) return { success: false, error: 'Document not found' };
+    const doc = docRows[0];
+
+    if (doc.status === 'revoked') {
+        return { success: false, error: 'Cannot sign a revoked document' };
+    }
+
+    // El hash a firmar lo determina el SERVIDOR a partir del documento, no el
+    // cliente. Antes se aceptaba el messageHash del cuerpo y sólo se
+    // comprobaba que la firma correspondiera a ese hash — con lo que bastaba
+    // firmar cualquier mensaje propio y presentarlo como firma del documento
+    // ajeno. La firma era criptográficamente válida y semánticamente vacía:
+    // el clásico signature misuse que el plan de métricas lista en §20.
+    const expectedHash = ethers.hashMessage(signingMessage(documentId, doc.file_hash));
+    if (messageHash && messageHash.toLowerCase() !== expectedHash.toLowerCase()) {
+        return {
+            success: false,
+            error: 'messageHash does not correspond to this document',
+            expectedMessageHash: expectedHash,
+        };
+    }
+
     // Verify signature matches signer
     try {
         const recoveredAddress = ethers.verifyMessage(
-            ethers.getBytes(messageHash),
+            signingMessage(documentId, doc.file_hash),
             signature
         );
         if (recoveredAddress.toLowerCase() !== signerAddress.toLowerCase()) {
@@ -175,6 +214,7 @@ async function addSignature(documentId, signerAddress, signature, messageHash, t
     } catch {
         return { success: false, error: 'Invalid signature format' };
     }
+    messageHash = expectedHash;
 
     try {
         const { rows } = await query(
@@ -235,8 +275,24 @@ async function getDocumentStats(ownerAddress) {
     return rows;
 }
 
+/**
+ * Mensaje exacto que el cliente debe firmar para este documento, más su hash.
+ *
+ * Sin esto el firmante tendría que reconstruir la cadena canónica por su
+ * cuenta y cualquier diferencia de formato haría fallar la verificación sin
+ * decir por qué.
+ */
+async function getSigningPayload(documentId) {
+    const { rows } = await query('SELECT id, file_hash FROM documents WHERE id = $1', [documentId]);
+    if (rows.length === 0) return null;
+    const message = signingMessage(documentId, rows[0].file_hash);
+    return { documentId, fileHash: rows[0].file_hash, message, messageHash: ethers.hashMessage(message) };
+}
+
 module.exports = {
     computeFileHash,
+    signingMessage,
+    getSigningPayload,
     createDocument,
     getDocument,
     getDocumentByHash,

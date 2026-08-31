@@ -3,7 +3,7 @@ type: "subapp"
 layer: 2
 priority: "P1"
 cluster: "finanzas-pagos"
-repo_path: "App's secundarias/gas-tank-manager/"
+repo_path: "App-nativas/gas-tank-manager/"
 domain: "gas.bez.digital"
 tags: ["platform-map", "finanzas-pagos", "p1"]
 ---
@@ -14,7 +14,7 @@ tags: ["platform-map", "finanzas-pagos", "p1"]
 
 Paymaster manager: patrocinio de gas B2B, recargas y límites por tenant.
 
-**Ubicación:** `App's secundarias/gas-tank-manager/` · gas.bez.digital
+**Ubicación:** `App-nativas/gas-tank-manager/` · gas.bez.digital
 
 ## Conexiones
 

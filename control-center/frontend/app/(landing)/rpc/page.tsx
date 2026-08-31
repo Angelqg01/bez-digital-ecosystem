@@ -109,7 +109,7 @@ export default function RPCPage() {
                   <div className="text-[10px] tracking-[0.4em] text-tertiary font-bold uppercase mb-2">Local real setup</div>
                   <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white">RPC, Enterprise Node &amp; Edge Node</h2>
                   <p className="text-sm text-gray-400 mt-3 max-w-2xl">
-                    Para pruebas unitarias y desarrollo de SubApps, apunta primero a un RPC local compatible EVM y valida que los nodos
+                    Para pruebas unitarias y desarrollo de Apps Nativas, apunta primero a un RPC local compatible EVM y valida que los nodos
                     respondan antes de conectar testnet, mainnet o servicios de produccion.
                   </p>
                 </div>

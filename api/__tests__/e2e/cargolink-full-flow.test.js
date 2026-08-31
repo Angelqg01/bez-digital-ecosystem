@@ -341,16 +341,22 @@ describe('E2E: BZ CargoLink full shipment lifecycle', () => {
       }],
       rowCount: 1,
     });
-    // INSERT telemetry row (breach = true, 14°C violates [2,8])
+    // SELECT transacción asociada al B-UID → ninguna: la telemetría llega suelta,
+    // sin envío vinculado, así que el oráculo no abre expediente de disputa.
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    // SELECT geocercas aplicables → ninguna
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    // INSERT telemetry row (breach = true, 12°C violates [2,8])
+    // 12°C se desvía 4 grados del máximo: el oráculo lo gradúa como Leve y el
+    // evento resultante es ON_COLD_CHAIN_BREACH. Con una desviación mayor que 5
+    // el incidente escala a ON_DISPUTE_OPENED — ese caso va en el test siguiente.
     mockQuery.mockResolvedValueOnce({
       rows: [{
-        id: 5, metric: 'temperature', value: 14, unit: '°C',
-        breach: true, reason: 'temperature 14°C outside [2,8]',
+        id: 5, metric: 'temperature', value: 12, unit: '°C',
+        breach: true, reason: 'temperature 12°C outside [2,8]',
       }],
       rowCount: 1,
     });
-    // UPDATE last_seen_at
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
     // fanoutWebhooks: SELECT webhooks subscribed to ON_COLD_CHAIN_BREACH
     mockQuery.mockResolvedValueOnce({
       rows: [{ id: 1, url: 'https://pos.acme.com/hook', events: ['ON_COLD_CHAIN_BREACH'], secret: 'wh_s3cr3t' }],
@@ -364,17 +370,22 @@ describe('E2E: BZ CargoLink full shipment lifecycle', () => {
     const res = await request(APP)
       .post('/api/cargolink/v1/iot/telemetry')
       .set('Authorization', 'Bearer bzd_freeze_key')
-      .send({ temperature: 14, bUid: 'BZ-IOT-BETA' });
+      .send({ temperature: 12, bUid: 'BZ-IOT-BETA' });
 
     expect(res.status).toBe(200);
     expect(res.body.deviceId).toBe('dev_freezer_01');
     expect(res.body.bUid).toBe('BZ-IOT-BETA');
     expect(res.body.stored).toBe(1);
+    // La fila persistida se devuelve tal cual: con la secuencia de mocks
+    // desalineada esto era `undefined` y el test seguía en verde.
+    expect(res.body.readings[0]).toMatchObject({ id: 5, metric: 'temperature', value: 12, breach: true });
     expect(res.body.breaches).toHaveLength(1);
     expect(res.body.breaches[0]).toMatchObject({
       metric: 'temperature',
-      reason: expect.stringContaining('14'),
+      reason: expect.stringContaining('12'),
     });
+    // El oráculo lo gradúa como Leve: notifica, pero no abre disputa.
+    expect(res.body.verdict).toMatchObject({ severity: 1, webhookEvent: 'ON_COLD_CHAIN_BREACH' });
     // Exactly one webhook delivery (the POS subscriber)
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledWith(
@@ -393,6 +404,59 @@ describe('E2E: BZ CargoLink full shipment lifecycle', () => {
       url: 'https://pos.acme.com/hook',
       status: 'delivered',
     });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Scenario 2b — La misma rotura, pero grave, escala a disputa.
+  //
+  // El oráculo de severidad (cargoDisputeOracle) gradúa la desviación térmica:
+  //   ≤ 5 grados → Leve     → ON_COLD_CHAIN_BREACH  (escenario anterior)
+  //   > 5 grados → Moderado → ON_DISPUTE_OPENED     (este)
+  //
+  // La frontera importa: un suscriptor apuntado solo a ON_COLD_CHAIN_BREACH
+  // NO debe recibir la rotura grave, porque esa va por el canal de disputas.
+  // ──────────────────────────────────────────────────────────────────────────
+  it('Scenario 2b — una rotura grave escala a ON_DISPUTE_OPENED y no llega al suscriptor de frío', async () => {
+    // resolveDevice
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        device_id: 'dev_freezer_01',
+        bezhas_id: 'BZ_POS_001',
+        type: 'temp',
+        b_uid: 'BZ-IOT-BETA',
+        config: { tempMin: 2, tempMax: 8, shockMax: 5 },
+        status: 'active',
+      }],
+      rowCount: 1,
+    });
+    // SELECT transacción asociada → ninguna · SELECT geocercas → ninguna
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    // INSERT telemetry (14°C = 6 grados por encima del máximo → Moderado)
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 6, metric: 'temperature', value: 14, unit: '°C',
+        breach: true, reason: 'temperature 14°C outside [2,8]',
+      }],
+      rowCount: 1,
+    });
+    // fanoutWebhooks: el único hook está suscrito solo al evento de frío
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ id: 1, url: 'https://pos.acme.com/hook', events: ['ON_COLD_CHAIN_BREACH'], secret: 'wh_s3cr3t' }],
+      rowCount: 1,
+    });
+
+    const res = await request(APP)
+      .post('/api/cargolink/v1/iot/telemetry')
+      .set('Authorization', 'Bearer bzd_freeze_key')
+      .send({ temperature: 14, bUid: 'BZ-IOT-BETA' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.breaches).toHaveLength(1);
+    expect(res.body.verdict).toMatchObject({ severity: 2, webhookEvent: 'ON_DISPUTE_OPENED' });
+    // El suscriptor de frío queda fuera: ni entrega ni llamada HTTP.
+    expect(res.body.webhookDeliveries).toHaveLength(0);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   // ──────────────────────────────────────────────────────────────────────────

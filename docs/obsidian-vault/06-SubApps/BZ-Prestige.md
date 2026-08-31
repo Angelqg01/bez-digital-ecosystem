@@ -3,7 +3,7 @@ type: "subapp"
 layer: 2
 priority: "P2"
 cluster: "identidad-comunidad"
-repo_path: "App's secundarias/BZ Prestige/"
+repo_path: "App-nativas/BZ Prestige/"
 domain: "prestige.bez.digital"
 tags: ["platform-map", "identidad-comunidad", "p2"]
 ---
@@ -14,7 +14,7 @@ tags: ["platform-map", "identidad-comunidad", "p2"]
 
 Reputación y prestigio empresarial dentro del ecosistema (score verificable).
 
-**Ubicación:** `App's secundarias/BZ Prestige/` · prestige.bez.digital
+**Ubicación:** `App-nativas/BZ Prestige/` · prestige.bez.digital
 
 ## Conexiones
 

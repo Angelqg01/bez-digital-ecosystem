@@ -82,6 +82,7 @@ import {CustomsClearanceOracle} from "../src/supplychain/CustomsClearanceOracle.
 import {TrackingIntegrationGateway} from "../src/supplychain/TrackingIntegrationGateway.sol";
 import {TrackingToCustomsGateway} from "../src/supplychain/TrackingToCustomsGateway.sol";
 import {TelemetryAnchor} from "../src/supplychain/TelemetryAnchor.sol";
+import {AegisSecurityProvider} from "../src/core/AegisSecurityProvider.sol";
 
 // ── Government ──
 import {CitizenIdentityNFT} from "../src/government/CitizenIdentityNFT.sol";
@@ -299,6 +300,57 @@ contract DeployAll is Script {
         console.log("  CustomsClearanceOracle:", address(scCustoms));
         console.log("  TrackingIntegrationGateway:", address(scTracking));
         console.log("  TrackingToCustomsGateway:", address(scGateway));
+
+        // ── Aprovisionamiento del tránsito aduanero ─────────────────────────
+        //
+        // Sin esto el gateway queda desplegado pero MUERTO: cada uno de sus
+        // requisitos vive en otro contrato, así que desplegarlo no basta para
+        // que funcione. Faltaba por completo, y como sus pruebas se aprovisionan
+        // a sí mismas en setUp(), pasaban en verde mientras el despliegue real
+        // no habría podido ejecutar ni una llamada.
+        //
+        // Cada línea cubre un require concreto:
+        scTracking.grantRole(scTracking.OPERATOR_ROLE(), address(scGateway));
+        scCustoms.grantRole(scCustoms.CUSTOMS_OFFICER_ROLE(), address(scGateway));
+        scGateway.grantRole(scGateway.OPERATOR_ROLE(), deployer);
+
+        // mintCargoWithTracking exige un proveedor ACTIVO con presupuesto: el
+        // propio BeZhas actúa de proveedor por defecto para la carga propia.
+        scTracking.registerProvider(
+            keccak256("BEZHAS"), "BeZhas Native Tracking", deployer, 1_000_000 ether
+        );
+
+        // requestClearance exige plataforma activa y partida arancelaria activa.
+        // AEAT es la del piloto de Algeciras; el arancel se registra genérico y
+        // gobernanza lo afina — sin al menos uno, cualquier despacho revierte.
+        scCustoms.registerCustomsPlatform("AEAT", "https://sede.agenciatributaria.gob.es", deployer);
+        scCustoms.updateTariff(keccak256("GENERIC"), "Generic tariff placeholder", 0, false, "");
+
+        // Las tasas las cobran los dos contratos con transferFrom, y cada uno a
+        // un pagador distinto. Hay que dejar las dos allowances puestas:
+        //
+        //   tokenización (0,5%)  -> la paga el PROVEEDOR (prov.webhookAddress)
+        //   integración  (0,15%) -> la paga EL GATEWAY (msg.sender de la llamada)
+        //
+        // Faltando cualquiera de las dos, createIntegratedShipment revierte con
+        // ERC20InsufficientAllowance y no hay forma de deducir cuál falta desde
+        // el mensaje de error.
+        bez.approve(address(scTracking), 10_000_000 ether);
+        bez.transfer(address(scGateway), 1_000_000 ether);
+        scGateway.approveCustomsFees(1_000_000 ether);
+        console.log("  [provision] transito multipais listo (AEAT + proveedor BEZHAS + tasas)");
+
+        // ── Aegis: registro on-chain de los rechazos de seguridad ───────────
+        //
+        // No estaba en ningún script de despliegue pese a figurar en el fichero
+        // de direcciones, así que sus direcciones venían de un origen que no
+        // consta en ningún broadcast. Aquí se despliega de verdad.
+        //
+        // Sólo se cablea el REGISTRO de señales. La vía de pausa automática
+        // (OpenClawAgent -> L2Sequencer) se deja fuera a propósito: ver el
+        // encabezado de api/services/aegisOnChain.js.
+        AegisSecurityProvider aegis = new AegisSecurityProvider(deployer);
+        console.log("  AegisSecurityProvider:", address(aegis));
 
         // Government
         address[4] memory gov = [

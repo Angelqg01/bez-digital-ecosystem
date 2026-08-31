@@ -38,6 +38,14 @@ const BEZHAS_COMPUTE_COST_EUR = {
     oracle_query: 0.006,     // consulta Quality/Dispute Oracle
     onchain_relay: 0.012,    // relay de tx on-chain (sin contar gas)
     webhook_delivery: 0.0005,
+    // OPERANT (SubApp de gestión empresarial autónoma). Una tarea no es una
+    // llamada: es manager + especialistas + memoria vectorial + guardarraíles +
+    // escritura en la cadena de auditoría. Coste medido sobre el runtime de
+    // OPERANT, sin contar los tokens del LLM (esos van aparte, por modelo).
+    operant_task: 0.018,
+    operant_specialist: 0.006,   // especialista extra por encima del perfil base
+    operant_anchor: 0.012,       // anclaje merkle en L2 (una tx por lote)
+    operant_approval: 0.0008,    // resolución de una aprobación HITL
     default: 0.001,
 };
 

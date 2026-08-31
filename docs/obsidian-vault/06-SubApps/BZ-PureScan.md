@@ -3,7 +3,7 @@ type: "subapp"
 layer: 2
 priority: "P1"
 cluster: "logistica-rwa"
-repo_path: "App's secundarias/BZ PureScan/"
+repo_path: "App-nativas/BZ PureScan/"
 domain: "purescan.bez.digital"
 tags: ["platform-map", "logistica-rwa", "p1"]
 ---
@@ -14,7 +14,7 @@ tags: ["platform-map", "logistica-rwa", "p1"]
 
 Trazabilidad y certificación de pureza/calidad con QR verificable on-chain.
 
-**Ubicación:** `App's secundarias/BZ PureScan/` · purescan.bez.digital
+**Ubicación:** `App-nativas/BZ PureScan/` · purescan.bez.digital
 
 ## Conexiones
 

@@ -5,7 +5,7 @@ hardware (Raspberry Pi / industrial PLC), reads real field equipment over their
 native protocols, and publishes **canonical telemetry** to the MQTT broker that
 the BeZhas Energy backend already ingests.
 
-> This is **Phase 1** of [`../App's secundarias/bez-energy/docs/ARQUITECTURA_REAL_Y_PLAN.md`](../App's%20secundarias/bez-energy/docs/ARQUITECTURA_REAL_Y_PLAN.md).
+> This is **Phase 1** of [`../App-nativas/bez-energy/docs/ARQUITECTURA_REAL_Y_PLAN.md`](../App-nativas/bez-energy/docs/ARQUITECTURA_REAL_Y_PLAN.md).
 > The backend (`api/services/vppMqttBroker.js`) prioritises live broker data and
 > falls back to simulated values, so **running this gateway against real hardware
 > makes the dashboard show real data with no other changes.**

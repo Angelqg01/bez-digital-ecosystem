@@ -11,7 +11,7 @@ const nativeApps = [
         href: '/dashboard',
         gcpUrl: '/dashboard',
         gcpStatus: '307 Redirect (→ /login)',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/Bezhas-Hub',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/Bezhas-Hub',
         accent: 'from-primary/80 to-tertiary/70',
         description: 'Centro operativo para coordinar identidad, wallet, pagos, social layer, contratos y flujos de negocio dentro del ecosistema.',
         use: 'La mejor base para crear nuevas apps porque ya conecta SDK, autenticacion, pagos, wallet y paneles de control.',
@@ -23,7 +23,7 @@ const nativeApps = [
         href: '/dashboard/wallet',
         gcpUrl: '/dashboard/wallet',
         gcpStatus: '307 Redirect (→ /login)',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/bez-wallet',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/bez-wallet',
         accent: 'from-emerald-400/80 to-primary/70',
         description: 'Wallet nativa para gestionar cuentas, activos BEZ, QR, pagos y operaciones on-chain.',
         use: 'Sirve como punto de entrada de usuarios, firmas y experiencia financiera Web3.',
@@ -35,7 +35,7 @@ const nativeApps = [
         href: '/dashboard/gas',
         gcpUrl: '/dashboard/gas',
         gcpStatus: '307 Redirect (→ /login)',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/gas-tank-manager',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/gas-tank-manager',
         accent: 'from-cyan-300/80 to-primary/70',
         description: 'Gestor de gas, consumo y subvenciones para operaciones empresariales y usuarios finales.',
         use: 'Permite controlar costes, patrocinar transacciones y operar apps sin friccion de gas.',
@@ -47,7 +47,7 @@ const nativeApps = [
         href: '/dashboard/validators',
         gcpUrl: '/dashboard/validators',
         gcpStatus: '307 Redirect (→ /login)',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/edge-node-manager',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/edge-node-manager',
         accent: 'from-tertiary/80 to-emerald-400/70',
         description: 'Panel para registrar, monitorizar y operar nodos edge conectados a BeZhas.',
         use: 'Ayuda a desplegar capacidad local, telemetria y servicios de validacion empresarial.',
@@ -59,7 +59,7 @@ const nativeApps = [
         href: '/dashboard/qr',
         gcpUrl: '/dashboard/qr',
         gcpStatus: '307 Redirect (→ /login)',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/bez-vision-scan',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/bez-vision-scan',
         accent: 'from-fuchsia-400/80 to-cyan-300/70',
         description: 'Scanner de vision artificial para logistica, trazabilidad, documentos y control de calidad.',
         use: 'Convierte imagenes y eventos fisicos en datos auditables dentro de la red.',
@@ -71,7 +71,7 @@ const nativeApps = [
         href: '/dashboard/farming',
         gcpUrl: '/dashboard/farming',
         gcpStatus: '307 Redirect (→ /login)',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/BZ%20Capital',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/BZ%20Capital',
         accent: 'from-primary/80 to-emerald-400/70',
         description: 'Frontend DeFi para tesoreria, mercados, staking, farming y analitica financiera.',
         use: 'Sirve para construir productos financieros sobre BEZ y liquidez tokenizada.',
@@ -83,7 +83,7 @@ const nativeApps = [
         href: '/dashboard/nfts',
         gcpUrl: '/dashboard/nfts',
         gcpStatus: '307 Redirect (→ /login)',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/BZ%20Prestige',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/BZ%20Prestige',
         accent: 'from-amber-300/80 to-primary/70',
         description: 'Experiencia para activos premium, certificados, productos exclusivos y trazabilidad de lujo.',
         use: 'Ideal para tokenizar autenticidad, propiedad y beneficios de objetos de alto valor.',
@@ -95,7 +95,7 @@ const nativeApps = [
         href: '/dashboard/sectors',
         gcpUrl: '/dashboard/sectors',
         gcpStatus: '307 Redirect (→ /login)',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/BZ%20CargoLink',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/BZ%20CargoLink',
         accent: 'from-sky-300/80 to-emerald-400/70',
         description: 'Aplicacion de coordinacion logistica para rutas, carga, eventos y seguimiento operacional.',
         use: 'Conecta supply chain real con contratos, pagos, alertas y evidencia verificable.',
@@ -107,7 +107,7 @@ const nativeApps = [
         href: '/payments',
         gcpUrl: '/payments',
         gcpStatus: '200 OK',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/bezhas-pay-manager',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/bezhas-pay-manager',
         accent: 'from-emerald-300/80 to-cyan-300/70',
         description: 'Gestor de cobros, suscripciones, checkout y conciliacion de pagos para comercios.',
         use: 'Acelera la integracion de pagos fiat/on-chain en apps y marketplaces.',
@@ -119,7 +119,7 @@ const nativeApps = [
         href: '/dashboard/qr',
         gcpUrl: '/dashboard/qr',
         gcpStatus: '307 Redirect (→ /login)',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/BZ%20PureScan',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/BZ%20PureScan',
         accent: 'from-cyan-300/80 to-fuchsia-400/70',
         description: 'App de escaneo y verificacion para lotes, productos, QR y evidencias de autenticidad.',
         use: 'Permite validar origen, estado y documentos desde una experiencia ligera.',
@@ -131,7 +131,7 @@ const nativeApps = [
         href: '/solutions',
         gcpUrl: '/solutions',
         gcpStatus: '200 OK',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/BZ%20Sphere',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/BZ%20Sphere',
         accent: 'from-primary/80 to-fuchsia-400/70',
         description: 'Capa social y colaborativa para comunidad, experiencias y actividad del ecosistema.',
         use: 'Sirve para crear espacios de usuario, reputacion y engagement alrededor de apps BeZhas.',
@@ -143,7 +143,7 @@ const nativeApps = [
         href: '/enterprise',
         gcpUrl: '/enterprise',
         gcpStatus: '200 OK',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/bez-energy',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/bez-energy',
         accent: 'from-emerald-400/80 to-amber-300/70',
         description: 'App sectorial para activos energeticos, eficiencia, auditoria y datos operativos.',
         use: 'Facilita casos de uso de energia tokenizada, medicion y cumplimiento.',
@@ -155,16 +155,16 @@ const nativeApps = [
         href: '/developers#build-with-bezhas',
         gcpUrl: '/developers',
         gcpStatus: '200 OK',
-        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App\'s%20secundarias/BZ%20Genesis',
+        githubUrl: 'https://github.com/Angelqg01/bez-digital-ecosystem/tree/main/App-nativas/BZ%20Genesis',
         accent: 'from-fuchsia-400/80 to-primary/70',
         description: 'Plantilla de arranque para prototipos, nuevos verticales y experiencias nativas.',
         use: 'Sirve como base conceptual para clonar patrones y lanzar una app BeZhas rapidamente.',
     },
 ];
 
-// Enlaces ONLINE reales de cada SubApp ya desarrollada (subdominios bez.digital).
+// Enlaces ONLINE reales de cada App Nativa ya desarrollada (subdominios bez.digital).
 // Edita aqui para cambiar el destino de una App; las tarjetas abren en pestana nueva.
-const SUBAPP_URLS: Record<string, string> = {
+const NATIVE_APP_URLS: Record<string, string> = {
     'BeZhas Hub': 'https://bezhas-hub-o5xep6gbwq-ew.a.run.app',
     'BEZ Wallet': 'https://bezhas-wallet-o5xep6gbwq-ew.a.run.app',
     'Gas Tank Manager': 'https://bezhas-gas-o5xep6gbwq-ew.a.run.app',
@@ -179,7 +179,7 @@ const SUBAPP_URLS: Record<string, string> = {
     'BEZ Energy': 'https://bezhas-energy-o5xep6gbwq-ew.a.run.app',
     'BZ Genesis': 'https://bezhas-genesis-o5xep6gbwq-ew.a.run.app',
 };
-const subAppUrl = (name: string) => SUBAPP_URLS[name] || '#';
+const nativeAppUrl = (name: string) => NATIVE_APP_URLS[name] || '#';
 
 export default function DevelopersPage() {
     const [appsList, setAppsList] = useState(nativeApps);
@@ -346,7 +346,7 @@ export default function DevelopersPage() {
                                 <div className="text-[10px] tracking-[0.4em] uppercase text-tertiary font-bold mb-2">Instalacion real</div>
                                 <h3 className="text-3xl font-black italic uppercase tracking-tighter mb-3">SDK, API, Nodos y RPC unificados</h3>
                                 <p className="text-sm text-on-surface-variant leading-relaxed">
-                                    Todas las SubApps deben pasar por la misma API Core para pagos, creditos, billing, compra de BEZ-Coin,
+                                    Todas las Apps Nativas deben pasar por la misma API Core para pagos, creditos, billing, compra de BEZ-Coin,
                                     contratos y ABIs. El SDK se instala con pnpm y el RPC se configura por entorno.
                                 </p>
                             </div>
@@ -457,12 +457,12 @@ export default function DevelopersPage() {
                                             </span>
                                         </div>
                                         <a
-                                            href={subAppUrl(app.name)}
+                                            href={nativeAppUrl(app.name)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-xs font-mono text-cyan-300 hover:text-cyan-200 transition-colors block truncate"
                                         >
-                                            {subAppUrl(app.name).replace('https://', '')}
+                                            {nativeAppUrl(app.name).replace('https://', '')}
                                         </a>
                                     </div>
 
@@ -488,7 +488,7 @@ export default function DevelopersPage() {
                                 <div className="border-t border-white/10 pt-4">
                                     <p className="text-xs text-slate-400 leading-relaxed mb-4">{app.use}</p>
                                     <a
-                                        href={subAppUrl(app.name)}
+                                        href={nativeAppUrl(app.name)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         aria-label={`Abrir ${app.name}`}

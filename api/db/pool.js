@@ -54,8 +54,19 @@ async function query(text, params = []) {
         }
         return result;
     } catch (err) {
-        const isDevOrTest = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV;
-        if (isDevOrTest) {
+        // El mock-fallback sólo vale para `test`, y sólo si se pide a
+        // propósito con DB_MOCK_FALLBACK=true.
+        //
+        // Antes se activaba también en `development` Y con NODE_ENV vacío —es
+        // decir, por defecto para cualquiera que arrancara el proceso sin
+        // configurar entorno—. El efecto era que un INSERT fallido devolvía un
+        // objeto inventado y la API respondía 201 sobre algo que nunca se
+        // guardó: medido en el Run 02 con POST /p2p/offer, que devolvió un
+        // offer_id de una fila inexistente. Un servicio que dice "hecho" sobre
+        // una escritura perdida es peor que uno que falla.
+        const mockAllowed = process.env.NODE_ENV === 'test'
+            && process.env.DB_MOCK_FALLBACK === 'true';
+        if (mockAllowed) {
             console.warn(`[DB][MOCK-FALLBACK] Query failed: "${err.message}". Using local mock.`);
             if (text.includes('INSERT INTO transactions')) {
                 return {

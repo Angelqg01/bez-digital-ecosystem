@@ -23,7 +23,7 @@ const TABS = [
     { id: 'intelligence',label: 'MCP Intelligence',    icon: BrainCircuit, desc: 'OpenClaw Brain' },
     { id: 'obsidian',     label: 'Obsidian Map',       icon: Map,          desc: 'Vault & Feedback' },
     { id: 'brainlive',   label: 'Brain Live',         icon: Radar,        desc: 'API Nodes & Usage' },
-    { id: 'watchdog',    label: 'Watchdog',            icon: HeartPulse,   desc: 'SubApps & Sync ABI' },
+    { id: 'watchdog',    label: 'Watchdog',            icon: HeartPulse,   desc: 'Apps Nativas & Sync ABI' },
     { id: 'governance',  label: 'DAO Governance',      icon: Scale,        desc: 'Audit & RBAC' },
     { id: 'skills',      label: 'SKILL Memory',        icon: BookOpen,     desc: 'Agent Interactions' },
 ];

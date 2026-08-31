@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { DOC_CATEGORIES, DOC_LIBRARY, getDocsByCategory } from '@/lib/docs-library';
 
 export default function DocsPage() {
     return (
@@ -17,6 +18,74 @@ export default function DocsPage() {
                     <p className="text-xl text-on-surface-variant max-w-2xl font-light leading-relaxed">
                         Documentación completa del protocolo BeZhas. APIs REST &amp; WebSocket, SDKs, Smart Contracts y guías de integración.
                     </p>
+                    <div className="flex flex-wrap gap-4 mt-8">
+                        <Link href="/docs/introduccion" className="bg-primary text-white px-8 py-4 font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform inline-flex items-center gap-2">
+                            EMPEZAR AQUÍ <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                        </Link>
+                        <a href="#biblioteca" className="glass-panel border border-white/10 text-white px-8 py-4 font-bold uppercase tracking-widest text-xs hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+                            <span className="material-symbols-outlined text-sm">menu_book</span>
+                            VER LOS {DOC_LIBRARY.length} DOCUMENTOS
+                        </a>
+                    </div>
+                </section>
+
+                {/* Biblioteca de documentación */}
+                <section id="biblioteca" className="mb-16 scroll-mt-24">
+                    <div className="flex items-end justify-between gap-6 mb-4">
+                        <div>
+                            <div className="text-[10px] tracking-[0.4em] uppercase text-tertiary font-bold mb-2">Biblioteca</div>
+                            <h2 className="text-4xl font-black italic tracking-tighter uppercase">
+                                Documentación <span className="text-primary">completa</span>
+                            </h2>
+                        </div>
+                    </div>
+                    <p className="text-on-surface-variant text-sm leading-relaxed max-w-3xl mb-10">
+                        Todo lo que necesitas para construir sobre BeZhas: uso de la plataforma, tokenización de activos,
+                        NFT y credenciales, creación de nodos, validadores y staking, gobernanza y seguridad.
+                        Documentación pública — no incluye credenciales, arquitectura interna ni material confidencial.
+                    </p>
+
+                    <div className="space-y-12">
+                        {DOC_CATEGORIES.map((cat) => {
+                            const docs = getDocsByCategory(cat.id);
+                            if (docs.length === 0) return null;
+                            return (
+                                <div key={cat.id}>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="material-symbols-outlined text-primary text-xl">{cat.icon}</span>
+                                        <h3 className="text-lg font-bold italic uppercase tracking-tight">{cat.id}</h3>
+                                        <span className="text-[10px] tracking-widest uppercase text-on-surface-variant bg-white/5 px-2 py-0.5 rounded">
+                                            {docs.length}
+                                        </span>
+                                    </div>
+                                    <p className="text-on-surface-variant text-xs mb-5 ml-9">{cat.blurb}</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                        {docs.map((doc) => (
+                                            <Link
+                                                key={doc.slug}
+                                                href={`/docs/${doc.slug}`}
+                                                className="glass-panel p-6 border border-white/5 rounded-xl group hover:border-primary/30 transition-all flex flex-col"
+                                            >
+                                                <div className="flex items-start justify-between gap-3 mb-3">
+                                                    <span className="material-symbols-outlined text-primary text-2xl">{doc.icon}</span>
+                                                    <span className="text-[9px] tracking-[0.2em] uppercase text-on-surface-variant bg-white/5 px-2 py-1 rounded flex-shrink-0">
+                                                        {doc.level}
+                                                    </span>
+                                                </div>
+                                                <h4 className="font-bold text-white text-sm mb-2 leading-snug">{doc.title}</h4>
+                                                <p className="text-on-surface-variant text-xs leading-relaxed mb-4 flex-1">
+                                                    {doc.description}
+                                                </p>
+                                                <span className="text-primary text-[10px] font-bold tracking-widest uppercase inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                                                    LEER <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                                                </span>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </section>
 
                 {/* Quick Start Cards */}
@@ -83,7 +152,7 @@ export default function DocsPage() {
                     <div className="glass-panel border border-primary/20 rounded-xl overflow-hidden">
                         <div className="p-6 border-b border-white/5">
                             <p className="text-on-surface-variant text-sm leading-relaxed max-w-4xl">
-                                Esta es la ruta recomendada para conectar cualquier SubApp a la BeZhas-Blockchain Core: instalar el SDK con pnpm,
+                                Esta es la ruta recomendada para conectar cualquier App Nativa a la BeZhas-Blockchain Core: instalar el SDK con pnpm,
                                 consumir la API Core, apuntar al RPC real o local y validar nodos antes de pasar a produccion.
                             </p>
                         </div>
@@ -100,7 +169,7 @@ export default function DocsPage() {
                                 {
                                     icon: 'api',
                                     title: 'API Core',
-                                    body: 'Gateway unificado para wallet, billing, contratos, CargoLink y SubApps.',
+                                    body: 'Gateway unificado para wallet, billing, contratos, CargoLink y Apps Nativas.',
                                     code: 'http://localhost:3001/api',
                                     href: '/developers#api',
                                     cta: 'Ver API',
@@ -184,12 +253,12 @@ export default function DocsPage() {
                     <h2 className="text-4xl font-black italic tracking-tighter uppercase mb-8">Smart <span className="text-primary">Contracts</span></h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {[
-                            { name: 'BEZCoinV2', desc: 'Token ERC-20 nativo con mint/burn governance-controlled', icon: 'token', link: '/learn' },
-                            { name: 'EdgeNodeRewards', desc: 'Sistema DePIN para rewards de nodos B2B', icon: 'hub', link: '/validators' },
-                            { name: 'SmartWallet', desc: 'Account Abstraction (ERC-4337) con guardians y límites', icon: 'account_balance_wallet', link: '/payments' },
-                            { name: 'MultiSigEnterprise', desc: 'Multisig para operaciones institucionales', icon: 'security', link: '/enterprise' },
-                            { name: 'PaymasterBEZ', desc: 'Gasless transactions via meta-tx relay', icon: 'ev_station', link: '/payments' },
-                            { name: 'BridgeGateway', desc: 'Bridge cross-chain Ethereum / Polygon / Solana', icon: 'alt_route', link: '/bridges' },
+                            { name: 'BEZCoinV2', desc: 'Token ERC-20 nativo con Permit, Votes y cap de 10.000M', icon: 'token', link: '/docs/bez-coin' },
+                            { name: 'ValidatorRegistry', desc: 'Registro de validadores, tiers, boosts y unbonding', icon: 'verified_user', link: '/docs/validadores-staking' },
+                            { name: 'EdgeNodeRewards', desc: 'Sistema DePIN para rewards de nodos B2B', icon: 'hub', link: '/docs/nodos-enterprise-edge' },
+                            { name: 'BeZhasLogisticsNFT', desc: 'NFT de manifiestos y activos logísticos (ERC-721)', icon: 'style', link: '/docs/nft-y-sbt' },
+                            { name: 'BeZhasPayment', desc: 'Pagos B2B con comisión, lotes y protección anti-replay', icon: 'payments', link: '/docs/pagos-y-gas' },
+                            { name: 'GovernanceSystem', desc: 'DAO sobre OpenZeppelin Governor con timelock', icon: 'how_to_vote', link: '/docs/gobernanza-dao' },
                         ].map((contract) => (
                             <Link key={contract.name} href={contract.link} className="glass-panel p-6 border border-white/5 rounded-xl flex gap-4 hover:border-primary/30 transition-all group">
                                 <span className="material-symbols-outlined text-primary text-2xl flex-shrink-0">{contract.icon}</span>
@@ -214,6 +283,7 @@ export default function DocsPage() {
                             { title: 'Bridge Cross-Chain', desc: 'Conecta activos entre BeZhas L2, Ethereum y Polygon.', icon: 'alt_route', href: '/bridges' },
                             { title: 'DeFi Integration', desc: 'Pools de liquidez, farming y lending con RWA tokenizados.', icon: 'account_balance', href: '/financial' },
                             { title: 'SSO & Auth', desc: 'Login con wallet, JWT cross-app y permisos basados en roles.', icon: 'vpn_key', href: '/login' },
+                            { title: 'OPERANT — Agentes IA', desc: '10 departamentos de agentes autónomos con aprobación humana y auditoría anclada en L2.', icon: 'smart_toy', href: '/docs/operant' },
                         ].map((guide) => (
                             <Link key={guide.title} href={guide.href} className="glass-panel p-6 border border-white/5 rounded-xl group hover:border-primary/30 transition-all block">
                                 <span className="material-symbols-outlined text-primary text-2xl mb-3 block">{guide.icon}</span>

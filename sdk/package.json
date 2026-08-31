@@ -6,7 +6,11 @@
   "module": "index.mjs",
   "browser": "dist/bezhas-sdk.min.js",
   "exports": {
-    ".": "./index.js",
+    ".": {
+      "import": "./index.mjs",
+      "require": "./index.js",
+      "default": "./index.js"
+    },
     "./contracts": "./contracts.js",
     "./chain-manager": "./chain-manager.js",
     "./gateway-client": "./gateway-client.js",
@@ -20,7 +24,10 @@
     "./rwa": "./rwa.js",
     "./logistics": "./logistics.js",
     "./vip": "./vip.js",
-    "./mcp": "./mcp-integration.js"
+    "./mcp": "./mcp-integration.js",
+    "./governance-client": "./modules/GovernanceClient.js",
+    "./modules/tier2": "./modules/Tier2Modules.js",
+    "./modules/tier3": "./modules/Tier3Modules.js"
   },
   "scripts": {
     "test": "node test-contracts-sdk.js",

@@ -720,6 +720,19 @@ router.post(
   async (req, res) => {
     const approved = hitlQueue.approve(req.params.jobId, req.user?.userId || req.user?.id);
     if (approved.error) return res.status(409).json({ error: approved.error, code: 'HITL_APPROVE_ERROR' });
+
+    // Los trabajos que crea el guard genérico (hitlApprove) no son comandos
+    // SCADA de un nodo: no hay nada que firmar ni publicar. Quedan aprobados y
+    // el cliente reenvía su petición original con el approvalJobId.
+    if (!approved.nodeId) {
+      logger.info(`[ENERGY][HITL] job=${approved.jobId} (${approved.command}) APPROVED by ${req.user?.userId}`);
+      return res.json({
+        success: true, job_id: approved.jobId, status: 'APPROVED', command: approved.command,
+        dispatched: false,
+        nextAction: 'resend_original_request_with_approvalJobId',
+      });
+    }
+
     try {
       const { published, onchain } = await dispatchSignedCommand(approved.jobId, approved.nodeId, approved.command, approved.params);
       logger.info(`[ENERGY][SCADA][HITL] job=${approved.jobId} APPROVED by ${req.user?.userId} → dispatched`);
@@ -799,7 +812,7 @@ router.post(
   '/demand-response',
   authenticateToken,
   requireRole('operator'),
-  hitlApprove,                          // Demand Response siempre requiere aprobación humana
+  hitlApprove({ command: 'DEMAND_RESPONSE' }),  // Aprobación humana real, atada a este comando
   [
     body('action').isIn(['ACTIVATE', 'DEACTIVATE']),
     body('nodeIds').isArray({ min: 1 }),

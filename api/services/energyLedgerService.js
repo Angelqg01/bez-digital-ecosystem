@@ -246,17 +246,80 @@ async function listCaeTokens(req) {
   return { owner: address, total_tokens: tokens.length, total_value_eur: total.toFixed(2), tokens };
 }
 
+const ORACLE_ABI = [
+  'function verifiedKWh(address account, string period) external view returns (uint256)',
+];
+
+/** EnergyOracle de sólo lectura, o null si no está configurado. */
+function readOracle() {
+  const p = readProvider();
+  const addr = process.env.ENERGY_ORACLE_ADDRESS || process.env.CONTRACT_ENERGY_ORACLE;
+  if (!p || !addr || !ethers) return null;
+  try { return new ethers.Contract(addr, ORACLE_ABI, p); } catch { return null; }
+}
+
+/**
+ * Emite un CAE contra ahorro REALMENTE verificado en cadena.
+ *
+ * Antes esto insertaba una fila con lo que dijera el cliente: `telemetryProof`
+ * se validaba sólo como cadena no vacía, así que un CAE de 50.000 kWh
+ * atribuido a la CNMC salía con la prueba `"x"`. El guardarraíl correcto
+ * existía desde el principio en el contrato —EnergyOracle acumula kWh sólo
+ * tras verifyProof(), y EnergyCAEToken.mintFromOracle los consume— pero esta
+ * ruta HTTP no pasaba por él.
+ *
+ * Ahora se comprueba `verifiedKWh(cuenta, periodo) >= savingsKwh` antes de
+ * registrar nada, y se descuenta lo ya certificado en el mismo periodo para
+ * que dos emisiones no gasten el mismo ahorro.
+ */
 async function mintCae(req, { savingsKwh, period, certifier, telemetryProof }) {
+  const { userId, address } = req.user;
+
+  const oracle = readOracle();
+  if (!oracle) {
+    // Sin oráculo no hay forma de saber si el ahorro existe. Emitir "por si
+    // acaso" es justo lo que convierte un certificado en papel mojado, así que
+    // se rechaza en vez de degradar en silencio.
+    throw err(503, 'EnergyOracle not configured — CAE cannot be certified without on-chain verified savings');
+  }
+
+  let verified;
+  try {
+    verified = await oracle.verifiedKWh(address, period);
+  } catch (e) {
+    throw err(502, `Could not read verified savings from EnergyOracle: ${e.message}`);
+  }
+  const verifiedKwh = Number(verified);
+
+  // Lo ya certificado en este periodo por este titular. El oráculo sólo
+  // descuenta cuando el mint on-chain ocurre de verdad; mientras haya filas en
+  // PENDING_MINT hay que restarlas aquí o se podría certificar dos veces el
+  // mismo ahorro con dos peticiones seguidas.
+  const { rows: prior } = await query(
+    `SELECT COALESCE(SUM(savings_kwh), 0) AS used FROM energy_cae_tokens
+      WHERE owner_user_id = $1 AND period = $2 AND status <> 'CANCELLED'`,
+    [userId, period]
+  );
+  const alreadyCertified = Number(prior?.[0]?.used || 0);
+  const available = verifiedKwh - alreadyCertified;
+
+  if (available < savingsKwh) {
+    throw err(422,
+      `Insufficient verified savings for ${period}: ${available} kWh available `
+      + `(${verifiedKwh} verified on-chain, ${alreadyCertified} already certified), ${savingsKwh} requested`);
+  }
+
   const tokenId = `CAE-${period}-${Date.now().toString(36).toUpperCase()}`;
   const value = Number((savingsKwh * 0.1).toFixed(2));
   await query(
     `INSERT INTO energy_cae_tokens (token_id, owner_user_id, savings_kwh, period, certifier, status, market_value_eur, telemetry_proof)
        VALUES ($1, $2, $3, $4, $5, 'PENDING_MINT', $6, $7)`,
-    [tokenId, req.user.userId, savingsKwh, period, certifier, value, telemetryProof]
+    [tokenId, userId, savingsKwh, period, certifier, value, telemetryProof]
   );
   return {
     token_id: tokenId, savings_kwh: savingsKwh, period, certifier,
     telemetry_proof: telemetryProof, estimated_value_eur: value,
+    verified_kwh_on_chain: verifiedKwh, remaining_after_mint: available - savingsKwh,
     minted_at: new Date().toISOString(), status: 'PENDING_MINT', tx_hash: null,
   };
 }
@@ -288,6 +351,19 @@ async function createP2pOffer(req, { energyKwh, priceBzhsKwh, nodeId, expiresInM
   };
 }
 
+/**
+ * Compra de una oferta P2P contra un pago REALMENTE confirmado en cadena.
+ *
+ * Antes bastaba con enviar cualquier cadena con forma de hash: la oferta
+ * pasaba a SOLD sin comprobar nada, y la energía cambiaba de manos gratis.
+ * Se demostró en el Run 02 con `0xdeadbeef…`, un hash que `cast tx` confirma
+ * que no existe en ninguna cadena.
+ *
+ * El patrón correcto ya estaba en este mismo fichero, en recordCreditPurchase:
+ * pedir el recibo y rechazar si revirtió. Aquí se aplica igual, más el guardia
+ * de replay, que también faltaba (el ON CONFLICT del historial silenciaba el
+ * duplicado en vez de rechazarlo).
+ */
 async function buyP2pOffer(req, { offerId, txHash }) {
   const { userId } = req.user;
   const { rows } = await query(
@@ -295,6 +371,30 @@ async function buyP2pOffer(req, { offerId, txHash }) {
   const offer = rows && rows[0];
   if (!offer || !offer.id) throw err(404, 'Offer not found');
   if (offer.status !== 'ACTIVE') throw err(409, `Offer is ${offer.status}, not purchasable`);
+
+  // Replay: el mismo pago no puede liquidar dos ofertas.
+  const dup = await query(
+    'SELECT id FROM energy_p2p_offers WHERE settle_tx_hash = $1 AND offer_id <> $2', [txHash, offerId]);
+  if (dup.rows && dup.rows[0] && dup.rows[0].id) {
+    throw err(409, 'This transaction already settled another offer');
+  }
+
+  const p = readProvider();
+  if (!p) {
+    // Igual que en el CAE: sin proveedor no hay forma de comprobar el pago, y
+    // dar por buena la palabra del comprador es exactamente el fallo que se
+    // está corrigiendo.
+    throw err(503, 'Chain provider not configured — cannot verify payment for a P2P purchase');
+  }
+
+  let receipt;
+  try {
+    receipt = await p.getTransactionReceipt(txHash);
+  } catch (e) {
+    throw err(502, `Could not verify payment on-chain: ${e.message}`);
+  }
+  if (!receipt) throw err(400, 'Payment transaction not found on-chain');
+  if (receipt.status === 0) throw err(400, 'Payment transaction reverted on-chain');
 
   await query('UPDATE energy_p2p_offers SET status = $1, buyer_user_id = $2, settle_tx_hash = $3 WHERE offer_id = $4',
     ['SOLD', userId, txHash, offerId]);

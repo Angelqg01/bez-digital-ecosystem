@@ -15,6 +15,8 @@ contract TrackingToCustomsGateway is AccessControl, ReentrancyGuard {
     TrackingIntegrationGateway public trackingGateway;
     CustomsClearanceOracle public customsOracle;
 
+    event CustomsFeeAllowanceSet(uint256 amount);
+
     // ── Integrated Shipment ────────────────────────────────────
     struct IntegratedShipment {
         uint256 shipmentId;
@@ -207,6 +209,26 @@ contract TrackingToCustomsGateway is AccessControl, ReentrancyGuard {
         if (allCleared) {
             emit EndToEndComplianceCompleted(_shipmentId);
         }
+    }
+
+    // ── Permitir a la aduana cobrar su tasa ────────────────────
+    //
+    // `CustomsClearanceOracle.requestClearance` cobra la tasa de integración
+    // con `transferFrom(msg.sender, ...)`, y cuando la llamada viene por aquí
+    // ese `msg.sender` es ESTE contrato. Sin una forma de fijar la allowance,
+    // `createIntegratedShipment` revierte siempre con
+    // `ERC20InsufficientAllowance`, y el contrato no puede funcionar en una
+    // cadena real por mucho que se le transfieran BEZ.
+    //
+    // Las pruebas no lo detectaban porque resuelven la allowance con
+    // `vm.prank(address(gateway))` — suplantar a un contrato es algo que sólo
+    // existe dentro de Foundry. Verde en el test, imposible en producción.
+    function approveCustomsFees(uint256 _amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        IERC20 bez = customsOracle.bezCoin();
+        // A cero primero: hay ERC-20 que rechazan cambiar una allowance no nula.
+        bez.approve(address(customsOracle), 0);
+        bez.approve(address(customsOracle), _amount);
+        emit CustomsFeeAllowanceSet(_amount);
     }
 
     // ── Get integrated shipment status ─────────────────────────

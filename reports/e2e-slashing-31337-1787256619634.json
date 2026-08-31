@@ -1,0 +1,48 @@
+{
+  "target": "0x317128BB172F8f76CeC7d0cBA54d5d1059DC4F21",
+  "steps": [
+    {
+      "step": 1,
+      "type": "downtime",
+      "stakeBefore": "50000.0",
+      "stakeAfter": "49000.0",
+      "penalty": "1000.00",
+      "tx": "0x873dec41a12cdf77262d376a4d2923e04f870902c65b3faa49133c16f0169af8"
+    },
+    {
+      "step": 2,
+      "isActive": true,
+      "tier": 1
+    },
+    {
+      "step": 3,
+      "action": "cooldown_enforced",
+      "reverted": true
+    },
+    {
+      "step": 4,
+      "error": "execution reverted (unknown custom error) (action=\"estimateGas\", data=\"0xe2517d3f000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922668e364b9033602b787e1b3bac10465b075248fd601fd74b4e0c3bb14ad62dce52\", reason=null, transaction={ \"data\": \"0x4edd0e65000000000000000000000000317128bb172f8f76cec7d0cba54d5d1059dc4f210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001e4532453a2073696d756c61746564206672617564756c656e7420646174610000\", \"from\": \"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\", \"to\": \"0x610178dA211FEF7D417bC0e6FeD39F05609AD788\" }, invocation=null, revert=null, code=CALL_EXCEPTION, version=6.17.0)"
+    },
+    {
+      "step": 5,
+      "error": "slashing.getSlashHistory is not a function"
+    },
+    {
+      "step": 6,
+      "error": "slashing.getSlashHistory is not a function"
+    },
+    {
+      "step": 7,
+      "type": "dao_inactivity",
+      "missedVotes": 3,
+      "stakeAfter": "48510.0"
+    },
+    {
+      "step": 8,
+      "totalSlashed": "1490.0",
+      "finalStake": "48510.0",
+      "isActive": true
+    }
+  ],
+  "success": true
+}

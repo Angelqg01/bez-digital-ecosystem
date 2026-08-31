@@ -150,6 +150,27 @@ describe('OraclePanel', () => {
         );
     });
 
+    it('el precio semilla del backend no se presenta como vigente', () => {
+        // El backend manda el semilla con updatedAt: null justamente para que no
+        // se pueda calcular antiguedad. El panel debe leerlo como fuera de
+        // ventana y no anunciar "En vivo" un valor que nadie ha medido.
+        mockUseOracle.mockReturnValue({
+            data: payload({
+                source: 'seed',
+                updatedAt: null,
+                tokens: { BEZ: { symbol: 'BEZ', priceUSD: 0.1, change24h: 0, updatedAt: null, seed: true } },
+                bezCoinPriceUSD: 0.1,
+            }),
+            error: undefined,
+        });
+        const { container } = render(<OraclePanel contracts={contracts} />);
+
+        expect(stateOf(container)).toBe('stale');
+        expect(screen.getByText('Obsoleto')).toBeInTheDocument();
+        expect(screen.getByText(/seed/)).toBeInTheDocument();
+        expect(screen.getByText(/en fecha desconocida/)).toBeInTheDocument();
+    });
+
     it('el aviso MiCA acompana siempre al precio', () => {
         mockUseOracle.mockReturnValue({ data: payload(), error: undefined });
         render(<OraclePanel contracts={contracts} />);

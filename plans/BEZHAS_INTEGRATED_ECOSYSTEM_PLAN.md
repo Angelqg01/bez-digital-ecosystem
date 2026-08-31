@@ -1,5 +1,5 @@
 # BeZhas — Plan de Desarrollo del Ecosistema Integrado (Sub-Apps 2.0)
-**Ruta base:** `D:\BeZhas-Blockchain\App's secundarias`  
+**Ruta base:** `D:\BeZhas-Blockchain\App-nativas`  
 **Fecha:** Mayo 2026  
 **Versión:** 2.0 (Adaptada a Visión Artificial + RWA)  
 **Estado:** Planificación Estratégica → Implementación de Verticales
@@ -32,7 +32,7 @@ Todas las apps utilizan un ID unificado que no es solo un login, sino un **DID (
 
 ## 3. Mapa de Aplicaciones (Verticales de Negocio)
 
-| Folder en `App's secundarias` | Nombre Comercial | Función Principal | Capacidad IA/Vision |
+| Folder en `App-nativas` | Nombre Comercial | Función Principal | Capacidad IA/Vision |
 |-------------------------------|------------------|-------------------|---------------------|
 | `Bezhas-Hub` | **The Core Hub** | Dashboard Central + Dev Console | Orquestador MCP |
 | `BEZ_Scaner` | **BEZ Vision Scan** | Tokenización RWA + Calidad | SIFT (Visual Fingerprint) |

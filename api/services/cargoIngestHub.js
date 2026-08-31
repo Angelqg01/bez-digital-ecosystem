@@ -182,7 +182,36 @@ async function ingestFromProvider({ providerId, rawBody, headers }) {
   const result = await iot.ingestCanonical({ provider, event });
   await query(`UPDATE cargolink_providers SET last_event_at = NOW() WHERE provider_id = $1`, [providerId]);
 
-  return { ...result, provider: provider.name, eventType: event.eventType };
+  // Anclaje del checkpoint en TrackingIntegrationGateway. Sólo tiene sentido
+  // cuando el evento trae posición: sin coordenadas no es un checkpoint, es
+  // una lectura de sensor, y ésa ya la ancla el lote merkle de telemetría.
+  //
+  // Es best-effort y opcional (CARGOLINK_ANCHOR_PROVIDER_CHECKPOINTS): cada
+  // checkpoint consume presupuesto mensual del proveedor en BEZ, y activarlo
+  // sin querer para un proveedor que emite miles de eventos al día agotaría
+  // su cuota el primer día.
+  let anchor;
+  if (process.env.CARGOLINK_ANCHOR_PROVIDER_CHECKPOINTS === 'true'
+      && event.lat != null && event.lng != null) {
+    try {
+      const onChain = require('./cargoLinkOnChain');
+      const shipmentId = await onChain.getChainShipmentId(event.bUid);
+      anchor = await onChain.anchorProviderCheckpoint(shipmentId, {
+        providerId,
+        lat: event.lat,
+        lng: event.lng,
+        timestamp: event.recordedAt || new Date(),
+        statusCode: event.statusCode ?? 0,
+        temperature: event.temperature,
+        speed: event.speed,
+        locationName: event.locationName || provider.name,
+      });
+    } catch (err) {
+      anchor = { anchored: false, mode: 'anchor_failed', error: err.message };
+    }
+  }
+
+  return { ...result, provider: provider.name, eventType: event.eventType, ...(anchor ? { anchor } : {}) };
 }
 
 module.exports = {

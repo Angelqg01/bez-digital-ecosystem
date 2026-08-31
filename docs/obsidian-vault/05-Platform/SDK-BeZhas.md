@@ -3,7 +3,7 @@ type: "platform-service"
 layer: 2
 priority: "P1"
 cluster: "nucleo-blockchain"
-repo_path: "sdk/ + App's secundarias/packages/connect"
+repo_path: "sdk/ + App-nativas/packages/connect"
 tags: ["platform-map", "nucleo-blockchain", "p1"]
 ---
 
@@ -13,7 +13,7 @@ tags: ["platform-map", "nucleo-blockchain", "p1"]
 
 @bezhas/sdk v3 (registry multi-chain, módulos por sector, cubre las 13 SubApps) y @bezhas/connect (embed B2B: Pay + CargoLink + Capability Registry + widget <script>, 30 tests).
 
-**Ubicación:** `sdk/ + App's secundarias/packages/connect`
+**Ubicación:** `sdk/ + App-nativas/packages/connect`
 
 ## Conexiones
 

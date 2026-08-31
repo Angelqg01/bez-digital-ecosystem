@@ -1,168 +1,183 @@
 'use strict';
 
 const express = require('express');
+const svc = require('../services/pureScanService');
 
 /**
- * Rutas de BZ PureScan
- * Actúa como Gateway para el agente de visión y blockchain de Food Oracle.
+ * Rutas de BZ PureScan — trazabilidad alimentaria.
+ *
+ * CAMBIO DE CONTRATO (antes: mocks síncronos)
+ * Estos endpoints devolvían datos inventados en la misma respuesta: siempre los
+ * mismos aguacates Hass, hashes de transacción con Math.random() e inventario
+ * aleatorio. El análisis real lo hace el AgentManager, cuya API es asíncrona, así
+ * que /analyze pasa a responder 202 con un scanRef y el cliente sondea
+ * GET /scans/:ref hasta que el estado sea 'completed'.
+ *
+ *   POST /analyze            → 202 { scanRef, status: 'analyzing'|'unavailable' }
+ *   GET  /scans/:ref         → estado y análisis del escaneo
+ *   GET  /scans              → historial (de la base de datos)
+ *   POST /scans/:ref/result  → escritura del resultado por el agente
+ *   POST /scans/:ref/feedback→ feedback humano (HITL)
+ *   POST /blockchain/sync    → emite el DPP y ancla su raíz merkle
+ *   GET  /dpp/:ref           → estado del pasaporte
+ *   GET  /inventory          → inventario
+ *   GET  /analytics          → agregados reales
+ *   GET  /profile/did        → DID derivado de la wallet configurada
  */
-module.exports = function (manager = null) {
-  const router = express.Router();
+module.exports = function (manager = null, bridge = null) {
+    const router = express.Router();
 
-  // Mocks iniciales integrados en el backend para facilitar el desarrollo local sin dependencias pesadas
-  const mockData = {
-    geminiAnalysis: (scanData) => ({
-      success: true,
-      analysis: {
-        product_type: 'Organic Hass Avocados',
-        batch_id: '8829-XP',
-        quality_assessment: 'EXCELLENT',
-        risk_level: 'LOW',
-        detected_issues: [],
-        nutritional_profile: {
-          fat: '15g',
-          protein: '3g',
-          fiber: '7g',
-          potassium: '485mg'
-        },
-        freshness_index: 9.2,
-        recommendation: 'Ready for immediate distribution'
-      },
-      processing_time_ms: 1200
-    }),
-    blockchainSync: (dppData) => ({
-      success: true,
-      transaction: {
-        hash: '0x' + Math.random().toString(16).slice(2, 66),
-        from: '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55',
-        to: '0x3EfC42095E8503d41Ad8001328FC23388E00e8a3',
-        block: Math.floor(Math.random() * 1000000),
-        timestamp: Date.now(),
-        gas_used: '125000',
-        status: 'CONFIRMED',
-        token_id: `DPP-${Date.now()}`
-      }
-    }),
-    inventory: () => Array.from({ length: 8 }, (_, i) => ({
-      id: `INV-${String(i + 1).padStart(4, '0')}`,
-      sku: `SKU-${8800 + i}`,
-      product: ['Avocados', 'Tomatoes', 'Lettuce', 'Bell Peppers', 'Cucumber', 'Spinach', 'Kale', 'Cabbage'][i],
-      quantity: Math.floor(Math.random() * 500) + 50,
-      last_scan: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      status: ['verified', 'pending', 'warning'][Math.floor(Math.random() * 3)],
-      batch: `BATCH-${2024}${String(i + 1).padStart(2, '0')}`
-    }))
-  };
+    /** Envuelve un handler async para que un throw acabe en 500 y no cuelgue. */
+    const wrap = (fn) => (req, res) => {
+        Promise.resolve(fn(req, res)).catch((error) => {
+            if (!res.headersSent) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+    };
 
-  /**
-   * POST /api/purescan/analyze
-   * Envía los datos de la inferencia Edge a Gemini / Agentes para análisis profundo
-   */
-  router.post('/analyze', async (req, res) => {
-    try {
-      const scanData = req.body;
-      // Aquí se conectaría con el Agente de Food Oracle real si se provee el manager
-      // Por ahora retornamos el mock estructurado para satisfacer al frontend
-      
-      setTimeout(() => {
-        res.json(mockData.geminiAnalysis(scanData));
-      }, 800);
+    // ── Escaneo ──────────────────────────────────────────────────────────────
+    router.post('/analyze', wrap(async (req, res) => {
+        const { sku, product, batch, walletAddress, ...rest } = req.body || {};
 
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
+        const scan = await svc.createScan(
+            { sku, product, batch, walletAddress, payload: rest },
+            manager
+        );
 
-  /**
-   * POST /api/purescan/blockchain/sync
-   * Sincroniza el Digital Product Passport (DPP) a la blockchain
-   */
-  router.post('/blockchain/sync', async (req, res) => {
-    try {
-      const dppData = req.body;
-      
-      // Simulación de delay de transacción
-      setTimeout(() => {
-        res.json(mockData.blockchainSync(dppData));
-      }, 1500);
+        // 202: aceptado y en curso. 503 si no hay runtime al que encargárselo —
+        // preferible a devolver un análisis inventado en trazabilidad alimentaria.
+        const status = scan.status === 'unavailable' ? 503 : 202;
 
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  /**
-   * GET /api/purescan/inventory
-   * Devuelve el inventario analizado y almacenado
-   */
-  router.get('/inventory', async (req, res) => {
-    try {
-      res.json(mockData.inventory());
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  /**
-   * GET /api/purescan/profile/did
-   * Devuelve el perfil descentralizado (DID)
-   */
-  router.get('/profile/did', async (req, res) => {
-    res.json({
-      did: 'did:bezhas:0x8a1e3930fde1f151471c368fdbb39f3f63a65b55',
-      name: 'BeZhas Food Oracle Node',
-      verified: true,
-      created_at: '2024-01-15T10:30:00Z',
-      verification_methods: 2,
-      credentials: [
-        { type: 'FOOD_SAFETY', issued_by: 'BeZhas', expires: '2026-01-15' },
-        { type: 'BLOCKCHAIN_PROVIDER', issued_by: 'BeZhas', expires: '2026-01-15' }
-      ]
-    });
-  });
-
-  /**
-   * GET /api/purescan/scans
-   * Historial de escaneos
-   */
-  router.get('/scans', async (req, res) => {
-    const limit = parseInt(req.query.limit || '10', 10);
-    const scans = Array.from({ length: limit }, (_, i) => ({
-      id: `SCAN-${i}`,
-      timestamp: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
-      product: ['Avocados', 'Tomatoes', 'Lettuce'][i % 3],
-      status: 'completed',
-      dpp_id: `DPP-${i}`
+        res.status(status).json({
+            success: scan.status !== 'unavailable',
+            scanRef: scan.scan_ref,
+            status: scan.status,
+            taskId: scan.taskId || null,
+            poll: `/api/purescan/scans/${scan.scan_ref}`,
+            ...(scan.error ? { error: scan.error } : {}),
+        });
     }));
-    res.json(scans);
-  });
 
-  /**
-   * POST /api/purescan/scans/:id/feedback
-   * Recibe feedback humano de un análisis (HITL)
-   */
-  router.post('/scans/:id/feedback', async (req, res) => {
-    res.json({ success: true, message: 'Feedback recorded' });
-  });
+    router.get('/scans/:ref', wrap(async (req, res) => {
+        const scan = await svc.getScan(req.params.ref);
+        if (!scan) return res.status(404).json({ success: false, error: 'Escaneo no encontrado' });
 
-  /**
-   * GET /api/purescan/analytics
-   * Devuelve analíticas para el dashboard
-   */
-  router.get('/analytics', async (req, res) => {
-    res.json({
-      total_scans: 128,
-      accuracy_rate: 99.2,
-      avg_processing_time: 4.2,
-      verified_batches: 124,
-      pending_review: 4,
-      risk_detected: 2,
-      daily_scans: Array.from({ length: 7 }, (_, i) => ({
-        date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        count: Math.floor(Math.random() * 30) + 10
-      }))
-    });
-  });
+        res.json({
+            success: true,
+            scanRef: scan.scan_ref,
+            status: scan.status,
+            analysis: scan.analysis || null,
+            riskLevel: scan.risk_level || null,
+            error: scan.error_message || null,
+            createdAt: scan.created_at,
+            updatedAt: scan.updated_at,
+        });
+    }));
 
-  return router;
+    router.get('/scans', wrap(async (req, res) => {
+        const scans = await svc.listScans({
+            limit: req.query.limit,
+            status: req.query.status || null,
+        });
+        res.json({ success: true, scans });
+    }));
+
+    /**
+     * Escritura del resultado por parte del agente, que cierra el sondeo.
+     * Protegida con la clave interna: quien pueda escribir aquí decide si un
+     * lote de comida es apto.
+     */
+    router.post('/scans/:ref/result', wrap(async (req, res) => {
+        const expected = process.env.INTERNAL_API_KEY;
+        if (!expected || req.get('x-internal-key') !== expected) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+
+        const { analysis, error } = req.body || {};
+
+        if (error) {
+            const failed = await svc.setScanStatus(req.params.ref, 'failed', { errorMessage: error });
+            if (!failed) return res.status(404).json({ success: false, error: 'Escaneo no encontrado' });
+            return res.json({ success: true, status: 'failed' });
+        }
+
+        if (!analysis || typeof analysis !== 'object') {
+            return res.status(400).json({ success: false, error: 'Falta el objeto analysis' });
+        }
+
+        const updated = await svc.completeScan(req.params.ref, analysis);
+        if (!updated) return res.status(404).json({ success: false, error: 'Escaneo no encontrado' });
+
+        res.json({ success: true, status: updated.status, riskLevel: updated.risk_level || null });
+    }));
+
+    router.post('/scans/:ref/feedback', wrap(async (req, res) => {
+        const { verdict, comment, createdBy } = req.body || {};
+
+        let saved;
+        try {
+            saved = await svc.recordFeedback(req.params.ref, { verdict, comment, createdBy });
+        } catch (err) {
+            return res.status(400).json({ success: false, error: err.message });
+        }
+
+        if (!saved) return res.status(404).json({ success: false, error: 'Escaneo no encontrado' });
+        res.status(201).json({ success: true, feedbackId: saved.id, verdict: saved.verdict });
+    }));
+
+    // ── Digital Product Passport ─────────────────────────────────────────────
+    router.post('/blockchain/sync', wrap(async (req, res) => {
+        const { scanRef = null, ...payload } = req.body || {};
+
+        if (!payload || Object.keys(payload).length === 0) {
+            return res.status(400).json({ success: false, error: 'El DPP no puede ir vacío' });
+        }
+
+        const dpp = await svc.createDpp({ scanRef, payload }, bridge);
+
+        res.status(dpp.status === 'failed' ? 502 : 201).json({
+            success: dpp.status !== 'failed',
+            dppRef: dpp.dpp_ref,
+            status: dpp.status,
+            leafHash: dpp.leaf_hash,
+            merkleRoot: dpp.merkle_root,
+            anchorTxHash: dpp.anchor_tx_hash || dpp.txHash || null,
+            anchored: Boolean(dpp.anchored),
+            ...(dpp.reason ? { reason: dpp.reason } : {}),
+            ...(dpp.error ? { error: dpp.error } : {}),
+        });
+    }));
+
+    router.get('/dpp/:ref', wrap(async (req, res) => {
+        const dpp = await svc.getDpp(req.params.ref);
+        if (!dpp) return res.status(404).json({ success: false, error: 'DPP no encontrado' });
+        res.json({ success: true, dpp });
+    }));
+
+    // ── Inventario y analíticas ──────────────────────────────────────────────
+    router.get('/inventory', wrap(async (req, res) => {
+        const inventory = await svc.listInventory({ limit: req.query.limit });
+        res.json({ success: true, inventory });
+    }));
+
+    router.put('/inventory/:sku', wrap(async (req, res) => {
+        const { product, quantity, batch, status } = req.body || {};
+        const row = await svc.upsertInventory({
+            sku: req.params.sku, product, quantity, batch, status,
+        });
+        res.json({ success: true, sku: req.params.sku, id: row ? row.id : null });
+    }));
+
+    router.get('/analytics', wrap(async (_req, res) => {
+        res.json({ success: true, ...(await svc.getAnalytics()) });
+    }));
+
+    router.get('/profile/did', wrap(async (_req, res) => {
+        const did = svc.getNodeDid();
+        if (!did.did) return res.status(503).json({ success: false, ...did });
+        res.json({ success: true, ...did });
+    }));
+
+    return router;
 };

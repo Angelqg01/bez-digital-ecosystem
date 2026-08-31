@@ -90,4 +90,58 @@ describe('anchorPending', () => {
     expect(res).toHaveLength(0);
     expect(bridge.anchorTelemetryOnChain).not.toHaveBeenCalled();
   });
+
+  test('retains the leaves of a non-anchorable batch instead of discarding them', async () => {
+    const bridge = { isOracleEnabled: () => true, registerNodeOnChain: jest.fn(), anchorTelemetryOnChain: jest.fn() };
+    // A battery at rest: signed readings, energy counter flat at 10.
+    for (const seq of [1, 2, 3]) {
+      anchor.observe({ nodeId: 'bat-02', accepted: true, payload: signed({ seq, sig: `sig${seq}`, metrics: { energy_kwh: 10 } }) });
+    }
+    expect(anchor.pendingCounts()).toEqual({ 'bat-02': 3 });
+
+    expect(await anchor.anchorPending(bridge, '0xBEEF')).toHaveLength(0);
+
+    expect(anchor.pendingCounts()).toEqual({ 'bat-02': 3 }); // evidence survives
+  });
+
+  test('anchors the retained leaves once the counter finally advances', async () => {
+    const anchored = [];
+    const bridge = {
+      isOracleEnabled: () => true,
+      registerNodeOnChain: async () => ({ ok: true }),
+      anchorTelemetryOnChain: async (proofId, nodeId, account, kWh, period, root) => { anchored.push({ kWh, root }); return { ok: true, hash: '0xdead' }; },
+    };
+    anchor.observe({ nodeId: 'bat-02', accepted: true, payload: signed({ seq: 1, sig: 'sig1', metrics: { energy_kwh: 10 } }) });
+    anchor.observe({ nodeId: 'bat-02', accepted: true, payload: signed({ seq: 2, sig: 'sig2', metrics: { energy_kwh: 10 } }) });
+    await anchor.anchorPending(bridge, '0xBEEF'); // interval 1: nothing to accredit
+
+    anchor.observe({ nodeId: 'bat-02', accepted: true, payload: signed({ seq: 3, sig: 'sig3', metrics: { energy_kwh: 17 } }) });
+    const res = await anchor.anchorPending(bridge, '0xBEEF'); // interval 2: 17 - 10
+
+    expect(anchored).toHaveLength(1);
+    expect(anchored[0].kWh).toBe(7);
+    expect(res[0].count).toBe(3);      // all three readings under one root
+    expect(res[0].dropped).toBe(0);
+    expect(anchor.pendingCounts()).toEqual({}); // consumed only once anchored
+  });
+
+  test('bounds the retained buffer, dropping the oldest leaves and counting them', async () => {
+    const prev = process.env.VPP_ANCHOR_MAX_PENDING_LEAVES;
+    process.env.VPP_ANCHOR_MAX_PENDING_LEAVES = '4';
+    try {
+      for (let seq = 1; seq <= 6; seq++) {
+        anchor.observe({ nodeId: 'bat-03', accepted: true, payload: signed({ seq, sig: `sig${seq}`, metrics: { energy_kwh: 10 } }) });
+      }
+      expect(anchor.pendingCounts()).toEqual({ 'bat-03': 4 });
+
+      // The kWh window is unchanged, so the batch stays truthful about energy;
+      // `dropped` tells the auditor the root covers fewer readings.
+      const batch = anchor.buildBatch('bat-03', { consume: false });
+      expect(batch.count).toBe(4);
+      expect(batch.dropped).toBe(2);
+    } finally {
+      if (prev === undefined) delete process.env.VPP_ANCHOR_MAX_PENDING_LEAVES;
+      else process.env.VPP_ANCHOR_MAX_PENDING_LEAVES = prev;
+    }
+  });
 });

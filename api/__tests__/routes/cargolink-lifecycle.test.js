@@ -98,7 +98,12 @@ describe('Routes: /api/cargolink lifecycle (B-UID object model)', () => {
       .send({ payload: {} });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toMatch(/Requires role 'customs'/);
+    // Desde CREATED hay dos ramas legítimas —gate-in (logistics) o despacho
+    // directo sin almacén (customs)—, así que el error las enumera en vez de
+    // nombrar una sola. `carrier` no es ninguna de las dos.
+    expect(res.body.error).toMatch(/Role 'carrier' cannot advance CREATED/);
+    expect(res.body.error).toMatch(/GATE_IN \(role 'logistics'\)/);
+    expect(res.body.error).toMatch(/CUSTOMS_CLEARED \(role 'customs'\)/);
   });
 
   it('advances CREATED -> CUSTOMS_CLEARED for the customs role and fans out the event', async () => {

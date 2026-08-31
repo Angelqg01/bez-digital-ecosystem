@@ -1,0 +1,35 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "action": "refreshQueue",
+      "queueLength": 3,
+      "tx": "0xaeac125002c70a54393c0d31697655f563106a741afb36c51dc6c4dfebc8cb12"
+    },
+    {
+      "step": 2,
+      "error": "execution reverted: \"SR: no record\" (action=\"estimateGas\", data=\"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53523a206e6f207265636f726400000000000000000000000000000000000000\", reason=\"SR: no record\", transaction={ \"data\": \"0x17ab7b6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064\", \"from\": \"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\", \"to\": \"0x8A791620dd6260079BF849Dc5567aDC3F2FdC318\" }, invocation=null, revert={ \"args\": [ \"SR: no record\" ], \"name\": \"Error\", \"signature\": \"Error(string)\" }, code=CALL_EXCEPTION, version=6.17.0)"
+    },
+    {
+      "step": 3,
+      "action": "advanceEpoch",
+      "oldEpoch": 0,
+      "newEpoch": 1,
+      "oldSeq": "0x55d5832c04D433f55cAa25e367Ed460048DE38b2",
+      "newSeq": "0x992f7c2acB9262b0eC1eaca42600E30b918eA65c",
+      "tx": "0x84740e8f350e5bbe511672b302d7cb97678b923170b79ccdc73daad0696c6929"
+    },
+    {
+      "step": 4,
+      "error": "execution reverted: \"SR: no record\" (action=\"estimateGas\", data=\"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53523a206e6f207265636f726400000000000000000000000000000000000000\", reason=\"SR: no record\", transaction={ \"data\": \"0x17ab7b6000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000032\", \"from\": \"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\", \"to\": \"0x8A791620dd6260079BF849Dc5567aDC3F2FdC318\" }, invocation=null, revert={ \"args\": [ \"SR: no record\" ], \"name\": \"Error\", \"signature\": \"Error(string)\" }, code=CALL_EXCEPTION, version=6.17.0)"
+    },
+    {
+      "step": 5,
+      "action": "forceRotation",
+      "oldSeq": "0x992f7c2acB9262b0eC1eaca42600E30b918eA65c",
+      "newSeq": "0xA118a5783BCB88717B351736600aD3CaAcAb5bfD",
+      "tx": "0x260a7c07a9c680d034ca80a7635604020d22108ae2b0234709d07650ba3e0f80"
+    }
+  ],
+  "success": true
+}

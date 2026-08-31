@@ -8,8 +8,8 @@ export default function ValidatorsPage() {
   const stk = data?.staking;
 
   const totalStaked = stk ? (stk.totalStaked / 1_000_000).toFixed(1) + 'M' : '—';
-  const activeNodes = net ? net.validatorsActive.toLocaleString() : '—';
-  const uptimeVal = net ? net.uptime.toFixed(2) : '—';
+  const activeNodes = net?.validatorsActive?.toLocaleString() ?? '—';
+  const uptimeVal = net?.uptime?.toFixed(2) ?? '—';
   const aprVal = stk ? stk.apr.toFixed(1) + '%' : '—';
 
   return (

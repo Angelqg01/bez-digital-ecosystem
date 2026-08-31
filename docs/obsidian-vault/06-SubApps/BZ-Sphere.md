@@ -3,7 +3,7 @@ type: "subapp"
 layer: 2
 priority: "P2"
 cluster: "identidad-comunidad"
-repo_path: "App's secundarias/BZ Sphere/"
+repo_path: "App-nativas/BZ Sphere/"
 domain: "sphere.bez.digital"
 tags: ["platform-map", "identidad-comunidad", "p2"]
 ---
@@ -14,7 +14,7 @@ tags: ["platform-map", "identidad-comunidad", "p2"]
 
 Red/comunidad del ecosistema de socios pre-verificados.
 
-**Ubicación:** `App's secundarias/BZ Sphere/` · sphere.bez.digital
+**Ubicación:** `App-nativas/BZ Sphere/` · sphere.bez.digital
 
 ## Conexiones
 

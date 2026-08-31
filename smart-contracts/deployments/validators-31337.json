@@ -1,0 +1,41 @@
+{
+  "chainId": 31337,
+  "validators": [
+    {
+      "name": "BeZhas Bronze Test",
+      "tier": "Bronze",
+      "address": "0xac566424C1AFD6DcC4b569fd70b97382f66b69b6",
+      "stake": "10000",
+      "txHash": "0x3b3e4ea89f11401077a892e85a0ccb8cc43dd5ee8b05d8b937e789790c4dfaff"
+    },
+    {
+      "name": "BeZhas Silver Test",
+      "tier": "Silver",
+      "address": "0x317128BB172F8f76CeC7d0cBA54d5d1059DC4F21",
+      "stake": "50000",
+      "txHash": "0xcd14889d568f3bf6db6eca8b919486639ab017064aa0713f96daa987130fe664"
+    },
+    {
+      "name": "BeZhas Gold Test",
+      "tier": "Gold",
+      "address": "0xA118a5783BCB88717B351736600aD3CaAcAb5bfD",
+      "stake": "250000",
+      "txHash": "0xb0ac9d4ec36cfcb980b5779785d0924395193cd896ac32096978c140993233b0"
+    },
+    {
+      "name": "BeZhas Platinum Test",
+      "tier": "Platinum",
+      "address": "0x55d5832c04D433f55cAa25e367Ed460048DE38b2",
+      "stake": "1000000",
+      "txHash": "0x1e2bd69d2a0cb652eb1b7ab2cf663f8ba8003d7a696b96849c94601fd439c41b"
+    },
+    {
+      "name": "BeZhas Gold-2 Test",
+      "tier": "Gold",
+      "address": "0x992f7c2acB9262b0eC1eaca42600E30b918eA65c",
+      "stake": "300000",
+      "txHash": "0x4bfcaf66e1ddea2cdba5f284b0fb386df12d60cfc4012a724aa7b3f5faed77af"
+    }
+  ],
+  "timestamp": "2026-08-20T20:08:51.414Z"
+}
