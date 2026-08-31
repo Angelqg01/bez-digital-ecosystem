@@ -161,7 +161,13 @@ app.use(cors({
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: parseInt(process.env.RATE_LIMIT_MAX, 10) || (IS_PROD ? 100 : 5000),
-  skip: req => !IS_PROD && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.ip),
+  skip: req => (!IS_PROD && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.ip))
+    // El War Room sondea cada 8 s por diseño: son 112 peticiones cada 15
+    // minutos contra un límite de 100. A los trece minutos de encender el
+    // kiosko, la pantalla se quedaba en blanco con un 429 y ahí seguía hasta
+    // que expiraba la ventana. Tiene su propio limitador, más abajo, dimensionado
+    // para ese sondeo — y además su propio token.
+    || req.path.startsWith('/api/monitor'),
   message: { error: 'Too many requests, please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -181,7 +187,22 @@ const scadaLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * Limitador del War Room. Generoso pero acotado: el sondeo son 7,5 peticiones
+ * por minuto y 60 dejan sitio a varios kioskos y a refrescos manuales sin
+ * dejarlo abierto de par en par. Lo que evita es que quedar fuera del limitador
+ * global signifique quedar sin ninguno.
+ */
+const monitorLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: parseInt(process.env.MONITOR_RATE_LIMIT_MAX, 10) || 60,
+  message: { error: 'Too many monitor requests.', code: 'MONITOR_RATE_LIMIT' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(globalLimiter);
+app.use('/api/monitor', monitorLimiter);
 
 // Aplicar limiter SCADA solo a las rutas críticas de energía
 app.use('/api/energy/control', scadaLimiter);

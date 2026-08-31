@@ -195,6 +195,22 @@ services:
       # responde 503 sin este token. Sin pasarlo, el War Room queda muerto.
       MONITOR_ACCESS_TOKEN: ${MONITOR_ACCESS_TOKEN:-}
 
+      # Fuentes del War Room (/monitor). Por NOMBRE DE SERVICIO, no localhost:
+      # los valores por defecto de monitor.js apuntan a localhost, que dentro
+      # de este contenedor es el propio contenedor. El panel «Docker / Infra»
+      # decía «Prometheus no disponible» teniendo Prometheus levantado y
+      # perfectamente alcanzable en prometheus:9090.
+      #
+      # prometheus y grafana están tras el perfil `monitoring`; si no se
+      # levantan, el nombre no resuelve y el panel degrada a null, que es el
+      # comportamiento correcto.
+      MONITOR_PROMETHEUS_URL:   ${MONITOR_PROMETHEUS_URL:-http://prometheus:9090/api/v1/targets}
+      MONITOR_BRAIN_URL:        ${MONITOR_BRAIN_URL:-http://obsidian-mcp:4007/telemetry/summary}
+      # Aegis no es un servicio de este compose: se deja configurable y sin
+      # valor por defecto útil, para que el panel diga «Offline» en vez de
+      # fingir que apunta a algo.
+      MONITOR_AEGIS_HEALTH_URL: ${MONITOR_AEGIS_HEALTH_URL:-}
+
       PORT:             3001
     ports:
       - "3001:3001"
@@ -215,6 +231,12 @@ services:
     volumes:
       - ./smart-contracts/deployments:/smart-contracts/deployments:ro
       - ./smart-contracts/abi:/smart-contracts/abi:ro
+      # Estado de las Apps Nativas que escribe scripts/subapp-watchdog.cjs.
+      # monitor.js lo resuelve con path.resolve(__dirname, '../../scripts/...')
+      # y __dirname es /app/routes, así que dentro del contenedor cuelga de la
+      # raíz. Sin montarlo, el panel «Apps Nativas» decía siempre
+      # «Watchdog no ejecutado» aunque el fichero existiera en el host.
+      - ./scripts/status:/scripts/status:ro
     # En Linux `host.docker.internal` no existe por defecto; esto lo resuelve.
     extra_hosts:
       - "host.docker.internal:host-gateway"

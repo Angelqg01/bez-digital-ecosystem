@@ -55,12 +55,42 @@ function checkAccess(req, res, next) {
   return res.status(401).json({ error: 'Unauthorized', code: 'MONITOR_TOKEN_REQUIRED' });
 }
 
+/**
+ * Cortacircuitos por URL: tras un fallo, esa fuente se salta durante un rato.
+ *
+ * No es solo por cortesía con un servicio caído. Las resoluciones DNS de Node
+ * van al threadpool de libuv, que tiene cuatro hilos: con las ocho fuentes
+ * lanzadas a la vez, UN host que no resuelve ocupa hilos el tiempo completo del
+ * timeout y arrastra a los que sí responden. Medido: obsidian-mcp caído tarda
+ * 615 ms en serie y 3.002 ms en paralelo, y de paso hacía que Prometheus
+ * —levantado y sano— agotase su propio timeout y saliera como null.
+ *
+ * Es decir: sin esto, un subsistema muerto apagaba paneles de subsistemas
+ * vivos, que es exactamente lo que el diseño por fuentes independientes
+ * pretendía evitar.
+ */
+const FETCH_COOLDOWN_MS = parseInt(process.env.MONITOR_FETCH_COOLDOWN_MS || '60000', 10);
+const ultimoFallo = new Map();
+
 async function safeFetch(url, timeoutMs = 3000) {
+  // Una URL vacía es una fuente sin configurar, no un fallo: ni se intenta.
+  if (!url) return null;
+
+  const fallo = ultimoFallo.get(url);
+  if (fallo && Date.now() - fallo < FETCH_COOLDOWN_MS) return null;
+
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      ultimoFallo.set(url, Date.now());
+      return null;
+    }
+    ultimoFallo.delete(url);   // se recuperó: vuelve a consultarse cada vez
     return await res.json();
-  } catch { return null; }
+  } catch {
+    ultimoFallo.set(url, Date.now());
+    return null;
+  }
 }
 
 function safeReadJson(filePath) {
