@@ -1,0 +1,54 @@
+{
+  "_comment": "Planes de OPERANT alineados con los de BeZhas (api/config/plans.js + api/config/operant-services.js, que son la fuente canónica). Aquí solo viven los LÍMITES DE EJECUCIÓN que necesita el runtime; el precio y la facturación los lleva el Gateway de BeZhas. 'pro' y 'enterprise' se conservan como alias de los planes antiguos para que un tenant dado de alta antes de la integración siga rehidratando tras un reinicio.",
+  "starter": {
+    "maxConcurrentTasks": 1,
+    "departments": ["sales", "support"],
+    "maxAgentCallsMonth": 450,
+    "maxRequestsPerMinute": 60,
+    "monthlyPriceEur": 0,
+    "billing": "bezhas-payg"
+  },
+  "creator_pro": {
+    "maxConcurrentTasks": 3,
+    "departments": ["sales", "support", "marketing", "finance"],
+    "maxAgentCallsMonth": 900,
+    "maxRequestsPerMinute": 300,
+    "monthlyPriceEur": 99,
+    "billing": "bezhas-quota"
+  },
+  "business": {
+    "maxConcurrentTasks": 8,
+    "departments": ["sales", "support", "marketing", "finance", "hr", "operations", "legal", "blockchain"],
+    "maxAgentCallsMonth": 6000,
+    "maxRequestsPerMinute": 1200,
+    "monthlyPriceEur": 499,
+    "billing": "bezhas-quota"
+  },
+  "enterprise_vip": {
+    "maxConcurrentTasks": 25,
+    "departments": ["sales", "support", "marketing", "finance", "hr", "operations", "legal", "blockchain", "treasury", "fundraising"],
+    "maxAgentCallsMonth": 27000,
+    "maxRequestsPerMinute": 6000,
+    "monthlyPriceEur": 2499,
+    "billing": "bezhas-quota"
+  },
+
+  "pro": {
+    "_deprecated": "alias histórico → creator_pro",
+    "maxConcurrentTasks": 3,
+    "departments": ["sales", "support", "marketing", "finance"],
+    "maxAgentCallsMonth": 900,
+    "maxRequestsPerMinute": 300,
+    "monthlyPriceEur": 99,
+    "billing": "bezhas-quota"
+  },
+  "enterprise": {
+    "_deprecated": "alias histórico → enterprise_vip",
+    "maxConcurrentTasks": 25,
+    "departments": ["sales", "support", "marketing", "finance", "hr", "operations", "legal", "blockchain", "treasury", "fundraising"],
+    "maxAgentCallsMonth": 27000,
+    "maxRequestsPerMinute": 6000,
+    "monthlyPriceEur": 2499,
+    "billing": "bezhas-quota"
+  }
+}

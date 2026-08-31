@@ -1,0 +1,144 @@
+# OPERANT — Stack soberano completo (auto-alojado, open source).
+# Levanta TODO lo propio: datos, IA local, almacenamiento, correo, CRM, soporte,
+# automatización y observabilidad. Arranca por perfiles para no encender todo a la vez:
+#
+#   docker compose -f infra/docker-compose.full.yml --profile core up -d        # cimientos
+#   docker compose -f infra/docker-compose.full.yml --profile comms up -d        # email + soporte
+#   docker compose -f infra/docker-compose.full.yml --profile business up -d     # CRM + ERP + automatización
+#
+# Los perfiles comms y business arrastran Postgres (y Redis) porque sus servicios
+# dependen de él: se pueden levantar solos, sin recordar añadir también `core`.
+#
+# La observabilidad (SigNoz + Langfuse) vive en docker-compose.observability.yml
+# y se levanta junto a este fichero. Está separada porque Compose interpola todo
+# el fichero al cargarlo, sin mirar perfiles: sus secretos obligatorios impedían
+# arrancar los cimientos.
+#
+# Cada servicio se expone al SaaS mediante un Connector (ver src/connectors/).
+# Nada es de pago: solo necesitas la máquina (PC o servidor) donde corre.
+
+name: operant
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  # ── NIVEL 1: CIMIENTOS (core) ─────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16          # Postgres + pgvector en una imagen
+    # En los tres perfiles porque chatwoot (comms) y twenty/n8n/btcpay (business)
+    # dependen de él: sin esto, `--profile comms up` fallaba con "depends on
+    # undefined service postgres" y había que acordarse de añadir `--profile core`.
+    profiles: [core, comms, business]
+    <<: *restart
+    environment:
+      # Rol DUEÑO (superusuario): migraciones y DDL. La aplicación NO debe usarlo
+      # — un superusuario ignora la RLS y anula el aislamiento entre tenants.
+      # Ella usa operant_app, que crea la migración 004 y al que
+      # `npm run db:migrate` le pone la contraseña de PG_APP_PASSWORD.
+      POSTGRES_USER: ${PG_USER:-operant}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-operant}
+      POSTGRES_DB: ${PG_DB:-operant}
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../src/db/migrations:/docker-entrypoint-initdb.d:ro   # migraciones 000→004
+
+  redis:
+    image: valkey/valkey:8-alpine          # Valkey = Redis OSS (caché, colas, rate limit)
+    profiles: [core, comms]                # chatwoot lo necesita
+    <<: *restart
+    ports: ["6379:6379"]
+    volumes: [redisdata:/data]
+
+  minio:
+    image: minio/minio:latest              # almacén S3-compatible (CVs, facturas, KB)
+    profiles: [core]
+    <<: *restart
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-operant}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-operant-secret}
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [miniodata:/data]
+
+  ollama:
+    image: ollama/ollama:latest            # LLM + embeddings locales (sin coste/token)
+    profiles: [core]
+    <<: *restart
+    ports: ["11434:11434"]
+    volumes: [ollamadata:/root/.ollama]
+    # Tras arrancar:  docker exec -it operant-ollama-1 ollama pull qwen2.5:14b
+    #                 docker exec -it operant-ollama-1 ollama pull nomic-embed-text
+
+  # ── NIVEL 2: COMUNICACIÓN (comms) ─────────────────────────────────
+  mail:
+    image: stalwartlabs/stalwart:latest    # correo propio: SMTP/IMAP/JMAP + antispam
+    profiles: [comms]
+    <<: *restart
+    ports: ["25:25", "465:465", "993:993", "8080:8080"]   # 465 = submission (TLS), 8080 = admin
+    volumes:
+      - maildata:/var/lib/stalwart      # buzones, colas, índices
+      - mailconfig:/etc/stalwart        # configuración (dominio, TLS, DKIM)
+
+  chatwoot:
+    image: chatwoot/chatwoot:latest        # bandeja omnicanal (WhatsApp/IG/web/email)
+    profiles: [comms]
+    <<: *restart
+    depends_on: [postgres, redis]
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY_BASE: ${CHATWOOT_SECRET:-change-me}
+    ports: ["3001:3000"]
+
+  # ── NIVEL 3: NEGOCIO (business) ───────────────────────────────────
+  twenty:
+    image: twentycrm/twenty:latest         # CRM propio (escuadrón de Ventas)
+    profiles: [business]
+    <<: *restart
+    depends_on: [postgres]
+    environment:
+      PG_DATABASE_URL: postgres://${PG_USER:-operant}:${PG_PASSWORD:-operant}@postgres:5432/twenty
+      SERVER_URL: http://localhost:3000
+    ports: ["3000:3000"]
+
+  n8n:
+    image: n8nio/n8n:latest                # automatización (pegamento de eventos)
+    profiles: [business]
+    <<: *restart
+    depends_on: [postgres]
+    environment:
+      # Persistencia en el Postgres propio (por defecto n8n usa SQLite en el volumen).
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: ${N8N_DB:-n8n}
+      DB_POSTGRESDB_USER: ${PG_USER:-operant}
+      DB_POSTGRESDB_PASSWORD: ${PG_PASSWORD:-operant}
+      # Sin esto los webhooks generan URLs con el hostname del contenedor.
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me}
+      GENERIC_TIMEZONE: ${TZ:-Europe/Madrid}
+    ports: ["5678:5678"]
+    volumes: [n8ndata:/home/node/.n8n]
+
+  btcpay:
+    image: btcpayserver/btcpayserver:latest # cobros en cripto, 100% soberano
+    profiles: [business]
+    <<: *restart
+    depends_on: [postgres]
+    environment:
+      BTCPAY_POSTGRES: postgres://${PG_USER:-operant}:${PG_PASSWORD:-operant}@postgres:5432/btcpay
+    ports: ["2300:49392"]
+
+  # ── NIVEL 4: OBSERVABILIDAD ───────────────────────────────────────
+  # En docker-compose.observability.yml (ver cabecera).
+
+volumes:
+  pgdata: {}
+  redisdata: {}
+  miniodata: {}
+  ollamadata: {}
+  maildata: {}
+  mailconfig: {}
+  n8ndata: {}

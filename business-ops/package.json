@@ -1,0 +1,35 @@
+{
+  "name": "operant-saas",
+  "version": "0.1.0",
+  "description": "Plataforma SaaS multi-tenant de gestión empresarial autónoma con ejército de agentes IA",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "server": "node src/server.js",
+    "dev": "nodemon src/index.js",
+    "smoke": "node test/smoke.js",
+    "test": "node --test \"test/*.test.js\"",
+    "evals": "node evals/run.js",
+    "pilot": "node test/pilot-bezhas.js",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:migrate": "node src/db/migrate.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.17.0",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^9.0.3",
+    "pg": "^8.13.1"
+  },
+  "optionalDependencies": {
+    "minio": "^8.0.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  },
+  "license": "UNLICENSED"
+}

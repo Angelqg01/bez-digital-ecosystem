@@ -1,0 +1,12 @@
+{
+  "sales":      { "manager": "sales.manager",      "tier": "frontier", "specialists": ["sales.lead-hunter", "sales.lead-scorer", "sales.outreach", "sales.negotiator"] },
+  "support":    { "manager": "support.manager",    "tier": "mid",      "specialists": ["support.triage", "support.kb", "support.resolver", "support.escalation"] },
+  "marketing":  { "manager": "marketing.manager",  "tier": "frontier", "specialists": ["marketing.content", "marketing.copy", "marketing.seo", "marketing.social"] },
+  "hr":         { "manager": "hr.manager",         "tier": "mid",      "specialists": ["hr.advisor", "hr.cv-screener", "hr.scheduler", "hr.onboarding"] },
+  "finance":    { "manager": "finance.manager",    "tier": "mid",      "specialists": ["finance.advisor", "finance.invoice", "finance.collections", "finance.forecast", "finance.token-disbursement"] },
+  "operations": { "manager": "operations.manager", "tier": "mid",      "specialists": ["operations.coordinator", "operations.procurement", "operations.inventory", "operations.report"] },
+  "blockchain": { "manager": "blockchain.manager", "tier": "mid",      "specialists": ["blockchain.onchain-monitor", "blockchain.compliance-check"] },
+  "legal":      { "manager": "legal.manager",      "tier": "mid",      "specialists": ["legal.contract-review", "legal.regulatory-advisor"] },
+  "treasury":   { "manager": "treasury.manager",   "tier": "mid",      "specialists": ["treasury.runway", "treasury.tokenomics"] },
+  "fundraising": { "manager": "fundraising.manager", "tier": "frontier", "specialists": ["fundraising.investor-scorer", "fundraising.investor-outreach"] }
+}

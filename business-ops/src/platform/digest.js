@@ -34,7 +34,8 @@ async function buildDigest(deps, tenantId) {
     llamadasUsadas: usage.used,
     llamadasRestantes: usage.remaining,
     costeIaUsd: Number(cost.costUsd.toFixed(4)),
-    facturaEstimadaUsd: invoice?.totalUsd ?? null,
+    facturaEstimadaEur: invoice?.totalEur ?? null,
+    excedenteFacturadoPor: invoice?.overageBilledBy ?? null,
     tareasRecientes: tasks.length,
     tareasPorDepartamento: byDept,
     soporte: {

@@ -1,0 +1,385 @@
+{
+  "id": "bezhas",
+  "company": "BeZhas — BlockConnection",
+  "oneLiner": "Infraestructura de validación operativa, smart escrow y trazabilidad que lleva a la empresa de la gestión manual a la operación blindada.",
+  "ceo": "Yoel A. Hernández",
+  "signature": "Yoel A. Hernández\nCEO & Founder | BeZhas\nWeb: https://bez.digital/\nDeck: https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view\nAgenda: https://calendar.app.google/eeLJBBT27St45XnD7",
+  "links": {
+    "web": "https://bez.digital/",
+    "agenda": "https://calendar.app.google/eeLJBBT27St45XnD7",
+    "ceoLinkedin": "https://www.linkedin.com/in/yoel-a-hernandez/",
+    "deck": "https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view"
+  },
+  "valueProps": [
+    "Validación inmutable de documentos y eventos logísticos.",
+    "Smart escrow: pagos que se liberan solos al validar la entrega o el hito, sin disputas ni impagos.",
+    "Trazabilidad operativa y auditoría compartida entre proveedor, marketplace y comprador.",
+    "Integración vía capa API/SDK sin sustituir el ERP/CRM existente.",
+    "Certificación digital de cosechas/cuotas/activos (RWA) para facilitar financiación.",
+    "Liquidez y trade finance sobre inventario verificado en tránsito.",
+    "Trazabilidad de la cadena de frío: origen, temperatura y calidad verificables de extremo a extremo.",
+    "Liquidación automática en lonja o subasta: el productor cobra al validarse peso y entrega, sin esperar conciliación.",
+    "Integración con sistemas de subasta de lonja y ERPs de marketplace, sin sustituirlos."
+  ],
+  "segments": [
+    {
+      "key": "naviera",
+      "label": "Naviera / operador marítimo",
+      "keywords": [
+        "naviera",
+        "shipping",
+        "operador marítimo",
+        "carrier"
+      ]
+    },
+    {
+      "key": "puerto",
+      "label": "Puerto / terminal / autoridad portuaria",
+      "keywords": [
+        "puerto",
+        "port",
+        "terminal",
+        "autoridad portuaria",
+        "aduana",
+        "customs"
+      ]
+    },
+    {
+      "key": "logistica",
+      "label": "Operador logístico",
+      "keywords": [
+        "logística",
+        "logistics",
+        "freight",
+        "transitario",
+        "supply chain"
+      ]
+    },
+    {
+      "key": "trade_finance",
+      "label": "Aseguradora / broker / trade finance",
+      "keywords": [
+        "seguro",
+        "insurance",
+        "broker",
+        "trade finance",
+        "factoring",
+        "tesorería"
+      ]
+    },
+    {
+      "key": "inversor",
+      "label": "VC / fondo / family office",
+      "keywords": [
+        "vc",
+        "fondo",
+        "family office",
+        "venture",
+        "inversor",
+        "business angel",
+        "agrotech",
+        "foodtech"
+      ]
+    },
+    {
+      "key": "partner_tecnico",
+      "label": "Partner técnico / integrador / compliance",
+      "keywords": [
+        "integrador",
+        "erp",
+        "sdk",
+        "iot",
+        "compliance",
+        "partner técnico"
+      ]
+    },
+    {
+      "key": "agro",
+      "label": "Agro / lonja / cooperativa",
+      "keywords": [
+        "lonja",
+        "cooperativa",
+        "productor",
+        "agro",
+        "pesca",
+        "mercado mayorista",
+        "mercasa",
+        "asaja",
+        "lonja de cítricos",
+        "mercamadrid",
+        "lonja pesquera",
+        "frusana",
+        "la reverde",
+        "cofradía"
+      ]
+    },
+    {
+      "key": "marketplace",
+      "label": "Marketplace B2B agroalimentario",
+      "keywords": [
+        "marketplace",
+        "wikifarmer",
+        "agri marketplace",
+        "ruralbridge",
+        "hispatec",
+        "ruralia"
+      ]
+    },
+    {
+      "key": "importador_exportador",
+      "label": "Importador / exportador de perecederos",
+      "keywords": [
+        "importador",
+        "exportador",
+        "perecederos",
+        "fresh produce",
+        "frigorífico",
+        "cadena de frío",
+        "cold chain",
+        "reefer"
+      ]
+    }
+  ],
+  "scoringBands": [
+    {
+      "min": 90,
+      "max": 100,
+      "criterio": "Dolor operativo agudo (congestión, claims, seguros, demoras, geopolítica) con decisor claro, o exportador a Asia."
+    },
+    {
+      "min": 80,
+      "max": 89,
+      "criterio": "Inversor estratégico o actor con fuerte efecto multiplicador; marketplace digital en crecimiento."
+    },
+    {
+      "min": 70,
+      "max": 79,
+      "criterio": "Operador relevante con caso de uso plausible; lonja tradicional buscando modernización."
+    },
+    {
+      "min": 50,
+      "max": 69,
+      "criterio": "Contacto útil pero sin decisor claro o con email genérico."
+    },
+    {
+      "min": 0,
+      "max": 49,
+      "criterio": "Fuente débil, sin validación o fuera de foco."
+    }
+  ],
+  "excludedAccounts": [
+    "iberdrola",
+    "banco santander",
+    "santander"
+  ],
+  "excludedTags": [
+    "acuerdo v1",
+    "partner confirmado"
+  ],
+  "onchainAssets": [
+    {
+      "label": "BEZ Token",
+      "network": "Polygon",
+      "address": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8"
+    },
+    {
+      "label": "BEZ Token",
+      "network": "BNB Chain",
+      "address": "0x8a1e3930fde1f151471c368fdbb39f3f63a65b55"
+    },
+    {
+      "label": "Treasury DAO",
+      "network": "Polygon",
+      "address": "0x89c23890c742d710265dD61be789C71dC8999b12"
+    },
+    {
+      "label": "QualityEscrow",
+      "network": "Polygon",
+      "address": "0x3EfC42095E8503d41Ad8001328FC23388E00e8a3"
+    },
+    {
+      "label": "Hot Wallet",
+      "network": "Polygon",
+      "address": "0x52Df82920CBAE522880dD7657e43d1A754eD044E"
+    }
+  ],
+  "translationLayer": [
+    {
+      "de": "blockchain / Web3",
+      "a": "trazabilidad inalterable",
+      "impacto": "elimina fraudes, reclamaciones y errores de inventario"
+    },
+    {
+      "de": "tokenización",
+      "a": "liquidez de activos",
+      "impacto": "permite financiar o usar como garantía stock y activos de forma ágil"
+    },
+    {
+      "de": "smart contract",
+      "a": "pagos programados que se ejecutan solos",
+      "impacto": "el dinero se mueve cuando el trabajo se completa; mejora el flujo de caja"
+    },
+    {
+      "de": "IA integrada",
+      "a": "operación predictiva",
+      "impacto": "anticipa compras, riesgos, roturas o incidencias"
+    },
+    {
+      "de": "Edge Node",
+      "a": "conector operativo seguro",
+      "impacto": "conecta ERP y sensores actuales sin reemplazar infraestructura"
+    },
+    {
+      "de": "Core Gateway",
+      "a": "centro de integración",
+      "impacto": "unifica pagos, contratos, datos y dashboards"
+    },
+    {
+      "de": "Aegis AI",
+      "a": "auditor operativo predictivo",
+      "impacto": "detecta anomalías antes de liberar procesos críticos"
+    }
+  ],
+  "glassPipe": "Instalamos una 'Tubería de Cristal' en vuestras operaciones: dinero, productos, órdenes y validaciones son visibles para quien debe verlos, difíciles de manipular y quedan certificados. Nadie necesita entender la tecnología; solo dejan de existir las fugas y las zonas oscuras.",
+  "coldCopyRules": [
+    "PROHIBIDO en frío: jerga cripto (Web3, token, blockchain, staking, DAO, NFT, DeFi, preventa, BEZ-Coin) y cualquier enlace de compra/pago.",
+    "PROHIBIDO prometer rentabilidad, ROI, retornos garantizados o cifras cerradas.",
+    "Traduce toda la tecnología a beneficio de junta directiva: validación operativa, trazabilidad, smart escrow (pagos seguros sin impagos), integración sin cambiar el ERP, menos disputas y auditoría.",
+    "Un solo caso de uso y un solo CTA pequeño por mensaje: una derivación al decisor o una llamada de 10 minutos con la agenda.",
+    "Personaliza con un hecho verificable y reciente del prospecto; nada de mensajes genéricos.",
+    "90-140 palabras. Cierra con la firma y el enlace de agenda, nunca con enlaces de inversión."
+  ],
+  "honestyRules": [
+    "Nunca inventes clientes, partners, pilotos, validaciones ni resultados.",
+    "Usa prueba social o 'presión de red' SOLO si está verificada en el CRM; si no, usa formulación segura.",
+    "Preséntate como asesor de BeZhas: tono ejecutivo, concreto y orientado a negocio, sin entrar en cómo se genera el mensaje. Si el cliente pregunta con quién habla, duda o pide hablar con alguien, NO afirmes ser una persona: di que le pasas con una del equipo y deriva a un humano."
+  ],
+  "humanEscalation": [
+    "Token, staking, DAO, preventa o compra directa: solo si el prospecto lo pide explícitamente y con aprobación humana.",
+    "Interlocutores C-level, M&A, inversión, term sheets o entidades reguladas: aprobación humana antes del primer envío sensible.",
+    "Cualquier primer contacto en frío se aprueba antes de enviarse.",
+    "El cliente pregunta con quién habla, pide hablar con una persona o tiene dudas que el asesor no puede cerrar: se deriva a un humano."
+  ],
+  "entryOffer": "Piloto acotado: 1 caso de uso, 1 flujo operativo, 1 sponsor interno, 14-21 días, con KPI de éxito definidos (tiempo de validación, reducción de conciliación manual, trazabilidad, visibilidad operativa).",
+  "email": {
+    "domain": "bez.digital",
+    "displayName": "BeZhas",
+    "default": "hola@bez.digital",
+    "byDepartment": {
+      "sales": "ventas@bez.digital",
+      "support": "soporte@bez.digital",
+      "marketing": "marketing@bez.digital",
+      "finance": "facturacion@bez.digital",
+      "hr": "rrhh@bez.digital",
+      "operations": "operaciones@bez.digital",
+      "blockchain": "infraestructura@bez.digital",
+      "legal": "legal@bez.digital",
+      "treasury": "tesoreria@bez.digital",
+      "fundraising": "inversores@bez.digital"
+    }
+  },
+  "markets": [
+    "España",
+    "Europa",
+    "Singapur",
+    "Malasia",
+    "Hong Kong",
+    "Tokio",
+    "Yokohama"
+  ],
+  "outreachTemplates": [
+    {
+      "key": "productores",
+      "para": "Lonjas, cooperativas y asociaciones de productores",
+      "asunto": "[Empresa] | Pagos automáticos y trazabilidad para productores",
+      "angulo": "El productor cobra de forma segura y automática en cuanto el producto se valida en destino o subasta, sin disputas ni papeleo. No exige cambiar el sistema actual. CTA: 10 min para valorar un piloto de 14 días."
+    },
+    {
+      "key": "marketplace",
+      "para": "Marketplaces B2B agroalimentarios",
+      "asunto": "Integración de smart escrow en [Empresa]",
+      "angulo": "Capa API conectada a su plataforma para que los pagos internacionales se liberen contra la validación de eventos logísticos (calidad/entrega). CTA: quién lleva producto o innovación."
+    },
+    {
+      "key": "seguimiento",
+      "para": "Seguimiento sin respuesta",
+      "asunto": "Re: [asunto original]",
+      "angulo": "Breve y sin reproche: ¿eres la persona adecuada o me recomiendas a alguien de operaciones? Nada de reenviar el mensaje original."
+    }
+  ],
+  "channelPolicy": {
+    "primary": "email",
+    "escalation": [
+      "linkedin",
+      "whatsapp",
+      "telegram"
+    ],
+    "rules": [
+      "El correo es el canal principal. Solo se cambia de canal si el correo rebota o no hay respuesta tras la secuencia.",
+      "Rebote duro: la dirección no vale, no se reintenta por correo. Se busca otra vía con el dato que ya haya en el CRM; si no hay ninguna, se descarta.",
+      "Un prospecto que responde sale de la secuencia automática y pasa a conversación.",
+      "Cambiar de canal no reinicia la cuenta de intentos: el límite es por prospecto, no por canal."
+    ]
+  },
+  "followUpCadence": {
+    "_nota": "Dias desde el primer contacto. Absorbido de sales-agency, que distinguia por sector; aqui habia una sola cadencia global [3,7,14]. followUpPolicy.cadenceFor() los traduce a esperas entre pasos.",
+    "default": [
+      0,
+      3,
+      10,
+      24
+    ],
+    "logistica": [
+      0,
+      4,
+      9,
+      16,
+      25
+    ],
+    "puerto": [
+      0,
+      4,
+      9,
+      16,
+      25
+    ],
+    "agro": [
+      0,
+      4,
+      9,
+      16,
+      25
+    ],
+    "importador_exportador": [
+      0,
+      4,
+      9,
+      16,
+      25
+    ],
+    "marketplace": [
+      0,
+      4,
+      9,
+      16,
+      25
+    ]
+  },
+  "sequenceAngles": {
+    "_nota": "Angulo de cada paso, por segmento. Portado de sales-agency SALVO su secuencia 'crypto', que incumplia coldCopyRules: llevaba jerga cripto, precio del token y presion de listing en frio.",
+    "logistica": [
+      "Problema concreto de despacho, documentacion o pagos; propuesta con dato de mejora; CTA de 15 minutos.",
+      "Caso practico de automatizacion aduanera en un puerto real.",
+      "Coste de la validacion manual frente a la automatica.",
+      "Pregunta breve: eres tu la persona adecuada o me derivas a operaciones.",
+      "Cierre sin reproche: quedamos aqui cuando lo necesiteis."
+    ],
+    "agro": [
+      "Trazabilidad exigida por normativa (Reg. UE 178/2002) resuelta sin cambiar el sistema actual.",
+      "Lo que cuesta una retirada de mercado sin trazabilidad digital.",
+      "Certificar un lote con BeZhas frente a la via notarial.",
+      "Antes de la proxima campana: ventana corta para un piloto.",
+      "Cierre sin presion."
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+# OPERANT · infraestructura de desarrollo.
+#   npm run db:up       → levanta Postgres + pgvector y aplica migraciones (1ª vez)
+#   npm run db:migrate  → aplica migraciones a una base YA creada (y fija la
+#                         contraseña del rol de aplicación con PG_APP_PASSWORD)
+#   npm run db:down     → para el contenedor (mantiene el volumen)
+#
+# Las migraciones de src/db/migrations se montan en el initdb de Postgres y se
+# ejecutan en orden alfabético (000 → 004) solo en el primer arranque del
+# volumen. Para todo lo demás está db:migrate, que también las lleva al día.
+#
+# El usuario de abajo es el DUEÑO del esquema y superusuario: sirve para migrar,
+# nunca para que se conecte la aplicación (un superusuario ignora la Row-Level
+# Security y se lleva por delante el aislamiento entre tenants). La aplicación
+# usa el rol operant_app que crea la migración 004. Ver docs/MULTI-TENANCY.md.
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: operant-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: operant
+    ports:
+      - "5432:5432"
+    volumes:
+      - operant_pgdata:/var/lib/postgresql/data
+      - ../src/db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d operant"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  operant_pgdata:

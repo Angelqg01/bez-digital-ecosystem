@@ -1,0 +1,25 @@
+# Finales de línea normalizados a LF en el repositorio.
+#
+# El proyecto vive en un volumen exFAT y ha ido y venido entre Windows y Linux,
+# así que algunos ficheros volvieron con CRLF. Como el contenido no cambiaba,
+# git los daba por modificados de arriba abajo: 14 ficheros y ~3.000 líneas de
+# diff fantasma que enterraban los cambios de verdad y hacían inservible el
+# `git diff` del día a día.
+#
+# `text=auto eol=lf` normaliza al guardar en el repositorio y saca LF al
+# trabajar, en cualquier sistema operativo. Con esto el problema no vuelve, y
+# no depende de que cada máquina tenga bien puesto core.autocrlf.
+#
+# Tras añadir este fichero, la normalización de lo ya existente se hizo con:
+#   git add --renormalize .
+* text=auto eol=lf
+
+# Excepciones: ficheros que no son texto o que dependen del final de línea.
+*.png  binary
+*.jpg  binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.db   binary
+*.sqlite binary

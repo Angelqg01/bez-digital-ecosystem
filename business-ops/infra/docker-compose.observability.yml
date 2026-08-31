@@ -1,0 +1,94 @@
+# OPERANT — Observabilidad (SigNoz + Langfuse). Fichero aparte a propósito.
+#
+# Docker Compose interpola TODAS las variables del fichero al cargarlo, sin
+# mirar qué perfil has pedido. Mientras estos servicios vivían en
+# docker-compose.full.yml, sus `${...:?}` obligatorios hacían que
+# `--profile core` —el comando de arranque de los cimientos— fallara con
+# "required variable LANGFUSE_SALT is missing" sin llegar a levantar nada.
+# Separarlos es lo que permite encender los cimientos sin tener que inventarse
+# los secretos de una pieza que todavía no vas a usar.
+#
+# Se levanta JUNTO al fichero principal, porque reutiliza su Postgres, Redis y
+# MinIO (y su red y su `name: operant`):
+#
+#   1. Genera los secretos:
+#        export CLICKHOUSE_PASSWORD=$(openssl rand -hex 32)
+#        export LANGFUSE_SALT=$(openssl rand -hex 32)
+#        export LANGFUSE_ENCRYPTION_KEY=$(openssl rand -hex 32)
+#        export LANGFUSE_NEXTAUTH_SECRET=$(openssl rand -hex 32)
+#   2. Crea la base de datos dedicada (los cimientos ya tienen que estar arriba):
+#        docker exec -it operant-postgres-1 psql -U ${PG_USER:-operant} -c 'CREATE DATABASE langfuse;'
+#   3. Arranca:
+#        docker compose -f infra/docker-compose.full.yml \
+#                       -f infra/docker-compose.observability.yml \
+#                       --profile core --profile observability up -d
+#
+# Guía completa de despliegue en docs/OBSERVABILIDAD-LANGFUSE.md.
+
+name: operant
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  signoz:
+    image: signoz/signoz:latest            # tracing + métricas + logs genéricos (todo en uno)
+    profiles: [observability]
+    <<: *restart
+    ports: ["3301:3301"]
+
+  # Langfuse — observabilidad ESPECÍFICA de LLM: cada llamada al modelo queda
+  # como traza con prompt, respuesta, tokens y coste (ver src/platform/LangfuseExporter.js).
+  # Complementa a SigNoz (que ve tareas/HTTP genéricos), no lo sustituye.
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.12   # motor analítico donde Langfuse guarda las trazas
+    profiles: [observability]
+    <<: *restart
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: "${CLICKHOUSE_PASSWORD:?define CLICKHOUSE_PASSWORD en el entorno}"
+    # Solo loopback: ClickHouse no necesita ser accesible fuera del propio servidor.
+    ports: ["127.0.0.1:8123:8123", "127.0.0.1:9001:9000"]
+    volumes: [clickhousedata:/var/lib/clickhouse]
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:3      # procesa la ingesta async (trazas → ClickHouse)
+    profiles: [observability]
+    <<: *restart
+    depends_on: [clickhouse]
+    environment: &langfuse-env
+      DATABASE_URL: postgres://${PG_USER:-operant}:${PG_PASSWORD:-operant}@postgres:5432/langfuse
+      SALT: "${LANGFUSE_SALT:?genera con -> openssl rand -hex 32}"
+      ENCRYPTION_KEY: "${LANGFUSE_ENCRYPTION_KEY:?genera con -> openssl rand -hex 32}"
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: "${CLICKHOUSE_PASSWORD:?define CLICKHOUSE_PASSWORD en el entorno}"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # Blob storage: el mismo MinIO del perfil core, bucket propio de Langfuse.
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: ${LANGFUSE_S3_BUCKET:-langfuse}
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${MINIO_USER:-operant}
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_PASSWORD:-operant-secret}
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      TELEMETRY_ENABLED: "false"    # no reportar uso del propio Langfuse a su fabricante (stack soberano)
+    ports: ["127.0.0.1:3030:3030"]
+
+  langfuse-web:
+    image: langfuse/langfuse:3             # UI + API de ingesta (/api/public/ingestion)
+    profiles: [observability]
+    <<: *restart
+    depends_on: [clickhouse, langfuse-worker]
+    environment:
+      <<: *langfuse-env
+      NEXTAUTH_URL: ${LANGFUSE_BASE_URL:-http://localhost:3400}
+      NEXTAUTH_SECRET: "${LANGFUSE_NEXTAUTH_SECRET:?genera con -> openssl rand -hex 32}"
+    # 3400 (no 3000) para no chocar con Twenty CRM. Solo loopback: el panel
+    # contiene prompts/negocio del tenant — para verlo en remoto, túnel SSH:
+    #   ssh -L 3400:localhost:3400 usuario@tu-servidor
+    ports: ["127.0.0.1:3400:3000"]
+
+volumes:
+  clickhousedata: {}

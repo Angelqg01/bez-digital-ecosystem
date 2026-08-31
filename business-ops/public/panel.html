@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPERANT · Consola</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b0d10;
+    --panel: #14171c;
+    --panel-2: #1b2027;
+    --panel-3: #242a33;
+    --line: rgba(232, 236, 243, .11);
+    --line-strong: rgba(232, 236, 243, .18);
+    --text: #f3f5f7;
+    --muted: #a4acb8;
+    --dim: #68727f;
+    --brand: #35d0ba;
+    --blue: #65a8ff;
+    --amber: #eab764;
+    --coral: #ef767a;
+    --green: #8ed879;
+    --shadow: 0 18px 55px rgba(0, 0, 0, .28);
+  }
+
+  * { box-sizing: border-box; }
+  html { min-width: 320px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0;
+  }
+
+  button, input, select, textarea { font: inherit; }
+  button {
+    min-height: 38px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: var(--brand);
+    color: #06100f;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease, transform .15s ease;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:disabled { cursor: not-allowed; opacity: .52; transform: none; }
+  button.secondary { background: var(--panel-3); color: var(--text); border-color: var(--line-strong); }
+  button.danger { background: var(--coral); color: #170607; }
+  button.warning { background: var(--amber); color: #160d02; }
+  button.compact { min-height: 32px; padding: 5px 9px; font-size: 12px; }
+
+  input, select, textarea {
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #0f1217;
+    color: var(--text);
+    padding: 8px 10px;
+    outline: none;
+  }
+  textarea { min-height: 94px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { border-color: rgba(53, 208, 186, .72); }
+  label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+  aside {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 22px 18px;
+    border-right: 1px solid var(--line);
+    background: #0d1014;
+  }
+  main { min-width: 0; padding: 22px; }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .mark {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--brand);
+    color: #07110f;
+    font-weight: 900;
+  }
+  .brand b { display: block; font-size: 15px; letter-spacing: 1px; }
+  .brand span { display: block; color: var(--muted); font-size: 12px; }
+  nav { display: grid; gap: 6px; margin-bottom: 20px; }
+  nav button {
+    justify-content: flex-start;
+    text-align: left;
+    background: transparent;
+    color: var(--muted);
+    border-color: transparent;
+    font-weight: 650;
+  }
+  nav button.active { background: var(--panel-2); color: var(--text); border-color: var(--line); }
+  .side-box {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+  }
+  .side-box + .side-box { margin-top: 12px; }
+  .side-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .headline h1 { margin: 0; font-size: 24px; line-height: 1.15; letter-spacing: 0; }
+  .headline p { margin: 5px 0 0; color: var(--muted); }
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--dim); }
+  .status.live .dot { background: var(--green); box-shadow: 0 0 0 5px rgba(142, 216, 121, .11); }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1.3fr .8fr 1.1fr auto;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 18px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+  .message {
+    display: none;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--muted);
+  }
+  .message.error { border-color: rgba(239, 118, 122, .45); color: #ffc9cb; }
+  .message.ok { border-color: rgba(142, 216, 121, .45); color: #d8ffd0; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+  .grid { display: grid; gap: 14px; }
+  .grid.kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .grid.two { grid-template-columns: minmax(0, 1fr) minmax(360px, .74fr); }
+  .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .section { margin-top: 14px; }
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    padding: 14px;
+    min-width: 0;
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .card h2 {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 750;
+    text-transform: uppercase;
+  }
+  .card-head p { margin: 3px 0 0; color: var(--dim); font-size: 12px; }
+  .kpi { font-size: 28px; line-height: 1.1; font-weight: 800; word-break: break-word; }
+  .kpi small { color: var(--muted); font-size: 13px; font-weight: 600; }
+  .subline { margin-top: 8px; color: var(--muted); font-size: 12px; }
+  .progress {
+    height: 8px;
+    border-radius: 99px;
+    overflow: hidden;
+    background: #0f1217;
+    border: 1px solid var(--line);
+    margin-top: 12px;
+  }
+  .progress span { display: block; height: 100%; width: 0; background: var(--brand); }
+
+  .rows { display: grid; gap: 2px; }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .row:last-child { border-bottom: 0; }
+  .muted { color: var(--muted); }
+  .dim { color: var(--dim); }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    background: var(--panel-2);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .pill.ok { color: #d8ffd0; border-color: rgba(142, 216, 121, .32); background: rgba(142, 216, 121, .08); }
+  .pill.warn { color: #ffe2aa; border-color: rgba(234, 183, 100, .32); background: rgba(234, 183, 100, .08); }
+  .pill.bad { color: #ffc9cb; border-color: rgba(239, 118, 122, .32); background: rgba(239, 118, 122, .08); }
+
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-size: 11px; text-transform: uppercase; font-weight: 750; }
+  td { color: var(--text); overflow-wrap: anywhere; }
+  code { font-family: "SFMono-Regular", Consolas, ui-monospace, monospace; color: var(--brand); font-size: 12px; }
+
+  .stack { display: grid; gap: 10px; }
+  .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .form-grid .wide { grid-column: 1 / -1; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .approval, .policy-line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #101419;
+  }
+  .approval + .approval, .policy-line + .policy-line { margin-top: 8px; }
+  .approval-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .empty {
+    padding: 18px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 8px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .output {
+    min-height: 86px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #0f1217;
+    color: var(--muted);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .secret { -webkit-text-security: disc; }
+
+  @media (max-width: 1040px) {
+    .app { grid-template-columns: 1fr; }
+    aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .toolbar, .grid.kpis, .grid.two, .grid.three { grid-template-columns: 1fr 1fr; }
+    .toolbar label:nth-child(3), .toolbar button { grid-column: auto; }
+  }
+  @media (max-width: 700px) {
+    main { padding: 16px; }
+    aside { padding: 16px; }
+    .topbar, .row, .approval, .policy-line { align-items: stretch; flex-direction: column; }
+    .toolbar, .grid.kpis, .grid.two, .grid.three, .form-grid, nav { grid-template-columns: 1fr; }
+    .approval, .policy-line { grid-template-columns: 1fr; }
+    .actions { justify-content: stretch; }
+    .actions button { flex: 1 1 120px; }
+    .headline h1 { font-size: 21px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="mark">O</div>
+      <div><b>OPERANT</b><span>SaaS command center</span></div>
+    </div>
+
+    <nav aria-label="Vistas">
+      <button class="active" data-view-btn="overview" onclick="showView('overview')">Panel</button>
+      <button data-view-btn="workbench" onclick="showView('workbench')">Operar</button>
+      <button data-view-btn="controls" onclick="showView('controls')">Control</button>
+      <button data-view-btn="onboarding" onclick="showView('onboarding')">Alta</button>
+    </nav>
+
+    <div class="side-box">
+      <div class="side-title"><span>Tenant</span><span id="sidePlan" class="pill">sin datos</span></div>
+      <div><code id="sideTenant">-</code></div>
+      <div class="muted" id="sideUsage">Sin conexión.</div>
+    </div>
+
+    <div class="side-box">
+      <div class="side-title"><span>Eventos</span><span id="live" class="status"><span class="dot"></span><span>offline</span></span></div>
+      <div class="muted" id="lastEvent">Esperando datos en vivo.</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="headline">
+        <h1>Consola de gestión autónoma</h1>
+        <p>Alta, operación diaria, aprobaciones humanas, conocimiento y políticas por tenant.</p>
+      </div>
+      <button class="secondary" onclick="refresh()">Actualizar</button>
+    </div>
+
+    <div class="toolbar">
+      <label>API base
+        <input id="base" placeholder="http://localhost:4000">
+      </label>
+      <label>Tenant
+        <input id="tenant" placeholder="acme">
+      </label>
+      <label>API key
+        <input id="key" placeholder="x-api-key" type="password">
+      </label>
+      <button onclick="saveAndRefresh()">Conectar</button>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <section id="view-overview" class="view active">
+      <div class="grid kpis">
+        <div class="card">
+          <div class="card-head"><h2>Plan</h2><span id="planBadge" class="pill">-</span></div>
+          <div id="plan" class="kpi">-</div>
+          <div id="limits" class="subline">Sin límites cargados.</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Llamadas</h2><span id="quotaBadge" class="pill">mes actual</span></div>
+          <div id="calls" class="kpi">-</div>
+          <div class="progress"><span id="callsBar"></span></div>
+          <div id="callsLine" class="subline">-</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Coste IA</h2><span class="pill">tokens</span></div>
+          <div id="cost" class="kpi">-</div>
+          <div id="tokenLine" class="subline">-</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Factura</h2><span class="pill warn">estimada</span></div>
+          <div id="invoice" class="kpi">-</div>
+          <div id="invoiceLine" class="subline">-</div>
+        </div>
+      </div>
+
+      <div class="grid two section">
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Actividad reciente</h2><p>Últimas tareas procesadas por los agentes.</p></div>
+          </div>
+          <table>
+            <thead><tr><th style="width:34%">ID</th><th>Depto.</th><th>Tipo</th><th>Estado</th></tr></thead>
+            <tbody id="tasks"><tr><td colspan="4" class="muted">Sin tareas.</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Soporte</h2><p>Indicadores del vertical de atención al cliente.</p></div>
+            <span id="supportBadge" class="pill">0 tickets</span>
+          </div>
+          <div id="support" class="rows"></div>
+        </div>
+      </div>
+
+      <div class="card section">
+        <div class="card-head">
+          <div><h2>Digest del CEO</h2><p>Resumen ejecutivo cross-departamento; se genera solo cada día.</p></div>
+          <div class="actions">
+            <span id="digestAt" class="pill">sin generar</span>
+            <button class="compact secondary" onclick="freshDigest()">Generar ahora</button>
+          </div>
+        </div>
+        <div id="digestText" class="output">Todavía no hay digest para este tenant.</div>
+      </div>
+
+      <div class="card section">
+        <div class="card-head">
+          <div><h2>Aprendizaje</h2><p>Playbooks destilados de la memoria de cada agente; se reinyectan en sus prompts.</p></div>
+          <div class="actions">
+            <span id="learnCount" class="pill">0 playbooks</span>
+            <button class="compact secondary" onclick="runLearning()">Aprender ahora</button>
+          </div>
+        </div>
+        <div id="playbooks" class="stack"><div class="empty">Aún sin playbooks. Se generan con la actividad.</div></div>
+      </div>
+
+      <div class="card section">
+        <div class="card-head">
+          <div><h2>Observabilidad</h2><p>Trazas por tarea (latencia y estado) y métricas del tenant.</p></div>
+          <span id="traceLatency" class="pill">—</span>
+        </div>
+        <table>
+          <thead><tr><th style="width:38%">Tarea</th><th>Depto.</th><th>Estado</th><th>Latencia</th></tr></thead>
+          <tbody id="traces"><tr><td colspan="4" class="muted">Sin trazas todavía.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="view-workbench" class="view">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Enviar solicitud</h2><p>Procesa una entrada real contra el tenant conectado.</p></div>
+          </div>
+          <div class="stack">
+            <div class="form-grid">
+              <label>Cliente
+                <input id="requestCustomer" value="web-demo">
+              </label>
+              <label>Canal
+                <select id="requestChannel">
+                  <option value="web">web</option>
+                  <option value="email">email</option>
+                  <option value="whatsapp">whatsapp</option>
+                  <option value="telegram">telegram</option>
+                </select>
+              </label>
+              <label class="wide">Mensaje
+                <textarea id="requestText">Tengo un problema con mi factura y necesito ayuda.</textarea>
+              </label>
+            </div>
+            <div class="actions">
+              <button onclick="sendRequest()">Enviar a agentes</button>
+            </div>
+            <div id="requestOutput" class="output">Sin solicitud enviada.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Base de conocimiento</h2><p>Ingesta de artículos para respuestas RAG de Soporte.</p></div>
+          </div>
+          <div class="stack">
+            <label>Título
+              <input id="kbTitle" value="Política de facturación">
+            </label>
+            <label>Etiquetas
+              <input id="kbTags" value="facturacion, soporte">
+            </label>
+            <label>Contenido
+              <textarea id="kbBody">Las facturas se emiten el día 1 de cada mes. Si un cliente detecta un error, soporte debe verificar el plan y escalar a finanzas si hay impacto económico.</textarea>
+            </label>
+            <div class="actions">
+              <button onclick="ingestKb()">Guardar artículo</button>
+            </div>
+            <div id="kbOutput" class="output">La KB del tenant aparecerá en las próximas consultas de soporte.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section">
+        <div class="card-head">
+          <div><h2>Agenda proactiva</h2><p>Trabajos recurrentes: los agentes trabajan sin que nadie pregunte. Misma cola, cuota y guardrails.</p></div>
+          <span id="scheduleCount" class="pill">0 trabajos</span>
+        </div>
+        <div class="stack">
+          <div class="form-grid">
+            <label>Descripción
+              <input id="scheduleDesc" value="Informe operativo periódico">
+            </label>
+            <label>Cada
+              <select id="scheduleEvery">
+                <option value="1m">1 minuto (demo)</option>
+                <option value="30m">30 minutos</option>
+                <option value="2h">2 horas</option>
+                <option value="1d" selected>1 día</option>
+              </select>
+            </label>
+            <label class="wide">Solicitud que ejecutará el agente
+              <input id="scheduleText" value="Necesito el informe operativo semanal de inventario">
+            </label>
+          </div>
+          <div class="actions">
+            <button onclick="addSchedule()">Programar trabajo</button>
+          </div>
+          <div id="schedules"><div class="empty">Sin trabajos programados.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-controls" class="view">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Aprobaciones HITL</h2><p>Acciones bloqueadas hasta decisión humana.</p></div>
+            <span id="approvalCount" class="pill">0 pendientes</span>
+          </div>
+          <div id="approvals" class="stack"><div class="empty">Sin aprobaciones pendientes.</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Políticas</h2><p>Endurece reglas por categoría: aprobación obligatoria o bloqueo.</p></div>
+          </div>
+          <div class="stack">
+            <div class="form-grid">
+              <label>Categoría
+                <input id="policyCategory" list="policyCategories" value="outbound">
+                <datalist id="policyCategories">
+                  <option value="outbound"></option>
+                  <option value="public_post"></option>
+                  <option value="payment"></option>
+                  <option value="contract"></option>
+                  <option value="employment"></option>
+                  <option value="filesystem"></option>
+                </datalist>
+              </label>
+              <label>Regla
+                <select id="policyRule">
+                  <option value="always_approve">always_approve</option>
+                  <option value="block">block</option>
+                </select>
+              </label>
+            </div>
+            <div class="actions">
+              <button onclick="savePolicy()">Aplicar política</button>
+            </div>
+            <div id="policies"><div class="empty">Sin políticas personalizadas.</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-onboarding" class="view">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Alta self-service</h2><p>Crea un tenant, limita departamentos por plan y devuelve su clave.</p></div>
+          </div>
+          <div class="stack">
+            <div class="form-grid">
+              <label>Tenant ID
+                <input id="signupTenant" placeholder="empresa-demo">
+              </label>
+              <label>Plan
+                <select id="signupPlan" onchange="syncPlanDepartments()">
+                  <option value="starter">starter</option>
+                  <option value="pro" selected>pro</option>
+                  <option value="enterprise">enterprise</option>
+                </select>
+              </label>
+              <label class="wide">Departamentos
+                <input id="signupDepartments" value="sales,support,marketing,finance">
+              </label>
+              <label class="wide">Signup secret
+                <input id="signupSecret" type="password" placeholder="solo si SIGNUP_SECRET está configurado">
+              </label>
+            </div>
+            <div class="actions">
+              <button onclick="signupTenant()">Crear tenant</button>
+            </div>
+            <div id="signupOutput" class="output">La clave se mostrará una sola vez tras el alta.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Planes</h2><p>Límites comerciales cargados desde la configuración del producto.</p></div>
+          </div>
+          <div id="plans" class="stack"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const cfg = {
+  plans: {
+    starter: { maxConcurrentTasks: 3, departments: ['sales', 'support'], maxAgentCallsMonth: 500, maxRequestsPerMinute: 60, monthlyPriceUsd: 49, overagePerCallUsd: 0.02 },
+    pro: { maxConcurrentTasks: 5, departments: ['sales', 'support', 'marketing', 'finance'], maxAgentCallsMonth: 5000, maxRequestsPerMinute: 300, monthlyPriceUsd: 199, overagePerCallUsd: 0.01 },
+    enterprise: { maxConcurrentTasks: 20, departments: ['sales', 'support', 'marketing', 'finance', 'hr', 'operations', 'blockchain', 'legal', 'treasury', 'fundraising'], maxAgentCallsMonth: 50000, maxRequestsPerMinute: 1200, monthlyPriceUsd: 999, overagePerCallUsd: 0.005 },
+  },
+};
+let currentDashboard = null;
+let es = null;
+let refreshTimer = null;
+
+function init() {
+  ['base', 'tenant', 'key', 'signupSecret'].forEach((id) => {
+    const fallback = id === 'base' ? location.origin : '';
+    $(id).value = localStorage.getItem('op_' + id) || fallback;
+    $(id).addEventListener('change', () => localStorage.setItem('op_' + id, $(id).value));
+  });
+  $('signupTenant').value = localStorage.getItem('op_last_signup_tenant') || '';
+  renderPlans();
+  if (tenant() && $('key').value) refresh();
+}
+
+function base() { return ($('base').value || location.origin).replace(/\/$/, ''); }
+function tenant() { return $('tenant').value.trim(); }
+function headers() { return { 'Content-Type': 'application/json', 'x-api-key': $('key').value }; }
+function money(n) { return '$' + Number(n || 0).toFixed(2); }
+function pct(n) { return Math.max(0, Math.min(100, Number(n || 0))); }
+function safe(v) {
+  return String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+function showMessage(text, type = '') {
+  const el = $('message');
+  el.textContent = text || '';
+  el.className = 'message ' + type;
+  el.style.display = text ? 'block' : 'none';
+}
+function setOutput(id, value) {
+  $(id).textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+}
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach((el) => el.classList.toggle('active', el.id === 'view-' + name));
+  document.querySelectorAll('[data-view-btn]').forEach((el) => el.classList.toggle('active', el.dataset.viewBtn === name));
+}
+
+function saveAndRefresh() {
+  ['base', 'tenant', 'key'].forEach((id) => localStorage.setItem('op_' + id, $(id).value));
+  refresh();
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(base() + path, { ...options, headers: { ...headers(), ...(options.headers || {}) } });
+  const contentType = res.headers.get('content-type') || '';
+  const body = contentType.includes('application/json') ? await res.json() : await res.text();
+  if (!res.ok) {
+    const msg = body && body.error ? body.error : 'HTTP ' + res.status;
+    throw new Error(msg);
+  }
+  return body;
+}
+
+async function refresh() {
+  showMessage('');
+  if (!tenant()) return showMessage('Indica un tenantId para cargar el panel.', 'error');
+  try {
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/dashboard');
+    currentDashboard = data;
+    renderDashboard(data);
+    await refreshPolicies();
+    await refreshSchedules();
+    await refreshDigest();
+    await refreshPlaybooks();
+    await refreshTraces();
+    connectLive();
+  } catch (err) {
+    showMessage('No se pudo cargar el tenant: ' + err.message, 'error');
+    setLive(false);
+  }
+}
+
+function renderDashboard(d) {
+  $('sideTenant').textContent = d.tenantId || '-';
+  $('sidePlan').textContent = d.plan || 'sin datos';
+  $('plan').textContent = d.plan || '-';
+  $('planBadge').textContent = d.tenantId || '-';
+  $('limits').textContent = `${d.limits?.maxConcurrentTasks ?? '-'} tareas concurrentes · ${d.limits?.maxRequestsPerMinute ?? '-'} req/min`;
+
+  const c = d.agentCalls || {};
+  const limit = c.limit ?? null;
+  const used = c.used ?? 0;
+  $('calls').innerHTML = `${safe(used)} <small>/ ${limit ?? '∞'}</small>`;
+  const usedPct = limit ? pct((used / limit) * 100) : 0;
+  $('callsBar').style.width = usedPct + '%';
+  $('quotaBadge').className = 'pill ' + (c.allowed === false ? 'bad' : usedPct > 80 ? 'warn' : 'ok');
+  $('quotaBadge').textContent = c.allowed === false ? 'agotada' : 'activa';
+  $('callsLine').textContent = `${c.remaining ?? '∞'} llamadas restantes`;
+  $('sideUsage').textContent = `${used} llamadas este mes · ${money(d.invoice?.totalUsd)} estimados`;
+
+  $('cost').textContent = money(d.cost?.costUsd);
+  $('tokenLine').textContent = `${d.cost?.inputTokens || 0} in · ${d.cost?.outputTokens || 0} out · ${d.cost?.calls || 0} llamadas IA`;
+  $('invoice').textContent = money(d.invoice?.totalUsd);
+  $('invoiceLine').textContent = `Base ${money(d.invoice?.baseUsd)} · excedente ${money(d.invoice?.overageUsd)} · IA ${money(d.invoice?.modelCostUsd)}`;
+
+  renderSupport(d.support || {});
+  renderTasks(d.tasks || []);
+  renderApprovals(d.approvals || []);
+}
+
+function renderSupport(s) {
+  $('supportBadge').textContent = `${s.handled || 0} tickets`;
+  $('support').innerHTML = [
+    ['Atendidos', s.handled || 0],
+    ['Resueltos sin humano', s.resolved || 0],
+    ['Escalados', s.escalated || 0],
+    ['Resolución autónoma', `${Math.round((s.resolutionRate || 0) * 100)}%`],
+    ['Latencia media', `${s.avgLatencyMs || 0} ms`],
+  ].map(([k, v]) => `<div class="row"><span class="muted">${k}</span><b>${v}</b></div>`).join('');
+}
+
+function renderTasks(tasks) {
+  $('tasks').innerHTML = tasks.length ? tasks.map((t) => {
+    const cls = t.status === 'failed' || t.status === 'interrupted' ? 'bad' : t.status === 'completed' ? 'ok' : 'warn';
+    const retry = ['interrupted', 'failed'].includes(t.status)
+      ? ` <button class="compact secondary" onclick="retryTask('${safe(t.id)}')">Reintentar</button>` : '';
+    // Distintivos que el operador necesita para decidir qué hacer con un fallo:
+    // si agotó reintentos solo, y si llegó a tener efecto fuera (reintentarla a
+    // mano podría duplicar un envío).
+    const intentos = t.attempts > 1 ? ` <span class="pill" title="Intentos realizados">${t.attempts}×</span>` : '';
+    const dead = t.deadLetter ? ' <span class="pill bad" title="Agotó sus reintentos automáticos">dead-letter</span>' : '';
+    const efecto = t.sideEffectPerformed
+      ? ' <span class="pill warn" title="Ya ejecutó una accion con efecto externo: reintentar puede duplicarla">con efecto</span>' : '';
+    return `<tr><td><code>${safe(t.id)}</code></td><td>${safe(t.department)}</td><td>${safe(t.type)}</td><td><span class="pill ${cls}">${safe(t.status)}</span>${intentos}${dead}${efecto}${retry}</td></tr>`;
+  }).join('') : '<tr><td colspan="4" class="muted">Sin tareas todavia.</td></tr>';
+}
+
+async function retryTask(taskId) {
+  try {
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/tasks/' + encodeURIComponent(taskId) + '/retry', { method: 'POST', body: '{}' });
+    showMessage('Tarea reintentada: ' + data.taskId, 'ok');
+    setTimeout(refresh, 650);
+  } catch (err) {
+    showMessage('No se pudo reintentar: ' + err.message, 'error');
+  }
+}
+
+function renderApprovals(approvals) {
+  $('approvalCount').textContent = `${approvals.length} pendientes`;
+  $('approvalCount').className = 'pill ' + (approvals.length ? 'warn' : 'ok');
+  if (!approvals.length) {
+    $('approvals').innerHTML = '<div class="empty">Sin aprobaciones pendientes.</div>';
+    return;
+  }
+  $('approvals').innerHTML = approvals.map((a) => `
+    <div class="approval">
+      <div>
+        <div class="approval-title">
+          <code>${safe(a.approvalId)}</code>
+          <span class="pill warn">${safe(a.action?.category || 'accion')}</span>
+        </div>
+        <div>${safe(a.reason || 'Aprobacion humana requerida.')}</div>
+        <div class="muted">${safe(a.agentId || '')}</div>
+        <label style="margin-top:8px">Nota
+          <input id="note-${safe(a.approvalId)}" placeholder="contexto de la decision">
+        </label>
+      </div>
+      <div class="actions">
+        <button class="compact" onclick="resolveApproval('${safe(a.approvalId)}', true)">Aprobar</button>
+        <button class="compact danger" onclick="resolveApproval('${safe(a.approvalId)}', false)">Rechazar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function refreshPolicies() {
+  if (!tenant()) return;
+  try {
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/policies');
+    renderPolicies(data.overrides || {});
+  } catch {
+    renderPolicies(currentDashboard?.policies || {});
+  }
+}
+
+function renderPolicies(overrides) {
+  const entries = Object.entries(overrides || {});
+  if (!entries.length) {
+    $('policies').innerHTML = '<div class="empty">Sin politicas personalizadas.</div>';
+    return;
+  }
+  $('policies').innerHTML = entries.map(([category, rule]) => `
+    <div class="policy-line">
+      <div><code>${safe(category)}</code><div class="muted">${safe(rule)}</div></div>
+      <button class="compact secondary" onclick="deletePolicy('${safe(category)}')">Quitar</button>
+    </div>
+  `).join('');
+}
+
+async function resolveApproval(id, approved) {
+  const noteEl = $('note-' + id);
+  try {
+    await api('/tenants/' + encodeURIComponent(tenant()) + '/approvals/' + encodeURIComponent(id), {
+      method: 'POST',
+      body: JSON.stringify({ approved, note: noteEl ? noteEl.value : '' }),
+    });
+    showMessage(approved ? 'Aprobacion aceptada.' : 'Aprobacion rechazada.', 'ok');
+    refresh();
+  } catch (err) {
+    showMessage('No se pudo resolver la aprobacion: ' + err.message, 'error');
+  }
+}
+
+async function savePolicy() {
+  const category = $('policyCategory').value.trim();
+  const rule = $('policyRule').value;
+  if (!category) return showMessage('Indica una categoria de politica.', 'error');
+  try {
+    await api('/tenants/' + encodeURIComponent(tenant()) + '/policies/' + encodeURIComponent(category), {
+      method: 'PUT',
+      body: JSON.stringify({ rule }),
+    });
+    showMessage('Politica aplicada.', 'ok');
+    refresh();
+  } catch (err) {
+    showMessage('No se pudo aplicar la politica: ' + err.message, 'error');
+  }
+}
+
+async function deletePolicy(category) {
+  try {
+    await api('/tenants/' + encodeURIComponent(tenant()) + '/policies/' + encodeURIComponent(category), { method: 'DELETE' });
+    showMessage('Politica retirada.', 'ok');
+    refresh();
+  } catch (err) {
+    showMessage('No se pudo retirar la politica: ' + err.message, 'error');
+  }
+}
+
+async function sendRequest() {
+  if (!tenant()) return showMessage('Conecta un tenant antes de operar.', 'error');
+  const text = $('requestText').value.trim();
+  if (!text) return showMessage('Escribe un mensaje para los agentes.', 'error');
+  try {
+    const body = { text, channel: $('requestChannel').value, customerId: $('requestCustomer').value || 'web-demo' };
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/handle', { method: 'POST', body: JSON.stringify(body) });
+    setOutput('requestOutput', data);
+    showMessage('Solicitud encolada: ' + data.taskId, 'ok');
+    setTimeout(refresh, 650);
+  } catch (err) {
+    setOutput('requestOutput', err.message);
+    showMessage('No se pudo enviar la solicitud: ' + err.message, 'error');
+  }
+}
+
+async function ingestKb() {
+  if (!tenant()) return showMessage('Conecta un tenant antes de cargar conocimiento.', 'error');
+  const title = $('kbTitle').value.trim();
+  const body = $('kbBody').value.trim();
+  const tags = $('kbTags').value.split(',').map((x) => x.trim()).filter(Boolean);
+  if (!title || !body) return showMessage('Titulo y contenido son obligatorios.', 'error');
+  try {
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/kb', {
+      method: 'POST',
+      body: JSON.stringify({ title, body, tags }),
+    });
+    setOutput('kbOutput', data);
+    showMessage('Articulo guardado en la KB.', 'ok');
+  } catch (err) {
+    setOutput('kbOutput', err.message);
+    showMessage('No se pudo guardar el articulo: ' + err.message, 'error');
+  }
+}
+
+// ── Digest del CEO ──
+function renderDigest(digest) {
+  if (!digest) {
+    $('digestAt').textContent = 'sin generar';
+    $('digestText').textContent = 'Todavía no hay digest para este tenant.';
+    return;
+  }
+  $('digestAt').textContent = new Date(digest.at).toLocaleString();
+  $('digestText').textContent = digest.text || '(vacío)';
+}
+
+async function refreshDigest() {
+  if (!tenant()) return;
+  try {
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/digest');
+    renderDigest(data.digest);
+  } catch { renderDigest(null); }
+}
+
+async function freshDigest() {
+  if (!tenant()) return showMessage('Conecta un tenant primero.', 'error');
+  try {
+    $('digestText').textContent = 'Generando…';
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/digest?fresh=1');
+    renderDigest(data.digest);
+    showMessage('Digest regenerado.', 'ok');
+  } catch (err) {
+    showMessage('No se pudo generar el digest: ' + err.message, 'error');
+  }
+}
+
+// ── Aprendizaje (playbooks) ──
+function renderPlaybooks(playbooks) {
+  const entries = Object.entries(playbooks || {});
+  $('learnCount').textContent = `${entries.length} playbooks`;
+  if (!entries.length) {
+    $('playbooks').innerHTML = '<div class="empty">Aún sin playbooks. Se generan con la actividad.</div>';
+    return;
+  }
+  $('playbooks').innerHTML = entries.map(([agentId, pb]) => `
+    <div class="card" style="padding:12px">
+      <div class="card-head">
+        <div><b>${safe(agentId)}</b></div>
+        <span class="pill">autonomía ${Math.round((pb.metrics?.tasaAutonomia || 0) * 100)}% · ${pb.metrics?.total || 0} casos</span>
+      </div>
+      <div class="output" style="white-space:pre-wrap">${safe(pb.text || '')}</div>
+    </div>
+  `).join('');
+}
+
+async function refreshPlaybooks() {
+  if (!tenant()) return;
+  try {
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/playbooks');
+    renderPlaybooks(data.playbooks || {});
+  } catch { renderPlaybooks({}); }
+}
+
+async function runLearning() {
+  if (!tenant()) return showMessage('Conecta un tenant primero.', 'error');
+  try {
+    $('learnCount').textContent = 'aprendiendo…';
+    const r = await api('/tenants/' + encodeURIComponent(tenant()) + '/learn', { method: 'POST', body: '{}' });
+    showMessage(`Aprendizaje: ${r.updated}/${r.agents} agentes con playbook.`, 'ok');
+    await refreshPlaybooks();
+  } catch (err) {
+    showMessage('No se pudo ejecutar el aprendizaje: ' + err.message, 'error');
+  }
+}
+
+// ── Observabilidad (trazas) ──
+function renderTraces(traces, snapshot) {
+  const h = snapshot?.histograms?.operant_task_duration_ms;
+  $('traceLatency').textContent = h && h.count ? `p̄ ${h.avg} ms · máx ${h.max} ms` : '—';
+  $('traces').innerHTML = traces.length ? traces.map((t) => {
+    const cls = t.status === 'failed' ? 'bad' : 'ok';
+    return `<tr><td><code>${safe(t.taskId)}</code></td><td>${safe(t.department)}</td><td><span class="pill ${cls}">${safe(t.status)}</span></td><td>${t.ms} ms</td></tr>`;
+  }).join('') : '<tr><td colspan="4" class="muted">Sin trazas todavía.</td></tr>';
+}
+
+async function refreshTraces() {
+  if (!tenant()) return;
+  try {
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/traces');
+    renderTraces(data.traces || [], data.telemetry);
+  } catch { renderTraces([], null); }
+}
+
+// ── Agenda proactiva (trabajos recurrentes) ──
+function renderSchedules(jobs) {
+  $('scheduleCount').textContent = `${jobs.length} trabajos`;
+  if (!jobs.length) {
+    $('schedules').innerHTML = '<div class="empty">Sin trabajos programados.</div>';
+    return;
+  }
+  $('schedules').innerHTML = jobs.map((j) => `
+    <div class="policy-line">
+      <div>
+        <div><b>${safe(j.description || j.id)}</b> <span class="pill">cada ${Math.round(j.everyMs / 60000)} min</span></div>
+        <div class="muted">${safe(j.action ? 'acción: ' + j.action : (j.input?.text || ''))}</div>
+        <div class="muted">último run: ${j.lastRunAt ? new Date(j.lastRunAt).toLocaleString() : 'nunca'}</div>
+      </div>
+      <button class="compact danger" onclick="deleteSchedule('${safe(j.id)}')">Quitar</button>
+    </div>
+  `).join('');
+}
+
+async function refreshSchedules() {
+  if (!tenant()) return;
+  try {
+    const data = await api('/tenants/' + encodeURIComponent(tenant()) + '/schedules');
+    renderSchedules(data.jobs || []);
+  } catch { renderSchedules([]); }
+}
+
+async function addSchedule() {
+  if (!tenant()) return showMessage('Conecta un tenant primero.', 'error');
+  const text = $('scheduleText').value.trim();
+  if (!text) return showMessage('Indica la solicitud que ejecutará el agente.', 'error');
+  try {
+    await api('/tenants/' + encodeURIComponent(tenant()) + '/schedules', {
+      method: 'PUT',
+      body: JSON.stringify({ description: $('scheduleDesc').value, every: $('scheduleEvery').value, text }),
+    });
+    showMessage('Trabajo programado.', 'ok');
+    refreshSchedules();
+  } catch (err) {
+    showMessage('No se pudo programar: ' + err.message, 'error');
+  }
+}
+
+async function deleteSchedule(jobId) {
+  try {
+    await api('/tenants/' + encodeURIComponent(tenant()) + '/schedules/' + encodeURIComponent(jobId), { method: 'DELETE' });
+    showMessage('Trabajo retirado.', 'ok');
+    refreshSchedules();
+  } catch (err) {
+    showMessage('No se pudo retirar el trabajo: ' + err.message, 'error');
+  }
+}
+
+function syncPlanDepartments() {
+  const p = cfg.plans[$('signupPlan').value];
+  if (p) $('signupDepartments').value = p.departments.join(',');
+}
+
+function renderPlans() {
+  $('plans').innerHTML = Object.entries(cfg.plans).map(([name, p]) => `
+    <div class="policy-line">
+      <div>
+        <div><b>${safe(name)}</b> <span class="pill">${money(p.monthlyPriceUsd)}/mes</span></div>
+        <div class="muted">${p.departments.join(', ')}</div>
+      </div>
+      <div class="muted">${p.maxAgentCallsMonth} llamadas</div>
+    </div>
+  `).join('');
+}
+
+async function signupTenant() {
+  const tenantId = $('signupTenant').value.trim();
+  const departments = $('signupDepartments').value.split(',').map((x) => x.trim()).filter(Boolean);
+  if (!tenantId) return showMessage('Indica un tenantId para el alta.', 'error');
+  const extraHeaders = {};
+  if ($('signupSecret').value) extraHeaders['x-signup-secret'] = $('signupSecret').value;
+  try {
+    const data = await fetch(base() + '/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...extraHeaders },
+      body: JSON.stringify({ tenantId, plan: $('signupPlan').value, departments }),
+    }).then(async (res) => {
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'HTTP ' + res.status);
+      return body;
+    });
+    localStorage.setItem('op_last_signup_tenant', tenantId);
+    $('tenant').value = data.tenantId;
+    $('key').value = data.apiKey;
+    localStorage.setItem('op_tenant', data.tenantId);
+    localStorage.setItem('op_key', data.apiKey);
+    setOutput('signupOutput', data);
+    showMessage('Tenant creado y conectado.', 'ok');
+    showView('overview');
+    refresh();
+  } catch (err) {
+    setOutput('signupOutput', err.message);
+    showMessage('No se pudo crear el tenant: ' + err.message, 'error');
+  }
+}
+
+function connectLive() {
+  if (es) es.close();
+  if (!tenant() || !$('key').value) return;
+  es = new EventSource(base() + '/tenants/' + encodeURIComponent(tenant()) + '/events?key=' + encodeURIComponent($('key').value));
+  es.onopen = () => setLive(true);
+  es.onerror = () => setLive(false);
+  ['hitl:pending', 'task:queued', 'task:completed', 'task:failed', 'support:escalated', 'digest:ready', 'agent:tool-call'].forEach((ev) => {
+    es.addEventListener(ev, (event) => {
+      $('lastEvent').textContent = ev + ' · ' + new Date().toLocaleTimeString();
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(refresh, 350);
+    });
+  });
+}
+
+function setLive(on) {
+  const live = $('live');
+  live.classList.toggle('live', !!on);
+  live.querySelector('span:last-child').textContent = on ? 'en vivo' : 'offline';
+}
+
+init();
+</script>
+</body>
+</html>
