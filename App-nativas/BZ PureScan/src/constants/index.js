@@ -141,14 +141,28 @@ export const STORAGE_KEYS = {
 }
 
 // API Endpoints
+//
+// ANALYZE ya NO devuelve el análisis en la respuesta: el trabajo lo hace el
+// runtime de agentes, que es asíncrono. El contrato es de sondeo:
+//
+//   POST ANALYZE          → 202 { scanRef, status: 'analyzing', poll }
+//                           503 { status: 'unavailable' } si no hay runtime
+//   GET  SCAN_STATUS      → { status, analysis, riskLevel }
+//                           sondear hasta status 'completed' o 'failed'
+//
+// BLOCKCHAIN_SYNC devuelve el DPP con su raíz merkle y `anchored: false`
+// mientras no haya contrato de anclaje para pasaportes alimentarios: antes
+// devolvía un hash aleatorio con status CONFIRMED que no significaba nada.
 export const API_ENDPOINTS = {
     ANALYZE: '/purescan/analyze',
-    BLOCKCHAIN_SYNC: '/purescan/blockchain/sync',
-    INVENTORY: '/purescan/inventory',
-    PROFILE_DID: '/purescan/profile/did',
+    SCAN_STATUS: '/purescan/scans/:ref',
     SCAN_HISTORY: '/purescan/scans',
+    FEEDBACK: '/purescan/scans/:ref/feedback',
+    BLOCKCHAIN_SYNC: '/purescan/blockchain/sync',
+    DPP_STATUS: '/purescan/dpp/:ref',
+    INVENTORY: '/purescan/inventory',
     ANALYTICS: '/purescan/analytics',
-    FEEDBACK: '/purescan/scans/:id/feedback',
+    PROFILE_DID: '/purescan/profile/did',
 }
 
 // Error Messages

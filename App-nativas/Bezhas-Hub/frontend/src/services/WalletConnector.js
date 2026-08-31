@@ -1,7 +1,7 @@
 /**
  * @deprecated — LEGACY SERVICE. Wallet connection now handled by:
  *   - _shared/bezhas-blockchain-client.js → BeZhasClient.connectWallet()
- *   - bez-wallet SubApp for full multi-wallet management
+ *   - bez-wallet App Nativa for full multi-wallet management
  * The Hub should use hubBlockchainService.js → connectWallet() instead.
  */
 import { ethers } from 'ethers';

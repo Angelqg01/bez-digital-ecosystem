@@ -156,6 +156,26 @@ async function dispatchEvent(event) {
             break;
         }
 
+        // ----- Disputas y reembolsos -----
+        // Llegan durante la retención del pago: bloquean la entrega de BEZ
+        // antes de que salga del hot wallet. Si el pago ya se entregó, esto
+        // sólo lo deja registrado — el token ya está fuera y es una pérdida.
+        case 'charge.dispute.created':
+        case 'charge.refunded':
+        case 'payment_intent.canceled': {
+            const fiatSettlement = safeRequire('../services/bezpayFiatSettlement');
+            if (fiatSettlement?.cancelFiatSettlement) {
+                const obj = event.data.object;
+                const providerReference = obj.payment_intent || obj.id;
+                const result = await fiatSettlement.cancelFiatSettlement({
+                    providerReference,
+                    reason: event.type,
+                });
+                results.push({ handled: true, source: 'bezpay-fiat', result });
+            }
+            break;
+        }
+
         default:
             console.log(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
             results.push({ handled: false });

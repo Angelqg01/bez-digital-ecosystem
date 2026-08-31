@@ -21,7 +21,7 @@ import {
   Cpu,
 } from 'lucide-react';
 
-import { SUBAPP_URLS } from '../config/subappUrls';
+import { NATIVE_APP_URLS } from '../config/nativeAppUrls';
 
 export const BEZ_POLYGON_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 export const BEZ_POLYGONSCAN_URL = `https://polygonscan.com/token/${BEZ_POLYGON_ADDRESS}`;
@@ -30,8 +30,8 @@ const BEZHAS_BASE_URL = 'https://bez.digital';
 
 // Páginas internas del propio Hub (portal, docs, tokenomics, etc.)
 const prodUrl = (path: string) => `${BEZHAS_BASE_URL}${path}`;
-// SubApps dedicadas → fuente única `config/subappUrls.js` (alineada con control-center).
-// Antes apuntaban a rutas internas /dashboard/* (drift); ahora deep-linkean a la SubApp real.
+// Apps Nativas dedicadas → fuente única `config/nativeAppUrls.js` (alineada con control-center).
+// Antes apuntaban a rutas internas /dashboard/* (drift); ahora deep-linkean a la App Nativa real.
 
 export type EcosystemApp = {
   name: string;
@@ -69,7 +69,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BeZhas Wallet',
-    url: SUBAPP_URLS.wallet,
+    url: NATIVE_APP_URLS.wallet,
     port: 'wallet ↗',
     icon: Wallet,
     accent: 'text-blue-300 bg-blue-400/10 border-blue-400/50',
@@ -77,7 +77,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'Gas Tank Manager',
-    url: SUBAPP_URLS.gas,
+    url: NATIVE_APP_URLS.gas,
     port: 'gas ↗',
     icon: Activity,
     accent: 'text-orange-300 bg-orange-400/10 border-orange-400/50',
@@ -85,7 +85,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'Edge Node Manager',
-    url: SUBAPP_URLS.edge,
+    url: NATIVE_APP_URLS.edge,
     port: 'edge ↗',
     icon: Server,
     accent: 'text-emerald-300 bg-emerald-400/10 border-emerald-400/50',
@@ -93,7 +93,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BEZ Vision Scan',
-    url: SUBAPP_URLS.vision,
+    url: NATIVE_APP_URLS.vision,
     port: 'vision ↗',
     icon: Box,
     accent: 'text-pink-300 bg-pink-400/10 border-pink-400/50',
@@ -101,7 +101,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BZ Capital',
-    url: SUBAPP_URLS.capital,
+    url: NATIVE_APP_URLS.capital,
     port: 'capital ↗',
     icon: Briefcase,
     accent: 'text-purple-300 bg-purple-400/10 border-purple-400/50',
@@ -109,7 +109,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BZ Prestige',
-    url: SUBAPP_URLS.prestige,
+    url: NATIVE_APP_URLS.prestige,
     port: 'prestige ↗',
     icon: Crown,
     accent: 'text-yellow-300 bg-yellow-400/10 border-yellow-400/50',
@@ -117,7 +117,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BZ CargoLink',
-    url: SUBAPP_URLS.cargolink,
+    url: NATIVE_APP_URLS.cargolink,
     port: 'cargolink ↗',
     icon: Ship,
     accent: 'text-sky-300 bg-sky-400/10 border-sky-400/50',
@@ -125,7 +125,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BEZ Energy',
-    url: SUBAPP_URLS.energy,
+    url: NATIVE_APP_URLS.energy,
     port: 'energy ↗',
     icon: Droplets,
     accent: 'text-teal-300 bg-teal-400/10 border-teal-400/50',
@@ -133,7 +133,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BZ PureScan',
-    url: SUBAPP_URLS.purescan,
+    url: NATIVE_APP_URLS.purescan,
     port: 'purescan ↗',
     icon: ShieldCheck,
     accent: 'text-lime-300 bg-lime-400/10 border-lime-400/50',
@@ -141,7 +141,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BZ Sphere',
-    url: SUBAPP_URLS.sphere,
+    url: NATIVE_APP_URLS.sphere,
     port: 'sphere ↗',
     icon: Globe2,
     accent: 'text-indigo-300 bg-indigo-400/10 border-indigo-400/50',
@@ -149,7 +149,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BZ Genesis',
-    url: SUBAPP_URLS.genesis,
+    url: NATIVE_APP_URLS.genesis,
     port: 'genesis ↗',
     icon: Cpu,
     accent: 'text-fuchsia-300 bg-fuchsia-400/10 border-fuchsia-400/50',
@@ -157,7 +157,7 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
   },
   {
     name: 'BeZhas Pay Manager',
-    url: SUBAPP_URLS.pay,
+    url: NATIVE_APP_URLS.pay,
     port: 'pay ↗',
     icon: Coins,
     accent: 'text-amber-300 bg-amber-400/10 border-amber-400/50',

@@ -165,10 +165,10 @@ function QuickStartTab({ onNavigate }) {
     },
     {
       icon: <Box size={18} className="text-pink-400" />,
-      title: 'SubApp',
+      title: 'App Nativa',
       desc: 'Aplicación especializada dentro del ecosistema.',
       details: [
-        '13 SubApps: Pay, CargoLink, Capital, Energy...',
+        '13 Apps Nativas: Pay, CargoLink, Capital, Energy...',
         'Acceso vía: URL directa, API o SDK',
         'Activa solo las que necesites',
       ],
@@ -539,7 +539,7 @@ function OverviewTab() {
       </div>
 
       <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">13 SubApps Disponibles</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">13 Apps Nativas Disponibles</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { name: 'CargoLink', desc: 'Logística', icon: '📦' },
@@ -590,7 +590,7 @@ function ApiTab() {
         <CopyBlock code={`curl -H "x-api-key: $BEZHAS_API_KEY" \\\n  https://api.bez.digital:3001/health\n\n# Response: { "status": "ok", "uptime": 12345, ... }`} />
       </StepCard>
 
-      <StepCard number={3} title="Usar Endpoints de SubApps">
+      <StepCard number={3} title="Usar Endpoints de Apps Nativas">
         <CopyBlock code={`# Crear pago\ncurl -X POST \\\n  -H "x-api-key: $BEZHAS_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"amountUSD":100,"paymentMethod":"card","email":"client@example.com"}' \\\n  https://api.bez.digital:3001/api/gateway/v1/pay\n\n# Crear transacción logística\ncurl -X POST \\\n  -H "x-api-key: $BEZHAS_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"posRef":"ORD-1001","origin":"Algeciras","destination":"Tánger"}' \\\n  https://api.bez.digital:3001/api/cargolink/transactions`} />
       </StepCard>
 
@@ -753,7 +753,7 @@ const VIDEO_SCRIPTS = [
       '00:00 — ¿Qué es BeZhas? Ecosistema blockchain B2B',
       '00:30 — 3 métodos: API REST, SDK, Plugin WordPress',
       '01:00 — Comparación: complejidad, tiempo, casos de uso',
-      '02:00 — 13 SubApps: CargoLink, Pay, Capital, Energy…',
+      '02:00 — 13 Apps Nativas: CargoLink, Pay, Capital, Energy…',
       '02:40 — Cómo elegir tu método según tu negocio',
     ],
   },

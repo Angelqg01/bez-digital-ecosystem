@@ -1,0 +1,5 @@
+packages:
+  - '.'
+allowBuilds:
+  '@reown/appkit': true
+  unrs-resolver: true

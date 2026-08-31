@@ -14,7 +14,7 @@ function formatTimeAgo(timestamp) {
 }
 
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, Sun, Moon, Wallet, ShoppingBag, LogIn, UserPlus, User, LogOut, Coins, Sparkles, ExternalLink, Globe, Eye, EyeOff, Shield } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Wallet, ShoppingBag, LogIn, UserPlus, User, LogOut, Coins, Sparkles, ExternalLink, Globe, Eye, EyeOff, Shield, Crown } from 'lucide-react';
 import { useAccount, useDisconnect, useBalance } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useTheme } from '../../context/ThemeContext';
@@ -308,6 +308,15 @@ const Header = () => {
 
           {/* Right Section - Actions */}
           <div className="flex items-center gap-3">
+            {/* Planes & Suscripción — CTA directa, siempre visible en el header */}
+            <Link
+              to="/be-vip"
+              className="hidden sm:inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-xs font-black uppercase tracking-widest hover:scale-[1.04] transition-transform shadow-lg"
+              title="Ver planes y suscribirme"
+            >
+              <Crown size={14} /> Planes
+            </Link>
+
             {/* Multi-tenant: selector de organización/sede + BeZhas_ID */}
             <TenantSwitcher />
 

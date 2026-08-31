@@ -12,7 +12,7 @@ const DOWNLOAD_URL = '/api/downloads/bezhas-hub-wp.zip';
 const FEATURES = [
     { icon: LayoutDashboard, color: '#10B981', label: 'Consola BeZ-Hub en wp-admin', desc: 'Panel completo del ecosistema incrustado en tu WordPress.' },
     { icon: Package,         color: '#6366F1', label: 'Planes de suscripción',       desc: 'Suscríbete y gestiona tu plan (Starter, Business, Pro, Enterprise) en $BEZ.' },
-    { icon: ToggleRight,     color: '#0EA5E9', label: 'Activación de SubApps',       desc: 'Enciende CargoLink, Energy, Pay, PureScan y más con un toggle.' },
+    { icon: ToggleRight,     color: '#0EA5E9', label: 'Activación de Apps Nativas',       desc: 'Enciende CargoLink, Energy, Pay, PureScan y más con un toggle.' },
     { icon: CreditCard,      color: '#F59E0B', label: 'BeZhas-Pay integrado',        desc: 'Shortcode [bezhas_pay] + bloque Gutenberg + gateway WooCommerce.' },
     { icon: ShieldCheck,     color: '#8B5CF6', label: 'Polygon & BNB Chain',         desc: 'Liquidación on-chain real. Firma server-side, clave nunca al browser.' },
     { icon: Zap,             color: '#EC4899', label: 'API-Key segura',              desc: 'X-API-Key server-side; nonce WP en cada petición del panel.' },
@@ -22,7 +22,7 @@ const STEPS = [
     { n: '01', title: 'Descarga el ZIP', body: 'Pulsa el botón de descarga y guarda el archivo bezhas-hub-2.0.0.zip en tu equipo.' },
     { n: '02', title: 'Sube a WordPress', body: 'En tu dashboard: Plugins → Añadir nuevo → Subir plugin → Elige el ZIP → Instalar → Activar.' },
     { n: '03', title: 'Conecta tu API Key', body: 'Copia tu API Key de la pestaña "API Keys" y pégala en BeZhas Hub → Ajustes → API Key.' },
-    { n: '04', title: 'Activa las SubApps', body: 'Entra en BeZhas Hub → Consola → SubApps y activa los módulos que necesites con un toggle.' },
+    { n: '04', title: 'Activa las Apps Nativas', body: 'Entra en BeZhas Hub → Consola → Apps Nativas y activa los módulos que necesites con un toggle.' },
     { n: '05', title: 'Configura los pagos', body: 'Activa el gateway en WooCommerce → Métodos de pago → BeZhas Pay, o usa el bloque en cualquier página.' },
 ];
 
@@ -67,7 +67,7 @@ export default function WordPressPluginTab() {
                             </span>
                         </div>
                         <p className="text-gray-300 text-sm leading-relaxed max-w-2xl">
-                            Todo el ecosistema BeZhas dentro de tu WordPress: consola del Hub, planes, SubApps y BeZhas-Pay sin salir de wp-admin. Gateway WooCommerce incluido.
+                            Todo el ecosistema BeZhas dentro de tu WordPress: consola del Hub, planes, Apps Nativas y BeZhas-Pay sin salir de wp-admin. Gateway WooCommerce incluido.
                         </p>
                     </div>
                     <a

@@ -6,6 +6,10 @@
 //
 // 4 niveles. Precios en EUR/mes (sin IVA). Pago en FIAT (Stripe) o en $BEZ
 // nativo con −20% de descuento. IVA 21%. Año = 10 meses (2 gratis ≈ −17%).
+//
+// Lo que cada plan desbloquea en OPERANT (departamentos, cuota de tareas,
+// autonomía, anclaje) vive en `config/operant-native-app.js` — aquí solo aparecen
+// las líneas de `features` que lo resumen para la tarjeta del plan.
 
 export const IVA_RATE = 0.21;               // IVA España
 export const BEZ_DISCOUNT_RATE = 0.20;      // −20% pagando con $BEZ nativo
@@ -30,6 +34,7 @@ export const ADMIN_SAVINGS_PCT = 85;        // % ahorro conciliación/auditoría
  * @property {number} gasSubsidy     % de gas subvencionado
  * @property {number} apy            % APY staking efectivo del tier
  * @property {number|null} roiPercent ROI estimado (%)
+ * @property {string} laborMultiplier factor de multiplicación de eficiencia/automatización mostrado en la tarjeta (ej. '6x')
  */
 
 /** @type {Plan[]} */
@@ -50,6 +55,7 @@ export const PLANS = [
     roiPercent: null,
     recommended: false,
     badge: '15 DÍAS GRATIS',
+    laborMultiplier: '4x',
     valueLine: 'Prueba gratis 15 días, luego solo pagas lo que usas',
     // Pago por uso: tras el trial, cada llamada API-SDK se factura a coste
     // real (Claude + cómputo BeZhas) +25%. 1 crédito = 0,001 €.
@@ -58,6 +64,8 @@ export const PLANS = [
     features: [
       '15 días de prueba gratis',
       'Después, pago por uso real de API-SDK (coste +25%)',
+      'OPERANT: agentes IA de Ventas y Soporte · pago por uso desde 0,13 €/tarea',
+      'Auditoría de agentes encadenada por hash',
       'Acceso Core a la plataforma',
       'DAO básica (participación en votaciones)',
       'Staking $BEZ 12,5% APY',
@@ -80,10 +88,14 @@ export const PLANS = [
     roiPercent: 343,
     recommended: true,
     badge: 'POPULAR',
+    laborMultiplier: '6x',
     valueLine: '+343% ahorro en gestión manual',
     features: [
       'Todo lo de Starter',
       '1.500 acciones IA/mes',
+      'OPERANT (+39 €/mes): 4 departamentos de agentes IA · 300 tareas/mes',
+      'Autonomía asistida: los agentes envían lo de riesgo bajo',
+      'Auditoría de agentes anclada en L2 cada semana',
       'Smart Escrows (custodia automatizada)',
       'Subsidio 25% de gas',
       '×1.5 staking → 18,75% APY',
@@ -107,6 +119,7 @@ export const PLANS = [
     roiPercent: 654,
     recommended: false,
     badge: null,
+    laborMultiplier: '10x',
     valueLine: '+654% eficiencia operativa',
     hierarchyEnabled: true,
     subCompanies: 5,
@@ -119,6 +132,10 @@ export const PLANS = [
     features: [
       'Todo lo de Creator Pro',
       '15.000 acciones IA/mes',
+      'OPERANT (+249 €/mes): 8 departamentos de agentes IA · 2.000 tareas/mes',
+      'Autonomía plena salvo línea roja (activos, datos personales, legal)',
+      'Auditoría anclada a diario + aprobaciones firmadas on-chain',
+      'Pago a proveedores en $BEZ y certificados NFT de entregables',
       'Universal Bridge API (SAP · Odoo · Salesforce)',
       'Subsidio 50% de gas',
       'ERC-3643: dividendos automáticos',
@@ -154,10 +171,14 @@ export const PLANS = [
     policyEngine: true,
     dataAggregation: true,
     whiteLabelResale: true,
+    laborMultiplier: '15x',
     valueLine: '+909% optimización global',
     features: [
       'Todo lo de Business',
       'Cómputo IA ilimitado',
+      'OPERANT (+1.199 €/mes): los 10 departamentos · 9.000 tareas/mes',
+      'Políticas de los agentes gobernadas por votación en BeZhasDAO',
+      'Auditoría anclada en continuo + Edge Node dedicado para OPERANT',
       'Nodo MCP dedicado (privacidad máxima)',
       'Gas 100% gratis (Paymaster ERC-4337)',
       'Marca Blanca (White-Label SDK)',

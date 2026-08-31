@@ -93,7 +93,7 @@ const HSTS_CONFIG = {
 // que nadie lo hubiera decidido así (los dos middlewares nunca se pusieron
 // de acuerdo). camera/geolocation en 'self' porque las SubApps (BZ CargoLink,
 // BZ PureScan) las usan legítimamente en su propio origen, con priming ético
-// y gate de suscripción antes de pedirlas (ver App's secundarias/_shared/).
+// y gate de suscripción antes de pedirlas (ver App-nativas/_shared/).
 const PERMISSIONS_POLICY = {
     camera: ['self'],
     microphone: ['none'],

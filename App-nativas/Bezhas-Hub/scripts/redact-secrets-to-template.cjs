@@ -24,8 +24,14 @@ const FILES = [
 const RULES = [
   // bzh_..._<hex secret>  ->  bzh_..._<ROTATE_ME>
   { re: /\b(bzh_[a-zA-Z0-9]+(?:_[a-zA-Z0-9]+)*?)_([0-9a-fA-F]{20,})\b/g, repl: '$1_<ROTATE_ME>' },
-  // whsec_..._<hex>       ->  whsec_..._<ROTATE_ME>
-  { re: /\b(whsec_[a-zA-Z0-9]+(?:_[a-zA-Z0-9]+)*?)_([0-9a-fA-F]{20,})\b/g, repl: '$1_<ROTATE_ME>' },
+  // whsec_<hex>           ->  whsec_<ROTATE_ME>
+  //
+  // Esta regla estaba calcada de la de `bzh_`, que sí lleva prefijo descriptivo
+  // (bzh_marketplace_<hex>): exigía un segundo guion bajo antes del hex. Los
+  // webhook secrets son `whsec_<hex>` a secas, así que no casaba ninguno y los
+  // 17 secretos de sector salían en claro en la plantilla *.example.txt — que
+  // sí se commitea. Se acepta ahora con o sin prefijo intermedio.
+  { re: /\bwhsec_((?:[a-zA-Z0-9]+_)*)([0-9a-fA-F]{20,})\b/g, repl: 'whsec_$1<ROTATE_ME>' },
   // bzh_cid_<hex>         ->  bzh_cid_<ROTATE_ME>
   { re: /\b(bzh_cid)_([0-9a-fA-F]{16,})\b/g, repl: '$1_<ROTATE_ME>' },
 ];

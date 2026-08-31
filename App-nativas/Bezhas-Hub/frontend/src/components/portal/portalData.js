@@ -1,7 +1,7 @@
 // portalData.js — datos del Portal Integrado (diseño "Cyber-Pipeline").
 //
 // Fuente única de los enlaces/servicios que muestra el portal rediseñado.
-// TODO enlace es REAL: deep-link a la SubApp en producción (config/subappUrls.js)
+// TODO enlace es REAL: deep-link a la App Nativa en producción (config/nativeAppUrls.js)
 // o ruta interna del propio Hub. No hay placeholders.
 
 import {
@@ -9,7 +9,7 @@ import {
   Fuel, Globe2, CreditCard, ShoppingBag, ShieldCheck, Boxes,
   LineChart, Cpu, BookOpen, LifeBuoy,
 } from 'lucide-react';
-import { subappUrl } from '../../config/subappUrls';
+import { nativeAppUrl } from '../../config/nativeAppUrls';
 
 /**
  * @typedef {Object} PortalLink
@@ -17,12 +17,12 @@ import { subappUrl } from '../../config/subappUrls';
  * @property {string} name
  * @property {string} desc
  * @property {import('lucide-react').LucideIcon} icon
- * @property {string} href      URL absoluta (SubApp) o ruta interna ('/...')
- * @property {boolean} external true → abre en nueva pestaña (SubApp)
+ * @property {string} href      URL absoluta (App Nativa) o ruta interna ('/...')
+ * @property {boolean} external true → abre en nueva pestaña (App Nativa)
  * @property {'active'|'syncing'|'core'} status
  */
 
-const ext = (app, sub = '') => ({ href: subappUrl(app, sub), external: true });
+const ext = (app, sub = '') => ({ href: nativeAppUrl(app, sub), external: true });
 const internal = (path) => ({ href: path, external: false });
 
 // ── Módulos núcleo (grid del Dashboard) ──────────────────────────────────────

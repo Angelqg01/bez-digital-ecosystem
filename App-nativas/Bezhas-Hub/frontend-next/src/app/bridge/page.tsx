@@ -1,8 +1,8 @@
-import SubappRedirectPage from '../../components/control-plane/SubappRedirectPage';
+import NativeAppRedirectPage from '../../components/control-plane/NativeAppRedirectPage';
 
 export default function BridgePage() {
   return (
-    <SubappRedirectPage
+    <NativeAppRedirectPage
       appKey="wallet"
       path="/bridge"
       title="Bridge migrado a BeZhas Wallet"

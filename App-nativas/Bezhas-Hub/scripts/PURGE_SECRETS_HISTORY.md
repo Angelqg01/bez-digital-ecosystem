@@ -33,14 +33,14 @@ git status
 Instalar: `pip install git-filter-repo`  (o `brew install git-filter-repo`)
 
 ```bash
-# Desde la raíz del repo (NOTA: la app está en "App's secundarias/Bezhas-Hub";
+# Desde la raíz del repo (NOTA: la app está en "App-nativas/Bezhas-Hub";
 # las rutas son relativas a la raíz del repo git, ajústalas si el repo
 # tiene su raíz en otro nivel).
 
 git filter-repo --invert-paths \
-  --path "App's secundarias/Bezhas-Hub/BEZHAS_API_KEYS_ABIS_WEBHOOKS.txt" \
-  --path "App's secundarias/Bezhas-Hub/BEZHAS_CONEXION_TERCEROS_OPENCLAW_AEGIS.txt" \
-  --path "App's secundarias/Bezhas-Hub/temp_secret.txt"
+  --path "App-nativas/Bezhas-Hub/BEZHAS_API_KEYS_ABIS_WEBHOOKS.txt" \
+  --path "App-nativas/Bezhas-Hub/BEZHAS_CONEXION_TERCEROS_OPENCLAW_AEGIS.txt" \
+  --path "App-nativas/Bezhas-Hub/temp_secret.txt"
 ```
 
 `git filter-repo` elimina el remoto `origin` por seguridad. Vuelve a añadirlo y push forzado:

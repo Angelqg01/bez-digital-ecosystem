@@ -1,7 +1,7 @@
 # Conexión API-Hub — Plan de Desarrollo
 
 > **Tipo:** Análisis del estado actual + Roadmap priorizado
-> **Ámbito:** `App's secundarias/Bezhas-Hub`
+> **Ámbito:** `App-nativas/Bezhas-Hub`
 > **Objetivo:** Fusionar/optimizar nuevas funciones sobre lo ya desarrollado **sin romper** lo existente.
 > **Fecha:** 2026-06-09 · **Maintainer:** Yoel (BeZhas)
 > **Estado:** Borrador para decisión — ninguna vertical concreta fijada todavía.

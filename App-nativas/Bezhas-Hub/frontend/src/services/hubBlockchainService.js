@@ -3,13 +3,13 @@
  * ═══════════════════════════════════════════════════════════════
  *
  * EXCLUSIVE functions for the Hub Control Plane.
- * These capabilities do NOT exist in any other SubApp.
+ * These capabilities do NOT exist in any other App Nativa.
  *
  * Control Plane responsibilities:
  *   1. Ecosystem Observability — Aggregated read-only view of all deployed contracts
  *   2. SSO / Auth on-chain    — IdentityRegistry + AuthenticationManager for cross-app auth
  *   3. Billing / Subscription — VIP subscription state reading on-chain
- *   4. App Switcher metadata  — Resolve contract catalog for each SubApp sector
+ *   4. App Switcher metadata  — Resolve contract catalog for each App Nativa sector
  *   5. Developer Console      — ABI catalog, deployment info, contract health checks
  *
  * DOES NOT:
@@ -47,7 +47,7 @@ function getClient() {
 /**
  * Get ecosystem-wide contract catalog from the API Gateway.
  * Returns the total count of contracts by sector, deployment status, etc.
- * This is a Hub-exclusive function — SubApps only see their own sector.
+ * This is a Hub-exclusive function — Apps Nativas only see their own sector.
  */
 export const getEcosystemCatalog = async () => {
   try {
@@ -155,7 +155,7 @@ export const checkAdminPermission = async (address, role) => {
 
 /**
  * Check VIP subscription status for a user.
- * The Hub controls billing — SubApps only check the result.
+ * The Hub controls billing — Apps Nativas only check the result.
  */
 export const getVIPStatus = async (address) => {
   try {
@@ -184,12 +184,12 @@ export const getRewardsStats = async () => {
 
 // ═══════════════════════════════════════════════════════════════
 //  4. APP SWITCHER
-//     Sector-level metadata for navigation between SubApps
+//     Sector-level metadata for navigation between Apps Nativas
 // ═══════════════════════════════════════════════════════════════
 
 /**
  * Get the full list of sectors with deployment statistics.
- * Used by the App Switcher to show which SubApps have active contracts.
+ * Used by the App Switcher to show which Apps Nativas have active contracts.
  */
 export const getAppSwitcherData = async () => {
   const catalog = await getEcosystemCatalog();

@@ -33,32 +33,91 @@ services:
       - .env.production
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bezhas-internal
+      - bezhas-external
+
+  # ============================================
+  # PostgreSQL (base de datos principal)
+  # ============================================
+  # Este servicio estaba fusionado dentro de `backend`: faltaba su clave
+  # `postgres:` y el cuerpo quedó absorbido, duplicando `restart` y dejando el
+  # fichero como YAML inválido — `docker compose` no podía ni parsearlo, así que
+  # no había forma de levantar la BD.
+  #
+  # De paso se quitan los restos de la etapa MongoDB, que apuntaban a un motor
+  # que ya no es este: healthcheck con `mongosh`, `--wiredTigerCacheSizeGB`,
+  # el volumen `/data/configdb` y el init de `./docker/mongo/init`.
+  postgres:
     image: postgres:16
+    container_name: bezhas-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: bezhas
-      POSTGRES_PASSWORD: bezhas_password
-      POSTGRES_DB: bezhas
+      POSTGRES_USER: ${POSTGRES_USER:-bezhas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bezhas_password}
+      POSTGRES_DB: ${POSTGRES_DB:-bezhas}
     ports:
       - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - postgres-config:/data/configdb
-      - ./docker/mongo/init:/docker-entrypoint-initdb.d:ro
     networks:
       - bezhas-internal
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bezhas} -d ${POSTGRES_DB:-bezhas}"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 30s
     deploy:
       resources:
         limits:
           cpus: '2'
           memory: 4G
-    command: ["--wiredTigerCacheSizeGB", "1.5", "--bind_ip_all"]
+
+  # ============================================
+  # Frontend (SPA React + Vite)
+  # ============================================
+  # Faltaba en este fichero pese a que `nginx` lo declaraba en depends_on, lo
+  # que hacía inválido el perfil `with-nginx`. Se define igual que en
+  # docker-compose.gcp.yml: Dockerfile.optimized es el único que acepta los
+  # args VITE_* (el Dockerfile a secas no acepta ninguno).
+  #
+  # La imagen resultante YA es un nginx sirviendo el build en el puerto 80 con
+  # el fallback de React Router; el nginx de abajo sólo hace de proxy delante.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.optimized
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:3001}
+        - VITE_WS_URL=${VITE_WS_URL:-ws://localhost:3001}
+        - VITE_CHAIN_ID=${VITE_CHAIN_ID:-137}
+        - VITE_NETWORK=${VITE_NETWORK:-polygon}
+    container_name: bezhas-frontend
+    restart: always
+    # 8081 y no 80: con el perfil `with-nginx` activo, el proxy ocupa el 80 del
+    # host. Publicarlo aquí permite además abrir el frontend sin levantar nginx.
+    ports:
+      - "8081:80"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - bezhas-external
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
 
   # ============================================
   # Redis Cache & Queue
@@ -126,7 +185,9 @@ services:
     ports:
       - "127.0.0.1:8001:8001"
     environment:
-      - DATABASE_URL=postgresql://bezhas:bezhas_password@postgres:5432/bezhas?authSource=admin
+      # `?authSource=admin` es un parámetro de MongoDB: libpq rechaza la
+      # conexión con «invalid URI query parameter». Otro resto de la etapa Mongo.
+      - DATABASE_URL=postgresql://bezhas:bezhas_password@postgres:5432/bezhas
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - AEGIS_PORT=8001
@@ -134,7 +195,7 @@ services:
     env_file:
       - .env.production
     depends_on:
-      mongo:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy

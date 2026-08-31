@@ -158,13 +158,13 @@ const McpSdkDownloadTab = () => {
                 </div>
 
                 <p className="text-gray-300 text-sm mb-4">
-                    Todo el ecosistema BeZhas dentro de tu plataforma: suscríbete a los planes, activa las SubApps y cobra con BeZhas-Pay sin salir de wp-admin. Gateway WooCommerce incluido.
+                    Todo el ecosistema BeZhas dentro de tu plataforma: suscríbete a los planes, activa las Apps Nativas y cobra con BeZhas-Pay sin salir de wp-admin. Gateway WooCommerce incluido.
                 </p>
 
                 <ul className="text-sm text-gray-400 space-y-2 mb-6">
                     <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> Consola del Hub embebida en wp-admin</li>
                     <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> Suscripción a los 4 planes (pago en $BEZ)</li>
-                    <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> Activación de SubApps (CargoLink, Energy, Pay...)</li>
+                    <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> Activación de Apps Nativas (CargoLink, Energy, Pay...)</li>
                     <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> BeZhas-Pay: shortcode + bloque + gateway WC</li>
                     <li className="flex items-center gap-2"><CheckIcon className="w-4 h-4 text-green-400" /> Polygon & BNB Chain · liquidación SEPA</li>
                 </ul>

@@ -31,7 +31,7 @@ const bezpay = require('../services/bezpay.service');
 
 // Precio BEZ de fallback cuando fetch falla (ver _bezPriceCache inicial).
 const BEZ_PRICE_FALLBACK = 1.24;
-const TREASURY_DEFAULT = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4';
+const TREASURY_DEFAULT = '0x89c23890c742d710265dD61be789C71dC8999b12';
 const USDT_POLYGON = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
 
 function mockRes() {

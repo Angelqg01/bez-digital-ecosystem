@@ -1,8 +1,8 @@
-import SubappRedirectPage from '../../components/control-plane/SubappRedirectPage';
+import NativeAppRedirectPage from '../../components/control-plane/NativeAppRedirectPage';
 
 export default function DAOPage() {
   return (
-    <SubappRedirectPage
+    <NativeAppRedirectPage
       appKey="wallet"
       path="/dao"
       title="DAO y governance se operan en BeZhas Wallet"

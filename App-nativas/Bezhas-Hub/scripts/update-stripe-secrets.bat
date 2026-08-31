@@ -1,20 +1,14 @@
 @echo off
-echo Updating Stripe Secrets in GCP Secret Manager...
+REM Sustituido por scripts/update-secrets.js.
+REM
+REM Este .bat llevaba las claves escritas dentro, las volcaba a ficheros temporales
+REM en disco y, por usar `echo "valor" > fichero`, subia el secreto CON comillas.
+REM Ademas solo actualizaba los nombres en minuscula (stripe-secret-key), dejando
+REM los de mayuscula (STRIPE_SECRET_KEY) que usan cloudbuild-backend.yaml y
+REM scripts/gcp-deploy.sh apuntando a la clave anterior.
+REM
+REM El script de Node lee los valores del .env, los sube por stdin a los dos
+REM nombres y aborta si alguna clave esta en el hueco equivocado.
 
-echo "pk_live_PLACEHOLDER" > temp_pk.txt
-echo Updating stripe-publishable-key...
-call gcloud secrets versions add stripe-publishable-key --data-file=temp_pk.txt
-del temp_pk.txt
-
-echo "sk_live_PLACEHOLDER" > temp_sk.txt
-echo Updating stripe-secret-key...
-call gcloud secrets versions add stripe-secret-key --data-file=temp_sk.txt
-del temp_sk.txt
-
-echo "whsec_PLACEHOLDER" > temp_wh.txt
-echo Updating stripe-webhook-secret...
-call gcloud secrets versions add stripe-webhook-secret --data-file=temp_wh.txt
-del temp_wh.txt
-
-echo Secrets updated successfully.
-exit /b 0
+node "%~dp0update-secrets.js" %*
+exit /b %ERRORLEVEL%

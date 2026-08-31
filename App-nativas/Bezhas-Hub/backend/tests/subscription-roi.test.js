@@ -2,10 +2,15 @@
  * ============================================================================
  * SUBSCRIPTION & ROI CALCULATION TESTS
  * ============================================================================
- * 
- * Unit tests for the unified subscription tier system and ROI calculations.
- * 
- * @version 2.0.0
+ *
+ * Reescrito por completo: la versión anterior probaba un sistema de 3 tiers
+ * en USD (Creator $14.99, Business $99.99) que ya no existe. El sistema real
+ * tiene 4 tiers en EUR (Starter/Creator/Business/Enterprise), reconciliados
+ * contra config/plans.js — "FUENTE ÚNICA Y DEFINITIVA de planes de
+ * suscripción", basada en los PDFs de precios aprobados. Cada número de aquí
+ * sale de ejecutar tier.config.js de verdad, no de una tabla aparte.
+ *
+ * @version 3.0.0
  */
 
 const {
@@ -23,10 +28,11 @@ describe('Tier Configuration', () => {
 
     describe('SUBSCRIPTION_TIERS', () => {
 
-        test('should have all three tiers defined', () => {
+        test('should have los 4 tiers reales definidos', () => {
             expect(SUBSCRIPTION_TIERS).toHaveProperty('STARTER');
             expect(SUBSCRIPTION_TIERS).toHaveProperty('CREATOR');
             expect(SUBSCRIPTION_TIERS).toHaveProperty('BUSINESS');
+            expect(SUBSCRIPTION_TIERS).toHaveProperty('ENTERPRISE');
         });
 
         test('STARTER tier should be free', () => {
@@ -35,46 +41,84 @@ describe('Tier Configuration', () => {
             expect(starter.price.yearly).toBe(0);
         });
 
-        test('CREATOR tier should cost $14.99/month', () => {
+        // Precios en EUR — config/plans.js l.35-73, no USD como antes.
+        test('CREATOR tier should cost €99/month', () => {
             const creator = SUBSCRIPTION_TIERS.CREATOR;
-            expect(creator.price.monthly).toBe(14.99);
-            expect(creator.price.yearly).toBe(149.99);
+            expect(creator.price.monthly).toBe(99);
+            expect(creator.price.yearly).toBe(990);
+            expect(creator.price.currency).toBe('EUR');
         });
 
-        test('BUSINESS tier should cost $99.99/month', () => {
+        test('BUSINESS tier should cost €499/month', () => {
             const business = SUBSCRIPTION_TIERS.BUSINESS;
-            expect(business.price.monthly).toBe(99.99);
-            expect(business.price.yearly).toBe(999.99);
+            expect(business.price.monthly).toBe(499);
+            expect(business.price.yearly).toBe(4990);
+            expect(business.price.currency).toBe('EUR');
+        });
+
+        test('ENTERPRISE tier should cost €2499/month', () => {
+            const enterprise = SUBSCRIPTION_TIERS.ENTERPRISE;
+            expect(enterprise.price.monthly).toBe(2499);
+            expect(enterprise.price.yearly).toBe(24990);
+            expect(enterprise.price.currency).toBe('EUR');
         });
 
         test('token lock amounts should be correct', () => {
             expect(SUBSCRIPTION_TIERS.STARTER.tokenLock.amount).toBe(0);
             expect(SUBSCRIPTION_TIERS.CREATOR.tokenLock.amount).toBe(5000);
             expect(SUBSCRIPTION_TIERS.BUSINESS.tokenLock.amount).toBe(50000);
+            expect(SUBSCRIPTION_TIERS.ENTERPRISE.tokenLock.amount).toBe(100000);
         });
 
-        test('staking multipliers should be correct', () => {
+        // Multiplicadores corregidos contra config/plans.js (apy: 12.5/18.75/25/31.25,
+        // l.21,37,52,73) — la vuelta anterior traía Business en 2.5x y Enterprise
+        // en 3.5x, ninguno de los dos respaldado por el PDF de precios aprobado.
+        test('staking multipliers should match config/plans.js', () => {
             expect(SUBSCRIPTION_TIERS.STARTER.staking.multiplier).toBe(1.0);
             expect(SUBSCRIPTION_TIERS.CREATOR.staking.multiplier).toBe(1.5);
-            expect(SUBSCRIPTION_TIERS.BUSINESS.staking.multiplier).toBe(2.5);
+            expect(SUBSCRIPTION_TIERS.BUSINESS.staking.multiplier).toBe(2.0);
+            expect(SUBSCRIPTION_TIERS.ENTERPRISE.staking.multiplier).toBe(2.5);
         });
 
-        test('gas subsidies should be correct', () => {
+        test('gas subsidies should match config/plans.js', () => {
             expect(SUBSCRIPTION_TIERS.STARTER.gas.subsidyPercent).toBe(0);
             expect(SUBSCRIPTION_TIERS.CREATOR.gas.subsidyPercent).toBe(0.25);
-            expect(SUBSCRIPTION_TIERS.BUSINESS.gas.subsidyPercent).toBe(1.0);
+            expect(SUBSCRIPTION_TIERS.BUSINESS.gas.subsidyPercent).toBe(0.5);
+            expect(SUBSCRIPTION_TIERS.ENTERPRISE.gas.subsidyPercent).toBe(1.0);
+        });
+
+        // El campo estático effectiveAPY (usado por BeVIP.jsx, useSubscription.js)
+        // debe coincidir siempre con multiplier × BASE_STAKING_APY — el bug real
+        // que se corrigió era exactamente esta desincronización.
+        test('effectiveAPY estático debe coincidir con el multiplicador, para cada tier', () => {
+            for (const key of TIER_HIERARCHY) {
+                const tier = SUBSCRIPTION_TIERS[key];
+                expect(tier.staking.effectiveAPY).toBe(BASE_STAKING_APY * tier.staking.multiplier);
+            }
+        });
+
+        // El bug real: ningún límite de gasto puede quedar en Infinity sin que
+        // alguien lo haya decidido a propósito — config/plans.js no define un
+        // concepto de "presupuesto mensual", así que Infinity no tiene respaldo.
+        test('ningún tier de pago debe tener presupuesto de gas o stake sin tope', () => {
+            for (const key of ['CREATOR', 'BUSINESS', 'ENTERPRISE']) {
+                const tier = SUBSCRIPTION_TIERS[key];
+                expect(Number.isFinite(tier.gas.monthlySubsidyBudget)).toBe(true);
+                expect(Number.isFinite(tier.gas.maxSubsidyPerTx)).toBe(true);
+                expect(Number.isFinite(tier.staking.maxStakeAmount)).toBe(true);
+            }
         });
 
     });
 
     describe('TIER_HIERARCHY', () => {
 
-        test('should have correct order', () => {
-            expect(TIER_HIERARCHY).toEqual(['STARTER', 'CREATOR', 'BUSINESS']);
+        test('should have correct order, incluido ENTERPRISE', () => {
+            expect(TIER_HIERARCHY).toEqual(['STARTER', 'CREATOR', 'BUSINESS', 'ENTERPRISE']);
         });
 
-        test('should have 3 tiers', () => {
-            expect(TIER_HIERARCHY.length).toBe(3);
+        test('should have 4 tiers', () => {
+            expect(TIER_HIERARCHY.length).toBe(4);
         });
 
     });
@@ -85,7 +129,14 @@ describe('Tier Configuration', () => {
             expect(BASE_STAKING_APY).toBe(12.5);
         });
 
-        test('BEZ_TO_USD_RATE should be $0.05', () => {
+        // ⚠️ Guarda de regresión, no una afirmación de que 0.05 esté bien.
+        // bezpay.service.js usa BEZ_PRICE_USD=1.24 en todo el resto del
+        // sistema — esta constante sigue 20x por debajo, sin unificar. Ver
+        // el informe de rentabilidad de suscripciones. Si esto cambia sin
+        // querer, este test debe fallar y avisar; si cambia a propósito
+        // (unificación), hay que revisar también los tests de ROI de abajo,
+        // que dependen de este valor.
+        test('BEZ_TO_USD_RATE sigue en 0,05 — inconsistente con bezpay.service.js (1,24), sin unificar aún', () => {
             expect(BEZ_TO_USD_RATE).toBe(0.05);
         });
 
@@ -96,30 +147,29 @@ describe('Tier Configuration', () => {
 describe('getTierConfig', () => {
 
     test('should return STARTER config for undefined input', () => {
-        const config = getTierConfig(undefined);
-        expect(config.id).toBe('starter');
+        expect(getTierConfig(undefined).id).toBe('starter');
     });
 
     test('should return STARTER config for null input', () => {
-        const config = getTierConfig(null);
-        expect(config.id).toBe('starter');
+        expect(getTierConfig(null).id).toBe('starter');
     });
 
     test('should return correct config for each tier', () => {
         expect(getTierConfig('STARTER').id).toBe('starter');
         expect(getTierConfig('CREATOR').id).toBe('creator');
         expect(getTierConfig('BUSINESS').id).toBe('business');
+        expect(getTierConfig('ENTERPRISE').id).toBe('enterprise');
     });
 
     test('should be case-insensitive', () => {
         expect(getTierConfig('starter').id).toBe('starter');
         expect(getTierConfig('Creator').id).toBe('creator');
         expect(getTierConfig('BUSINESS').id).toBe('business');
+        expect(getTierConfig('enterprise').id).toBe('enterprise');
     });
 
     test('should return STARTER for invalid tier', () => {
-        const config = getTierConfig('INVALID');
-        expect(config.id).toBe('starter');
+        expect(getTierConfig('INVALID').id).toBe('starter');
     });
 
 });
@@ -127,23 +177,23 @@ describe('getTierConfig', () => {
 describe('getEffectiveAPY', () => {
 
     test('STARTER should have 12.5% APY', () => {
-        const apy = getEffectiveAPY('STARTER');
-        expect(apy).toBe(12.5);
+        expect(getEffectiveAPY('STARTER')).toBe(12.5);
     });
 
     test('CREATOR should have 18.75% APY (1.5x)', () => {
-        const apy = getEffectiveAPY('CREATOR');
-        expect(apy).toBe(18.75);
+        expect(getEffectiveAPY('CREATOR')).toBe(18.75);
     });
 
-    test('BUSINESS should have 31.25% APY (2.5x)', () => {
-        const apy = getEffectiveAPY('BUSINESS');
-        expect(apy).toBe(31.25);
+    test('BUSINESS should have 25% APY (2.0x) — no 31.25%, ese era el bug', () => {
+        expect(getEffectiveAPY('BUSINESS')).toBe(25);
+    });
+
+    test('ENTERPRISE should have 31.25% APY (2.5x) — no 43.75%, esa fue mi propia corrección a medias', () => {
+        expect(getEffectiveAPY('ENTERPRISE')).toBe(31.25);
     });
 
     test('should return base APY for undefined tier', () => {
-        const apy = getEffectiveAPY(undefined);
-        expect(apy).toBe(12.5);
+        expect(getEffectiveAPY(undefined)).toBe(12.5);
     });
 
 });
@@ -154,33 +204,32 @@ describe('calculatePotentialROI', () => {
 
         test('should calculate staking reward correctly for STARTER', () => {
             const roi = calculatePotentialROI(10000, 'STARTER', 12);
-
-            // 10000 BEZ * 12.5% = 1250 BEZ per year
-            expect(roi.periodStakingReward).toBe(1250);
+            expect(roi.periodStakingReward).toBe(1250); // 10000 * 12.5%
             expect(roi.effectiveAPY).toBe(12.5);
         });
 
         test('should calculate staking reward correctly for CREATOR', () => {
             const roi = calculatePotentialROI(10000, 'CREATOR', 12);
-
-            // 10000 BEZ * 18.75% = 1875 BEZ per year
-            expect(roi.periodStakingReward).toBe(1875);
+            expect(roi.periodStakingReward).toBe(1875); // 10000 * 18.75%
             expect(roi.effectiveAPY).toBe(18.75);
         });
 
         test('should calculate staking reward correctly for BUSINESS', () => {
             const roi = calculatePotentialROI(10000, 'BUSINESS', 12);
+            expect(roi.periodStakingReward).toBe(2500); // 10000 * 25%
+            expect(roi.effectiveAPY).toBe(25);
+        });
 
-            // 10000 BEZ * 31.25% = 3125 BEZ per year
-            expect(roi.periodStakingReward).toBe(3125);
+        test('should calculate staking reward correctly for ENTERPRISE', () => {
+            const roi = calculatePotentialROI(10000, 'ENTERPRISE', 12);
+            expect(roi.periodStakingReward).toBe(3125); // 10000 * 31.25%
             expect(roi.effectiveAPY).toBe(31.25);
         });
 
         test('should prorate rewards for partial year', () => {
-            const roi6months = calculatePotentialROI(10000, 'STARTER', 6);
-            const roi12months = calculatePotentialROI(10000, 'STARTER', 12);
-
-            expect(roi6months.periodStakingReward).toBe(roi12months.periodStakingReward / 2);
+            const roi6 = calculatePotentialROI(10000, 'STARTER', 6);
+            const roi12 = calculatePotentialROI(10000, 'STARTER', 12);
+            expect(roi6.periodStakingReward).toBe(roi12.periodStakingReward / 2);
         });
 
     });
@@ -189,30 +238,29 @@ describe('calculatePotentialROI', () => {
 
         test('STARTER should have zero subscription cost', () => {
             const roi = calculatePotentialROI(10000, 'STARTER', 12);
-
             expect(roi.totalSubscriptionCost).toBe(0);
             expect(roi.subscriptionCostInBEZ).toBe(0);
         });
 
-        test('CREATOR should cost $179.88 per year', () => {
+        test('CREATOR should cost €1.188 per year (€99 × 12)', () => {
             const roi = calculatePotentialROI(10000, 'CREATOR', 12);
-
-            // $14.99 * 12 = $179.88
-            expect(roi.totalSubscriptionCost).toBe(179.88);
+            expect(roi.totalSubscriptionCost).toBe(1188);
         });
 
-        test('BUSINESS should cost $1199.88 per year', () => {
+        test('BUSINESS should cost €5.988 per year (€499 × 12)', () => {
             const roi = calculatePotentialROI(10000, 'BUSINESS', 12);
-
-            // $99.99 * 12 = $1199.88
-            expect(roi.totalSubscriptionCost).toBeCloseTo(1199.88, 1);
+            expect(roi.totalSubscriptionCost).toBe(5988);
         });
 
-        test('subscription cost should be converted to BEZ correctly', () => {
-            const roi = calculatePotentialROI(10000, 'CREATOR', 12);
+        test('ENTERPRISE should cost €29.988 per year (€2.499 × 12)', () => {
+            const roi = calculatePotentialROI(10000, 'ENTERPRISE', 12);
+            expect(roi.totalSubscriptionCost).toBe(29988);
+        });
 
-            // $179.88 / $0.05 = 3597.6 BEZ
-            expect(roi.subscriptionCostInBEZ).toBeCloseTo(3597.6, 1);
+        test('subscription cost should be converted to BEZ at BEZ_TO_USD_RATE', () => {
+            const roi = calculatePotentialROI(10000, 'CREATOR', 12);
+            // 1188 / 0.05 = 23.760 BEZ
+            expect(roi.subscriptionCostInBEZ).toBeCloseTo(23760, 1);
         });
 
     });
@@ -225,30 +273,37 @@ describe('calculatePotentialROI', () => {
             expect(roi.netProfitBEZ).toBeGreaterThan(0);
         });
 
-        test('small stake net profit is less than STARTER for paid tiers', () => {
-            const roiStarter = calculatePotentialROI(1000, 'STARTER', 12);
-            const roiCreator = calculatePotentialROI(1000, 'CREATOR', 12);
-            const roiBusiness = calculatePotentialROI(1000, 'BUSINESS', 12);
-
-            // Small stakes: STARTER should have better net profit than paid tiers
-            // (paid tiers may still be profitable due to gas/AI value, but less than STARTER)
-            expect(roiStarter.netProfitBEZ).toBeGreaterThan(roiCreator.netProfitBEZ - roiCreator.gasSavingsInBEZ - roiCreator.aiValueInBEZ);
+        // A 10.000 BEZ (justo el tokenLock de Creator), Creator NO es rentable
+        // todavía — hace falta bastante más stake. Es el hallazgo real del
+        // informe de rentabilidad, no un caso límite artificial.
+        test('CREATOR a 10.000 BEZ (su propio tokenLock) NO es rentable aún', () => {
+            const roi = calculatePotentialROI(10000, 'CREATOR', 12);
+            expect(roi.isProfitable).toBe(false);
         });
 
-        test('large stake should be profitable for CREATOR', () => {
-            // Need to stake enough to cover $179.88/year in subscription
-            // At 18.75% APY, break-even is around 19,194 BEZ
-            const roi = calculatePotentialROI(25000, 'CREATOR', 12);
+        test('CREATOR se vuelve rentable por encima de su breakEvenStake', () => {
+            const roi = calculatePotentialROI(10000, 'CREATOR', 12);
+            const roiAboveBreakEven = calculatePotentialROI(roi.breakEvenStake + 10000, 'CREATOR', 12);
+            expect(roiAboveBreakEven.isProfitable).toBe(true);
+        });
 
+        test('BUSINESS a 10.000 BEZ ya es rentable', () => {
+            const roi = calculatePotentialROI(10000, 'BUSINESS', 12);
             expect(roi.isProfitable).toBe(true);
         });
 
-        test('very large stake should be profitable for BUSINESS', () => {
-            // Need to stake enough to cover $1199.88/year in subscription
-            // At 31.25% APY, break-even is around 76,792 BEZ
-            const roi = calculatePotentialROI(100000, 'BUSINESS', 12);
+        // A este mismo stake de referencia, Enterprise NO es rentable — su
+        // cuota (€29.988/año) pesa más que lo que devuelve un stake moderado,
+        // aun con el subsidio de gas ya acotado a 2.000€/mes.
+        test('ENTERPRISE a 10.000 BEZ NO es rentable a ese nivel de stake', () => {
+            const roi = calculatePotentialROI(10000, 'ENTERPRISE', 12);
+            expect(roi.isProfitable).toBe(false);
+        });
 
-            expect(roi.isProfitable).toBe(true);
+        test('ENTERPRISE se vuelve rentable por encima de su breakEvenStake', () => {
+            const roi = calculatePotentialROI(10000, 'ENTERPRISE', 12);
+            const roiAboveBreakEven = calculatePotentialROI(roi.breakEvenStake + 10000, 'ENTERPRISE', 12);
+            expect(roiAboveBreakEven.isProfitable).toBe(true);
         });
 
     });
@@ -256,26 +311,25 @@ describe('calculatePotentialROI', () => {
     describe('Break-even Calculations', () => {
 
         test('STARTER should have zero break-even stake', () => {
-            const roi = calculatePotentialROI(10000, 'STARTER', 12);
-            expect(roi.breakEvenStake).toBe(0);
+            expect(calculatePotentialROI(10000, 'STARTER', 12).breakEvenStake).toBe(0);
         });
 
-        test('CREATOR break-even should be around 19,194 BEZ', () => {
+        test('CREATOR break-even se calcula desde su propio coste y APY', () => {
             const roi = calculatePotentialROI(10000, 'CREATOR', 12);
-
-            // $179.88 / $0.05 = 3597.6 BEZ cost
-            // 3597.6 / 0.1875 = 19,187 BEZ
-            expect(roi.breakEvenStake).toBeGreaterThan(15000);
-            expect(roi.breakEvenStake).toBeLessThan(25000);
+            // 1.188€ / 0,05 = 23.760 BEZ de coste; 23.760 / 0,1875 = 126.720 BEZ
+            expect(roi.breakEvenStake).toBe(126720);
         });
 
-        test('BUSINESS break-even should be around 76,792 BEZ', () => {
+        test('BUSINESS break-even se calcula desde su propio coste y APY', () => {
             const roi = calculatePotentialROI(10000, 'BUSINESS', 12);
+            // 5.988€ / 0,05 = 119.760 BEZ de coste; 119.760 / 0,25 = 479.040 BEZ
+            expect(roi.breakEvenStake).toBe(479040);
+        });
 
-            // $1199.88 / $0.05 = 23,997.6 BEZ cost
-            // 23,997.6 / 0.3125 = 76,792 BEZ
-            expect(roi.breakEvenStake).toBeGreaterThan(70000);
-            expect(roi.breakEvenStake).toBeLessThan(85000);
+        test('ENTERPRISE break-even se calcula desde su propio coste y APY', () => {
+            const roi = calculatePotentialROI(10000, 'ENTERPRISE', 12);
+            // 29.988€ / 0,05 = 599.760 BEZ de coste; 599.760 / 0,3125 = 1.919.232 BEZ
+            expect(roi.breakEvenStake).toBe(1919232);
         });
 
     });
@@ -283,18 +337,14 @@ describe('calculatePotentialROI', () => {
     describe('Comparison with STARTER', () => {
 
         test('should calculate extra APY vs STARTER', () => {
-            const roiCreator = calculatePotentialROI(10000, 'CREATOR', 12);
-            const roiBusiness = calculatePotentialROI(10000, 'BUSINESS', 12);
-
-            expect(roiCreator.vsStarter.extraAPY).toBe(6.25); // 18.75 - 12.5
-            expect(roiBusiness.vsStarter.extraAPY).toBe(18.75); // 31.25 - 12.5
+            expect(calculatePotentialROI(10000, 'CREATOR', 12).vsStarter.extraAPY).toBe(6.25); // 18.75 - 12.5
+            expect(calculatePotentialROI(10000, 'BUSINESS', 12).vsStarter.extraAPY).toBe(12.5); // 25 - 12.5
+            expect(calculatePotentialROI(10000, 'ENTERPRISE', 12).vsStarter.extraAPY).toBe(18.75); // 31.25 - 12.5
         });
 
         test('should calculate extra reward BEZ vs STARTER', () => {
             const roiCreator = calculatePotentialROI(10000, 'CREATOR', 12);
-
-            // 10000 * (18.75% - 12.5%) = 625 extra BEZ
-            expect(roiCreator.vsStarter.extraRewardBEZ).toBe(625);
+            expect(roiCreator.vsStarter.extraRewardBEZ).toBe(625); // 10000 * (18.75%-12.5%)
         });
 
     });
@@ -303,30 +353,27 @@ describe('calculatePotentialROI', () => {
 
         test('should handle zero stake amount', () => {
             const roi = calculatePotentialROI(0, 'STARTER', 12);
-
             expect(roi.periodStakingReward).toBe(0);
-            // STARTER has no subscription cost, so net profit from staking alone is 0
             expect(roi.stakeAmount).toBe(0);
         });
 
-        test('should handle very large stake amounts', () => {
+        test('should handle very large stake amounts, incluso en BUSINESS con tope 500.000', () => {
             const roi = calculatePotentialROI(1000000, 'BUSINESS', 12);
-
-            expect(roi.periodStakingReward).toBe(312500); // 1M * 31.25%
+            // El cálculo de ROI no aplica el tope de staking.maxStakeAmount por sí
+            // solo — es la capa de negocio (StakingPool) la que debe rechazar el
+            // exceso. Aquí sólo se confirma que el cálculo no explota ni da NaN/Infinity.
+            expect(roi.periodStakingReward).toBe(250000); // 1M * 25%
+            expect(Number.isFinite(roi.netProfitBEZ)).toBe(true);
             expect(roi.isProfitable).toBe(true);
         });
 
         test('should handle 1 month duration', () => {
             const roi = calculatePotentialROI(10000, 'STARTER', 1);
-
-            // 1250 / 12 ≈ 104.17
             expect(roi.periodStakingReward).toBeCloseTo(104.17, 1);
         });
 
         test('should handle 24 month duration', () => {
             const roi = calculatePotentialROI(10000, 'STARTER', 24);
-
-            // 1250 * 2 = 2500
             expect(roi.periodStakingReward).toBe(2500);
         });
 
@@ -336,53 +383,44 @@ describe('calculatePotentialROI', () => {
 
 describe('compareROIAcrossTiers', () => {
 
-    test('should return comparison for all tiers', () => {
+    test('should return comparison for all 4 tiers', () => {
         const comparison = compareROIAcrossTiers(10000, 12);
-
         expect(comparison.comparison).toHaveProperty('STARTER');
         expect(comparison.comparison).toHaveProperty('CREATOR');
         expect(comparison.comparison).toHaveProperty('BUSINESS');
+        expect(comparison.comparison).toHaveProperty('ENTERPRISE');
     });
 
     test('should include stake amount and duration', () => {
         const comparison = compareROIAcrossTiers(10000, 12);
-
         expect(comparison.stakeAmount).toBe(10000);
         expect(comparison.durationMonths).toBe(12);
     });
 
     test('should recommend a tier for small stakes', () => {
         const comparison = compareROIAcrossTiers(1000, 12);
-
-        // Should recommend some tier based on algorithm logic
-        expect(['STARTER', 'CREATOR', 'BUSINESS']).toContain(comparison.recommendation.tier);
+        expect(TIER_HIERARCHY).toContain(comparison.recommendation.tier);
     });
 
     test('should recommend a tier for medium stakes', () => {
         const comparison = compareROIAcrossTiers(30000, 12);
-
-        // At 30,000 BEZ stake:
-        // Algorithm considers overall value (staking rewards + gas savings + AI value)
-        // The actual recommendation depends on the algorithm implementation
-        expect(['STARTER', 'CREATOR', 'BUSINESS']).toContain(comparison.recommendation.tier);
+        expect(TIER_HIERARCHY).toContain(comparison.recommendation.tier);
     });
 
-    test('should recommend BUSINESS for very large stakes', () => {
+    // A 200.000 BEZ, BUSINESS da el mejor neto de los 4 (verificado ejecutando
+    // compareROIAcrossTiers de verdad) — CREATOR también es rentable a ese
+    // nivel pero con menos margen; ENTERPRISE todavía no llega a su
+    // break-even (1.919.232 BEZ) a este tamaño de stake.
+    test('should recommend BUSINESS para 200.000 BEZ de stake', () => {
         const comparison = compareROIAcrossTiers(200000, 12);
-
-        // At 200,000 BEZ:
-        // STARTER: 25,000 BEZ
-        // CREATOR: 37,500 - 3,597.6 = 33,902.4 BEZ
-        // BUSINESS: 62,500 - 23,997.6 = 38,502.4 BEZ
-        // Should recommend highest net profit
         expect(comparison.recommendation.tier).toBe('BUSINESS');
+        expect(comparison.comparison.ENTERPRISE.isProfitable).toBe(false);
     });
 
     test('should include recommendation reason', () => {
         const comparison = compareROIAcrossTiers(10000, 12);
-
-        expect(comparison.recommendation.reason).toBeDefined();
         expect(typeof comparison.recommendation.reason).toBe('string');
+        expect(comparison.recommendation.reason.length).toBeGreaterThan(0);
     });
 
 });
@@ -391,28 +429,33 @@ describe('Feature Access', () => {
 
     test('STARTER should not have advanced features', () => {
         const config = getTierConfig('STARTER');
-
         expect(config.features.canCreateProposals).toBe(false);
         expect(config.features.advancedAIModels).toBe(false);
         expect(config.features.apiAccess).toBe(false);
     });
 
-    test('CREATOR should have most features', () => {
+    test('CREATOR should have most features but not apiAccess', () => {
         const config = getTierConfig('CREATOR');
-
         expect(config.features.canCreateProposals).toBe(true);
         expect(config.features.advancedAIModels).toBe(true);
         expect(config.features.analytics).toBe(true);
-        expect(config.features.apiAccess).toBe(false); // Only BUSINESS
+        expect(config.features.apiAccess).toBe(false); // sólo desde BUSINESS
     });
 
-    test('BUSINESS should have all features', () => {
+    test('BUSINESS should have full API access', () => {
         const config = getTierConfig('BUSINESS');
-
-        expect(config.features.canCreateProposals).toBe(true);
-        expect(config.features.advancedAIModels).toBe(true);
         expect(config.features.apiAccess).toBe(true);
         expect(config.features.webhooks).toBe(true);
+        expect(config.features.dedicatedManager).toBe(true);
+    });
+
+    // whiteLabel/dedicatedNode sólo existen en Enterprise — no están ni
+    // definidos (undefined, no false) en los demás tiers.
+    test('ENTERPRISE should have exclusive whiteLabel/dedicatedNode features', () => {
+        const config = getTierConfig('ENTERPRISE');
+        expect(config.features.whiteLabel).toBe(true);
+        expect(config.features.dedicatedNode).toBe(true);
+        expect(getTierConfig('BUSINESS').features.whiteLabel).toBeUndefined();
     });
 
 });
@@ -420,28 +463,34 @@ describe('Feature Access', () => {
 describe('AI Limits', () => {
 
     test('STARTER should have 5 daily queries', () => {
-        const config = getTierConfig('STARTER');
-        expect(config.ai.dailyQueries).toBe(5);
+        expect(getTierConfig('STARTER').ai.dailyQueries).toBe(5);
     });
 
     test('CREATOR should have 50 daily queries', () => {
-        const config = getTierConfig('CREATOR');
-        expect(config.ai.dailyQueries).toBe(50);
+        expect(getTierConfig('CREATOR').ai.dailyQueries).toBe(50);
     });
 
-    test('BUSINESS should have unlimited queries', () => {
+    // Acotado a 500 diarias / 15.000 mensuales — config/plans.js l.52
+    // (aiActions: 15000). Infinity no tenía respaldo en el PDF aprobado.
+    test('BUSINESS should have 500 daily / 15.000 monthly queries — no Infinity', () => {
         const config = getTierConfig('BUSINESS');
-        expect(config.ai.dailyQueries).toBe(Infinity);
+        expect(config.ai.dailyQueries).toBe(500);
+        expect(config.ai.monthlyQueries).toBe(15000);
+    });
+
+    // ENTERPRISE SÍ es Infinity a propósito — config/plans.js l.73 tiene
+    // aiActions: null, que es como el PDF representa "ilimitado" para este
+    // tier en concreto. No es el mismo bug que Business.
+    test('ENTERPRISE should have unlimited queries — sí respaldado por el PDF (aiActions: null)', () => {
+        expect(getTierConfig('ENTERPRISE').ai.dailyQueries).toBe(Infinity);
+        expect(getTierConfig('ENTERPRISE').ai.monthlyQueries).toBe(Infinity);
     });
 
     test('model access should be tier-based', () => {
-        const starter = getTierConfig('STARTER');
-        const creator = getTierConfig('CREATOR');
-        const business = getTierConfig('BUSINESS');
-
-        expect(starter.ai.models).toEqual(['gpt-3.5-turbo']);
-        expect(creator.ai.models).toContain('gpt-4');
-        expect(business.ai.models).toEqual(['all']);
+        expect(getTierConfig('STARTER').ai.models).toEqual(['gpt-3.5-turbo']);
+        expect(getTierConfig('CREATOR').ai.models).toContain('gpt-4');
+        expect(getTierConfig('BUSINESS').ai.models).toEqual(['all']);
+        expect(getTierConfig('ENTERPRISE').ai.models).toEqual(['all']);
     });
 
 });
@@ -449,18 +498,23 @@ describe('AI Limits', () => {
 describe('Gas Subsidies', () => {
 
     test('STARTER should have 0% gas subsidy', () => {
-        const config = getTierConfig('STARTER');
-        expect(config.gas.subsidyPercent).toBe(0);
+        expect(getTierConfig('STARTER').gas.subsidyPercent).toBe(0);
     });
 
     test('CREATOR should have 25% gas subsidy', () => {
-        const config = getTierConfig('CREATOR');
-        expect(config.gas.subsidyPercent).toBe(0.25);
+        expect(getTierConfig('CREATOR').gas.subsidyPercent).toBe(0.25);
     });
 
-    test('BUSINESS should have 100% gas subsidy (free gas)', () => {
-        const config = getTierConfig('BUSINESS');
+    // 50%, no 100% — el bug real que traía esta vuelta (config/plans.js
+    // l.52: gasSubsidy: 50).
+    test('BUSINESS should have 50% gas subsidy — no 100%, ese era el bug', () => {
+        expect(getTierConfig('BUSINESS').gas.subsidyPercent).toBe(0.5);
+    });
+
+    test('ENTERPRISE should have 100% gas subsidy, con presupuesto mensual acotado', () => {
+        const config = getTierConfig('ENTERPRISE');
         expect(config.gas.subsidyPercent).toBe(1.0);
+        expect(config.gas.monthlySubsidyBudget).toBe(2000); // acotado; antes Infinity
     });
 
 });

@@ -28,7 +28,7 @@ import GlobalModals from './components/GlobalModals';
 import TranslateWidget from './components/TranslateWidget';
 import { BezPayProvider } from './context/BezPayContext';
 import BezPayModal from './components/payments/BezPayModal';
-import MovedToSubApp from './components/MovedToSubApp'; // Control Plane: deep-link a SubApp tras migrar un vertical
+import MovedToNativeApp from './components/MovedToNativeApp'; // Control Plane: deep-link a App Nativa tras migrar un vertical
 
 // --- Pages (Lazy Loaded) ---
 const LandingPage = lazy(() => import('./pages/LandingPage')); // legacy: accesible en /landing-legacy
@@ -42,11 +42,11 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage')); // Simple Profile (temporary fix)
 const ProfileEditPage = lazy(() => import('./pages/ProfileEditPage')); // NEW: Profile Edit Page
 const MarketplaceUnified = lazy(() => import('./pages/MarketplaceUnified')); // Unified Marketplace + Shop + Create
-// StakingPage / FarmingPage → [MIGRATED to BZ Capital] (operativa servida por la SubApp; el Hub solo enlaza vía MovedToSubApp)
+// StakingPage / FarmingPage → [MIGRATED to BZ Capital] (operativa servida por la App Nativa; el Hub solo enlaza vía MovedToNativeApp)
 const OraclePage = lazy(() => import('./pages/OraclePage')); // NEW: Data Oracle
 const CreatePage = lazy(() => import('./pages/Create')); // Unified Creation Hub
 const BeZhasFeed = lazy(() => import('./pages/BeZhasFeed'));
-// BridgePage → [MIGRATED to BEZ Wallet] (deep-link vía MovedToSubApp)
+// BridgePage → [MIGRATED to BEZ Wallet] (deep-link vía MovedToNativeApp)
 // ProfileView removed - using ProfilePage instead
 // const BadgesPage = lazy(() => import('./pages/BadgesPage')); // REMOVED: Badges system eliminated in cleanup
 // CreateItemPage removed - now integrated into MarketplaceUnified Tab 3
@@ -117,7 +117,7 @@ const DocViewer = lazy(() => import('./pages/docs/DocViewer')); // NEW: Document
 // const AdMarketplace = lazy(() => import('./pages/dao/AdMarketplace')); // REMOVED
 // const DAOAdminPanel = lazy(() => import('./components/admin/DAOAdminPanel')); // REMOVED
 // const PluginManager = lazy(() => import('./pages/dao/PluginManager')); // REMOVED
-// DAOPage → [MIGRATED to BEZ Wallet] (deep-link vía MovedToSubApp)
+// DAOPage → [MIGRATED to BEZ Wallet] (deep-link vía MovedToNativeApp)
 const Industria40FundPage = lazy(() => import('./pages/dao/Industria40FundPage')); // NEW: Industry 4.0 Fund Details
 const SaludBiotecFundPage = lazy(() => import('./pages/dao/SaludBiotecFundPage')); // NEW: Health & Biotech Fund Details
 const EnergiaSmartCitiesFundPage = lazy(() => import('./pages/dao/EnergiaSmartCitiesFundPage')); // NEW: Energy & Smart Cities Fund Details
@@ -128,7 +128,7 @@ const EducacionCredencialesFundPage = lazy(() => import('./pages/dao/EducacionCr
 const RWAPage = lazy(() => import('./pages/RWAPage')); // NEW: Real World Assets Marketplace
 
 // New Governance & Compliance
-// GovernancePage → [MIGRATED to BEZ Wallet] (deep-link vía MovedToSubApp)
+// GovernancePage → [MIGRATED to BEZ Wallet] (deep-link vía MovedToNativeApp)
 const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 
 // Developer Tools
@@ -138,7 +138,7 @@ const ClientGuidesPage = lazy(() => import('./pages/ClientGuidesPage')); // NEW:
 // const SDKTestPage = lazy(() => import('./pages/SDKTestPage')); // NEW: SDK Integration TestPage
 const AuthPage = lazy(() => import('./pages/AuthPage')); // NEW: Unified Auth (Email, Google, Facebook, Wallet)
 const BuyTokensPage = lazy(() => import('./pages/BuyTokensPage')); // Token Purchase Page
-// DeFiHub → [MIGRATED to BZ Capital] (deep-link vía MovedToSubApp)
+// DeFiHub → [MIGRATED to BZ Capital] (deep-link vía MovedToNativeApp)
 const BezPayPage = lazy(() => import('./pages/BezPayPage')); // NEW: BeZhas Pay System v2.0 full page
 
 // AI Guide Widget (Global)
@@ -386,19 +386,19 @@ export const router = createBrowserRouter(
             { path: '/social', element: <Navigate to="/home" replace /> }, // REMOVED: Redirige al feed principal
             // { path: '/badges', element: <BadgesPage /> }, // REMOVED: Badges system eliminated
             // { path: '/groups', element: <GroupsPage /> }, // REMOVED: Groups feature not implemented
-            // Rutas de Marketplace y DeFi migradas a subapps correspondientes
+            // Rutas de Marketplace y DeFi migradas a las Apps Nativas correspondientes
             // { path: '/marketplace', element: <MarketplaceUnified /> }, // [MIGRATED to BZ Capital / Ecosystem]
             // { path: '/shop', element: <MarketplaceUnified /> }, // [MIGRATED]
             // --- DeFi vertical → BZ Capital (Control Plane: deep-link, sin operativa local) ---
-            { path: '/defi', element: <MovedToSubApp app="capital" feature="DeFi" /> },
-            { path: '/staking', element: <MovedToSubApp app="capital" subPath="/staking" feature="Staking" /> },
-            { path: '/farming', element: <MovedToSubApp app="capital" subPath="/farming" feature="Farming" /> },
-            { path: '/liquidity', element: <MovedToSubApp app="capital" subPath="/treasury" feature="Liquidez / Tesorería" /> },
+            { path: '/defi', element: <MovedToNativeApp app="capital" feature="DeFi" /> },
+            { path: '/staking', element: <MovedToNativeApp app="capital" subPath="/staking" feature="Staking" /> },
+            { path: '/farming', element: <MovedToNativeApp app="capital" subPath="/farming" feature="Farming" /> },
+            { path: '/liquidity', element: <MovedToNativeApp app="capital" subPath="/treasury" feature="Liquidez / Tesorería" /> },
             { path: '/defi-hub', element: <Navigate to="/defi" replace /> },
             // --- Governance / DAO / Bridge vertical → BEZ Wallet (Control Plane: deep-link) ---
-            { path: '/governance', element: <MovedToSubApp app="wallet" subPath="/governance" feature="Gobernanza" /> },
-            { path: '/dao-page', element: <MovedToSubApp app="wallet" subPath="/governance" feature="DAO / Gobernanza" /> },
-            { path: '/bridge', element: <MovedToSubApp app="wallet" subPath="/bridge" feature="Bridge" /> },
+            { path: '/governance', element: <MovedToNativeApp app="wallet" subPath="/governance" feature="Gobernanza" /> },
+            { path: '/dao-page', element: <MovedToNativeApp app="wallet" subPath="/governance" feature="DAO / Gobernanza" /> },
+            { path: '/bridge', element: <MovedToNativeApp app="wallet" subPath="/bridge" feature="Bridge" /> },
             { path: '/compliance', element: <CompliancePage /> }, // [KEEP] Compliance Dashboard
             { path: '/oracle', element: <OraclePage /> }, // NEW: Data Oracle
             // { path: '/members', element: <MembersPage /> }, // REMOVED: Members moved to other sections

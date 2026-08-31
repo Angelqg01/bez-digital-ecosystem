@@ -1,22 +1,22 @@
 import { Link } from 'react-router-dom';
-import { SUBAPP_META, subappUrl } from '../config/subappUrls';
+import { NATIVE_APP_META, nativeAppUrl } from '../config/nativeAppUrls';
 
 /**
  * Panel de "Control Plane": una función operativa ya NO vive en el Hub, sino en
- * su SubApp dedicada. Muestra un resumen breve y un deep-link a la SubApp.
+ * su App Nativa dedicada. Muestra un resumen breve y un deep-link a la App Nativa.
  *
  * Sustituye a las páginas operativas migradas (staking/farming/defi → BZ Capital,
  * etc.) para que las rutas del Hub no queden muertas tras la migración.
  *
  * @param {object}  props
- * @param {string}  props.app        clave de SubApp (ver config/subappUrls.js)
- * @param {string} [props.subPath]   ruta interna dentro de la SubApp
+ * @param {string}  props.app        clave de App Nativa (ver config/nativeAppUrls.js)
+ * @param {string} [props.subPath]   ruta interna dentro de la App Nativa
  * @param {string}  props.feature    nombre de la función (p.ej. "Staking")
  * @param {string} [props.description] texto opcional de contexto
  */
-export default function MovedToSubApp({ app, subPath = '', feature, description }) {
-  const meta = SUBAPP_META[app] || { name: app, tagline: '' };
-  const href = subappUrl(app, subPath);
+export default function MovedToNativeApp({ app, subPath = '', feature, description }) {
+  const meta = NATIVE_APP_META[app] || { name: app, tagline: '' };
+  const href = nativeAppUrl(app, subPath);
 
   return (
     <div className="flex min-h-[60vh] w-full items-center justify-center p-6">

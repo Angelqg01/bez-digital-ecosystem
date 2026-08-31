@@ -1,5 +1,5 @@
 /**
- * @deprecated — LEGACY SERVICE. NFT operations now live in BZ Prestige SubApp.
+ * @deprecated — LEGACY SERVICE. NFT operations now live in BZ Prestige App Nativa.
  * Replacement: BZ Prestige/src/services/blockchainService.js
  * NFT minting → BZ Prestige → registerProduct()
  * Provenance → BZ Prestige → getProvenance()

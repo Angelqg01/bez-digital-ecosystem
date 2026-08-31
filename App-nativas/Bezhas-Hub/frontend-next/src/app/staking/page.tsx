@@ -1,8 +1,8 @@
-import SubappRedirectPage from '../../components/control-plane/SubappRedirectPage';
+import NativeAppRedirectPage from '../../components/control-plane/NativeAppRedirectPage';
 
 export default function StakingPage() {
   return (
-    <SubappRedirectPage
+    <NativeAppRedirectPage
       appKey="capital"
       path="/staking"
       title="Staking migrado a BZ Capital"

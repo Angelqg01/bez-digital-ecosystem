@@ -1,6 +1,6 @@
 /**
  * verify-subapps.js – Auditoría arquitectural completa del ecosistema BeZhas.
- * Ejecutar desde: D:\BeZhas-Blockchain\App's secundarias\
+ * Ejecutar desde: D:\BeZhas-Blockchain\App-nativas\
  * Comando: node verify-subapps.js
  */
 

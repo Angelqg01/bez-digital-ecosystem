@@ -208,6 +208,31 @@ export const REGISTRY = {
   // APIs currently run on the SubApp's own subdomain).
   vision: { baseUrl: '/api/vision', auth: 'apiKey', label: 'BeZhas Vision', external: 'https://vision.bez.digital', actions: {} },
   purescan: { baseUrl: '/api/purescan', auth: 'apiKey', label: 'BZ PureScan', external: 'https://purescan.bez.digital', actions: {} },
+  // ── OPERANT — gestión empresarial autónoma (api/routes/operant.js) ──────────
+  // Los agentes corren en el runtime de OPERANT, pero el contrato es el del
+  // Gateway: api-key de la app, entitlements del plan y consumo facturado.
+  operant: {
+    baseUrl: '/api/operant',
+    auth: 'apiKey',
+    label: 'OPERANT — Gestión Empresarial Autónoma',
+    actions: {
+      catalog: { method: 'GET', path: '/catalog', auth: 'public', description: 'Departamentos, capacidades por plan y tarifas.' },
+      health: { method: 'GET', path: '/health', auth: 'public', description: 'Estado del runtime de agentes.' },
+      entitlements: { method: 'GET', path: '/entitlements', description: 'Qué desbloquea el plan de esta app (no gateado: sirve el upsell).' },
+      departments: { method: 'GET', path: '/departments', description: 'Departamentos disponibles + precio por tarea.' },
+      provision: { method: 'POST', path: '/tenants/provision', description: 'Alta/reconfiguración del tenant con los límites del plan.' },
+      tenant: { method: 'GET', path: '/tenants/me', description: 'Configuración del tenant de esta app.' },
+      run: { method: 'POST', path: '/tasks', required: ['department', 'input'], description: 'Lanza una tarea a un departamento.' },
+      getTask: { method: 'GET', path: '/tasks/:taskId', required: ['taskId'], description: 'Estado, salida y coste de una tarea.' },
+      approvals: { method: 'GET', path: '/approvals', description: 'Cola de aprobaciones humanas (HITL).' },
+      resolveApproval: { method: 'POST', path: '/approvals/:approvalId', required: ['approvalId', 'decision'], description: 'Aprueba o rechaza una acción retenida.' },
+      usage: { method: 'GET', path: '/usage', description: 'Cuota, overage y coste del ciclo en curso.' },
+      anchorAudit: { method: 'POST', path: '/audit/anchor', description: 'Ancla en L2 la raíz merkle del tramo de auditoría pendiente.' },
+      verifyAudit: { method: 'GET', path: '/audit/verify', description: 'Integridad de la cadena de auditoría + anclas on-chain.' },
+      auditProof: { method: 'GET', path: '/audit/proof/:auditHash', required: ['auditHash'], description: 'Prueba de inclusión de un registro contra su ancla.' },
+    },
+  },
+
   sphere: { baseUrl: '/api/sphere', auth: 'apiKey', label: 'BZ Sphere', external: 'https://sphere.bez.digital', actions: {} },
   prestige: { baseUrl: '/api/prestige', auth: 'apiKey', label: 'BZ Prestige', external: 'https://prestige.bez.digital', actions: {} },
   edge: { baseUrl: '/api/edge', auth: 'apiKey', label: 'BeZhas Edge', external: 'https://edge.bez.digital', actions: {} },

@@ -1,6 +1,6 @@
 // Recorrido "Cómo usar BeZhas Hub" — contenido de las escenas.
 // Genera public/como-usar.html con:  pnpm tour:build
-// Motor + mecánica: @bezhas/guided-tour (App's secundarias/packages/guided-tour).
+// Motor + mecánica: @bezhas/guided-tour (App-nativas/packages/guided-tour).
 
 export default {
   appName: 'BeZhas Hub',
@@ -19,7 +19,7 @@ export default {
     {
       label: 'Introducción', kicker: 'BeZhas Hub',
       title: 'El plano de control de todo el ecosistema B2B',
-      body: 'Un solo panel para gestionar tu organización, activar SubApps por sector, pagar en $BEZ y conectar todo por API. Pensado para instituciones, holdings y empresas multi-sede.',
+      body: 'Un solo panel para gestionar tu organización, activar Apps Nativas por sector, pagar en $BEZ y conectar todo por API. Pensado para instituciones, holdings y empresas multi-sede.',
       tags: [['c', 'Multi-tenant'], ['g', 'B2B'], ['p', 'Un panel, todo el ecosistema']],
       visual: `
         <div class="phone">
@@ -39,7 +39,7 @@ export default {
         <div class="phone">
           <div class="bar">{{ico:cpu}}<b>DASHBOARD</b></div>
           <div class="mini pop row"><div class="h">{{ico:radio}} Red</div><span class="chip green" style="margin-left:auto">Operativa</span></div>
-          <div class="mini pop d1"><div class="bars"><b class="b1" style="width:92%"></b></div><div class="s" style="margin-top:6px">Throughput 92% · 4 SubApps online</div></div>
+          <div class="mini pop d1"><div class="bars"><b class="b1" style="width:92%"></b></div><div class="s" style="margin-top:6px">Throughput 92% · 4 Apps Nativas online</div></div>
           <div class="mini pop d2 row"><span class="chip cyan">CargoLink</span><span class="chip cyan">Energy</span><span class="chip cyan">Capital</span></div>
         </div>`,
     },
@@ -57,7 +57,7 @@ export default {
         </div>`,
     },
     {
-      label: 'Verticales · SubApps', kicker: 'Servicios por sector',
+      label: 'Verticales · Apps Nativas', kicker: 'Servicios por sector',
       title: 'Un servicio real por cada sector de tu operación',
       body: 'Activa CargoLink (logística/aduanas), Energy·VPP (energía), RWA (inmobiliario), Vision Scan y PureScan (compliance/antifraude), Prestige (red de socios B2B), Genesis (ERP) y Capital (DeFi/tesorería) desde un mismo lugar.',
       tags: [['c', 'Logística · Energía'], ['g', 'RWA · Compliance'], ['p', 'DeFi · ERP']],
@@ -72,7 +72,7 @@ export default {
     {
       label: 'BeZhas Pay & Wallet', kicker: 'Finanzas',
       title: 'Cobra y paga en fiat o en $BEZ, con liquidación real',
-      body: 'BeZhas Pay procesa cobros fiat/cripto con liquidación SEPA/SWIFT o on-chain. Tu Wallet custodia el BEZ, sirve para gobernanza y activa el gas abstraction (Gas Tank) del resto de SubApps.',
+      body: 'BeZhas Pay procesa cobros fiat/cripto con liquidación SEPA/SWIFT o on-chain. Tu Wallet custodia el BEZ, sirve para gobernanza y activa el gas abstraction (Gas Tank) del resto de Apps Nativas.',
       tags: [['c', 'Fiat + $BEZ'], ['g', 'SEPA · SWIFT'], ['', 'Gas abstraction']],
       visual: `
         <div class="phone">
@@ -111,7 +111,7 @@ export default {
     {
       label: 'Plugin WordPress', kicker: 'Integración · Downloads',
       title: 'Todo el ecosistema, embebido en tu WordPress',
-      body: 'Descarga el Plugin WordPress "Embedded Gateway": consola del Hub dentro de wp-admin, suscripción a planes en $BEZ, activación de SubApps y BeZhas-Pay (shortcode + bloque + gateway WooCommerce), sin salir de tu web.',
+      body: 'Descarga el Plugin WordPress "Embedded Gateway": consola del Hub dentro de wp-admin, suscripción a planes en $BEZ, activación de Apps Nativas y BeZhas-Pay (shortcode + bloque + gateway WooCommerce), sin salir de tu web.',
       tags: [['c', 'wp-admin'], ['g', 'WooCommerce'], ['', 'Shortcode + bloque']],
       visual: `
         <div class="phone">
@@ -123,9 +123,9 @@ export default {
     },
     {
       label: 'Planes & Suscripción', kicker: 'Finanzas · Cierre',
-      title: 'Un plan por organización, SubApps a la carta',
-      body: 'Elige el plan de tu organización y activa solo las SubApps que necesitas. Todo se paga en $BEZ, el combustible del ecosistema: cuanto más operas, más eficiente se vuelve tu operación.',
-      tags: [['c', '4 planes'], ['g', 'SubApps a la carta'], ['p', 'Pago en $BEZ']],
+      title: 'Un plan por organización, Apps Nativas a la carta',
+      body: 'Elige el plan de tu organización y activa solo las Apps Nativas que necesitas. Todo se paga en $BEZ, el combustible del ecosistema: cuanto más operas, más eficiente se vuelve tu operación.',
+      tags: [['c', '4 planes'], ['g', 'Apps Nativas a la carta'], ['p', 'Pago en $BEZ']],
       visual: `
         <div class="phone">
           <div class="bar">{{ico:gift}}<b>PLANES & SUSCRIPCIÓN</b></div>

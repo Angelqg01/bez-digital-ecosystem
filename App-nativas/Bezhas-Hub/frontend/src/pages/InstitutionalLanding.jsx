@@ -18,7 +18,7 @@ import {
 import Header from '../components/layout/Header';
 import SidebarDrawer from '../components/SidebarDrawer';
 import NodeNetworkBackground from '../components/landing/NodeNetworkBackground';
-import { subappUrl } from '../config/subappUrls';
+import { nativeAppUrl } from '../config/nativeAppUrls';
 
 // ── Tokens de diseño ──────────────────────────────────────────────────────────
 const C = {
@@ -651,7 +651,7 @@ export default function InstitutionalLanding() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {SECTORS.map((s, i) => (
               <Reveal key={s.name} delay={i * 60}>
-                <button onClick={() => open(s.internal || subappUrl(s.app), !s.internal)} className="text-left w-full h-full">
+                <button onClick={() => open(s.internal || nativeAppUrl(s.app), !s.internal)} className="text-left w-full h-full">
                   <GlassCard className="h-full">
                     <div className="w-11 h-11 rounded-xl grid place-items-center mb-4" style={{ background: `${C.cyan}12`, color: C.cyan }}><s.icon size={22} /></div>
                     <h3 className="font-bold text-white mb-1.5">{s.name}</h3>

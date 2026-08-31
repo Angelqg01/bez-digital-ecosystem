@@ -2,6 +2,20 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Función de los triggers `*_modtime` que se crean más abajo y también en la
+-- migración 009. No estaba definida en ninguna migración: existía sólo en las
+-- bases ya montadas, donde alguien la creó a mano. Sobre una base limpia, la
+-- cadena reventaba aquí con «function update_modified_column() does not exist»,
+-- de modo que el esquema no se podía reconstruir desde cero.
+-- CREATE OR REPLACE la hace inocua en las bases donde ya existe.
+CREATE OR REPLACE FUNCTION update_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Table: bridge_shipments
 CREATE TABLE IF NOT EXISTS bridge_shipments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

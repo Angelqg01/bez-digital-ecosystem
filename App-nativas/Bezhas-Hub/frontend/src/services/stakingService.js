@@ -1,5 +1,5 @@
 /**
- * @deprecated — LEGACY SERVICE. Staking operations now live in bez-wallet SubApp.
+ * @deprecated — LEGACY SERVICE. Staking operations now live in bez-wallet App Nativa.
  * Replacement: bez-wallet/src/services/walletBlockchainService.js
  * The Hub should link to bez-wallet/staking instead of handling staking directly.
  */

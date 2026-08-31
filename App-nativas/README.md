@@ -4,7 +4,7 @@
 
 ```bash
 # 1. Install dependencies
-cd "App's secundarias"
+cd "App-nativas"
 pnpm install
 
 # 2. Build shared packages first

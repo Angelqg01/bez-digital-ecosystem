@@ -29,23 +29,23 @@ import {
   GitBranch,
   FileText,
 } from 'lucide-react';
-import { subappUrl } from './subappUrls';
+import { nativeAppUrl } from './nativeAppUrls';
 
 /**
  * @dev BeZhas-Hub Sidebar — Plano de Control B2B.
  *
  * El Hub es la consola de control para Instituciones · Holdings · Empresas
  * multi-sede. La navegación se organiza en torno a: controlar la organización,
- * operar cada vertical (SubApp real), pagar/suscribir, e integrar vía
+ * operar cada vertical (App Nativa real), pagar/suscribir, e integrar vía
  * API · SDK · Plugin WordPress.
  *
  * TODOS los enlaces son REALES:
- *   - http(s) → deep-link a la SubApp en producción (config/subappUrls.js)
+ *   - http(s) → deep-link a la App Nativa en producción (config/nativeAppUrls.js)
  *   - /ruta   → ruta interna real del Hub (ver App.jsx router)
  *
  * Categorías:
  *   control      → Panel de control de la organización y sus sedes
- *   verticales   → Servicios operativos (SubApps) por sector
+ *   verticales   → Servicios operativos (Apps Nativas) por sector
  *   finanzas     → Pagos, token y planes de suscripción
  *   integracion  → API · SDK · Plugin WordPress · Oracle · Compliance
  *   cuenta       → Perfil y configuración
@@ -83,10 +83,10 @@ export const sidebarNavItems = [
   },
 
   // ========================================
-  // 🧩 VERTICALES — SERVICIOS (SubApps reales)
+  // 🧩 VERTICALES — SERVICIOS (Apps Nativas reales)
   // ========================================
   {
-    path: subappUrl('cargolink'),
+    path: nativeAppUrl('cargolink'),
     icon: <Ship size={22} />,
     label: 'CargoLink · Logística',
     description: 'Flota, contenedores, aduanas y trazabilidad de extremo a extremo',
@@ -94,7 +94,7 @@ export const sidebarNavItems = [
     category: 'verticales',
   },
   {
-    path: subappUrl('energy'),
+    path: nativeAppUrl('energy'),
     icon: <Bolt size={22} />,
     label: 'Energy · VPP',
     description: 'Control de activos electro-energéticos y mercado OMIE',
@@ -110,7 +110,7 @@ export const sidebarNavItems = [
     category: 'verticales',
   },
   {
-    path: subappUrl('vision'),
+    path: nativeAppUrl('vision'),
     icon: <Eye size={22} />,
     label: 'Vision Scan',
     description: 'Trazabilidad de activos por visión artificial + IA',
@@ -118,7 +118,7 @@ export const sidebarNavItems = [
     category: 'verticales',
   },
   {
-    path: subappUrl('purescan'),
+    path: nativeAppUrl('purescan'),
     icon: <ScanLine size={22} />,
     label: 'PureScan · Compliance',
     description: 'Auditoría, certificados y verificación de socios',
@@ -126,7 +126,7 @@ export const sidebarNavItems = [
     category: 'verticales',
   },
   {
-    path: subappUrl('prestige'),
+    path: nativeAppUrl('prestige'),
     icon: <BadgeCheck size={22} />,
     label: 'Prestige · Club B2B',
     description: 'Networking y directorio de socios verificados',
@@ -134,7 +134,7 @@ export const sidebarNavItems = [
     category: 'verticales',
   },
   {
-    path: subappUrl('genesis'),
+    path: nativeAppUrl('genesis'),
     icon: <Network size={22} />,
     label: 'Genesis · ERP',
     description: 'Gestión empresarial integral y onboarding de unidades',
@@ -142,7 +142,7 @@ export const sidebarNavItems = [
     category: 'verticales',
   },
   {
-    path: subappUrl('capital'),
+    path: nativeAppUrl('capital'),
     icon: <Landmark size={22} />,
     label: 'Capital · DeFi',
     description: 'Tesorería: staking, farming y liquidez',
@@ -163,7 +163,7 @@ export const sidebarNavItems = [
     badge: 'v2.0',
   },
   {
-    path: subappUrl('wallet'),
+    path: nativeAppUrl('wallet'),
     icon: <Wallet size={22} />,
     label: 'Wallet & Gobernanza',
     description: 'Custodia BEZ, bridge, validadores y votaciones',
@@ -171,7 +171,7 @@ export const sidebarNavItems = [
     category: 'finanzas',
   },
   {
-    path: subappUrl('gas'),
+    path: nativeAppUrl('gas'),
     icon: <Fuel size={22} />,
     label: 'Gas Tank',
     description: 'Gas abstraction y patrocinio de transacciones',
@@ -191,9 +191,10 @@ export const sidebarNavItems = [
     path: '/be-vip',
     icon: <Crown size={22} />,
     label: 'Planes & Suscripción',
-    description: 'Planes para usuarios y empresas + activación de SubApps',
+    description: 'Elige tu plan, activa Apps Nativas y multiplica tu eficiencia hasta 15x',
     roles: ['public', 'user', 'admin'],
     category: 'finanzas',
+    badge: '👑',
   },
 
   // ========================================

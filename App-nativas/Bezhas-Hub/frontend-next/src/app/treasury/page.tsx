@@ -1,8 +1,8 @@
-import SubappRedirectPage from '../../components/control-plane/SubappRedirectPage';
+import NativeAppRedirectPage from '../../components/control-plane/NativeAppRedirectPage';
 
 export default function TreasuryPage() {
   return (
-    <SubappRedirectPage
+    <NativeAppRedirectPage
       appKey="capital"
       path="/treasury"
       title="Treasury operativo migrado a BZ Capital"

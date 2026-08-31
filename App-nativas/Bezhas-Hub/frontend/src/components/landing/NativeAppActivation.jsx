@@ -1,6 +1,6 @@
 /**
- * SubAppActivation — calculador "estilo ERP": el cliente elige un plan base y
- * ACTIVA las SubApps que necesita (toggle), viendo el precio total en vivo.
+ * NativeAppActivation — calculador "estilo ERP": el cliente elige un plan base y
+ * ACTIVA las Apps Nativas que necesita (toggle), viendo el precio total en vivo.
  * Replica el modelo SAP/Odoo de módulos activables sobre una suscripción.
  *
  * Lógica de precios en config/pricing.js (single source of truth).
@@ -9,14 +9,14 @@ import React, { useMemo, useState } from 'react';
 import { Check, Plus, Sparkles, Calculator } from 'lucide-react';
 import {
   BASE_PLANS,
-  SUBAPP_ADDONS,
+  NATIVE_APP_ADDONS,
   calculatePricing,
   ANNUAL_FREE_MONTHS,
 } from '../../config/pricing';
 
 const euro = (n) => `${n.toLocaleString('es-ES')} €`;
 
-export default function SubAppActivation() {
+export default function NativeAppActivation() {
   const [planId, setPlanId] = useState('business');
   const [annual, setAnnual] = useState(false);
   const [active, setActive] = useState(['pay', 'cargolink']);
@@ -32,7 +32,7 @@ export default function SubAppActivation() {
   const plan = BASE_PLANS.find((p) => p.id === planId);
 
   return (
-    <section id="activar-subapps" className="relative py-24 px-6 lg:px-20 z-10">
+    <section id="activar-apps-nativas" className="relative py-24 px-6 lg:px-20 z-10">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-cyan-300/30 mb-5">
@@ -48,7 +48,7 @@ export default function SubAppActivation() {
             </span>
           </h2>
           <p className="mt-6 text-gray-300 text-lg max-w-2xl mx-auto leading-relaxed">
-            Como un ERP: eliges un plan base y activas las SubApps que tu empresa
+            Como un ERP: eliges un plan base y activas las Apps Nativas que tu empresa
             necesita. Cuantas más activas, menor el precio por módulo.
           </p>
         </div>
@@ -85,8 +85,8 @@ export default function SubAppActivation() {
                       </div>
                       <div className="text-gray-500 text-[11px] mt-1">
                         {p.includedAddons === Infinity
-                          ? 'Todas las SubApps'
-                          : `${p.includedAddons} SubApp${p.includedAddons > 1 ? 's' : ''} incluida${p.includedAddons > 1 ? 's' : ''}`}
+                          ? 'Todas las Apps Nativas'
+                          : `${p.includedAddons} App Nativa${p.includedAddons > 1 ? 's' : ''} incluida${p.includedAddons > 1 ? 's' : ''}`}
                       </div>
                     </button>
                   );
@@ -94,13 +94,13 @@ export default function SubAppActivation() {
               </div>
             </div>
 
-            {/* Toggles de SubApps */}
+            {/* Toggles de Apps Nativas */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
               <div className="text-xs uppercase tracking-widest text-gray-400 font-bold mb-3">
-                2 · Activa SubApps
+                2 · Activa Apps Nativas
               </div>
               <div className="grid sm:grid-cols-2 gap-2.5">
-                {SUBAPP_ADDONS.map((app) => {
+                {NATIVE_APP_ADDONS.map((app) => {
                   const isActive = app.core || active.includes(app.id);
                   return (
                     <button
@@ -155,7 +155,7 @@ export default function SubAppActivation() {
               <div className="py-6 text-center">
                 <div className="text-3xl font-black text-white mb-2">A medida</div>
                 <p className="text-gray-400 text-sm">
-                  Enterprise incluye todas las SubApps. Hablemos de tu volumen.
+                  Enterprise incluye todas las Apps Nativas. Hablemos de tu volumen.
                 </p>
               </div>
             ) : (
@@ -164,7 +164,7 @@ export default function SubAppActivation() {
                   <Row label={`Plan ${plan.name}`} value={euro(quote.basePrice)} />
                   {quote.includedCount > 0 && (
                     <Row
-                      label={`${quote.includedCount} SubApp(s) incluida(s)`}
+                      label={`${quote.includedCount} App${quote.includedCount > 1 ? 's' : ''} Nativa${quote.includedCount > 1 ? 's' : ''} incluida${quote.includedCount > 1 ? 's' : ''}`}
                       value="0 €"
                       muted
                     />
@@ -201,7 +201,7 @@ export default function SubAppActivation() {
                   <Plus size={16} /> Activar suscripción
                 </a>
                 <p className="text-center text-[11px] text-gray-500 mt-3">
-                  Las SubApps que actives quedan disponibles al instante en tu API key,
+                  Las Apps Nativas que actives quedan disponibles al instante en tu API key,
                   SDK, plugin de WordPress y widgets. Cambia o cancela cuando quieras · EUR o BEZ.
                 </p>
               </>

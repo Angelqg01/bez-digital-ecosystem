@@ -12,7 +12,7 @@
  *
  * ESTE ARCHIVO ESTÁ DUPLICADO A PROPÓSITO en:
  *   - api/lib/bezhasId.js
- *   - App's secundarias/Bezhas-Hub/backend/lib/bezhasId.js
+ *   - App-nativas/Bezhas-Hub/backend/lib/bezhasId.js
  * Cada servicio se empaqueta en su propio contenedor, así que no pueden
  * compartir un require() relativo. Si tocas uno, toca el otro: el test
  * `bezhasId.test.js` de cada lado comprueba que ambos generan el mismo formato.

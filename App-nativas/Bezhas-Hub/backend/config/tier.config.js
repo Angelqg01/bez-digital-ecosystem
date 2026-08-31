@@ -275,10 +275,14 @@ const SUBSCRIPTION_TIERS = {
         },
 
         // === DEFI: STAKING ===
+        // multiplier/gasSubsidy corregidos contra config/plans.js — la fuente
+        // definitiva basada en los PDFs de precios ("apy: 25" y "gasSubsidy: 50"
+        // para Business, l.52). Este fichero traía 2.5x/100%, que no coincide
+        // con ningún valor aprobado — 25% de APY es 2.0x sobre el 12.5% base.
         staking: {
-            multiplier: 2.5,              // 2.5x APY (31.25%)
-            effectiveAPY: BASE_STAKING_APY * 2.5,
-            maxStakeAmount: Infinity,     // Sin límite
+            multiplier: 2.0,              // 2.0x APY (25%) — plans.js l.52
+            effectiveAPY: BASE_STAKING_APY * 2.0,
+            maxStakeAmount: 500000,       // capado: 10x el tokenLock del tier (50.000 BEZ) — ver hallazgo P&L
             earlyUnstakePenalty: 0,       // Sin penalización
             lockPeriodDays: 0,            // Sin lock obligatorio
             compoundingEnabled: true
@@ -286,16 +290,18 @@ const SUBSCRIPTION_TIERS = {
 
         // === GAS SUBSIDY ===
         gas: {
-            subsidyPercent: 1.0,          // 100% subsidio (gas gratis)
-            maxSubsidyPerTx: Infinity,    // Sin límite por TX
+            subsidyPercent: 0.5,          // 50% subsidio — plans.js l.52
+            maxSubsidyPerTx: 10,          // acotado; Infinity no es un límite
             monthlySubsidyBudget: 500,    // $500 USD/mes
             priorityFee: true             // Priority fee incluido
         },
 
         // === AI CREDITS ===
+        // monthlyQueries acotado a 15.000 — plans.js l.52 (aiActions: 15000).
+        // Enterprise sí es null/ilimitado en el PDF (l.73); Business no lo es.
         ai: {
-            dailyQueries: Infinity,
-            monthlyQueries: Infinity,
+            dailyQueries: 500,
+            monthlyQueries: 15000,
             models: ['all'],              // Todos los modelos
             maxTokensPerQuery: 8000,
             imageGeneration: Infinity,
@@ -371,20 +377,30 @@ const SUBSCRIPTION_TIERS = {
         },
 
         // === DEFI: STAKING ===
+        // multiplier corregido contra config/plans.js (fuente definitiva):
+        // "apy: 31.25" para enterprise_vip (l.73) es 2.5x sobre el 12.5% base,
+        // no 3.5x. Éste era el origen real del bug que se corrigió a medias
+        // en la vuelta anterior — se arregló el síntoma (el campo estático
+        // no coincidía con SU PROPIO multiplicador) sin saber que el propio
+        // multiplicador ya estaba desviado del PDF de precios aprobado.
         staking: {
-            multiplier: 3.5,
+            multiplier: 2.5,              // 2.5x APY (31.25%) — plans.js l.73
             effectiveAPY: BASE_STAKING_APY * 2.5,
-            maxStakeAmount: Infinity,
+            maxStakeAmount: 1000000,      // capado: 10x el tokenLock del tier (100.000 BEZ)
             earlyUnstakePenalty: 0,
             lockPeriodDays: 0,
             compoundingEnabled: true
         },
 
         // === GAS SUBSIDY ===
+        // subsidyPercent=100% sí coincide con plans.js (gasSubsidy:100, l.73);
+        // lo que no tenía respaldo en el PDF es dejar el PRESUPUESTO sin tope
+        // — "100% de subsidio" es un porcentaje por transacción, no una
+        // licencia para gastar sin límite mensual.
         gas: {
             subsidyPercent: 1.0,
-            maxSubsidyPerTx: Infinity,
-            monthlySubsidyBudget: Infinity,
+            maxSubsidyPerTx: 20,          // acotado, proporcional a Business (10)
+            monthlySubsidyBudget: 2000,   // $2.000/mes — acotado, ver informe P&L
             priorityFee: true
         },
 

@@ -1,5 +1,5 @@
 /**
- * @deprecated — LEGACY SERVICE. Marketplace operations now live in BZ Sphere SubApp.
+ * @deprecated — LEGACY SERVICE. Marketplace operations now live in BZ Sphere App Nativa.
  * Replacement: BZ Sphere/src/services/blockchainService.js
  * DEX swaps → BZ Sphere → executeSwap()
  * Delivery escrow → BZ Sphere → createDeliveryEscrow()

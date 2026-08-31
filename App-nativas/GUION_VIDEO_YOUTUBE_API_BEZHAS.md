@@ -240,7 +240,7 @@ GET  /api/organizations/:orgId/hierarchy/commissions
 - **Voz:** española neutra, ritmo pausado; dejar respiración entre cifras (escenas 8–9).
 - **Subtítulos:** quemar subtítulos ES; preparar pista EN para versión internacional (traducir cifras a formato anglosajón: `€17.45M`).
 - **Código en pantalla:** usar los snippets **reales** de este repo (`packages/connect/README.md`) — no inventar sintaxis. Space Mono, tema oscuro, resaltado teal.
-- **Datos de la simulación:** provienen de `App's secundarias/Bezhas-Hub/backend/scripts/simulations/seur-hierarchy-simulation.js`. Si cambian los parámetros, re-renderizar los rótulos de las escenas 8–9.
+- **Datos de la simulación:** provienen de `App-nativas/Bezhas-Hub/backend/scripts/simulations/seur-hierarchy-simulation.js`. Si cambian los parámetros, re-renderizar los rótulos de las escenas 8–9.
 - **Disclaimer permanente** en escenas 8–9: *"simulación ilustrativa · cifras estimadas · no constituye asesoramiento financiero"*.
 - **Legal:** decidir antes de publicar si se nombra a SEUR (requiere consentimiento) o se anonimiza. Por defecto: anonimizar.
 - **Reutilización de assets:** el recorrido `como-usar.html` y el paquete `@bezhas/guided-tour` ya tienen la estética y varias de estas animaciones; se pueden capturar en pantalla como b-roll.

@@ -3,7 +3,7 @@
  * ═══════════════════════════════════════════════════════
  * Replaced by:
  *   - hubBlockchainService.js (Hub Control Plane)
- *   - _shared/bezhas-blockchain-client.js (all SubApps)
+ *   - _shared/bezhas-blockchain-client.js (all Apps Nativas)
  * Issues: Uses OBSOLETE address 0xE65F...5744 on Polygon 137.
  * Real production token: 0xEcBa873B...A8 on BSC (56).
  * @see hubBlockchainService.js

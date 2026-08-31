@@ -1,4 +1,4 @@
-export type SubappKey =
+export type NativeAppKey =
   | 'wallet'
   | 'gas'
   | 'nodes'
@@ -9,8 +9,8 @@ export type SubappKey =
   | 'prestige'
   | 'sphere';
 
-export type SubappConfig = {
-  key: SubappKey;
+export type NativeAppConfig = {
+  key: NativeAppKey;
   name: string;
   url: string;
   owns: string[];
@@ -18,7 +18,7 @@ export type SubappConfig = {
 
 const env = process.env;
 
-export const SUBAPPS: Record<SubappKey, SubappConfig> = {
+export const NATIVE_APPS: Record<NativeAppKey, NativeAppConfig> = {
   wallet: {
     key: 'wallet',
     name: 'BeZhas Wallet',
@@ -75,8 +75,8 @@ export const SUBAPPS: Record<SubappKey, SubappConfig> = {
   },
 };
 
-export function subappUrl(key: SubappKey, path = '') {
-  const base = SUBAPPS[key].url.replace(/\/$/, '');
+export function nativeAppUrl(key: NativeAppKey, path = '') {
+  const base = NATIVE_APPS[key].url.replace(/\/$/, '');
   const suffix = path.startsWith('/') ? path : `/${path}`;
   return `${base}${suffix === '/' ? '' : suffix}`;
 }

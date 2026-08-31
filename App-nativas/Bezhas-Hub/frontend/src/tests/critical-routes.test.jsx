@@ -89,7 +89,7 @@ import AdminAdsPage from '../pages/admin/AdminAdsPage';
 import AdminUsersPage from '../pages/admin/AdminUsersPage';
 import AdminDashboard from '../pages/AdminDashboard';
 import BeVIP from '../pages/BeVIP';
-// DAOPage → [MIGRATED to BEZ Wallet] · StakingPage / DeFiHub → [MIGRATED to BZ Capital]: operativa en la SubApp; el Hub solo enlaza (MovedToSubApp)
+// DAOPage → [MIGRATED to BEZ Wallet] · StakingPage / DeFiHub → [MIGRATED to BZ Capital]: operativa en la App Nativa; el Hub solo enlaza (MovedToNativeApp)
 import MarketplaceUnified from '../pages/MarketplaceUnified';
 import BuyTokensPage from '../pages/BuyTokensPage';
 import CreatePage from '../pages/Create';

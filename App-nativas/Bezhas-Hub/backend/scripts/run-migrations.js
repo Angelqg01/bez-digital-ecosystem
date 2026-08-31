@@ -76,4 +76,11 @@ async function run() {
 
 run()
   .then(() => process.exit(0))
-  .catch(() => process.exit(1));
+  .catch((err) => {
+    // Antes era `.catch(() => process.exit(1))`: cualquier fallo salía con
+    // código 1 y SIN imprimir nada, así que un error de conexión y una
+    // migración rota eran indistinguibles desde fuera.
+    console.error('❌ migraciones abortadas:', err.code || '', err.message);
+    if (err.stack) console.error(err.stack.split('\n').slice(1, 4).join('\n'));
+    process.exit(1);
+  });

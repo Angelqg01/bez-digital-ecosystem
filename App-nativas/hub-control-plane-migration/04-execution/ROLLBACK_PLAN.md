@@ -14,7 +14,7 @@ Este documento describe los procedimientos de emergencia en caso de que la migra
 Para revertir el enrutamiento que delegaba las vistas operativas (Wallet, Gas, DeFi, Governance) a subapps, debes restaurar el commit previo al inicio del Sprint 1:
 
 ```bash
-cd "D:\BeZhas-Blockchain\App's secundarias\Bezhas-Hub\frontend"
+cd "D:\BeZhas-Blockchain\App-nativas\Bezhas-Hub\frontend"
 # Revertir los cambios en App.jsx, sidebarConfig.jsx y Header.jsx
 git checkout HEAD -- src/App.jsx src/config/sidebarConfig.jsx src/components/layout/Header.jsx src/components/SidebarDrawer.jsx
 ```
@@ -23,7 +23,7 @@ git checkout HEAD -- src/App.jsx src/config/sidebarConfig.jsx src/components/lay
 Para remover el middleware de deprecación (410 Gone) y reactivar el enrutamiento en el backend principal:
 
 ```bash
-cd "D:\BeZhas-Blockchain\App's secundarias\Bezhas-Hub\backend"
+cd "D:\BeZhas-Blockchain\App-nativas\Bezhas-Hub\backend"
 # Revertir los cambios en server.js
 git checkout HEAD -- server.js
 ```
@@ -32,12 +32,12 @@ git checkout HEAD -- server.js
 Una vez que el código haya sido revertido a su estado monolítico:
 ```bash
 # Frontend
-cd "D:\BeZhas-Blockchain\App's secundarias\Bezhas-Hub\frontend"
+cd "D:\BeZhas-Blockchain\App-nativas\Bezhas-Hub\frontend"
 pnpm run build
 pm2 restart bezhas-hub-frontend
 
 # Backend
-cd "D:\BeZhas-Blockchain\App's secundarias\Bezhas-Hub\backend"
+cd "D:\BeZhas-Blockchain\App-nativas\Bezhas-Hub\backend"
 pm2 restart bezhas-hub-backend
 ```
 
@@ -45,7 +45,7 @@ pm2 restart bezhas-hub-backend
 Una vez completado el rollback, ejecutar el script de smoke test apuntando al monolito para asegurar que los endpoints operativos devuelven 200 OK y no 410 Gone:
 
 ```bash
-node "D:\BeZhas-Blockchain\App's secundarias\hub-control-plane-migration\04-execution\smoke-test.mjs"
+node "D:\BeZhas-Blockchain\App-nativas\hub-control-plane-migration\04-execution\smoke-test.mjs"
 # Los endpoints como /api/wallet y /api/staking deben fallar el test actual (que espera 410) indicando que han vuelto a su estado original (200 o similar).
 ```
 

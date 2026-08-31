@@ -279,26 +279,51 @@ export function useBezPayTransaction() {
   };
 
   // ── Notificar backend ────────────────────────────────────────────────────
-  const notifyBackend = async (payload) => {
+  // El backend verifica el pago contra la cadena y exige confirmaciones, así
+  // que las primeras llamadas devuelven 202 ("aún no, reintenta"). Reintentar
+  // es parte del flujo normal, no un caso de error: sin esto el usuario paga y
+  // se queda esperando el BEZ.
+  const notifyBackend = async (payload, { path = '/api/payment/webhook', maxAttempts = 12 } = {}) => {
     log('Notificando backend...', 'info');
     setTxState(TX_STATE.NOTIFYING);
-    try {
-      const token = localStorage.getItem('token');
-      const resp = await fetch('https://api.bez.digital/api/payment/webhook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ ...payload, source: 'bezpay_v2', ts: Date.now() }),
-      });
-      const data = await resp.json().catch(() => ({}));
-      log(`Backend confirmado: ${JSON.stringify(data).slice(0, 80)}`, 'success');
-      return data;
-    } catch (err) {
-      log(`Backend no disponible (TX válida en chain): ${err.message}`, 'warn');
-      return null;  // No es fatal: la TX on-chain ya se ha confirmado
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const token = localStorage.getItem('token');
+        const resp = await fetch(`https://api.bez.digital${path}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ ...payload, source: 'bezpay_v2', ts: Date.now() }),
+        });
+        const data = await resp.json().catch(() => ({}));
+
+        if (resp.status === 202 && data?.retryable && attempt < maxAttempts) {
+          log(`Esperando confirmaciones (${data.code})... intento ${attempt}/${maxAttempts}`, 'info');
+          await new Promise(r => setTimeout(r, data.retryAfterMs || 5000));
+          continue;
+        }
+
+        if (!resp.ok) {
+          log(`Backend rechazó la confirmación: ${data?.code || resp.status} — ${data?.message || ''}`, 'error');
+          return data;
+        }
+
+        log(`Backend confirmado: ${JSON.stringify(data).slice(0, 80)}`, 'success');
+        return data;
+      } catch (err) {
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, 5000));
+          continue;
+        }
+        log(`Backend no disponible (TX válida en chain): ${err.message}`, 'warn');
+        return null;  // No es fatal: la TX on-chain ya se ha confirmado
+      }
     }
+    log('Confirmación no completada tras varios intentos — revisa el historial', 'warn');
+    return null;
   };
 
   // ── FLUJO NATIVO (MATIC / ETH) ───────────────────────────────────────────
@@ -312,7 +337,8 @@ export function useBezPayTransaction() {
     log(`TX enviada: ${hash.slice(0, 12)}...`);
     const receipt = await waitForTx(hash, 'pago nativo');
     if (!receipt.success) throw new Error('TX fallida en la cadena');
-    await notifyBackend({ type: 'native_payment', txHash: hash, ...meta });
+    // La confirmación al backend la hace quien crea la orden (payWithHotWallet),
+    // que es el único que tiene el paymentId contra el que liquidar.
     return { txHash: hash, blockNumber: receipt.blockNumber };
   };
 
@@ -335,7 +361,7 @@ export function useBezPayTransaction() {
     log(`TX ERC-20 enviada: ${hash.slice(0, 12)}...`);
     const receipt = await waitForTx(hash, `${tokenSymbol} transfer`);
     if (!receipt.success) throw new Error(`TX ${tokenSymbol} fallida en la cadena`);
-    await notifyBackend({ type: 'erc20_payment', txHash: hash, tokenSymbol, ...meta });
+    // Igual que en el flujo nativo: confirma quien tiene el paymentId.
     return { txHash: hash, blockNumber: receipt.blockNumber };
   };
 
@@ -442,13 +468,15 @@ export function useBezPayTransaction() {
     const receipt = await waitForTx(escrowHash, 'createService');
     if (!receipt.success) throw new Error('Escrow TX fallida');
 
+    // Escrow no cobra nada al Treasury: es registro de actividad, no liquidación.
     await notifyBackend({
       type: 'escrow_created',
       txHash: escrowHash,
+      walletAddress: address,
       clientWallet,
       collateralBEZ,
       quality,
-    });
+    }, { path: '/api/payment/events', maxAttempts: 3 });
 
     return { txHash: escrowHash, blockNumber: receipt.blockNumber };
   };
@@ -482,12 +510,13 @@ export function useBezPayTransaction() {
     const receipt = await waitForTx(depositHash, 'farming deposit');
     if (!receipt.success) throw new Error('Deposit TX fallida');
 
+    // Farming tampoco pasa por el Treasury: registro de actividad.
     await notifyBackend({
       type: 'farming_deposit',
       txHash: depositHash,
       pid, amountBEZ, lockDays,
       walletAddress: address,
-    });
+    }, { path: '/api/payment/events', maxAttempts: 3 });
 
     return { txHash: depositHash, blockNumber: receipt.blockNumber };
   };

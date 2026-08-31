@@ -2,7 +2,7 @@
  * @deprecated — LEGACY SERVICE. DO NOT USE FOR NEW CODE.
  * Replaced by: hubBlockchainService.js + _shared/bezhas-blockchain-client.js
  * Token ops → BeZhasClient.getBEZBalance() / transferBEZ()
- * Fiat purchase → bezhas-pay-manager SubApp
+ * Fiat purchase → bezhas-pay-manager App Nativa
  * VIP/billing → hubBlockchainService.js → getVIPStatus()
  *
  * bezCoinService.js (LEGACY)

@@ -34,4 +34,4 @@ pnpm dev
 - La barra de ecosistema activa compra BEZ-Coin, planes Starter/Business, recarga de Gas Tank, staking y validación de contratos.
 
 ---
-*Este módulo es parte de la suite "App's secundarias" de BeZhas.*
+*Este módulo es parte de la suite "App-nativas" de BeZhas.*

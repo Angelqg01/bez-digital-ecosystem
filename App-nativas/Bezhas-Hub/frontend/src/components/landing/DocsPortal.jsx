@@ -1,6 +1,6 @@
 /**
  * DocsPortal — Navegador de documentación interactivo
- * Muestra guías de: SDK, API, MCP, WordPress, ERP, ABI, Nodos, SubApps
+ * Muestra guías de: SDK, API, MCP, WordPress, ERP, ABI, Nodos, Apps Nativas
  * Embebible en cualquier página (/developers/docs, /documentation, etc.)
  */
 import React, { useState } from 'react';
@@ -64,8 +64,8 @@ const DOCS = [
     topics: ['Instalación', 'Sincronización', 'Staking', 'Rewards', 'Troubleshooting'],
   },
   {
-    id: 'subapps',
-    title: 'SubApps Manual',
+    id: 'native-apps',
+    title: 'Apps Nativas Manual',
     icon: BookOpen,
     color: 'from-teal-500 to-cyan-500',
     description: 'Guía de usuario para todas las apps',

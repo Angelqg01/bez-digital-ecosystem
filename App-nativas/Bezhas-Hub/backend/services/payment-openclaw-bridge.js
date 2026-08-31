@@ -322,7 +322,7 @@ async function onPaymentCompleted({ walletAddress, type, txHash, bezAmount, plan
     if (settlement.isEnabled() && txHash) {
       const expectedTo = metadata.expectedTo
         || process.env.TREASURY_WALLET
-        || '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4';
+        || '0x89c23890c742d710265dD61be789C71dC8999b12';
       const settled = await settlement.settle({
         txHash, expectedTo, minAmountBez: Number(bezAmount) || 0,
       });

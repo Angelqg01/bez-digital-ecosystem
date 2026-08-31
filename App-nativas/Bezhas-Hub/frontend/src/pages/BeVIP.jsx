@@ -36,6 +36,8 @@ import {
     Droplets
 } from 'lucide-react';
 import ROICalculator from '../components/vip/ROICalculator';
+import OperantNativeApp from '../components/vip/OperantNativeApp';
+import NativeAppActivation from '../components/landing/NativeAppActivation';
 import GlobalStatsBar from '../components/GlobalStatsBar';
 import toast from 'react-hot-toast';
 import vipService from '../services/vipService';
@@ -89,6 +91,9 @@ const UNIFIED_VIP_TIERS = {
             { text: 'Participación en votaciones DAO', included: true },
             { text: 'Marketplace NFT y RWA (solo lectura)', included: true },
             { text: 'Wallet corporativa BeZhas', included: true },
+            { text: '🤖 OPERANT: agentes IA de Ventas y Soporte (pago por uso)', included: true },
+            { text: 'Auditoría de agentes encadenada por hash', included: true },
+            { text: 'Anclaje on-chain de la auditoría', included: false },
             { text: '5 escaneos Quality Oracle / mes', included: true },
             { text: 'Smart Contracts propios', included: false },
             { text: 'Subsidio de gas', included: false },
@@ -135,6 +140,9 @@ const UNIFIED_VIP_TIERS = {
         },
         benefits: [
             { text: 'Todo lo del plan Starter', included: true },
+            { text: '🤖 OPERANT (+39 €/mes): 4 departamentos de agentes IA · 300 tareas/mes', included: true },
+            { text: 'Autonomía asistida — los agentes envían lo de riesgo bajo', included: true },
+            { text: '⛓️ Auditoría de agentes anclada en L2 cada semana', included: true },
             { text: '1.500 acciones IA/mes (Gemini Pro Vision + Authenticator)', included: true },
             { text: '1 Smart Contract / Smart Escrow en mainnet', included: true },
             { text: '×1.5 multiplicador staking → 18,75% APY efectivo', included: true },
@@ -187,6 +195,10 @@ const UNIFIED_VIP_TIERS = {
         },
         benefits: [
             { text: 'Todo lo del plan Creator Pro', included: true },
+            { text: '🤖 OPERANT (+249 €/mes): 8 departamentos de agentes IA · 2.000 tareas/mes', included: true },
+            { text: 'Autonomía plena salvo línea roja (activos, datos personales, legal)', included: true },
+            { text: '⛓️ Auditoría anclada a diario + aprobaciones firmadas on-chain', included: true },
+            { text: '💸 Pago a proveedores en $BEZ y certificados NFT de entregables', included: true },
             { text: '15.000 acciones agénticas IA/mes (Cargo Fingerprint, Bio-Agent Edge)', included: true },
             { text: '5 Smart Contracts activos simultáneos en mainnet', included: true },
             { text: '×2.0 multiplicador staking → 25% APY efectivo', included: true },
@@ -240,6 +252,9 @@ const UNIFIED_VIP_TIERS = {
         },
         benefits: [
             { text: 'Todo lo del plan Business', included: true },
+            { text: '🤖 OPERANT (+1.199 €/mes): los 10 departamentos · 9.000 tareas/mes', included: true },
+            { text: '🏛️ Políticas de los agentes gobernadas por votación en BeZhasDAO', included: true },
+            { text: '⛓️ Auditoría anclada en continuo + Edge Node dedicado para OPERANT', included: true },
             { text: '50.000 acciones IA/mes (uso justo — sin límite real)', included: true },
             { text: 'Smart Contracts ilimitados + despliegue asistido', included: true },
             { text: '×2.5 multiplicador staking → 31,25% APY efectivo', included: true },
@@ -248,6 +263,7 @@ const UNIFIED_VIP_TIERS = {
             { text: '🏛️ Sub-DAOs personalizadas para gobernanza corporativa', included: true },
             { text: '🧠 Quality Genius Oracle — IA entrenada a medida con tus datos', included: true },
             { text: '🏷️ Integración White-Label (Marca Blanca) — BeZhas como tu producto', included: true },
+            { text: 'Todas las Apps Nativas incluidas salvo OPERANT, que se factura por capacidad de cómputo', included: true },
             { text: '🔥 Real Yield LP Rewards (+12% APY — máximo del ecosistema)', included: true },
             { text: '⚡ Quality Oracle VIP — Validación instantánea', included: true },
             { text: 'Concierge Web3 personal 24/7 + DAO Council', included: true },
@@ -890,6 +906,14 @@ const BeVIP = () => {
                             />
                         </motion.div>
                     ))}
+                </div>
+
+                {/* OPERANT — la App Nativa de agentes que trae cada plan */}
+                <OperantNativeApp />
+
+                {/* Activa Apps Nativas — calculador ERP en vivo: mismo plan, servicios en detalle */}
+                <div className="mb-12 -mx-4">
+                    <NativeAppActivation />
                 </div>
 
                 {/* Comparison Table Toggle */}

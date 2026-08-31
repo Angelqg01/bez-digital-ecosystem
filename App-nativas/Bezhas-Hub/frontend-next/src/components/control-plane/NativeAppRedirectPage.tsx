@@ -1,18 +1,18 @@
 'use client';
 
 import { ExternalLink } from 'lucide-react';
-import { SUBAPPS, SubappKey, subappUrl } from '../../config/subapps';
+import { NATIVE_APPS, NativeAppKey, nativeAppUrl } from '../../config/nativeApps';
 
 type Props = {
-  appKey: SubappKey;
+  appKey: NativeAppKey;
   path?: string;
   title: string;
   reason: string;
 };
 
-export default function SubappRedirectPage({ appKey, path = '', title, reason }: Props) {
-  const app = SUBAPPS[appKey];
-  const targetUrl = subappUrl(appKey, path);
+export default function NativeAppRedirectPage({ appKey, path = '', title, reason }: Props) {
+  const app = NATIVE_APPS[appKey];
+  const targetUrl = nativeAppUrl(appKey, path);
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl flex-col justify-center px-6 py-24">

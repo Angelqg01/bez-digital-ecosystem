@@ -1,8 +1,8 @@
-import SubappRedirectPage from '../../components/control-plane/SubappRedirectPage';
+import NativeAppRedirectPage from '../../components/control-plane/NativeAppRedirectPage';
 
 export default function RWAPage() {
   return (
-    <SubappRedirectPage
+    <NativeAppRedirectPage
       appKey="capital"
       path="/rwa"
       title="RWA migrado a BZ Capital"

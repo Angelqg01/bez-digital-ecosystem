@@ -34,7 +34,7 @@
 
 ```
 BeZhas-Blockchain/
-├── App's secundarias/Bezhas-Hub/
+├── App-nativas/Bezhas-Hub/
 │   └── frontend/
 │       ├── src/
 │       │   ├── docs/                           (NUEVO)

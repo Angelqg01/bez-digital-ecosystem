@@ -18,4 +18,4 @@ Puerto de desarrollo: **3012**
 URL Local: `http://localhost:3012`
 
 ---
-*Este módulo es parte de la suite "App's secundarias" de BeZhas.*
+*Este módulo es parte de la suite "App-nativas" de BeZhas.*

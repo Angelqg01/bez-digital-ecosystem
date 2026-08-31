@@ -1,8 +1,8 @@
-import SubappRedirectPage from '../../components/control-plane/SubappRedirectPage';
+import NativeAppRedirectPage from '../../components/control-plane/NativeAppRedirectPage';
 
 export default function FarmingPage() {
   return (
-    <SubappRedirectPage
+    <NativeAppRedirectPage
       appKey="capital"
       path="/farming"
       title="Yield farming migrado a BZ Capital"

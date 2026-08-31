@@ -1,15 +1,17 @@
 // Unit tests for the subscription pricing model (config/pricing.js).
-// Pure logic — la "matemática del dinero" del calculador de SubApps.
+// Pure logic — la "matemática del dinero" del calculador de Apps Nativas.
 import { describe, it, expect } from 'vitest';
 import {
   calculatePricing,
   BASE_PLANS,
-  SUBAPP_ADDONS,
+  NATIVE_APP_ADDONS,
   BUNDLE_DISCOUNTS,
   ANNUAL_FREE_MONTHS,
+  OPERANT_PRICE,
+  addonPrice,
 } from './pricing';
 
-const priceOf = (id) => SUBAPP_ADDONS.find((a) => a.id === id).price;
+const priceOf = (id) => NATIVE_APP_ADDONS.find((a) => a.id === id).price;
 
 describe('calculatePricing — base plans', () => {
   it('Starter sin add-ons de pago cuesta 0', () => {
@@ -24,7 +26,7 @@ describe('calculatePricing — base plans', () => {
     expect(q.monthly).toBe(499);
   });
 
-  it('Enterprise VIP incluye todas las SubApps sin coste extra', () => {
+  it('Enterprise VIP incluye todas las Apps Nativas sin coste extra', () => {
     const q = calculatePricing({ planId: 'enterprise_vip', activeAddons: ['pay', 'energy'] });
     expect(q.basePrice).toBe(2499);
     expect(q.addonsSubtotal).toBe(0); // includedAddons = Infinity
@@ -37,15 +39,15 @@ describe('calculatePricing — base plans', () => {
   });
 });
 
-describe('calculatePricing — SubApps incluidas (free slots)', () => {
-  it('Business incluye 3 SubApps: pay+cargolink quedan gratis', () => {
+describe('calculatePricing — Apps Nativas incluidas (free slots)', () => {
+  it('Business incluye 3 Apps Nativas: pay+cargolink quedan gratis', () => {
     const q = calculatePricing({ planId: 'business', activeAddons: ['pay', 'cargolink'] });
     expect(q.includedCount).toBe(2); // ambos caben en los 3 incluidos
     expect(q.addonsSubtotal).toBe(0);
     expect(q.monthly).toBe(499);
   });
 
-  it('los slots gratis cubren primero las SubApps MÁS caras', () => {
+  it('los slots gratis cubren primero las Apps Nativas MÁS caras', () => {
     // Starter incluye 1. Activamos pay(49) + energy(129) → energy (la cara) gratis.
     const q = calculatePricing({ planId: 'starter', activeAddons: ['pay', 'energy'] });
     expect(q.includedCount).toBe(1);
@@ -97,7 +99,7 @@ describe('calculatePricing — facturación anual', () => {
   });
 });
 
-describe('calculatePricing — SubApps core', () => {
+describe('calculatePricing — Apps Nativas core', () => {
   it('Hub y Wallet (core) nunca suman al precio aunque se "activen"', () => {
     const q = calculatePricing({ planId: 'business', activeAddons: ['hub', 'wallet'] });
     expect(q.paidAddons.length).toBe(0); // core no cuenta como add-on de pago
@@ -112,9 +114,77 @@ describe('config integrity', () => {
     }
   });
 
-  it('hay exactamente 2 SubApps core gratuitas', () => {
-    const core = SUBAPP_ADDONS.filter((a) => a.core);
+  it('hay exactamente 2 Apps Nativas core gratuitas', () => {
+    const core = NATIVE_APP_ADDONS.filter((a) => a.core);
     expect(core.length).toBe(2);
     expect(core.every((a) => a.price === 0)).toBe(true);
+  });
+});
+
+
+/**
+ * OPERANT rompe dos supuestos del calculador y por eso lleva tests propios:
+ * su precio depende del plan, y no se puede comp con los slots gratis. El
+ * segundo es el importante — antes de `alwaysBilled`, un Business con 3 slots
+ * libres activaba OPERANT y la plataforma servía hasta 1.186 €/mes de cómputo
+ * facturando 0 €.
+ */
+describe('OPERANT — módulo de coste variable', () => {
+  it('cuesta distinto en cada plan, según la cuota que entrega', () => {
+    const operant = NATIVE_APP_ADDONS.find((a) => a.id === 'operant');
+    expect(addonPrice(operant, 'creator_pro')).toBe(39);
+    expect(addonPrice(operant, 'business')).toBe(249);
+    expect(addonPrice(operant, 'enterprise_vip')).toBe(1199);
+    expect(addonPrice(operant, 'starter')).toBe(0);
+  });
+
+  it('los módulos de precio plano no cambian con el plan', () => {
+    const pay = NATIVE_APP_ADDONS.find((a) => a.id === 'pay');
+    expect(addonPrice(pay, 'starter')).toBe(addonPrice(pay, 'enterprise_vip'));
+  });
+
+  it('NO se regala con los slots gratis del plan, aunque sobren', () => {
+    // Business trae 3 slots y solo se activa OPERANT: antes salía gratis.
+    const q = calculatePricing({ planId: 'business', activeAddons: ['operant'] });
+    expect(q.monthly).toBe(499 + 249);
+    expect(q.alwaysBilledAddons.map((a) => a.id)).toEqual(['operant']);
+  });
+
+  it('tampoco en Enterprise VIP, que incluye el resto de módulos sin coste', () => {
+    const q = calculatePricing({
+      planId: 'enterprise_vip',
+      activeAddons: ['operant', 'pay', 'cargolink'],
+    });
+    expect(q.monthly).toBe(2499 + 1199, 'pay y cargolink sí van incluidas');
+  });
+
+  it('los slots gratis siguen cubriendo a los demás módulos', () => {
+    const q = calculatePricing({ planId: 'business', activeAddons: ['operant', 'pay', 'cargolink'] });
+    expect(q.includedCount).toBe(2);            // pay + cargolink, gratis
+    expect(q.monthly).toBe(499 + 249);          // solo OPERANT factura
+  });
+
+  it('el descuento por bundle no muerde el precio de OPERANT', () => {
+    const q = calculatePricing({
+      planId: 'creator_pro',                    // 1 slot gratis
+      activeAddons: ['operant', 'pay', 'cargolink', 'purescan', 'sphere'],
+    });
+    expect(q.discountRate).toBe(0.25);          // 5 módulos activos
+    // El −25% cae sobre los descontables, nunca sobre los 39 € de OPERANT.
+    expect(q.discountAmount).toBe(Math.round(q.discountableSubtotal * 0.25));
+    expect(q.addonsSubtotal - q.discountableSubtotal).toBe(39);
+  });
+
+  it('pero OPERANT sí cuenta para alcanzar el tramo de descuento', () => {
+    const sinOperant = calculatePricing({ planId: 'business', activeAddons: ['pay', 'cargolink'] });
+    const conOperant = calculatePricing({ planId: 'business', activeAddons: ['pay', 'cargolink', 'operant'] });
+    expect(sinOperant.discountRate).toBe(0);
+    expect(conOperant.discountRate).toBe(0.15);
+  });
+
+  it('en Starter no suma nada: allí OPERANT es pago por uso puro', () => {
+    const q = calculatePricing({ planId: 'starter', activeAddons: ['operant'] });
+    expect(q.monthly).toBe(0);
+    expect(OPERANT_PRICE.starter).toBe(0);
   });
 });

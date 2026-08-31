@@ -14,7 +14,7 @@ Esta carpeta concentra la estructura de trabajo para ejecutar la migracion compl
 
 ## Arranque rapido
 
-Desde `App's secundarias`:
+Desde `App-nativas`:
 
 ```powershell
 pnpm hub:migration:check

@@ -1,8 +1,8 @@
-import SubappRedirectPage from '../../components/control-plane/SubappRedirectPage';
+import NativeAppRedirectPage from '../../components/control-plane/NativeAppRedirectPage';
 
 export default function TokenomicsPage() {
   return (
-    <SubappRedirectPage
+    <NativeAppRedirectPage
       appKey="capital"
       path="/tokenomics"
       title="Tokenomics migrado a BZ Capital"

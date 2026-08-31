@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, MessageSquare, Search, HelpCircle } from 'lucide-react';
+import { Bell, MessageSquare, Search, HelpCircle, Crown } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import PageGuide from '../../components/ui/PageGuide';
 import { guideContent, getGuideByPath } from '../../data/guideContent';
@@ -30,6 +30,12 @@ export default function TopNavbar() {
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-3">
+                    <NavLink
+                        to="/be-vip"
+                        className="hidden sm:inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-xs font-black uppercase tracking-widest hover:scale-[1.04] transition-transform"
+                    >
+                        <Crown size={14} /> Planes
+                    </NavLink>
                     <button className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10" aria-label="Mensajes">
                         <MessageSquare size={22} />
                     </button>

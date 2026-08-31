@@ -26,8 +26,8 @@ RUN pnpm install --no-frozen-lockfile
 COPY frontend/ .
 
 # Build arguments para variables de entorno en tiempo de build
-ARG VITE_API_URL=https://api.bezhas.com
-ARG VITE_WS_URL=wss://api.bezhas.com
+ARG VITE_API_URL=https://api.bez.digital
+ARG VITE_WS_URL=wss://api.bez.digital
 ARG VITE_WALLET_CONNECT_PROJECT_ID
 ARG VITE_STRIPE_PUBLIC_KEY
 ARG VITE_POLYGON_CHAIN_ID=137

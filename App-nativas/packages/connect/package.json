@@ -4,7 +4,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Angelqg01/BeZhas-Blockchain.git",
-    "directory": "App's secundarias/packages/connect"
+    "directory": "App-nativas/packages/connect"
   },
   "homepage": "https://bez.digital/developers",
   "sideEffects": false,

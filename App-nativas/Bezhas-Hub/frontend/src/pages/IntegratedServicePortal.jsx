@@ -7,7 +7,7 @@
  * Una sola superficie con navegación inferior (Feed · Hub · BEZ-Pay · Support) y
  * pantalla de Planes. Toda la información del ecosistema (módulos, servicios,
  * precios, feed) se adapta aquí; todos los enlaces son REALES:
- *   - SubApps  → deep-link a producción (config/subappUrls.js)
+ *   - Apps Nativas  → deep-link a producción (config/nativeAppUrls.js)
  *   - Internos → rutas reales del Hub (/pay, /rwa, /oracle, /compliance, /docs…)
  *   - Pagos    → BezPayModal global vía useBezPay() (pago real BEZ/fiat)
  *

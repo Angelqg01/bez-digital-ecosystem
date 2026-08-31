@@ -6,7 +6,7 @@ import { Search, Bell, Sun, Moon, Wallet, User, LogOut } from 'lucide-react';
 import { useAccount, useDisconnect } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useUserStore } from '../../stores/userStore';
-import { SUBAPPS, subappUrl } from '../../config/subapps';
+import { NATIVE_APPS, nativeAppUrl } from '../../config/nativeApps';
 
 export default function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
@@ -73,11 +73,11 @@ export default function Navbar() {
           </Link>
           <div className="hidden lg:flex items-center gap-6">
             <Link href="/feed" className="text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Feed</Link>
-            <a href={subappUrl('capital', '/marketplace')} className="text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Marketplace</a>
-            <a href={subappUrl('capital', '/rwa')} className="text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">RWA</a>
-            <a href={SUBAPPS.wallet.url} className="text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Wallet</a>
-            <a href={subappUrl('capital', '/tokenomics')} className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 transition-colors">DeFi</a>
-            <a href={SUBAPPS.pay.url} className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 transition-colors">BezPay</a>
+            <a href={nativeAppUrl('capital', '/marketplace')} className="text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Marketplace</a>
+            <a href={nativeAppUrl('capital', '/rwa')} className="text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">RWA</a>
+            <a href={NATIVE_APPS.wallet.url} className="text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Wallet</a>
+            <a href={nativeAppUrl('capital', '/tokenomics')} className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 transition-colors">DeFi</a>
+            <a href={NATIVE_APPS.pay.url} className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 transition-colors">BezPay</a>
           </div>
           <div className="hidden xl:flex items-center bg-light-muted dark:bg-gray-800 rounded-full px-4 py-2 w-full max-w-xs transition-colors border border-transparent focus-within:border-primary-300">
             <Search size={18} className="text-text-muted" />
@@ -128,22 +128,22 @@ export default function Navbar() {
                       <span>🛠️</span> <span className="font-semibold">Developer Console</span>
                     </Link>
                     <div className="border-t border-gray-100 dark:border-gray-800 my-1" />
-                    <a href={subappUrl('capital', '/staking')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
+                    <a href={nativeAppUrl('capital', '/staking')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
                       <span>🔒</span> <span className="font-semibold">Staking</span>
                     </a>
-                    <a href={subappUrl('capital', '/farming')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
+                    <a href={nativeAppUrl('capital', '/farming')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
                       <span>🌱</span> <span className="font-semibold">Yield Farming</span>
                     </a>
-                    <a href={subappUrl('wallet', '/dao')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
+                    <a href={nativeAppUrl('wallet', '/dao')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
                       <span>🏛️</span> <span className="font-semibold">DAO Governance</span>
                     </a>
-                    <a href={subappUrl('wallet', '/bridge')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
+                    <a href={nativeAppUrl('wallet', '/bridge')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
                       <span>🌉</span> <span className="font-semibold">Bridge</span>
                     </a>
-                    <a href={subappUrl('capital', '/treasury')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
+                    <a href={nativeAppUrl('capital', '/treasury')} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
                       <span>🏦</span> <span className="font-semibold">Treasury</span>
                     </a>
-                    <a href={SUBAPPS.nodes.url} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
+                    <a href={NATIVE_APPS.nodes.url} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-light-hover dark:hover:bg-gray-800 text-sm text-text-primary dark:text-gray-300 transition-colors">
                       <span>🖥️</span> <span className="font-semibold">Edge Node</span>
                     </a>
                     <div className="border-t border-gray-100 dark:border-gray-800 my-1" />

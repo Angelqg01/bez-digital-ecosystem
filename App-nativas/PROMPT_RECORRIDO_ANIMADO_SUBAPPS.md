@@ -1,9 +1,9 @@
 # Prompt reutilizable — Recorrido animado "Cómo usar" para SubApps BeZhas (vía @bezhas/guided-tour)
 
 > Pega este prompt en una sesión de Claude Code **abierta en la carpeta de la SubApp destino**
-> (p. ej. `App's secundarias/BZ PureScan`). Rellena primero el bloque `‹PARÁMETROS›`.
+> (p. ej. `App-nativas/BZ PureScan`). Rellena primero el bloque `‹PARÁMETROS›`.
 > La mecánica de la animación ya vive en el paquete compartido **`@bezhas/guided-tour`**
-> (`App's secundarias/packages/guided-tour`); esta tarea es sobre todo **escribir las escenas**
+> (`App-nativas/packages/guided-tour`); esta tarea es sobre todo **escribir las escenas**
 > reales de la SubApp y cablear el reproductor. Consumidor de referencia: **BZ CargoLink**.
 
 ---
@@ -11,7 +11,7 @@
 ## ‹PARÁMETROS› (rellena esto antes de enviar)
 
 - **SUBAPP**: `<nombre visible, p. ej. BZ PureScan>`
-- **CARPETA**: `<ruta, p. ej. App's secundarias/BZ PureScan>`
+- **CARPETA**: `<ruta, p. ej. App-nativas/BZ PureScan>`
 - **PUERTO DEV**: `<puerto de vite, míralo en package.json → scripts.dev>`
 - **FRAMEWORK / ROUTER**: `<React + react-router | React sin router | Vue | vanilla — averígualo>`
 - **OBJETIVO DE NEGOCIO EN UNA FRASE**: `<qué resuelve para el usuario>`
@@ -31,13 +31,13 @@ animación: solo **define las escenas reales** de esta SubApp y **cablea** el re
 
 ### Referencias — LÉELAS PRIMERO
 
-- `App's secundarias/packages/guided-tour/README.md` — API y flujo de consumo.
-- `App's secundarias/packages/guided-tour/tour.config.example.mjs` — plantilla de escenas.
+- `App-nativas/packages/guided-tour/README.md` — API y flujo de consumo.
+- `App-nativas/packages/guided-tour/tour.config.example.mjs` — plantilla de escenas.
 - **Consumidor de referencia (cópialo como patrón):**
-  - `App's secundarias/BZ CargoLink/tour.config.mjs` — 9 escenas reales.
-  - `App's secundarias/BZ CargoLink/src/components/GuidedTour.jsx` — wrapper fino del paquete.
-  - `App's secundarias/BZ CargoLink/src/App.jsx` — botón "CÓMO USAR" en cabecera + `<GuidedTour/>` montado.
-  - `App's secundarias/BZ CargoLink/package.json` — dep `file:` + script `tour:build`.
+  - `App-nativas/BZ CargoLink/tour.config.mjs` — 9 escenas reales.
+  - `App-nativas/BZ CargoLink/src/components/GuidedTour.jsx` — wrapper fino del paquete.
+  - `App-nativas/BZ CargoLink/src/App.jsx` — botón "CÓMO USAR" en cabecera + `<GuidedTour/>` montado.
+  - `App-nativas/BZ CargoLink/package.json` — dep `file:` + script `tour:build`.
 
 ## Paso 0 — Descubrimiento (obligatorio)
 

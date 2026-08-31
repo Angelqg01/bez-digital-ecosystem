@@ -4,7 +4,7 @@ import { ChevronRight, BookOpen, Zap, DollarSign, Settings, Users, Lock, Trendin
 import Header from '../components/layout/Header';
 import SidebarDrawer from '../components/SidebarDrawer';
 import NodeNetworkBackground from '../components/landing/NodeNetworkBackground';
-import { subappUrl } from '../config/subappUrls';
+import { nativeAppUrl } from '../config/nativeAppUrls';
 
 const C = {
   bg: '#05080F',
@@ -104,7 +104,7 @@ export default function MasterBeZhasHub() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const openService = (link, external) => {
-    if (external) window.open(subappUrl(link), '_blank', 'noopener,noreferrer');
+    if (external) window.open(nativeAppUrl(link), '_blank', 'noopener,noreferrer');
     else navigate(link);
   };
 

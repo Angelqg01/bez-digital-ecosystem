@@ -185,6 +185,102 @@ async function createSubscriptionCheckoutSession(plan, userInfo) {
 /**
  * Crear sesión de pago para compra de tokens BZS
  */
+// Recargo por procesamiento con tarjeta — repercutido al pagador, no
+// descontado del BEZ que recibe.
+//
+// Motivo: tres backtests de naviera (Hapag-Lloyd, Maersk, MSC), mismo
+// volumen de control, coinciden en el mismo resultado — con la comisión
+// plana del 1,5% (calculatePaymentAmounts), el tramo de tarjeta pierde
+// dinero con CUALQUIER procesador probado, incluido el más barato
+// encontrado (Sabadell/PAYCOMET, 1,80%+0,45€): entre −€397 y −€694 según
+// naviera, sobre un único suscriptor de tarjeta al año. La transferencia,
+// en cambio, no tiene este problema (sin coste de procesador).
+//
+// 3,5% + 0,30€ cubre el caso base de Stripe para tarjeta no-UE (3,25%+0,25€,
+// stripe.com/pricing) con un margen pequeño. NO cubre el caso con
+// conversión de divisa (+2% adicional, probable en tarjetas no emitidas en
+// EUR) — ese caso seguiría en pérdida. Configurable por si se cambia de
+// procesador o se ajusta con datos reales de uso.
+const CARD_SURCHARGE_PCT = parseFloat(process.env.BEZPAY_CARD_SURCHARGE_PCT || '0.035');
+const CARD_SURCHARGE_FIXED = parseFloat(process.env.BEZPAY_CARD_SURCHARGE_FIXED_EUR || '0.30');
+
+/**
+ * Sesión de Checkout ligada a una orden de BezPay.
+ *
+ * Es la diferencia entre cobrar y poder entregar: un Payment Link estático no
+ * lleva metadata, así que el webhook recibe el cobro sin saber a qué wallet
+ * acreditar. Aquí van `bezpayPaymentId` y `walletAddress`, y con eso
+ * handleCheckoutCompleted puede retener la orden y entregarla al vencer plazo.
+ *
+ * El importe base (flete + comisión) se cobra tal cual lo fijó la orden — no
+ * se recalcula aquí, para que lo cobrado y lo prometido no puedan divergir.
+ * El recargo de tarjeta va en una línea aparte, visible al pagador, y no
+ * afecta al BEZ entregado (bezAmount no cambia).
+ *
+ * @returns {Promise<{url: string, sessionId: string}>}
+ */
+async function createBezPayCheckoutSession({
+    paymentId, walletAddress, bezAmount, amountFiat, currency = 'eur', email,
+}) {
+    if (!paymentId) throw new Error('paymentId requerido');
+    if (!walletAddress) throw new Error('walletAddress requerido');
+
+    const unitAmount = Math.round(Number(amountFiat) * 100); // a céntimos
+    if (!(unitAmount > 0)) throw new Error('amountFiat inválido');
+
+    const surchargeAmount = Math.round(
+        (Number(amountFiat) * CARD_SURCHARGE_PCT + CARD_SURCHARGE_FIXED) * 100
+    ); // a céntimos
+
+    const lineItems = [{
+        price_data: {
+            currency: String(currency).toLowerCase(),
+            product_data: {
+                name: `${Number(bezAmount).toFixed(2)} BEZ`,
+                description: `Compra de BEZ-Coin · referencia ${paymentId}`,
+            },
+            unit_amount: unitAmount,
+        },
+        quantity: 1,
+    }];
+
+    if (surchargeAmount > 0) {
+        lineItems.push({
+            price_data: {
+                currency: String(currency).toLowerCase(),
+                product_data: {
+                    name: 'Recargo por pago con tarjeta',
+                    description: `${(CARD_SURCHARGE_PCT * 100).toFixed(1)}% + ${CARD_SURCHARGE_FIXED.toFixed(2)}€ · cubre el coste real del procesador de pago`,
+                },
+                unit_amount: surchargeAmount,
+            },
+            quantity: 1,
+        });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        mode: 'payment',
+        success_url: `${STRIPE_CONFIG.SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: STRIPE_CONFIG.CANCEL_URL,
+        customer_email: email || undefined,
+        client_reference_id: paymentId,
+        metadata: {
+            type: 'token_purchase',
+            bezpayPaymentId: paymentId,      // ← lo que permite entregar después
+            walletAddress,
+            tokenAmount: String(bezAmount),
+        },
+    });
+
+    audit.admin('BEZPAY_STRIPE_SESSION_CREATED', 'info', {
+        paymentId, sessionId: session.id, amountFiat, currency, surchargeAmount: surchargeAmount / 100,
+    });
+
+    return { url: session.url, sessionId: session.id };
+}
+
 async function createTokenPurchaseSession(tokenAmount, userInfo) {
     try {
         // Precio por token BZS: $0.10 (10 centavos)
@@ -544,13 +640,37 @@ async function handleCheckoutCompleted(session) {
                 break;
 
             case 'token_purchase':
-                // Transferir tokens BEZ al usuario automáticamente
                 console.log('💰 Processing token purchase:', {
                     walletAddress: metadata.walletAddress,
                     tokenAmount: metadata.tokenAmount,
                     amountPaid: amount_total / 100
                 });
 
+                // ── Órdenes BezPay: se RETIENEN, no se entregan aquí ────────
+                // Cobrar con tarjeta es reversible y entregar BEZ no lo es. Si
+                // se dispensa en este mismo instante, quien pague y luego meta
+                // un contracargo se queda con los tokens. La entrega la hace
+                // bezpayFiatSettlement cuando vence el plazo del medio de pago
+                // y tras comprobar que no hay disputa.
+                if (metadata.bezpayPaymentId) {
+                    const fiatSettlement = require('./bezpayFiatSettlement');
+                    const held = await fiatSettlement.recordFiatPayment({
+                        paymentId: metadata.bezpayPaymentId,
+                        providerReference: session.payment_intent || session.id,
+                        methodKind: 'card',
+                    });
+                    console.log('⏳ Token purchase retenido:', {
+                        paymentId: metadata.bezpayPaymentId,
+                        holdUntil: held.holdUntil,
+                        held: held.held,
+                    });
+                    break;
+                }
+
+                // ── Camino heredado (sesiones sin orden BezPay) ─────────────
+                // Entrega inmediata, sin retención. Se mantiene para no romper
+                // integraciones existentes, pero toda sesión nueva debería
+                // llevar bezpayPaymentId y pasar por la retención de arriba.
                 if (!metadata.walletAddress) {
                     throw new Error('Wallet address missing in metadata');
                 }
@@ -1057,6 +1177,9 @@ module.exports = {
     createNFTCheckoutSession,
     createSubscriptionCheckoutSession,
     createTokenPurchaseSession,
+    createBezPayCheckoutSession,
+    CARD_SURCHARGE_PCT,
+    CARD_SURCHARGE_FIXED,
     getCheckoutSession,
     createPaymentIntent,
     cancelSubscription,

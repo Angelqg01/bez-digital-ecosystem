@@ -31,7 +31,7 @@
 ## Action
 
 **Do not develop new features in this directory.**  
-All scanning work should go to: `App's secundarias/BZ PureScan/`
+All scanning work should go to: `App-nativas/BZ PureScan/`
 
 ---
 

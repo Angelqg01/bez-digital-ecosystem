@@ -1606,6 +1606,19 @@ if (process.env.NODE_ENV !== 'test') {
             logger.error('❌ Error inicializando Automation Engine:', error);
         }
 
+        // ===================================
+        // BEZPAY — LIBERADOR DE RETENCIONES FIAT
+        // ===================================
+        // Entrega el BEZ de los pagos con tarjeta cuando vence su plazo de
+        // retención y no ha habido disputa. Sin esto, los cobros se quedan
+        // retenidos para siempre y nadie recibe sus tokens.
+        try {
+            require('./services/bezpayFiatSettlement').start();
+            logger.info('✅ BezPay: liberador de retenciones fiat arrancado');
+        } catch (error) {
+            logger.error('❌ Error inicializando el liberador de BezPay fiat:', error);
+        }
+
         logger.info(`WebSocket server ready for connections`);
 
         // Initialize services
