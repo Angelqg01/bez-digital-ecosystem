@@ -91,6 +91,7 @@ const organizationTechRoutes = require('./routes/organization-tech');
 const organizationBillingRoutes = require('./routes/organization-billing');
 const adminConfigRoutes = require('./routes/admin-config');
 const adminGovernanceRoutes = require('./routes/admin-governance');
+const mcpGatewayRoutes = require('./routes/mcp-gateway');
 const webhookRoutes = require('./routes/webhooks');
 const energyRoutes = require('./routes/energy');          // ← VPP Energy Layer
 const mtfcRoutes = require('./routes/mtfc');
@@ -402,6 +403,11 @@ app.use('/api/qr', qrRoutes);
 
 // ── Gateway ───────────────────────────────────────────────────────────────────
 app.use('/api/gateway/v1', gatewayRoutes);
+// MCP de cara al cliente. Misma autenticación por api-key y mismos scopes que
+// el Gateway REST, en el mismo proceso: un servicio aparte obligaría a
+// reimplementar auth, scopes, medición y límites, y cuatro reimplementaciones
+// son cuatro sitios donde divergir del original.
+app.use('/api/mcp', mcpGatewayRoutes);
 app.use('/c', require('./routes/checkout')); // hosted checkout (pay.bez.digital/c/<token>)
 app.use('/api/cargolink', cargoLinkRoutes);
 
