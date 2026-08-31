@@ -1,0 +1,25 @@
+{
+  "$comment": [
+    "Servidores MCP del proyecto BeZhas.",
+    "",
+    "bezhas-messaging se sirve por stdio: el cliente MCP lanza el proceso bajo",
+    "demanda y habla por stdin/stdout. Por eso NO está en docker-compose.yml —",
+    "un subproceso no tiene puerto estable ni URL pública.",
+    "",
+    "Las credenciales NO se ponen aquí: este fichero se versiona. El servidor",
+    "carga el .env de la raíz con dotenv, que sí está en .gitignore. Hacen",
+    "falta TELEGRAM_BOT_TOKEN, TELEGRAM_ALERT_CHAT_ID y, para que",
+    "request_human_confirmation sirva de algo, TELEGRAM_AUTHORIZED_USERS.",
+    "",
+    "Este servidor es INTERNO: lleva el bot de BeZhas y avisa a los operadores",
+    "de BeZhas. No es la superficie que se ofrece a clientes; ésa sería otro",
+    "servidor, con transporte HTTP y autenticación por api-key del Gateway."
+  ],
+  "mcpServers": {
+    "bezhas-messaging": {
+      "command": "node",
+      "args": ["messaging-mcp/src/index.js"],
+      "env": {}
+    }
+  }
+}

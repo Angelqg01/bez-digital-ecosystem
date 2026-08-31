@@ -16,7 +16,9 @@
 
 import { randomBytes } from 'crypto';
 
-const API_BASE = 'https://api.telegram.org';
+// Configurable para poder apuntar a un doble en las pruebas o a un proxy
+// corporativo. Por defecto, la API real.
+const API_BASE = process.env.TELEGRAM_API_BASE || 'https://api.telegram.org';
 
 /** Cuántos mensajes se guardan por chat. */
 const HISTORY_MAX = parseInt(process.env.TELEGRAM_HISTORY_MAX || '200', 10);
@@ -43,6 +45,16 @@ export function escapeMarkdownV2(value) {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Traza por stderr.
+ *
+ * NUNCA console.log: con transporte stdio, stdout es el canal JSON-RPC del
+ * protocolo MCP. Una sola línea de traza ahí se cuela entre dos mensajes y el
+ * cliente cierra la sesión con un error de parseo que no apunta a ninguna
+ * parte. stderr, en cambio, el cliente lo recoge como log del servidor.
+ */
+export const log = (...args) => console.error(...args);
 
 export class TelegramClient {
     constructor({ token, alertChatId, leadsChannelId, authorizedUsers } = {}) {
@@ -87,13 +99,23 @@ export class TelegramClient {
 
     // ── Ciclo de vida ────────────────────────────────────────────────────────
 
-    async initialize(redis) {
+    /**
+     * @param {object|null} redis  Cliente de ioredis, o null para historial en memoria.
+     * @param {{ polling?: boolean }} [opciones]
+     *        `polling` decide si se traen las actualizaciones con getUpdates.
+     *        Lo elige el llamante en vez de deducirse de NODE_ENV, porque son
+     *        cosas distintas: con transporte stdio hay que hacer polling
+     *        SIEMPRE —el proceso lo lanza el cliente MCP y no es alcanzable
+     *        desde internet, así que Telegram no puede entregarle un webhook—
+     *        y eso no depende de si el despliegue es de producción o no.
+     */
+    async initialize(redis, { polling = true } = {}) {
         this.redis = redis || null;
 
         // getMe valida el token antes de que nadie intente enviar nada: mejor
         // fallar aquí que en la primera alerta crítica.
         this.botInfo = await this.call('getMe');
-        console.log(`[Telegram] Bot conectado: @${this.botInfo.username} (id ${this.botInfo.id})`);
+        log(`[Telegram] Bot conectado: @${this.botInfo.username} (id ${this.botInfo.id})`);
 
         if (this.authorizedUsers.size === 0) {
             console.warn(
@@ -103,10 +125,12 @@ export class TelegramClient {
             );
         }
 
-        // En desarrollo no hay URL pública a la que Telegram pueda llamar, así
-        // que se tira de polling. En producción manda el webhook que monta
-        // index.js y arrancar polling aquí duplicaría las actualizaciones.
-        if (process.env.NODE_ENV !== 'production') {
+        // Sin polling no llegan los callback_query, y sin ellos NINGUNA
+        // confirmación humana puede resolverse: todas caducarían en silencio.
+        // Por eso se hace explícito quién lo apaga.
+        if (polling) {
+            // Un webhook activo y polling a la vez es un error de Telegram
+            // (409 Conflict), así que se retira el webhook antes.
             await this.deleteWebhook().catch(() => { /* puede no haber ninguno */ });
             this._startPolling();
         }
@@ -430,7 +454,7 @@ export class TelegramClient {
     _startPolling() {
         if (this.polling) return;
         this.polling = true;
-        console.log('[Telegram] Polling activo (getUpdates)');
+        log('[Telegram] Polling activo (getUpdates)');
 
         const bucle = async () => {
             while (this.polling && !this._stopped) {
@@ -541,7 +565,7 @@ export class TelegramClient {
             bot: this.botInfo
                 ? { id: this.botInfo.id, username: this.botInfo.username, name: this.botInfo.first_name }
                 : null,
-            mode: process.env.NODE_ENV === 'production' ? 'webhook' : 'polling',
+            mode: this.polling ? 'polling' : 'webhook',
             polling: this.polling,
             webhook,
             redis: this.redis ? 'conectado' : 'no disponible (historial en memoria)',

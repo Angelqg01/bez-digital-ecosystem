@@ -1,6 +1,7 @@
 # BeZhas — Docker Compose Unificado v2.0
 # ─────────────────────────────────────────────────────────────────────────────
-# Servicios P0 (ACTIVOS):    redis, messaging-mcp, business-ops
+# Servicios P0 (ACTIVOS):    redis, business-ops
+# messaging-mcp NO es un servicio: se sirve por stdio (ver .mcp.json).
 # Servicios P1 (Planificados): lead-mcp, open-webui
 # Servicios existentes:      api (3001), mcp-core (4001), postgres, ...
 #
@@ -70,35 +71,20 @@ services:
       retries: 5
 
   # ── P0: MESSAGING MCP (Telegram) ──────────────────────────────────────────
-  messaging-mcp:
-    build:
-      context: ./messaging-mcp
-      dockerfile: Dockerfile
-    container_name: bezhas-messaging-mcp
-    restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV:                    ${NODE_ENV:-production}
-      REDIS_URL:                   redis://redis:6379
-      REDIS_PREFIX:                "bezhas:messaging:"
-      TELEGRAM_BOT_TOKEN:          ${TELEGRAM_BOT_TOKEN}
-      TELEGRAM_ALERT_CHAT_ID:      ${TELEGRAM_ALERT_CHAT_ID}
-      TELEGRAM_LEADS_CHANNEL_ID:   ${TELEGRAM_LEADS_CHANNEL_ID:-}
-      TELEGRAM_AUTHORIZED_USERS:   ${TELEGRAM_AUTHORIZED_USERS}
-      BEZHAS_PUBLIC_URL:           ${BEZHAS_PUBLIC_URL:-https://mcp.bez.digital}
-      MCP_PORT:                    4002
-      RATE_LIMIT_PER_MIN:          20
-    ports:
-      - "4002:4002"
-    networks:
-      - bezhas-net
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+  # ── messaging-mcp: NO va aquí ────────────────────────────────────────────
+  # Se sirve por stdio, no como servicio de red. El cliente MCP (Claude Code,
+  # Claude Desktop, o cualquier agente con soporte MCP) lo lanza como
+  # subproceso bajo demanda y habla con él por stdin/stdout. Ver .mcp.json en
+  # la raíz.
+  #
+  # Estuvo definido aquí con `ports: 4002:4002` y un healthcheck HTTP, pero el
+  # servidor usa StdioServerTransport: no escuchaba en ese puerto ni en ningún
+  # otro, así que el healthcheck no habría pasado nunca. Además nunca llegó a
+  # construirse — la carpeta no tiene Dockerfile.
+  #
+  # Si algún día hay que exponerlo en red (para clientes externos, no para los
+  # agentes propios), no es este servidor: haría falta StreamableHTTP con
+  # autenticación por api-key del Gateway y medición por tenant.
 
   # ── P0: OBSIDIAN MCP (Knowledge Ops + memoria documental) ────────────────
   obsidian-mcp:

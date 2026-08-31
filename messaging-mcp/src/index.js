@@ -5,25 +5,28 @@
  * Discord (planificados). Los agentes IA de OpenClaw usan estas tools para
  * comunicarse con humanos, enviar alertas y solicitar confirmaciones.
  *
- * Puerto: 4002 (mcp.bez.digital:4002)
- * Transport: stdio (local) | HTTP (producción con Express)
+ * Transporte: stdio. El cliente MCP (Claude Code, Claude Desktop, o cualquier
+ * agente compatible) lanza este fichero como subproceso y habla por
+ * stdin/stdout. Ver .mcp.json en la raíz del repositorio.
+ *
+ * NO es un servicio de red y por eso no está en docker-compose.yml: un
+ * subproceso lanzado bajo demanda no tiene puerto estable ni URL pública, así
+ * que Telegram no puede entregarle un webhook. Las actualizaciones se traen
+ * con polling, siempre.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import 'dotenv/config';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createServer } from 'http';
 import { Redis } from 'ioredis';
-import { TelegramClient } from './telegram.js';
+import { TelegramClient, log } from './telegram.js';
 import { registerMessagingTools } from './tools.js';
 
 // ─── Validar variables de entorno requeridas ──────────────────────────────────
 function validateEnv() {
   const required = ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_ALERT_CHAT_ID'];
-  if (process.env.NODE_ENV === 'production') {
-    required.push('TELEGRAM_WEBHOOK_SECRET');
-  }
+  // TELEGRAM_WEBHOOK_SECRET ya no se exige: sin webhook no hay nada que firmar.
   const missing = required.filter(k => !process.env[k]);
   if (missing.length > 0) {
     console.error('[MessagingMCP] Faltan variables de entorno:', missing.join(', '));
@@ -44,7 +47,7 @@ async function createRedisClient() {
   try {
     await redis.connect();
     await redis.ping();
-    console.log('[Redis] Conectado:', url);
+    log('[Redis] Conectado:', url);
     return redis;
   } catch (err) {
     console.warn('[Redis] No disponible, continuando sin Redis:', err.message);
@@ -52,67 +55,9 @@ async function createRedisClient() {
   }
 }
 
-// ─── HTTP server para webhook de Telegram en producción ──────────────────────
-function createWebhookServer(telegram) {
-  const port = parseInt(process.env.MCP_PORT || '4002');
-  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-
-  const server = createServer(async (req, res) => {
-    if (req.method === 'POST' && req.url === '/telegram/webhook') {
-      if (webhookSecret && req.headers['x-telegram-bot-api-secret-token'] !== webhookSecret) {
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid Telegram webhook secret' }));
-        return;
-      }
-
-      let body = '';
-      req.on('data', chunk => {
-        body += chunk;
-        if (body.length > Number(process.env.TELEGRAM_WEBHOOK_MAX_BYTES || 1048576)) {
-          req.destroy();
-        }
-      });
-      req.on('end', () => {
-        try {
-          const update = JSON.parse(body);
-          telegram.processUpdate(update);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: true }));
-        } catch (e) {
-          res.writeHead(400);
-          res.end(JSON.stringify({ error: 'Invalid JSON' }));
-        }
-      });
-      return;
-    }
-
-    if (req.method === 'GET' && req.url === '/health') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        status: 'ok',
-        service: 'bezhas-messaging-mcp',
-        version: '1.0.0',
-        uptime: process.uptime()
-      }));
-      return;
-    }
-
-    res.writeHead(404);
-    res.end(JSON.stringify({ error: 'Not found' }));
-  });
-
-  server.listen(port, process.env.MCP_HOST || '0.0.0.0', () => {
-    console.log(`[MessagingMCP] HTTP server escuchando en puerto ${port}`);
-    console.log(`[MessagingMCP] Webhook URL: https://mcp.bez.digital:${port}/telegram/webhook`);
-    console.log(`[MessagingMCP] Health: http://localhost:${port}/health`);
-  });
-
-  return server;
-}
-
 // ─── Bootstrap principal ──────────────────────────────────────────────────────
 async function main() {
-  console.log('🚀 [BeZhas] Iniciando Messaging MCP Server...');
+  log('🚀 [BeZhas] Iniciando Messaging MCP Server...');
 
   validateEnv();
 
@@ -126,7 +71,7 @@ async function main() {
     leadsChannelId: process.env.TELEGRAM_LEADS_CHANNEL_ID,
     authorizedUsers: process.env.TELEGRAM_AUTHORIZED_USERS || ''
   });
-  await telegram.initialize(redis);
+  await telegram.initialize(redis, { polling: true });
 
   // Servidor MCP
   const mcp = new McpServer({
@@ -138,50 +83,22 @@ async function main() {
   // Registrar todas las tools
   registerMessagingTools(mcp, { telegram });
 
-  console.log('[MessagingMCP] Tools registradas: send_telegram_message, send_trade_alert, send_system_alert, send_lead_notification, request_human_confirmation, get_chat_history, get_telegram_status, send_telegram_document');
+  log('[MessagingMCP] Tools registradas: send_telegram_message, send_trade_alert, send_system_alert, send_lead_notification, request_human_confirmation, get_chat_history, get_telegram_status, send_telegram_document');
 
-  // ── Modo producción: webhook HTTP + stdio ──────────────────────────────────
-  if (process.env.NODE_ENV === 'production') {
-    const httpServer = createWebhookServer(telegram);
+  // ── Transporte stdio ──────────────────────────────────────────────────────
+  // Polling incondicional: es la única forma de recibir los callback_query de
+  // los botones, y sin ellos request_human_confirmation caduca SIEMPRE. Antes
+  // esto dependía de NODE_ENV, que con `production` —el valor por defecto—
+  // dejaba la confirmación humana rota sin que nada lo dijera.
+  const transport = new StdioServerTransport();
+  await mcp.connect(transport);
 
-    // Configurar webhook en Telegram si se proporciona URL
-    const webhookUrl = process.env.BEZHAS_PUBLIC_URL || `https://mcp.bez.digital`;
-    try {
-      await telegram.setWebhook(webhookUrl);
-      console.log(`[Telegram] Webhook configurado en ${webhookUrl}/telegram/webhook`);
-    } catch (err) {
-      console.warn('[Telegram] No se pudo configurar webhook automáticamente:', err.message);
-      console.warn('[Telegram] Configúralo manualmente con: setWebhook()');
-    }
-
-    // MCP vía stdio (para OpenClaw local)
-    const transport = new StdioServerTransport();
-    await mcp.connect(transport);
-
-    // Alerta de inicio
-    try {
-      await telegram.sendMessage(
-        process.env.TELEGRAM_ALERT_CHAT_ID,
-        '✅ *BeZhas Messaging MCP iniciado* — Sistema online y listo para recibir comandos\\.', {
-          parse_mode: 'MarkdownV2'
-        }
-      );
-    } catch (e) {
-      console.warn('[Telegram] No se pudo enviar alerta de inicio:', e.message);
-    }
-
-  } else {
-    // ── Modo desarrollo: polling + stdio ────────────────────────────────────
-    console.log('[MessagingMCP] Modo desarrollo: usando polling de Telegram');
-    const transport = new StdioServerTransport();
-    await mcp.connect(transport);
-  }
-
-  console.log('✅ [BeZhas] Messaging MCP Server listo\n');
+  log('✅ [BeZhas] Messaging MCP Server listo\n');
 
   // Graceful shutdown
   const shutdown = async (signal) => {
-    console.log(`\n[MessagingMCP] Recibido ${signal}, cerrando...`);
+    log(`\n[MessagingMCP] Recibido ${signal}, cerrando...`);
+    telegram.stop();
     if (redis) await redis.quit();
     process.exit(0);
   };
