@@ -16,9 +16,36 @@
 'use strict';
 
 const express = require('express');
+const crypto  = require('crypto');
 const router  = express.Router();
 const logger  = require('../utils/logger');
-const { createPayment, handleWebhook, getQuote, getHotWalletStatus } = require('../services/bezpay.service');
+const { createPayment, handleWebhook, handleActivityEvent, confirmBankTransfer, confirmBankTransferBatch, getQuote, getHotWalletStatus, VIP_PLANS,
+  setFeeOverride, removeFeeOverride, listFeeOverrides } = require('../services/bezpay.service');
+
+/** Comparación en tiempo constante para secretos compartidos. */
+function timingSafeMatch(provided, expected) {
+  if (typeof provided !== 'string' || typeof expected !== 'string') return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+/**
+ * Exige `x-admin-token` (o `?adminToken=`) igual a ADMIN_TOKEN/ADMIN_SECRET.
+ * Sin esa variable definida, la ruta queda cerrada — no abierta: la versión
+ * original de hot-wallet/status comparaba con `undefined` a secas, y
+ * `undefined !== undefined` es `false`, así que sin configurar nada quedaba
+ * pública. Aquí `!expected` corta ese caso antes de comparar.
+ */
+function requireAdmin(req, res, next) {
+  const expected = process.env.ADMIN_TOKEN || process.env.ADMIN_SECRET;
+  const provided = req.headers['x-admin-token'] || req.query.adminToken;
+  if (!expected || !provided || !timingSafeMatch(String(provided), expected)) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+  next();
+}
 
 // Rate limiting básico (sin Redis) para endpoints críticos
 const _ipCounts = new Map();
@@ -67,15 +94,35 @@ router.post(
 
 /**
  * POST /api/payment/webhook
- * Recibido tras confirmar la TX on-chain desde el frontend (useBezPayTransaction).
- * Dispensa BEZ, activa VIP, registra farming/escrow, etc.
+ * Confirma una orden creada en /create indicando la TX que la paga.
  *
- * También recibe eventos del blockchain listener (backend indexer).
+ * Público a propósito: lo llama el navegador del pagador
+ * (useBezPayTransaction), que no puede guardar un secreto compartido. La
+ * seguridad NO está en autenticar al llamante, sino en que el handler ignora
+ * el body salvo { paymentId, txHash } y deriva importe, token, destinatario y
+ * BEZ a entregar de la orden en BD + la propia cadena. Ver la cabecera de
+ * services/bezpay.service.js → handleWebhook.
+ *
+ * Respuestas: 200 liquidado (o ya liquidado) · 202 reintenta (TX aún sin
+ * confirmar / RPC caído) · 4xx rechazo definitivo.
  */
 router.post(
   '/webhook',
-  rateLimit(60, 60_000),  // más permisivo (puede haber reintentos)
+  rateLimit(60, 60_000),  // más permisivo (el 202 provoca reintentos legítimos)
+  validate(['paymentId', 'txHash']),
   handleWebhook
+);
+
+/**
+ * POST /api/payment/events
+ * Registro de actividad on-chain que no mueve fondos nuestros (farming,
+ * escrow). Separado de /webhook para que la ruta de liquidación no crezca.
+ */
+router.post(
+  '/events',
+  rateLimit(60, 60_000),
+  validate(['type', 'txHash', 'walletAddress']),
+  handleActivityEvent
 );
 
 /**
@@ -89,14 +136,42 @@ router.get('/quote', getQuote);
  * GET /api/payment/hot-wallet/status
  * Estado del Hot Wallet (sólo admin)
  */
-router.get('/hot-wallet/status', async (req, res) => {
-  // Protección básica — reemplazar con authMiddleware en producción
-  const adminToken = req.headers['x-admin-token'] || req.query.adminToken;
-  if (adminToken !== process.env.ADMIN_TOKEN && adminToken !== process.env.ADMIN_SECRET) {
-    return res.status(401).json({ success: false, message: 'Unauthorized' });
-  }
-  return getHotWalletStatus(req, res);
-});
+router.get('/hot-wallet/status', requireAdmin, getHotWalletStatus);
+
+/**
+ * Tarifas negociadas por wallet — para dar una cuenta grande una comisión
+ * preferente sin cambiar el 1,5% de todos los demás clientes.
+ */
+router.get('/fee-override', requireAdmin, listFeeOverrides);
+router.put('/fee-override/:wallet', requireAdmin, rateLimit(20, 60_000), setFeeOverride);
+router.delete('/fee-override/:wallet', requireAdmin, removeFeeOverride);
+
+/**
+ * POST /api/payment/bank-transfer/confirm
+ * Un humano confirma que una transferencia llegó (transferencia bancaria no
+ * tiene webhook: nadie más avisa). Requiere admin — ver services/bezpay.service.js
+ * → confirmBankTransfer para el porqué y el candado de unicidad.
+ */
+router.post(
+  '/bank-transfer/confirm',
+  requireAdmin,
+  rateLimit(30, 60_000),
+  validate(['paymentId', 'bankReference']),
+  confirmBankTransfer
+);
+
+/**
+ * POST /api/payment/bank-transfer/confirm-batch
+ * Un wire cubre varias facturas — ver services/bezpay.service.js →
+ * confirmBankTransferBatch para la salvaguarda de suma contra lo recibido.
+ */
+router.post(
+  '/bank-transfer/confirm-batch',
+  requireAdmin,
+  rateLimit(15, 60_000),
+  validate(['bankReference', 'totalAmountReceived', 'paymentIds']),
+  confirmBankTransferBatch
+);
 
 /**
  * GET /api/payment/bez-price
@@ -122,17 +197,17 @@ router.get('/bez-price', async (req, res) => {
  * Planes VIP disponibles (público)
  */
 router.get('/plans', (req, res) => {
+  // Antes: una tercera copia literal de los mismos 5 planes, ya desincronizada
+  // de bezpay.service.js antes de este cambio. Ahora expone el VIP_PLANS real
+  // del servicio — cambiar el precio en un sitio lo cambia en los dos.
+  const plans = Object.fromEntries(
+    Object.entries(VIP_PLANS).map(([id, plan]) => [id, { id, name: id[0].toUpperCase() + id.slice(1), ...plan }])
+  );
   res.json({
     success: true,
-    plans: {
-      basic:      { id: 'basic',      name: 'Basic',      bezAmount: 500,   priceUSD: 49,  durationDays: 30 },
-      creator:    { id: 'creator',    name: 'Creator',    bezAmount: 1000,  priceUSD: 99,  durationDays: 30 },
-      pro:        { id: 'pro',        name: 'Pro',        bezAmount: 2500,  priceUSD: 199, durationDays: 30 },
-      business:   { id: 'business',   name: 'Business',   bezAmount: 5000,  priceUSD: 399, durationDays: 30 },
-      enterprise: { id: 'enterprise', name: 'Enterprise', bezAmount: 15000, priceUSD: 999, durationDays: 30 },
-    },
+    plans,
     bezContract: process.env.BEZCOIN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
-    treasury:    process.env.TREASURY_WALLET || '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4',
+    treasury:    process.env.TREASURY_WALLET || '0x89c23890c742d710265dD61be789C71dC8999b12',
   });
 });
 
@@ -192,6 +267,7 @@ router.get('/bezpay-health', (req, res) => {
     endpoints: [
       'POST /api/payment/create',
       'POST /api/payment/webhook',
+      'POST /api/payment/bank-transfer/confirm',
       'GET  /api/payment/quote',
       'GET  /api/payment/bez-price',
       'GET  /api/payment/plans',
@@ -200,7 +276,7 @@ router.get('/bezpay-health', (req, res) => {
     ],
     contracts: {
       bezPolygon: process.env.BEZCOIN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
-      treasury:   process.env.TREASURY_WALLET || '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4',
+      treasury:   process.env.TREASURY_WALLET || '0x89c23890c742d710265dD61be789C71dC8999b12',
       escrow:     process.env.QUALITY_ESCROW_ADDRESS || '0x3088573c025F197A886b97440761990c9A9e83C9',
     },
     ts: new Date().toISOString(),
