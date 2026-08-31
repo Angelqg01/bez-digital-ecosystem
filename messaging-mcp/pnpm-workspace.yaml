@@ -1,0 +1,18 @@
+# Raíz de instalación propia, igual que api/, agent-lib/ y business-ops/.
+#
+# No es decorativo: sin este fichero pnpm sube por el árbol hasta el
+# pnpm-workspace.yaml de la raíz del repositorio, da por hecho que este
+# directorio cuelga de esa instalación y no crea ni node_modules ni lockfile
+# aquí. El módulo parecía instalado —resolvía las dependencias desde la raíz—
+# pero sin versiones fijadas propias, que es justo lo que un package.json viene
+# a resolver.
+#
+# El repositorio no declara `packages:` a propósito: cada módulo se instala por
+# separado y CI los recorre directorio a directorio.
+
+# Mismos overrides de seguridad que la raíz, para no reintroducir por esta vía
+# versiones que ya se habían parcheado en el resto del proyecto.
+overrides:
+  axios: '^1.16.0'
+  form-data@<2.5.4: '^2.5.5'
+  form-data@>=3.0.0 <3.0.4: '^3.0.4'

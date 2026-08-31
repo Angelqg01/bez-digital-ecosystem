@@ -98,6 +98,10 @@ jobs:
         working-directory: ./control-center/frontend
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Install messaging-mcp dependencies
+        working-directory: ./messaging-mcp
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
       # ==========================================
       # 1. smart-contracts (Foundry)
       # ==========================================
@@ -117,6 +121,13 @@ jobs:
       # proceso de la API (api/services/agentRuntime.js). Sus agentes se
       # ejercitan ahora desde las suites de ./api, que son las que cubren el
       # contrato HTTP de /api/agents — el que de verdad consume el frontend.
+      # No necesita red ni un bot real: intercepta fetch y levanta un doble de
+      # la Bot API en localhost. Cubre la puerta de aprobación humana, que es la
+      # parte con consecuencias.
+      - name: Run messaging-mcp smoke test
+        working-directory: ./messaging-mcp
+        run: pnpm test
+
       - name: Run Backend API Tests (unit)
         working-directory: ./api
         run: pnpm run test:unit
