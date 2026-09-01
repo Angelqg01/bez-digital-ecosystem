@@ -23,6 +23,7 @@ const { chainCall } = require('../utils/chainCall');
 const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
 const { authenticateGateway, requireScope, authenticateSSOToken } = require('../middleware/gateway-auth');
+const { requireAddressAccess } = require('../middleware/address-access');
 const { meterUsage } = require('../middleware/gateway-metering');
 const ssoService = require('../services/ssoService');
 const walletService = require('../services/walletService');
@@ -301,7 +302,7 @@ router.get('/sso/me', authenticateSSOToken, async (req, res) => {
 //  WALLET — Balance, transfers, history
 // ═══════════════════════════════════════════════════════════
 
-router.get('/wallet/balance/:address', authenticateGateway, requireScope('wallet'), async (req, res) => {
+router.get('/wallet/balance/:address', authenticateGateway, requireScope('wallet'), requireAddressAccess(), async (req, res) => {
     try {
         const balance = await walletService.getBalance(req.params.address);
         res.json({ success: true, ...balance });
@@ -324,7 +325,7 @@ router.get('/wallet/me', authenticateGateway, requireScope('wallet'), async (req
     }
 });
 
-router.get('/wallet/history/:address', authenticateGateway, requireScope('wallet'), async (req, res) => {
+router.get('/wallet/history/:address', authenticateGateway, requireScope('wallet'), requireAddressAccess(), async (req, res) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 20, 100);
         const offset = parseInt(req.query.offset) || 0;
@@ -345,7 +346,7 @@ router.get('/wallet/history/:address', authenticateGateway, requireScope('wallet
 //  STAKING — Positions, stake, unstake, rewards
 // ═══════════════════════════════════════════════════════════
 
-router.get('/staking/positions/:address', authenticateGateway, requireScope('staking'), async (req, res) => {
+router.get('/staking/positions/:address', authenticateGateway, requireScope('staking'), requireAddressAccess(), async (req, res) => {
     try {
         const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
         try {
@@ -467,7 +468,7 @@ router.post('/staking/unstake', authenticateGateway, requireScope('staking'), [
 //  FARMING — LP positions
 // ═══════════════════════════════════════════════════════════
 
-router.get('/farming/positions/:address', authenticateGateway, requireScope('farming'), async (req, res) => {
+router.get('/farming/positions/:address', authenticateGateway, requireScope('farming'), requireAddressAccess(), async (req, res) => {
     try {
         const poolId = Number.isFinite(parseInt(req.query.poolId)) ? parseInt(req.query.poolId) : 0;
         try {
@@ -620,7 +621,7 @@ router.post('/governance/vote', authenticateGateway, requireScope('governance'),
 //  BRIDGE — Cross-chain transfers
 // ═══════════════════════════════════════════════════════════
 
-router.get('/bridge/transfers/:address', authenticateGateway, requireScope('bridge'), async (req, res) => {
+router.get('/bridge/transfers/:address', authenticateGateway, requireScope('bridge'), requireAddressAccess(), async (req, res) => {
     try {
         const { rows } = await query(
             `SELECT * FROM bridge_transfers
@@ -1394,7 +1395,7 @@ router.post('/payments/send', authenticateGateway, requireScope('wallet'), [
     }
 });
 
-router.get('/payments/history/:address', authenticateGateway, requireScope('wallet'), [
+router.get('/payments/history/:address', authenticateGateway, requireScope('wallet'), requireAddressAccess(), [
     param('address').isEthereumAddress(),
 ], async (req, res) => {
     if (!validate(req, res)) return;
@@ -1676,7 +1677,7 @@ router.post('/payments/:id(\\d+)/refund', requirePaymentSettlementKey, [
 // ═══════════════════════════════════════════════════════════
 
 /** GET /kyc/status/:address — level + remaining headroom for a wallet. */
-router.get('/kyc/status/:address', authenticateGateway, requireScope('wallet'), [
+router.get('/kyc/status/:address', authenticateGateway, requireScope('wallet'), requireAddressAccess(), [
     param('address').isEthereumAddress(),
 ], async (req, res) => {
     if (!validate(req, res)) return;

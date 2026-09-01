@@ -26,7 +26,8 @@ async function authenticateApp(req, res, next) {
 
     try {
         const { rows } = await query(
-            `SELECT id, app_name, scopes, tier, is_active 
+            `SELECT id, app_name, scopes, tier, is_active,
+                    enterprise_id, authorized_addresses, address_access_mode
              FROM app_registry 
              WHERE api_key_hash = encode(digest($1, 'sha256'), 'hex')`,
             [apiKey]
@@ -47,6 +48,13 @@ async function authenticateApp(req, res, next) {
             name: app.app_name,
             scopes: app.scopes || [],
             tier: app.tier,
+            // Titularidad: contra esto se contrasta cualquier dirección que
+            // llegue por la URL. Ver middleware/address-access.js.
+            enterpriseId: app.enterprise_id || null,
+            authorizedAddresses: app.authorized_addresses || [],
+            // Si la columna no existe todavía (base sin migrar), se asume
+            // 'strict': una migración pendiente no puede abrir un permiso.
+            addressAccessMode: app.address_access_mode || 'strict',
         };
         next();
     } catch (error) {

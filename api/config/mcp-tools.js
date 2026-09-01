@@ -21,19 +21,28 @@
  *  POR QUÉ NO HAY NINGUNA HERRAMIENTA CON `address` COMO ARGUMENTO
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * Varios endpoints del Gateway aceptan una dirección arbitraria y devuelven
- * datos de quien sea, porque `app_registry` no tiene titular: la api-key
- * identifica una APP, no a un dueño de datos, así que no hay contra qué
- * contrastar la dirección recibida.
+ * ACTUALIZACIÓN: la fuga que motivó esta decisión ya está corregida. La
+ * migración 049 añadió titularidad a `app_registry` y las siete rutas con
+ * `:address` pasan por `middleware/address-access.js`, que exige acreditar el
+ * derecho a esa dirección. Ver ese fichero para el detalle.
  *
- * En la API REST eso ya es un problema. En un MCP sería mucho peor: las
- * direcciones son públicas en cadena, y «tráeme el historial de pagos y el
- * estado KYC de estas 200 direcciones» es UNA frase. Se pasaría de una
- * vulnerabilidad que hay que saber explotar a una que se explota en lenguaje
- * natural.
+ * Aun así, v1 del MCP sigue SIN herramientas que tomen una dirección, por una
+ * razón distinta de la original: un cliente MCP se conecta con api-key y sin
+ * JWT de usuario, así que la única vía de acreditación disponible sería la
+ * titularidad de la clave. Eso funciona, pero conviene estrenarlo primero por
+ * REST, donde el volumen es bajo y los fallos se ven, antes de ponerlo detrás
+ * de un agente que puede pedir mil direcciones en un minuto.
  *
- * Quedan fuera hasta que exista vinculación entre la api-key y las direcciones
- * que le pertenecen:
+ * Añadirlas ahora es un cambio pequeño y seguro: basta una herramienta que
+ * llame al puente y deje que `puedeAcceder()` decida. Lo que NO puede volver
+ * es una herramienta que acepte una dirección sin pasar por esa comprobación.
+ *
+ * El problema original, para que quede el porqué: las direcciones son públicas
+ * en cadena, y «tráeme el historial de pagos y el estado KYC de estas 200
+ * direcciones» es UNA frase. Convertía una vulnerabilidad que había que saber
+ * explotar en una que se explota hablando.
+ *
+ * Endpoints afectados, hoy ya protegidos:
  *
  *   GET /payments/history/:address  → tipo, importe, método, destinatario,
  *                                     NOTA y tx de cualquiera. Datos internos,
@@ -51,9 +60,8 @@
  * a cualquier cliente la lista de todos los demás. Es administración interna,
  * no superficie de cliente, y no pertenece aquí con ningún scope.
  *
- * Las dos primeras son las graves. Las tres últimas reflejan estado de cadena
- * —consultable en cualquier explorador— pero se excluyen igual: mientras no
- * haya titular, no se ofrece ninguna herramienta que tome una dirección ajena.
+ * Las dos primeras eran las graves: datos internos y de cumplimiento, no
+ * estado de cadena.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  *  POR QUÉ v1 ES DE SOLO LECTURA

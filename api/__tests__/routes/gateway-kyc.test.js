@@ -14,7 +14,14 @@ app.use('/api/gateway/v1', gatewayRoutes);
 const API_KEY = 'test-gateway-key';
 const INTERNAL_KEY = 'test-internal-key';
 const WALLET = '0x' + 'f'.repeat(40);
-const APP_ROW = { id: 7, app_name: 'test-app', scopes: ['wallet'], tier: 'business', is_active: true };
+// La clave declara WALLET entre sus direcciones autorizadas. Antes no hacía
+// falta: /kyc/status/:address devolvía el nivel KYC, el proveedor y el volumen
+// acumulado de CUALQUIER dirección con solo tener el scope `wallet`.
+// Ver middleware/address-access.js.
+const APP_ROW = {
+    id: 7, app_name: 'test-app', scopes: ['wallet'], tier: 'business', is_active: true,
+    enterprise_id: null, authorized_addresses: [WALLET], address_access_mode: 'strict',
+};
 const mockAppAuth = () => mockQuery.mockResolvedValueOnce({ rows: [APP_ROW], rowCount: 1 });
 
 describe('KYC volume gates', () => {
@@ -78,6 +85,19 @@ describe('KYC volume gates', () => {
             expect(res.body.level).toBe(1);
             expect(res.body.limitUSD).toBe(15000);
             expect(res.body.remainingUSD).toBe(10000);
+        });
+
+        it('no devuelve el KYC de una dirección que no es suya', async () => {
+            // El agujero original: nivel KYC, proveedor, fecha de verificación y
+            // volumen acumulado en USD de cualquiera, con solo el scope `wallet`
+            // y una dirección — que es pública en cadena.
+            mockAppAuth();
+            const res = await request(app)
+                .get(`/api/gateway/v1/kyc/status/0x${'a'.repeat(40)}`)
+                .set('x-api-key', API_KEY);
+            expect(res.status).toBe(403);
+            expect(res.body.code).toBe('ADDRESS_ACCESS_DENIED');
+            expect(res.body.level).toBeUndefined();
         });
     });
 
