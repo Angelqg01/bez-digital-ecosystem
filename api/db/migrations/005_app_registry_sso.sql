@@ -46,19 +46,45 @@ CREATE INDEX IF NOT EXISTS idx_sso_active ON sso_sessions(user_id, is_revoked) W
 --  SEED: Register default ecosystem apps
 -- ─────────────────────────────────────────────────────────
 
--- Core (internal — full access)
-INSERT INTO app_registry (app_name, api_key_hash, scopes, tier, allowed_origins) VALUES
-    ('bezhas-core', encode(digest('core-internal-key', 'sha256'), 'hex'),
-     ARRAY['admin'], 'internal', ARRAY['http://localhost:3000', 'https://bezhas.com']),
-    ('bezhas-defi', encode(digest('defi-dev-key', 'sha256'), 'hex'),
+-- Apps del ecosistema.
+--
+-- SIN CLAVE UTILIZABLE, a propósito. Este bloque sembraba las cuatro claves con
+-- su secreto EN CLARO dentro de este mismo fichero, que está versionado:
+--
+--     'core-internal-key'  → scope admin
+--     'defi-dev-key' · 'app-dev-key' · 'web3-dev-key'
+--
+-- Cualquiera con acceso al repositorio calculaba el SHA-256 y entraba. Y
+-- 'core-internal-key' lleva scope `admin`, que en middleware/address-access.js
+-- salta la comprobación de titularidad: esa clave anulaba por sí sola el
+-- control de acceso a datos de otros clientes.
+--
+-- Se siembran las filas —así queda documentado qué apps existen y con qué
+-- permisos— pero DESACTIVADAS y con un hash que ninguna clave puede producir:
+-- lleva caracteres fuera del alfabeto hexadecimal, así que no hay entrada cuyo
+-- SHA-256 coincida.
+--
+-- Para dar de alta una de verdad:
+--
+--   UPDATE app_registry
+--      SET api_key_hash = encode(digest('<clave-generada>','sha256'),'hex'),
+--          is_active = TRUE
+--    WHERE app_name = 'bezhas-core';
+--
+-- Genera la clave con  openssl rand -hex 32  y guárdala en el gestor de
+-- secretos, nunca en el repositorio.
+INSERT INTO app_registry (app_name, api_key_hash, scopes, tier, allowed_origins, is_active) VALUES
+    ('bezhas-core', 'PROVISION_REQUIRED_' || gen_random_uuid(),
+     ARRAY['admin'], 'internal', ARRAY['http://localhost:3000', 'https://bezhas.com'], FALSE),
+    ('bezhas-defi', 'PROVISION_REQUIRED_' || gen_random_uuid(),
      ARRAY['staking', 'farming', 'governance', 'bridge', 'treasury', 'wallet', 'token', 'contracts'],
-     'premium', ARRAY['http://localhost:5174', 'https://defi.bezhas.com']),
-    ('bezhas-app', encode(digest('app-dev-key', 'sha256'), 'hex'),
+     'premium', ARRAY['http://localhost:5174', 'https://defi.bezhas.com'], FALSE),
+    ('bezhas-app', 'PROVISION_REQUIRED_' || gen_random_uuid(),
      ARRAY['auth', 'wallet', 'token', 'marketplace', 'social', 'notifications'],
-     'premium', ARRAY['http://localhost:5173', 'https://app.bezhas.com']),
-    ('bezhas-web3', encode(digest('web3-dev-key', 'sha256'), 'hex'),
+     'premium', ARRAY['http://localhost:5173', 'https://app.bezhas.com'], FALSE),
+    ('bezhas-web3', 'PROVISION_REQUIRED_' || gen_random_uuid(),
      ARRAY['auth', 'wallet', 'token', 'contracts', 'staking', 'bridge', 'marketplace', 'notifications'],
-     'premium', ARRAY['http://localhost:5175', 'https://web3.bezhas.com'])
+     'premium', ARRAY['http://localhost:5175', 'https://web3.bezhas.com'], FALSE)
 ON CONFLICT (app_name) DO NOTHING;
 
 -- Cleanup expired sessions (run via cron or pg_cron)
