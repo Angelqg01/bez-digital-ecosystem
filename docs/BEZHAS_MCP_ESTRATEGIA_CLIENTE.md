@@ -127,9 +127,10 @@ dos se queda con el control viejo.
 | **OAuth 2.1 para clientes de chat** | ❌ falta | — |
 | **Tools de escritura con firma + HITL** | ❌ falta | — |
 | Conector ERP (SAP/Odoo/Dynamics) | ✅ hecho | `api/services/erp/`, `api/routes/erp.js` |
-| **Gradación de razonamiento por plan** | ❌ falta | — |
+| Gradación por plan (catálogo, razonamiento, mercado, límites) | ✅ hecho | `api/config/plan-entitlements.js` |
 | Barrido de sesiones y anonimización | ✅ hecho | `api/services/onboardingSweeper.js` |
-| **Régimen de privacidad por plan** | ❌ falta | — |
+| Régimen de privacidad por plan (declarado) | ✅ declarado | `api/config/plan-entitlements.js` |
+| **Pipeline que lo aplica (telemetría/episodios)** | ❌ falta | — |
 | **Pipeline de telemetría → mejora de CS** | ❌ falta | — |
 | **Detección de extracción de catálogo** | ❌ falta | — |
 

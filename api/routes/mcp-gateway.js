@@ -47,7 +47,13 @@
  *  6. Respuestas acotadas en tamaño, y todas envueltas como DATO, no como
  *     instrucción: lo que sale de aquí entra en el contexto de un LLM ajeno.
  *
- *  7. Límite de tasa propio por api-key, además del global.
+ *  7. Límite de tasa propio por api-key, además del global, y graduado por el
+ *     plan contratado: el techo de un starter no puede ser el de un enterprise.
+ *
+ *  8. El plan se comprueba junto al scope, y las dos veces: al listar y al
+ *     ejecutar. Son ejes distintos —el scope dice qué área te han habilitado, el
+ *     plan hasta dónde llega lo que pagas— y ninguno cubre al otro. Una clave
+ *     con scope `admin` salta el scope por ser interna, pero no compra plan.
  */
 
 const { Router } = require('express');
@@ -56,8 +62,10 @@ const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 
 const { authenticateApp } = require('../middleware/gateway-auth');
-const { toolsParaScopes, getTool, MAX_RESPUESTA_CHARS } = require('../config/mcp-tools');
+const { toolsParaScopes, planPermiteTool, getTool, MAX_RESPUESTA_CHARS } = require('../config/mcp-tools');
+const { getEntitlements, PLAN_POR_DEFECTO } = require('../config/plan-entitlements');
 const bridge = require('../services/mcpGatewayBridge');
+const { query } = require('../db/pool');
 const logger = require('../utils/logger');
 
 const router = Router();
@@ -69,12 +77,42 @@ const router = Router();
  */
 const mcpLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: parseInt(process.env.MCP_RATE_LIMIT_MAX, 10) || 120,
+    // El techo lo pone el plan. `max` recibe la petición ya autenticada porque
+    // el limitador se monta DESPUÉS de resolver el plan: al revés, un starter
+    // gastaría el cupo de un enterprise por el simple orden de los middlewares.
+    max: (req) => req.entitlements?.limites?.mcpPorMinuto
+        || parseInt(process.env.MCP_RATE_LIMIT_MAX, 10) || 120,
     keyGenerator: (req) => req.headers['x-api-key'] || req.ip,
     message: { error: 'Too many MCP requests.', code: 'MCP_RATE_LIMIT' },
     standardHeaders: true,
     legacyHeaders: false,
 });
+
+/**
+ * Resuelve el plan contratado de la api-key y deja sus derechos en la petición.
+ *
+ * Va después de `authenticateApp` y antes del limitador, porque el techo de
+ * llamadas depende del plan. Si la consulta falla se cae al plan MÁS
+ * RESTRICTIVO, no al más generoso: una base que no responde no es motivo para
+ * regalar el catálogo de enterprise.
+ */
+async function resolverPlan(req, _res, next) {
+    let plan = PLAN_POR_DEFECTO;
+    try {
+        const { rows } = await query(
+            `SELECT plan_id FROM gateway_subscriptions
+              WHERE app_id = $1 AND status = 'active' LIMIT 1`,
+            [req.registeredApp.id]
+        );
+        if (rows.length > 0 && rows[0].plan_id) plan = rows[0].plan_id;
+    } catch (err) {
+        logger.warn({ appId: req.registeredApp.id, error: err.message },
+            'No se pudo resolver el plan; se aplica el más restrictivo');
+    }
+    req.plan = plan;
+    req.entitlements = getEntitlements(plan);
+    next();
+}
 
 /** Trunca con aviso explícito, para que el agente sepa que falta cola. */
 function acotar(texto) {
@@ -116,14 +154,15 @@ function resultadoError(nombre, err, appId) {
  * usar. Se crea uno por petición: es barato (registrar ocho funciones) y
  * garantiza que el catálogo de un cliente no puede acabar sirviéndose a otro.
  */
-function construirServidor(app) {
+function construirServidor(app, plan) {
+    const entitlements = getEntitlements(plan);
     const mcp = new McpServer({
         name: 'bezhas-gateway',
         version: '1.0.0',
         description: 'Acceso de solo lectura al ecosistema BeZhas: token, mercado, red, contratos y tu suscripción.',
     });
 
-    const visibles = toolsParaScopes(app.scopes);
+    const visibles = toolsParaScopes(app.scopes, plan);
 
     for (const tool of visibles) {
         mcp.registerTool(tool.name, {
@@ -145,6 +184,18 @@ function construirServidor(app) {
             const definicion = getTool(tool.name);
             if (!definicion) return resultadoError(tool.name, new Error('unknown tool'), app.id);
 
+            // Defensa en profundidad: el catálogo ya viene filtrado por plan,
+            // así que en operación normal aquí no llega nada denegado. Está por
+            // si `toolsParaScopes` y `planPermiteTool` llegaran a divergir —el
+            // día que eso pase, se deniega en vez de servir—.
+            if (!planPermiteTool(tool.name, plan)) {
+                logger.info({ tool: tool.name, appId: app.id, plan }, 'MCP tool call denied by plan');
+                return {
+                    content: [{ type: 'text', text: `«${tool.name}» no está incluida en tu plan (${plan}). Amplíalo desde el panel de BeZhas.` }],
+                    isError: true,
+                };
+            }
+
             const permitido = app.scopes.includes(definicion.scope) || app.scopes.includes('admin');
             if (!permitido) {
                 logger.warn({ tool: tool.name, appId: app.id, scope: definicion.scope },
@@ -156,7 +207,7 @@ function construirServidor(app) {
             }
 
             try {
-                const datos = await definicion.handler({ args: args || {}, app, bridge });
+                const datos = await definicion.handler({ args: args || {}, app, bridge, entitlements });
                 return resultadoDato(tool.name, datos);
             } catch (err) {
                 return resultadoError(tool.name, err, app.id);
@@ -173,7 +224,7 @@ function construirServidor(app) {
  * `authenticateApp` va PRIMERO: sin api-key válida no se llega ni a construir
  * el servidor, así que una petición anónima no puede ni enumerar herramientas.
  */
-router.post('/', mcpLimiter, authenticateApp, async (req, res) => {
+router.post('/', authenticateApp, resolverPlan, mcpLimiter, async (req, res) => {
     const app = req.registeredApp;
 
     // Sin scopes no hay nada que ofrecer. Se dice en claro en lugar de servir
@@ -185,7 +236,7 @@ router.post('/', mcpLimiter, authenticateApp, async (req, res) => {
         });
     }
 
-    const mcp = construirServidor(app);
+    const mcp = construirServidor(app, req.plan);
 
     // Sin estado: sin identificador de sesión, cada petición se autentica sola
     // y no queda nada del inquilino anterior en memoria entre llamadas.
