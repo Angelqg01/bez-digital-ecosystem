@@ -1782,6 +1782,78 @@ router.get('/checkout/:token([0-9a-f]{32})', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════
+//  ONBOARDING ASISTIDO — público, acotado por token
+//
+//  El token de la URL es la única credencial, igual que en el checkout: revela
+//  ESTA sesión de alta y nada más. Lo tiene la persona que abrió el enlace
+//  desde su IA, y el prefill que devuelve son sus propios datos —los que el
+//  agente recogió de su conversación—, así que puede verlos.
+//
+//  Lo que NO devuelve, ni aunque el token sea válido: app_id, org_id, la IP de
+//  origen ni nada de otra sesión. Consumido por la página /o/:token.
+// ═══════════════════════════════════════════════════════════
+
+const onboardingSession = require('../services/onboardingSession');
+
+router.get('/onboarding/:token([0-9a-f]{64})', async (req, res) => {
+    try {
+        const sesion = await onboardingSession.porToken(req.params.token);
+        if (!sesion) return res.status(404).json({ error: 'Onboarding session not found' });
+
+        res.set('Cache-Control', 'no-store');
+        res.json({
+            success: true,
+            onboarding: {
+                ...onboardingSession.estadoPublico(sesion),
+                // El prefill sí va aquí y no en el estado que ve el agente:
+                // esta respuesta la lee el navegador de la persona, aquella
+                // acaba en el contexto de un modelo.
+                prefill: sesion.prefill || {},
+            },
+        });
+    } catch (error) {
+        logger.error(error, 'Onboarding status fetch failed');
+        res.status(500).json({ error: 'Failed to fetch onboarding session' });
+    }
+});
+
+/** Avance dentro de la pantalla. No acepta ningún dato, sólo en qué paso va. */
+router.post('/onboarding/:token([0-9a-f]{64})/step', async (req, res) => {
+    try {
+        const paso = typeof req.body?.step === 'string' ? req.body.step.slice(0, 64) : null;
+        const sesion = await onboardingSession.avanzar(req.params.token, { step: paso, status: 'en_curso' });
+        if (!sesion) return res.status(404).json({ error: 'Onboarding session not found' });
+        res.set('Cache-Control', 'no-store');
+        res.json({ success: true, onboarding: onboardingSession.estadoPublico(sesion) });
+    } catch (error) {
+        if (error.code) return res.status(400).json({ error: error.message, code: error.code });
+        logger.error(error, 'Onboarding step failed');
+        res.status(500).json({ error: 'Failed to advance onboarding session' });
+    }
+});
+
+/**
+ * Cierre de la sesión.
+ *
+ * No recibe ningún dato de negocio: lo que la persona introduce en la pantalla
+ * va a su destino real —proveedor de pagos, alta de organización, su propia
+ * máquina— por sus propias rutas, cada una con su validación. Esto sólo marca
+ * que el vale se ha consumido, para que el agente pueda seguir la conversación.
+ */
+router.post('/onboarding/:token([0-9a-f]{64})/complete', async (req, res) => {
+    try {
+        const sesion = await onboardingSession.completar(req.params.token);
+        if (!sesion) return res.status(404).json({ error: 'Onboarding session not found' });
+        res.set('Cache-Control', 'no-store');
+        res.json({ success: true, onboarding: onboardingSession.estadoPublico(sesion) });
+    } catch (error) {
+        if (error.code) return res.status(409).json({ error: error.message, code: error.code });
+        logger.error(error, 'Onboarding completion failed');
+        res.status(500).json({ error: 'Failed to complete onboarding session' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
 //  OUTBOUND WEBHOOKS — signed payment events per registered app
 //  Deliveries signed with X-BeZhas-Signature (sha256=<hex HMAC>), the format
 //  @bezhas/connect webhooks.verify checks. Retries with exponential backoff.

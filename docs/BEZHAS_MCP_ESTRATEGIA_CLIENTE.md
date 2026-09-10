@@ -9,6 +9,8 @@ suscripción, sin poder reconstruir lo que hay dentro.*
 > Documento de arquitectura y producto. No sustituye a
 > [`docs/developer/HOSTINGER_DEPLOYMENT_GUIDE.md`](developer/HOSTINGER_DEPLOYMENT_GUIDE.md)
 > (despliegue) ni a [`docs/OPERANT_SUBAPP.md`](OPERANT_SUBAPP.md) (agentes de gestión).
+> El alta, la instalación y la configuración asistidas por la propia IA van
+> aparte, en [`BEZHAS_MCP_ONBOARDING_ASISTIDO.md`](BEZHAS_MCP_ONBOARDING_ASISTIDO.md).
 
 ---
 

@@ -6,7 +6,9 @@ cada fase, y cómo lo usa cada sector.*
 
 > Complemento operativo de
 > [`BEZHAS_MCP_ESTRATEGIA_CLIENTE.md`](BEZHAS_MCP_ESTRATEGIA_CLIENTE.md)
-> (documento interno de arquitectura y producto).
+> (documento interno de arquitectura y producto). Si prefieres que sea la propia
+> IA quien te dé de alta, instale el SDK, integre tu ERP o levante un nodo, eso
+> se describe en [`BEZHAS_MCP_ONBOARDING_ASISTIDO.md`](BEZHAS_MCP_ONBOARDING_ASISTIDO.md).
 
 ---
 
