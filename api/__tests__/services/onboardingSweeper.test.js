@@ -13,11 +13,12 @@ describe('onboardingSweeper', () => {
         jest.restoreAllMocks();
     });
 
-    it('caduca lo vencido y borra la IP de lo viejo', async () => {
-        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 2 });
-        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 5 });
+    it('caduca lo vencido, borra la IP de lo viejo y cierra los vales de nodo', async () => {
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 2 });   // sesiones caducadas
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 5 });   // anonimizadas
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });   // vales de nodo sin usar
         const r = await sweeper.pasada();
-        expect(r).toEqual({ caducadas: 2, anonimizadas: 5 });
+        expect(r).toEqual({ caducadas: 2, anonimizadas: 5, nodosCaducados: 1 });
         expect(String(mockQuery.mock.calls[1][0])).toMatch(/source_ip = NULL/);
         expect(String(mockQuery.mock.calls[1][0])).toMatch(/user_agent = NULL/);
     });
@@ -47,7 +48,8 @@ describe('onboardingSweeper', () => {
 
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-        await expect(sweeper.pasada()).resolves.toEqual({ caducadas: 0, anonimizadas: 0 });
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+        await expect(sweeper.pasada()).resolves.toEqual({ caducadas: 0, anonimizadas: 0, nodosCaducados: 0 });
     });
 
     it('arrancar dos veces no crea dos bucles', () => {
@@ -71,6 +73,17 @@ describe('onboardingSweeper', () => {
         sweeper.startSweeper(60000);
         await new Promise((r) => setImmediate(r));
         expect(espia).toHaveBeenCalledTimes(1);
+    });
+
+    it('un vale de nodo sin usar se cierra aunque no haya sesiones que caducar', async () => {
+        // Un vale «pendiente» de hace un mes en la pantalla del cliente parece
+        // que todavía sirve, y no sirve.
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 3 });
+        const r = await sweeper.pasada();
+        expect(r.nodosCaducados).toBe(3);
+        expect(String(mockQuery.mock.calls[2][0])).toMatch(/registration_token_hash = NULL/);
     });
 
     it('stopSweeper lo detiene', () => {

@@ -113,6 +113,14 @@ function pageHtml(token) {
   .big { font-size:42px; text-align:center; margin:18px 0 6px; }
   .aviso { border-left:3px solid var(--gold); padding:10px 14px; margin:14px 0; background:#0e131a;
            border-radius:0 12px 12px 0; font-size:13px; color:var(--dim); }
+  button.emitir { width:100%; background:var(--teal); color:#06251e; font-weight:700; border:0;
+                  padding:13px; border-radius:12px; font-size:15px; cursor:pointer; }
+  button.emitir:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; align-items:center; gap:8px; }
+  .row .mono { flex:1; }
+  button.copy { background:transparent; border:1px solid var(--line); color:var(--teal); border-radius:8px;
+                padding:5px 10px; font-size:12px; cursor:pointer; }
+  button.copy:hover { border-color:var(--teal); }
   .foot { margin-top:18px; font-size:11px; color:var(--dim); text-align:center; }
   [hidden] { display:none !important; }
 </style>
@@ -129,6 +137,20 @@ function pageHtml(token) {
     <ol class="pasos" id="a-pasos"></ol>
     <div class="box" id="a-datos" hidden><label>Datos que trae tu asistente</label><div id="a-prefill" class="dim"></div></div>
     <div class="aviso" id="a-aviso" hidden></div>
+
+    <div id="a-emitir" hidden>
+      <button class="emitir" id="btn-emitir">Generar y mostrar</button>
+      <p class="dim" style="margin-top:8px">Se muestra una sola vez. Tenlo a mano dónde guardarlo antes de pulsar.</p>
+    </div>
+
+    <div id="a-secreto" hidden>
+      <div class="box"><label id="s-label">Credencial</label>
+        <div class="row"><div class="mono" id="s-valor"></div><button class="copy" data-copy="s-valor">Copiar</button></div>
+      </div>
+      <div class="aviso">Esto no vuelve a mostrarse. Si cierras la pantalla sin copiarlo, hay que emitir otro.</div>
+      <ul class="dim" id="s-instrucciones" style="padding-left:18px"></ul>
+    </div>
+
     <div class="status"><div class="spinner"></div><span id="a-status">Esta pantalla se actualiza sola.</span></div>
     <p class="dim" id="a-caduca" style="margin-top:10px"></p>
   </div>
@@ -215,9 +237,60 @@ function pageHtml(token) {
       av.textContent = 'Tu número de cuenta se introduce en el formulario del proveedor de pagos. '
         + 'No lo escribas nunca en el chat: acabaría en el historial de la conversación y en el contexto del modelo.';
     }
+    // Sólo los flujos que entregan algo enseñan el botón. El resto se limita a
+    // guiar: no hay nada que emitir en un alta o en una configuración de banco.
+    if ((o.tipo === 'sdk_install' || o.tipo === 'node_provision') && !yaEmitido) {
+      document.getElementById('a-emitir').hidden = false;
+    }
+
     if (o.siguienteAccion) txt('a-status', o.siguienteAccion);
     if (o.caduca) txt('a-caduca', 'Este enlace caduca el ' + new Date(o.caduca).toLocaleString());
   }
+
+  // El valor emitido vive en esta variable y en ningún otro sitio del
+  // navegador: nada de localStorage ni de la URL. Si la pestaña se cierra, se
+  // ha perdido — que es exactamente lo que se le advierte al usuario.
+  var yaEmitido = false;
+
+  function pintarSecreto(e) {
+    yaEmitido = true;
+    clearInterval(timer);                        // deja de sondear: ya está
+    document.getElementById('a-emitir').hidden = true;
+    document.getElementById('a-secreto').hidden = false;
+    txt('s-label', e.tipo === 'api_key' ? 'Tu api-key' : 'Token de registro del nodo');
+    txt('s-valor', e.valor);
+    var ul = document.getElementById('s-instrucciones');
+    ul.innerHTML = '';
+    (e.instrucciones || []).forEach(function (i) {
+      var li = document.createElement('li'); li.textContent = i; ul.appendChild(li);
+    });
+  }
+
+  document.getElementById('btn-emitir').addEventListener('click', function () {
+    var b = this;
+    b.disabled = true;
+    b.textContent = 'Generando…';
+    fetch(API + '/issue', {
+      method: 'POST', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok) {
+          b.disabled = false;
+          b.textContent = 'Generar y mostrar';
+          txt('a-status', res.d.error || 'No se pudo generar.');
+          return;
+        }
+        pintarSecreto(res.d.emitido);
+      })
+      .catch(function () {
+        b.disabled = false;
+        b.textContent = 'Generar y mostrar';
+        txt('a-status', 'Fallo de red. Vuelve a intentarlo.');
+      });
+  });
 
   function poll() {
     fetch(API, { cache: 'no-store' })
@@ -225,7 +298,7 @@ function pageHtml(token) {
         if (r.status === 404) throw new Error('notfound');
         return r.json();
       })
-      .then(function (d) { render(d.onboarding); })
+      .then(function (d) { if (!yaEmitido) render(d.onboarding); })
       .catch(function (err) {
         if (err.message === 'notfound') {
           show('muerto');

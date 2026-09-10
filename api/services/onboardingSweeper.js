@@ -28,6 +28,7 @@
  */
 
 const onboarding = require('./onboardingSession');
+const credentialIssuance = require('./credentialIssuance');
 const logger = require('../utils/logger');
 
 const INTERVALO_POR_DEFECTO = parseInt(process.env.ONBOARDING_SWEEP_MS || '600000', 10); // 10 min
@@ -44,11 +45,16 @@ async function pasada() {
     enCurso = true;
     try {
         const r = await onboarding.barrer();
+        // Los vales de registro de nodo que nadie usó caducan por su cuenta en
+        // la consulta que los consume, pero conviene además marcarlos: un vale
+        // «pendiente» de hace un mes en la pantalla del cliente parece que
+        // todavía sirve, y no sirve.
+        r.nodosCaducados = await credentialIssuance.caducarTokensDeNodo();
         ultimo = { ...r, fecha: new Date().toISOString() };
         // Sólo se registra cuando hubo algo que hacer: un barrido silencioso
         // cada diez minutos llenaría el log de líneas idénticas y haría más
         // difícil ver la que importa.
-        if (r.caducadas > 0 || r.anonimizadas > 0) {
+        if (r.caducadas > 0 || r.anonimizadas > 0 || r.nodosCaducados > 0) {
             logger.info(r, 'Barrido de onboarding');
         }
         return r;

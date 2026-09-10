@@ -87,6 +87,86 @@ describe('Pantallas de onboarding (/o)', () => {
         });
     });
 
+    describe('entrega de credenciales', () => {
+        const sha256 = (v) => require('crypto').createHash('sha256').update(v).digest('hex');
+
+        it('emite la api-key una vez y devuelve el valor sin cachearlo', async () => {
+            mockQuery.mockResolvedValueOnce({                       // consumir sesión
+                rows: [{ id: 's1', kind: 'sdk_install', prefill: {}, app_id: 'app-1', org_id: null }], rowCount: 1,
+            });
+            mockQuery.mockResolvedValueOnce({                       // app padre
+                rows: [{ app_name: 'cliente', scopes: ['token'], tier: 'standard',
+                    enterprise_id: null, authorized_addresses: [], address_access_mode: 'strict' }],
+            });
+            mockQuery.mockResolvedValueOnce({ rows: [{ id: 'app-2', app_name: 'cliente-x' }] });
+
+            const res = await request(app).post(`/api/gateway/v1/onboarding/${token()}/issue`).send({});
+            expect(res.status).toBe(200);
+            expect(res.body.emitido.valor).toHaveLength(64);
+            // Sin no-store, un proxy o el propio navegador podrían dejar la
+            // credencial en caché en disco.
+            expect(res.headers['cache-control']).toContain('no-store');
+
+            const insert = mockQuery.mock.calls.find((c) => /INSERT INTO app_registry/i.test(String(c[0])));
+            expect(insert[1][1]).toBe(sha256(res.body.emitido.valor));
+        });
+
+        it('el segundo intento con el mismo enlace da 409', async () => {
+            mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+            mockQuery.mockResolvedValueOnce({ rows: [{ status: 'completado', expires_at: new Date() }] });
+            const res = await request(app).post(`/api/gateway/v1/onboarding/${token()}/issue`).send({});
+            expect(res.status).toBe(409);
+            expect(res.body.code).toBe('ISSUE_YA_EMITIDO');
+        });
+
+        it('un tipo que no emite no se convierte en emisor', async () => {
+            mockQuery.mockResolvedValueOnce({
+                rows: [{ id: 's1', kind: 'bank_setup', prefill: {}, app_id: 'app-1', org_id: null }], rowCount: 1,
+            });
+            const res = await request(app).post(`/api/gateway/v1/onboarding/${token()}/issue`).send({});
+            expect(res.status).toBe(400);
+            expect(res.body.code).toBe('ISSUE_TIPO_SIN_EMISION');
+        });
+    });
+
+    describe('registro de nodo', () => {
+        it('acepta la pública y consume el vale', async () => {
+            mockQuery.mockResolvedValueOnce({
+                rows: [{ id: 'n1', tipo: 'edge', entorno: 'sandbox', nombre: 'edge-1', app_id: 'app-1' }], rowCount: 1,
+            });
+            const res = await request(app).post('/api/gateway/v1/nodes/register')
+                .send({ registrationToken: 'b'.repeat(64), publicKey: 'x'.repeat(64), version: '1.0.0' });
+            expect(res.status).toBe(201);
+            expect(res.body.nodo.nodeId).toBe('n1');
+        });
+
+        it('rechaza que le manden una clave privada', async () => {
+            const res = await request(app).post('/api/gateway/v1/nodes/register')
+                .send({ registrationToken: 'b'.repeat(64),
+                    publicKey: '-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----' });
+            expect(res.status).toBe(400);
+            expect(res.body.code).toBe('NODO_CLAVE_PRIVADA');
+        });
+    });
+
+    describe('la página entrega, pero avisa', () => {
+        it('dice que el valor no vuelve a mostrarse', async () => {
+            const res = await request(app).get(`/o/${token()}`);
+            expect(res.text).toMatch(/no vuelve a mostrarse/i);
+        });
+
+        it('no guarda el secreto en localStorage ni en la URL', async () => {
+            // Si la pestaña se cierra, se ha perdido: es lo que se le advierte
+            // al usuario y tiene que ser cierto.
+            const res = await request(app).get(`/o/${token()}`);
+            // Se busca USO, no la palabra: el propio código lleva un comentario
+            // explicando que no se usa, y una comprobación por palabra suelta
+            // fallaría por el comentario que documenta la decisión correcta.
+            expect(res.text).not.toMatch(/(local|session)Storage\s*[.[]/);
+            expect(res.text).not.toMatch(/location\.(hash|search)\s*=/);
+        });
+    });
+
     describe('avance y cierre', () => {
         it('el avance no acepta datos, sólo el paso', async () => {
             // Es la garantía de que ningún dato de negocio entra por aquí: el

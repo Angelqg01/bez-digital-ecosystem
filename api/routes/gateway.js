@@ -1794,6 +1794,7 @@ router.get('/checkout/:token([0-9a-f]{32})', async (req, res) => {
 // ═══════════════════════════════════════════════════════════
 
 const onboardingSession = require('../services/onboardingSession');
+const credentialIssuance = require('../services/credentialIssuance');
 
 router.get('/onboarding/:token([0-9a-f]{64})', async (req, res) => {
     try {
@@ -1850,6 +1851,80 @@ router.post('/onboarding/:token([0-9a-f]{64})/complete', async (req, res) => {
         if (error.code) return res.status(409).json({ error: error.message, code: error.code });
         logger.error(error, 'Onboarding completion failed');
         res.status(500).json({ error: 'Failed to complete onboarding session' });
+    }
+});
+
+/**
+ * POST /onboarding/:token/issue — lo que la pantalla ENTREGA.
+ *
+ * Es el único sitio de la plataforma donde sale una credencial nueva, y sale
+ * una vez: se devuelve en esta respuesta —al navegador de la persona— y se
+ * guarda hasheada. No hay forma de volver a verla, ni aquí ni en el panel.
+ *
+ * El token de la URL es la autorización. No hace falta api-key porque la sesión
+ * ya sabe de quién es: la abrió una herramienta MCP autenticada.
+ */
+router.post('/onboarding/:token([0-9a-f]{64})/issue', async (req, res) => {
+    try {
+        const emitido = await credentialIssuance.emitir(req.params.token, {
+            nombre: typeof req.body?.nombre === 'string' ? req.body.nombre : null,
+        });
+        // no-store aquí no es rutina: sin él, un proxy o el propio navegador
+        // podrían dejar la credencial en caché en disco.
+        res.set('Cache-Control', 'no-store');
+        res.set('Pragma', 'no-cache');
+        res.json({ success: true, emitido });
+    } catch (error) {
+        if (error.code === 'ISSUE_YA_EMITIDO') {
+            return res.status(409).json({ error: error.message, code: error.code });
+        }
+        if (error.code) {
+            return res.status(400).json({ error: error.message, code: error.code });
+        }
+        logger.error(error, 'Credential issuance failed');
+        res.status(500).json({ error: 'No se pudo emitir la credencial.' });
+    }
+});
+
+/**
+ * POST /nodes/register — el nodo se presenta con su vale.
+ *
+ * Llega desde la máquina del cliente y sin credencial previa: el token de
+ * registro ES la credencial y se consume al usarlo. Lo que el nodo manda es su
+ * clave PÚBLICA; si manda una privada por error se rechaza en vez de guardarla.
+ */
+router.post('/nodes/register', async (req, res) => {
+    try {
+        const nodo = await credentialIssuance.registrarNodo({
+            registrationToken: req.body?.registrationToken,
+            publicKey: req.body?.publicKey,
+            version: req.body?.version || null,
+        });
+        res.set('Cache-Control', 'no-store');
+        res.status(201).json({ success: true, nodo });
+    } catch (error) {
+        if (error.code) return res.status(400).json({ error: error.message, code: error.code });
+        logger.error(error, 'Node registration failed');
+        res.status(500).json({ error: 'No se pudo registrar el nodo.' });
+    }
+});
+
+/** GET /nodes — los nodos de quien llama. Nunca devuelve tokens ni claves privadas. */
+router.get('/nodes', authenticateGateway, requireScope('contracts', 'wallet'), async (req, res) => {
+    try {
+        // authenticateGateway acepta también un JWT de usuario, y por esa vía no
+        // hay `registeredApp`. Un nodo pertenece a una api-key, no a una sesión
+        // de usuario: se dice en claro en lugar de reventar con un 500.
+        if (!req.registeredApp?.id) {
+            return res.status(400).json({
+                error: 'Los nodos se consultan con la api-key de la organización, no con una sesión de usuario.',
+                code: 'NODES_REQUIERE_API_KEY',
+            });
+        }
+        res.json({ success: true, nodos: await credentialIssuance.listarNodos(req.registeredApp.id) });
+    } catch (error) {
+        logger.error(error, 'Node listing failed');
+        res.status(500).json({ error: 'No se pudieron listar los nodos.' });
     }
 });
 
