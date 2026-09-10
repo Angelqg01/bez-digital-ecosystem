@@ -129,13 +129,72 @@ describe('credentialIssuance', () => {
     });
 
     describe('tipos que no emiten', () => {
-        it.each(['signup', 'bank_setup', 'erp_integration', 'connect'])(
+        it.each(['signup', 'bank_setup', 'erp_integration'])(
             '«%s» no entrega credenciales', async (kind) => {
                 sesionConsumida(kind);
                 await expect(issuance.emitir(TOKEN, {}))
                     .rejects.toMatchObject({ code: 'ISSUE_TIPO_SIN_EMISION' });
             }
         );
+    });
+
+    describe('conexión de una IA a una cuenta existente', () => {
+        // Aquí NO hay clave padre de la que heredar: el que llega no tiene
+        // ninguna, por eso viene. La titularidad la aporta la persona que se
+        // identificó en la pantalla.
+        function sesionConnect(over = {}) {
+            mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });   // guarda la organización elegida
+            mockQuery.mockResolvedValueOnce({
+                rows: [{ id: 's1', kind: 'connect', prefill: { organizationId: 'o1', entorno: 'sandbox' },
+                    app_id: null, org_id: null, user_id: 'u1', ...over }],
+                rowCount: 1,
+            });
+        }
+
+        it('exige identificarse antes de emitir', async () => {
+            sesionConnect({ user_id: null });
+            await expect(issuance.emitir(TOKEN, { organizationId: 'o1' }))
+                .rejects.toMatchObject({ code: 'ISSUE_SIN_IDENTIFICAR' });
+        });
+
+        it('vuelve a comprobar la membresía AL EMITIR', async () => {
+            // No basta con que se comprobara al hacer login: entre una cosa y
+            // otra pueden haberle quitado el papel.
+            sesionConnect();
+            mockQuery.mockResolvedValueOnce({ rows: [] });      // ya no es miembro
+            await expect(issuance.emitir(TOKEN, { organizationId: 'o1' }))
+                .rejects.toMatchObject({ code: 'LOGIN_NO_MIEMBRO' });
+        });
+
+        it('ata la clave al titular de la organización y con permisos de consulta', async () => {
+            sesionConnect();
+            mockQuery.mockResolvedValueOnce({
+                rows: [{ id: 'o1', name: 'Delta SL', legacy_enterprise_id: 'ent-9', role: 'owner' }],
+            });
+            mockQuery.mockResolvedValueOnce({ rows: [{ id: 'app-9', app_name: 'org-delta-sl-ia-sandbox-aa' }] });
+
+            const r = await issuance.emitir(TOKEN, { organizationId: 'o1', entorno: 'sandbox' });
+            const insert = mockQuery.mock.calls.find((c) => /INSERT INTO app_registry/i.test(String(c[0])));
+            expect(insert[1][4]).toBe('ent-9');                       // enterprise heredado
+            expect(insert[1][2]).toEqual(['token', 'contracts', 'wallet']);
+            // Una pantalla de conexión rápida no es donde se decide que un
+            // agente pueda mover tesorería.
+            expect(insert[1][2]).not.toContain('treasury');
+            expect(insert[1][2]).not.toContain('governance');
+            expect(insert[1][2]).not.toContain('admin');
+            expect(insert[1][1]).toBe(sha256(r.valor));
+        });
+
+        it('sin organización elegida no emite', async () => {
+            // Sin organizationId no hay UPDATE previo del prefill: la primera
+            // consulta que se hace ya es la que consume la sesión.
+            mockQuery.mockResolvedValueOnce({
+                rows: [{ id: 's1', kind: 'connect', prefill: {}, app_id: null, org_id: null, user_id: 'u1' }],
+                rowCount: 1,
+            });
+            await expect(issuance.emitir(TOKEN, {}))
+                .rejects.toMatchObject({ code: 'ISSUE_SIN_ORGANIZACION' });
+        });
     });
 
     describe('registro del nodo', () => {

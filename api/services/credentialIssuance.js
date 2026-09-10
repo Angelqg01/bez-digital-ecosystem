@@ -38,6 +38,7 @@
 const crypto = require('crypto');
 const { query } = require('../db/pool');
 const { getPerfil } = require('../config/node-profiles');
+const onboardingLogin = require('./onboardingLogin');
 const logger = require('../utils/logger');
 
 const sha256 = (v) => crypto.createHash('sha256').update(v).digest('hex');
@@ -65,7 +66,7 @@ async function _consumirSesion(token) {
           WHERE token_hash = $1
             AND status IN ('pendiente', 'en_curso')
             AND expires_at > NOW()
-      RETURNING id, kind, prefill, app_id, org_id`,
+      RETURNING id, kind, prefill, app_id, org_id, user_id`,
         [sha256(token)]
     );
     return rows[0] || null;
@@ -201,10 +202,87 @@ async function _emitirTokenNodo(sesion, { nombre }) {
     };
 }
 
+/**
+ * api-key para una IA que se conecta a una cuenta que ya existe.
+ *
+ * A diferencia de `sdk_install`, aquí NO hay clave padre de la que heredar: el
+ * que llega no tiene ninguna, por eso viene. La titularidad la aporta la persona
+ * identificada en la pantalla, y por eso este emisor exige `user_id` y vuelve a
+ * comprobar la membresía en el momento de emitir —no basta con que la
+ * comprobara al hacer login: entre una cosa y otra pueden haberle quitado el
+ * papel—.
+ *
+ * Los permisos son los conservadores de siempre. Ampliarlos se hace en el panel,
+ * con las dos manos y viendo lo que se firma; una pantalla de conexión rápida no
+ * es el sitio donde se decide que un agente pueda mover tesorería.
+ */
+const SCOPES_POR_DEFECTO = ['token', 'contracts', 'wallet'];
+
+async function _emitirConexion(sesion, { nombre }) {
+    if (!sesion.user_id) {
+        throw new IssuanceError(
+            'Hay que identificarse antes de conectar la IA.',
+            'ISSUE_SIN_IDENTIFICAR'
+        );
+    }
+    const organizationId = sesion.prefill?.organizationId;
+    if (!organizationId) {
+        throw new IssuanceError(
+            'Falta elegir la organización a la que conectar la IA.',
+            'ISSUE_SIN_ORGANIZACION'
+        );
+    }
+
+    let organizacion;
+    try {
+        organizacion = await onboardingLogin.verificarMembresia(sesion.user_id, organizationId);
+    } catch (err) {
+        // El error de membresía llega tal cual: «no perteneces» y «tu papel no
+        // llega» son cosas distintas y el usuario puede actuar sobre ambas.
+        throw new IssuanceError(err.message, err.code || 'ISSUE_MEMBRESIA');
+    }
+
+    const entorno = sesion.prefill?.entorno === 'produccion' ? 'produccion' : 'sandbox';
+    const etiqueta = String(nombre || 'ia').replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 30);
+    const nombreApp = `org-${String(organizacion.name).toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30)}`
+        + `-${etiqueta}-${entorno}-${crypto.randomBytes(3).toString('hex')}`;
+
+    const clave = crypto.randomBytes(32).toString('hex');
+    const { rows } = await query(
+        `INSERT INTO app_registry
+             (app_name, api_key_hash, scopes, tier, enterprise_id, address_access_mode, is_active)
+         VALUES ($1, $2, $3, $4, $5, 'strict', TRUE)
+         RETURNING id, app_name`,
+        [nombreApp, sha256(clave), SCOPES_POR_DEFECTO,
+            entorno === 'produccion' ? 'standard' : 'free',
+            organizacion.legacy_enterprise_id || null]
+    );
+
+    logger.info({ appId: rows[0].id, organizationId, userId: sesion.user_id, entorno },
+        'api-key de conexión emitida');
+
+    return {
+        tipo: 'api_key',
+        valor: clave,
+        appId: rows[0].id,
+        appName: rows[0].app_name,
+        organizacion: organizacion.name,
+        entorno,
+        scopes: SCOPES_POR_DEFECTO,
+        instrucciones: [
+            `Añade el conector con esta clave: es de ${entorno}.`,
+            'Guárdala en tu gestor de secretos, no en el chat ni en un fichero versionado.',
+            'No vuelve a mostrarse: si la pierdes, pide otra y revoca ésta.',
+            'Los permisos son de consulta. Para ampliarlos, desde el panel de BeZhas.',
+        ],
+    };
+}
+
 /** Qué emite cada tipo de sesión. Lo que no está aquí, no emite nada. */
 const EMISORES = {
     sdk_install: _emitirApiKey,
     node_provision: _emitirTokenNodo,
+    connect: _emitirConexion,
 };
 
 /**
@@ -212,6 +290,20 @@ const EMISORES = {
  * segunda llamada no encuentra la sesión abierta y recibe 409.
  */
 async function emitir(token, opciones = {}) {
+    // La organización se elige en el último paso de la pantalla, así que llega
+    // en esta llamada y hay que dejarla en el prefill ANTES de consumir la
+    // sesión: después, el UPDATE condicional ya no la encuentra abierta.
+    if (opciones.organizationId) {
+        await query(
+            `UPDATE onboarding_sessions
+                SET prefill = prefill || jsonb_build_object('organizationId', $2::text, 'entorno', $3::text),
+                    updated_at = NOW()
+              WHERE token_hash = $1 AND kind = 'connect' AND status IN ('pendiente', 'en_curso')`,
+            [sha256(token), String(opciones.organizationId),
+                opciones.entorno === 'produccion' ? 'produccion' : 'sandbox']
+        );
+    }
+
     const sesion = await _consumirSesion(token);
     if (!sesion) throw await _porQueNoSePudo(token);
 

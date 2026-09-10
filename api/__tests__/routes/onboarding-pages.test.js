@@ -167,6 +167,73 @@ describe('Pantallas de onboarding (/o)', () => {
         });
     });
 
+    describe('login del flujo connect', () => {
+        function sesionConnect(over = {}) {
+            mockQuery.mockResolvedValueOnce({
+                rows: [{ id: 's1', kind: 'connect', status: 'pendiente', prefill: {},
+                    user_id: null, intentos_login: 0,
+                    expires_at: new Date(Date.now() + 600000), ...over }],
+            });
+        }
+
+        it('credenciales malas dan 401 sin decir si el correo existe', async () => {
+            sesionConnect();
+            mockQuery.mockResolvedValueOnce({ rows: [] });                       // usuario no existe
+            mockQuery.mockResolvedValueOnce({ rows: [{ intentos_login: 1 }] });  // suma intento
+
+            const res = await request(app).post(`/api/gateway/v1/onboarding/${token()}/login`)
+                .send({ email: 'quien@sea.com', password: 'x' });
+            expect(res.status).toBe(401);
+            expect(res.body.error).not.toMatch(/no existe|no encontrado|desconocid/i);
+        });
+
+        it('no cachea la respuesta ni devuelve un token', async () => {
+            sesionConnect();
+            mockQuery.mockResolvedValueOnce({ rows: [] });
+            mockQuery.mockResolvedValueOnce({ rows: [{ intentos_login: 1 }] });
+            const res = await request(app).post(`/api/gateway/v1/onboarding/${token()}/login`)
+                .send({ email: 'a@b.com', password: 'x' });
+            expect(JSON.stringify(res.body)).not.toMatch(/"token"|jwt|Bearer/i);
+        });
+
+        it('la contraseña no vuelve en la respuesta bajo ningún concepto', async () => {
+            sesionConnect();
+            mockQuery.mockResolvedValueOnce({ rows: [] });
+            mockQuery.mockResolvedValueOnce({ rows: [{ intentos_login: 1 }] });
+            const res = await request(app).post(`/api/gateway/v1/onboarding/${token()}/login`)
+                .send({ email: 'a@b.com', password: 'secreta-del-cliente' });
+            expect(JSON.stringify(res.body)).not.toContain('secreta-del-cliente');
+        });
+
+        it('un flujo que no es connect no acepta login', async () => {
+            sesionConnect({ kind: 'sdk_install' });
+            const res = await request(app).post(`/api/gateway/v1/onboarding/${token()}/login`)
+                .send({ email: 'a@b.com', password: 'x' });
+            expect(res.status).toBe(400);
+            expect(res.body.code).toBe('LOGIN_TIPO_NO_APLICA');
+        });
+    });
+
+    describe('la pantalla de connect', () => {
+        it('trae el formulario de identificación y el selector de organización', async () => {
+            const res = await request(app).get(`/o/${token()}`);
+            expect(res.text).toContain('id="form-login"');
+            expect(res.text).toContain('id="o-select"');
+            expect(res.text).toContain('autocomplete="current-password"');
+        });
+
+        it('avisa de que la contraseña no se escribe en el chat', async () => {
+            const res = await request(app).get(`/o/${token()}`);
+            expect(res.text).toMatch(/Nunca la escribas en el chat/i);
+        });
+
+        it('borra la contraseña del formulario en cuanto deja de hacer falta', async () => {
+            // No tiene por qué seguir en el DOM el resto de la sesión.
+            const res = await request(app).get(`/o/${token()}`);
+            expect(res.text).toMatch(/getElementById\('l-pass'\)\.value = ''/);
+        });
+    });
+
     describe('avance y cierre', () => {
         it('el avance no acepta datos, sólo el paso', async () => {
             // Es la garantía de que ningún dato de negocio entra por aquí: el

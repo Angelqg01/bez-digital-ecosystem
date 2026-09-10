@@ -113,6 +113,11 @@ function pageHtml(token) {
   .big { font-size:42px; text-align:center; margin:18px 0 6px; }
   .aviso { border-left:3px solid var(--gold); padding:10px 14px; margin:14px 0; background:#0e131a;
            border-radius:0 12px 12px 0; font-size:13px; color:var(--dim); }
+  .campo { margin-bottom:12px; }
+  .campo label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--dim); margin-bottom:5px; }
+  input, select { width:100%; background:#0e131a; border:1px solid var(--line); color:var(--txt);
+                  border-radius:10px; padding:11px 12px; font-size:14px; font-family:inherit; }
+  input:focus, select:focus { outline:none; border-color:var(--teal); }
   button.emitir { width:100%; background:var(--teal); color:#06251e; font-weight:700; border:0;
                   padding:13px; border-radius:12px; font-size:15px; cursor:pointer; }
   button.emitir:disabled { opacity:.5; cursor:default; }
@@ -137,6 +142,35 @@ function pageHtml(token) {
     <ol class="pasos" id="a-pasos"></ol>
     <div class="box" id="a-datos" hidden><label>Datos que trae tu asistente</label><div id="a-prefill" class="dim"></div></div>
     <div class="aviso" id="a-aviso" hidden></div>
+
+    <div id="a-login" hidden>
+      <form id="form-login" autocomplete="on">
+        <div class="campo">
+          <label for="l-email">Correo</label>
+          <input type="email" id="l-email" name="email" autocomplete="username" required>
+        </div>
+        <div class="campo">
+          <label for="l-pass">Contraseña</label>
+          <input type="password" id="l-pass" name="password" autocomplete="current-password" required>
+        </div>
+        <button class="emitir" type="submit" id="btn-login">Entrar</button>
+      </form>
+      <p class="dim" style="margin-top:8px">Tu contraseña se envía a BeZhas por esta pantalla cifrada. Nunca la escribas en el chat.</p>
+    </div>
+
+    <div id="a-orgs" hidden>
+      <div class="box"><label>Organización</label>
+        <select id="o-select"></select>
+      </div>
+      <div class="box"><label>Entorno</label>
+        <select id="o-entorno">
+          <option value="sandbox">Pruebas (recomendado para empezar)</option>
+          <option value="produccion">Producción</option>
+        </select>
+      </div>
+      <p class="dim" id="o-aviso" hidden></p>
+      <button class="emitir" id="btn-conectar">Conectar y mostrar la clave</button>
+    </div>
 
     <div id="a-emitir" hidden>
       <button class="emitir" id="btn-emitir">Generar y mostrar</button>
@@ -243,6 +277,15 @@ function pageHtml(token) {
       document.getElementById('a-emitir').hidden = false;
     }
 
+    // El flujo connect tiene dos pasos antes de emitir: identificarse y elegir dónde.
+    // Cuál toca lo decide lo que ya ha ocurrido en ESTA pestaña, no el servidor:
+    // el servidor no manda de vuelta quién eres, y así no hay nada que
+    // interceptar en el sondeo.
+    if (o.tipo === 'connect' && !yaEmitido) {
+      document.getElementById('a-login').hidden = Boolean(organizaciones);
+      document.getElementById('a-orgs').hidden = !organizaciones;
+    }
+
     if (o.siguienteAccion) txt('a-status', o.siguienteAccion);
     if (o.caduca) txt('a-caduca', 'Este enlace caduca el ' + new Date(o.caduca).toLocaleString());
   }
@@ -256,6 +299,8 @@ function pageHtml(token) {
     yaEmitido = true;
     clearInterval(timer);                        // deja de sondear: ya está
     document.getElementById('a-emitir').hidden = true;
+    document.getElementById('a-login').hidden = true;
+    document.getElementById('a-orgs').hidden = true;
     document.getElementById('a-secreto').hidden = false;
     txt('s-label', e.tipo === 'api_key' ? 'Tu api-key' : 'Token de registro del nodo');
     txt('s-valor', e.valor);
@@ -266,30 +311,101 @@ function pageHtml(token) {
     });
   }
 
-  document.getElementById('btn-emitir').addEventListener('click', function () {
+  // Las organizaciones que devolvió el login viven aquí y en ningún otro sitio.
+  var organizaciones = null;
+
+  function pintarOrganizaciones(lista) {
+    organizaciones = lista;
+    var sel = document.getElementById('o-select');
+    sel.innerHTML = '';
+    lista.forEach(function (o) {
+      var opt = document.createElement('option');
+      opt.value = o.id;
+      // Se listan TODAS, marcando las que el papel no permite, en vez de
+      // esconderlas: una lista vacía haría pensar que el alta está mal.
+      opt.textContent = o.nombre + (o.puedeConectar ? '' : ' — sin permiso (' + o.papel + ')');
+      opt.disabled = !o.puedeConectar;
+      sel.appendChild(opt);
+    });
+    var conectables = lista.filter(function (o) { return o.puedeConectar; });
+    var aviso = document.getElementById('o-aviso');
+    if (conectables.length === 0) {
+      aviso.hidden = false;
+      aviso.textContent = 'Ninguna de tus organizaciones te permite conectar integraciones con tu papel actual. '
+        + 'Pídeselo a quien sea owner o admin.';
+      document.getElementById('btn-conectar').disabled = true;
+    } else {
+      sel.value = conectables[0].id;
+    }
+    document.getElementById('a-login').hidden = true;
+    document.getElementById('a-orgs').hidden = false;
+  }
+
+  document.getElementById('form-login').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var b = document.getElementById('btn-login');
+    b.disabled = true; b.textContent = 'Comprobando…';
+    fetch(API + '/login', {
+      method: 'POST', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('l-email').value,
+        password: document.getElementById('l-pass').value,
+      }),
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        b.disabled = false; b.textContent = 'Entrar';
+        if (!res.ok) { txt('a-status', res.d.error || 'No se pudo entrar.'); return; }
+        // La contraseña se borra del formulario en cuanto deja de hacer falta:
+        // no tiene por qué seguir en el DOM el resto de la sesión.
+        document.getElementById('l-pass').value = '';
+        pintarOrganizaciones(res.d.organizaciones || []);
+      })
+      .catch(function () {
+        b.disabled = false; b.textContent = 'Entrar';
+        txt('a-status', 'Fallo de red. Vuelve a intentarlo.');
+      });
+  });
+
+  document.getElementById('btn-conectar').addEventListener('click', function () {
     var b = this;
-    b.disabled = true;
-    b.textContent = 'Generando…';
+    b.disabled = true; b.textContent = 'Conectando…';
+    emitir({
+      organizationId: document.getElementById('o-select').value,
+      entorno: document.getElementById('o-entorno').value,
+    }, b, 'Conectar y mostrar la clave');
+  });
+
+  /** Pide la emisión. Común a los tres flujos que entregan algo. */
+  function emitir(cuerpo, boton, textoBoton) {
     fetch(API + '/issue', {
       method: 'POST', cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
+      body: JSON.stringify(cuerpo || {}),
     })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) {
         if (!res.ok) {
-          b.disabled = false;
-          b.textContent = 'Generar y mostrar';
+          boton.disabled = false;
+          boton.textContent = textoBoton;
           txt('a-status', res.d.error || 'No se pudo generar.');
           return;
         }
         pintarSecreto(res.d.emitido);
       })
       .catch(function () {
-        b.disabled = false;
-        b.textContent = 'Generar y mostrar';
+        boton.disabled = false;
+        boton.textContent = textoBoton;
         txt('a-status', 'Fallo de red. Vuelve a intentarlo.');
       });
+  }
+
+  document.getElementById('btn-emitir').addEventListener('click', function () {
+    var b = this;
+    b.disabled = true;
+    b.textContent = 'Generando…';
+    emitir({}, b, 'Generar y mostrar');
   });
 
   function poll() {

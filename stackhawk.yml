@@ -1,0 +1,103 @@
+# stackhawk.yml — configuración de HawkScan (DAST) para la API de BeZhas.
+#
+# ═══════════════════════════════════════════════════════════════════════════
+#  QUÉ ESCANEA Y POR QUÉ ESTA CONFIGURACIÓN Y NO LA DE PLANTILLA
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# HawkScan es un escáner dinámico: ataca la aplicación CORRIENDO, no el código.
+# Eso lo hace especialmente útil para lo que se ha construido este último tramo
+# —el MCP público sin credencial, las pantallas alojadas, las rutas del ERP—,
+# porque son superficies que un análisis estático no llega a ejercitar.
+#
+# Y lo hace peligroso si se apunta al sitio equivocado: manda peticiones
+# hostiles de verdad. Por eso `host` NUNCA apunta a producción en este fichero.
+#
+# ═══════════════════════════════════════════════════════════════════════════
+#  LA CLAVE NO ESTÁ AQUÍ NI PUEDE ESTARLO
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# HAWK_API_KEY es una credencial de la cuenta de StackHawk: se obtiene en su
+# consola (app.stackhawk.com → Settings → API keys) y se pasa por variable de
+# entorno. Este fichero está versionado, así que aquí sólo va lo que puede leer
+# cualquiera con acceso al repositorio.
+#
+#   export HAWK_API_KEY="hawk.xxxxxxxx"      # nunca en el .env versionado
+#   ./scripts/security-scan.sh
+#
+# El applicationId también sale de su consola al crear la aplicación.
+
+app:
+  # Se lee del entorno para que cada quien apunte a la suya sin tocar el fichero.
+  applicationId: ${HAWK_APP_ID}
+  env: ${HAWK_ENV:-Development}
+
+  # Objetivo del escaneo. Por defecto la API en local: escanear producción manda
+  # peticiones hostiles reales contra el sistema que usan los clientes.
+  host: ${HAWK_HOST:-http://localhost:3001}
+
+  # ── Autenticación ────────────────────────────────────────────────────────
+  #
+  # Sin esto el escáner sólo ve las rutas públicas y da un informe engañosamente
+  # limpio: el 90% de la superficie de BeZhas está detrás de `x-api-key`, así que
+  # un escaneo anónimo no la toca y no encuentra nada porque no llega.
+  #
+  # Se usa una clave de SANDBOX creada para esto y revocable. Nunca la de un
+  # cliente ni una de producción: el escáner escribe, y escribe cosas raras.
+  authentication:
+    external:
+      type: COOKIE
+      value: nonexistent          # placeholder: la autenticación real va por cabecera
+    tokenAuthorization:
+      type: HEADER
+      value: x-api-key
+      token: ${HAWK_SCAN_API_KEY}
+
+  # ── Descubrimiento ───────────────────────────────────────────────────────
+  #
+  # La API no publica OpenAPI todavía, así que se le dan las rutas a mano. Sin
+  # esta lista el escáner sólo encuentra lo que cuelga de la raíz y se deja
+  # fuera justamente lo nuevo.
+  openApiConf:
+    filePath: ${HAWK_OPENAPI:-}
+
+  # Rutas que interesan, con el MCP público y el onboarding delante porque son
+  # las que se alcanzan sin credencial.
+  paths:
+    - /api/mcp/onboarding
+    - /o
+    - /api/gateway/v1/onboarding
+    - /api/gateway/v1/nodes/register
+    - /api/erp
+    - /api/mcp
+    - /api/gateway/v1
+    - /api/health
+
+  # ── Lo que NO se toca ────────────────────────────────────────────────────
+  #
+  # Cada exclusión es una decisión, no comodidad:
+  antiCsrfParam: _csrf
+  excludePaths:
+    # Mueve dinero de verdad. Un escáner que "prueba" aquí genera cobros.
+    - /api/gateway/v1/payments/.*
+    - /api/webhooks/.*
+    # Control de red eléctrica: el escáner mandaría órdenes a nodos reales.
+    - /api/energy/control/.*
+    - /api/energy/demand-response/.*
+    - /api/energy/arbitrage/execute
+    # Panel de administración: sus rutas destructivas no son superficie de
+    # cliente y un escaneo aquí sólo borra cosas.
+    - /api/admin-auth/.*
+    - /api/admin-config/.*
+    - /api/admin/.*
+    # Escribiría en el ERP DEL CLIENTE, que no es nuestro para escanearlo.
+    - /api/erp/connections/.*/documents/.*
+
+hawk:
+  spider:
+    base: false
+    maxDurationMinutes: 5
+  scan:
+    maxDurationMinutes: 20
+  # El escaneo falla la construcción si encuentra algo de gravedad alta o
+  # crítica. Poner esto en 'never' convierte el escáner en un adorno.
+  failureThreshold: high

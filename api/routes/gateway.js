@@ -1795,6 +1795,7 @@ router.get('/checkout/:token([0-9a-f]{32})', async (req, res) => {
 
 const onboardingSession = require('../services/onboardingSession');
 const credentialIssuance = require('../services/credentialIssuance');
+const onboardingLogin = require('../services/onboardingLogin');
 
 router.get('/onboarding/:token([0-9a-f]{64})', async (req, res) => {
     try {
@@ -1855,6 +1856,47 @@ router.post('/onboarding/:token([0-9a-f]{64})/complete', async (req, res) => {
 });
 
 /**
+ * POST /onboarding/:token/login — identificación en el flujo `connect`.
+ *
+ * Es el único formulario de contraseña de esta plataforma que se sirve sin
+ * credencial previa, así que lleva limitador propio además del contador por
+ * sesión: el de la sesión acota un enlace, éste acota la IP que pruebe con
+ * muchos enlaces.
+ *
+ * No devuelve token ninguno. La persona se identifica para que la pantalla sepa
+ * qué organizaciones ofrecerle; el token de la URL sigue siendo la única
+ * credencial del flujo.
+ */
+const onboardingLoginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: parseInt(process.env.ONBOARDING_LOGIN_RATE_MAX, 10) || 20,
+    keyGenerator: (req) => `onbLogin:${req.ip}`,
+    message: { error: 'Demasiados intentos de identificación.', code: 'LOGIN_RATE_LIMIT' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+router.post('/onboarding/:token([0-9a-f]{64})/login', onboardingLoginLimiter, async (req, res) => {
+    try {
+        const r = await onboardingLogin.identificar(req.params.token, {
+            email: req.body?.email,
+            password: req.body?.password,
+        });
+        res.set('Cache-Control', 'no-store');
+        res.json({ success: true, ...r });
+    } catch (error) {
+        if (error.code === 'LOGIN_CREDENCIALES' || error.code === 'LOGIN_INTENTOS_AGOTADOS') {
+            return res.status(401).json({ error: error.message, code: error.code });
+        }
+        if (error.code) return res.status(400).json({ error: error.message, code: error.code });
+        // El detalle al log; al cliente, una frase. Un fallo aquí no puede
+        // contar nada sobre qué correos existen.
+        logger.error(error, 'Onboarding login failed');
+        res.status(500).json({ error: 'No se pudo completar la identificación.' });
+    }
+});
+
+/**
  * POST /onboarding/:token/issue — lo que la pantalla ENTREGA.
  *
  * Es el único sitio de la plataforma donde sale una credencial nueva, y sale
@@ -1868,6 +1910,8 @@ router.post('/onboarding/:token([0-9a-f]{64})/issue', async (req, res) => {
     try {
         const emitido = await credentialIssuance.emitir(req.params.token, {
             nombre: typeof req.body?.nombre === 'string' ? req.body.nombre : null,
+            organizationId: typeof req.body?.organizationId === 'string' ? req.body.organizationId : null,
+            entorno: req.body?.entorno === 'produccion' ? 'produccion' : 'sandbox',
         });
         // no-store aquí no es rutina: sin él, un proxy o el propio navegador
         // podrían dejar la credencial en caché en disco.
