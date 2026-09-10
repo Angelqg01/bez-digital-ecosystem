@@ -126,8 +126,9 @@ dos se queda con el control viejo.
 | Aprobación humana en el bucle | ✅ hecho | `api/middleware/hitl.js` |
 | **OAuth 2.1 para clientes de chat** | ❌ falta | — |
 | **Tools de escritura con firma + HITL** | ❌ falta | — |
-| **Conector ERP (SAP/Odoo/Dynamics)** | ❌ no existe | — |
+| Conector ERP (SAP/Odoo/Dynamics) | ✅ hecho | `api/services/erp/`, `api/routes/erp.js` |
 | **Gradación de razonamiento por plan** | ❌ falta | — |
+| Barrido de sesiones y anonimización | ✅ hecho | `api/services/onboardingSweeper.js` |
 | **Régimen de privacidad por plan** | ❌ falta | — |
 | **Pipeline de telemetría → mejora de CS** | ❌ falta | — |
 | **Detección de extracción de catálogo** | ❌ falta | — |
@@ -222,7 +223,7 @@ api/services/erp/
   ├── OdooAdapter.js            ← JSON-RPC
   ├── DynamicsAdapter.js        ← Dataverse Web API
   └── NetSuiteAdapter.js        ← SuiteQL / REST
-api/db/migrations/052_erp_connections.sql
+api/db/migrations/054_erp_connections.sql   ← la 052 acabó siendo la de onboarding
 ```
 
 El contrato común es deliberadamente **corto**: `listarDocumentos(tipo, filtro)`,

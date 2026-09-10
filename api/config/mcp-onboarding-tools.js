@@ -48,14 +48,37 @@ const MAX_RESPUESTA_CHARS = parseInt(process.env.MCP_MAX_RESPONSE_CHARS || '2400
 const SDK_PAQUETE = '@bezhas/sdk';
 const SDK_VERSION = process.env.SDK_VERSION_RECOMENDADA || '3.0.0';
 
-/** ERPs con plan de integración descrito. Lo que no está, se responde honestamente. */
-const ERPS = {
-    sap_s4hana: { nombre: 'SAP S/4HANA Cloud', via: 'OData v4 vía BTP Destination', modos: ['agente', 'gestionado'] },
-    sap_b1: { nombre: 'SAP Business One', via: 'Service Layer (REST)', modos: ['agente', 'gestionado'] },
-    odoo: { nombre: 'Odoo', via: 'JSON-RPC', modos: ['agente', 'gestionado'] },
-    dynamics: { nombre: 'Microsoft Dynamics 365', via: 'Dataverse Web API', modos: ['agente', 'gestionado'] },
-    netsuite: { nombre: 'Oracle NetSuite', via: 'SuiteQL / REST', modos: ['agente'] },
+/**
+ * ERPs con plan de integración descrito.
+ *
+ * El nombre y la vía se escriben aquí porque son texto de cara al cliente, pero
+ * QUÉ SE PUEDE HACER con cada uno sale del registro de adaptadores: si un
+ * adaptador no declara un tipo como escribible, esta herramienta no puede
+ * prometerlo. Antes eran dos listas escritas a mano y una habría acabado
+ * mintiendo sobre la otra.
+ */
+const { describirErp, IDS: ERP_IDS, canonical: erpCanonical } = require('../services/erp');
+
+const ERP_TEXTO = {
+    sap_s4hana: { nombre: 'SAP S/4HANA Cloud', via: 'OData v4 vía BTP Destination' },
+    sap_b1: { nombre: 'SAP Business One', via: 'Service Layer (REST)' },
+    odoo: { nombre: 'Odoo', via: 'JSON-RPC' },
+    dynamics: { nombre: 'Microsoft Dynamics 365', via: 'Dataverse Web API' },
+    netsuite: { nombre: 'Oracle NetSuite', via: 'SuiteQL sobre REST' },
 };
+
+const ERPS = Object.fromEntries(ERP_IDS.map((id) => {
+    const capacidades = describirErp(id);
+    return [id, {
+        ...ERP_TEXTO[id],
+        // Gestionado sólo tiene sentido si el adaptador existe, que es
+        // exactamente lo que dice el registro.
+        modos: ['agente', 'gestionado'],
+        tiposLegibles: capacidades.tiposLegibles,
+        tiposEscribibles: capacidades.tiposEscribibles,
+        credenciales: capacidades.credenciales.map((c) => c.etiqueta),
+    }];
+}));
 
 /** Sectores con SubApp que encaja. Alimenta la recomendación de plan. */
 const SECTORES = {
@@ -355,18 +378,30 @@ const TOOLS = [
                 ip: contexto.ip,
                 userAgent: contexto.userAgent,
             });
+            // Del caso de uso al tipo canónico: es el vocabulario que entiende
+            // el adaptador, y el que el cliente aprueba campo a campo.
+            const TIPO_DE_CASO = {
+                facturas_proveedor: 'factura', pedidos: 'pedido',
+                albaranes: 'albaran', activos: 'activo', asientos: 'asiento',
+            };
+            const tipos = args.casos.map((c) => TIPO_DE_CASO[c]);
+            const noLegibles = tipos.filter((t) => !erp.tiposLegibles.includes(t));
+
             return {
                 erp: erp.nombre,
                 via: erp.via,
                 modo: args.modo,
                 objetos: args.casos,
-                camposMinimos: {
-                    facturas_proveedor: ['numero', 'proveedor', 'importe', 'moneda', 'vencimiento', 'estado'],
-                    pedidos: ['numero', 'cliente', 'lineas', 'importe', 'fecha'],
-                    albaranes: ['numero', 'pedido', 'destino', 'bultos', 'fecha'],
-                    activos: ['referencia', 'descripcion', 'valoracion', 'fecha_tasacion'],
-                    asientos: ['cuenta', 'debe', 'haber', 'concepto', 'fecha'],
-                },
+                // Se dice lo que NO se puede en vez de callarlo: un plan que
+                // promete un objeto que el adaptador no lee se descubre tarde.
+                noDisponibles: noLegibles.length > 0
+                    ? `${erp.nombre} todavía no expone: ${noLegibles.join(', ')}.`
+                    : null,
+                escrituraPosible: tipos.filter((t) => erp.tiposEscribibles.includes(t)),
+                camposMinimos: Object.fromEntries(
+                    tipos.filter(Boolean).map((t) => [t, erpCanonical.camposDe(t)])
+                ),
+                credencialesQuePedira: erp.credenciales,
                 permisosQuePedir: args.modo === 'gestionado'
                     ? ['Usuario de servicio de SOLO LECTURA sobre los objetos listados.',
                         'Alta de escritura únicamente si vas a conciliar de vuelta, y sobre un único objeto.']

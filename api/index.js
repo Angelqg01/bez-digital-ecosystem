@@ -421,6 +421,7 @@ app.use('/api/gateway/v1', gatewayRoutes);
 // authenticateApp por delante atendería también '/api/mcp/onboarding' y
 // devolvería 401 justo a quien todavía no tiene clave.
 app.use('/api/mcp', mcpGatewayRoutes);
+app.use('/api/erp', require('./routes/erp'));   // conexiones gestionadas con el ERP del cliente
 app.use('/c', require('./routes/checkout')); // hosted checkout (pay.bez.digital/c/<token>)
 app.use('/o', require('./routes/onboarding-pages')); // alta guiada (onb.bez.digital/o/<token>)
 app.use('/api/cargolink', cargoLinkRoutes);
@@ -570,6 +571,12 @@ async function shutdown(signal) {
     gcpLogger.info('[SHUTDOWN] Gas monitor stopped');
   } catch (_) { /* no crítico */ }
 
+  // 4b. Detener el barrido de onboarding
+  try {
+    require('./services/onboardingSweeper').stopSweeper();
+    gcpLogger.info('[SHUTDOWN] Onboarding sweeper stopped');
+  } catch (_) { /* no crítico */ }
+
   gcpLogger.info('[SHUTDOWN] Graceful shutdown complete');
   process.exit(0);
 }
@@ -626,6 +633,16 @@ async function startServer() {
   // ── PASO 4: Gas monitor daemon ────────────────────────────────────────────────
   gasMonitor.startDaemon(60_000);
   gcpLogger.info('[STARTUP] Gas monitor daemon started (60s interval)');
+
+  // ── PASO 4a: Barrido de sesiones de onboarding ───────────────────────────────
+  // Caduca lo vencido y borra la IP y el user-agent pasadas 24 h. Lo segundo no
+  // es limpieza: esos datos se recogieron para el limitador y conservarlos
+  // después es guardar un dato personal sin finalidad.
+  const onboardingSweeper = require('./services/onboardingSweeper');
+  onboardingSweeper.startSweeper();
+  gcpLogger.info('[STARTUP] Onboarding sweeper started', {
+    intervalMs: onboardingSweeper.INTERVALO_POR_DEFECTO,
+  });
 
   // ── PASO 4b: BEZ-Pay — settlement watcher + webhook dispatcher (opt-in) ──────
   if (process.env.PAYMENTS_WATCHER_ENABLED === 'true') {
