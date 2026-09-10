@@ -95,8 +95,8 @@ Hace falta, por tanto, una **clase de autenticación nueva**: un puñado muy cor
 de herramientas invocables sin credencial. Es superficie pública en internet
 llamable por un bot, así que se acota en serio:
 
-1. **Cuatro herramientas y ninguna más**: `bezhas_intro`, `bezhas_recommend_plan`,
-   `bezhas_signup_start`, `bezhas_onboarding_status`.
+1. **Cinco herramientas y ninguna más**: `bezhas_intro`, `bezhas_recommend_plan`,
+   `bezhas_signup_start`, `bezhas_connect_start`, `bezhas_onboarding_status`.
 2. **Ninguna lee ni escribe datos de negocio.** Crean una sesión de onboarding y
    devuelven una URL. Nada más.
 3. **Límite por IP mucho más duro** que el de cliente (10/min frente a 120), y
@@ -116,10 +116,59 @@ sirviendo por error una herramienta de cliente a un desconocido.
 
 ---
 
-## 3. Los cinco flujos
+### 2.1 Lo que corre antes de saber quién llama
+
+Sin credencial que exigir, todo lo que va por delante del handler —parser de
+JSON, transporte del SDK, deserialización del sobre JSON-RPC— queda al alcance
+de cualquiera. No hay ningún fallo conocido en esas piezas; la postura es que un
+fallo *futuro* en ellas no deba ser alcanzable sin credencial más de lo
+imprescindible. De ahí cinco recortes, todos anteriores al SDK:
+
+| Recorte | Por qué |
+|---|---|
+| Cuerpo de 32 KB con parser propio | el global de la API son 10 MB, pensados para subir documentos **con sesión iniciada**; un sobre JSON-RPC no llega a 1 KB |
+| Sin lotes JSON-RPC | un array multiplica el trabajo de UNA petición, y el limitador cuenta peticiones |
+| Lista blanca de métodos del protocolo | de todo lo que el SDK atiende, aquí sólo tienen sentido cinco |
+| Tiempo máximo por petición | el servidor y el transporte se crean por llamada; una colgada es memoria retenida |
+| Protección contra DNS rebinding | cuando hay hosts configurados |
+
+El primero obliga a montar este router **antes** de `express.json()` en
+`api/index.js`: si se monta después, el cuerpo ya viene analizado con el límite
+global y el recorte no sirve de nada.
+
+---
+
+## 3. Los flujos
 
 Cada uno con el mismo esquema: qué pide el cliente, qué herramientas entran, qué
 ocurre en la pantalla alojada y dónde está la línea que el agente no cruza.
+
+### 3.0 Conectar una cuenta existente (login)
+
+**Lo que dice el cliente:**
+> *"Ya trabajamos con BeZhas. Conéctame esta IA a nuestra cuenta."*
+
+```
+bezhas_connect_start({ entorno, organizacion? })
+  → { onboardingId, url, caduca, pasos: [...] }
+```
+
+En la pantalla: la persona inicia sesión con su cuenta de BeZhas, elige
+organización y entorno, autoriza el conector y **copia la credencial a su gestor
+de secretos**.
+
+**La línea, y aquí es la más estricta de todas:** la credencial **no vuelve por
+el MCP**. El agente se entera de que la sesión pasó a `completado` y de nada
+más. Si la clave viajara en la respuesta de una herramienta acabaría en el
+contexto del modelo y en el historial del chat, y daría igual lo bien hecho que
+estuviera el resto del sistema.
+
+Es el caso más frecuente en la práctica —alguien nuevo en el equipo, un cambio
+de IA, el conector en otro equipo— y sin él esa persona tenía que salir del
+chat, buscar el panel y copiar una clave a mano: justo el recorrido que esto
+viene a eliminar.
+
+---
 
 ### 3.1 Alta según perfil
 
@@ -354,8 +403,11 @@ Cinco preguntas cuya respuesta cambia el diseño, no el acabado:
 ## 6. Riesgos
 
 - **Superficie pública sin autenticar.** Es el cambio de exposición más grande
-  que hemos hecho: hasta hoy, sin api-key no hay MCP. Merece su propia revisión
-  de seguridad antes de publicarse, no después.
+  que hemos hecho: hasta hoy, sin api-key no hay MCP. Los recortes de §2.1
+  acotan lo alcanzable —cuerpo, lotes, métodos, tiempo—, pero **no sustituyen a
+  una revisión de seguridad propia** antes de publicarse. Conviene además fijar
+  la versión del SDK de MCP y seguir sus avisos: es la dependencia que ahora
+  corre antes de cualquier autenticación.
 - **Suplantación en el alta.** Un agente puede afirmar cualquier razón social.
   Es el KYB quien resuelve, y por eso el sandbox no puede convertirse en
   producción sin pasar por él.

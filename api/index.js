@@ -218,6 +218,14 @@ app.use('/api/energy/demand-response', scadaLimiter);
 
 app.use('/api/webhooks', webhookRoutes);          // raw body — DEBE ir antes de express.json()
 
+// MCP de alta asistida — DEBE ir antes de express.json() por la misma razón que
+// los webhooks, pero al revés: no necesita el cuerpo crudo, necesita un cuerpo
+// PEQUEÑO. Es el único endpoint MCP al que se llega sin credencial, y con el
+// parser global de 10 MB un desconocido podría hacernos analizar diez megas de
+// JSON por petición antes de que nada haya comprobado quién es. Su router monta
+// su propio parser acotado. Ver routes/mcp-public.js.
+app.use('/api/mcp/onboarding', mcpPublicRoutes);
+
 app.use(compression({                             // gzip respuestas > 1 KB
   level: 6,
   threshold: 1024,
@@ -408,11 +416,10 @@ app.use('/api/gateway/v1', gatewayRoutes);
 // el Gateway REST, en el mismo proceso: un servicio aparte obligaría a
 // reimplementar auth, scopes, medición y límites, y cuatro reimplementaciones
 // son cuatro sitios donde divergir del original.
-// El MCP de onboarding va ANTES que el de cliente: montar '/api/mcp' primero
-// haría que su router —que empieza por authenticateApp— atendiera también
-// '/api/mcp/onboarding' y devolviera 401 a quien todavía no tiene clave,
-// que es justo a quien va dirigido.
-app.use('/api/mcp/onboarding', mcpPublicRoutes);
+// El de cliente. El de onboarding ya se montó arriba, antes de express.json():
+// tenía que ir antes que éste de todas formas, porque '/api/mcp' con
+// authenticateApp por delante atendería también '/api/mcp/onboarding' y
+// devolvería 401 justo a quien todavía no tiene clave.
 app.use('/api/mcp', mcpGatewayRoutes);
 app.use('/c', require('./routes/checkout')); // hosted checkout (pay.bez.digital/c/<token>)
 app.use('/o', require('./routes/onboarding-pages')); // alta guiada (onb.bez.digital/o/<token>)

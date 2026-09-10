@@ -46,8 +46,37 @@
  *  7. El paso que decide —aceptar condiciones, escribir un IBAN, ejecutar el
  *     contenedor— NO ocurre aquí. Ocurre en la pantalla alojada, delante de una
  *     persona. Este router sólo reparte vales.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  SUPERFICIE ANTES DE AUTENTICAR
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Lo que de verdad distingue a este endpoint del de cliente no es qué
+ * herramientas sirve: es CUÁNTO CÓDIGO SE EJECUTA antes de saber quién llama.
+ * En /api/mcp ese código es `authenticateApp` y nada más. Aquí, sin clave que
+ * exigir, todo lo que va delante del handler —parser de JSON, transporte del
+ * SDK, deserialización del sobre JSON-RPC— queda al alcance de cualquiera.
+ *
+ * No hay ningún fallo conocido en esas piezas. La postura es que un fallo
+ * futuro en ellas no debe ser alcanzable sin credencial más de lo
+ * imprescindible, así que se recorta lo que se pueda ANTES de llegar a ellas:
+ *
+ *   a. Cuerpo acotado a 32 KB con parser propio. El global de la API son 10 MB,
+ *      pensados para subir documentos con sesión iniciada. Un sobre JSON-RPC de
+ *      alta no llega a un kilobyte; diez megas es sólo trabajo regalado a quien
+ *      quiera consumirnos CPU. Por eso este router se monta ANTES de
+ *      express.json() en index.js.
+ *   b. Sin lotes. Un array JSON-RPC multiplica el trabajo de una petición, y el
+ *      limitador cuenta peticiones, no operaciones. Se rechaza el array entero.
+ *   c. Lista blanca de métodos del protocolo. De todo lo que el SDK sabe
+ *      atender, aquí sólo tienen sentido cinco. El resto se corta antes de que
+ *      el transporte lo mire.
+ *   d. Tiempo máximo por petición: una que se queda colgada retiene un socket y
+ *      la memoria del servidor y del transporte que se crean por llamada.
+ *   e. Protección contra DNS rebinding cuando hay hosts configurados.
  */
 
+const express = require('express');
 const { Router } = require('express');
 const rateLimit = require('express-rate-limit');
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
@@ -217,11 +246,145 @@ function construirServidor(contexto) {
     return mcp;
 }
 
+/**
+ * Parser propio y acotado.
+ *
+ * Este router se monta antes del express.json() global de la API (10 MB), así
+ * que aquí se decide cuánto cuerpo se analiza sin saber quién llama. Un sobre
+ * JSON-RPC de alta no pasa de un kilobyte.
+ */
+const parserAcotado = express.json({
+    limit: process.env.MCP_PUBLIC_BODY_LIMIT || '32kb',
+    strict: true,
+});
+
+/** Cuerpo demasiado grande o JSON roto: se contesta aquí, no cinco capas más adentro. */
+function errorDeCuerpo(err, _req, res, next) {
+    if (!err) return next();
+    if (err.type === 'entity.too.large') {
+        return res.status(413).json({
+            jsonrpc: '2.0', id: null,
+            error: { code: -32600, message: 'Request body too large.' },
+        });
+    }
+    if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+        return res.status(400).json({
+            jsonrpc: '2.0', id: null,
+            error: { code: -32700, message: 'Parse error.' },
+        });
+    }
+    return next(err);
+}
+
+/**
+ * Métodos del protocolo que tienen sentido aquí.
+ *
+ * El SDK atiende bastantes más —suscripciones a recursos, prompts, muestreo—
+ * que este servidor no ofrece. Cortarlos antes de que el transporte los mire
+ * reduce el código alcanzable sin credencial a lo que de verdad se usa.
+ */
+const METODOS_PERMITIDOS = new Set([
+    'initialize',
+    'notifications/initialized',
+    'notifications/cancelled',
+    'ping',
+    'tools/list',
+    'tools/call',
+]);
+
+/** Tope de tiempo por petición. Una colgada retiene socket, servidor y transporte. */
+const TIMEOUT_MS = parseInt(process.env.MCP_PUBLIC_TIMEOUT_MS || '20000', 10);
+
+/**
+ * Filtro del sobre JSON-RPC, antes del SDK.
+ *
+ * Comprueba lo barato y estructural: que sea un objeto, que declare el
+ * protocolo, y que pida un método de la lista. Lo que valida el contenido de
+ * los argumentos sigue siendo zod, dentro de cada herramienta.
+ */
+function filtrarSobre(req, res, next) {
+    const cuerpo = req.body;
+
+    // Un lote multiplica el trabajo de UNA petición, y el limitador cuenta
+    // peticiones. Se rechaza entero en vez de servir el primer elemento.
+    if (Array.isArray(cuerpo)) {
+        return res.status(400).json({
+            jsonrpc: '2.0', id: null,
+            error: { code: -32600, message: 'Batch requests are not supported on this endpoint.' },
+        });
+    }
+
+    if (!cuerpo || typeof cuerpo !== 'object') {
+        return res.status(400).json({
+            jsonrpc: '2.0', id: null,
+            error: { code: -32600, message: 'Invalid Request.' },
+        });
+    }
+
+    if (cuerpo.jsonrpc !== '2.0') {
+        return res.status(400).json({
+            jsonrpc: '2.0', id: null,
+            error: { code: -32600, message: 'Invalid Request: se espera jsonrpc 2.0.' },
+        });
+    }
+
+    if (typeof cuerpo.method !== 'string' || !METODOS_PERMITIDOS.has(cuerpo.method)) {
+        // Se registra el método porque enumerar métodos del protocolo es
+        // reconocimiento, no uso normal.
+        logger.info({ ip: req.ip, method: String(cuerpo.method).slice(0, 60) },
+            'MCP público: método fuera de la lista permitida');
+        return res.status(400).json({
+            jsonrpc: '2.0', id: cuerpo.id ?? null,
+            error: { code: -32601, message: 'Method not found.' },
+        });
+    }
+
+    return next();
+}
+
+/**
+ * Hosts y orígenes admitidos, contra DNS rebinding.
+ *
+ * Sólo se activa si están configurados: en desarrollo la API se alcanza por
+ * localhost, por IP y por el nombre del contenedor, y una lista fija rompería
+ * las tres. Vacío en producción es un despiste, así que se avisa al arrancar.
+ */
+const HOSTS_PERMITIDOS = (process.env.MCP_ALLOWED_HOSTS || '')
+    .split(',').map((h) => h.trim()).filter(Boolean);
+const ORIGENES_PERMITIDOS = (process.env.MCP_ALLOWED_ORIGINS || '')
+    .split(',').map((o) => o.trim()).filter(Boolean);
+
+if (process.env.NODE_ENV === 'production' && HOSTS_PERMITIDOS.length === 0) {
+    logger.warn('MCP público sin MCP_ALLOWED_HOSTS: la protección contra DNS rebinding queda desactivada.');
+}
+
 /** POST /api/mcp/onboarding — único endpoint. */
-router.post('/', limitadorAnonimo, limitadorCliente, autenticacionOpcional, async (req, res) => {
+router.post('/', parserAcotado, errorDeCuerpo, filtrarSobre,
+    limitadorAnonimo, limitadorCliente, autenticacionOpcional, async (req, res) => {
     const contexto = req.contexto;
+
+    // Una petición que no termina en TIMEOUT_MS se corta: el servidor y el
+    // transporte se crean por llamada, así que dejarla viva es memoria retenida.
+    req.setTimeout(TIMEOUT_MS, () => {
+        if (!res.headersSent) {
+            res.status(504).json({
+                jsonrpc: '2.0', id: null,
+                error: { code: -32000, message: 'Request timed out.' },
+            });
+        }
+        res.destroy();
+    });
     const mcp = construirServidor(contexto);
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+        ...(HOSTS_PERMITIDOS.length > 0 || ORIGENES_PERMITIDOS.length > 0
+            ? {
+                enableDnsRebindingProtection: true,
+                allowedHosts: HOSTS_PERMITIDOS,
+                allowedOrigins: ORIGENES_PERMITIDOS,
+            }
+            : {}),
+    });
 
     res.on('close', () => {
         transport.close().catch(() => {});

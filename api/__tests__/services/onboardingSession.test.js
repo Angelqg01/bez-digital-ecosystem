@@ -159,10 +159,20 @@ describe('onboardingSession', () => {
             expect(mockQuery).not.toHaveBeenCalled();
         });
 
-        it('los tipos son exactamente los cinco flujos previstos', () => {
+        it('los tipos son exactamente los seis flujos previstos', () => {
             expect([...onboarding.TIPOS].sort()).toEqual(
-                ['bank_setup', 'erp_integration', 'node_provision', 'sdk_install', 'signup']
+                ['bank_setup', 'connect', 'erp_integration', 'node_provision', 'sdk_install', 'signup']
             );
+        });
+
+        it('connect no crea empresa: sólo identifica', async () => {
+            // signup crea organización; connect comprueba quién eres y emite una
+            // credencial acotada. Son flujos distintos aunque compartan pantalla.
+            conRecuento(0);
+            conInsert('connect');
+            await onboarding.crear({ kind: 'connect', prefill: { entorno: 'sandbox' }, ip: '10.0.0.1' });
+            const sqls = mockQuery.mock.calls.map((c) => String(c[0]));
+            expect(sqls.some((q) => /INSERT INTO (enterprises|organizations|users)/i.test(q))).toBe(false);
         });
     });
 

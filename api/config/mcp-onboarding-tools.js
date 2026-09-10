@@ -115,6 +115,8 @@ const TOOLS = [
                 'Consultar qué plan encaja con tu perfil (bezhas_recommend_plan).',
                 'Abrir un alta guiada, con entorno de pruebas y sin coste (bezhas_signup_start).',
             ],
+            siYaEresCliente: 'bezhas_connect_start abre el inicio de sesión para conectar esta IA '
+                + 'con tu cuenta. No hace falta darse de alta otra vez.',
             sectores: Object.keys(SECTORES),
             loQueNuncaHaceElAgente: [
                 'Firmar una transacción o mover fondos por su cuenta.',
@@ -207,6 +209,51 @@ const TOOLS = [
                 ],
                 comoContarlo: 'Abre este enlace: es una pantalla de BeZhas con tus datos ya rellenos. '
                     + 'Caduca en unos minutos por seguridad; si se pasa, pides otro y sale al momento.',
+            };
+        },
+    },
+    {
+        name: 'bezhas_connect_start',
+        anonimo: true,
+        title: 'Conectar una IA a una cuenta existente',
+        description: 'Para quien YA es cliente y sólo tiene que identificarse desde una IA nueva. '
+            + 'Abre la pantalla de inicio de sesión de BeZhas y devuelve el enlace. '
+            + 'No pidas usuario ni contraseña por el chat: se escriben en la pantalla.',
+        inputSchema: {
+            entorno: z.enum(['sandbox', 'produccion']).default('sandbox')
+                .describe('Con qué entorno va a trabajar el asistente'),
+            organizacion: z.string().max(200).optional()
+                .describe('Nombre de la organización, si el usuario lo menciona. Se usa sólo para '
+                    + 'preseleccionarla en la pantalla; quién puede entrar lo decide el login.'),
+        },
+        handler: async ({ args, contexto }) => {
+            const sesion = await onboarding.crear({
+                kind: 'connect',
+                prefill: { entorno: args.entorno, organizacion: args.organizacion ?? null },
+                appId: contexto.appId,
+                ip: contexto.ip,
+                userAgent: contexto.userAgent,
+            });
+            return {
+                onboardingId: sesion.id,
+                url: sesion.url,
+                caduca: sesion.expiresAt,
+                entorno: args.entorno,
+                pasos: [
+                    'Iniciar sesión con tu cuenta de BeZhas.',
+                    'Elegir organización y entorno.',
+                    'Autorizar el conector para esta IA.',
+                    'Guardar la credencial en tu gestor de secretos.',
+                ],
+                // Es la propiedad que sostiene todo el flujo: si la clave
+                // volviera por aquí, acabaría en el contexto del modelo y en el
+                // historial del chat, y daría igual lo bien hecho que estuviera
+                // el resto. El agente sabe que terminó; no sabe con qué.
+                loQueNoVuelvePorElChat: 'La credencial se muestra y se copia en la pantalla. '
+                    + 'Este canal sólo llega a saber si la conexión se completó.',
+                siSeCierra: 'Si cierras la pantalla a medias, pide otro enlace: se genera al momento.',
+                comoContarlo: 'Abre este enlace e inicia sesión con tu cuenta de BeZhas. '
+                    + 'Cuando termines, vuelve aquí y sigo.',
             };
         },
     },

@@ -43,6 +43,12 @@ const COPY = {
         entradilla: 'Tu asistente ya ha rellenado lo que sabía. Revisa, corrige y acepta.',
         pasos: ['Datos de la empresa', 'Condiciones', 'Verificar correo', 'Credenciales de pruebas'],
     },
+    connect: {
+        titulo: 'Conecta tu IA con BeZhas',
+        entradilla: 'Inicia sesión con tu cuenta de BeZhas y elige desde qué organización y entorno '
+            + 'va a trabajar tu asistente.',
+        pasos: ['Iniciar sesión', 'Elegir organización', 'Elegir entorno', 'Autorizar el conector'],
+    },
     sdk_install: {
         titulo: 'Credenciales para el SDK',
         entradilla: 'Copia la clave y pégala en tu gestor de secretos. No vuelve a mostrarse.',

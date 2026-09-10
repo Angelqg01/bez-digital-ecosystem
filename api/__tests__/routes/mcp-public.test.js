@@ -21,7 +21,7 @@ function conApp(activa = true) {
 function conSesionCreada(kind = 'signup') {
     mockQuery.mockResolvedValueOnce({
         rows: [{
-            id: '11111111-2222-3333-4444-555555555555',
+            id: '3f1a2b4c-5d6e-4f70-8a91-b2c3d4e5f607',
             kind,
             status: 'pendiente',
             expires_at: new Date(Date.now() + 900000),
@@ -77,11 +77,12 @@ describe('MCP de alta asistida (/api/mcp/onboarding)', () => {
             }
         });
 
-        it('el catálogo anónimo son exactamente cuatro herramientas', () => {
+        it('el catálogo anónimo son exactamente cinco herramientas', () => {
             // Cerrado a propósito: ampliarlo tiene que ser una decisión, no un
             // efecto secundario de añadir una herramienta de cliente.
             const anon = toolsVisibles({ autenticado: false }).map((t) => t.name).sort();
             expect(anon).toEqual([
+                'bezhas_connect_start',
                 'bezhas_intro',
                 'bezhas_onboarding_status',
                 'bezhas_recommend_plan',
@@ -94,6 +95,16 @@ describe('MCP de alta asistida (/api/mcp/onboarding)', () => {
                 expect(t.name).not.toMatch(/erp|node|sdk|bank|payment|wallet|contract/);
             }
         });
+
+        it('ninguna anónima pide usuario ni contraseña', () => {
+            // El login ocurre en la pantalla. Una herramienta que aceptara
+            // credenciales las metería en el contexto del modelo del cliente.
+            for (const t of toolsVisibles({ autenticado: false })) {
+                for (const clave of Object.keys(t.inputSchema || {})) {
+                    expect(clave).not.toMatch(/user|usuario|email|correo|pass|contrase|otp|codigo/i);
+                }
+            }
+        });
     });
 
     describe('autenticación opcional', () => {
@@ -101,7 +112,7 @@ describe('MCP de alta asistida (/api/mcp/onboarding)', () => {
             const res = await rpc(null, 'tools/list');
             expect(res.status).toBe(200);
             expect(listar(res).sort()).toEqual([
-                'bezhas_intro', 'bezhas_onboarding_status',
+                'bezhas_connect_start', 'bezhas_intro', 'bezhas_onboarding_status',
                 'bezhas_recommend_plan', 'bezhas_signup_start',
             ]);
         });
@@ -246,6 +257,105 @@ describe('MCP de alta asistida (/api/mcp/onboarding)', () => {
             const t = texto(await rpc(null, 'tools/call', { name: 'bezhas_intro', arguments: {} }));
             expect(t).toMatch(/loQueNuncaHaceElAgente/);
             expect(t).toMatch(/IBAN|claves privadas/);
+        });
+    });
+
+    describe('conectar una cuenta existente', () => {
+        it('devuelve el enlace de inicio de sesión sin pedir credenciales', async () => {
+            conRecuentoIp(0);
+            conSesionCreada('connect');
+            const t = texto(await rpc(null, 'tools/call', {
+                name: 'bezhas_connect_start',
+                arguments: { entorno: 'produccion', organizacion: 'Delta SL' },
+            }));
+            expect(t).toMatch(/\/o\/[0-9a-f]{64}/);
+            expect(t).toContain('loQueNoVuelvePorElChat');
+        });
+
+        it('la respuesta no puede transportar la credencial', async () => {
+            // Es la propiedad que sostiene el flujo entero: si la clave volviera
+            // por aquí acabaría en el contexto del modelo y en el historial.
+            conRecuentoIp(0);
+            conSesionCreada('connect');
+            const t = texto(await rpc(null, 'tools/call', {
+                name: 'bezhas_connect_start',
+                arguments: { entorno: 'sandbox' },
+            }));
+            expect(t).not.toMatch(/"(apiKey|api_key|token|secret|credencial)"\s*:\s*"[A-Za-z0-9_-]{8}/);
+        });
+
+        it('el estado sólo dice si terminó, nunca con qué', async () => {
+            mockQuery.mockResolvedValueOnce({
+                rows: [{
+                    id: '3f1a2b4c-5d6e-4f70-8a91-b2c3d4e5f607', kind: 'connect',
+                    status: 'completado', step: null, expires_at: new Date(Date.now() + 60000),
+                    created_at: new Date(), completed_at: new Date(),
+                }],
+            });
+            const t = texto(await rpc(null, 'tools/call', {
+                name: 'bezhas_onboarding_status',
+                arguments: { onboarding_id: '3f1a2b4c-5d6e-4f70-8a91-b2c3d4e5f607' },
+            }));
+            expect(t).toContain('completado');
+            expect(t).not.toMatch(/apiKey|api_key|secret|credencial/i);
+        });
+    });
+
+    describe('superficie antes de autenticar', () => {
+        // Este es el único MCP de BeZhas al que se llega sin credencial, así que
+        // lo que corre ANTES de saber quién llama tiene que ser lo mínimo.
+
+        it('rechaza un cuerpo desmesurado sin analizarlo entero', async () => {
+            // El parser global de la API son 10 MB, para subir documentos con
+            // sesión iniciada. Aquí basta un sobre JSON-RPC.
+            const res = await request(app).post('/api/mcp/onboarding')
+                .set('Content-Type', 'application/json')
+                .send({ jsonrpc: '2.0', id: 1, method: 'tools/list', relleno: 'x'.repeat(200000) });
+            expect(res.status).toBe(413);
+        });
+
+        it('rechaza los lotes JSON-RPC', async () => {
+            // Un array multiplica el trabajo de UNA petición, y el limitador
+            // cuenta peticiones, no operaciones.
+            const res = await request(app).post('/api/mcp/onboarding')
+                .set('Content-Type', 'application/json')
+                .send([{ jsonrpc: '2.0', id: 1, method: 'tools/list' }]);
+            expect(res.status).toBe(400);
+            expect(res.body.error.message).toMatch(/Batch/i);
+        });
+
+        it('rechaza un método fuera de la lista permitida antes del SDK', async () => {
+            const res = await request(app).post('/api/mcp/onboarding')
+                .set('Content-Type', 'application/json')
+                .send({ jsonrpc: '2.0', id: 1, method: 'resources/subscribe', params: {} });
+            expect(res.status).toBe(400);
+            expect(res.body.error.code).toBe(-32601);
+        });
+
+        it('rechaza un sobre sin jsonrpc 2.0', async () => {
+            const res = await request(app).post('/api/mcp/onboarding')
+                .set('Content-Type', 'application/json')
+                .send({ id: 1, method: 'tools/list' });
+            expect(res.status).toBe(400);
+        });
+
+        it('rechaza JSON roto con error de protocolo, no con un 500', async () => {
+            const res = await request(app).post('/api/mcp/onboarding')
+                .set('Content-Type', 'application/json')
+                .send('{"jsonrpc":');
+            expect(res.status).toBe(400);
+            expect(res.body.error.code).toBe(-32700);
+        });
+
+        it('el filtro corre antes que la autenticación', async () => {
+            // Si el orden se invirtiera, una clave inválida gastaría una consulta
+            // a app_registry por cada sobre basura que llegue.
+            const res = await request(app).post('/api/mcp/onboarding')
+                .set('Content-Type', 'application/json')
+                .set('x-api-key', 'inventada')
+                .send({ jsonrpc: '2.0', id: 1, method: 'resources/list' });
+            expect(res.status).toBe(400);
+            expect(mockQuery).not.toHaveBeenCalled();
         });
     });
 

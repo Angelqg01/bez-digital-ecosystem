@@ -46,7 +46,11 @@ const TTL_MINUTOS = parseInt(process.env.ONBOARDING_TTL_MIN || '15', 10);
 const MAX_POR_IP_HORA = parseInt(process.env.ONBOARDING_MAX_POR_IP_HORA || '20', 10);
 
 const TIPOS = Object.freeze([
-    'signup', 'sdk_install', 'erp_integration', 'node_provision', 'bank_setup',
+    // `signup` es para quien no es cliente; `connect`, para quien ya lo es y
+    // sólo tiene que identificarse desde una IA nueva. Son flujos distintos
+    // aunque acaben en la misma pantalla: uno crea empresa, el otro no crea
+    // nada — comprueba quién eres y emite una credencial acotada.
+    'signup', 'connect', 'sdk_install', 'erp_integration', 'node_provision', 'bank_setup',
 ]);
 
 const ESTADOS = Object.freeze([
