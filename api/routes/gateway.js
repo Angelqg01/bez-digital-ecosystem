@@ -1796,6 +1796,7 @@ router.get('/checkout/:token([0-9a-f]{32})', async (req, res) => {
 const onboardingSession = require('../services/onboardingSession');
 const credentialIssuance = require('../services/credentialIssuance');
 const onboardingLogin = require('../services/onboardingLogin');
+const telemetry = require('../services/telemetryPipeline');
 
 router.get('/onboarding/:token([0-9a-f]{64})', async (req, res) => {
     try {
@@ -1969,6 +1970,113 @@ router.get('/nodes', authenticateGateway, requireScope('contracts', 'wallet'), a
     } catch (error) {
         logger.error(error, 'Node listing failed');
         res.status(500).json({ error: 'No se pudieron listar los nodos.' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  PRIVACIDAD — derechos del interesado sobre la telemetría
+//
+//  RGPD arts. 15 (acceso), 17 (supresión) y 21 (oposición). Van con la api-key
+//  del cliente porque es lo que identifica al inquilino cuyos datos son.
+//
+//  La oposición TIENE que poder ejercerse de forma tan sencilla como se recoge
+//  el dato. Por eso es un endpoint y un interruptor en el panel, no un correo a
+//  soporte: un derecho que exige abrir un ticket es un derecho con fricción
+//  puesta a propósito, y eso no se sostiene ante una inspección.
+//
+//  Detalle completo: docs/PRIVACIDAD_TELEMETRIA.md
+// ═══════════════════════════════════════════════════════════
+
+/** GET /privacy/telemetry — qué se recoge, con qué base y hasta cuándo (art. 13). */
+router.get('/privacy/telemetry', authenticateGateway, async (req, res) => {
+    try {
+        if (!req.registeredApp?.id) {
+            return res.status(400).json({ error: 'Se consulta con la api-key de la organización.' });
+        }
+        const [prefs, permiso] = await Promise.all([
+            telemetry.obtenerPreferencias(req.registeredApp.id),
+            telemetry.permiteRecoger(req.registeredApp.id, req.plan),
+        ]);
+        res.set('Cache-Control', 'no-store');
+        res.json({
+            success: true,
+            preferencias: prefs,
+            recogiendo: { telemetria: permiso.telemetria, episodios: permiso.episodios, motivo: permiso.motivo },
+            informacion: {
+                finalidad: 'Mejorar el servicio automatizado: detectar huecos de catálogo, descripciones de '
+                    + 'herramienta mal entendidas y flujos que merecen empaquetarse.',
+                baseJuridica: 'Interés legítimo (art. 6.1.f RGPD), con derecho de oposición (art. 21).',
+                queSeRecoge: 'Qué herramienta, la FORMA de los argumentos (nombres y tipos, nunca valores), '
+                    + 'latencia, error, reintento y resultado de las aprobaciones.',
+                queNoSeRecoge: 'El contenido de tus llamadas, tus documentos, importes, direcciones ni texto libre.',
+                plazos: { telemetriaDias: telemetry.DIAS_TELEMETRIA, episodiosMeses: telemetry.MESES_EPISODIOS },
+                entrenamiento: 'El contenido de tus operaciones no se usa para entrenar modelos en ningún plan.',
+                documento: 'docs/PRIVACIDAD_TELEMETRIA.md',
+            },
+        });
+    } catch (error) {
+        logger.error(error, 'Privacy status failed');
+        res.status(500).json({ error: 'No se pudo consultar el estado de privacidad.' });
+    }
+});
+
+/** POST /privacy/telemetry — oposición al tratamiento (art. 21). Efecto inmediato. */
+router.post('/privacy/telemetry', authenticateGateway, async (req, res) => {
+    try {
+        if (!req.registeredApp?.id) {
+            return res.status(400).json({ error: 'Se configura con la api-key de la organización.' });
+        }
+        const prefs = await telemetry.fijarPreferencias(req.registeredApp.id, {
+            telemetria: req.body?.telemetria !== false,
+            episodios: req.body?.episodios !== false,
+        });
+        res.set('Cache-Control', 'no-store');
+        res.json({ success: true, preferencias: prefs });
+    } catch (error) {
+        logger.error(error, 'Privacy preferences failed');
+        res.status(500).json({ error: 'No se pudieron guardar las preferencias.' });
+    }
+});
+
+/** GET /privacy/telemetry/export — derecho de acceso (art. 15). */
+router.get('/privacy/telemetry/export', authenticateGateway, async (req, res) => {
+    try {
+        if (!req.registeredApp?.id) {
+            return res.status(400).json({ error: 'Se exporta con la api-key de la organización.' });
+        }
+        const filas = await telemetry.exportarDe(req.registeredApp.id);
+        res.set('Cache-Control', 'no-store');
+        res.json({ success: true, total: filas.length, registros: filas });
+    } catch (error) {
+        logger.error(error, 'Privacy export failed');
+        res.status(500).json({ error: 'No se pudo exportar la telemetría.' });
+    }
+});
+
+/**
+ * DELETE /privacy/telemetry — derecho de supresión (art. 17).
+ *
+ * Borra la telemetría de este inquilino. Los episodios NO se borran y la
+ * respuesta lo dice: están agregados por sector y ya no contienen dato que
+ * permita identificarlo, así que no son suyos que suprimir. Callarlo sería
+ * dejarle creer que borró algo que sigue ahí.
+ */
+router.delete('/privacy/telemetry', authenticateGateway, async (req, res) => {
+    try {
+        if (!req.registeredApp?.id) {
+            return res.status(400).json({ error: 'Se suprime con la api-key de la organización.' });
+        }
+        const r = await telemetry.suprimirDe(req.registeredApp.id);
+        res.set('Cache-Control', 'no-store');
+        res.json({
+            success: true,
+            ...r,
+            nota: 'Los episodios agregados por sector no se borran: ya no contienen dato que permita '
+                + 'identificar a tu organización, así que no son datos personales tuyos.',
+        });
+    } catch (error) {
+        logger.error(error, 'Privacy deletion failed');
+        res.status(500).json({ error: 'No se pudo suprimir la telemetría.' });
     }
 });
 

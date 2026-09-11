@@ -3,6 +3,15 @@
  */
 const jwt = require('jsonwebtoken');
 
+// OJO: en este entorno NODE_ENV llega como 'production' —lo trae la shell, no
+// jest—, así que todos los guardas de producción del código están ACTIVOS
+// durante los tests. Es una anomalía del entorno, no del código, pero mientras
+// sea así hay que darle a la seudonimización su clave o el pipeline de
+// telemetría aborta en cada llamada. El guard en sí se prueba aparte, en
+// episodeAnonymizer.test.js.
+process.env.TELEMETRY_PSEUDONYM_KEY = process.env.TELEMETRY_PSEUDONYM_KEY
+    || 'clave-de-pruebas-para-seudonimos';
+
 // Mismo fallback que config/secrets.js: si divergen, los tokens que firma
 // makeToken() no verifican contra la app y todo falla con un 401 opaco.
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret';

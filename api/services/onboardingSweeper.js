@@ -29,6 +29,7 @@
 
 const onboarding = require('./onboardingSession');
 const credentialIssuance = require('./credentialIssuance');
+const telemetry = require('./telemetryPipeline');
 const logger = require('../utils/logger');
 
 const INTERVALO_POR_DEFECTO = parseInt(process.env.ONBOARDING_SWEEP_MS || '600000', 10); // 10 min
@@ -50,11 +51,19 @@ async function pasada() {
         // «pendiente» de hace un mes en la pantalla del cliente parece que
         // todavía sirve, y no sirve.
         r.nodosCaducados = await credentialIssuance.caducarTokensDeNodo();
+        // Purga por plazo (art. 5.1.e RGPD). Va aquí y no en un proceso aparte
+        // porque un plazo que depende de un demonio que nadie vigila es un
+        // plazo que no se cumple: si este barrido se para, se nota en todo lo
+        // demás y alguien lo arregla.
+        const purgado = await telemetry.purgar();
+        r.telemetriaBorrada = purgado.telemetriaBorrada;
+        r.episodiosBorrados = purgado.episodiosBorrados;
         ultimo = { ...r, fecha: new Date().toISOString() };
         // Sólo se registra cuando hubo algo que hacer: un barrido silencioso
         // cada diez minutos llenaría el log de líneas idénticas y haría más
         // difícil ver la que importa.
-        if (r.caducadas > 0 || r.anonimizadas > 0 || r.nodosCaducados > 0) {
+        if (r.caducadas > 0 || r.anonimizadas > 0 || r.nodosCaducados > 0
+            || r.telemetriaBorrada > 0 || r.episodiosBorrados > 0) {
             logger.info(r, 'Barrido de onboarding');
         }
         return r;

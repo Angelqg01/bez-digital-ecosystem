@@ -65,6 +65,7 @@ const { authenticateApp } = require('../middleware/gateway-auth');
 const { toolsParaScopes, planPermiteTool, getTool, MAX_RESPUESTA_CHARS } = require('../config/mcp-tools');
 const { getEntitlements, PLAN_POR_DEFECTO } = require('../config/plan-entitlements');
 const bridge = require('../services/mcpGatewayBridge');
+const telemetry = require('../services/telemetryPipeline');
 const { query } = require('../db/pool');
 const logger = require('../utils/logger');
 
@@ -190,6 +191,12 @@ function construirServidor(app, plan) {
             // día que eso pase, se deniega en vez de servir—.
             if (!planPermiteTool(tool.name, plan)) {
                 logger.info({ tool: tool.name, appId: app.id, plan }, 'MCP tool call denied by plan');
+                // Que un cliente pida algo que su plan no cubre es señal
+                // comercial, no ruido: dice qué querría comprar.
+                telemetry.registrar({
+                    appId: app.id, plan, canal: 'mcp', herramienta: tool.name,
+                    argumentos: args || {}, resultado: 'denegado', codigoError: 'PLAN',
+                }).catch(() => {});
                 return {
                     content: [{ type: 'text', text: `«${tool.name}» no está incluida en tu plan (${plan}). Amplíalo desde el panel de BeZhas.` }],
                     isError: true,
@@ -206,10 +213,25 @@ function construirServidor(app, plan) {
                 };
             }
 
+            // La telemetría se recoge DESPUÉS de resolver, nunca antes, y no se
+            // espera a que se escriba: mejora el producto, no lo presta. Ver
+            // services/telemetryPipeline.js — comprueba plan y oposición antes
+            // de escribir nada, así que aquí no hay que decidir nada.
+            const t0 = Date.now();
+            const anotar = (resultado, codigoError) => {
+                telemetry.registrar({
+                    appId: app.id, plan, canal: 'mcp', herramienta: tool.name,
+                    argumentos: args || {}, resultado, codigoError,
+                    latenciaMs: Date.now() - t0,
+                }).catch(() => {});
+            };
+
             try {
                 const datos = await definicion.handler({ args: args || {}, app, bridge, entitlements });
+                anotar('ok');
                 return resultadoDato(tool.name, datos);
             } catch (err) {
+                anotar('error_servidor', err?.code);
                 return resultadoError(tool.name, err, app.id);
             }
         });

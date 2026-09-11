@@ -17,8 +17,15 @@ describe('onboardingSweeper', () => {
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 2 });   // sesiones caducadas
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 5 });   // anonimizadas
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });   // vales de nodo sin usar
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 7 });   // telemetría vencida
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 4 });   // episodios vencidos
         const r = await sweeper.pasada();
-        expect(r).toEqual({ caducadas: 2, anonimizadas: 5, nodosCaducados: 1 });
+        expect(r).toEqual({
+            caducadas: 2, anonimizadas: 5, nodosCaducados: 1,
+            // Purga por plazo (art. 5.1.e RGPD): va en el mismo barrido para que
+            // no dependa de un segundo demonio que nadie vigila.
+            telemetriaBorrada: 7, episodiosBorrados: 4,
+        });
         expect(String(mockQuery.mock.calls[1][0])).toMatch(/source_ip = NULL/);
         expect(String(mockQuery.mock.calls[1][0])).toMatch(/user_agent = NULL/);
     });
@@ -46,10 +53,11 @@ describe('onboardingSweeper', () => {
         jest.spyOn(onboarding, 'barrer').mockRejectedValueOnce(new Error('la base no responde'));
         await expect(sweeper.pasada()).resolves.toBeNull();
 
-        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-        await expect(sweeper.pasada()).resolves.toEqual({ caducadas: 0, anonimizadas: 0, nodosCaducados: 0 });
+        for (let i = 0; i < 5; i++) mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+        await expect(sweeper.pasada()).resolves.toEqual({
+            caducadas: 0, anonimizadas: 0, nodosCaducados: 0,
+            telemetriaBorrada: 0, episodiosBorrados: 0,
+        });
     });
 
     it('arrancar dos veces no crea dos bucles', () => {
@@ -84,6 +92,20 @@ describe('onboardingSweeper', () => {
         const r = await sweeper.pasada();
         expect(r.nodosCaducados).toBe(3);
         expect(String(mockQuery.mock.calls[2][0])).toMatch(/registration_token_hash = NULL/);
+    });
+
+    it('purga la telemetría y los episodios por la fecha de la fila', async () => {
+        // Por `purgar_despues_de` y no por la constante de hoy: purgar con la
+        // constante actual alargaría retroactivamente la conservación de datos
+        // ya recogidos si alguien sube el plazo.
+        for (let i = 0; i < 3; i++) mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 9 });
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 2 });
+        const r = await sweeper.pasada();
+        expect(r.telemetriaBorrada).toBe(9);
+        expect(r.episodiosBorrados).toBe(2);
+        const sqls = mockQuery.mock.calls.map((c) => String(c[0]));
+        expect(sqls.filter((q) => /purgar_despues_de <= NOW\(\)/.test(q))).toHaveLength(2);
     });
 
     it('stopSweeper lo detiene', () => {
