@@ -1,11 +1,15 @@
 "use client";
 
 import React, { ReactNode } from "react";
-import Web3ModalProvider from "./Web3ModalProvider";
+import dynamic from "next/dynamic";
 import { Web3Provider } from "../context/Web3Context";
 import { BezPayProvider } from "../context/BezPayContext";
 import BuyBezModal from "../components/economy/BuyBezModal";
 import { Toaster } from "react-hot-toast";
+
+const Web3ModalProvider = dynamic(() => import("./Web3ModalProvider"), {
+  ssr: false,
+});
 
 export function Providers({ children }: { children: ReactNode }) {
   return (

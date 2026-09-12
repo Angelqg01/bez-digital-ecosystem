@@ -17,6 +17,7 @@ const nextConfig = {
             '@metamask/connect-evm': false,
             'porto/internal': false,
             'porto': false,
+            'pino-pretty': false,
         };
         // Ignore optional MetaMask SDK modules
         config.externals = [
