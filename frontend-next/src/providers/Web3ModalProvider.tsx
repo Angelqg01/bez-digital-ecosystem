@@ -11,12 +11,9 @@ const queryClient = new QueryClient();
 
 if (!projectId) throw new Error('Project ID is not defined');
 
-// `config` se construye con la copia de @wagmi/core de esta app, mientras que
-// createWeb3Modal y WagmiProvider están tipados contra otra copia presente en el
-// árbol. Misma duplicación que se documenta en config/web3.ts: las aserciones
-// cruzan esa frontera de tipos y no alteran el comportamiento en ejecución.
+// Create modal
 createWeb3Modal({
-  wagmiConfig: config as unknown as Parameters<typeof createWeb3Modal>[0]['wagmiConfig'],
+  wagmiConfig: config,
   projectId,
   enableAnalytics: true,
   enableOnramp: true,
@@ -35,7 +32,7 @@ export default function Web3ModalProvider({
   initialState?: State;
 }) {
   return (
-    <WagmiProvider config={config as unknown as React.ComponentProps<typeof WagmiProvider>['config']} initialState={initialState}>
+    <WagmiProvider config={config} initialState={initialState}>
       <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>

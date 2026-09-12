@@ -25,21 +25,14 @@ const metadata = {
     icons: ['https://bez.digital/logo.png']
 };
 
-// El árbol de dependencias contiene copias duplicadas de viem/abitype,
-// resueltas contra dos versiones distintas de TypeScript (frontend fija 5.6.3 y
-// frontend-next usa ^5). Eso hace que `polygon` y `anvil` vengan de una copia de
-// viem y que defaultWagmiConfig esté tipado contra otra, así que TypeScript los
-// considera tipos distintos aunque sean estructuralmente idénticos. La aserción
-// cruza esa frontera; en tiempo de ejecución no cambia nada. Se puede retirar en
-// cuanto se deduplique el árbol (versionar pnpm-lock.yaml y unificar viem).
 export const config = defaultWagmiConfig({
-    chains: [polygon, anvil] as unknown as Parameters<typeof defaultWagmiConfig>[0]['chains'],
+    chains: [polygon, anvil],
     projectId,
     metadata,
     ssr: true,
     storage: createStorage({
         storage: cookieStorage
-    }) as unknown as Parameters<typeof defaultWagmiConfig>[0]['storage'],
+    }),
 });
 
 export function formatTokenBalance(balance: number | string | bigint, decimals = 18): string {
