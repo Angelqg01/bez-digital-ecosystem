@@ -74,9 +74,9 @@ export default function AuthPage() {
             }
         } catch (error: Error | unknown) {
             console.error('SIWE Error:', error);
-            const errMsg = error && typeof error === 'object' && 'response' in error 
-              ? (error as { response?: { data?: { error?: string } } }).response?.data?.error 
-              : 'Falló la autenticación con Wallet';
+            const errMsg = (error && typeof error === 'object' && 'response' in error
+              ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+              : undefined) ?? 'Falló la autenticación con Wallet';
             toast.error(errMsg);
             disconnect();
         } finally {
@@ -95,7 +95,7 @@ export default function AuthPage() {
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        toast.info("En la Fase 3, se prioriza Sign-In With Ethereum. El servidor local usa Mock DB.");
+        toast("En la Fase 3, se prioriza Sign-In With Ethereum. El servidor local usa Mock DB.");
         setTimeout(() => setLoading(false), 1500);
     };
 

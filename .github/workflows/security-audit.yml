@@ -52,6 +52,12 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
+      - name: Usar HTTPS para dependencias git alojadas en GitHub
+        # @chainlink/contracts declara @zksync/contracts con una URL SSH
+        # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
+        # clave SSH, así que sin esta reescritura `pnpm install` falla con
+        # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Cache npm dependencies
         uses: actions/cache@v4
@@ -202,6 +208,12 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
+      - name: Usar HTTPS para dependencias git alojadas en GitHub
+        # @chainlink/contracts declara @zksync/contracts con una URL SSH
+        # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
+        # clave SSH, así que sin esta reescritura `pnpm install` falla con
+        # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Check Frontend Dependencies
         working-directory: ./frontend-next
@@ -251,6 +263,12 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
+      - name: Usar HTTPS para dependencias git alojadas en GitHub
+        # @chainlink/contracts declara @zksync/contracts con una URL SSH
+        # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
+        # clave SSH, así que sin esta reescritura `pnpm install` falla con
+        # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Cache Script Dependencies
         uses: actions/cache@v4
@@ -303,6 +321,12 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
+      - name: Usar HTTPS para dependencias git alojadas en GitHub
+        # @chainlink/contracts declara @zksync/contracts con una URL SSH
+        # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
+        # clave SSH, así que sin esta reescritura `pnpm install` falla con
+        # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend-next

@@ -5,6 +5,19 @@ packages:
   - 'api'
   - 'sdk'
   - 'packages/*'
+allowBuilds:
+  '@arbitrum/nitro-contracts': set this to true or false
+  '@prisma/engines': set this to true or false
+  '@reown/appkit': set this to true or false
+  '@scarf/scarf': set this to true or false
+  bufferutil: set this to true or false
+  esbuild: set this to true or false
+  keccak: set this to true or false
+  msgpackr-extract: set this to true or false
+  prisma: set this to true or false
+  secp256k1: set this to true or false
+  unrs-resolver: set this to true or false
+  utf-8-validate: set this to true or false
 
 # pnpm 10+ reads settings here, not from .npmrc. Allow the git-resolved
 # @zksync/contracts subdependency that pnpm's supply-chain guard blocks by default.
@@ -30,3 +43,14 @@ onlyBuiltDependencies:
 # (e.g. for per-directory `cd api && pnpm install` steps that don't pick up the
 # allowlist). Downgrades ERR_PNPM_IGNORED_BUILDS to a warning so CI proceeds.
 strictDepBuilds: false
+
+# @web3modal/base@5.1.11 declara peers exactos de la línea wagmi v2
+# (@wagmi/connectors 5.1.9, @wagmi/core 2.13.4, viem 2.21.4), pero sin estos
+# overrides pnpm resolvía @wagmi/connectors@8 y @wagmi/core@3 (línea wagmi v3).
+# Ese salto de major metía en el árbol el conector baseAccount y con él
+# @base-org/account -> @coinbase/cdp-sdk -> los módulos x402 que rompían
+# `next build`, y duplicaba viem/abitype provocando choques de tipos.
+overrides:
+  '@wagmi/connectors': 5.11.2
+  '@wagmi/core': 2.22.1
+  viem: ^2.47.10
