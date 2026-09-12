@@ -311,7 +311,7 @@ const audit = await mcp.auditContract({ contractAddress: '0xEcBa873B534C54DE2B62
 const REQUIREMENTS = [
     { icon: WalletIcon, title: 'Cuenta BeZhas + wallet', desc: 'Regístrate y conecta tu wallet Polygon. Es la identidad que firma tus operaciones on-chain.', link: '/auth', linkLabel: 'Crear cuenta' },
     { icon: KeyIcon, title: 'API Key con scopes', desc: 'Genera la clave en la consola y activa solo los módulos que tu agente necesita (marketplace, pagos, identidad, legal, IA…).', tab: 'keys', linkLabel: 'Generar API Key' },
-    { icon: Building2Icon, title: 'Suscripción activa', desc: 'El acceso a la API y al MCP empieza en el plan Starter (99 €/mes). BeZhas Pro añade el Universal Bridge API (ERP/SAP) y Enterprise VIP el nodo MCP dedicado.', link: '/be-vip', linkLabel: 'Ver planes' },
+    { icon: Building2Icon, title: 'Plan activo', desc: 'Freemium ya trae API Key y webhooks sin cuota, facturados por uso. Starter cambia el pago por uso por una cuota plana con más límites, BeZhas Pro añade el Universal Bridge API (ERP/SAP) y Enterprise VIP el nodo MCP dedicado.', link: '/be-vip', linkLabel: 'Ver planes' },
     { icon: TerminalIcon, title: 'Node.js 20+ y pnpm 11+', desc: 'El servidor MCP corre sobre Node 20 o superior. Con npx no necesitas instalarlo globalmente.' },
     { icon: BotIcon, title: 'Cliente compatible', desc: 'Claude Desktop, Claude Code, Cursor, VS Code o tu propio agente. Vía HTTP también sirve cualquier backend.' },
     { icon: ShieldCheckIcon, title: 'KYC verificado (pagos)', desc: 'Las herramientas de pagos, escrow y tokenización exigen KYC aprobado y pasan por verify_regulatory_compliance.', link: '/compliance', linkLabel: 'Ir a Compliance' },
@@ -320,15 +320,15 @@ const REQUIREMENTS = [
 const PLANS = [
     {
         name: 'Freemium',
-        price: 'Gratis',
-        billed: '0 € / mes · coste según uso',
+        price: 'Pago por uso',
+        billed: 'Sin cuota mensual · pagas solo las llamadas a la API',
         highlight: false,
-        mcp: 'Playground y sandbox',
+        mcp: 'MCP completo (20 herramientas)',
         features: [
-            '150 acciones IA/mes',
-            'Documentación completa y simulador SDK',
+            'API Key productiva facturada por uso',
+            'Webhooks de eventos en tiempo real',
+            '150 acciones IA/mes incluidas',
             'Wallet corporativa + voto en la DAO',
-            'Sin API Key productiva ni webhooks',
         ],
     },
     {
@@ -437,7 +437,7 @@ const FAQ = [
     },
     {
         q: '¿Desde qué plan tengo acceso?',
-        a: 'Freemium incluye playground, simulador y documentación. El MCP productivo con API Key empieza en el plan Starter (99 € + IVA). BeZhas Pro añade el Universal Bridge API para conectar tu ERP (SAP, Odoo, Salesforce) y Enterprise VIP entrega un nodo MCP dedicado con aislamiento de datos.',
+        a: 'Desde Freemium, sin cuota mensual: incluye API Key productiva y webhooks, y se factura por uso de la API de BeZhas, de modo que solo pagas las llamadas que hagas. Starter cambia ese pago por uso por una cuota plana con límites más altos, BeZhas Pro añade el Universal Bridge API para conectar tu ERP (SAP, Odoo, Salesforce) y Enterprise VIP entrega un nodo MCP dedicado con aislamiento de datos.',
     },
     {
         q: '¿Puedo usarlo desde la plataforma de IA de BeZhas?',
@@ -647,13 +647,16 @@ const MCPSection = ({ onOpenTab }) => {
                     <div className="rounded-2xl border border-gray-700 bg-gray-900 p-6">
                         <div className="flex items-center gap-3 mb-3">
                             <span className="w-8 h-8 rounded-full bg-purple-600 text-white font-bold text-sm flex items-center justify-center">3</span>
-                            <h3 className="text-lg font-bold text-white">Activa la suscripción que necesitas</h3>
+                            <h3 className="text-lg font-bold text-white">Elige cómo quieres pagar</h3>
                         </div>
                         <p className="text-sm text-gray-400 mb-4">
-                            El MCP productivo empieza en el plan <strong className="text-gray-200">Starter</strong> (99 € + IVA).
-                            Si vas a conectar un ERP (SAP, Odoo, Salesforce) necesitas <strong className="text-gray-200">BeZhas Pro</strong>,
-                            y si requieres un nodo MCP aislado con tus propios datos, <strong className="text-gray-200">Enterprise VIP</strong>.
-                            En los tres casos puedes pagar en euros, en $BEZ o bloquear tokens y acceder sin cuota.
+                            Puedes empezar en <strong className="text-gray-200">Freemium</strong> sin cuota mensual: la API y los
+                            webhooks se facturan por uso, así que solo pagas las llamadas que hagas.
+                            <strong className="text-gray-200"> Starter</strong> sustituye ese pago por uso por una cuota plana con
+                            límites más altos, <strong className="text-gray-200">BeZhas Pro</strong> añade el Universal Bridge API para
+                            conectar tu ERP (SAP, Odoo, Salesforce) y <strong className="text-gray-200">Enterprise VIP</strong> entrega un
+                            nodo MCP aislado con tus propios datos. En los planes de cuota puedes pagar en euros, en $BEZ o
+                            bloquear tokens y acceder sin cuota.
                         </p>
                         <Link to="/be-vip" className="px-4 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold transition-all inline-flex items-center gap-2">
                             <SparklesIcon size={16} /> Comparar planes

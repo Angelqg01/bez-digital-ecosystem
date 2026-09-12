@@ -88,6 +88,8 @@ const UNIFIED_VIP_TIERS = {
         },
         benefits: [
             { text: 'Acceso básico a la plataforma BeZhas', included: true },
+            { text: 'API BeZhas con pago por uso (sin cuota)', included: true },
+            { text: 'Webhooks de eventos en tiempo real', included: true },
             { text: '150 acciones IA/mes (Gemini Flash)', included: true },
             { text: 'Staking $BEZ al 12,5% APY base', included: true },
             { text: 'Participación en votaciones DAO', included: true },
