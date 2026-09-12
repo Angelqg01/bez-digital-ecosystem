@@ -14,7 +14,7 @@ function formatTimeAgo(timestamp) {
 }
 
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, Sun, Moon, Wallet, ShoppingBag, LogIn, UserPlus, User, LogOut, Coins, Sparkles, ExternalLink, Globe, Eye, EyeOff, Shield } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Wallet, ShoppingBag, LogIn, UserPlus, User, LogOut, Coins, Sparkles, ExternalLink, Globe, Eye, EyeOff, Shield, Plug } from 'lucide-react';
 import { useAccount, useDisconnect, useBalance } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useTheme } from '../../context/ThemeContext';
@@ -538,6 +538,16 @@ const Header = () => {
                           >
                             <Wallet size={18} className="text-gray-600 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" />
                             <span className="font-semibold text-gray-700 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400">Mi Wallet</span>
+                            <span className="ml-auto text-xs text-gray-400 dark:text-gray-500 group-hover:text-purple-500">→</span>
+                          </Link>
+
+                          <Link
+                            to="/developers"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-all group cursor-pointer border border-transparent hover:border-purple-300 dark:hover:border-purple-700"
+                          >
+                            <Plug size={18} className="text-gray-600 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" />
+                            <span className="font-semibold text-gray-700 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400">BeZhas MCP</span>
                             <span className="ml-auto text-xs text-gray-400 dark:text-gray-500 group-hover:text-purple-500">→</span>
                           </Link>
 

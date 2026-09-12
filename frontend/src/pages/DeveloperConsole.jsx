@@ -13,6 +13,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
 // Sub-components
+import MCPSection from '../components/developer-console/MCPSection';
 import McpSdkDownloadTab from '../components/developer-console/McpSdkDownloadTab';
 import SDKSnippetsTab from '../components/developer-console/SDKSnippetsTab';
 import WebhooksTab from '../components/developer-console/WebhooksTab';
@@ -130,8 +131,11 @@ const DeveloperConsole = () => {
     return (
         <>
             <div className="container mx-auto px-6 py-8">
+                {/* 1) MCP Section — primera seccion de /developers */}
+                <MCPSection onOpenTab={setActiveTab} />
+
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div id="developer-console" className="scroll-mt-24 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400">
                             Developer Console
