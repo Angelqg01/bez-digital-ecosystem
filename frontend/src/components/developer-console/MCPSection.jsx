@@ -81,6 +81,41 @@ const Snippet = ({ title, code, accent = 'text-green-300' }) => (
     </div>
 );
 
+const METHOD_COLORS = {
+    GET: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    POST: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+    DELETE: 'bg-red-500/15 text-red-300 border-red-500/30',
+};
+
+const EndpointTable = ({ rows }) => (
+    <div className="overflow-x-auto -mx-2 px-2">
+        <table className="w-full text-sm min-w-[520px]">
+            <thead>
+                <tr className="text-left text-gray-400 border-b border-gray-700">
+                    <th className="pb-2 pr-3 font-semibold w-20">Método</th>
+                    <th className="pb-2 pr-4 font-semibold">Endpoint</th>
+                    <th className="pb-2 font-semibold">Descripción</th>
+                </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+                {rows.map((row) => (
+                    <tr key={`${row.method}-${row.path}`}>
+                        <td className="py-2.5 pr-3 align-top">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${METHOD_COLORS[row.method] || 'bg-gray-700/40 text-gray-300 border-gray-600'}`}>
+                                {row.method}
+                            </span>
+                        </td>
+                        <td className="py-2.5 pr-4 align-top">
+                            <code className="text-[13px] text-white whitespace-nowrap">{row.path}</code>
+                        </td>
+                        <td className="py-2.5 align-top text-gray-400">{row.desc}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
+);
+
 const SectionTitle = ({ eyebrow, title, subtitle, icon: Icon, onDark = false }) => (
     <div className="mb-8">
         {eyebrow && (
@@ -337,6 +372,60 @@ const PLANS = [
     },
 ];
 
+const MCP_HTTP_ENDPOINTS = [
+    { method: 'GET', path: '/api/mcp/health', desc: 'Estado del servidor, red activa y RPC en uso.' },
+    { method: 'GET', path: '/api/mcp/tools', desc: 'Catálogo de herramientas con su endpoint y sus parámetros.' },
+    { method: 'POST', path: '/api/mcp/analyze-gas', desc: 'analyze_gas_strategy' },
+    { method: 'POST', path: '/api/mcp/calculate-swap', desc: 'calculate_smart_swap' },
+    { method: 'POST', path: '/api/mcp/verify-compliance', desc: 'verify_regulatory_compliance' },
+    { method: 'POST', path: '/api/mcp/blockscout', desc: 'blockscout_explorer' },
+    { method: 'POST', path: '/api/mcp/github', desc: 'github_repo_manager' },
+    { method: 'POST', path: '/api/mcp/firecrawl', desc: 'firecrawl_scraper' },
+    { method: 'POST', path: '/api/mcp/playwright', desc: 'playwright_automation' },
+    { method: 'POST', path: '/api/mcp/skill-creator', desc: 'skill_creator_ai' },
+    { method: 'POST', path: '/api/mcp/auditmos', desc: 'auditmos_security' },
+    { method: 'POST', path: '/api/mcp/tally-dao', desc: 'tally_dao_governance' },
+    { method: 'POST', path: '/api/mcp/obliq-sre', desc: 'obliq_ai_sre' },
+    { method: 'POST', path: '/api/mcp/kinaxis', desc: 'kinaxis_supply_chain' },
+    { method: 'POST', path: '/api/mcp/alpaca-markets', desc: 'alpaca_markets' },
+];
+
+const ORCHESTRATOR_ENDPOINTS = [
+    { method: 'GET', path: '/api/mcp/status', desc: 'Registro completo de herramientas y su estado.' },
+    { method: 'POST', path: '/api/mcp/execute', desc: 'Ejecuta una herramienta: { tool, params }.' },
+    { method: 'POST', path: '/api/mcp/pipeline', desc: 'Secuencia con contexto compartido: { steps: [{ tool, params }] }.' },
+    { method: 'POST', path: '/api/mcp/parallel', desc: 'Varias herramientas a la vez: { tools: [{ tool, params }] }.' },
+];
+
+const DEVELOPER_ENDPOINTS = [
+    { method: 'GET', path: '/api/developer/keys', desc: 'Lista tus API Keys.' },
+    { method: 'POST', path: '/api/developer/keys', desc: 'Crea una API Key con sus scopes.' },
+    { method: 'POST', path: '/api/developer/keys/:id/rotate', desc: 'Rota la clave; la anterior deja de servir.' },
+    { method: 'DELETE', path: '/api/developer/keys/:id', desc: 'Revoca una API Key.' },
+    { method: 'GET', path: '/api/developer/usage-stats/:wallet', desc: 'Consumo y métricas de uso.' },
+    { method: 'GET', path: '/api/developer/keys/:id/webhooks', desc: 'Webhooks registrados en esa clave.' },
+    { method: 'POST', path: '/api/developer/keys/:id/webhooks', desc: 'Registra un webhook: { url, events, secret }.' },
+    { method: 'DELETE', path: '/api/developer/keys/:keyId/webhooks/:webhookId', desc: 'Elimina un webhook.' },
+];
+
+const WEBHOOK_EVENTS = [
+    { name: 'shipment.created', desc: 'Nuevo envío registrado en logística.' },
+    { name: 'shipment.updated', desc: 'Cambio de estado o posición de un envío.' },
+    { name: 'payment.completed', desc: 'Pago liquidado (fiat o cripto).' },
+    { name: 'escrow.released', desc: 'Fondos liberados de un escrow.' },
+    { name: 'kyc.verified', desc: 'Identidad verificada correctamente.' },
+    { name: 'property.tokenized', desc: 'Inmueble o activo RWA tokenizado.' },
+    { name: 'marketplace.sale', desc: 'Venta cerrada en el marketplace.' },
+    { name: 'nft.minted', desc: 'NFT acuñado on-chain.' },
+    { name: 'token.transferred', desc: 'Transferencia de BEZ registrada.' },
+];
+
+const API_TIERS = [
+    { tier: 'free', limit: '100 req/hora' },
+    { tier: 'pro', limit: '1.000 req/hora' },
+    { tier: 'enterprise', limit: 'Sin límite' },
+];
+
 const FAQ = [
     {
         q: '¿Qué es exactamente el MCP de BeZhas?',
@@ -368,6 +457,7 @@ const FAQ = [
 
 const MCPSection = ({ onOpenTab }) => {
     const [activeClient, setActiveClient] = useState('claude-desktop');
+    const [activeDoc, setActiveDoc] = useState('api');
     const client = CLIENT_CONFIGS.find((c) => c.id === activeClient) || CLIENT_CONFIGS[0];
 
     const goToTab = (tab) => {
@@ -683,6 +773,270 @@ usar relayer para una transferencia de 100 USD."`}
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* ── DOCUMENTACIÓN: API Y WEBHOOKS ───────────────────────────── */}
+            <div id="mcp-api-webhooks" className="scroll-mt-24">
+                <SectionTitle
+                    eyebrow="Documentación"
+                    icon={ServerIcon}
+                    title="API REST y Webhooks"
+                    subtitle="Las mismas herramientas del MCP están disponibles por HTTP para tu backend, tu ERP o tu propia plataforma de IA. Y los webhooks te devuelven los eventos del ecosistema en tiempo real, firmados."
+                />
+
+                <div className="flex flex-wrap gap-2 mb-6">
+                    {[
+                        { id: 'api', label: 'API REST', icon: ServerIcon },
+                        { id: 'webhooks', label: 'Webhooks', icon: NetworkIcon },
+                    ].map((t) => (
+                        <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setActiveDoc(t.id)}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                                activeDoc === t.id
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                            }`}
+                        >
+                            <t.icon size={16} />
+                            {t.label}
+                        </button>
+                    ))}
+                </div>
+
+                {activeDoc === 'api' && (
+                    <div className="space-y-6">
+                        {/* Autenticación */}
+                        <div className="rounded-2xl border border-gray-700 bg-gray-900 p-6">
+                            <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                                <LockIcon className="w-5 h-5 text-amber-300" />
+                                Autenticación y límites
+                            </h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                La API pública se autentica con la cabecera <code className="text-purple-300">X-API-Key</code>.
+                                Las claves tienen el formato <code className="text-purple-300">bzh_&#123;tier&#125;_&#123;hash&#125;</code> y
+                                cada una lleva su propio límite de peticiones.
+                            </p>
+                            <Snippet
+                                title="Cabeceras de toda petición"
+                                code={`X-API-Key: bzh_live_TU_API_KEY
+Content-Type: application/json`}
+                                accent="text-cyan-200"
+                            />
+                            <div className="overflow-x-auto mt-5">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="text-left text-gray-400 border-b border-gray-700">
+                                            <th className="pb-2 pr-4 font-semibold">Tier de la clave</th>
+                                            <th className="pb-2 font-semibold">Límite</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-800">
+                                        {API_TIERS.map((t) => (
+                                            <tr key={t.tier}>
+                                                <td className="py-2.5 pr-4"><code className="text-purple-300">{t.tier}</code></td>
+                                                <td className="py-2.5 text-gray-300">{t.limit}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-3">
+                                El <em>tier</em> es un atributo técnico de la clave y no equivale al nombre comercial de tu plan;
+                                consulta la sección de suscripciones para saber qué incluye cada uno.
+                            </p>
+                        </div>
+
+                        {/* Servidor MCP HTTP */}
+                        <div className="rounded-2xl border border-gray-700 bg-gray-900 p-6">
+                            <h3 className="text-lg font-bold text-white mb-2">Servidor MCP · wrapper HTTP</h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                El paquete <code className="text-purple-300">{MCP_PACKAGE}</code> expone las herramientas como REST
+                                además de por STDIO. Se arranca con <code className="text-purple-300">start:http</code> y escucha
+                                en el puerto <code className="text-purple-300">8080</code> por defecto
+                                (configurable con <code className="text-purple-300">PORT</code>).
+                            </p>
+                            <EndpointTable rows={MCP_HTTP_ENDPOINTS} />
+                            <div className="mt-5">
+                                <Snippet
+                                    title="Ejemplo: analizar estrategia de gas"
+                                    code={`curl -X POST ${API_BASE}/api/mcp/analyze-gas \\
+  -H "X-API-Key: $BEZHAS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"transactionType":"token_transfer","estimatedValueUSD":100,"urgency":"medium"}'`}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Orquestador */}
+                        <div className="rounded-2xl border border-gray-700 bg-gray-900 p-6">
+                            <h3 className="text-lg font-bold text-white mb-2">Orquestador · ejecución compuesta</h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                El backend añade ejecución por nombre, secuencias con contexto compartido y ejecución en paralelo.
+                                Estos endpoints requieren <strong className="text-gray-200">token de administrador</strong>, no API Key.
+                            </p>
+                            <EndpointTable rows={ORCHESTRATOR_ENDPOINTS} />
+                            <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <Snippet
+                                    title="Pipeline con contexto compartido"
+                                    code={`POST /api/mcp/pipeline
+
+{
+  "steps": [
+    { "tool": "analyze_gas_strategy",
+      "params": { "transactionType": "nft_mint",
+                  "estimatedValueUSD": 250 } },
+    { "tool": "calculate_smart_swap",
+      "params": { "direction": "FIAT_TO_BEZ",
+                  "amount": 250 } }
+  ]
+}`}
+                                    accent="text-cyan-200"
+                                />
+                                <Snippet
+                                    title="Respuesta"
+                                    code={`{
+  "success": true,
+  "result": { ... }
+}
+
+// En error:
+{
+  "success": false,
+  "error": "mensaje"
+}`}
+                                    accent="text-yellow-200"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Developer API */}
+                        <div className="rounded-2xl border border-gray-700 bg-gray-900 p-6">
+                            <h3 className="text-lg font-bold text-white mb-2">Developer API · claves y webhooks</h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                Gestión programática de tus credenciales. Acepta <code className="text-purple-300">Authorization: Bearer &lt;JWT&gt;</code>{' '}
+                                o, para flujos Web3 nativos, la cabecera <code className="text-purple-300">x-wallet-address</code>.
+                            </p>
+                            <EndpointTable rows={DEVELOPER_ENDPOINTS} />
+                        </div>
+                    </div>
+                )}
+
+                {activeDoc === 'webhooks' && (
+                    <div className="space-y-6">
+                        {/* Registro */}
+                        <div className="rounded-2xl border border-gray-700 bg-gray-900 p-6">
+                            <h3 className="text-lg font-bold text-white mb-2">Registrar un webhook</h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                Cada webhook cuelga de una API Key concreta: así solo recibes los eventos de los módulos que esa
+                                clave tiene autorizados. Puedes darlo de alta desde la pestaña Webhooks de la consola o por API.
+                            </p>
+                            <Snippet
+                                title="POST /api/developer/keys/:id/webhooks"
+                                code={`{
+  "url": "https://tu-servidor.com/hooks/bezhas",
+  "events": ["payment.completed", "escrow.released"],
+  "secret": "opcional — si lo omites se genera uno de 32 bytes"
+}`}
+                                accent="text-cyan-200"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => goToTab('webhooks')}
+                                className="mt-4 px-4 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold transition-all inline-flex items-center gap-2"
+                            >
+                                <NetworkIcon size={16} /> Gestionar mis webhooks
+                            </button>
+                        </div>
+
+                        {/* Eventos */}
+                        <div className="rounded-2xl border border-gray-700 bg-gray-900 p-6">
+                            <h3 className="text-lg font-bold text-white mb-4">Eventos disponibles</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {WEBHOOK_EVENTS.map((ev) => (
+                                    <div key={ev.name} className="rounded-xl border border-gray-700/70 bg-gray-950 p-4">
+                                        <code className="text-sm text-cyan-300 block mb-1">{ev.name}</code>
+                                        <p className="text-xs text-gray-400">{ev.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Payload y firma */}
+                        <div className="rounded-2xl border border-gray-700 bg-gray-900 p-6">
+                            <h3 className="text-lg font-bold text-white mb-2">Entrega y firma</h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                Cada entrega es un <code className="text-purple-300">POST</code> con cuerpo JSON y va firmada con
+                                HMAC-SHA256 sobre el cuerpo crudo usando tu secret, en la cabecera{' '}
+                                <code className="text-purple-300">x-bezhas-signature</code>. El tiempo de espera es de 10 segundos
+                                y los fallos de entrega se contabilizan por webhook.
+                            </p>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <Snippet
+                                    title="Payload recibido"
+                                    code={`POST https://tu-servidor.com/hooks/bezhas
+Content-Type: application/json
+x-bezhas-signature: 9f86d081884c7d65...
+
+{
+  "event": "payment.completed",
+  "timestamp": "2026-09-12T07:36:11.000Z",
+  "data": { }
+}`}
+                                    accent="text-cyan-200"
+                                />
+                                <Snippet
+                                    title="Verificar la firma (Node.js)"
+                                    code={`import crypto from 'node:crypto';
+
+// OJO: el cuerpo CRUDO, sin parsear ni re-serializar
+app.post('/hooks/bezhas',
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const firma = crypto
+      .createHmac('sha256', process.env.BEZHAS_WEBHOOK_SECRET)
+      .update(req.body)
+      .digest('hex');
+
+    const recibida = req.get('x-bezhas-signature') || '';
+    const ok = firma.length === recibida.length &&
+      crypto.timingSafeEqual(Buffer.from(firma),
+                             Buffer.from(recibida));
+
+    if (!ok) return res.sendStatus(401);
+
+    const { event, data } = JSON.parse(req.body);
+    res.sendStatus(200); // responde rápido, procesa después
+  });`}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Buenas prácticas */}
+                        <div className="rounded-2xl border border-amber-500/40 bg-gray-900 p-6">
+                            <h3 className="text-base font-bold text-amber-200 mb-3 flex items-center gap-2">
+                                <ShieldCheckIcon className="w-5 h-5 text-amber-300" />
+                                Reglas de oro del receptor
+                            </h3>
+                            <ul className="space-y-2">
+                                {[
+                                    'Verifica la firma siempre, y sobre el cuerpo crudo: si parseas y vuelves a serializar, el HMAC no coincidirá.',
+                                    'Compara en tiempo constante (timingSafeEqual), nunca con ===.',
+                                    'Responde 2xx en cuanto valides y procesa en segundo plano: hay 10 segundos de margen.',
+                                    'Haz el manejador idempotente: una reentrega no debe cobrar ni acuñar dos veces.',
+                                    'Trata el secret como una credencial: en variables de entorno, nunca en el repositorio.',
+                                    'Expón el endpoint solo por HTTPS.',
+                                ].map((rule) => (
+                                    <li key={rule} className="flex items-start gap-2 text-sm text-amber-50">
+                                        <CheckIcon size={15} className="text-amber-300 mt-0.5 flex-shrink-0" />
+                                        <span>{rule}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* ── REQUISITOS ──────────────────────────────────────────────── */}
