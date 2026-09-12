@@ -17,20 +17,6 @@ const nextConfig = {
             '@metamask/connect-evm': false,
             'porto/internal': false,
             'porto': false,
-            // Optional x402 packages of @coinbase/cdp-sdk, reached via
-            // @wagmi/connectors/baseAccount -> @base-org/account. The app never
-            // uses the x402 payment flow and the packages are not installed, so
-            // webpack cannot resolve them during `next build`. These non-exact
-            // aliases also cover their subpaths (e.g. @x402/evm/exact/client).
-            '@x402/core': false,
-            '@x402/evm': false,
-            '@x402/svm': false,
-            // @wagmi/core's tempo/Connectors.js imports a bare 'accounts'
-            // specifier that resolves to nothing. The repo pins wagmi to v2,
-            // but @wagmi/connectors (pulled by @web3modal/base) still drags in
-            // a @wagmi/core v3 whose build carries it. Exact-match alias so
-            // only this specifier is stubbed.
-            'accounts$': false,
         };
         // Ignore optional MetaMask SDK modules
         config.externals = [
