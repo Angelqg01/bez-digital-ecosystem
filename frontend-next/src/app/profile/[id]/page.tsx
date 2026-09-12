@@ -41,7 +41,7 @@ const formatDate = (ts: string | number) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function ProfilePage() {
     const params = useParams();
-    const routeAddress = params?.id as string | undefined;
+    const routeAddress = params?.id as `0x${string}` | undefined;
 
     const { address: connectedAddress, isConnected } = useAccount();
     const { disconnect } = useDisconnect();

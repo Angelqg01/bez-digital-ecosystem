@@ -189,16 +189,10 @@ export default function NotificationsPage() {
                     filtered.map(n => {
                         const Icon = ICONS[n.type];
                         const colorClass = COLORS[n.type];
-                        const Wrapper = n.href ? Link : 'div';
-                        const wrapperProps = n.href ? { href: n.href } : {};
+                        const className = `block bg-white dark:bg-gray-900 rounded-2xl border p-5 shadow-soft-lg transition-all hover:shadow-xl cursor-pointer ${!n.read ? 'border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/10' : 'border-light-border dark:border-gray-800'}`;
+                        const onClick = () => markRead(n.id);
 
-                        return (
-                            <Wrapper
-                                key={n.id}
-                                {...wrapperProps}
-                                onClick={() => markRead(n.id)}
-                                className={`block bg-white dark:bg-gray-900 rounded-2xl border p-5 shadow-soft-lg transition-all hover:shadow-xl cursor-pointer ${!n.read ? 'border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/10' : 'border-light-border dark:border-gray-800'}`}
-                            >
+                        const content = (
                                 <div className="flex items-start gap-4">
                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${colorClass}`}>
                                         <Icon size={20} />
@@ -217,7 +211,18 @@ export default function NotificationsPage() {
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
-                            </Wrapper>
+                        );
+
+                        // Link exige href: se ramifica en lugar de repartir props
+                        // opcionales sobre un componente calculado.
+                        return n.href ? (
+                            <Link key={n.id} href={n.href} onClick={onClick} className={className}>
+                                {content}
+                            </Link>
+                        ) : (
+                            <div key={n.id} onClick={onClick} className={className}>
+                                {content}
+                            </div>
                         );
                     })
                 )}
