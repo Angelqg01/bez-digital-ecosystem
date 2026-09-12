@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import useSWR from 'swr';
-import { fetcher } from '../../lib/api';
-
-type TierDef = { name: string; minStake: number; boostPct: number; color: string };
+import { useState } from 'react';
+import Step1Wallet from './steps/Step1Wallet';
+import Step2BezTokens from './steps/Step2BezTokens';
+import Step3Validator from './steps/Step3Validator';
+import Step4EdgeNode from './steps/Step4EdgeNode';
+import Step5ErpWebhook from './steps/Step5ErpWebhook';
 
 export interface OnboardingData {
     companyName: string;
@@ -28,144 +29,113 @@ export interface OnboardingData {
     webhookConfigured: boolean;
 }
 
+const INITIAL: OnboardingData = {
+    companyName: '',
+    guardian: '',
+    dailyLimit: '',
+    walletAddress: '',
+    walletCreated: false,
+    operatorAddress: '',
+    bridgeAmount: '',
+    tokensAcquired: false,
+    bezBalance: '',
+    selectedTier: '',
+    stakeAmount: '',
+    validatorRegistered: false,
+    nodeUrl: '',
+    nodeInstalled: false,
+    erpType: 'woocommerce',
+    webhookUrl: '',
+    webhookSecret: '',
+    selectedSectors: [],
+    webhookConfigured: false,
+};
+
+const STEPS = [
+    { id: 1, title: 'Wallet', description: 'Cuenta multi-sig' },
+    { id: 2, title: 'BEZ Tokens', description: 'Adquisición y bridge' },
+    { id: 3, title: 'Validator', description: 'Stake y registro' },
+    { id: 4, title: 'Edge Node', description: 'Instalación' },
+    { id: 5, title: 'ERP / Webhook', description: 'API + WordPress' },
+];
+
 export default function OnboardingPage() {
-    const [companyName, setCompanyName] = useState('Global Logistics S.A.');
-    const [stakeAmountEth, setStakeAmountEth] = useState('50000');
-    const [doHeartbeat, setDoHeartbeat] = useState(true);
-    const [doRegisterNode, setDoRegisterNode] = useState(true);
+    const [step, setStep] = useState(1);
+    const [data, setData] = useState<OnboardingData>(INITIAL);
 
-    const { data: tiersData } = useSWR<{ tiers: Record<string, TierDef> }>('/validators/tiers', fetcher);
-    const { data: contractsFlat } = useSWR<
-        { contract_name: string; address: string }[]
-    >('/contracts?flat=true', fetcher);
-
-    const contractAddrs = useMemo(() => {
-        const rows = contractsFlat || [];
-        const pick = (name: string) => rows.find((r) => r.contract_name === name)?.address || '';
-        return {
-            bez: pick('BEZCoinV2'),
-            validatorRegistry: pick('ValidatorRegistry'),
-            edgeNodeRewards: pick('EdgeNodeRewards'),
-        };
-    }, [contractsFlat]);
-
-    const cliCommand = useMemo(() => {
-        const args = [
-            'node scripts/register-validator.js',
-            `--chainId ${process.env.NEXT_PUBLIC_CHAIN_ID || '31337'}`,
-            `--rpcUrl ${process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545'}`,
-            `--companyName "${companyName}"`,
-            `--stakeAmountEth ${stakeAmountEth}`,
-            '--privateKey <DEPLOYER_PRIVATE_KEY>',
-        ];
-        // Provide overrides only when backend address registry doesn't have them yet.
-        if (!contractAddrs.validatorRegistry) args.push('--validatorRegistryAddress <ValidatorRegistryAddress>');
-        if (!contractAddrs.edgeNodeRewards) args.push('--edgeNodeRewardsAddress <EdgeNodeRewardsAddress>');
-        if (!contractAddrs.bez) args.push('--bezAddress <BEZCoinV2Address>');
-
-        if (doHeartbeat) args.push('--heartbeat');
-        if (doRegisterNode) args.push('--registerNode');
-
-        return args.join(' \\\\\n');
-    }, [
-        companyName,
-        stakeAmountEth,
-        doHeartbeat,
-        doRegisterNode,
-        contractAddrs.bez,
-        contractAddrs.edgeNodeRewards,
-        contractAddrs.validatorRegistry,
-    ]);
+    const update = (patch: Partial<OnboardingData>) => setData((prev) => ({ ...prev, ...patch }));
+    const next = () => setStep((s) => Math.min(s + 1, STEPS.length));
+    const prev = () => setStep((s) => Math.max(s - 1, 1));
 
     return (
-        <div className="min-h-screen bg-[#03060E] text-[#E8F4FF] p-6">
+        <div className="min-h-screen bg-[#F5F7FB] px-4 py-10">
             <div className="max-w-4xl mx-auto space-y-6">
                 <header>
-                    <h1 className="text-2xl font-semibold">Onboarding Validator (Fase 12B)</h1>
-                    <p className="text-[#3D5E80] mt-1">
-                        Wizard mínimo para preparar el registro/heartbeat del validador. El registro on-chain se
-                        ejecuta con el CLI (ver comando generado).
+                    <p className="text-xs uppercase tracking-wider text-[#3D5E80]">Onboarding empresa</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Alta en la red BeZhas</h1>
+                    <p className="text-sm text-gray-600 mt-1">
+                        Cinco pasos: wallet → tokens → validador → edge node → ERP/Webhook.
+                        Puedes salir en cualquier momento; el estado se guarda al avanzar.
                     </p>
                 </header>
 
-                <section className="border border-[#0D2040] rounded-lg p-4 bg-[#0C1628]">
-                    <h2 className="font-semibold">1) Datos del validador</h2>
-                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <label className="space-y-1">
-                            <span className="text-sm text-[#3D5E80]">Company Name</span>
-                            <input
-                                className="w-full bg-[#03060E] border border-[#0D2040] rounded px-3 py-2"
-                                value={companyName}
-                                onChange={(e) => setCompanyName(e.target.value)}
-                            />
-                        </label>
-                        <label className="space-y-1">
-                            <span className="text-sm text-[#3D5E80]">Stake Amount (BEZ, ETH-decimals)</span>
-                            <input
-                                className="w-full bg-[#03060E] border border-[#0D2040] rounded px-3 py-2"
-                                value={stakeAmountEth}
-                                onChange={(e) => setStakeAmountEth(e.target.value)}
-                            />
-                        </label>
-                    </div>
+                <nav aria-label="Progreso" className="grid grid-cols-5 gap-2">
+                    {STEPS.map((s) => {
+                        const state = s.id === step ? 'active' : s.id < step ? 'done' : 'todo';
+                        const base = 'rounded-lg border px-3 py-2 text-left transition';
+                        const styles =
+                            state === 'active'
+                                ? 'border-bezhas-accent bg-white shadow-sm'
+                                : state === 'done'
+                                ? 'border-green-200 bg-green-50 hover:bg-green-100'
+                                : 'border-gray-200 bg-white/60 text-gray-400 cursor-not-allowed';
+                        return (
+                            <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => state !== 'todo' && setStep(s.id)}
+                                disabled={state === 'todo'}
+                                className={`${base} ${styles}`}
+                            >
+                                <div className="text-[11px] uppercase tracking-wider text-[#3D5E80]">
+                                    Paso {s.id}
+                                </div>
+                                <div className="text-sm font-semibold text-gray-900">{s.title}</div>
+                                <div className="text-[11px] text-gray-500">{s.description}</div>
+                            </button>
+                        );
+                    })}
+                </nav>
 
-                    <div className="mt-4 flex items-center gap-3">
-                        <label className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                checked={doHeartbeat}
-                                onChange={(e) => setDoHeartbeat(e.target.checked)}
-                            />
-                            Heartbeat
-                        </label>
-                        <label className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                checked={doRegisterNode}
-                                onChange={(e) => setDoRegisterNode(e.target.checked)}
-                            />
-                            Register EdgeNode
-                        </label>
-                    </div>
-                </section>
+                <div>
+                    {step === 1 && <Step1Wallet data={data} update={update} next={next} prev={prev} />}
+                    {step === 2 && <Step2BezTokens data={data} update={update} next={next} prev={prev} />}
+                    {step === 3 && <Step3Validator data={data} update={update} next={next} prev={prev} />}
+                    {step === 4 && <Step4EdgeNode data={data} update={update} next={next} prev={prev} />}
+                    {step === 5 && <Step5ErpWebhook data={data} update={update} next={next} prev={prev} />}
+                </div>
 
-                <section className="border border-[#0D2040] rounded-lg p-4 bg-[#0C1628]">
-                    <h2 className="font-semibold">2) Tier & Direcciones de contratos</h2>
-                    <div className="mt-3 space-y-2 text-sm">
-                        {tiersData?.tiers ? (
-                            <>
-                                <p className="text-[#3D5E80]">Tiers (min stake / boost):</p>
-                                {Object.entries(tiersData.tiers).map(([tierId, def]) => (
-                                    <div key={tierId}>
-                                        <span className="font-semibold">Tier {def.name}:</span>{' '}
-                                        <span>
-                                            minStake={def.minStake} BEZ, boost={def.boostPct / 100}x
-                                        </span>
-                                    </div>
-                                ))}
-                            </>
-                        ) : (
-                            <p className="text-[#3D5E80]">Cargando tiers...</p>
-                        )}
-
-                        <div className="pt-2 text-[#3D5E80]">Direcciones (desde backend):</div>
-                        <div className="break-all">
-                            <div>BEZCoinV2: {contractAddrs.bez || <span className="text-[#3D5E80]">No encontrado</span>}</div>
-                            <div>ValidatorRegistry: {contractAddrs.validatorRegistry || <span className="text-[#3D5E80]">No encontrado</span>}</div>
-                            <div>EdgeNodeRewards: {contractAddrs.edgeNodeRewards || <span className="text-[#3D5E80]">No encontrado</span>}</div>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="border border-[#0D2040] rounded-lg p-4 bg-[#0C1628]">
-                    <h2 className="font-semibold">3) Comando CLI</h2>
-                    <p className="text-[#3D5E80] mt-2 text-sm">
-                        Copia/pega este comando en tu terminal (ajustando `--privateKey` y overrides si faltan direcciones).
-                    </p>
-                    <pre className="mt-3 p-3 bg-[#03060E] border border-[#0D2040] rounded overflow-auto text-sm">
-                        {cliCommand}
-                    </pre>
-                </section>
+                <div className="flex items-center justify-between pt-2">
+                    <button
+                        type="button"
+                        onClick={prev}
+                        disabled={step === 1}
+                        className="px-4 py-2 text-sm rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        ← Anterior
+                    </button>
+                    <span className="text-xs text-gray-500">
+                        Paso {step} de {STEPS.length}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={next}
+                        disabled={step === STEPS.length}
+                        className="px-4 py-2 text-sm rounded-lg bg-bezhas-accent text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        Siguiente →
+                    </button>
+                </div>
             </div>
         </div>
     );
