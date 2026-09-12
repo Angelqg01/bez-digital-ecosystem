@@ -34,7 +34,8 @@ import {
   Building2,
   Package,
   CircleDollarSign,
-  Droplets
+  Droplets,
+  Plug
 } from 'lucide-react';
 
 /**
@@ -201,6 +202,15 @@ export const sidebarNavItems = [
   // ========================================
   // ⚙️ PLATFORM - GESTIÓN DE PLATAFORMA
   // ========================================
+  {
+    path: '/developers',
+    icon: <Plug size={22} />,
+    label: 'BeZhas MCP',
+    description: 'Conecta tu IA a todo el ecosistema',
+    roles: ['public', 'user', 'admin'],
+    category: 'platform',
+    badge: 'MCP'
+  },
   {
     path: '/developer-console',
     icon: <Code size={22} />,
