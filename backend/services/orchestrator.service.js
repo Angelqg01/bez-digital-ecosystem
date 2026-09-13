@@ -200,8 +200,11 @@ async function blockscoutHandler({ action = 'token_info', address = BEZ_TOKEN, l
                 };
             }
             case 'holder_analysis': {
-                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/tokens/${address}/holders?limit=${limit}`);
-                const holders = (data.items || []).map(h => ({
+                // La API v2 de Blockscout no acepta `limit` en esta ruta: pagina con
+                // `next_page_params` y devuelve 422 ante el parámetro. Se pide la
+                // página y se recorta aquí, que es lo que el llamante espera.
+                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/tokens/${address}/holders`);
+                const holders = (data.items || []).slice(0, limit).map(h => ({
                     address: h.address?.hash,
                     value: h.value,
                     percentage: h.percentage,
@@ -214,8 +217,9 @@ async function blockscoutHandler({ action = 'token_info', address = BEZ_TOKEN, l
                 };
             }
             case 'transaction_history': {
-                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/addresses/${address}/transactions?limit=${limit}`);
-                const txs = (data.items || []).map(tx => ({
+                // Mismo motivo que en holder_analysis: sin `limit` en la query.
+                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/addresses/${address}/transactions`);
+                const txs = (data.items || []).slice(0, limit).map(tx => ({
                     hash: tx.hash,
                     from: tx.from?.hash,
                     to: tx.to?.hash,
