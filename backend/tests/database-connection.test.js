@@ -8,17 +8,33 @@
 
 const mongoose = require('mongoose');
 
-const describeDatabase = process.env.DATABASE_URL || process.env.RUN_DB_TESTS === 'true'
-    ? describe
-    : describe.skip;
+/**
+ * Estas pruebas necesitan un MongoDB de verdad, así que se activan con una
+ * señal explícita: `RUN_DB_TESTS=true`. La CI la enciende, porque levanta
+ * MongoDB como servicio; en una máquina sin base de datos se omiten en vez de
+ * fallar quince veces por algo que no es del código.
+ *
+ * La URI sale de `MONGODB_URI`. Antes salía de `DATABASE_URL`, y ahí estaba el
+ * fallo: en este código esa variable es la cadena de **PostgreSQL** (ver
+ * models/pg/Notification.js), y la CI la define como `sqlite://:memory:`. Las
+ * pruebas se activaban y acto seguido intentaban conectar Mongoose a una URL
+ * de SQLite — las quince fallaban en bloque.
+ *
+ * Ojo: `tests/setup.js` fija `MONGODB_URI` incondicionalmente, así que su mera
+ * presencia no sirve como señal de que haya una base de datos delante. De ahí
+ * que la condición sea la bandera y no la variable.
+ */
+const mongoUri = (uri) => typeof uri === 'string' && /^mongodb(\+srv)?:\/\//.test(uri);
+
+const MONGO_URI = [process.env.MONGODB_URI, process.env.DATABASE_URL].find(mongoUri)
+    || 'mongodb://localhost:27017/bezhas_test';
+
+const describeDatabase = process.env.RUN_DB_TESTS === 'true' ? describe : describe.skip;
 
 describeDatabase('Database Connection Tests', () => {
     beforeAll(async () => {
-        // Conectar a MongoDB antes de los tests
-        const DATABASE_URL = process.env.DATABASE_URL || 'mongodb://localhost:27017/bezhas_test';
-
         try {
-            await mongoose.connect(DATABASE_URL, {
+            await mongoose.connect(MONGO_URI, {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
                 serverSelectionTimeoutMS: 5000
@@ -271,15 +287,13 @@ describeDatabase('Database Connection Tests', () => {
 
 // Test de conexión standalone (puede ejecutarse independientemente)
 describe('Standalone Connection Test', () => {
-    test('should connect to DATABASE_URL from environment', async () => {
-        const DATABASE_URL = process.env.DATABASE_URL;
-
-        if (!DATABASE_URL) {
-            console.warn('⚠️ DATABASE_URL not set, skipping test');
+    test('should connect to the MongoDB URI from environment', async () => {
+        if (process.env.RUN_DB_TESTS !== 'true') {
+            console.warn('⚠️ RUN_DB_TESTS no está activo, se omite');
             return;
         }
 
-        const connection = await mongoose.createConnection(DATABASE_URL, {
+        const connection = await mongoose.createConnection(MONGO_URI, {
             serverSelectionTimeoutMS: 5000
         }).asPromise();
 

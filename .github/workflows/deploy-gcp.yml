@@ -173,7 +173,9 @@ jobs:
           MONGODB_URI: "mongodb://localhost:27017/bezhas_test"
           REDIS_URL: "redis://localhost:6379"
           JWT_SECRET: test_jwt_secret_key_for_ci
-          DATABASE_URL: "sqlite://:memory:"
+          # Este job levanta MongoDB como servicio, así que las pruebas que
+          # necesitan base de datos sí pueden ejecutarse aquí.
+          RUN_DB_TESTS: "true"
 
   # ===================================================
   # JOB 4: Frontend Build & Test
