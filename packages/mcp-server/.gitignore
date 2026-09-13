@@ -1,0 +1,10 @@
+# Artefactos de compilación. Nunca deben versionarse dentro de src/: los
+# imports de este paquete llevan extensión `.js` (ESM), así que un `.js`
+# compilado junto a su `.ts` lo ECLIPSA — Node resuelve el fichero real y las
+# ediciones del fuente dejan de tener efecto. Fue exactamente lo que impidió
+# que el servidor arrancara durante meses.
+dist/
+build/
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts

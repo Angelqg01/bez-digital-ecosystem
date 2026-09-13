@@ -1,5 +1,6 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
+import { z } from "zod";
 import 'dotenv/config';
 
 // Load these from environment
@@ -112,15 +113,14 @@ export function registerTelegramMcp(server: any): void {
         "send_telegram_message",
         "Send a message proactively to the system Administrator via Telegram. Use this to report critical security alerts, summaries of platform status, or request human intervention. Do not overuse to avoid rate-limiting.",
         {
-            message: {
-                type: "string",
-                description: "The main content of the message. You can use markdown formatting (bold, italic, code blocks).",
-            },
-            severity: {
-                type: "string",
-                enum: ["low", "medium", "high", "critical"],
-                description: "The urgency of the message. High and critical will use more urgent emojis.",
-            }
+            message: z
+                .string()
+                .min(1)
+                .describe("The main content of the message. You can use markdown formatting (bold, italic, code blocks)."),
+            severity: z
+                .enum(["low", "medium", "high", "critical"])
+                .optional()
+                .describe("The urgency of the message. High and critical will use more urgent emojis."),
         },
         async (args: any) => {
             return await sendTelegramMessage(args);

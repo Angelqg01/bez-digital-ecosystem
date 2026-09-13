@@ -1,5 +1,6 @@
 import axios from 'axios';
 import 'dotenv/config';
+import { z } from 'zod';
 
 export const SYNC_CONTACTS_TOOLS = [
     {
@@ -126,36 +127,27 @@ async function syncContacts(contacts: any[], userToken: string) {
     }
 }
 
+/** Un contacto trae correo, teléfono o ambos; al menos uno hace falta. */
+const contactSchema = z
+    .object({
+        name: z.string().optional().describe("Name of the contact"),
+        email: z.string().optional().describe("Email address of the contact (optional if phone is provided)"),
+        phone: z.string().optional().describe("Phone number of the contact (optional if email is provided)"),
+    })
+    .refine((c) => Boolean(c.email || c.phone), {
+        message: "Cada contacto necesita al menos email o phone",
+    });
+
 export function registerSyncContactsMcp(server: any) {
     server.tool(
         "sync_contacts",
         "Synchronize a list of contacts (email or phone) to the BeZhas network. Local hashing ensures privacy.",
         {
-            contacts: {
-                type: "array",
-                description: "List of contacts to sync.",
-                items: {
-                    type: "object",
-                    properties: {
-                        name: {
-                            type: "string",
-                            description: "Name of the contact"
-                        },
-                        email: {
-                            type: "string",
-                            description: "Email address of the contact"
-                        },
-                        phone: {
-                            type: "string",
-                            description: "Phone number of the contact"
-                        }
-                    }
-                }
-            },
-            userToken: {
-                type: "string",
-                description: "The authentication token of the BeZhas user executing the sync."
-            }
+            contacts: z.array(contactSchema).min(1).describe("List of contacts to sync."),
+            userToken: z
+                .string()
+                .min(1)
+                .describe("The authentication token of the BeZhas user executing the sync."),
         },
         async (args: any) => {
             return await syncContacts(args.contacts, args.userToken);

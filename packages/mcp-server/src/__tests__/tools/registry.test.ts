@@ -78,3 +78,31 @@ describe('Tool Registry', () => {
         }
     });
 });
+
+/**
+ * Las pruebas de arriba usan un servidor simulado, que acepta cualquier cosa
+ * como esquema. Por eso no vieron que dos herramientas declaraban el suyo en
+ * JSON-Schema crudo y el SDK las rechazaba al registrarlas: el servidor MCP no
+ * arrancaba, ni por STDIO ni por HTTP, y ninguna prueba lo detectaba.
+ *
+ * Este bloque registra contra un `McpServer` de verdad, que es lo único que
+ * reproduce el fallo.
+ */
+describe('registro contra un McpServer real', () => {
+    it('registra las 20 herramientas sin que el SDK rechace ningún esquema', async () => {
+        const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js');
+        const server = new McpServer({ name: 'registry-test', version: '0.0.0' });
+
+        expect(() => registerTools(server as any)).not.toThrow();
+    });
+
+    it('sigue registrándolas con el vigilante de por medio', async () => {
+        // El blindaje envuelve `.tool()`, así que también tiene que dejar
+        // pasar los esquemas intactos hasta el SDK.
+        const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js');
+        const { hardenServer } = await import('../../security/harden.js');
+        const server = new McpServer({ name: 'registry-test-harden', version: '0.0.0' });
+
+        expect(() => registerTools(hardenServer(server as any))).not.toThrow();
+    });
+});
