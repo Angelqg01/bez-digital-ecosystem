@@ -1,7 +1,14 @@
 /**
  * BeZhas Watchdog — superficie pública
  */
-export { auditLog, AuditLog, subjectId, type AuditEntry, type Verdict } from './auditLog.js';
+export {
+    auditLog,
+    AuditLog,
+    subjectFromCredentials,
+    subjectId,
+    type AuditEntry,
+    type Verdict,
+} from './auditLog.js';
 export { guardian, Guardian, WatchdogError, type Decision, type GuardContext } from './guardian.js';
 export { hardenServer, type HardenOptions } from './harden.js';
 export {
@@ -15,3 +22,4 @@ export {
 export { extractAmountUSD, policy, riskOf, TOOL_RISK, type RiskTier } from './policy.js';
 export { rateLimiter, RateLimiter } from './rateLimiter.js';
 export { redact, scan, type Finding, type ScanResult } from './scanner.js';
+export { throttle, type ThrottleOptions } from './throttle.js';

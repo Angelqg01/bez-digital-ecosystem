@@ -50,6 +50,42 @@ export function subjectId(raw: string): string {
     return 'sbj_' + createHmac('sha256', SUBJECT_SALT).update(raw).digest('hex').slice(0, 16);
 }
 
+/**
+ * Elige qué credencial puede convertirse en sujeto, y cuál no debe tocarse.
+ *
+ * `Basic` transporta una contraseña elegida por una persona: aunque se
+ * seudonimice, un registro de auditoría filtrado permitiría atacarla por
+ * fuerza bruta fuera de línea, porque su entropía es baja. Esa rama nunca
+ * llega al HMAC; se cae a la IP. Una API Key o un Bearer opacos sí son
+ * material aleatorio de 192-256 bits, donde el HMAC con sal es suficiente.
+ *
+ * El esquema se incorpora al valor para que la misma cadena presentada por
+ * dos vías distintas no colapse en el mismo sujeto.
+ */
+export function subjectFromCredentials(opts: {
+    apiKey?: string;
+    authorization?: string;
+    ip?: string;
+}): string {
+    const fallback = `ip:${opts.ip ?? 'desconocida'}`;
+
+    if (opts.apiKey) return subjectId(`apikey:${opts.apiKey}`);
+
+    const auth = (opts.authorization ?? '').trim();
+    if (auth) {
+        const [scheme, ...rest] = auth.split(/\s+/);
+        const credential = rest.join(' ');
+        // Solo los portadores opacos entran; Basic (y cualquier esquema
+        // desconocido con contraseña dentro) se descarta sin hashear.
+        if (/^bearer$/i.test(scheme) && credential) {
+            return subjectId(`bearer:${credential}`);
+        }
+        return subjectId(fallback);
+    }
+
+    return subjectId(fallback);
+}
+
 /** Recorta los campos de texto antes de persistirlos. */
 function clamp(text: string): string {
     const flat = String(text).replace(/[\r\n]+/g, ' ');

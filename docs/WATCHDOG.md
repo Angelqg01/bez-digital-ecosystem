@@ -94,9 +94,14 @@ GET  /api/mcp/watchdog/audit     últimas decisiones
 POST /api/mcp/watchdog/inspect   analiza un texto sin ejecutarlo
 ```
 
-Los tres van limitados por sujeto y minuto (30 / 30 / 60) y responden `429`
-al pasarse: exponen estado interno, así que sin freno servirían para sondear
-el sistema o para vaciar la ventana de auditoría a base de peticiones.
+Los tres van limitados por sujeto y ruta (30 / 30 / 60 por minuto) y responden
+`429` al pasarse: exponen estado interno, así que sin freno servirían para
+sondear el sistema o para desplazar la ventana de auditoría a base de
+peticiones hasta que la evidencia de un ataque saliera de ella. El limitador es
+`express-rate-limit`, el mismo que usa el backend, y emite las cabeceras
+`RateLimit-*` estándar. La clave es el sujeto opaco y no la IP: detrás de un
+proxy todas las llamadas compartirían origen y una sola clave agotaría el cupo
+del resto.
 
 La auditoría **nunca incluye el contenido inspeccionado**, solo el veredicto,
 los identificadores de patrón y la ruta donde saltó. La evidencia de un secreto
@@ -104,9 +109,24 @@ se guarda ofuscada, para que el propio registro no se convierta en la filtració
 
 ### El registro tampoco guarda credenciales
 
-El sujeto de cada entrada es `sbj_` + HMAC-SHA256 de la API Key (o de la IP si
-no hay clave) con `WATCHDOG_SUBJECT_SALT`. Permite agrupar por llamante sin
-conservar nada reversible. Los campos de texto (`tool`, `subject`, `reason`)
+El sujeto de cada entrada es `sbj_` + HMAC-SHA256 con `WATCHDOG_SUBJECT_SALT`
+de la credencial presentada. Permite agrupar por llamante sin conservar nada
+reversible. Qué entra y qué no:
+
+| Credencial | Sujeto |
+|---|---|
+| `X-API-Key` | HMAC de la clave |
+| `Authorization: Bearer <token>` | HMAC del token |
+| `Authorization: Basic <…>` | **HMAC de la IP** — la credencial no se toca |
+| Otro esquema, o ninguna | HMAC de la IP |
+
+`Basic` transporta una contraseña elegida por una persona. Aunque se
+seudonimice, su entropía es baja, así que un registro de auditoría filtrado
+permitiría atacarla por fuerza bruta fuera de línea; esa rama nunca llega al
+HMAC. Una API Key (`crypto.randomBytes(24)`, 192 bits) o un Bearer opaco sí
+son material aleatorio donde el HMAC con sal secreta es suficiente. El esquema
+se incorpora al valor, para que la misma cadena presentada por dos vías
+distintas no colapse en el mismo sujeto. Los campos de texto (`tool`, `subject`, `reason`)
 se recortan a 200 caracteres y se aplanan los saltos de línea antes de
 escribirlos, para que una entrada controlada por el atacante no pueda inflar
 el fichero ni inyectar líneas falsas en el rastro.

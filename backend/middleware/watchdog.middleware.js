@@ -201,10 +201,37 @@ const SUBJECT_SALT = process.env.WATCHDOG_SUBJECT_SALT || crypto.randomBytes(32)
  * parcial. El HMAC con sal permite agrupar por sujeto sin conservar nada
  * reversible.
  */
-function subjectOf(req) {
-    const key = req.header('X-API-Key') || req.header('authorization') || '';
-    const raw = key || `ip:${req.ip}`;
+function hmacSubject(raw) {
     return 'sbj_' + crypto.createHmac('sha256', SUBJECT_SALT).update(String(raw)).digest('hex').slice(0, 16);
+}
+
+/**
+ * Elige qué credencial puede convertirse en sujeto, y cuál no debe tocarse.
+ *
+ * `Basic` transporta una contraseña elegida por una persona: aunque se
+ * seudonimice, un registro de auditoría filtrado permitiría atacarla por
+ * fuerza bruta fuera de línea, porque su entropía es baja. Esa rama nunca
+ * llega al HMAC; se cae a la IP. Una API Key o un Bearer opacos sí son
+ * material aleatorio de 192-256 bits, donde el HMAC con sal es suficiente.
+ */
+function subjectOf(req) {
+    const fallback = `ip:${req.ip}`;
+
+    const apiKey = req.header('X-API-Key');
+    if (apiKey) return hmacSubject(`apikey:${apiKey}`);
+
+    const auth = String(req.header('authorization') || '').trim();
+    if (auth) {
+        const [scheme, ...rest] = auth.split(/\s+/);
+        const credential = rest.join(' ');
+        // Solo los portadores opacos entran; Basic (y cualquier esquema
+        // desconocido con contraseña dentro) se descarta sin hashear.
+        if (/^bearer$/i.test(scheme) && credential) {
+            return hmacSubject(`bearer:${credential}`);
+        }
+    }
+
+    return hmacSubject(fallback);
 }
 
 /**

@@ -25,7 +25,14 @@ import express from 'express';
 import cors from 'cors';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools } from './tools/index.js';
-import { auditLog, guardian, hardenServer, policy, rateLimiter, subjectId } from './security/index.js';
+import {
+    auditLog,
+    guardian,
+    hardenServer,
+    policy,
+    subjectFromCredentials,
+    throttle as makeThrottle,
+} from './security/index.js';
 import { config } from './config.js';
 
 const app: ReturnType<typeof express> = express();
@@ -37,30 +44,17 @@ app.use(express.json({ limit: process.env.MCP_BODY_LIMIT || '1mb' }));
 // Identifica al solicitante para los techos por sujeto del vigilante.
 // El identificador es opaco: no se conserva material de la credencial.
 app.use((req, _res, next) => {
-    const key = req.header('X-API-Key') || req.header('authorization') || '';
-    currentSubject = subjectId(key || `ip:${req.ip}`);
+    currentSubject = subjectFromCredentials({
+        apiKey: req.header('X-API-Key') ?? undefined,
+        authorization: req.header('authorization') ?? undefined,
+        ip: req.ip,
+    });
     next();
 });
 
-/**
- * Límite de ritmo para los endpoints de observación del vigilante. Exponen
- * estado y auditoría, así que sin freno servirían para sondear el sistema.
- */
-function throttle(limitPerMinute: number) {
-    return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        const subject = `${currentSubject ?? 'anon'}:${req.path}`;
-        const { perMinute } = rateLimiter.countCall(subject);
-        if (perMinute > limitPerMinute) {
-            res.status(429).json({
-                success: false,
-                error: 'Demasiadas peticiones',
-                retryAfterSeconds: 60,
-            });
-            return;
-        }
-        next();
-    };
-}
+/** Limitador por sujeto para los endpoints de observación (ver security/throttle). */
+const throttle = (limitPerMinute: number) =>
+    makeThrottle(limitPerMinute, { resolveSubject: () => currentSubject });
 
 // Initialize MCP Server (internal, not connected to transport)
 const mcpServer = new McpServer({
