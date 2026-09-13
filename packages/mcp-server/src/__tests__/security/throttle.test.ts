@@ -9,7 +9,8 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import express from 'express';
 import { afterEach, describe, expect, it } from 'vitest';
-import { throttle } from '../../security/throttle.js';
+import rateLimit from 'express-rate-limit';
+import { watchdogLimiter } from '../../security/throttle.js';
 
 let server: Server | undefined;
 
@@ -21,10 +22,10 @@ afterEach(async () => {
 /** Levanta un servidor con el limitador puesto y devuelve su URL base. */
 async function listen(limit: number, subject: () => string | undefined): Promise<string> {
     const app = express();
-    app.get('/status', throttle(limit, { resolveSubject: subject }), (_req, res) => {
+    app.get('/status', rateLimit(watchdogLimiter(limit, { resolveSubject: subject })), (_req, res) => {
         res.json({ ok: true });
     });
-    app.get('/otra', throttle(limit, { resolveSubject: subject }), (_req, res) => {
+    app.get('/otra', rateLimit(watchdogLimiter(limit, { resolveSubject: subject })), (_req, res) => {
         res.json({ ok: true });
     });
 

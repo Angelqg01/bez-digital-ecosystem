@@ -99,7 +99,9 @@ Los tres van limitados por sujeto y ruta (30 / 30 / 60 por minuto) y responden
 sondear el sistema o para desplazar la ventana de auditoría a base de
 peticiones hasta que la evidencia de un ataque saliera de ella. El limitador es
 `express-rate-limit`, el mismo que usa el backend, y emite las cabeceras
-`RateLimit-*` estándar. La clave es el sujeto opaco y no la IP: detrás de un
+`RateLimit-*` estándar. La llamada a `rateLimit()` se hace en el punto de
+montaje, junto a la ruta que protege: envolverla en un ayudante escondía el
+control tanto del lector como del análisis estático. La clave es el sujeto opaco y no la IP: detrás de un
 proxy todas las llamadas compartirían origen y una sola clave agotaría el cupo
 del resto.
 

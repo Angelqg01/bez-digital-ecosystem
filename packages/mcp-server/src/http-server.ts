@@ -23,6 +23,7 @@
  */
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools } from './tools/index.js';
 import {
@@ -31,7 +32,7 @@ import {
     hardenServer,
     policy,
     subjectFromRequest,
-    throttle as makeThrottle,
+    watchdogLimiter,
 } from './security/index.js';
 import { config } from './config.js';
 
@@ -50,9 +51,17 @@ app.use((req, _res, next) => {
     next();
 });
 
-/** Limitador por sujeto para los endpoints de observación (ver security/throttle). */
-const throttle = (limitPerMinute: number) =>
-    makeThrottle(limitPerMinute, { resolveSubject: () => currentSubject });
+/**
+ * Limitadores de los endpoints de observación. `rateLimit()` se llama aquí, a
+ * la vista de las rutas que protege, en vez de dentro de un ayudante: así el
+ * control es comprobable leyendo el fichero, sin seguir dos saltos de módulo.
+ */
+const limiterOptions = (limitPerMinute: number) =>
+    watchdogLimiter(limitPerMinute, { resolveSubject: () => currentSubject });
+
+const statusLimiter = rateLimit(limiterOptions(30));
+const auditLimiter = rateLimit(limiterOptions(30));
+const inspectLimiter = rateLimit(limiterOptions(60));
 
 // Initialize MCP Server (internal, not connected to transport)
 const mcpServer = new McpServer({
@@ -79,7 +88,7 @@ app.get('/api/mcp/health', (_req, res) => {
 
 // ─── Watchdog ──────────────────────────────────────────────
 /** Estado del vigilante: política activa e integridad de la auditoría. */
-app.get('/api/mcp/watchdog/status', throttle(30), (_req, res) => {
+app.get('/api/mcp/watchdog/status', statusLimiter, (_req, res) => {
     res.json({
         enforcing: policy.enforce,
         blockAtSeverity: policy.blockAtSeverity,
@@ -91,7 +100,7 @@ app.get('/api/mcp/watchdog/status', throttle(30), (_req, res) => {
 });
 
 /** Últimas decisiones. Nunca incluye el contenido inspeccionado. */
-app.get('/api/mcp/watchdog/audit', throttle(30), (req, res) => {
+app.get('/api/mcp/watchdog/audit', auditLimiter, (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 50, 200);
     res.json({ entries: auditLog.recent(limit), chain: auditLog.verifyChain() });
 });
@@ -100,7 +109,7 @@ app.get('/api/mcp/watchdog/audit', throttle(30), (req, res) => {
  * Analiza un texto sin ejecutarlo. Permite a otros servicios del ecosistema
  * (backend, panel de admin) usar el mismo criterio que el MCP.
  */
-app.post('/api/mcp/watchdog/inspect', throttle(60), (req, res) => {
+app.post('/api/mcp/watchdog/inspect', inspectLimiter, (req, res) => {
     const decision = guardian.inspectOutput(
         { tool: 'watchdog_inspect', subject: currentSubject },
         req.body?.content ?? req.body,

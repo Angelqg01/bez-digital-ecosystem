@@ -22,4 +22,4 @@ export {
 export { extractAmountUSD, policy, riskOf, TOOL_RISK, type RiskTier } from './policy.js';
 export { rateLimiter, RateLimiter } from './rateLimiter.js';
 export { redact, scan, type Finding, type ScanResult } from './scanner.js';
-export { throttle, type ThrottleOptions } from './throttle.js';
+export { watchdogLimiter, type ThrottleOptions } from './throttle.js';
