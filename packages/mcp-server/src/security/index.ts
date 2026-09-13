@@ -4,7 +4,7 @@
 export {
     auditLog,
     AuditLog,
-    subjectFromCredentials,
+    subjectFromRequest,
     subjectId,
     type AuditEntry,
     type Verdict,

@@ -30,7 +30,7 @@ import {
     guardian,
     hardenServer,
     policy,
-    subjectFromCredentials,
+    subjectFromRequest,
     throttle as makeThrottle,
 } from './security/index.js';
 import { config } from './config.js';
@@ -42,13 +42,11 @@ app.use(cors());
 app.use(express.json({ limit: process.env.MCP_BODY_LIMIT || '1mb' }));
 
 // Identifica al solicitante para los techos por sujeto del vigilante.
-// El identificador es opaco: no se conserva material de la credencial.
+// Deriva de la IP, no de la cabecera de clave: este servidor no la valida, así
+// que un tope indexado por ella se esquiva enviando una clave distinta cada
+// vez. Ver `subjectFromRequest`.
 app.use((req, _res, next) => {
-    currentSubject = subjectFromCredentials({
-        apiKey: req.header('X-API-Key') ?? undefined,
-        authorization: req.header('authorization') ?? undefined,
-        ip: req.ip,
-    });
+    currentSubject = subjectFromRequest({ ip: req.ip });
     next();
 });
 

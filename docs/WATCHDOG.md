@@ -107,29 +107,34 @@ La auditoría **nunca incluye el contenido inspeccionado**, solo el veredicto,
 los identificadores de patrón y la ruta donde saltó. La evidencia de un secreto
 se guarda ofuscada, para que el propio registro no se convierta en la filtración.
 
-### El registro tampoco guarda credenciales
+### El registro no toca la credencial, y el tope ata de verdad
 
-El sujeto de cada entrada es `sbj_` + HMAC-SHA256 con `WATCHDOG_SUBJECT_SALT`
-de la credencial presentada. Permite agrupar por llamante sin conservar nada
-reversible. Qué entra y qué no:
+El sujeto de cada entrada — a quién se le imputan los topes de ritmo y de
+importe, y bajo qué etiqueta queda en la auditoría — es `sbj_` + HMAC-SHA256
+con `WATCHDOG_SUBJECT_SALT` de la **IP** del llamante, o de su id de cuenta
+cuando existe una identidad autenticada.
 
-| Credencial | Sujeto |
-|---|---|
-| `X-API-Key` | HMAC de la clave |
-| `Authorization: Bearer <token>` | HMAC del token |
-| `Authorization: Basic <…>` | **HMAC de la IP** — la credencial no se toca |
-| Otro esquema, o ninguna | HMAC de la IP |
+**La credencial no interviene, y es deliberado.** El servidor MCP lee
+`X-API-Key` pero no la valida contra nada. Derivar el sujeto de esa cabecera
+tenía dos consecuencias, ambas malas:
 
-`Basic` transporta una contraseña elegida por una persona. Aunque se
-seudonimice, su entropía es baja, así que un registro de auditoría filtrado
-permitiría atacarla por fuerza bruta fuera de línea; esa rama nunca llega al
-HMAC. Una API Key (`crypto.randomBytes(24)`, 192 bits) o un Bearer opaco sí
-son material aleatorio donde el HMAC con sal secreta es suficiente. El esquema
-se incorpora al valor, para que la misma cadena presentada por dos vías
-distintas no colapse en el mismo sujeto. Los campos de texto (`tool`, `subject`, `reason`)
-se recortan a 200 caracteres y se aplanan los saltos de línea antes de
-escribirlos, para que una entrada controlada por el atacante no pueda inflar
-el fichero ni inyectar líneas falsas en el rastro.
+- **El tope no ataba.** Bastaba enviar una clave distinta en cada petición para
+  estrenar cupo de ritmo y de importe. Un control que se esquiva con una línea
+  de código es peor que no tenerlo, porque aparenta protección.
+- **Metía material de credencial en el rastro.** `Authorization` puede traer
+  `Basic base64(usuario:contraseña)`. Una contraseña elegida por una persona
+  tiene poca entropía: si el registro de auditoría se filtrara, sería atacable
+  por fuerza bruta fuera de línea aunque estuviera seudonimizada.
+
+La IP no es un identificador perfecto — tras un proxy compartido varios
+llamantes caen en el mismo cupo, salvo que se configure `trust proxy` — pero
+es un tope que ata en vez de uno que lo aparenta. Cuando exista una capa que
+valide la clave, el id de cuenta toma el relevo sin tocar nada más.
+
+Los campos de texto (`tool`, `subject`, `reason`) se recortan a 200 caracteres
+y se aplanan los saltos de línea antes de escribirlos, para que una entrada
+controlada por el atacante no pueda inflar el fichero ni inyectar líneas falsas
+en el rastro.
 
 ### El saneado no puede contaminar el prototipo
 

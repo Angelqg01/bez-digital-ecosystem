@@ -3,7 +3,7 @@
  * detenido, o un uso legítimo que no debe estorbarse.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AuditLog, subjectFromCredentials, subjectId } from '../../security/auditLog.js';
+import { AuditLog, subjectFromRequest, subjectId } from '../../security/auditLog.js';
 import { Guardian, WatchdogError } from '../../security/guardian.js';
 import { hardenServer } from '../../security/harden.js';
 import { extractAmountUSD, riskOf } from '../../security/policy.js';
@@ -352,30 +352,24 @@ describe('endurecimiento del propio vigilante', () => {
         expect(subjectId('')).toBe('anonymous');
     });
 
-    it('acepta como sujeto una API Key o un Bearer opacos', () => {
-        const key = fake.bezhasKey();
-        const byKey = subjectFromCredentials({ apiKey: key, ip: '10.0.0.1' });
-        const byBearer = subjectFromCredentials({ authorization: `Bearer ${key}`, ip: '10.0.0.1' });
+    it('el sujeto no depende de la credencial: rotarla no regala cupo', () => {
+        // Este servidor no valida la clave. Si el sujeto saliera de ella,
+        // bastaría enviar una distinta en cada petición para estrenar los
+        // topes de ritmo y de importe, y el vigilante no ataría nada.
+        const desdeUnaIp = subjectFromRequest({ ip: '10.0.0.1' });
 
-        expect(byKey).toMatch(/^sbj_[0-9a-f]{16}$/);
-        expect(byBearer).toMatch(/^sbj_[0-9a-f]{16}$/);
-        // El mismo valor por dos vías distintas no debe colapsar en un sujeto.
-        expect(byBearer).not.toBe(byKey);
-        // La API Key manda sobre la cabecera de autorización.
-        expect(subjectFromCredentials({ apiKey: key, authorization: 'Bearer otro', ip: '10.0.0.1' })).toBe(byKey);
+        expect(desdeUnaIp).toMatch(/^sbj_[0-9a-f]{16}$/);
+        expect(subjectFromRequest({ ip: '10.0.0.1' })).toBe(desdeUnaIp);
+        expect(subjectFromRequest({ ip: '10.0.0.2' })).not.toBe(desdeUnaIp);
     });
 
-    it('nunca hashea una contraseña de Basic: cae a la IP', () => {
-        const basic = 'Basic ' + Buffer.from('ana:contraseña-débil').toString('base64');
-        const porIp = subjectFromCredentials({ ip: '10.0.0.1' });
+    it('una identidad autenticada manda sobre la IP', () => {
+        // El relevo para cuando exista una capa que valide la credencial.
+        const porCuenta = subjectFromRequest({ accountId: 'acc_123', ip: '10.0.0.1' });
 
-        // Una contraseña elegida por una persona tiene poca entropía: si el
-        // registro se filtrara, el HMAC sería atacable fuera de línea. No entra.
-        expect(subjectFromCredentials({ authorization: basic, ip: '10.0.0.1' })).toBe(porIp);
-        // Y un esquema desconocido se trata igual de conservador.
-        expect(subjectFromCredentials({ authorization: 'Raro secreto', ip: '10.0.0.1' })).toBe(porIp);
-        // Dos IPs distintas siguen siendo sujetos distintos.
-        expect(subjectFromCredentials({ authorization: basic, ip: '10.0.0.2' })).not.toBe(porIp);
+        expect(porCuenta).not.toBe(subjectFromRequest({ ip: '10.0.0.1' }));
+        // La misma cuenta desde otra IP sigue siendo el mismo sujeto.
+        expect(subjectFromRequest({ accountId: 'acc_123', ip: '10.0.0.9' })).toBe(porCuenta);
     });
 
     it('recorta los campos de texto antes de persistirlos', () => {

@@ -206,32 +206,20 @@ function hmacSubject(raw) {
 }
 
 /**
- * Elige qué credencial puede convertirse en sujeto, y cuál no debe tocarse.
+ * Deriva el sujeto de una petición: a quién se le imputan los topes y bajo qué
+ * etiqueta queda en la auditoría.
  *
- * `Basic` transporta una contraseña elegida por una persona: aunque se
- * seudonimice, un registro de auditoría filtrado permitiría atacarla por
- * fuerza bruta fuera de línea, porque su entropía es baja. Esa rama nunca
- * llega al HMAC; se cae a la IP. Una API Key o un Bearer opacos sí son
- * material aleatorio de 192-256 bits, donde el HMAC con sal es suficiente.
+ * **La credencial no interviene, y es deliberado.** Indexar los topes por
+ * `X-API-Key` los volvía inútiles mientras la ruta no valide esa clave —
+ * bastaba enviar una distinta en cada petición para estrenar cupo — y además
+ * metía material de credencial (incluida una contraseña de `Basic`) en el
+ * rastro. Mientras no haya autenticación, la IP es el identificador más firme
+ * disponible; cuando la haya, `req.user?.id` toma el relevo.
  */
 function subjectOf(req) {
-    const fallback = `ip:${req.ip}`;
-
-    const apiKey = req.header('X-API-Key');
-    if (apiKey) return hmacSubject(`apikey:${apiKey}`);
-
-    const auth = String(req.header('authorization') || '').trim();
-    if (auth) {
-        const [scheme, ...rest] = auth.split(/\s+/);
-        const credential = rest.join(' ');
-        // Solo los portadores opacos entran; Basic (y cualquier esquema
-        // desconocido con contraseña dentro) se descarta sin hashear.
-        if (/^bearer$/i.test(scheme) && credential) {
-            return hmacSubject(`bearer:${credential}`);
-        }
-    }
-
-    return hmacSubject(fallback);
+    const accountId = req.user?.id;
+    if (accountId) return hmacSubject(`account:${accountId}`);
+    return hmacSubject(`ip:${req.ip}`);
 }
 
 /**

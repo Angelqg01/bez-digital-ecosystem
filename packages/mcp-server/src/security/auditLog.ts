@@ -51,39 +51,25 @@ export function subjectId(raw: string): string {
 }
 
 /**
- * Elige qué credencial puede convertirse en sujeto, y cuál no debe tocarse.
+ * Deriva el sujeto de una petición: a quién se le imputan los topes de ritmo
+ * y de importe, y bajo qué etiqueta queda en la auditoría.
  *
- * `Basic` transporta una contraseña elegida por una persona: aunque se
- * seudonimice, un registro de auditoría filtrado permitiría atacarla por
- * fuerza bruta fuera de línea, porque su entropía es baja. Esa rama nunca
- * llega al HMAC; se cae a la IP. Una API Key o un Bearer opacos sí son
- * material aleatorio de 192-256 bits, donde el HMAC con sal es suficiente.
+ * **La credencial no interviene, y es deliberado.** Este servidor no
+ * autentica: lee `X-API-Key` pero no la valida contra nada. Indexar los topes
+ * por esa cabecera los volvía inútiles — bastaba enviar una clave distinta en
+ * cada petición para estrenar cupo — y además metía material de credencial
+ * (incluida una contraseña de `Basic`) en el rastro de auditoría. Dos
+ * problemas con un mismo origen: tratar como identidad algo que no lo es.
  *
- * El esquema se incorpora al valor para que la misma cadena presentada por
- * dos vías distintas no colapse en el mismo sujeto.
+ * Mientras no haya autenticación, la IP es el identificador más firme
+ * disponible: no es perfecto (tras un proxy compartido varios llamantes caen
+ * en el mismo cupo, salvo que se configure `trust proxy`), pero es un tope que
+ * ata, en vez de uno que aparenta atar. Cuando exista una capa que valide la
+ * clave, `accountId` toma el relevo sin tocar nada más.
  */
-export function subjectFromCredentials(opts: {
-    apiKey?: string;
-    authorization?: string;
-    ip?: string;
-}): string {
-    const fallback = `ip:${opts.ip ?? 'desconocida'}`;
-
-    if (opts.apiKey) return subjectId(`apikey:${opts.apiKey}`);
-
-    const auth = (opts.authorization ?? '').trim();
-    if (auth) {
-        const [scheme, ...rest] = auth.split(/\s+/);
-        const credential = rest.join(' ');
-        // Solo los portadores opacos entran; Basic (y cualquier esquema
-        // desconocido con contraseña dentro) se descarta sin hashear.
-        if (/^bearer$/i.test(scheme) && credential) {
-            return subjectId(`bearer:${credential}`);
-        }
-        return subjectId(fallback);
-    }
-
-    return subjectId(fallback);
+export function subjectFromRequest(opts: { ip?: string; accountId?: string }): string {
+    if (opts.accountId) return subjectId(`account:${opts.accountId}`);
+    return subjectId(`ip:${opts.ip ?? 'desconocida'}`);
 }
 
 /** Recorta los campos de texto antes de persistirlos. */
