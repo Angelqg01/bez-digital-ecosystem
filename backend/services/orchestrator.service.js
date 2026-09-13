@@ -29,10 +29,63 @@ const axios = require('axios');
 const aiProviderService = require('./ai-provider.service');
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const BEZ_TOKEN = process.env.BEZ_TOKEN_ADDRESS || '0x89c23890c742d710265dd61be789c71dc8999b12';
+// Contrato del token BEZ en Polygon. El valor anterior por defecto era
+// 0x89c23890…, que es la dirección de la TESORERÍA/DAO (ver treasuryDAO en
+// src/BezhasToken.sol), no el token. Por eso `supply_metrics` y
+// `holder_analysis` pedían a Blockscout metadatos de token sobre una cartera
+// y fallaban, mientras `token_info` — que recibe la dirección explícita en el
+// humo — pasaba.
+const BEZ_TOKEN = process.env.BEZ_TOKEN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 const POLYGON_CHAIN_ID = 137;
 const BLOCKSCOUT_BASE = 'https://polygon.blockscout.com/api/v2';
 const QUICKNODE_RPC = process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com';
+
+// ─── CLASIFICACIÓN DE FALLOS ───────────────────────────────────────────────────
+/**
+ * Distingue un fallo NUESTRO de una indisponibilidad del servicio externo.
+ *
+ * No es cosmético: sin esta distinción, el limitador de ritmo de una API
+ * pública tumbaba la CI entera y era indistinguible de una herramienta rota.
+ * Marcamos `upstream: true` cuando la culpa es del otro lado — límite de
+ * ritmo, autenticación que no tenemos, caída del servicio, red o timeout —
+ * para que quien lea el resultado sepa si tiene un bug o un mal día de un
+ * tercero.
+ */
+const UPSTREAM_NETWORK_CODES = new Set([
+    'ECONNABORTED', 'ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND',
+    'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE', 'ERR_NETWORK',
+]);
+
+function classifyError(err) {
+    const httpStatus = err?.response?.status ?? null;
+    const code = err?.code ?? null;
+
+    // 401/403 sin credenciales, 408 y 429 son del otro lado; 5xx también.
+    const upstreamHttp =
+        httpStatus === 401 || httpStatus === 403 || httpStatus === 408 ||
+        httpStatus === 429 || (httpStatus >= 500 && httpStatus <= 599);
+
+    return {
+        httpStatus,
+        code,
+        upstream: Boolean(upstreamHttp || (code && UPSTREAM_NETWORK_CODES.has(code))),
+    };
+}
+
+/** Resultado de fallo uniforme, con la clasificación incorporada. */
+function failure(err, base = {}) {
+    const { httpStatus, code, upstream } = classifyError(err);
+    const reasoning = err?.response?.data?.message || err?.message || 'Error desconocido';
+    return {
+        ...base,
+        status: 'FAILED',
+        upstream,
+        httpStatus,
+        errorCode: code,
+        reasoning,
+        data: { error: reasoning },
+    };
+}
 
 // ─── TOOL REGISTRY ─────────────────────────────────────────────────────────────
 const TOOL_REGISTRY = {
@@ -147,8 +200,11 @@ async function blockscoutHandler({ action = 'token_info', address = BEZ_TOKEN, l
                 };
             }
             case 'holder_analysis': {
-                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/tokens/${address}/holders?limit=${limit}`);
-                const holders = (data.items || []).map(h => ({
+                // La API v2 de Blockscout no acepta `limit` en esta ruta: pagina con
+                // `next_page_params` y devuelve 422 ante el parámetro. Se pide la
+                // página y se recorta aquí, que es lo que el llamante espera.
+                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/tokens/${address}/holders`);
+                const holders = (data.items || []).slice(0, limit).map(h => ({
                     address: h.address?.hash,
                     value: h.value,
                     percentage: h.percentage,
@@ -161,8 +217,9 @@ async function blockscoutHandler({ action = 'token_info', address = BEZ_TOKEN, l
                 };
             }
             case 'transaction_history': {
-                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/addresses/${address}/transactions?limit=${limit}`);
-                const txs = (data.items || []).map(tx => ({
+                // Mismo motivo que en holder_analysis: sin `limit` en la query.
+                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/addresses/${address}/transactions`);
+                const txs = (data.items || []).slice(0, limit).map(tx => ({
                     hash: tx.hash,
                     from: tx.from?.hash,
                     to: tx.to?.hash,
@@ -212,14 +269,16 @@ async function blockscoutHandler({ action = 'token_info', address = BEZ_TOKEN, l
                 return { action, status: 'FAILED', reasoning: `Unknown action: ${action}` };
         }
     } catch (err) {
-        return { action, status: 'FAILED', reasoning: err.message, data: { error: err.message } };
+        return failure(err, { action });
     }
 }
 
 /**
  * GitHub Repo Manager — queries GitHub REST API
  */
-async function githubHandler({ action = 'analyze_repo', repository = 'Angelqg01/BeZhas_web3', branch = 'main', title, body } = {}) {
+// El repositorio por defecto era 'Angelqg01/BeZhas_web3', que no existe: toda
+// llamada sin `repository` explícito daba 404. Es el repo real del ecosistema.
+async function githubHandler({ action = 'analyze_repo', repository = 'Angelqg01/bez-digital-ecosystem', branch = 'main', title, body } = {}) {
     const token = process.env.GITHUB_TOKEN;
     const headers = {
         Authorization: token ? `Bearer ${token}` : undefined,
@@ -292,7 +351,7 @@ async function githubHandler({ action = 'analyze_repo', repository = 'Angelqg01/
                 return { action, status: 'FAILED', reasoning: `Unknown action: ${action}` };
         }
     } catch (err) {
-        return { action, repository, status: 'FAILED', reasoning: err.message };
+        return failure(err, { action, repository });
     }
 }
 
@@ -331,7 +390,7 @@ async function tallyDaoHandler({ action = 'list_proposals', daoAddress, limit = 
         }
         return { action, status: 'FAILED', reasoning: `Unknown action: ${action}` };
     } catch (err) {
-        return { action, status: 'FAILED', reasoning: err.response?.data?.message || err.message };
+        return failure(err, { action });
     }
 }
 
@@ -355,7 +414,7 @@ async function firecrawlHandler({ action = 'scrape', url, extractors = [] } = {}
             reasoning: `Scraped ${url} successfully.`,
         };
     } catch (err) {
-        return { action, url, status: 'FAILED', reasoning: err.message };
+        return failure(err, { action, url });
     }
 }
 
@@ -397,7 +456,7 @@ async function kinaxisHandler({ action = 'check_inventory', sku } = {}) {
         });
         return { action, status: 'SUCCESS', data, reasoning: `Kinaxis inventory for ${sku} retrieved.` };
     } catch (err) {
-        return { action, status: 'FAILED', reasoning: err.message };
+        return failure(err, { action });
     }
 }
 
@@ -445,7 +504,7 @@ async function alpacaHandler({ action = 'get_account', symbol, qty, side = 'buy'
         }
         return { action, status: 'FAILED', reasoning: `Unknown action: ${action}` };
     } catch (err) {
-        return { action, status: 'FAILED', reasoning: err.response?.data?.message || err.message };
+        return failure(err, { action });
     }
 }
 
@@ -481,7 +540,7 @@ async function analyzeGasHandler({ action = 'current_fees' } = {}) {
             reasoning: `Current gas: ${gasPriceGwei.toFixed(4)} Gwei. Fast: ${recommendations.fast} Gwei.`,
         };
     } catch (err) {
-        return { action, status: 'FAILED', reasoning: err.message };
+        return failure(err, { action });
     }
 }
 
@@ -583,7 +642,7 @@ async function auditSmartContractHandler({ contractAddress = BEZ_TOKEN, checks =
             reasoning: `Contract ${data.is_verified ? 'verified' : 'NOT verified'}. ${findings.length} findings.`,
         };
     } catch (err) {
-        return { action: 'audit_smart_contract', status: 'FAILED', reasoning: err.message };
+        return failure(err, { action: 'audit_smart_contract' });
     }
 }
 
@@ -881,4 +940,10 @@ module.exports = {
     executeParallel,
     getToolRegistry,
     TOOL_REGISTRY,
+    // Expuestos para poder fijar por pruebas dónde está la frontera entre un
+    // fallo nuestro y una indisponibilidad ajena. Esa frontera decide si el
+    // humo tumba la build, así que no puede quedar sin cubrir.
+    classifyError,
+    failure,
+    BEZ_TOKEN,
 };
