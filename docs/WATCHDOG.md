@@ -108,7 +108,13 @@ Por encima de esos tres hay un **techo global** (`MCP_RATE_LIMIT_PER_MINUTE`,
 que ejecutan herramientas y gastan cuota de APIs externas de pago. Su clave es
 solo el sujeto, sin la ruta: separarlo por endpoint multiplicaría el cupo real
 por el número de rutas, que es justo lo que un abusador aprovecharía. Un
-servidor con tres endpoints limitados y quince abiertos no está limitado. La clave es el sujeto opaco y no la IP: detrás de un
+servidor con tres endpoints limitados y quince abiertos no está limitado.
+
+En el backend, las rutas `/api/mcp` llevan su propio techo
+(`MCP_ROUTES_RATE_LIMIT_PER_MINUTE`, 120/min) montado **antes** de
+`verifyAdminToken`: un endpoint con token de admin y sin límite de ritmo se
+puede probar por fuerza bruta, y con el limitador por detrás los intentos
+fallidos ni siquiera se contarían. La clave es el sujeto opaco y no la IP: detrás de un
 proxy todas las llamadas compartirían origen y una sola clave agotaría el cupo
 del resto.
 

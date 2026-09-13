@@ -24,6 +24,7 @@
  */
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const { verifyAdminToken } = require('../middleware/admin.middleware');
 const orchestrator = require('../services/orchestrator.service');
@@ -37,6 +38,24 @@ const {
 } = require('../middleware/watchdog.middleware');
 
 // ─── MIDDLEWARE ────────────────────────────────────────────────────────────────
+// Freno antes de la autenticación, no después: un endpoint con token de admin
+// y sin límite de ritmo se puede probar por fuerza bruta, y los intentos
+// fallidos ni siquiera llegarían a contarse si el limitador fuera por detrás.
+const mcpLimiter = rateLimit({
+    windowMs: 60_000,
+    limit: Number(process.env.MCP_ROUTES_RATE_LIMIT_PER_MINUTE) || 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            error: 'Demasiadas peticiones',
+            retryAfter: Math.ceil((req.rateLimit?.resetTime ?? Date.now() + 60_000) / 1000),
+        });
+    },
+});
+router.use(mcpLimiter);
+
 // All MCP routes require admin authentication
 router.use(verifyAdminToken);
 
