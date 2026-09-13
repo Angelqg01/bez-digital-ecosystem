@@ -1,6 +1,6 @@
 // backend/tests/ads.test.js
 const request = require('supertest');
-const app = require('../server');
+const { app } = require('../server');
 
 describe('Ads Module', () => {
     it('should return a relevant ad for context', async () => {

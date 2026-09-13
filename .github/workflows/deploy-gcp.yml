@@ -153,22 +153,29 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.local/share/pnpm/store
-          key: pnpm-backend-${{ hashFiles('api/pnpm-lock.yaml') }}
+          key: pnpm-backend-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: pnpm-backend-
 
+      # Antes se instalaba y se probaba `./api`, un paquete con
+      # `jest --passWithNoTests` y cero pruebas: el job pasaba en verde sin
+      # ejecutar ni una de las 600 pruebas de `backend/`. Ahora se ejecutan de
+      # verdad — las que están sanas; ver backend/jest.ci.config.js, que lista
+      # una a una las suites rotas que quedan pendientes de reparar.
       - name: Install backend dependencies
-        working-directory: ./api
+        working-directory: ./backend
         run: pnpm install --no-frozen-lockfile
 
       - name: Run backend tests
-        working-directory: ./api
-        run: pnpm test
+        working-directory: ./backend
+        run: pnpm run test:ci
         env:
           NODE_ENV: test
           MONGODB_URI: "mongodb://localhost:27017/bezhas_test"
           REDIS_URL: "redis://localhost:6379"
           JWT_SECRET: test_jwt_secret_key_for_ci
-          DATABASE_URL: "sqlite://:memory:"
+          # Este job levanta MongoDB como servicio, así que las pruebas que
+          # necesitan base de datos sí pueden ejecutarse aquí.
+          RUN_DB_TESTS: "true"
 
   # ===================================================
   # JOB 4: Frontend Build & Test
