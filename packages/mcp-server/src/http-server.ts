@@ -25,11 +25,21 @@ import express from 'express';
 import cors from 'cors';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools } from './tools/index.js';
+import { auditLog, guardian, hardenServer, policy } from './security/index.js';
 import { config } from './config.js';
 
 const app: ReturnType<typeof express> = express();
 app.use(cors());
-app.use(express.json());
+// Límite de cuerpo: una carga enorme es a la vez un vector de agotamiento y
+// la forma habitual de esconder una inyección entre miles de líneas.
+app.use(express.json({ limit: process.env.MCP_BODY_LIMIT || '1mb' }));
+
+// Identifica al solicitante para los techos por sujeto del vigilante.
+app.use((req, _res, next) => {
+    const key = req.header('X-API-Key') || req.header('authorization') || '';
+    currentSubject = key ? `key:${key.slice(-8)}` : `ip:${req.ip}`;
+    next();
+});
 
 // Initialize MCP Server (internal, not connected to transport)
 const mcpServer = new McpServer({
@@ -37,7 +47,10 @@ const mcpServer = new McpServer({
     version: '1.0.0',
 });
 
-registerTools(mcpServer);
+// Mismo blindaje que en STDIO. El sujeto sale de la cabecera de la petición
+// en curso, que fija el middleware de más abajo.
+let currentSubject: string | undefined;
+registerTools(hardenServer(mcpServer, { resolveSubject: () => currentSubject }));
 
 // ─── Health Check ──────────────────────────────────────────
 app.get('/api/mcp/health', (_req, res) => {
@@ -48,6 +61,42 @@ app.get('/api/mcp/health', (_req, res) => {
         network: config.network.mode,
         rpc: config.network.activeRpc,
         timestamp: new Date().toISOString(),
+    });
+});
+
+// ─── Watchdog ──────────────────────────────────────────────
+/** Estado del vigilante: política activa e integridad de la auditoría. */
+app.get('/api/mcp/watchdog/status', (_req, res) => {
+    res.json({
+        enforcing: policy.enforce,
+        blockAtSeverity: policy.blockAtSeverity,
+        maxTransactionUSD: policy.maxTransactionUSD,
+        maxHourlyUSD: policy.maxHourlyUSD,
+        disabledTools: policy.disabledTools,
+        audit: { ...auditLog.stats(), chain: auditLog.verifyChain() },
+    });
+});
+
+/** Últimas decisiones. Nunca incluye el contenido inspeccionado. */
+app.get('/api/mcp/watchdog/audit', (req, res) => {
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    res.json({ entries: auditLog.recent(limit), chain: auditLog.verifyChain() });
+});
+
+/**
+ * Analiza un texto sin ejecutarlo. Permite a otros servicios del ecosistema
+ * (backend, panel de admin) usar el mismo criterio que el MCP.
+ */
+app.post('/api/mcp/watchdog/inspect', (req, res) => {
+    const decision = guardian.inspectOutput(
+        { tool: 'watchdog_inspect', subject: currentSubject },
+        req.body?.content ?? req.body,
+    );
+    res.json({
+        verdict: decision.verdict,
+        reason: decision.reason,
+        findings: decision.findings,
+        sanitized: decision.sanitized,
     });
 });
 
