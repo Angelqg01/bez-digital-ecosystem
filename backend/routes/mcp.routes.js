@@ -24,13 +24,68 @@
  */
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const { verifyAdminToken } = require('../middleware/admin.middleware');
 const orchestrator = require('../services/orchestrator.service');
+const {
+    watchdogRequest,
+    watchdogResponse,
+    getAudit,
+    auditStats,
+    verifyChain,
+    policy: watchdogPolicy,
+} = require('../middleware/watchdog.middleware');
 
 // ─── MIDDLEWARE ────────────────────────────────────────────────────────────────
+// Freno antes de la autenticación, no después: un endpoint con token de admin
+// y sin límite de ritmo se puede probar por fuerza bruta, y los intentos
+// fallidos ni siquiera llegarían a contarse si el limitador fuera por detrás.
+const mcpLimiter = rateLimit({
+    windowMs: 60_000,
+    limit: Number(process.env.MCP_ROUTES_RATE_LIMIT_PER_MINUTE) || 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            error: 'Demasiadas peticiones',
+            retryAfter: Math.ceil((req.rateLimit?.resetTime ?? Date.now() + 60_000) / 1000),
+        });
+    },
+});
+router.use(mcpLimiter);
+
 // All MCP routes require admin authentication
 router.use(verifyAdminToken);
+
+// El vigilante va después de la autenticación y antes de cualquier ejecución:
+// inspecciona el cuerpo entrante y filtra la respuesta saliente.
+router.use(watchdogRequest);
+router.use(watchdogResponse);
+
+// ─── WATCHDOG ──────────────────────────────────────────────────────────────────
+/**
+ * GET /api/mcp/watchdog
+ * Estado del vigilante e integridad de su cadena de auditoría.
+ */
+router.get('/watchdog', (req, res) => {
+    res.json({
+        success: true,
+        enforcing: watchdogPolicy.enforce,
+        blockAtSeverity: watchdogPolicy.blockAtSeverity,
+        audit: { ...auditStats(), chain: verifyChain() },
+    });
+});
+
+/**
+ * GET /api/mcp/watchdog/audit
+ * Últimas decisiones. No incluye el contenido inspeccionado, solo el veredicto.
+ */
+router.get('/watchdog/audit', (req, res) => {
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    res.json({ success: true, entries: getAudit(limit), chain: verifyChain() });
+});
 
 // ─── STATUS ────────────────────────────────────────────────────────────────────
 /**

@@ -23,13 +23,60 @@
  */
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools } from './tools/index.js';
+import {
+    auditLog,
+    guardian,
+    hardenServer,
+    policy,
+    subjectFromRequest,
+    GLOBAL_LIMIT_PER_MINUTE,
+    watchdogLimiter,
+} from './security/index.js';
 import { config } from './config.js';
 
 const app: ReturnType<typeof express> = express();
+
+/**
+ * Limitadores. `rateLimit()` se llama aquí, a la vista de las rutas que
+ * protege, en vez de dentro de un ayudante: así el control es comprobable
+ * leyendo el fichero, sin seguir dos saltos de módulo. El sujeto lo deriva
+ * cada limitador de la propia petición, sin depender de ningún middleware
+ * anterior — que es lo que permite montarlos los primeros.
+ */
+const limiterOptions = (limitPerMinute: number, global = false) =>
+    watchdogLimiter(limitPerMinute, { global });
+
+const statusLimiter = rateLimit(limiterOptions(30));
+const auditLimiter = rateLimit(limiterOptions(30));
+const inspectLimiter = rateLimit(limiterOptions(60));
+
 app.use(cors());
-app.use(express.json());
+
+// Techo global, y va el PRIMERO de la pila a propósito.
+//
+// Dos razones. Una: las rutas de herramientas ejecutan trabajo real y gastan
+// cuota de APIs externas de pago, así que ninguna puede quedar sin freno — un
+// servidor con tres endpoints limitados y quince abiertos no está limitado.
+// Otra: por detrás del parseo del cuerpo, una riada de cargas de 1 MB se
+// deserializaría entera antes de que nadie contase las peticiones, que es el
+// trabajo caro que precisamente hay que evitar.
+app.use(rateLimit(limiterOptions(GLOBAL_LIMIT_PER_MINUTE, true)));
+
+// Límite de cuerpo: una carga enorme es a la vez un vector de agotamiento y
+// la forma habitual de esconder una inyección entre miles de líneas.
+app.use(express.json({ limit: process.env.MCP_BODY_LIMIT || '1mb' }));
+
+// Identifica al solicitante para los techos por sujeto del vigilante.
+// Deriva de la IP, no de la cabecera de clave: este servidor no la valida, así
+// que un tope indexado por ella se esquiva enviando una clave distinta cada
+// vez. Ver `subjectFromRequest`.
+app.use((req, _res, next) => {
+    currentSubject = subjectFromRequest({ ip: req.ip });
+    next();
+});
 
 // Initialize MCP Server (internal, not connected to transport)
 const mcpServer = new McpServer({
@@ -37,7 +84,10 @@ const mcpServer = new McpServer({
     version: '1.0.0',
 });
 
-registerTools(mcpServer);
+// Mismo blindaje que en STDIO. El sujeto sale de la cabecera de la petición
+// en curso, que fija el middleware de más abajo.
+let currentSubject: string | undefined;
+registerTools(hardenServer(mcpServer, { resolveSubject: () => currentSubject }));
 
 // ─── Health Check ──────────────────────────────────────────
 app.get('/api/mcp/health', (_req, res) => {
@@ -48,6 +98,42 @@ app.get('/api/mcp/health', (_req, res) => {
         network: config.network.mode,
         rpc: config.network.activeRpc,
         timestamp: new Date().toISOString(),
+    });
+});
+
+// ─── Watchdog ──────────────────────────────────────────────
+/** Estado del vigilante: política activa e integridad de la auditoría. */
+app.get('/api/mcp/watchdog/status', statusLimiter, (_req, res) => {
+    res.json({
+        enforcing: policy.enforce,
+        blockAtSeverity: policy.blockAtSeverity,
+        maxTransactionUSD: policy.maxTransactionUSD,
+        maxHourlyUSD: policy.maxHourlyUSD,
+        disabledTools: policy.disabledTools,
+        audit: { ...auditLog.stats(), chain: auditLog.verifyChain() },
+    });
+});
+
+/** Últimas decisiones. Nunca incluye el contenido inspeccionado. */
+app.get('/api/mcp/watchdog/audit', auditLimiter, (req, res) => {
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    res.json({ entries: auditLog.recent(limit), chain: auditLog.verifyChain() });
+});
+
+/**
+ * Analiza un texto sin ejecutarlo. Permite a otros servicios del ecosistema
+ * (backend, panel de admin) usar el mismo criterio que el MCP.
+ */
+app.post('/api/mcp/watchdog/inspect', inspectLimiter, (req, res) => {
+    const decision = guardian.inspectOutput(
+        { tool: 'watchdog_inspect', subject: currentSubject },
+        req.body?.content ?? req.body,
+    );
+    res.json({
+        verdict: decision.verdict,
+        reason: decision.reason,
+        findings: decision.findings,
+        sanitized: decision.sanitized,
     });
 });
 

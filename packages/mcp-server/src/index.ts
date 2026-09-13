@@ -15,6 +15,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerTools } from './tools/index.js';
+import { hardenServer } from './security/index.js';
 
 // Initialize MCP Server
 const server = new McpServer({
@@ -23,8 +24,15 @@ const server = new McpServer({
     description: 'BeZhas AI Intelligence Server - Gas optimization, Fiat/Crypto swap, payment processing, and regulatory compliance',
 });
 
-// Register all tools (including payment tools)
-registerTools(server);
+// Todas las herramientas se registran a través del vigilante: inspecciona
+// parámetros y respuestas, aplica los techos de importe y deja auditoría.
+// Envolver aquí garantiza que una herramienta nueva quede protegida sin que
+// haya que acordarse de nada en su fichero.
+registerTools(
+    hardenServer(server, {
+        resolveSubject: () => process.env.BEZHAS_API_KEY?.slice(0, 12) ?? 'stdio',
+    }),
+);
 
 // Start STDIO transport (for VS Code / CLI)
 const transport = new StdioServerTransport();

@@ -22,7 +22,8 @@
     "dotenv": "^16.4.7",
     "mongoose": "^8.10.0",
     "pino": "^9.6.0",
-    "axios": "^1.16.0"
+    "axios": "^1.16.0",
+    "express-rate-limit": "^7.1.5"
   },
   "devDependencies": {
     "@types/node": "^22.12.0",
