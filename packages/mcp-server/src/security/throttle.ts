@@ -15,10 +15,16 @@
  */
 import type { Options } from 'express-rate-limit';
 import type { Request, Response } from 'express';
+import { subjectFromRequest } from './auditLog.js';
 
 export interface ThrottleOptions {
-    /** Sujeto opaco del llamante en curso. Ver `subjectFromRequest`. */
-    resolveSubject?: () => string | undefined;
+    /**
+     * Sujeto opaco del llamante. Por defecto se deriva de la propia petición
+     * con `subjectFromRequest`, de modo que el limitador **no depende de que
+     * otro middleware haya corrido antes**: así puede montarse el primero de
+     * todos, por delante incluso del parseo del cuerpo.
+     */
+    resolveSubject?: (req: Request) => string | undefined;
     /**
      * Si es `true`, el cupo es del sujeto para todo el servidor en vez de por
      * ruta. Es lo que corresponde al techo global: separar por ruta ahí
@@ -46,7 +52,7 @@ export function watchdogLimiter(limitPerMinute: number, options: ThrottleOptions
         standardHeaders: true,
         legacyHeaders: false,
         keyGenerator: (req: Request) => {
-            const subject = options.resolveSubject?.() ?? 'anon';
+            const subject = options.resolveSubject?.(req) ?? subjectFromRequest({ ip: req.ip });
             return options.global ? subject : `${subject}:${req.path}`;
         },
         handler: (_req: Request, res: Response) => {

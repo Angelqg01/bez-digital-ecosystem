@@ -100,3 +100,32 @@ describe('techo global del servidor', () => {
         expect(Number.isFinite(GLOBAL_LIMIT_PER_MINUTE)).toBe(true);
     });
 });
+
+describe('independencia del orden en la pila', () => {
+    it('deriva el sujeto de la petición, así que puede ir el primero de todo', async () => {
+        // Sin `resolveSubject`, el limitador se basta con `req.ip`. Es lo que
+        // permite montarlo por delante del parseo del cuerpo: si dependiera de
+        // un middleware anterior, una riada de cargas grandes se deserializaría
+        // entera antes de que nadie contase las peticiones.
+        const app = express();
+        app.use(rateLimit(watchdogLimiter(2, { global: true })));
+        app.use(express.json());
+        app.post('/carga', (_req, res) => res.json({ ok: true }));
+
+        server = await new Promise<Server>((resolve) => {
+            const s = app.listen(0, () => resolve(s));
+        });
+        const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+
+        const post = () => fetch(`${base}/carga`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ relleno: 'x'.repeat(1000) }),
+        });
+
+        expect((await post()).status).toBe(200);
+        expect((await post()).status).toBe(200);
+        // La tercera se corta sin llegar a parsear el cuerpo.
+        expect((await post()).status).toBe(429);
+    });
+});

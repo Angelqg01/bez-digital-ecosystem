@@ -105,7 +105,12 @@ control tanto del lector como del análisis estático.
 
 Por encima de esos tres hay un **techo global** (`MCP_RATE_LIMIT_PER_MINUTE`,
 300/min por defecto) que cubre todas las rutas del wrapper HTTP, incluidas las
-que ejecutan herramientas y gastan cuota de APIs externas de pago. Su clave es
+que ejecutan herramientas y gastan cuota de APIs externas de pago. Va montado
+el **primero** de la pila, por delante incluso de `express.json()`: por detrás
+del parseo, una riada de cargas de 1 MB se deserializaría entera antes de que
+nadie contase las peticiones, que es justo el trabajo caro a evitar. Cada
+limitador deriva el sujeto de la propia petición, sin depender de ningún
+middleware anterior — eso es lo que le permite ir el primero. Su clave es
 solo el sujeto, sin la ruta: separarlo por endpoint multiplicaría el cupo real
 por el número de rutas, que es justo lo que un abusador aprovecharía. Un
 servidor con tres endpoints limitados y quince abiertos no está limitado.

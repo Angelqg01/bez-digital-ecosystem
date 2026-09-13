@@ -38,7 +38,33 @@ import {
 import { config } from './config.js';
 
 const app: ReturnType<typeof express> = express();
+
+/**
+ * Limitadores. `rateLimit()` se llama aquí, a la vista de las rutas que
+ * protege, en vez de dentro de un ayudante: así el control es comprobable
+ * leyendo el fichero, sin seguir dos saltos de módulo. El sujeto lo deriva
+ * cada limitador de la propia petición, sin depender de ningún middleware
+ * anterior — que es lo que permite montarlos los primeros.
+ */
+const limiterOptions = (limitPerMinute: number, global = false) =>
+    watchdogLimiter(limitPerMinute, { global });
+
+const statusLimiter = rateLimit(limiterOptions(30));
+const auditLimiter = rateLimit(limiterOptions(30));
+const inspectLimiter = rateLimit(limiterOptions(60));
+
 app.use(cors());
+
+// Techo global, y va el PRIMERO de la pila a propósito.
+//
+// Dos razones. Una: las rutas de herramientas ejecutan trabajo real y gastan
+// cuota de APIs externas de pago, así que ninguna puede quedar sin freno — un
+// servidor con tres endpoints limitados y quince abiertos no está limitado.
+// Otra: por detrás del parseo del cuerpo, una riada de cargas de 1 MB se
+// deserializaría entera antes de que nadie contase las peticiones, que es el
+// trabajo caro que precisamente hay que evitar.
+app.use(rateLimit(limiterOptions(GLOBAL_LIMIT_PER_MINUTE, true)));
+
 // Límite de cuerpo: una carga enorme es a la vez un vector de agotamiento y
 // la forma habitual de esconder una inyección entre miles de líneas.
 app.use(express.json({ limit: process.env.MCP_BODY_LIMIT || '1mb' }));
@@ -51,24 +77,6 @@ app.use((req, _res, next) => {
     currentSubject = subjectFromRequest({ ip: req.ip });
     next();
 });
-
-/**
- * Limitadores de los endpoints de observación. `rateLimit()` se llama aquí, a
- * la vista de las rutas que protege, en vez de dentro de un ayudante: así el
- * control es comprobable leyendo el fichero, sin seguir dos saltos de módulo.
- */
-const limiterOptions = (limitPerMinute: number, global = false) =>
-    watchdogLimiter(limitPerMinute, { resolveSubject: () => currentSubject, global });
-
-const statusLimiter = rateLimit(limiterOptions(30));
-const auditLimiter = rateLimit(limiterOptions(30));
-const inspectLimiter = rateLimit(limiterOptions(60));
-
-// Techo global. Las rutas de herramientas ejecutan trabajo real y gastan
-// cuota de APIs externas de pago, así que ninguna puede quedar sin freno: un
-// servidor con tres endpoints limitados y quince abiertos no está limitado.
-// Las del vigilante, más arriba, llevan además su propio cupo más estrecho.
-app.use(rateLimit(limiterOptions(GLOBAL_LIMIT_PER_MINUTE, true)));
 
 // Initialize MCP Server (internal, not connected to transport)
 const mcpServer = new McpServer({
