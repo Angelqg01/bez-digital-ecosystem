@@ -16,6 +16,7 @@ on:
     paths:
       - 'backend/services/orchestrator.service.js'
       - 'backend/routes/mcp.routes.js'
+      - 'scripts/test-orchestrator-e2e.js'
   workflow_dispatch:
     inputs:
       tool:

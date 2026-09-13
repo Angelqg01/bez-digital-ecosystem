@@ -29,10 +29,25 @@ const axios = require('axios');
 const aiProviderService = require('./ai-provider.service');
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const BEZ_TOKEN = process.env.BEZ_TOKEN_ADDRESS || '0x89c23890c742d710265dd61be789c71dc8999b12';
+// BEZ-Coin ERC-20 en Polygon (0x89c2…9b12 es la wallet Treasury DAO, no el token)
+const BEZ_TOKEN = process.env.BEZ_TOKEN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 const POLYGON_CHAIN_ID = 137;
 const BLOCKSCOUT_BASE = 'https://polygon.blockscout.com/api/v2';
 const QUICKNODE_RPC = process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com';
+
+/**
+ * true solo si el error HTTP es una limitación de ritmo: 429, o 403 con
+ * evidencia de rate limit (cuota agotada o Retry-After). Un 403 sin esas
+ * cabeceras (permisos, proxy) NO cuenta como limitación.
+ */
+function isRateLimited(err) {
+    const res = err?.response;
+    if (!res) return false;
+    if (res.status === 429) return true;
+    if (res.status !== 403) return false;
+    const h = res.headers || {};
+    return String(h['x-ratelimit-remaining']) === '0' || h['retry-after'] !== undefined;
+}
 
 // ─── TOOL REGISTRY ─────────────────────────────────────────────────────────────
 const TOOL_REGISTRY = {
@@ -147,8 +162,9 @@ async function blockscoutHandler({ action = 'token_info', address = BEZ_TOKEN, l
                 };
             }
             case 'holder_analysis': {
-                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/tokens/${address}/holders?limit=${limit}`);
-                const holders = (data.items || []).map(h => ({
+                // Blockscout v2 rechaza `limit` (422 "Unexpected field"); se recorta en cliente
+                const { data } = await axios.get(`${BLOCKSCOUT_BASE}/tokens/${address}/holders`);
+                const holders = (data.items || []).slice(0, limit).map(h => ({
                     address: h.address?.hash,
                     value: h.value,
                     percentage: h.percentage,
@@ -212,7 +228,10 @@ async function blockscoutHandler({ action = 'token_info', address = BEZ_TOKEN, l
                 return { action, status: 'FAILED', reasoning: `Unknown action: ${action}` };
         }
     } catch (err) {
-        return { action, status: 'FAILED', reasoning: err.message, data: { error: err.message } };
+        return {
+            action, status: 'FAILED', reasoning: err.message, data: { error: err.message },
+            httpStatus: err.response?.status, rateLimited: isRateLimited(err),
+        };
     }
 }
 
@@ -292,7 +311,10 @@ async function githubHandler({ action = 'analyze_repo', repository = 'Angelqg01/
                 return { action, status: 'FAILED', reasoning: `Unknown action: ${action}` };
         }
     } catch (err) {
-        return { action, repository, status: 'FAILED', reasoning: err.message };
+        return {
+            action, repository, status: 'FAILED', reasoning: err.message,
+            httpStatus: err.response?.status, rateLimited: isRateLimited(err),
+        };
     }
 }
 

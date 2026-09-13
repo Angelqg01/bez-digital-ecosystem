@@ -13,6 +13,7 @@
  *
  * Environment (optional):
  *   GITHUB_TOKEN, TALLY_API_KEY, FIRECRAWL_API_KEY, ALPACA_API_KEY, etc.
+ *   GITHUB_REPOSITORY (set by GitHub Actions; repo used by the GitHub tests)
  *   BACKEND_URL (default: http://localhost:3001)
  */
 
@@ -44,42 +45,66 @@ const C = {
 const col = (msg, c) => `${C[c] || ''}${msg}${C.reset}`;
 const log = (msg, c = 'reset') => console.log(col(msg, c));
 
+// ─── EXTERNAL HOSTS ───────────────────────────────────────────────────────────
+// Public APIs hit by the smoke test. `credentialEnv` is the env var that
+// authenticates against the host (null = the orchestrator never sends one).
+// A rate-limit response (429, or 403 with rate-limit headers — see
+// isRateLimited in orchestrator.service) from a host WITHOUT credentials is
+// the third party's throttling, not a broken tool, so it is reported as
+// PARTIAL. Any other failure — or throttling while authenticated — stays FAILED.
+const HOSTS = {
+    blockscout: { name: 'polygon.blockscout.com', credentialEnv: null },
+    github: { name: 'api.github.com', credentialEnv: 'GITHUB_TOKEN' },
+};
+const HOST_MIN_GAP_MS = 750;      // spacing between consecutive calls to the same host
+const RATE_LIMIT_RETRIES = 2;     // retries on a rate-limit response
+const RATE_LIMIT_BACKOFF_MS = 1500; // doubles on each retry
+
+const BEZ_TOKEN = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
+const GITHUB_REPO = process.env.GITHUB_REPOSITORY || 'Angelqg01/bez-digital-ecosystem';
+
 // ─── TEST DEFINITIONS ─────────────────────────────────────────────────────────
 // Each test defines: tool name, params, and optional assertions on the result.
+// `host` groups tests that call the same external API (see HOSTS).
 const TESTS = [
     {
         tool: 'blockscout_explorer',
         name: 'Blockscout — token_info',
-        params: { action: 'token_info', address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
-        assert: (r) => r.status !== 'FAILED',
+        params: { action: 'token_info', address: BEZ_TOKEN },
+        assert: (r) => r.status === 'SUCCESS' && r.data?.symbol === 'BEZ',
+        host: 'blockscout',
         slow: false,
     },
     {
         tool: 'blockscout_explorer',
         name: 'Blockscout — supply_metrics',
         params: { action: 'supply_metrics' },
-        assert: (r) => r.status !== 'FAILED',
+        assert: (r) => r.status === 'SUCCESS' && r.data?.totalSupply !== undefined,
+        host: 'blockscout',
         slow: false,
     },
     {
         tool: 'blockscout_explorer',
         name: 'Blockscout — holder_analysis',
         params: { action: 'holder_analysis', limit: 5 },
-        assert: (r) => r.status !== 'FAILED',
+        assert: (r) => r.status === 'SUCCESS' && Array.isArray(r.data?.topHolders),
+        host: 'blockscout',
         slow: false,
     },
     {
         tool: 'github_repo_manager',
         name: 'GitHub — analyze_repo',
-        params: { action: 'analyze_repo', repository: 'Angelqg01/BeZhas_web3' },
-        assert: (r) => r.status !== 'FAILED',
+        params: { action: 'analyze_repo', repository: GITHUB_REPO },
+        assert: (r) => r.status === 'SUCCESS' && r.details?.defaultBranch !== undefined,
+        host: 'github',
         slow: false,
     },
     {
         tool: 'github_repo_manager',
         name: 'GitHub — list_issues',
-        params: { action: 'list_issues', repository: 'Angelqg01/BeZhas_web3' },
-        assert: (r) => r.status !== 'FAILED',
+        params: { action: 'list_issues', repository: GITHUB_REPO },
+        assert: (r) => r.status === 'SUCCESS' && Array.isArray(r.details?.issues),
+        host: 'github',
         slow: false,
     },
     {
@@ -101,7 +126,7 @@ const TESTS = [
         name: 'Swap Calculator — USDC→BEZ',
         params: {
             fromToken: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
-            toToken: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
+            toToken: BEZ_TOKEN,
             amount: '10',
         },
         assert: (r) => r.data?.outputAmount !== undefined,
@@ -145,8 +170,9 @@ const TESTS = [
     {
         tool: 'auditmos_auditor',
         name: 'Smart Contract Auditor — BEZ token',
-        params: { contractAddress: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
+        params: { contractAddress: BEZ_TOKEN },
         assert: (r) => r.status !== 'FAILED',
+        host: 'blockscout',
         slow: true,  // Requires external API calls — excluded in --fast mode
         timeout: 30_000,
     },
@@ -172,7 +198,7 @@ const PIPELINE_TEST = {
     steps: [
         { tool: 'analyze_gas', params: {} },
         { tool: 'calculate_swap', params: { amount: '50' } },
-        { tool: 'auditmos_auditor', params: { contractAddress: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' } },
+        { tool: 'auditmos_auditor', params: { contractAddress: BEZ_TOKEN } },
     ],
 };
 
@@ -180,30 +206,67 @@ const PARALLEL_TEST = {
     name: 'Parallel: token_info + github_health + sre_monitor',
     tools: [
         { tool: 'blockscout_explorer', params: { action: 'token_info' } },
-        { tool: 'github_repo_manager', params: { action: 'check_health', repository: 'Angelqg01/BeZhas_web3' } },
+        { tool: 'github_repo_manager', params: { action: 'check_health', repository: GITHUB_REPO } },
         { tool: 'obliq_sre_monitor', params: { action: 'health_check' } },
     ],
 };
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────────
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const lastCallAt = {};
+
+/** Wait until HOST_MIN_GAP_MS have passed since the previous call to this host. */
+async function throttleHost(host) {
+    if (!host) return;
+    const wait = (lastCallAt[host] || 0) + HOST_MIN_GAP_MS - Date.now();
+    if (wait > 0) await sleep(wait);
+    lastCallAt[host] = Date.now();
+}
+
+async function callTool(test) {
+    return Promise.race([
+        executeTool(test.tool, test.params),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), test.timeout || 15_000)),
+    ]);
+}
+
 async function runTest(test) {
-    const start = Date.now();
+    let ms = 0;
+    let retries = 0;
     try {
-        const result = await Promise.race([
-            executeTool(test.tool, test.params),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), test.timeout || 15_000)),
-        ]);
-        const ms = Date.now() - start;
-        const passed = test.assert ? test.assert(result) : true;
+        let result;
+        for (;;) {
+            await throttleHost(test.host);
+            const start = Date.now();
+            result = await callTool(test);
+            ms = Date.now() - start;
+            if (!(test.host && result.rateLimited) || retries >= RATE_LIMIT_RETRIES) break;
+            await sleep(RATE_LIMIT_BACKOFF_MS * 2 ** retries);
+            retries++;
+        }
+
+        let status = result.status;
+        let passed = test.assert ? test.assert(result) : true;
+        let note = null;
+
+        // Narrow reclassification: the call went through the registry to the
+        // right tool, the handler reported a rate-limit response, and the host
+        // is a public API used without credentials.
+        const host = HOSTS[test.host];
+        const keyless = host && (!host.credentialEnv || !process.env[host.credentialEnv]);
+        if (!passed && status === 'FAILED' && result.rateLimited && keyless && result.toolName === test.tool) {
+            status = 'PARTIAL';
+            passed = true;
+            note = `rate-limited by ${host.name} (HTTP ${result.httpStatus}, no credentials, ${retries} retries)`;
+        }
 
         if (verbose) {
             console.log(col('  Result:', 'gray'), JSON.stringify(result, null, 4).slice(0, 400));
         }
 
-        return { name: test.name, tool: test.tool, status: result.status, passed, ms, error: null };
+        return { name: test.name, tool: test.tool, status, passed, ms, retries, note, error: passed ? null : result.reasoning || null };
     } catch (err) {
-        const ms = Date.now() - start;
-        return { name: test.name, tool: test.tool, status: 'ERROR', passed: false, ms, error: err.message };
+        return { name: test.name, tool: test.tool, status: 'ERROR', passed: false, ms, retries, note: null, error: err.message };
     }
 }
 
@@ -239,6 +302,9 @@ async function main() {
         process.stdout.clearLine?.(0);
         process.stdout.cursorTo?.(0);
         console.log(`  ${icon} ${r.name.padEnd(50)} ${badge.padEnd(20)} ${col(`${r.ms}ms`, 'gray')}`);
+        if (r.note) {
+            log(`      └─ ${r.note}`, 'yellow');
+        }
         if (!r.passed && r.error) {
             log(`      └─ ${r.error}`, 'red');
         }
@@ -273,11 +339,15 @@ async function main() {
     // ── Summary ───────────────────────────────────────────────────────────────
     const passed = results.filter(r => r.passed).length;
     const failed = results.filter(r => !r.passed).length;
+    const rateLimited = results.filter(r => r.note).length;
     const avgMs = Math.round(results.reduce((s, r) => s + r.ms, 0) / results.length);
     const allPass = failed === 0;
 
     console.log('\n' + col('═'.repeat(65), 'cyan'));
     log(`  Results: ${col(passed + ' passed', 'green')} / ${failed > 0 ? col(failed + ' failed', 'red') : col('0 failed', 'gray')} — avg ${avgMs}ms per tool`, allPass ? 'green' : 'yellow');
+    if (rateLimited > 0) {
+        log(`  ${rateLimited} test(s) PARTIAL due to third-party rate limiting (keyless public API)`, 'yellow');
+    }
     console.log(col('═'.repeat(65), 'cyan'));
 
     if (!allPass) {
