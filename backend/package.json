@@ -11,7 +11,7 @@
     "test": "jest --env=node",
     "test:watch": "jest --env=node --watch",
     "test:coverage": "jest --env=node --coverage",
-    "test:ci": "jest --env=node --coverage --ci --reporters=default --reporters=jest-junit",
+    "test:ci": "jest --env=node --config jest.ci.config.js --ci",
     "test:unit": "jest --env=node --testPathPattern=tests/(?!integration)",
     "test:integration": "jest --env=node --testPathPattern=tests/integration",
     "test:db": "jest --env=node tests/database-connection.test.js",
