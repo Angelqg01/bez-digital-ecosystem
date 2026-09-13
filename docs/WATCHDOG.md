@@ -101,7 +101,14 @@ peticiones hasta que la evidencia de un ataque saliera de ella. El limitador es
 `express-rate-limit`, el mismo que usa el backend, y emite las cabeceras
 `RateLimit-*` estándar. La llamada a `rateLimit()` se hace en el punto de
 montaje, junto a la ruta que protege: envolverla en un ayudante escondía el
-control tanto del lector como del análisis estático. La clave es el sujeto opaco y no la IP: detrás de un
+control tanto del lector como del análisis estático.
+
+Por encima de esos tres hay un **techo global** (`MCP_RATE_LIMIT_PER_MINUTE`,
+300/min por defecto) que cubre todas las rutas del wrapper HTTP, incluidas las
+que ejecutan herramientas y gastan cuota de APIs externas de pago. Su clave es
+solo el sujeto, sin la ruta: separarlo por endpoint multiplicaría el cupo real
+por el número de rutas, que es justo lo que un abusador aprovecharía. Un
+servidor con tres endpoints limitados y quince abiertos no está limitado. La clave es el sujeto opaco y no la IP: detrás de un
 proxy todas las llamadas compartirían origen y una sola clave agotaría el cupo
 del resto.
 

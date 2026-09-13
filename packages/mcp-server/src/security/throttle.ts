@@ -19,14 +19,25 @@ import type { Request, Response } from 'express';
 export interface ThrottleOptions {
     /** Sujeto opaco del llamante en curso. Ver `subjectFromRequest`. */
     resolveSubject?: () => string | undefined;
+    /**
+     * Si es `true`, el cupo es del sujeto para todo el servidor en vez de por
+     * ruta. Es lo que corresponde al techo global: separar por ruta ahí
+     * multiplicaría el cupo real por el número de endpoints, que es justo lo
+     * que un abusador aprovecharía.
+     */
+    global?: boolean;
 }
+
+/** Cupo global por sujeto y minuto para todo el servidor HTTP. */
+export const GLOBAL_LIMIT_PER_MINUTE = Number(process.env.MCP_RATE_LIMIT_PER_MINUTE) || 300;
 
 /**
  * Configuración de un limitador de `limitPerMinute` peticiones por minuto.
  *
- * La clave es el sujeto opaco y la ruta, no la IP en crudo: `subjectFromRequest`
- * ya decide qué identifica al llamante, y así el cupo de una ruta no se lleva
- * por delante el de las demás.
+ * La clave sale del sujeto opaco, no de la IP en crudo: `subjectFromRequest`
+ * ya decide qué identifica al llamante. Por defecto se separa además por ruta,
+ * para que agotar un endpoint no cierre los demás; con `global: true` el cupo
+ * es uno solo para todo el servidor.
  */
 export function watchdogLimiter(limitPerMinute: number, options: ThrottleOptions = {}): Partial<Options> {
     return {
@@ -34,7 +45,10 @@ export function watchdogLimiter(limitPerMinute: number, options: ThrottleOptions
         limit: limitPerMinute,
         standardHeaders: true,
         legacyHeaders: false,
-        keyGenerator: (req: Request) => `${options.resolveSubject?.() ?? 'anon'}:${req.path}`,
+        keyGenerator: (req: Request) => {
+            const subject = options.resolveSubject?.() ?? 'anon';
+            return options.global ? subject : `${subject}:${req.path}`;
+        },
         handler: (_req: Request, res: Response) => {
             res.status(429).json({
                 success: false,

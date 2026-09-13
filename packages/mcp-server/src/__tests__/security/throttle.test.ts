@@ -10,7 +10,7 @@ import type { AddressInfo } from 'node:net';
 import express from 'express';
 import { afterEach, describe, expect, it } from 'vitest';
 import rateLimit from 'express-rate-limit';
-import { watchdogLimiter } from '../../security/throttle.js';
+import { GLOBAL_LIMIT_PER_MINUTE, watchdogLimiter } from '../../security/throttle.js';
 
 let server: Server | undefined;
 
@@ -70,5 +70,33 @@ describe('límite de ritmo de los endpoints de observación', () => {
         for (let i = 0; i < 3; i++) await fetch(`${base}/status`);
         expect((await fetch(`${base}/status`)).status).toBe(429);
         expect((await fetch(`${base}/otra`)).status).toBe(200);
+    });
+});
+
+describe('techo global del servidor', () => {
+    it('un cupo único para todas las rutas: cambiar de endpoint no lo renueva', async () => {
+        // Con clave por ruta, un abusador multiplicaba su cupo por el número
+        // de endpoints. El techo global tiene que contarlas todas juntas.
+        const app = express();
+        app.use(rateLimit(watchdogLimiter(3, { resolveSubject: () => 'sbj_cccc', global: true })));
+        app.get('/uno', (_req, res) => res.json({ ok: true }));
+        app.get('/dos', (_req, res) => res.json({ ok: true }));
+
+        server = await new Promise<Server>((resolve) => {
+            const s = app.listen(0, () => resolve(s));
+        });
+        const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+
+        expect((await fetch(`${base}/uno`)).status).toBe(200);
+        expect((await fetch(`${base}/uno`)).status).toBe(200);
+        expect((await fetch(`${base}/dos`)).status).toBe(200);
+        // El cuarto ya excede el cupo, venga por donde venga.
+        expect((await fetch(`${base}/dos`)).status).toBe(429);
+        expect((await fetch(`${base}/uno`)).status).toBe(429);
+    });
+
+    it('el cupo global por defecto es configurable y razonable', () => {
+        expect(GLOBAL_LIMIT_PER_MINUTE).toBeGreaterThan(0);
+        expect(Number.isFinite(GLOBAL_LIMIT_PER_MINUTE)).toBe(true);
     });
 });

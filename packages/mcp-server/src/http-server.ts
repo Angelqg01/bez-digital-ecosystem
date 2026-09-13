@@ -32,6 +32,7 @@ import {
     hardenServer,
     policy,
     subjectFromRequest,
+    GLOBAL_LIMIT_PER_MINUTE,
     watchdogLimiter,
 } from './security/index.js';
 import { config } from './config.js';
@@ -56,12 +57,18 @@ app.use((req, _res, next) => {
  * la vista de las rutas que protege, en vez de dentro de un ayudante: así el
  * control es comprobable leyendo el fichero, sin seguir dos saltos de módulo.
  */
-const limiterOptions = (limitPerMinute: number) =>
-    watchdogLimiter(limitPerMinute, { resolveSubject: () => currentSubject });
+const limiterOptions = (limitPerMinute: number, global = false) =>
+    watchdogLimiter(limitPerMinute, { resolveSubject: () => currentSubject, global });
 
 const statusLimiter = rateLimit(limiterOptions(30));
 const auditLimiter = rateLimit(limiterOptions(30));
 const inspectLimiter = rateLimit(limiterOptions(60));
+
+// Techo global. Las rutas de herramientas ejecutan trabajo real y gastan
+// cuota de APIs externas de pago, así que ninguna puede quedar sin freno: un
+// servidor con tres endpoints limitados y quince abiertos no está limitado.
+// Las del vigilante, más arriba, llevan además su propio cupo más estrecho.
+app.use(rateLimit(limiterOptions(GLOBAL_LIMIT_PER_MINUTE, true)));
 
 // Initialize MCP Server (internal, not connected to transport)
 const mcpServer = new McpServer({
