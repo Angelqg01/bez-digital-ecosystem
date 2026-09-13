@@ -3,7 +3,7 @@
  * detenido, o un uso legítimo que no debe estorbarse.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AuditLog } from '../../security/auditLog.js';
+import { AuditLog, subjectId } from '../../security/auditLog.js';
 import { Guardian, WatchdogError } from '../../security/guardian.js';
 import { hardenServer } from '../../security/harden.js';
 import { extractAmountUSD, riskOf } from '../../security/policy.js';
@@ -314,5 +314,60 @@ describe('política y límites', () => {
         expect(rl.peekCalls('x', now + 2000).perMinute).toBe(2);
         expect(rl.peekCalls('x', now + 120_000).perMinute).toBe(0);
         expect(rl.peekCalls('x', now + 120_000).perHour).toBe(2);
+    });
+});
+
+describe('endurecimiento del propio vigilante', () => {
+    it('no contamina el prototipo al copiar el objeto saneado', () => {
+        const payload = JSON.parse('{"__proto__": {"comprometido": true}, "ok": 1}');
+        const r = scan(payload);
+
+        expect(({} as Record<string, unknown>).comprometido).toBeUndefined();
+        expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'comprometido')).toBe(false);
+        expect(r.findings.some((f) => f.patternId === 'PROTO_POLLUTION_KEY')).toBe(true);
+        expect((r.redacted as Record<string, unknown>).ok).toBe(1);
+    });
+
+    it('descarta también constructor y prototype como claves de datos', () => {
+        const r = scan({ constructor: { x: 1 }, prototype: { y: 2 }, real: 'z' });
+        const ids = r.findings.filter((f) => f.patternId === 'PROTO_POLLUTION_KEY');
+        expect(ids).toHaveLength(2);
+        expect(Object.keys(r.redacted as object)).toEqual(['real']);
+    });
+
+    it('el objeto saneado no hereda del prototipo de Object', () => {
+        const r = redact({ a: 1 }) as Record<string, unknown>;
+        expect(Object.getPrototypeOf(r)).toBeNull();
+    });
+
+    it('convierte el sujeto en una etiqueta opaca y estable', () => {
+        const key = fake.bezhasKey();
+        const id = subjectId(key);
+
+        expect(id).toMatch(/^sbj_[0-9a-f]{16}$/);
+        expect(id).not.toContain(key);
+        expect(id).not.toContain(key.slice(-8));
+        expect(subjectId(key)).toBe(id);
+        expect(subjectId(key + 'x')).not.toBe(id);
+        expect(subjectId('')).toBe('anonymous');
+    });
+
+    it('recorta los campos de texto antes de persistirlos', () => {
+        const log = new AuditLog();
+        log.record({
+            tool: 'x'.repeat(5_000),
+            subject: 'y'.repeat(5_000),
+            verdict: 'block',
+            reason: 'línea1\nlínea2\r\n' + 'z'.repeat(5_000),
+            findings: [],
+            amountUSD: null,
+        });
+
+        const [entry] = log.recent(1);
+        expect(entry.tool.length).toBeLessThanOrEqual(201);
+        expect(entry.subject.length).toBeLessThanOrEqual(201);
+        expect(entry.reason.length).toBeLessThanOrEqual(201);
+        expect(entry.reason).not.toContain('\n');
+        expect(log.verifyChain().valid).toBe(true);
     });
 });

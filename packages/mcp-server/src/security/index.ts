@@ -1,7 +1,7 @@
 /**
  * BeZhas Watchdog — superficie pública
  */
-export { auditLog, AuditLog, type AuditEntry, type Verdict } from './auditLog.js';
+export { auditLog, AuditLog, subjectId, type AuditEntry, type Verdict } from './auditLog.js';
 export { guardian, Guardian, WatchdogError, type Decision, type GuardContext } from './guardian.js';
 export { hardenServer, type HardenOptions } from './harden.js';
 export {

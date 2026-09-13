@@ -77,6 +77,7 @@ WATCHDOG_MAX_TX_USD=1000     # techo por operación
 WATCHDOG_MAX_HOURLY_USD=5000 # techo acumulado por hora
 WATCHDOG_DISABLED_TOOLS=     # corte en caliente, sin desplegar
 WATCHDOG_AUDIT_FILE=         # persistencia de la auditoría
+WATCHDOG_SUBJECT_SALT=       # sal del HMAC de sujeto (ver más abajo)
 ```
 
 ### Despliegue recomendado
@@ -93,9 +94,29 @@ GET  /api/mcp/watchdog/audit     últimas decisiones
 POST /api/mcp/watchdog/inspect   analiza un texto sin ejecutarlo
 ```
 
+Los tres van limitados por sujeto y minuto (30 / 30 / 60) y responden `429`
+al pasarse: exponen estado interno, así que sin freno servirían para sondear
+el sistema o para vaciar la ventana de auditoría a base de peticiones.
+
 La auditoría **nunca incluye el contenido inspeccionado**, solo el veredicto,
 los identificadores de patrón y la ruta donde saltó. La evidencia de un secreto
 se guarda ofuscada, para que el propio registro no se convierta en la filtración.
+
+### El registro tampoco guarda credenciales
+
+El sujeto de cada entrada es `sbj_` + HMAC-SHA256 de la API Key (o de la IP si
+no hay clave) con `WATCHDOG_SUBJECT_SALT`. Permite agrupar por llamante sin
+conservar nada reversible. Los campos de texto (`tool`, `subject`, `reason`)
+se recortan a 200 caracteres y se aplanan los saltos de línea antes de
+escribirlos, para que una entrada controlada por el atacante no pueda inflar
+el fichero ni inyectar líneas falsas en el rastro.
+
+### El saneado no puede contaminar el prototipo
+
+El escáner copia los datos sobre objetos sin prototipo (`Object.create(null)`)
+y descarta las claves `__proto__`, `constructor` y `prototype`, que además
+quedan registradas como hallazgo `PROTO_POLLUTION_KEY`. Un cuerpo malicioso no
+puede alterar `Object.prototype` a través del propio módulo que lo inspecciona.
 
 ## Verificar la integridad del rastro
 

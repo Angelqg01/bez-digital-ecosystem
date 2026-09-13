@@ -47,6 +47,9 @@ const FORBIDDEN_ENV_KEYS = [
 
 const SEVERITY_RANK = { low: 1, medium: 2, high: 3, critical: 4 };
 
+/** Claves que nunca deben copiarse: escribirlas contamina el prototipo. */
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 // ─── Escáner ─────────────────────────────────────────────────────────────────
 
 function scanString(text, path, findings) {
@@ -80,9 +83,21 @@ function walk(value, path, findings, depth) {
     }
     if (Array.isArray(value)) return value.map((v, i) => walk(v, `${path}[${i}]`, findings, depth + 1));
     if (value && typeof value === 'object') {
-        const out = {};
+        // Sin prototipo: escribir una clave `__proto__` sobre un objeto literal
+        // contaminaría Object.prototype para todo el proceso, y las claves aquí
+        // vienen del atacante.
+        const out = Object.create(null);
         for (const [k, v] of Object.entries(value)) {
             scanString(k, `${path}.<clave>`, findings);
+            if (DANGEROUS_KEYS.has(k)) {
+                findings.push({
+                    patternId: 'PROTO_POLLUTION_KEY',
+                    kind: 'injection',
+                    severity: 'high',
+                    path: `${path}.<clave>`,
+                });
+                continue;
+            }
             out[k] = walk(v, path ? `${path}.${k}` : k, findings, depth + 1);
         }
         return out;
@@ -123,14 +138,21 @@ let auditSeq = 0;
 let auditPrev = GENESIS;
 const MAX_AUDIT = 500;
 
+/** Recorta los campos de texto que entran en el registro. */
+const MAX_FIELD = 200;
+function clamp(text) {
+    const flat = String(text).replace(/[\r\n]+/g, ' ');
+    return flat.length > MAX_FIELD ? flat.slice(0, MAX_FIELD) + '…' : flat;
+}
+
 function recordAudit({ route, subject, verdict, reason, findings }) {
     const base = {
         seq: ++auditSeq,
         ts: new Date().toISOString(),
-        route,
-        subject,
+        route: clamp(route),
+        subject: clamp(subject),
         verdict,
-        reason,
+        reason: clamp(reason),
         findings: (findings || []).map((f) => ({ patternId: f.patternId, kind: f.kind, severity: f.severity, path: f.path })),
         prevHash: auditPrev,
     };
@@ -165,9 +187,24 @@ const policy = {
 
 // ─── Middlewares ─────────────────────────────────────────────────────────────
 
+/**
+ * Sal de proceso para el identificador de sujeto. Se genera al arrancar si no
+ * se proporciona, de modo que el identificador no sea reversible.
+ */
+const SUBJECT_SALT = process.env.WATCHDOG_SUBJECT_SALT || crypto.randomBytes(32).toString('hex');
+
+/**
+ * Etiqueta opaca del llamante.
+ *
+ * Antes se guardaban los últimos caracteres de la API Key, que son material de
+ * la credencial: el registro de auditoría se convertía en una filtración
+ * parcial. El HMAC con sal permite agrupar por sujeto sin conservar nada
+ * reversible.
+ */
 function subjectOf(req) {
     const key = req.header('X-API-Key') || req.header('authorization') || '';
-    return key ? `key:${String(key).slice(-8)}` : `ip:${req.ip}`;
+    const raw = key || `ip:${req.ip}`;
+    return 'sbj_' + crypto.createHmac('sha256', SUBJECT_SALT).update(String(raw)).digest('hex').slice(0, 16);
 }
 
 /**

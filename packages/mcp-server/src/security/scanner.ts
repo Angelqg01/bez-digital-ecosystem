@@ -32,6 +32,9 @@ export interface ScanResult {
 }
 
 const MAX_STRING_SCAN = 200_000; // corta entradas absurdas antes de regexear
+
+/** Claves que nunca deben copiarse: escribirlas contamina el prototipo. */
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const EVIDENCE_WINDOW = 60;
 
 /** Recorta y ofusca el fragmento para que el propio log no filtre el secreto. */
@@ -94,10 +97,24 @@ function walk(value: unknown, path: string, findings: Finding[], depth: number):
         return value.map((v, i) => walk(v, `${path}[${i}]`, findings, depth + 1));
     }
     if (value && typeof value === 'object') {
-        const out: Record<string, unknown> = {};
+        // Sin prototipo: escribir una clave `__proto__` sobre un objeto
+        // literal contaminaría Object.prototype para todo el proceso, y las
+        // claves aquí vienen del atacante.
+        const out: Record<string, unknown> = Object.create(null);
         for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
             // La clave también puede portar el ataque.
             scanString(k, `${path}.<clave>`, findings);
+            if (DANGEROUS_KEYS.has(k)) {
+                findings.push({
+                    patternId: 'PROTO_POLLUTION_KEY',
+                    kind: 'injection',
+                    severity: 'high',
+                    description: `Clave reservada del prototipo en los datos: ${k}`,
+                    path: `${path}.<clave>`,
+                    evidence: k,
+                });
+                continue;
+            }
             out[k] = walk(v, path ? `${path}.${k}` : k, findings, depth + 1);
         }
         return out;

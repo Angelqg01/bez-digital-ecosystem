@@ -5,7 +5,7 @@
  * rompe la cadena y `verifyChain` lo detecta, así que un atacante que consiga
  * ejecución no puede limpiar su rastro sin dejar señal.
  */
-import { createHash } from 'node:crypto';
+import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Finding } from './scanner.js';
@@ -26,6 +26,35 @@ export interface AuditEntry {
 }
 
 const GENESIS = '0'.repeat(64);
+
+/**
+ * Sal de proceso para el identificador de sujeto. Se genera al arrancar si no
+ * se proporciona: así el identificador no es reversible ni correlacionable
+ * entre despliegues.
+ */
+const SUBJECT_SALT = process.env.WATCHDOG_SUBJECT_SALT || randomBytes(32).toString('hex');
+
+/** Longitud máxima de los campos de texto que llegan al fichero. */
+const MAX_FIELD = 200;
+
+/**
+ * Convierte un identificador de llamante en una etiqueta opaca.
+ *
+ * Antes se guardaban los últimos caracteres de la API Key, que son material de
+ * la credencial: el propio registro de auditoría se convertía en una filtración
+ * parcial. El HMAC con sal de proceso permite seguir agrupando por sujeto sin
+ * conservar nada reversible.
+ */
+export function subjectId(raw: string): string {
+    if (!raw) return 'anonymous';
+    return 'sbj_' + createHmac('sha256', SUBJECT_SALT).update(raw).digest('hex').slice(0, 16);
+}
+
+/** Recorta los campos de texto antes de persistirlos. */
+function clamp(text: string): string {
+    const flat = String(text).replace(/[\r\n]+/g, ' ');
+    return flat.length > MAX_FIELD ? flat.slice(0, MAX_FIELD) + '…' : flat;
+}
 
 function hashEntry(e: Omit<AuditEntry, 'hash'>): string {
     return createHash('sha256').update(JSON.stringify(e)).digest('hex');
@@ -75,10 +104,10 @@ export class AuditLog {
         const base: Omit<AuditEntry, 'hash'> = {
             seq: ++this.seq,
             ts: new Date().toISOString(),
-            tool: input.tool,
-            subject: input.subject,
+            tool: clamp(input.tool),
+            subject: clamp(input.subject),
             verdict: input.verdict,
-            reason: input.reason,
+            reason: clamp(input.reason),
             findings: (input.findings ?? []).map((f) => ({
                 patternId: f.patternId,
                 kind: f.kind,

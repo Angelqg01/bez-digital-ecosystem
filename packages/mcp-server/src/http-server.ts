@@ -25,7 +25,7 @@ import express from 'express';
 import cors from 'cors';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools } from './tools/index.js';
-import { auditLog, guardian, hardenServer, policy } from './security/index.js';
+import { auditLog, guardian, hardenServer, policy, rateLimiter, subjectId } from './security/index.js';
 import { config } from './config.js';
 
 const app: ReturnType<typeof express> = express();
@@ -35,11 +35,32 @@ app.use(cors());
 app.use(express.json({ limit: process.env.MCP_BODY_LIMIT || '1mb' }));
 
 // Identifica al solicitante para los techos por sujeto del vigilante.
+// El identificador es opaco: no se conserva material de la credencial.
 app.use((req, _res, next) => {
     const key = req.header('X-API-Key') || req.header('authorization') || '';
-    currentSubject = key ? `key:${key.slice(-8)}` : `ip:${req.ip}`;
+    currentSubject = subjectId(key || `ip:${req.ip}`);
     next();
 });
+
+/**
+ * Límite de ritmo para los endpoints de observación del vigilante. Exponen
+ * estado y auditoría, así que sin freno servirían para sondear el sistema.
+ */
+function throttle(limitPerMinute: number) {
+    return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        const subject = `${currentSubject ?? 'anon'}:${req.path}`;
+        const { perMinute } = rateLimiter.countCall(subject);
+        if (perMinute > limitPerMinute) {
+            res.status(429).json({
+                success: false,
+                error: 'Demasiadas peticiones',
+                retryAfterSeconds: 60,
+            });
+            return;
+        }
+        next();
+    };
+}
 
 // Initialize MCP Server (internal, not connected to transport)
 const mcpServer = new McpServer({
@@ -66,7 +87,7 @@ app.get('/api/mcp/health', (_req, res) => {
 
 // ─── Watchdog ──────────────────────────────────────────────
 /** Estado del vigilante: política activa e integridad de la auditoría. */
-app.get('/api/mcp/watchdog/status', (_req, res) => {
+app.get('/api/mcp/watchdog/status', throttle(30), (_req, res) => {
     res.json({
         enforcing: policy.enforce,
         blockAtSeverity: policy.blockAtSeverity,
@@ -78,7 +99,7 @@ app.get('/api/mcp/watchdog/status', (_req, res) => {
 });
 
 /** Últimas decisiones. Nunca incluye el contenido inspeccionado. */
-app.get('/api/mcp/watchdog/audit', (req, res) => {
+app.get('/api/mcp/watchdog/audit', throttle(30), (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 50, 200);
     res.json({ entries: auditLog.recent(limit), chain: auditLog.verifyChain() });
 });
@@ -87,7 +108,7 @@ app.get('/api/mcp/watchdog/audit', (req, res) => {
  * Analiza un texto sin ejecutarlo. Permite a otros servicios del ecosistema
  * (backend, panel de admin) usar el mismo criterio que el MCP.
  */
-app.post('/api/mcp/watchdog/inspect', (req, res) => {
+app.post('/api/mcp/watchdog/inspect', throttle(60), (req, res) => {
     const decision = guardian.inspectOutput(
         { tool: 'watchdog_inspect', subject: currentSubject },
         req.body?.content ?? req.body,
