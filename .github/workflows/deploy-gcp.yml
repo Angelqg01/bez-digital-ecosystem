@@ -254,6 +254,59 @@ jobs:
           RUN_DB_TESTS: "true"
 
   # ===================================================
+  # JOB 3.5: MCP Server Tests
+  # ===================================================
+  #
+  # `packages/mcp-server` tiene 206 pruebas repartidas en 17 ficheros y ningún
+  # workflow las ejecutaba. Aparecía en la CI en un solo sitio: el job que lo
+  # PUBLICA en npm, que además lo hacía sin probarlo.
+  #
+  # Es el mismo patrón que el #39, #40 y #41 curaron en el backend y en los
+  # contratos: pruebas que existen, pasan, y no protegen nada porque nadie las
+  # lanza. Aquí además el paquete se publica de cara al exterior, así que una
+  # regresión no se queda en casa.
+  test-mcp:
+    name: MCP Server Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Usar HTTPS para dependencias git alojadas en GitHub
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+      - name: Cache MCP dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-mcp-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-mcp-
+
+      - name: Install MCP dependencies
+        working-directory: ./packages/mcp-server
+        run: pnpm install --no-frozen-lockfile
+
+      # El build va antes que las pruebas a propósito: si TypeScript no compila,
+      # interesa saberlo por el error del compilador y no por veinte pruebas
+      # fallando a la vez.
+      - name: Build MCP Server
+        working-directory: ./packages/mcp-server
+        run: pnpm run build
+
+      - name: Run MCP tests
+        working-directory: ./packages/mcp-server
+        run: pnpm test
+
+  # ===================================================
   # JOB 4: Frontend Build & Test
   # ===================================================
   test-frontend:
@@ -334,7 +387,7 @@ jobs:
   check-deploy-config:
     name: Comprobar configuración de despliegue
     runs-on: ubuntu-latest
-    needs: [lint-and-security, test-contracts, test-backend, test-frontend]
+    needs: [lint-and-security, test-contracts, test-backend, test-frontend, test-mcp]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
 
     outputs:
@@ -380,7 +433,7 @@ jobs:
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [lint-and-security, test-contracts, test-backend, test-frontend, check-deploy-config]
+    needs: [lint-and-security, test-contracts, test-backend, test-frontend, test-mcp, check-deploy-config]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && needs.check-deploy-config.outputs.configurado == 'true'
 
     permissions:
