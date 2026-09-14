@@ -234,31 +234,96 @@ describe("BezhasToken Security Tests", function () {
         // La carrera del `approve` (frontrunning de asignaciones)
         // ────────────────────────────────────────────────────────────────────
         //
-        // Estas tres pruebas llamaban a `increaseAllowance` y
-        // `decreaseAllowance`. OpenZeppelin las **eliminó en la versión 5.0**, y
-        // este token hereda de OZ 5.6.1: no existen. Como la suite no se
-        // ejecutaba en ninguna parte, nadie se enteró.
+        // `approve` sobrescribe la asignación anterior en vez de sumarla. Si el
+        // titular tiene aprobados N y firma un `approve(M)`, el gastador puede
+        // ver esa transacción en el mempool, gastar los N antes de que entre y
+        // gastar los M después: N+M cuando solo se quiso autorizar M.
         //
-        // Conviene ser claro sobre lo que eso significa, porque la sección se
-        // llamaba «Frontrunning Prevention» y ya no previene nada: BEZ **no
-        // tiene mitigación en cadena** de la carrera clásica del `approve`. Si
-        // el titular cambia una asignación de N a M, el gastador puede ver la
-        // transacción en el mempool, gastar N antes de que entre y gastar M
-        // después: N+M en total.
+        // OpenZeppelin ofrecía `increaseAllowance`/`decreaseAllowance` para
+        // esquivarlo y las eliminó en la v5.0; al heredar de OZ 5.6.1, este
+        // token se quedó sin mitigación en cadena. `src/BezhasToken.sol` las
+        // recupera, y aquí se comprueba que cierran la carrera de verdad.
         //
-        // La mitigación aplicable hoy es de convención, no de contrato: poner
-        // la asignación a cero y confirmar antes de fijar la nueva. Eso es lo
-        // que se prueba aquí, junto con la semántica real de `approve`. Añadir
-        // los ayudantes al contrato es una decisión de diseño aparte —y el
-        // token ya está desplegado—, así que la prueba describe lo que hay.
+        // OJO: esto protege a los despliegues futuros. El BEZ ya desplegado
+        // (0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8) no es actualizable
+        // —`BezhasToken is ERC20Pausable, AccessControl`, sin proxy—, así que
+        // sigue sin tenerlas. Contra ese contrato la mitigación es de
+        // convención: poner la asignación a cero antes de fijar la nueva, que
+        // es lo que hace `safeApprove` en el código de la aplicación.
         describe("Allowance race (`approve` frontrunning)", function () {
-            it("does NOT expose increaseAllowance/decreaseAllowance (removed in OpenZeppelin v5)", async function () {
+            it("exposes increaseAllowance/decreaseAllowance again", async function () {
                 const { bezToken } = await loadFixture(deployBezhasTokenFixture);
 
-                // Si algún día se añaden al contrato, esta prueba falla y toca
-                // recuperar las comprobaciones de incremento y decremento.
-                expect(bezToken.increaseAllowance).to.equal(undefined);
-                expect(bezToken.decreaseAllowance).to.equal(undefined);
+                // OpenZeppelin las quitó en la v5.0 y el token se quedó sin
+                // mitigación en cadena. Se recuperan en BezhasToken.sol.
+                expect(bezToken.increaseAllowance).to.be.a("function");
+                expect(bezToken.decreaseAllowance).to.be.a("function");
+            });
+
+            it("increaseAllowance adds to the current allowance", async function () {
+                const { bezToken, user1, user2 } = await loadFixture(deployBezhasTokenFixture);
+                const inicial = ethers.parseUnits("100", 18);
+                const incremento = ethers.parseUnits("50", 18);
+
+                await bezToken.connect(user1).approve(user2.address, inicial);
+                await bezToken.connect(user1).increaseAllowance(user2.address, incremento);
+
+                expect(await bezToken.allowance(user1.address, user2.address))
+                    .to.equal(inicial + incremento);
+            });
+
+            it("increaseAllowance works from zero and emits Approval", async function () {
+                const { bezToken, user1, user2 } = await loadFixture(deployBezhasTokenFixture);
+                const cantidad = ethers.parseUnits("25", 18);
+
+                await expect(bezToken.connect(user1).increaseAllowance(user2.address, cantidad))
+                    .to.emit(bezToken, "Approval")
+                    .withArgs(user1.address, user2.address, cantidad);
+            });
+
+            it("decreaseAllowance subtracts from the current allowance", async function () {
+                const { bezToken, user1, user2 } = await loadFixture(deployBezhasTokenFixture);
+                const inicial = ethers.parseUnits("100", 18);
+                const recorte = ethers.parseUnits("40", 18);
+
+                await bezToken.connect(user1).approve(user2.address, inicial);
+                await bezToken.connect(user1).decreaseAllowance(user2.address, recorte);
+
+                expect(await bezToken.allowance(user1.address, user2.address))
+                    .to.equal(inicial - recorte);
+            });
+
+            it("decreaseAllowance reverts instead of silently flooring at zero", async function () {
+                const { bezToken, user1, user2 } = await loadFixture(deployBezhasTokenFixture);
+                const inicial = ethers.parseUnits("100", 18);
+                const exceso = ethers.parseUnits("150", 18);
+
+                await bezToken.connect(user1).approve(user2.address, inicial);
+
+                // Bajar de más casi siempre significa que quien llama tenía una
+                // idea equivocada del estado; dejarlo en cero en silencio lo
+                // escondería.
+                await expect(bezToken.connect(user1).decreaseAllowance(user2.address, exceso))
+                    .to.be.revertedWithCustomError(bezToken, "BezInsufficientAllowanceToDecrease")
+                    .withArgs(user2.address, inicial, exceso);
+            });
+
+            it("closes the race: the spender cannot get old + new", async function () {
+                const { bezToken, user1, user2 } = await loadFixture(deployBezhasTokenFixture);
+                const viejaAsignacion = ethers.parseUnits("100", 18);
+                const incremento = ethers.parseUnits("50", 18);
+
+                // El titular aprueba 100 y el gastador se los lleva enteros
+                // —ésa es la transacción que en la carrera real se adelanta—.
+                await bezToken.connect(user1).approve(user2.address, viejaAsignacion);
+                await bezToken.connect(user2).transferFrom(user1.address, user2.address, viejaAsignacion);
+                expect(await bezToken.allowance(user1.address, user2.address)).to.equal(0);
+
+                // Con `approve(50)` el gastador acabaría pudiendo gastar 150 en
+                // total. Con `increaseAllowance(50)` parte de lo que queda de
+                // verdad —cero—, así que solo quedan 50 autorizados.
+                await bezToken.connect(user1).increaseAllowance(user2.address, incremento);
+                expect(await bezToken.allowance(user1.address, user2.address)).to.equal(incremento);
             });
 
             it("approve overwrites the previous allowance instead of adding to it", async function () {
@@ -274,7 +339,7 @@ describe("BezhasToken Security Tests", function () {
                 expect(await bezToken.allowance(user1.address, user2.address)).to.equal(segunda);
             });
 
-            it("supports the zero-first pattern, which is the available mitigation", async function () {
+            it("still supports the zero-first pattern, for callers that rely on it", async function () {
                 const { bezToken, user1, user2 } = await loadFixture(deployBezhasTokenFixture);
                 const inicial = ethers.parseUnits("100", 18);
                 const nueva = ethers.parseUnits("40", 18);

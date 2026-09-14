@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+import { safeApprove } from '../utils/safeApprove';
 import { useAuth } from '../context/AuthContext';
 import { BEZ_COIN_ADDRESS } from '../config/contracts';
 
@@ -85,10 +86,11 @@ export const useCargoManifestContract = (contractAddress) => {
 
         setLoading(true);
         try {
-            // 1. Approve BEZ-Coin spending
+            // 1. Approve BEZ-Coin spending.
+            // `safeApprove` y no `approve`: cambiar una asignación viva con
+            // `approve` abre la carrera del ERC-20. Ver utils/safeApprove.js.
             const feeInWei = ethers.parseUnits(registrationFee, 18);
-            const approveTx = await bezCoinContract.approve(contract.address, feeInWei);
-            await approveTx.wait();
+            await safeApprove(bezCoinContract, walletAddress, contract.address, feeInWei);
 
             // 2. Upload metadata to IPFS (you'll need to implement this)
             const manifestURI = await uploadToIPFS(manifestData);
@@ -124,7 +126,7 @@ export const useCargoManifestContract = (contractAddress) => {
             console.error('Error registering manifest:', error);
             throw error;
         }
-    }, [contract, bezCoinContract, registrationFee]);
+    }, [contract, bezCoinContract, registrationFee, walletAddress]);
 
     /**
      * Attach hazardous cargo appendix
