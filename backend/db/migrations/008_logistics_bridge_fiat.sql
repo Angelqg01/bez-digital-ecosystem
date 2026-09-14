@@ -2,6 +2,21 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Esta migración —y la 009— crean disparadores que invocan
+-- `update_modified_column()`, pero la función no se definía en ninguna
+-- migración: sobre una base limpia fallaban los siete `CREATE TRIGGER` y
+-- `updated_at` no se actualizaba nunca. Se define aquí, antes del primer uso,
+-- para que una instalación desde cero funcione en orden.
+-- La migración 012 repite la definición y recrea los disparadores para las
+-- bases de datos que ya estaban desplegadas sin ellos.
+CREATE OR REPLACE FUNCTION update_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Table: bridge_shipments
 CREATE TABLE IF NOT EXISTS bridge_shipments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
