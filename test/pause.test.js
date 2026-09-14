@@ -34,7 +34,7 @@ describe("Pausable contracts", function () {
     await market.pause();
 
     // Create dummy ERC721 for listing
-    const ERC721Mock = await ethers.getContractFactory("contracts/mocks/ERC721Mock.sol:ERC721Mock");
+    const ERC721Mock = await ethers.getContractFactory("src/mocks/ERC721Mock.sol:ERC721Mock");
     const nft = await ERC721Mock.deploy("TestNFT", "TNFT");
     await nft.waitForDeployment();
 

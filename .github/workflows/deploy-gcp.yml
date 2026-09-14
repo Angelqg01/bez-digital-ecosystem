@@ -95,6 +95,19 @@ jobs:
   # ===================================================
   # JOB 2: Smart Contract Tests
   # ===================================================
+  #
+  # Este job pasaba en verde sin probar nada. `forge test` recorre el proyecto
+  # buscando ficheros `.t.sol` —las pruebas nativas de Foundry— y en este
+  # repositorio no hay ninguno: ejecutaba cero pruebas y salía con código 0.
+  # En los registros se ve claro: el paso «Run Foundry tests» duraba 0 segundos.
+  #
+  # Las pruebas de contrato que sí existen son de Hardhat: 208 repartidas en
+  # diez ficheros de `test/`, y ningún workflow las ejecutaba. Cubren el token
+  # BEZ, el puente entre cadenas, el oráculo de calidad, el marketplace, los
+  # alquileres de NFT y el control de acceso. Ahora se ejecutan.
+  #
+  # `forge build` se queda: compila con la misma configuración que usan los
+  # despliegues y detecta antes cualquier rotura de compilación.
   test-contracts:
     name: Solidity Tests
     runs-on: ubuntu-latest
@@ -105,14 +118,48 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Usar HTTPS para dependencias git alojadas en GitHub
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-contracts-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-contracts-
+
+      - name: Install root dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      # Compilar 44 contratos con `viaIR` cuesta varios minutos. Se cachean los
+      # artefactos y el compilador descargado, con la clave atada a los fuentes
+      # y a la configuración: si cambia un `.sol`, la caché no se reutiliza.
+      - name: Cache compilación de contratos
+        uses: actions/cache@v4
+        with:
+          path: |
+            cache
+            artifacts
+            ~/.cache/hardhat-nodejs
+          key: solidity-${{ hashFiles('src/**/*.sol', 'hardhat.config.js', 'foundry.toml') }}
+          restore-keys: solidity-
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Compile contracts
+      - name: Compile contracts (Foundry)
         run: forge build
 
-      - name: Run Foundry tests
-        run: forge test -vvv
+      - name: Run contract tests (Hardhat)
+        run: npx hardhat test
 
   # ===================================================
   # JOB 3: Backend Tests

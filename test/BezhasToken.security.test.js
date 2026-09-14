@@ -26,14 +26,22 @@ describe("BezhasToken Security Tests", function () {
         const [owner, minter, burner, pauser, treasury, attacker, user1, user2] = await ethers.getSigners();
 
         // Deploy BezhasToken
+        //
+        // El constructor es `BezhasToken(uint256 initialSupply)`. Aquí se le
+        // pasaba `owner.address`: ethers convierte esa cadena hexadecimal a
+        // entero, así que no fallaba — acuñaba ~1,4·10^48 tokens al
+        // desplegante. No reventaba, pero dejaba el fixture con un suministro
+        // absurdo. Se despliega sin suministro inicial y los tokens de prueba
+        // se acuñan abajo, explícitamente.
         const BezhasToken = await ethers.getContractFactory("BezhasToken");
-        const bezToken = await BezhasToken.deploy(owner.address);
+        const bezToken = await BezhasToken.deploy(0);
 
         // Get role identifiers
         const MINTER_ROLE = await bezToken.MINTER_ROLE();
         const BURNER_ROLE = await bezToken.BURNER_ROLE();
         const PAUSER_ROLE = await bezToken.PAUSER_ROLE();
         const DEFAULT_ADMIN_ROLE = await bezToken.DEFAULT_ADMIN_ROLE();
+        const TREASURY_ROLE = await bezToken.TREASURY_ROLE();
 
         // Grant roles
         await bezToken.grantRole(MINTER_ROLE, minter.address);
@@ -58,6 +66,7 @@ describe("BezhasToken Security Tests", function () {
             BURNER_ROLE,
             PAUSER_ROLE,
             DEFAULT_ADMIN_ROLE,
+            TREASURY_ROLE,
             initialSupply
         };
     }
@@ -152,7 +161,11 @@ describe("BezhasToken Security Tests", function () {
             });
         });
 
-        describe("DEFAULT_ADMIN_ROLE", function () {
+        // La tesorería y el reparto de premios de LP no los gobierna
+        // DEFAULT_ADMIN_ROLE sino un TREASURY_ROLE dedicado. La prueba esperaba
+        // el rol de administración, que es una separación de poderes más floja
+        // que la que el contrato implementa de verdad.
+        describe("TREASURY_ROLE", function () {
             it("should allow admin to update treasury address", async function () {
                 const { bezToken, owner, treasury } = await loadFixture(deployBezhasTokenFixture);
 
@@ -161,19 +174,19 @@ describe("BezhasToken Security Tests", function () {
                 expect(await bezToken.treasuryDAO()).to.equal(treasury.address);
             });
 
-            it("should reject treasury update from non-admin", async function () {
-                const { bezToken, attacker, treasury, DEFAULT_ADMIN_ROLE } = await loadFixture(deployBezhasTokenFixture);
+            it("should reject treasury update from an account without TREASURY_ROLE", async function () {
+                const { bezToken, attacker, treasury, TREASURY_ROLE } = await loadFixture(deployBezhasTokenFixture);
 
                 await expect(bezToken.connect(attacker).setTreasuryDAO(treasury.address))
                     .to.be.revertedWithCustomError(bezToken, "AccessControlUnauthorizedAccount")
-                    .withArgs(attacker.address, DEFAULT_ADMIN_ROLE);
+                    .withArgs(attacker.address, TREASURY_ROLE);
             });
 
             it("should reject setting treasury to zero address", async function () {
                 const { bezToken, owner } = await loadFixture(deployBezhasTokenFixture);
 
                 await expect(bezToken.connect(owner).setTreasuryDAO(ethers.ZeroAddress))
-                    .to.be.revertedWith("Treasury cannot be zero address");
+                    .to.be.revertedWith("BEZ: Invalid address");
             });
         });
     });
@@ -217,42 +230,69 @@ describe("BezhasToken Security Tests", function () {
             });
         });
 
-        describe("Frontrunning Prevention", function () {
-            it("should support increaseAllowance to prevent frontrunning", async function () {
-                const { bezToken, user1, user2 } = await loadFixture(deployBezhasTokenFixture);
-                const initialAllowance = ethers.parseUnits("100", 18);
-                const increaseAmount = ethers.parseUnits("50", 18);
+        // ────────────────────────────────────────────────────────────────────
+        // La carrera del `approve` (frontrunning de asignaciones)
+        // ────────────────────────────────────────────────────────────────────
+        //
+        // Estas tres pruebas llamaban a `increaseAllowance` y
+        // `decreaseAllowance`. OpenZeppelin las **eliminó en la versión 5.0**, y
+        // este token hereda de OZ 5.6.1: no existen. Como la suite no se
+        // ejecutaba en ninguna parte, nadie se enteró.
+        //
+        // Conviene ser claro sobre lo que eso significa, porque la sección se
+        // llamaba «Frontrunning Prevention» y ya no previene nada: BEZ **no
+        // tiene mitigación en cadena** de la carrera clásica del `approve`. Si
+        // el titular cambia una asignación de N a M, el gastador puede ver la
+        // transacción en el mempool, gastar N antes de que entre y gastar M
+        // después: N+M en total.
+        //
+        // La mitigación aplicable hoy es de convención, no de contrato: poner
+        // la asignación a cero y confirmar antes de fijar la nueva. Eso es lo
+        // que se prueba aquí, junto con la semántica real de `approve`. Añadir
+        // los ayudantes al contrato es una decisión de diseño aparte —y el
+        // token ya está desplegado—, así que la prueba describe lo que hay.
+        describe("Allowance race (`approve` frontrunning)", function () {
+            it("does NOT expose increaseAllowance/decreaseAllowance (removed in OpenZeppelin v5)", async function () {
+                const { bezToken } = await loadFixture(deployBezhasTokenFixture);
 
-                await bezToken.connect(user1).approve(user2.address, initialAllowance);
-
-                // Use increaseAllowance instead of approve to prevent frontrunning
-                await bezToken.connect(user1).increaseAllowance(user2.address, increaseAmount);
-
-                const newAllowance = await bezToken.allowance(user1.address, user2.address);
-                expect(newAllowance).to.equal(initialAllowance + increaseAmount);
+                // Si algún día se añaden al contrato, esta prueba falla y toca
+                // recuperar las comprobaciones de incremento y decremento.
+                expect(bezToken.increaseAllowance).to.equal(undefined);
+                expect(bezToken.decreaseAllowance).to.equal(undefined);
             });
 
-            it("should support decreaseAllowance safely", async function () {
+            it("approve overwrites the previous allowance instead of adding to it", async function () {
                 const { bezToken, user1, user2 } = await loadFixture(deployBezhasTokenFixture);
-                const initialAllowance = ethers.parseUnits("100", 18);
-                const decreaseAmount = ethers.parseUnits("40", 18);
+                const primera = ethers.parseUnits("100", 18);
+                const segunda = ethers.parseUnits("50", 18);
 
-                await bezToken.connect(user1).approve(user2.address, initialAllowance);
-                await bezToken.connect(user1).decreaseAllowance(user2.address, decreaseAmount);
+                await bezToken.connect(user1).approve(user2.address, primera);
+                await bezToken.connect(user1).approve(user2.address, segunda);
 
-                const newAllowance = await bezToken.allowance(user1.address, user2.address);
-                expect(newAllowance).to.equal(initialAllowance - decreaseAmount);
+                // Sobrescribe: 50, no 150. Ésta es justamente la semántica que
+                // abre la carrera.
+                expect(await bezToken.allowance(user1.address, user2.address)).to.equal(segunda);
             });
 
-            it("should revert decreaseAllowance below zero", async function () {
+            it("supports the zero-first pattern, which is the available mitigation", async function () {
                 const { bezToken, user1, user2 } = await loadFixture(deployBezhasTokenFixture);
-                const initialAllowance = ethers.parseUnits("100", 18);
-                const decreaseAmount = ethers.parseUnits("150", 18);
+                const inicial = ethers.parseUnits("100", 18);
+                const nueva = ethers.parseUnits("40", 18);
 
-                await bezToken.connect(user1).approve(user2.address, initialAllowance);
+                await bezToken.connect(user1).approve(user2.address, inicial);
 
-                await expect(bezToken.connect(user1).decreaseAllowance(user2.address, decreaseAmount))
-                    .to.be.revertedWithCustomError(bezToken, "ERC20FailedDecreaseAllowance");
+                await bezToken.connect(user1).approve(user2.address, 0);
+                expect(await bezToken.allowance(user1.address, user2.address)).to.equal(0);
+
+                await bezToken.connect(user1).approve(user2.address, nueva);
+                expect(await bezToken.allowance(user1.address, user2.address)).to.equal(nueva);
+            });
+
+            it("rejects approving the zero address as spender", async function () {
+                const { bezToken, user1 } = await loadFixture(deployBezhasTokenFixture);
+
+                await expect(bezToken.connect(user1).approve(ethers.ZeroAddress, 1))
+                    .to.be.revertedWithCustomError(bezToken, "ERC20InvalidSpender");
             });
         });
     });
@@ -294,7 +334,7 @@ describe("BezhasToken Security Tests", function () {
             const { bezToken, burner } = await loadFixture(deployBezhasTokenFixture);
 
             await expect(bezToken.connect(burner).processDeflation(0))
-                .to.be.revertedWith("Amount must be greater than 0");
+                .to.be.revertedWith("BEZ: Amount must be > 0");
         });
 
         it("should reject processDeflation with insufficient balance", async function () {
@@ -302,7 +342,7 @@ describe("BezhasToken Security Tests", function () {
             const excessiveAmount = ethers.parseUnits("999999999999", 18);
 
             await expect(bezToken.connect(burner).processDeflation(excessiveAmount))
-                .to.be.revertedWithCustomError(bezToken, "ERC20InsufficientBalance");
+                .to.be.revertedWith("BEZ: Insufficient balance");
         });
     });
 
@@ -311,13 +351,13 @@ describe("BezhasToken Security Tests", function () {
     // ========================================================================
     describe("LP Rewards Distribution Security", function () {
 
-        it("should only allow admin to distribute LP rewards", async function () {
-            const { bezToken, attacker, DEFAULT_ADMIN_ROLE } = await loadFixture(deployBezhasTokenFixture);
+        it("should only allow TREASURY_ROLE to distribute LP rewards", async function () {
+            const { bezToken, attacker, TREASURY_ROLE } = await loadFixture(deployBezhasTokenFixture);
             const lpAddress = ethers.Wallet.createRandom().address;
 
             await expect(bezToken.connect(attacker).distributeLPRewards(lpAddress, ethers.parseUnits("100", 18)))
                 .to.be.revertedWithCustomError(bezToken, "AccessControlUnauthorizedAccount")
-                .withArgs(attacker.address, DEFAULT_ADMIN_ROLE);
+                .withArgs(attacker.address, TREASURY_ROLE);
         });
 
         it("should reject distribution exceeding LP pool balance", async function () {
@@ -326,7 +366,7 @@ describe("BezhasToken Security Tests", function () {
             const excessiveAmount = ethers.parseUnits("999999999999", 18);
 
             await expect(bezToken.connect(owner).distributeLPRewards(lpAddress, excessiveAmount))
-                .to.be.revertedWith("Insufficient LP rewards");
+                .to.be.revertedWith("BEZ: Insufficient LP rewards pool");
         });
     });
 

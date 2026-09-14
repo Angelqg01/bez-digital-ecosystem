@@ -69,9 +69,16 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run Solidity tests (Foundry)
+      # `forge test` no probaba nada: busca ficheros `.t.sol` y este repositorio
+      # no tiene ninguno, así que ejecutaba cero pruebas y salía con código 0.
+      # Las pruebas de contrato reales son de Hardhat, en `test/`.
+      - name: Compile contracts (Foundry)
         working-directory: ./
-        run: forge test -vvv
+        run: forge build
+
+      - name: Run contract tests (Hardhat)
+        working-directory: ./
+        run: npx hardhat test
 
       # ==========================================
       # 2. api backend (Jest)
