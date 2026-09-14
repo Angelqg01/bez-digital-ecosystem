@@ -38,6 +38,82 @@
 process.env.STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_secret_para_pruebas';
 process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_mock';
 
+// El registro de idempotencia del webhook vive en PostgreSQL. Aquí se sustituye
+// por un doble en memoria con la misma semántica —la clave primaria decide
+// quién procesa— para que estas pruebas no necesiten una base de datos y sigan
+// siendo deterministas. Las pruebas de persistencia de más abajo cogen el pool
+// de verdad con `jest.requireActual`.
+//
+// Funciones planas, no `jest.fn()`: la configuración del proyecto activa
+// `resetMocks`, que vaciaría la implementación antes de cada prueba.
+jest.mock('../db/pool', () => {
+    const eventos = new Map();
+
+    /** Reproduce solo las consultas que hace routes/stripe-webhook.routes.js. */
+    async function query(texto, valores = []) {
+        const sql = String(texto);
+
+        if (sql.includes('INSERT INTO stripe_webhook_events')) {
+            const [eventId, eventType, digest] = valores;
+            if (eventos.has(eventId)) return { rows: [] }; // ON CONFLICT DO NOTHING
+            eventos.set(eventId, {
+                event_id: eventId,
+                event_type: eventType,
+                status: 'processing',
+                attempts: 1,
+                payload_digest: digest,
+                updated_at: Date.now(),
+            });
+            return { rows: [{ event_id: eventId }] };
+        }
+
+        if (sql.includes('UPDATE stripe_webhook_events') && sql.includes("SET status = 'processing'")) {
+            const [eventId] = valores;
+            const fila = eventos.get(eventId);
+            if (!fila) return { rows: [] };
+
+            // Misma condición que el SQL: se reclama lo fallido siempre, y lo
+            // que lleva demasiado en 'processing'.
+            const caducado = Date.now() - fila.updated_at > 15 * 60 * 1000;
+            if (fila.status === 'failed' || (fila.status === 'processing' && caducado)) {
+                fila.status = 'processing';
+                fila.attempts += 1;
+                fila.updated_at = Date.now();
+                return { rows: [{ event_id: eventId }] };
+            }
+            return { rows: [] };
+        }
+
+        if (sql.includes('UPDATE stripe_webhook_events')) {
+            const [eventId, status, error] = valores;
+            const fila = eventos.get(eventId);
+            if (fila) {
+                fila.status = status;
+                fila.last_error = error;
+                fila.updated_at = Date.now();
+            }
+            return { rows: [] };
+        }
+
+        // Cualquier otra consulta (los pagos, por ejemplo) va al pool de
+        // verdad: aquí solo se sustituye el registro de idempotencia.
+        return realPool().query(texto, valores);
+    }
+
+    let cacheado = null;
+    function realPool() {
+        if (!cacheado) cacheado = jest.requireActual('../db/pool');
+        return cacheado;
+    }
+
+    return {
+        query,
+        getClient: (...args) => realPool().getClient(...args),
+        end: () => (cacheado ? cacheado.end() : Promise.resolve()),
+        __eventos: eventos,
+    };
+});
+
 // Servicios externos: fuera. No se llama a Stripe ni a la cadena en pruebas.
 jest.mock('../services/fiat-gateway.service');
 jest.mock('../middleware/discordNotifier');
@@ -91,9 +167,15 @@ function webhookFirmado(evento) {
     return { payload, firma };
 }
 
+let contadorEventos = 0;
+/** Cada evento de Stripe trae un id único; reutilizarlo lo marca como repetido. */
+function idEvento(prefijo = 'evt_test') {
+    return `${prefijo}_${Date.now()}_${++contadorEventos}`;
+}
+
 function eventoCheckoutCompletado(overrides = {}) {
     return {
-        id: 'evt_test_1',
+        id: idEvento(),
         type: 'checkout.session.completed',
         data: {
             object: {
@@ -292,7 +374,7 @@ describe('Flujo de pago E2E', () => {
             stripeService.handlePaymentFailed.mockResolvedValue({ ok: true });
 
             const res = await enviarWebhook({
-                id: 'evt_failed',
+                id: idEvento('evt_failed'),
                 type: 'payment_intent.payment_failed',
                 data: {
                     object: {
@@ -310,7 +392,7 @@ describe('Flujo de pago E2E', () => {
 
         test('un tipo de evento desconocido se acepta pero se marca como no gestionado', async () => {
             const res = await enviarWebhook({
-                id: 'evt_raro',
+                id: idEvento('evt_raro'),
                 type: 'radar.early_fraud_warning.created',
                 data: { object: { id: 'issfr_1' } },
             });
@@ -344,7 +426,7 @@ describe('Flujo de pago E2E', () => {
             // comprobación `r.handled !== false` leía `undefined !== false`:
             // siempre respondía `handled: true`, incluso sin gestionar nada.
             const res = await enviarWebhook({
-                id: 'evt_sin_handler',
+                id: idEvento('evt_sin_handler'),
                 type: 'charge.dispute.created',
                 data: { object: { id: 'dp_1' } },
             });
@@ -418,6 +500,104 @@ describe('Flujo de pago E2E', () => {
         test('exige autenticación', async () => {
             const res = await request(app).get('/api/stripe/session/cs_test_query');
             expect(res.status).toBe(401);
+        });
+    });
+
+    describe('Idempotencia (Stripe entrega al menos una vez)', () => {
+        test('la segunda entrega del mismo evento no vuelve a procesar el pago', async () => {
+            stripeService.handleCheckoutCompleted.mockResolvedValue({ ok: true });
+            const evento = eventoCheckoutCompletado();
+
+            const primera = await enviarWebhook(evento);
+            const segunda = await enviarWebhook(evento);
+
+            expect(primera.status).toBe(200);
+            expect(primera.body.duplicate).toBeUndefined();
+
+            // Reintento: Stripe reenvía el MISMO evt_... tras un 5xx, un 429 o
+            // un timeout. Si se volviera a procesar, `processFiatPayment`
+            // transferiría los BEZ una segunda vez.
+            expect(segunda.status).toBe(200);
+            expect(segunda.body.duplicate).toBe(true);
+            expect(stripeService.handleCheckoutCompleted).toHaveBeenCalledTimes(1);
+        });
+
+        test('dos eventos distintos sí se procesan los dos', async () => {
+            stripeService.handleCheckoutCompleted.mockResolvedValue({ ok: true });
+
+            await enviarWebhook(eventoCheckoutCompletado());
+            await enviarWebhook(eventoCheckoutCompletado());
+
+            expect(stripeService.handleCheckoutCompleted).toHaveBeenCalledTimes(2);
+        });
+
+        test('el mismo evento reenviado en paralelo se procesa una sola vez', async () => {
+            stripeService.handleCheckoutCompleted.mockResolvedValue({ ok: true });
+            const evento = eventoCheckoutCompletado();
+
+            const respuestas = await Promise.all([
+                enviarWebhook(evento),
+                enviarWebhook(evento),
+                enviarWebhook(evento),
+            ]);
+
+            expect(respuestas.every((r) => r.status === 200)).toBe(true);
+            expect(stripeService.handleCheckoutCompleted).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('Semántica de reintentos', () => {
+        test('un fallo pasajero devuelve 5xx para que Stripe reintente', async () => {
+            // Antes esto devolvía 200: Stripe daba el evento por bueno, no
+            // volvía nunca, y el cliente se quedaba pagando sin recibir nada.
+            const caida = new Error('connect ECONNREFUSED 127.0.0.1:8545');
+            caida.code = 'ECONNREFUSED';
+            stripeService.handleCheckoutCompleted.mockRejectedValue(caida);
+
+            const res = await enviarWebhook(eventoCheckoutCompletado());
+
+            expect(res.status).toBeGreaterThanOrEqual(500);
+            expect(res.body.retryable).toBe(true);
+        });
+
+        test('un 503 del proveedor también se considera reintentable', async () => {
+            const caida = new Error('Service Unavailable');
+            caida.status = 503;
+            stripeService.handleCheckoutCompleted.mockRejectedValue(caida);
+
+            const res = await enviarWebhook(eventoCheckoutCompletado());
+            expect(res.status).toBeGreaterThanOrEqual(500);
+        });
+
+        test('un fallo permanente devuelve 200: reintentarlo repetiría el error tres días', async () => {
+            stripeService.handleCheckoutCompleted.mockRejectedValue(
+                new Error('Wallet address missing in metadata')
+            );
+
+            const res = await enviarWebhook(eventoCheckoutCompletado());
+
+            expect(res.status).toBe(200);
+            expect(res.body.retryable).toBeUndefined();
+        });
+
+        test('tras un fallo pasajero, el reintento de Stripe sí vuelve a procesarse', async () => {
+            // La deduplicación no puede tragarse el reintento que nosotros
+            // mismos hemos pedido con un 5xx: el pago se perdería igual, solo
+            // que en silencio.
+            const caida = new Error('ETIMEDOUT');
+            caida.code = 'ETIMEDOUT';
+            stripeService.handleCheckoutCompleted.mockRejectedValueOnce(caida);
+            stripeService.handleCheckoutCompleted.mockResolvedValue({ ok: true });
+
+            const evento = eventoCheckoutCompletado();
+
+            const primera = await enviarWebhook(evento);
+            expect(primera.status).toBeGreaterThanOrEqual(500);
+
+            const segunda = await enviarWebhook(evento);
+            expect(segunda.status).toBe(200);
+            expect(segunda.body.duplicate).toBeUndefined();
+            expect(stripeService.handleCheckoutCompleted).toHaveBeenCalledTimes(2);
         });
     });
 

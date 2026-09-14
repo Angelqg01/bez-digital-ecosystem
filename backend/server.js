@@ -419,12 +419,36 @@ if (process.env.NODE_ENV === 'production') {
     }));
 }
 
+// ============================================================================
+// CONFIANZA EN EL PROXY
+// ============================================================================
+//
+// El backend se despliega detrás de un balanceador de Google Cloud. Sin esta
+// línea, Express ignora `X-Forwarded-For` y `req.ip` devuelve la dirección del
+// *proxy* en todas las peticiones. Consecuencia: el limitador global de abajo
+// mete a toda la plataforma —usuarios, webhooks, sondas de salud— en un único
+// cubo de 500 peticiones cada 15 minutos, en vez de uno por cliente. A partir
+// de ahí, 429 para todo el mundo.
+//
+// Se confía exactamente en un salto (el balanceador). Poner `true` haría lo
+// contrario de lo que parece: cualquiera podría falsear su IP con una cabecera
+// `X-Forwarded-For` y saltarse los límites por IP.
+app.set('trust proxy', 1);
+
+// Rutas de webhook: las llama una máquina, no una persona, y su emisor
+// reintenta si le contestamos 429. Limitarlas con el cubo pensado para
+// navegadores solo consigue que un pico de eventos se convierta en una
+// tormenta de reintentos. Llevan su propio limitador, más holgado, en su
+// router.
+const RUTAS_WEBHOOK = ['/api/stripe/webhook', '/api/telegram/webhook'];
+
 // Global rate limiting - more permissive for development
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: process.env.NODE_ENV === 'production' ? 500 : 2000, // Very permissive in dev
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => RUTAS_WEBHOOK.some((ruta) => req.path.startsWith(ruta)),
     handler: (req, res) => {
         res.status(429).json({
             error: 'Too many requests',
