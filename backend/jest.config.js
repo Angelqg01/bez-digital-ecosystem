@@ -2,6 +2,15 @@
  * Jest Configuration for BeZhas Backend
  * @type {import('jest').Config}
  */
+
+/**
+ * Dependencias publicadas como ESM puro (`"type": "module"`).
+ *
+ * Son las únicas que se transforman con Babel; el resto de node_modules, y
+ * nuestro propio código CJS, se cargan tal cual. Si aparece un
+ * «Unexpected token 'export'» al cargar un paquete nuevo, se añade aquí.
+ */
+const ESM_DEPS = ['afinn-165', 'uuid'];
 module.exports = {
     // Test environment
     testEnvironment: 'node',
@@ -10,9 +19,15 @@ module.exports = {
     rootDir: '.',
 
     // Test file patterns
+    //
+    // Ojo con `**/test/**`: lo incluía el patrón anterior y arrastraba
+    // `test/BezLiquidityRamp.test.js`, que es una prueba de contrato escrita
+    // para Hardhat (`require('hardhat')`, `chai`). Jest la cargaba, reventaba
+    // al no encontrar el runtime de Hardhat y contaba como suite rota del
+    // backend. Las pruebas del backend viven en `tests/`; `test/` es el
+    // directorio de Hardhat y no le corresponde a Jest.
     testMatch: [
         '**/tests/**/*.test.js',
-        '**/test/**/*.test.js',
         '**/__tests__/**/*.js'
     ],
 
@@ -84,13 +99,26 @@ module.exports = {
     globalTeardown: undefined,
 
     // Transform configuration
-    // NOTE: transform: {} means no Babel transform. This is intentional for CJS.
-    // mongodb driver v6 ships TypeScript source in some imports - we mock those.
-    transform: {},
+    //
+    // Nuestro código es CJS y no necesita Babel: no se transforma, es más
+    // rápido y evita sorpresas. La excepción son unas pocas dependencias
+    // publicadas como ESM puro que `natural` arrastra para el análisis de
+    // sentimiento; sin transformarlas, Jest revienta al cargarlas con
+    // «Unexpected token 'export'».
+    transform: {
+        '\\.[mc]?js$': ['babel-jest', {
+            presets: [['@babel/preset-env', { targets: { node: 'current' } }]],
+            babelrc: false,
+            configFile: false,
+        }],
+    },
 
-    // Ignore transforming node_modules except none (all CJS)
+    // Todo node_modules queda sin transformar salvo esos paquetes ESM. El
+    // patrón busca el nombre en cualquier punto de la ruta: pnpm resuelve a
+    // rutas con dos `node_modules/` (.pnpm/<pkg>@<ver>/node_modules/<pkg>), y
+    // un patrón anclado al primero dejaba el segundo sin excepción.
     transformIgnorePatterns: [
-        'node_modules/(?!nothing)'
+        `node_modules/(?!.*(${ESM_DEPS.join('|')}))`,
     ],
 
     // Mock modules that are problematic in test environment

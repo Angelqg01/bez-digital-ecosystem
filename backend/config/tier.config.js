@@ -513,12 +513,22 @@ const calculatePotentialROI = (stakeAmount, tierName, durationMonths = 12) => {
     const totalSubscriptionCost = monthlySubscriptionCost * durationMonths;
     const subscriptionCostInBEZ = totalSubscriptionCost / BEZ_TO_USD_RATE;
 
-    // Valor del gas subsidio (estimado)
-    const estimatedGasSavings = config.gas.monthlySubsidyBudget * durationMonths;
+    // Valor del gas subsidio (estimado).
+    //
+    // Un presupuesto «ilimitado» se representa con Infinity, y multiplicarlo
+    // contaminaba todo el cálculo: ENTERPRISE salía con beneficio neto
+    // Infinity, ganaba siempre en compareROIAcrossTiers, y al serializar a
+    // JSON aparecía como `null` — el consumo ilimitado no es beneficio
+    // infinito. Se estima con un tope, igual que ya se hacía con las
+    // consultas de IA justo debajo.
+    const monthlyGasBudget = Number.isFinite(config.gas.monthlySubsidyBudget)
+        ? config.gas.monthlySubsidyBudget
+        : UNLIMITED_GAS_BUDGET_ESTIMATE;
+    const estimatedGasSavings = monthlyGasBudget * durationMonths;
     const gasSavingsInBEZ = estimatedGasSavings / BEZ_TO_USD_RATE;
 
     // Valor de AI credits (estimado a $0.01 por query)
-    const aiCreditsValue = (config.ai.monthlyQueries === Infinity ? 10000 : config.ai.monthlyQueries) * 0.01 * durationMonths;
+    const aiCreditsValue = (Number.isFinite(config.ai.monthlyQueries) ? config.ai.monthlyQueries : UNLIMITED_AI_QUERIES_ESTIMATE) * 0.01 * durationMonths;
     const aiValueInBEZ = aiCreditsValue / BEZ_TO_USD_RATE;
 
     // Calcular beneficio neto
@@ -616,6 +626,16 @@ const compareTiers = (tierA, tierB) => {
  * @param {number} durationMonths - Duración en meses
  * @returns {Object} Comparación de todos los tiers
  */
+/**
+ * Estimaciones para los planes con cupo «ilimitado».
+ *
+ * Ilimitado no significa infinito: sirve para no poner tope contractual, pero
+ * a efectos de ROI hay que estimar un consumo realista. Sin esto, cualquier
+ * cálculo sobre ENTERPRISE devolvía Infinity y arrastraba al resto.
+ */
+const UNLIMITED_AI_QUERIES_ESTIMATE = 10000;
+const UNLIMITED_GAS_BUDGET_ESTIMATE = 1000; // USD/mes, el doble del tope de BUSINESS
+
 const compareROIAcrossTiers = (stakeAmount, durationMonths = 12) => {
     const comparison = {};
 

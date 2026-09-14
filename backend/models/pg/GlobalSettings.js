@@ -1,6 +1,79 @@
 const pool = require('../../db/pool');
 const AuditLog = require('./AuditLog'); // Note: uses AuditLog PG DAO
 
+/** Secciones que el panel de administración puede escribir. */
+const SECCIONES = ['defi', 'fiat', 'token', 'farming', 'staking', 'dao', 'rwa', 'platform', 'openclaw'];
+
+/**
+ * Cotas numéricas de cada parámetro sensible.
+ *
+ * El modelo Mongoose original (`models/GlobalSettings.model.js`) declaraba
+ * estos `min`/`max` en el esquema, y Mongoose los hacía cumplir en cada
+ * escritura. Al migrar a PostgreSQL las secciones pasaron a ser columnas
+ * `jsonb`, que no validan nada: `updateSettings` guardaba tal cual lo que
+ * llegara del cuerpo de la petición. Eso deja la tokenómica sin barandilla
+ * —una comisión de swap del 500 %, un `burnRate` negativo, un quórum de DAO
+ * del 0 % que aprueba cualquier propuesta— a un solo PUT de distancia.
+ *
+ * Aquí se recuperan esas cotas y se aplican antes de tocar la base de datos.
+ * Los valores son los mismos que declaraba el esquema Mongoose.
+ */
+const COTAS = {
+    'defi.swapFeePercent': { min: 0, max: 10 },
+    'defi.maxSlippage': { min: 0.1, max: 50 },
+    'defi.bridgeFeePercent': { min: 0, max: 5 },
+    'token.decimals': { min: 0, max: 18 },
+    'token.burnRate': { min: 0, max: 500 },          // base 10000 (20 = 0,2 %)
+    'token.treasuryRate': { min: 0, max: 1000 },     // base 10000 (100 = 1 %)
+    'token.transferFeePercent': { min: 0, max: 10 },
+    'fiat.minPurchaseUSD': { min: 0, max: 1000000 },
+    'fiat.maxPurchaseUSD': { min: 0, max: 10000000 },
+    'farming.defaultAPY': { min: 0, max: 1000 },
+    'farming.earlyWithdrawalPenalty': { min: 0, max: 50 },
+    'staking.rewardRatePercent': { min: 0, max: 100 },
+    'staking.slashingPercent': { min: 0, max: 100 },
+    'dao.quorumPercentage': { min: 1, max: 100 },
+    'dao.votingPeriodDays': { min: 1, max: 30 },
+    'dao.vetoThreshold': { min: 0, max: 100 },
+    'rwa.platformFeePercent': { min: 0, max: 10 },
+    'platform.maxLoginAttempts': { min: 1, max: 100 },
+    'platform.sessionTimeoutMinutes': { min: 1, max: 10080 },
+};
+
+/** Error de validación: la ruta lo traduce a 400, no a 500. */
+class SettingsValidationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'SettingsValidationError';
+        this.statusCode = 400;
+    }
+}
+
+/**
+ * Comprueba las cotas de `updates` (parcial: solo mira lo que venga).
+ * Lanza `SettingsValidationError` al primer valor fuera de rango.
+ */
+function validateSettings(updates) {
+    if (!updates || typeof updates !== 'object') return;
+
+    for (const [ruta, { min, max }] of Object.entries(COTAS)) {
+        const [seccion, campo] = ruta.split('.');
+        const valores = updates[seccion];
+        if (!valores || typeof valores !== 'object' || !(campo in valores)) continue;
+
+        const bruto = valores[campo];
+        if (bruto === undefined || bruto === null) continue;
+
+        const valor = typeof bruto === 'string' ? Number(bruto) : bruto;
+        if (typeof valor !== 'number' || !Number.isFinite(valor)) {
+            throw new SettingsValidationError(`${ruta} debe ser un número finito, se recibió ${JSON.stringify(bruto)}`);
+        }
+        if (valor < min || valor > max) {
+            throw new SettingsValidationError(`${ruta} debe estar entre ${min} y ${max}, se recibió ${valor}`);
+        }
+    }
+}
+
 class GlobalSettingsPG {
     static async getSettings() {
         const result = await pool.query("SELECT * FROM global_settings WHERE id = 'global_settings'");
@@ -33,6 +106,7 @@ class GlobalSettingsPG {
     }
 
     static async updateSettings(updates, adminId, metadata = {}) {
+        validateSettings(updates);
         const current = await this.getSettings();
         const previousState = { ...current };
 
@@ -44,7 +118,7 @@ class GlobalSettingsPG {
         let paramIdx = 1;
 
         for (const key of updatedSections) {
-            if (['defi', 'fiat', 'token', 'farming', 'staking', 'dao', 'rwa', 'platform', 'openclaw'].includes(key)) {
+            if (SECCIONES.includes(key)) {
                 // deep merge simulation
                 const merged = { ...current[key], ...updates[key] };
                 setClauses.push(`${key} = $${paramIdx}::jsonb`);
@@ -148,3 +222,7 @@ class GlobalSettingsPG {
 }
 
 module.exports = GlobalSettingsPG;
+module.exports.SECCIONES = SECCIONES;
+module.exports.COTAS = COTAS;
+module.exports.validateSettings = validateSettings;
+module.exports.SettingsValidationError = SettingsValidationError;

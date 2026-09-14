@@ -1,12 +1,21 @@
 /**
- * GlobalSettings API Tests
- * 
- * Tests for the Admin Configuration API
+ * Pruebas de GlobalSettings (configuración global del panel de administración).
+ *
+ * Esta suite comprobaba el esquema de Mongoose (`models/GlobalSettings.model.js`),
+ * pero importaba el DAO de PostgreSQL (`models/pg/GlobalSettings.js`), que no
+ * tiene `.schema`: las 29 pruebas de esquema fallaban con
+ * «Cannot read properties of undefined (reading 'paths')».
+ *
+ * La implementación viva es la de PostgreSQL —es la que usa
+ * `routes/globalSettings.routes.js`, y nada en el backend requiere ya el modelo
+ * de Mongoose—, así que las pruebas se reescriben contra ella: secciones,
+ * valores por defecto y, sobre todo, las cotas numéricas que la migración a
+ * `jsonb` había dejado sin aplicar.
  */
 
 const GlobalSettings = require('../models/pg/GlobalSettings');
+const { COTAS, SECCIONES, validateSettings, SettingsValidationError } = GlobalSettings;
 
-// Mock logger
 jest.mock('../utils/logger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
@@ -14,225 +23,193 @@ jest.mock('../utils/logger', () => ({
     debug: jest.fn(),
 }));
 
-// Mock mongoose connection for model tests
-jest.mock('mongoose', () => {
-    const actualMongoose = jest.requireActual('mongoose');
-    return {
-        ...actualMongoose,
-        connect: jest.fn().mockResolvedValue(true),
-        connection: {
-            on: jest.fn(),
-            once: jest.fn(),
-            readyState: 1,
-        },
-    };
-});
+// El DAO abre un pool de PostgreSQL al importarse; aquí no se consulta la base
+// de datos, solo los valores por defecto y la validación, que son puros.
+jest.mock('../db/pool', () => ({
+    query: jest.fn(),
+    end: jest.fn(),
+}));
 
-describe('GlobalSettings Model', () => {
-    describe('Schema Validation', () => {
-        test('should have correct _id default', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema._id).toBeDefined();
-            expect(schema._id.options.default).toBe('global_settings');
+describe('GlobalSettings (DAO PostgreSQL)', () => {
+    const defaults = GlobalSettings.getDefaultSettings();
+
+    describe('Secciones de configuración', () => {
+        const seccionesEsperadas = ['defi', 'fiat', 'token', 'farming', 'staking', 'dao', 'rwa', 'platform'];
+
+        seccionesEsperadas.forEach((seccion) => {
+            test(`existe la sección ${seccion}`, () => {
+                expect(defaults[seccion]).toBeDefined();
+                expect(typeof defaults[seccion]).toBe('object');
+            });
         });
 
-        test('should have defi configuration section', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['defi.enabled']).toBeDefined();
-            expect(schema['defi.swapFeePercent']).toBeDefined();
-            expect(schema['defi.maxSlippage']).toBeDefined();
+        test('la lista de secciones escribibles incluye openclaw además de las públicas', () => {
+            expect(SECCIONES).toEqual(expect.arrayContaining([...seccionesEsperadas, 'openclaw']));
         });
 
-        test('should have fiat configuration section', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['fiat.enabled']).toBeDefined();
-            expect(schema['fiat.minPurchaseUSD']).toBeDefined();
-            expect(schema['fiat.maxPurchaseUSD']).toBeDefined();
+        test('defi expone comisión de swap y slippage', () => {
+            expect(defaults.defi).toHaveProperty('swapFeePercent');
+            expect(defaults.defi).toHaveProperty('maxSlippage');
+            expect(defaults.defi).toHaveProperty('bridgeFeePercent');
         });
 
-        test('should have token configuration section', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['token.contractAddress']).toBeDefined();
-            expect(schema['token.symbol']).toBeDefined();
-            expect(schema['token.decimals']).toBeDefined();
+        test('token expone los parámetros de tokenómica', () => {
+            expect(defaults.token).toHaveProperty('burnRate');
+            expect(defaults.token).toHaveProperty('treasuryRate');
+            expect(defaults.token).toHaveProperty('transferFeePercent');
         });
 
-        test('should have farming configuration section', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['farming.enabled']).toBeDefined();
-            expect(schema['farming.defaultAPY']).toBeDefined();
-            expect(schema['farming.rewardsPerBlock']).toBeDefined();
-        });
-
-        test('should have staking configuration section', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['staking.enabled']).toBeDefined();
-            expect(schema['staking.minStakeAmount']).toBeDefined();
-            expect(schema['staking.rewardRatePercent']).toBeDefined();
-        });
-
-        test('should have dao configuration section', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['dao.enabled']).toBeDefined();
-            expect(schema['dao.quorumPercentage']).toBeDefined();
-            expect(schema['dao.votingPeriodDays']).toBeDefined();
-        });
-
-        test('should have rwa configuration section', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['rwa.enabled']).toBeDefined();
-            expect(schema['rwa.minInvestmentUSD']).toBeDefined();
-            expect(schema['rwa.platformFeePercent']).toBeDefined();
-        });
-
-        test('should have platform configuration section', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['platform.maintenanceMode']).toBeDefined();
-            expect(schema['platform.registrationEnabled']).toBeDefined();
-            expect(schema['platform.sessionTimeoutMinutes']).toBeDefined();
+        test('dao expone quórum y periodo de votación', () => {
+            expect(defaults.dao).toHaveProperty('quorumPercentage');
+            expect(defaults.dao).toHaveProperty('votingPeriodDays');
         });
     });
 
-    describe('Default Values', () => {
-        test('defi defaults should be correct', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['defi.enabled'].options.default).toBe(true);
-            expect(schema['defi.swapFeePercent'].options.default).toBe(0.3);
-            expect(schema['defi.maxSlippage'].options.default).toBe(1);
+    describe('Valores por defecto', () => {
+        test('defi', () => {
+            expect(defaults.defi.enabled).toBe(true);
+            expect(defaults.defi.swapFeePercent).toBe(0.3);
+            expect(defaults.defi.maxSlippage).toBe(1);
         });
 
-        test('fiat defaults should be correct', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['fiat.enabled'].options.default).toBe(true);
-            expect(schema['fiat.minPurchaseUSD'].options.default).toBe(10);
-            expect(schema['fiat.maxPurchaseUSD'].options.default).toBe(10000);
+        test('fiat', () => {
+            expect(defaults.fiat.enabled).toBe(true);
+            expect(defaults.fiat.minPurchaseUSD).toBe(10);
+            expect(defaults.fiat.maxPurchaseUSD).toBe(10000);
+            expect(defaults.fiat.kycRequired).toBe(true);
         });
 
-        test('token defaults should be correct', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['token.symbol'].options.default).toBe('BEZ');
-            expect(schema['token.decimals'].options.default).toBe(18);
+        test('token apunta al contrato BEZ desplegado', () => {
+            expect(defaults.token.symbol).toBe('BEZ');
+            expect(defaults.token.decimals).toBe(18);
+            expect(defaults.token.contractAddress).toBe('0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8');
+            // Acuñación cerrada por defecto: abrirla es una decisión explícita.
+            expect(defaults.token.mintingEnabled).toBe(false);
         });
 
-        test('farming defaults should be correct', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['farming.enabled'].options.default).toBe(true);
-            expect(schema['farming.defaultAPY'].options.default).toBe(15);
+        test('farming y staking', () => {
+            expect(defaults.farming.defaultAPY).toBe(15);
+            expect(defaults.staking.rewardRatePercent).toBe(12);
         });
 
-        test('staking defaults should be correct', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['staking.enabled'].options.default).toBe(true);
-            expect(schema['staking.rewardRatePercent'].options.default).toBe(12);
+        test('dao', () => {
+            expect(defaults.dao.quorumPercentage).toBe(10);
+            expect(defaults.dao.votingPeriodDays).toBe(7);
         });
 
-        test('dao defaults should be correct', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['dao.enabled'].options.default).toBe(true);
-            expect(schema['dao.quorumPercentage'].options.default).toBe(10);
-            expect(schema['dao.votingPeriodDays'].options.default).toBe(7);
+        test('platform', () => {
+            expect(defaults.platform.maintenanceMode).toBe(false);
+            expect(defaults.platform.registrationEnabled).toBe(true);
+            expect(defaults.platform.sessionTimeoutMinutes).toBe(60);
         });
 
-        test('platform defaults should be correct', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['platform.maintenanceMode'].options.default).toBe(false);
-            expect(schema['platform.registrationEnabled'].options.default).toBe(true);
-            expect(schema['platform.sessionTimeoutMinutes'].options.default).toBe(60);
+        test('todos los valores por defecto pasan su propia validación', () => {
+            expect(() => validateSettings(defaults)).not.toThrow();
         });
     });
 
-    describe('Validation Constraints', () => {
-        test('swapFeePercent should have min/max constraints', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['defi.swapFeePercent'].options.min).toBe(0);
-            expect(schema['defi.swapFeePercent'].options.max).toBe(10);
-        });
-
-        test('maxSlippage should have min/max constraints', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['defi.maxSlippage'].options.min).toBe(0.1);
-            expect(schema['defi.maxSlippage'].options.max).toBe(50);
-        });
-
-        test('rewardRatePercent should have min/max constraints', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['staking.rewardRatePercent'].options.min).toBe(0);
-            expect(schema['staking.rewardRatePercent'].options.max).toBe(100);
-        });
-
-        test('quorumPercentage should have min/max constraints', () => {
-            const schema = GlobalSettings.schema.paths;
-            expect(schema['dao.quorumPercentage'].options.min).toBe(1);
-            expect(schema['dao.quorumPercentage'].options.max).toBe(100);
-        });
-    });
-
-    describe('Static Methods', () => {
-        test('should have getSettings static method', () => {
-            expect(typeof GlobalSettings.getSettings).toBe('function');
-        });
-
-        test('should have updateSettings static method', () => {
-            expect(typeof GlobalSettings.updateSettings).toBe('function');
-        });
-    });
-
-    describe('Configuration Sections Coverage', () => {
-        const requiredSections = [
-            'defi',
-            'fiat',
-            'token',
-            'farming',
-            'staking',
-            'dao',
-            'rwa',
-            'platform',
+    describe('Cotas de los parámetros sensibles', () => {
+        const casos = [
+            ['defi.swapFeePercent', 0, 10],
+            ['defi.maxSlippage', 0.1, 50],
+            ['token.burnRate', 0, 500],
+            ['token.treasuryRate', 0, 1000],
+            ['staking.rewardRatePercent', 0, 100],
+            ['dao.quorumPercentage', 1, 100],
+            ['dao.votingPeriodDays', 1, 30],
+            ['rwa.platformFeePercent', 0, 10],
         ];
 
-        requiredSections.forEach(section => {
-            test(`should have ${section} configuration section`, () => {
-                const paths = Object.keys(GlobalSettings.schema.paths);
-                const sectionPaths = paths.filter(p => p.startsWith(`${section}.`));
-                expect(sectionPaths.length).toBeGreaterThan(0);
+        casos.forEach(([ruta, min, max]) => {
+            test(`${ruta} está acotado en [${min}, ${max}]`, () => {
+                expect(COTAS[ruta]).toEqual({ min, max });
+            });
+
+            test(`${ruta} rechaza un valor por encima del máximo`, () => {
+                const [seccion, campo] = ruta.split('.');
+                expect(() => validateSettings({ [seccion]: { [campo]: max + 1 } }))
+                    .toThrow(SettingsValidationError);
+            });
+
+            test(`${ruta} rechaza un valor por debajo del mínimo`, () => {
+                const [seccion, campo] = ruta.split('.');
+                expect(() => validateSettings({ [seccion]: { [campo]: min - 1 } }))
+                    .toThrow(SettingsValidationError);
+            });
+
+            test(`${ruta} acepta los extremos del rango`, () => {
+                const [seccion, campo] = ruta.split('.');
+                expect(() => validateSettings({ [seccion]: { [campo]: min } })).not.toThrow();
+                expect(() => validateSettings({ [seccion]: { [campo]: max } })).not.toThrow();
+            });
+        });
+
+        test('rechaza NaN e Infinity, que en jsonb se guardarían como null', () => {
+            expect(() => validateSettings({ defi: { swapFeePercent: Number.NaN } })).toThrow(SettingsValidationError);
+            expect(() => validateSettings({ defi: { swapFeePercent: Number.POSITIVE_INFINITY } })).toThrow(SettingsValidationError);
+        });
+
+        test('acepta números en forma de cadena (los formularios envían texto)', () => {
+            expect(() => validateSettings({ dao: { quorumPercentage: '51' } })).not.toThrow();
+            expect(() => validateSettings({ dao: { quorumPercentage: '0' } })).toThrow(SettingsValidationError);
+        });
+
+        test('ignora los campos que no vienen en la actualización parcial', () => {
+            expect(() => validateSettings({ defi: { enabled: false } })).not.toThrow();
+            expect(() => validateSettings({})).not.toThrow();
+            expect(() => validateSettings(undefined)).not.toThrow();
+        });
+
+        test('el error de validación se traduce a 400, no a 500', () => {
+            try {
+                validateSettings({ defi: { swapFeePercent: 500 } });
+                throw new Error('debería haber lanzado');
+            } catch (error) {
+                expect(error).toBeInstanceOf(SettingsValidationError);
+                expect(error.statusCode).toBe(400);
+                expect(error.message).toContain('defi.swapFeePercent');
+            }
+        });
+    });
+
+    describe('Métodos estáticos', () => {
+        ['getSettings', 'updateSettings', 'resetSettings', 'rollback', 'getDefaultSettings'].forEach((metodo) => {
+            test(`expone ${metodo}`, () => {
+                expect(typeof GlobalSettings[metodo]).toBe('function');
             });
         });
     });
 });
 
-describe('GlobalSettings API Integration', () => {
-    describe('Endpoint Structure', () => {
-        const expectedEndpoints = [
-            { method: 'GET', path: '/api/admin/settings/global' },
-            { method: 'PUT', path: '/api/admin/settings/global' },
-            { method: 'GET', path: '/api/admin/settings/global/:section' },
-            { method: 'PATCH', path: '/api/admin/settings/global/:section' },
-            { method: 'POST', path: '/api/admin/settings/global/reset' },
-            { method: 'GET', path: '/api/admin/settings/global/public/frontend' },
-        ];
+describe('Rutas de GlobalSettings', () => {
+    const router = require('../routes/globalSettings.routes');
 
-        test('should have all required endpoints documented', () => {
-            // This is a documentation test - actual endpoint testing requires supertest
-            expectedEndpoints.forEach(endpoint => {
-                expect(endpoint.method).toBeDefined();
-                expect(endpoint.path).toBeDefined();
-            });
+    /** Extrae los pares método/ruta registrados en el router de Express. */
+    const rutasRegistradas = router.stack
+        .filter((capa) => capa.route)
+        .flatMap((capa) => Object.keys(capa.route.methods).map((m) => `${m.toUpperCase()} ${capa.route.path}`));
+
+    const esperadas = [
+        'GET /',
+        'PUT /',
+        'GET /:section',
+        'PATCH /:section',
+        'POST /reset',
+        'GET /public/frontend',
+    ];
+
+    esperadas.forEach((ruta) => {
+        test(`registra ${ruta}`, () => {
+            expect(rutasRegistradas).toContain(ruta);
         });
     });
 
-    describe('Section Validation', () => {
-        const validSections = ['defi', 'fiat', 'token', 'farming', 'staking', 'dao', 'rwa', 'platform'];
-
-        validSections.forEach(section => {
-            test(`${section} should be a valid section`, () => {
-                expect(validSections.includes(section)).toBe(true);
-            });
-        });
-
-        test('should reject invalid sections', () => {
-            const invalidSections = ['invalid', 'test', 'unknown'];
-            invalidSections.forEach(section => {
-                expect(validSections.includes(section)).toBe(false);
-            });
-        });
+    test('/reset usa el DAO de PostgreSQL, no métodos de Mongoose', () => {
+        // `deleteOne` y `create` son de Mongoose y no existen en el DAO: la
+        // ruta devolvía siempre 500. Se comprueba que ya no se nombran.
+        const fuente = require('fs').readFileSync(require.resolve('../routes/globalSettings.routes'), 'utf8');
+        expect(fuente).toContain('GlobalSettings.resetSettings(');
+        expect(fuente).not.toContain('GlobalSettings.deleteOne(');
+        expect(fuente).not.toContain('GlobalSettings.create(');
     });
 });

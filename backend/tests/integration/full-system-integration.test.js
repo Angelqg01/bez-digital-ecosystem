@@ -76,8 +76,14 @@ jest.mock('../../models/Payment.model', () => {
     };
 });
 
-// Mock del modelo User
-jest.mock('../../models/User.model', () => {
+// Mock del modelo User.
+//
+// Esto decía `../../models/User.model`, con mayúscula. El fichero real es
+// `models/user.model.js`: en macOS (sistema de ficheros insensible a
+// mayúsculas) resolvía, pero en Linux —la CI y los contenedores— no, y la
+// suite entera moría al cargarse con MODULE_NOT_FOUND antes de ejecutar una
+// sola prueba.
+jest.mock('../../models/user.model', () => {
     return class User {
         constructor(data) { Object.assign(this, data); }
         save() { return Promise.resolve(this); }

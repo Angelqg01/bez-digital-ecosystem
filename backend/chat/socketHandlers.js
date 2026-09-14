@@ -89,6 +89,21 @@ const messageRateLimits = new Map();
  * @param {Socket} socket - Socket.IO socket instance
  * @param {Function} next - Callback para continuar o rechazar
  */
+/** Secreto de desarrollo; jamás debe usarse fuera de local. */
+const CHAT_JWT_DEV_SECRET = 'bezhas_super_secret_key_change_in_production';
+
+/**
+ * Devuelve el secreto con el que verificar los tokens de chat.
+ *
+ * En producción solo vale `JWT_SECRET`: si falta, se devuelve `null` y la
+ * conexión se rechaza, en vez de caer a un valor por defecto conocido.
+ */
+function resolveChatJwtSecret() {
+    if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+    if (process.env.NODE_ENV === 'production') return null;
+    return CHAT_JWT_DEV_SECRET;
+}
+
 function authenticationMiddleware(socket, next) {
     try {
         // Extraer token del handshake
@@ -101,7 +116,18 @@ function authenticationMiddleware(socket, next) {
 
         // ✅ PRODUCCIÓN: Verificar token JWT
         const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET || 'bezhas_super_secret_key_change_in_production';
+
+        // Sin JWT_SECRET esto caía a 'bezhas_super_secret_key_change_in_production',
+        // una cadena que está publicada en este mismo repositorio: en producción
+        // cualquiera podía firmarse un token de chat válido con ella. El resto de
+        // verificadores del backend ya se niegan a arrancar sin secreto
+        // (`middleware/verifyAdminJWT.js`, `middleware/admin.middleware.js`);
+        // éste era el único que seguía aceptándolo en silencio.
+        const JWT_SECRET = resolveChatJwtSecret();
+        if (!JWT_SECRET) {
+            logger.error({ socketId: socket.id }, 'JWT_SECRET no configurado: se rechaza la conexión');
+            return next(new Error('Server configuration error'));
+        }
 
         try {
             const decoded = jwt.verify(token, JWT_SECRET);
@@ -652,6 +678,7 @@ module.exports = {
     getChatSystemStats,
     broadcastSystemMessage,
     authenticationMiddleware,
+    resolveChatJwtSecret,
     cleanupResources,
     SOCKET_CONFIG
 };

@@ -68,7 +68,9 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         res.json({
             received: true,
             eventType: event.type,
-            handled: results.some(r => r.handled !== false)
+            // `=== true` y no `!== false`: un resultado sin la propiedad (o una
+            // promesa, como pasaba antes) no debe contar como gestionado.
+            handled: results.some(r => r && r.handled === true)
         });
 
     } catch (error) {
@@ -103,10 +105,33 @@ async function dispatchEvent(event) {
         case 'payment_intent.payment_failed': {
             const stripeService = safeRequire('../services/stripe.service');
             if (stripeService?.handleStripeWebhook) {
-                // handleStripeWebhook does its own event-type switching internally
-                const result = await stripeService.handleStripeWebhook.__dispatchOnly
-                    ? stripeService.handleStripeWebhook(event)
-                    : handleViaStripeService(stripeService, event);
+                // OJO: aquí había un fallo de precedencia de operadores.
+                //
+                //   const result = await svc.handleStripeWebhook.__dispatchOnly
+                //       ? svc.handleStripeWebhook(event)
+                //       : handleViaStripeService(svc, event);
+                //
+                // `await` liga más fuerte que `?:`, así que eso se evaluaba como
+                // `(await ...__dispatchOnly) ? A : B`: se esperaba a una
+                // propiedad `undefined` y la rama elegida se quedaba SIN await.
+                // Consecuencias reales, las tres malas:
+                //
+                //   1. `results` recibía una Promesa, no un resultado. El
+                //      `results.some(r => r.handled !== false)` de abajo leía
+                //      `undefined !== false` y respondía siempre `handled: true`,
+                //      aunque no se hubiera gestionado nada.
+                //   2. Se contestaba 200 a Stripe ANTES de terminar de procesar.
+                //      Un pago podía darse por bueno mientras su procesamiento
+                //      fallaba en silencio.
+                //   3. Cualquier rechazo que escapara al try/catch interno de
+                //      `handleViaStripeService` quedaba sin capturar, fuera ya
+                //      del try/catch de esta ruta, que había respondido antes.
+                //
+                // `handleStripeWebhook` espera (rawBody, signature) y vuelve a
+                // verificar la firma; aquí el evento ya viene verificado, así
+                // que se despacha por `handleViaStripeService`, que usa
+                // `handleVerifiedEvent`.
+                const result = await handleViaStripeService(stripeService, event);
                 results.push(result);
             }
 

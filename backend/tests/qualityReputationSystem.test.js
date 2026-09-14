@@ -1,9 +1,27 @@
 /**
- * Quality Reputation System - Unit Tests
- * Tests for reputation calculation, tier assignment, and achievements
+ * Quality Reputation System — pruebas unitarias
+ *
+ * Reescritas contra la API real del servicio. Las anteriores databan de una
+ * implementación previa: esperaban `TIERS` como Map con `minScore`, campos
+ * planos (`totalServices`, `averageQuality`, `totalDisputes`) y parámetros
+ * `qualityScore`/`collateralAmount`. El servicio actual expone `tiers` como
+ * objeto con `min`, agrupa las cifras bajo `stats` y recibe `finalQuality`,
+ * `collateralReturned` y `penaltyApplied`.
  */
 
-const QualityReputationSystem = require('../services/qualityReputationSystem');
+const QualityReputationSystem = require('../services/quality-reputation.service');
+
+/** Servicio completado con los nombres de campo que espera el servicio. */
+const service = (serviceId, finalQuality, extra = {}) => ({
+    serviceId,
+    finalQuality,
+    collateralReturned: 100,
+    penaltyApplied: 0,
+    isDisputed: false,
+    ...extra,
+});
+
+const PROVIDER = '0x1234567890123456789012345678901234567890';
 
 describe('QualityReputationSystem', () => {
     let reputationSystem;
@@ -13,451 +31,240 @@ describe('QualityReputationSystem', () => {
     });
 
     describe('Constructor', () => {
-        it('should initialize with empty reputation map', () => {
+        it('arranca sin ninguna reputación registrada', () => {
             expect(reputationSystem.reputations.size).toBe(0);
         });
 
-        it('should have correct tier definitions', () => {
-            const tiers = reputationSystem.TIERS;
-            expect(tiers.get('LEGENDARY').minScore).toBe(950);
-            expect(tiers.get('MASTER').minScore).toBe(900);
-            expect(tiers.get('EXPERT').minScore).toBe(850);
-            expect(tiers.get('PROFESSIONAL').minScore).toBe(800);
-            expect(tiers.get('INTERMEDIATE').minScore).toBe(700);
-            expect(tiers.get('BEGINNER').minScore).toBe(0);
+        it('define los umbrales de cada nivel', () => {
+            const { tiers } = reputationSystem;
+            expect(tiers.LEGENDARY.min).toBe(950);
+            expect(tiers.MASTER.min).toBe(900);
+            expect(tiers.EXPERT.min).toBe(850);
+            expect(tiers.PROFESSIONAL.min).toBe(800);
+            expect(tiers.INTERMEDIATE.min).toBe(700);
+            expect(tiers.BEGINNER.min).toBe(0);
+        });
+
+        it('los pesos del cálculo suman 1', () => {
+            const total = Object.values(reputationSystem.weights).reduce((a, b) => a + b, 0);
+            expect(total).toBeCloseTo(1, 5);
         });
     });
 
     describe('updateAfterService', () => {
-        it('should create new reputation for first service', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
+        it('crea la reputación en el primer servicio', () => {
+            reputationSystem.updateAfterService(PROVIDER, service(1, 90));
 
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 90,
-                collateralAmount: 100
-            });
-
-            const reputation = reputationSystem.reputations.get(provider);
+            const reputation = reputationSystem.reputations.get(PROVIDER);
             expect(reputation).toBeDefined();
-            expect(reputation.totalServices).toBe(1);
-            expect(reputation.completedServices).toBe(1);
+            expect(reputation.stats.totalServices).toBe(1);
+            expect(reputation.stats.completedServices).toBe(1);
         });
 
-        it('should calculate correct score for high quality service', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            // Complete 5 services with 90% quality
+        it('sube la puntuación con calidad alta sostenida', () => {
             for (let i = 1; i <= 5; i++) {
-                await reputationSystem.updateAfterService(provider, {
-                    serviceId: i,
-                    qualityScore: 90,
-                    collateralAmount: 100
-                });
+                reputationSystem.updateAfterService(PROVIDER, service(i, 90));
             }
 
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.score).toBeGreaterThan(800); // Should be PROFESSIONAL tier
-            expect(reputation.tier).toBe('PROFESSIONAL');
+            const reputation = reputationSystem.reputations.get(PROVIDER);
+            expect(reputation.score).toBeGreaterThan(800);
+            expect(reputation.stats.avgQuality).toBe(90);
         });
 
-        it('should penalize low quality services', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
+        it('penaliza la calidad baja', () => {
+            for (let i = 1; i <= 5; i++) {
+                reputationSystem.updateAfterService(PROVIDER, service(i, 50, { penaltyApplied: 20 }));
+            }
 
-            // Complete services with declining quality
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 95,
-                collateralAmount: 100
-            });
-
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 2,
-                qualityScore: 50,
-                collateralAmount: 100
-            });
-
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.averageQuality).toBeLessThan(80);
+            const reputation = reputationSystem.reputations.get(PROVIDER);
+            expect(reputation.stats.avgQuality).toBeLessThan(80);
+            expect(reputation.score).toBeLessThan(800);
         });
 
-        it('should award FIRST_SERVICE achievement', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
+        it('concede FIRST_SERVICE al primer servicio', () => {
+            reputationSystem.updateAfterService(PROVIDER, service(1, 85));
 
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 90,
-                collateralAmount: 100
-            });
-
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.achievements).toContainEqual(
-                expect.objectContaining({ type: 'FIRST_SERVICE' })
-            );
+            expect(reputationSystem.reputations.get(PROVIDER).achievements).toContain('FIRST_SERVICE');
         });
 
-        it('should award VETERAN_10 achievement after 10 services', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            // Complete 10 services
+        it('concede VETERAN_10 al décimo servicio', () => {
             for (let i = 1; i <= 10; i++) {
-                await reputationSystem.updateAfterService(provider, {
-                    serviceId: i,
-                    qualityScore: 85,
-                    collateralAmount: 100
-                });
+                reputationSystem.updateAfterService(PROVIDER, service(i, 85));
             }
 
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.achievements).toContainEqual(
-                expect.objectContaining({ type: 'VETERAN_10' })
-            );
+            expect(reputationSystem.reputations.get(PROVIDER).achievements).toContain('VETERAN_10');
         });
 
-        it('should award PERFECTIONIST achievement for consistent 95%+', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
+        it('concede PERFECTIONIST con un servicio perfecto', () => {
+            // El servicio lo otorga por un 100 exacto, no por una media alta.
+            reputationSystem.updateAfterService(PROVIDER, service(1, 98));
+            expect(reputationSystem.reputations.get(PROVIDER).achievements).not.toContain('PERFECTIONIST');
 
-            // Complete 5 perfect services
-            for (let i = 1; i <= 5; i++) {
-                await reputationSystem.updateAfterService(provider, {
-                    serviceId: i,
-                    qualityScore: 98,
-                    collateralAmount: 100
-                });
+            reputationSystem.updateAfterService(PROVIDER, service(2, 100));
+            expect(reputationSystem.reputations.get(PROVIDER).achievements).toContain('PERFECTIONIST');
+        });
+
+        it('concede CONSISTENT_EXCELLENCE con diez servicios seguidos por encima de 90', () => {
+            for (let i = 1; i <= 10; i++) {
+                reputationSystem.updateAfterService(PROVIDER, service(i, 95));
             }
 
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.achievements).toContainEqual(
-                expect.objectContaining({ type: 'PERFECTIONIST' })
-            );
+            expect(reputationSystem.reputations.get(PROVIDER).achievements).toContain('CONSISTENT_EXCELLENCE');
+        });
+
+        it('acumula el colateral devuelto y las penalizaciones', () => {
+            reputationSystem.updateAfterService(PROVIDER, service(1, 90, { collateralReturned: 80, penaltyApplied: 20 }));
+            reputationSystem.updateAfterService(PROVIDER, service(2, 90, { collateralReturned: 100, penaltyApplied: 0 }));
+
+            const { stats } = reputationSystem.reputations.get(PROVIDER);
+            expect(stats.totalCollateralEarned).toBe(180);
+            expect(stats.totalPenalties).toBe(20);
+        });
+
+        it('registra cada servicio en el historial', () => {
+            reputationSystem.updateAfterService(PROVIDER, service(7, 90));
+
+            const [entry] = reputationSystem.reputations.get(PROVIDER).history;
+            expect(entry).toMatchObject({ serviceId: 7, action: 'service_completed', finalQuality: 90 });
+            expect(entry.oldScore).toBe(600);
         });
     });
 
     describe('updateAfterDispute', () => {
-        it('should penalize provider when dispute is lost', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            // Create baseline reputation
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 90,
-                collateralAmount: 100
-            });
-
-            const scoreBefore = reputationSystem.reputations.get(provider).score;
-
-            // Provider loses dispute
-            await reputationSystem.updateAfterDispute(provider, {
-                serviceId: 2,
-                disputeResolution: 'PROVIDER_FAULT',
-                qualityPenalty: 20
-            });
-
-            const scoreAfter = reputationSystem.reputations.get(provider).score;
-            expect(scoreAfter).toBeLessThan(scoreBefore);
+        beforeEach(() => {
+            reputationSystem.updateAfterService(PROVIDER, service(1, 90));
         });
 
-        it('should slightly penalize provider when dispute is won', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
+        it('penaliza con fuerza cuando la culpa es del proveedor', () => {
+            const before = reputationSystem.reputations.get(PROVIDER).score;
+            reputationSystem.updateAfterDispute(PROVIDER, { serviceId: 1, wasProviderFault: true, refundAmount: 50 });
 
-            // Create baseline reputation
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 90,
-                collateralAmount: 100
-            });
-
-            const scoreBefore = reputationSystem.reputations.get(provider).score;
-
-            // Provider wins dispute
-            await reputationSystem.updateAfterDispute(provider, {
-                serviceId: 2,
-                disputeResolution: 'PROVIDER_WIN',
-                qualityPenalty: 0
-            });
-
-            const scoreAfter = reputationSystem.reputations.get(provider).score;
-            expect(scoreAfter).toBeLessThan(scoreBefore); // Still penalized but less
+            expect(reputationSystem.reputations.get(PROVIDER).score).toBe(before - 100);
         });
 
-        it('should increment dispute stats', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
+        it('penaliza menos cuando la culpa no es del proveedor', () => {
+            const before = reputationSystem.reputations.get(PROVIDER).score;
+            reputationSystem.updateAfterDispute(PROVIDER, { serviceId: 1, wasProviderFault: false, refundAmount: 0 });
+            const after = reputationSystem.reputations.get(PROVIDER).score;
 
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 90,
-                collateralAmount: 100
-            });
+            expect(after).toBeLessThan(before);
+            expect(before - after).toBeLessThan(100);
+        });
 
-            await reputationSystem.updateAfterDispute(provider, {
-                serviceId: 2,
-                disputeResolution: 'PROVIDER_FAULT',
-                qualityPenalty: 20
-            });
+        it('cuenta las disputas', () => {
+            reputationSystem.updateAfterDispute(PROVIDER, { serviceId: 1, wasProviderFault: true, refundAmount: 50 });
+            reputationSystem.updateAfterDispute(PROVIDER, { serviceId: 2, wasProviderFault: false, refundAmount: 0 });
 
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.totalDisputes).toBe(1);
-            expect(reputation.disputesLost).toBe(1);
+            expect(reputationSystem.reputations.get(PROVIDER).stats.disputedServices).toBe(2);
+        });
+
+        it('la puntuación nunca baja de cero', () => {
+            for (let i = 0; i < 20; i++) {
+                reputationSystem.updateAfterDispute(PROVIDER, { serviceId: i, wasProviderFault: true, refundAmount: 10 });
+            }
+
+            expect(reputationSystem.reputations.get(PROVIDER).score).toBe(0);
         });
     });
 
-    describe('Score Calculation', () => {
-        it('should weight quality score most heavily (40%)', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            // Service with perfect quality
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 100,
-                collateralAmount: 100
-            });
-
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.score).toBeGreaterThan(700); // Quality heavily weighted
+    describe('Niveles', () => {
+        it('empieza en BEGINNER con 600 puntos', () => {
+            expect(reputationSystem.getReputation(PROVIDER)).toMatchObject({ score: 600, tier: 'BEGINNER' });
         });
 
-        it('should calculate completion rate correctly', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            // 3 completed, 1 cancelled = 75% completion rate
-            for (let i = 1; i <= 3; i++) {
-                await reputationSystem.updateAfterService(provider, {
-                    serviceId: i,
-                    qualityScore: 85,
-                    collateralAmount: 100
-                });
+        it('llega a LEGENDARY con rendimiento perfecto sostenido', () => {
+            for (let i = 1; i <= 12; i++) {
+                reputationSystem.updateAfterService(PROVIDER, service(i, 100));
             }
 
-            // Simulate cancelled service
-            const reputation = reputationSystem.reputations.get(provider);
-            reputation.totalServices = 4;
-            reputation.cancelledServices = 1;
-
-            const score = reputationSystem._calculateScore(reputation);
-            const completionRate = (reputation.completedServices / reputation.totalServices) * 100;
-            expect(completionRate).toBe(75);
-        });
-
-        it('should apply longevity bonus for veteran providers', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 80,
-                collateralAmount: 100
-            });
-
-            const reputation = reputationSystem.reputations.get(provider);
-
-            // Simulate 200 days of activity
-            reputation.firstServiceDate = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
-
-            const scoreWithBonus = reputationSystem._calculateScore(reputation);
-            expect(scoreWithBonus).toBeGreaterThan(reputation.score);
-        });
-    });
-
-    describe('Tier Assignment', () => {
-        it('should start at BEGINNER tier', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 70,
-                collateralAmount: 100
-            });
-
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.tier).toBe('BEGINNER');
-        });
-
-        it('should promote to PROFESSIONAL tier with consistent quality', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            // 10 services with 85% quality
-            for (let i = 1; i <= 10; i++) {
-                await reputationSystem.updateAfterService(provider, {
-                    serviceId: i,
-                    qualityScore: 85,
-                    collateralAmount: 100
-                });
-            }
-
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.tier).toBe('PROFESSIONAL');
-            expect(reputation.score).toBeGreaterThanOrEqual(800);
-        });
-
-        it('should reach LEGENDARY tier with perfect performance', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            // 50 perfect services
-            for (let i = 1; i <= 50; i++) {
-                await reputationSystem.updateAfterService(provider, {
-                    serviceId: i,
-                    qualityScore: 98,
-                    collateralAmount: 100
-                });
-            }
-
-            const reputation = reputationSystem.reputations.get(provider);
+            const reputation = reputationSystem.reputations.get(PROVIDER);
             expect(reputation.tier).toBe('LEGENDARY');
             expect(reputation.score).toBeGreaterThanOrEqual(950);
         });
+
+        it('la puntuación está acotada a 1000', () => {
+            for (let i = 1; i <= 40; i++) {
+                reputationSystem.updateAfterService(PROVIDER, service(i, 100));
+            }
+
+            expect(reputationSystem.reputations.get(PROVIDER).score).toBeLessThanOrEqual(1000);
+        });
     });
 
-    describe('Leaderboard', () => {
-        it('should return empty array when no reputations exist', () => {
-            const leaderboard = reputationSystem.getLeaderboard(10);
-            expect(leaderboard).toEqual([]);
+    describe('getLeaderboard', () => {
+        it('devuelve una lista vacía sin reputaciones', () => {
+            expect(reputationSystem.getLeaderboard()).toEqual([]);
         });
 
-        it('should sort providers by score descending', async () => {
-            // Create 3 providers with different scores
-            const providers = [
-                '0x1111111111111111111111111111111111111111',
-                '0x2222222222222222222222222222222222222222',
-                '0x3333333333333333333333333333333333333333'
-            ];
-
-            // Provider 1: 5 services @ 90%
-            for (let i = 1; i <= 5; i++) {
-                await reputationSystem.updateAfterService(providers[0], {
-                    serviceId: i,
-                    qualityScore: 90,
-                    collateralAmount: 100
-                });
+        it('ordena por puntuación descendente', () => {
+            const quality = { '0xaaa': 100, '0xbbb': 85, '0xccc': 60 };
+            for (const [provider, q] of Object.entries(quality)) {
+                for (let i = 1; i <= 5; i++) reputationSystem.updateAfterService(provider, service(i, q));
             }
 
-            // Provider 2: 10 services @ 85%
-            for (let i = 1; i <= 10; i++) {
-                await reputationSystem.updateAfterService(providers[1], {
-                    serviceId: i,
-                    qualityScore: 85,
-                    collateralAmount: 100
-                });
-            }
-
-            // Provider 3: 3 services @ 95%
-            for (let i = 1; i <= 3; i++) {
-                await reputationSystem.updateAfterService(providers[2], {
-                    serviceId: i,
-                    qualityScore: 95,
-                    collateralAmount: 100
-                });
-            }
-
-            const leaderboard = reputationSystem.getLeaderboard(10);
-
-            expect(leaderboard.length).toBe(3);
+            const leaderboard = reputationSystem.getLeaderboard();
+            expect(leaderboard).toHaveLength(3);
             expect(leaderboard[0].score).toBeGreaterThanOrEqual(leaderboard[1].score);
             expect(leaderboard[1].score).toBeGreaterThanOrEqual(leaderboard[2].score);
+            expect(leaderboard[0].rank).toBe(1);
         });
 
-        it('should respect limit parameter', async () => {
-            // Create 5 providers
-            for (let p = 1; p <= 5; p++) {
-                const provider = `0x${p.toString().repeat(40)}`;
-                await reputationSystem.updateAfterService(provider, {
-                    serviceId: 1,
-                    qualityScore: 80,
-                    collateralAmount: 100
-                });
+        it('respeta el límite pedido', () => {
+            for (const provider of ['0xa', '0xb', '0xc', '0xd', '0xe']) {
+                reputationSystem.updateAfterService(provider, service(1, 90));
             }
 
-            const leaderboard = readerboardSystem.getLeaderboard(3);
-            expect(leaderboard.length).toBe(3);
+            expect(reputationSystem.getLeaderboard(3)).toHaveLength(3);
         });
     });
 
     describe('getSummary', () => {
-        it('should return null for non-existent provider', () => {
-            const summary = reputationSystem.getSummary('0x0000000000000000000000000000000000000000');
-            expect(summary).toBeNull();
+        it('incluye la información del nivel', () => {
+            reputationSystem.updateAfterService(PROVIDER, service(1, 90));
+            const summary = reputationSystem.getSummary(PROVIDER);
+
+            expect(summary.tier).toMatchObject({ name: expect.any(String), color: expect.any(String), badge: expect.any(String) });
+            expect(summary.provider).toBe(PROVIDER);
         });
 
-        it('should include tier information in summary', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 85,
-                collateralAmount: 100
-            });
-
-            const summary = reputationSystem.getSummary(provider);
-
-            expect(summary.tierInfo).toBeDefined();
-            expect(summary.tierInfo.name).toBe('Beginner');
-            expect(summary.tierInfo.color).toBeDefined();
-            expect(summary.tierInfo.badge).toBeDefined();
-        });
-
-        it('should limit recent history to 10 entries', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
-
-            // Create 15 services
+        it('recorta el historial reciente a las últimas 5 entradas', () => {
             for (let i = 1; i <= 15; i++) {
-                await reputationSystem.updateAfterService(provider, {
-                    serviceId: i,
-                    qualityScore: 85,
-                    collateralAmount: 100
-                });
+                reputationSystem.updateAfterService(PROVIDER, service(i, 90));
             }
 
-            const summary = reputationSystem.getSummary(provider);
-            expect(summary.recentHistory.length).toBe(10);
+            const { recentHistory } = reputationSystem.getSummary(PROVIDER);
+            expect(recentHistory).toHaveLength(5);
+            expect(recentHistory[recentHistory.length - 1].serviceId).toBe(15);
+        });
+
+        it('describe cada logro en vez de devolver solo su identificador', () => {
+            reputationSystem.updateAfterService(PROVIDER, service(1, 90));
+
+            const [achievement] = reputationSystem.getSummary(PROVIDER).achievements;
+            expect(achievement).toMatchObject({ name: expect.any(String), description: expect.any(String) });
         });
     });
 
-    describe('Edge Cases', () => {
-        it('should handle zero quality score', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
+    describe('Casos límite', () => {
+        it('admite calidad cero', () => {
+            reputationSystem.updateAfterService(PROVIDER, service(1, 0, { collateralReturned: 0, penaltyApplied: 100 }));
 
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 0,
-                collateralAmount: 100
-            });
-
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.averageQuality).toBe(0);
+            expect(reputationSystem.reputations.get(PROVIDER).stats.avgQuality).toBe(0);
         });
 
-        it('should handle perfect 100% quality score', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
+        it('admite calidad perfecta', () => {
+            reputationSystem.updateAfterService(PROVIDER, service(1, 100));
 
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 100,
-                collateralAmount: 100
-            });
-
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.averageQuality).toBe(100);
+            expect(reputationSystem.reputations.get(PROVIDER).stats.avgQuality).toBe(100);
         });
 
-        it('should handle multiple disputes in succession', async () => {
-            const provider = '0x1234567890123456789012345678901234567890';
+        it('mantiene reputaciones independientes por proveedor', () => {
+            reputationSystem.updateAfterService('0xaaa', service(1, 100));
+            reputationSystem.updateAfterService('0xbbb', service(1, 40, { penaltyApplied: 60 }));
 
-            await reputationSystem.updateAfterService(provider, {
-                serviceId: 1,
-                qualityScore: 90,
-                collateralAmount: 100
-            });
-
-            // 3 lost disputes
-            for (let i = 2; i <= 4; i++) {
-                await reputationSystem.updateAfterDispute(provider, {
-                    serviceId: i,
-                    disputeResolution: 'PROVIDER_FAULT',
-                    qualityPenalty: 20
-                });
-            }
-
-            const reputation = reputationSystem.reputations.get(provider);
-            expect(reputation.totalDisputes).toBe(3);
-            expect(reputation.disputesLost).toBe(3);
+            const a = reputationSystem.reputations.get('0xaaa').score;
+            const b = reputationSystem.reputations.get('0xbbb').score;
+            expect(a).toBeGreaterThan(b);
         });
     });
 });

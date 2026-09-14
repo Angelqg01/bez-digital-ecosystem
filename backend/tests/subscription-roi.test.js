@@ -35,16 +35,22 @@ describe('Tier Configuration', () => {
             expect(starter.price.yearly).toBe(0);
         });
 
-        test('CREATOR tier should cost $14.99/month', () => {
+        test('CREATOR tier should cost 99/month', () => {
             const creator = SUBSCRIPTION_TIERS.CREATOR;
-            expect(creator.price.monthly).toBe(14.99);
-            expect(creator.price.yearly).toBe(149.99);
+            expect(creator.price.monthly).toBe(99);
+            expect(creator.price.yearly).toBe(990);
         });
 
-        test('BUSINESS tier should cost $99.99/month', () => {
+        test('BUSINESS tier should cost 499/month', () => {
             const business = SUBSCRIPTION_TIERS.BUSINESS;
-            expect(business.price.monthly).toBe(99.99);
-            expect(business.price.yearly).toBe(999.99);
+            expect(business.price.monthly).toBe(499);
+            expect(business.price.yearly).toBe(4990);
+        });
+
+        test('ENTERPRISE tier should cost 2499/month', () => {
+            const enterprise = SUBSCRIPTION_TIERS.ENTERPRISE;
+            expect(enterprise.price.monthly).toBe(2499);
+            expect(enterprise.price.yearly).toBe(24990);
         });
 
         test('token lock amounts should be correct', () => {
@@ -70,11 +76,11 @@ describe('Tier Configuration', () => {
     describe('TIER_HIERARCHY', () => {
 
         test('should have correct order', () => {
-            expect(TIER_HIERARCHY).toEqual(['STARTER', 'CREATOR', 'BUSINESS']);
+            expect(TIER_HIERARCHY).toEqual(['STARTER', 'CREATOR', 'BUSINESS', 'ENTERPRISE']);
         });
 
-        test('should have 3 tiers', () => {
-            expect(TIER_HIERARCHY.length).toBe(3);
+        test('should have 4 tiers', () => {
+            expect(TIER_HIERARCHY.length).toBe(4);
         });
 
     });
@@ -194,25 +200,25 @@ describe('calculatePotentialROI', () => {
             expect(roi.subscriptionCostInBEZ).toBe(0);
         });
 
-        test('CREATOR should cost $179.88 per year', () => {
+        test('CREATOR should cost 1188 per year', () => {
             const roi = calculatePotentialROI(10000, 'CREATOR', 12);
 
-            // $14.99 * 12 = $179.88
-            expect(roi.totalSubscriptionCost).toBe(179.88);
+            // 99 * 12 = 1188
+            expect(roi.totalSubscriptionCost).toBe(1188);
         });
 
-        test('BUSINESS should cost $1199.88 per year', () => {
+        test('BUSINESS should cost 5988 per year', () => {
             const roi = calculatePotentialROI(10000, 'BUSINESS', 12);
 
-            // $99.99 * 12 = $1199.88
-            expect(roi.totalSubscriptionCost).toBeCloseTo(1199.88, 1);
+            // 499 * 12 = 5988
+            expect(roi.totalSubscriptionCost).toBe(5988);
         });
 
         test('subscription cost should be converted to BEZ correctly', () => {
             const roi = calculatePotentialROI(10000, 'CREATOR', 12);
 
-            // $179.88 / $0.05 = 3597.6 BEZ
-            expect(roi.subscriptionCostInBEZ).toBeCloseTo(3597.6, 1);
+            // 1188 / 0.05 = 23 760 BEZ
+            expect(roi.subscriptionCostInBEZ).toBeCloseTo(23760, 1);
         });
 
     });
@@ -236,17 +242,16 @@ describe('calculatePotentialROI', () => {
         });
 
         test('large stake should be profitable for CREATOR', () => {
-            // Need to stake enough to cover $179.88/year in subscription
-            // At 18.75% APY, break-even is around 19,194 BEZ
-            const roi = calculatePotentialROI(25000, 'CREATOR', 12);
+            // Hay que apostar lo bastante para cubrir 1188/año de suscripción.
+            // Al 18,75 % de APY el punto de equilibrio ronda los 126 720 BEZ.
+            const roi = calculatePotentialROI(200000, 'CREATOR', 12);
 
             expect(roi.isProfitable).toBe(true);
         });
 
         test('very large stake should be profitable for BUSINESS', () => {
-            // Need to stake enough to cover $1199.88/year in subscription
-            // At 31.25% APY, break-even is around 76,792 BEZ
-            const roi = calculatePotentialROI(100000, 'BUSINESS', 12);
+            // 5988/año al 31,25 % de APY: equilibrio en unos 383 232 BEZ.
+            const roi = calculatePotentialROI(500000, 'BUSINESS', 12);
 
             expect(roi.isProfitable).toBe(true);
         });
@@ -260,22 +265,22 @@ describe('calculatePotentialROI', () => {
             expect(roi.breakEvenStake).toBe(0);
         });
 
-        test('CREATOR break-even should be around 19,194 BEZ', () => {
+        test('CREATOR break-even should be around 126,720 BEZ', () => {
             const roi = calculatePotentialROI(10000, 'CREATOR', 12);
 
-            // $179.88 / $0.05 = 3597.6 BEZ cost
-            // 3597.6 / 0.1875 = 19,187 BEZ
-            expect(roi.breakEvenStake).toBeGreaterThan(15000);
-            expect(roi.breakEvenStake).toBeLessThan(25000);
+            // 1188 / 0,05 = 23 760 BEZ de coste
+            // 23 760 / 0,1875 = 126 720 BEZ
+            expect(roi.breakEvenStake).toBeGreaterThan(120000);
+            expect(roi.breakEvenStake).toBeLessThan(135000);
         });
 
-        test('BUSINESS break-even should be around 76,792 BEZ', () => {
+        test('BUSINESS break-even should be around 383,232 BEZ', () => {
             const roi = calculatePotentialROI(10000, 'BUSINESS', 12);
 
-            // $1199.88 / $0.05 = 23,997.6 BEZ cost
-            // 23,997.6 / 0.3125 = 76,792 BEZ
-            expect(roi.breakEvenStake).toBeGreaterThan(70000);
-            expect(roi.breakEvenStake).toBeLessThan(85000);
+            // 5988 / 0,05 = 119 760 BEZ de coste
+            // 119 760 / 0,3125 = 383 232 BEZ
+            expect(roi.breakEvenStake).toBeGreaterThan(370000);
+            expect(roi.breakEvenStake).toBeLessThan(395000);
         });
 
     });
@@ -355,7 +360,7 @@ describe('compareROIAcrossTiers', () => {
         const comparison = compareROIAcrossTiers(1000, 12);
 
         // Should recommend some tier based on algorithm logic
-        expect(['STARTER', 'CREATOR', 'BUSINESS']).toContain(comparison.recommendation.tier);
+        expect(TIER_HIERARCHY).toContain(comparison.recommendation.tier);
     });
 
     test('should recommend a tier for medium stakes', () => {
@@ -364,18 +369,30 @@ describe('compareROIAcrossTiers', () => {
         // At 30,000 BEZ stake:
         // Algorithm considers overall value (staking rewards + gas savings + AI value)
         // The actual recommendation depends on the algorithm implementation
-        expect(['STARTER', 'CREATOR', 'BUSINESS']).toContain(comparison.recommendation.tier);
+        expect(TIER_HIERARCHY).toContain(comparison.recommendation.tier);
     });
 
     test('should recommend BUSINESS for very large stakes', () => {
         const comparison = compareROIAcrossTiers(200000, 12);
 
-        // At 200,000 BEZ:
-        // STARTER: 25,000 BEZ
-        // CREATOR: 37,500 - 3,597.6 = 33,902.4 BEZ
-        // BUSINESS: 62,500 - 23,997.6 = 38,502.4 BEZ
-        // Should recommend highest net profit
+        // El beneficio neto más alto manda. Con los precios vigentes, a
+        // 200 000 BEZ gana BUSINESS: su multiplicador de staking compensa de
+        // sobra la cuota, y ENTERPRISE aún no llega a su equilibrio.
         expect(comparison.recommendation.tier).toBe('BUSINESS');
+        expect(Number.isFinite(comparison.recommendation.netProfit)).toBe(true);
+    });
+
+    test('ningún plan produce un beneficio infinito', () => {
+        // Los cupos «ilimitados» se representan con Infinity. Si se propagan
+        // al cálculo, ENTERPRISE gana siempre y el importe llega a JSON como
+        // null. Ilimitado no es infinito.
+        for (const stake of [0, 1000, 200000, 1000000]) {
+            const comparison = compareROIAcrossTiers(stake, 12);
+            for (const tier of TIER_HIERARCHY) {
+                expect(Number.isFinite(comparison.comparison[tier].netProfitBEZ)).toBe(true);
+                expect(Number.isFinite(comparison.comparison[tier].gasSavingsInBEZ)).toBe(true);
+            }
+        }
     });
 
     test('should include recommendation reason', () => {

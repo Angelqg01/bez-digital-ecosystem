@@ -3,14 +3,32 @@
  * @description Verifica el cálculo y distribución de tokens con burn + treasury
  */
 
-const { calculateDistribution, simulateDistribution, getDistributionStats, BURN_RATE, TREASURY_RATE } = require('../services/token-distribution.service');
+// Las tasas salen de la configuración global, que en producción vive en base
+// de datos. Se simula para que estas pruebas midan el cálculo y no el estado
+// de un entorno: 20 = 0,2 % de quema y 100 = 1 % de tesorería, en base 10000.
+// Función plana a propósito, no `jest.fn()`: la configuración del proyecto
+// activa `resetMocks`, que vaciaría la implementación antes de cada prueba.
+jest.mock('../utils/settingsHelper', () => ({
+    getTokenConfig: async () => ({
+        burnRate: 20,
+        treasuryRate: 100,
+        burningEnabled: true,
+    }),
+}));
+
+const {
+    calculateDistribution,
+    simulateDistribution,
+    getDistributionStats,
+    getCurrentRates,
+} = require('../services/token-distribution.service');
 
 describe('Token Distribution Service', () => {
 
     describe('calculateDistribution', () => {
 
-        test('debe calcular correctamente la distribución para 100,000 BEZ', () => {
-            const result = calculateDistribution(100000);
+        test('debe calcular correctamente la distribución para 100,000 BEZ', async () => {
+            const result = await calculateDistribution(100000);
 
             // Verificar totales
             expect(result.total).toBe(100000);
@@ -29,24 +47,24 @@ describe('Token Distribution Service', () => {
             expect(result.user + result.burn + result.treasury).toBe(result.total);
         });
 
-        test('debe calcular correctamente para montos pequeños', () => {
-            const result = calculateDistribution(1000);
+        test('debe calcular correctamente para montos pequeños', async () => {
+            const result = await calculateDistribution(1000);
 
             expect(result.burn).toBe(2);          // 0.2% de 1,000
             expect(result.treasury).toBe(10);     // 1% de 1,000
             expect(result.user).toBe(988);        // 98.8% de 1,000
         });
 
-        test('debe calcular correctamente para montos grandes', () => {
-            const result = calculateDistribution(1000000);
+        test('debe calcular correctamente para montos grandes', async () => {
+            const result = await calculateDistribution(1000000);
 
             expect(result.burn).toBe(2000);       // 0.2% de 1,000,000
             expect(result.treasury).toBe(10000);  // 1% de 1,000,000
             expect(result.user).toBe(988000);     // 98.8% de 1,000,000
         });
 
-        test('debe manejar decimales correctamente', () => {
-            const result = calculateDistribution(12345.67);
+        test('debe manejar decimales correctamente', async () => {
+            const result = await calculateDistribution(12345.67);
 
             // Verificar que los montos son números válidos
             expect(typeof result.burn).toBe('number');
@@ -62,9 +80,9 @@ describe('Token Distribution Service', () => {
 
     describe('simulateDistribution', () => {
 
-        test('debe retornar la misma estructura que calculateDistribution', () => {
-            const simulated = simulateDistribution(50000);
-            const calculated = calculateDistribution(50000);
+        test('debe retornar la misma estructura que calculateDistribution', async () => {
+            const simulated = await simulateDistribution(50000);
+            const calculated = await calculateDistribution(50000);
 
             expect(simulated).toEqual(calculated);
         });
@@ -73,8 +91,8 @@ describe('Token Distribution Service', () => {
 
     describe('getDistributionStats', () => {
 
-        test('debe retornar configuración válida', () => {
-            const stats = getDistributionStats();
+        test('debe retornar configuración válida', async () => {
+            const stats = await getDistributionStats();
 
             // Verificar estructura
             expect(stats).toHaveProperty('rates');
@@ -94,26 +112,28 @@ describe('Token Distribution Service', () => {
 
     });
 
-    describe('Constantes exportadas', () => {
+    // El servicio dejó de exportar BURN_RATE y TREASURY_RATE como constantes:
+    // las tasas son configurables y se consultan con getCurrentRates().
+    describe('Tasas vigentes', () => {
 
-        test('BURN_RATE debe ser 20 (0.2% en base 10000)', () => {
-            expect(BURN_RATE).toBe(20);
+        test('la quema es 20 (0,2 % en base 10000)', async () => {
+            expect((await getCurrentRates()).burn).toBe(20);
         });
 
-        test('TREASURY_RATE debe ser 100 (1% en base 10000)', () => {
-            expect(TREASURY_RATE).toBe(100);
+        test('la tesorería es 100 (1 % en base 10000)', async () => {
+            expect((await getCurrentRates()).treasury).toBe(100);
         });
 
     });
 
     describe('Escenarios de negocio', () => {
 
-        test('compra de €1000 en BEZ (precio 0.000694 EUR)', () => {
+        test('compra de €1000 en BEZ (precio 0.000694 EUR)', async () => {
             const priceEUR = 0.000694;
             const eurAmount = 1000;
             const bezAmount = eurAmount / priceEUR; // ~1,440,922 BEZ
 
-            const result = calculateDistribution(bezAmount);
+            const result = await calculateDistribution(bezAmount);
 
             // El usuario debe recibir 98.8%
             expect(result.user / result.total).toBeCloseTo(0.988, 2);
@@ -125,12 +145,12 @@ describe('Token Distribution Service', () => {
             expect(result.treasury / result.total).toBeCloseTo(0.01, 2);
         });
 
-        test('compra mínima de €10', () => {
+        test('compra mínima de €10', async () => {
             const priceEUR = 0.000694;
             const eurAmount = 10;
             const bezAmount = eurAmount / priceEUR; // ~14,409 BEZ
 
-            const result = calculateDistribution(bezAmount);
+            const result = await calculateDistribution(bezAmount);
 
             // Verificar que incluso montos pequeños se distribuyen correctamente
             expect(result.burn).toBeGreaterThan(0);

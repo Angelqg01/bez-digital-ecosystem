@@ -71,6 +71,9 @@ router.put('/', verifyAdminToken, async (req, res) => {
             version: settings.version,
         });
     } catch (error) {
+        if (error.name === 'SettingsValidationError') {
+            return res.status(400).json({ success: false, error: error.message });
+        }
         console.error('Error updating global settings:', error);
         res.status(500).json({
             success: false,
@@ -153,6 +156,9 @@ router.patch('/:section', verifyAdminToken, async (req, res) => {
             version: settings.version,
         });
     } catch (error) {
+        if (error.name === 'SettingsValidationError') {
+            return res.status(400).json({ success: false, error: error.message });
+        }
         console.error('Error updating section settings:', error);
         res.status(500).json({
             success: false,
@@ -172,12 +178,10 @@ router.post('/reset', verifyAdminToken, async (req, res) => {
     try {
         const adminId = req.admin?.id || req.user?.id || 'admin';
 
-        // Delete existing and recreate with defaults
-        await GlobalSettings.deleteOne({ _id: 'global_settings' });
-        const settings = await GlobalSettings.create({
-            _id: 'global_settings',
-            lastUpdatedBy: adminId,
-        });
+        // `deleteOne`/`create` son de Mongoose; el DAO de PostgreSQL expone
+        // `resetSettings`, que borra la fila y la recrea con los valores por
+        // defecto dentro de la misma llamada (y deja rastro en el audit log).
+        const settings = await GlobalSettings.resetSettings(adminId);
 
         res.json({
             success: true,

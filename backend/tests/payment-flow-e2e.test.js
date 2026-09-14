@@ -1,396 +1,504 @@
 /**
  * ============================================================================
- * PAYMENT FLOW END-TO-END TESTS
+ * PRUEBAS E2E DEL FLUJO DE PAGO
  * ============================================================================
- * 
- * Tests E2E para el flujo completo de pagos con Stripe y asignación de BEZ-Coins
+ *
+ * Flujo completo de cobro con Stripe y asignación de BEZ-Coins.
+ *
+ * ─── Por qué estaba rota ────────────────────────────────────────────────────
+ *
+ * Las 14 pruebas fallaban y la suite ni siquiera terminaba de cargar. Tres
+ * causas, todas de deriva entre la prueba y el código:
+ *
+ *  1. `app = require('../server')`. El servidor exporta `{ app, server }`, así
+ *     que `app` era el objeto del módulo, no la aplicación de Express:
+ *     supertest reventaba con «app.address is not a function» en cada petición.
+ *
+ *  2. `await pool.end()` en `afterAll`. `db/pool.js` solo exponía `query` y
+ *     `getClient`; `end` no existía y tumbaba la suite entera («pool.end is not
+ *     a function»), además de dejar el pool abierto. Se ha añadido `end()` al
+ *     pool, que hacía falta de todos modos para un apagado limpio.
+ *
+ *  3. Las pruebas del webhook mandaban `stripe-signature: 'mock-signature'`.
+ *     El router verifica la firma de verdad —como debe— y responde 400. La
+ *     prueba describía un webhook sin autenticar que ya no existe.
+ *
+ * ─── Cómo se prueba ahora ───────────────────────────────────────────────────
+ *
+ * Los tokens de acceso se firman con el secreto real del proyecto y los
+ * webhooks con `stripe.webhooks.generateTestHeaderString`, que es HMAC puro y
+ * no sale a la red. Así se ejercita la verificación de firma de verdad, en vez
+ * de saltársela: un webhook mal firmado debe rechazarse, y ésa es justamente
+ * la prueba que más valor tiene aquí.
+ *
+ * Las pruebas de persistencia necesitan PostgreSQL y solo corren con
+ * `RUN_DB_TESTS=true`, la misma convención que `tests/database-connection.test.js`.
  */
 
-const request = require('supertest');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
-const pool = require('../db/pool');
+process.env.STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_secret_para_pruebas';
+process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_mock';
 
-// Mock de servicios externos
+// Servicios externos: fuera. No se llama a Stripe ni a la cadena en pruebas.
 jest.mock('../services/fiat-gateway.service');
 jest.mock('../middleware/discordNotifier');
 jest.mock('../middleware/telegramNotifier');
+jest.mock('../services/stripe.service', () => ({
+    STRIPE_CONFIG: { publishableKey: 'pk_test_mock', currency: 'usd' },
+    createNFTCheckoutSession: jest.fn(),
+    createSubscriptionCheckoutSession: jest.fn(),
+    createTokenPurchaseSession: jest.fn(),
+    getCheckoutSession: jest.fn(),
+    createPaymentIntent: jest.fn(),
+    cancelSubscription: jest.fn(),
+    getCustomerSubscriptions: jest.fn(),
+    createRefund: jest.fn(),
+    handleStripeWebhook: jest.fn(),
+    handleCheckoutCompleted: jest.fn(),
+    handlePaymentSucceeded: jest.fn(),
+    handlePaymentFailed: jest.fn(),
+}));
 
-const fiatGatewayService = require('../services/fiat-gateway.service');
+const request = require('supertest');
+const jwt = require('jsonwebtoken');
+const stripeLib = require('stripe');
+const pool = require('../db/pool');
+
+const stripeService = require('../services/stripe.service');
 const Payment = require('../models/pg/Payment');
+const { app, server } = require('../server');
 
-describe('Payment Flow E2E Tests', () => {
-    let app;
-    let server;
+const WALLET = '0x1234567890123456789012345678901234567890';
+// `payments.user_id` es de tipo UUID en PostgreSQL: 'user123' no cuela.
+const USER_UUID = '11111111-2222-3333-4444-555555555555';
+const EJECUTAR_PRUEBAS_DB = process.env.RUN_DB_TESTS === 'true';
 
-    beforeAll(async () => {
-        // App includes postgres initialization implicitly via pg pool
-        app = require('../server');
+/** Token de acceso válido para `verifyTokenMiddleware` (type: 'access'). */
+function tokenDeAcceso(extra = {}) {
+    return jwt.sign(
+        { userId: 'user123', walletAddress: WALLET, type: 'access', ...extra },
+        process.env.JWT_SECRET || 'default-secret-change-me',
+        { expiresIn: '15m' }
+    );
+}
+
+/** Cuerpo + cabecera de un webhook firmado como lo firmaría Stripe. */
+function webhookFirmado(evento) {
+    const payload = JSON.stringify(evento);
+    const firma = stripeLib.webhooks.generateTestHeaderString({
+        payload,
+        secret: process.env.STRIPE_WEBHOOK_SECRET,
     });
+    return { payload, firma };
+}
+
+function eventoCheckoutCompletado(overrides = {}) {
+    return {
+        id: 'evt_test_1',
+        type: 'checkout.session.completed',
+        data: {
+            object: {
+                id: 'cs_test_123',
+                payment_status: 'paid',
+                amount_total: 1000, // 10,00 USD en céntimos
+                customer_email: 'test@example.com',
+                metadata: {
+                    type: 'token_purchase',
+                    userId: 'user123',
+                    walletAddress: WALLET,
+                    tokenAmount: '100',
+                },
+                ...overrides,
+            },
+        },
+    };
+}
+
+/** Envía un webhook ya firmado al endpoint real. */
+function enviarWebhook(evento) {
+    const { payload, firma } = webhookFirmado(evento);
+    return request(app)
+        .post('/api/stripe/webhook')
+        .set('stripe-signature', firma)
+        .set('Content-Type', 'application/json')
+        .send(payload);
+}
+
+describe('Flujo de pago E2E', () => {
+    const auth = { Authorization: `Bearer ${tokenDeAcceso()}` };
 
     afterAll(async () => {
-        if (server) {
-            server.close();
-        }
-        await pool.end();
+        try { server.close(); } catch (_) { /* el servidor puede no estar escuchando */ }
+        if (EJECUTAR_PRUEBAS_DB) await pool.end();
     });
 
-    beforeEach(async () => {
-        // Limpiar colección de pagos antes de cada test
-        await pool.query('DELETE FROM payments');
-
-        // Reset mocks
-        jest.clearAllMocks();
-    });
-
-    describe('Stripe Checkout Session Creation', () => {
-        test('should create token purchase session successfully', async () => {
-            const response = await request(app)
-                .post('/api/stripe/create-token-purchase-session')
-                .set('Authorization', 'Bearer mock-jwt-token')
-                .send({
-                    tokenAmount: 100,
-                    email: 'test@example.com'
-                });
-
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveProperty('success', true);
-            expect(response.body).toHaveProperty('sessionId');
-            expect(response.body).toHaveProperty('url');
-        });
-
-        test('should reject invalid token amount', async () => {
-            const response = await request(app)
-                .post('/api/stripe/create-token-purchase-session')
-                .set('Authorization', 'Bearer mock-jwt-token')
-                .send({
-                    tokenAmount: -10, // Cantidad inválida
-                    email: 'test@example.com'
-                });
-
-            expect(response.status).toBe(400);
-            expect(response.body).toHaveProperty('error');
-        });
-
-        test('should require authentication', async () => {
-            const response = await request(app)
-                .post('/api/stripe/create-token-purchase-session')
-                .send({
-                    tokenAmount: 100,
-                    email: 'test@example.com'
-                });
-
-            expect(response.status).toBe(401);
-        });
-    });
-
-    describe('Stripe Webhook Processing', () => {
-        test('should process checkout.session.completed event', async () => {
-            // Mock del evento de Stripe
-            const mockEvent = {
-                type: 'checkout.session.completed',
-                data: {
-                    object: {
-                        id: 'cs_test_123',
-                        payment_status: 'paid',
-                        amount_total: 1000, // $10.00
-                        customer_email: 'test@example.com',
-                        metadata: {
-                            type: 'token_purchase',
-                            userId: 'user123',
-                            walletAddress: '0x1234567890123456789012345678901234567890',
-                            tokenAmount: '100'
-                        }
-                    }
-                }
-            };
-
-            // Mock de fiat gateway service
-            fiatGatewayService.processFiatPayment.mockResolvedValue({
+    describe('Creación de sesión de checkout', () => {
+        test('crea la sesión de compra de tokens', async () => {
+            stripeService.createTokenPurchaseSession.mockResolvedValue({
                 success: true,
-                transactionHash: '0xabcdef...',
-                amount: 100
+                sessionId: 'cs_test_new',
+                url: 'https://checkout.stripe.com/c/pay/cs_test_new',
             });
 
-            const response = await request(app)
-                .post('/api/stripe/webhook')
-                .set('stripe-signature', 'mock-signature')
-                .send(mockEvent);
+            const res = await request(app)
+                .post('/api/stripe/create-token-purchase-session')
+                .set(auth)
+                .send({ tokenAmount: 100, email: 'test@example.com' });
 
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveProperty('received', true);
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('success', true);
+            expect(res.body).toHaveProperty('sessionId');
+            expect(res.body).toHaveProperty('url');
+        });
 
-            // Verificar que se llamó al servicio de transferencia
-            expect(fiatGatewayService.processFiatPayment).toHaveBeenCalledWith(
-                '0x1234567890123456789012345678901234567890',
-                expect.any(Number)
+        test('pasa al servicio el monedero del token, no uno del cuerpo', async () => {
+            // La dirección de destino sale del token verificado. Si viniera del
+            // cuerpo, cualquiera podría comprar tokens a la cartera de otro.
+            stripeService.createTokenPurchaseSession.mockResolvedValue({
+                success: true, sessionId: 'cs_x', url: 'https://x',
+            });
+
+            await request(app)
+                .post('/api/stripe/create-token-purchase-session')
+                .set(auth)
+                .send({ tokenAmount: 100, walletAddress: '0xATACANTE' });
+
+            expect(stripeService.createTokenPurchaseSession).toHaveBeenCalledWith(
+                100,
+                expect.objectContaining({ walletAddress: WALLET, userId: 'user123' })
             );
         });
 
-        test('should handle payment_intent.payment_failed event', async () => {
-            const mockEvent = {
+        test('rechaza una cantidad de tokens inválida', async () => {
+            for (const tokenAmount of [-10, 0, 0.5]) {
+                const res = await request(app)
+                    .post('/api/stripe/create-token-purchase-session')
+                    .set(auth)
+                    .send({ tokenAmount, email: 'test@example.com' });
+
+                expect(res.status).toBe(400);
+                expect(res.body).toHaveProperty('error');
+            }
+        });
+
+        test('exige autenticación', async () => {
+            const res = await request(app)
+                .post('/api/stripe/create-token-purchase-session')
+                .send({ tokenAmount: 100, email: 'test@example.com' });
+
+            expect(res.status).toBe(401);
+        });
+
+        test('rechaza un token firmado con otro secreto', async () => {
+            const falso = jwt.sign(
+                { userId: 'user123', walletAddress: WALLET, type: 'access' },
+                'secreto-que-no-es-el-nuestro',
+                { expiresIn: '15m' }
+            );
+
+            const res = await request(app)
+                .post('/api/stripe/create-token-purchase-session')
+                .set({ Authorization: `Bearer ${falso}` })
+                .send({ tokenAmount: 100 });
+
+            expect(res.status).toBe(401);
+        });
+
+        test('rechaza un refresh token usado como access token', async () => {
+            const refresh = jwt.sign(
+                { userId: 'user123', type: 'refresh' },
+                process.env.JWT_SECRET || 'default-secret-change-me',
+                { expiresIn: '7d' }
+            );
+
+            const res = await request(app)
+                .post('/api/stripe/create-token-purchase-session')
+                .set({ Authorization: `Bearer ${refresh}` })
+                .send({ tokenAmount: 100 });
+
+            expect(res.status).toBe(401);
+        });
+    });
+
+    describe('Verificación de firma del webhook', () => {
+        // Estas pruebas provocan a propósito rechazos de firma, y la ruta los
+        // registra con console.error. Sin silenciarlos, la salida de la suite
+        // se llena de «[STRIPE WEBHOOK] Signature verification failed», que
+        // parece un fallo cuando en realidad es la prueba de que la
+        // verificación hace su trabajo.
+        let errorOriginal;
+        beforeAll(() => { errorOriginal = console.error; console.error = () => {}; });
+        afterAll(() => { console.error = errorOriginal; });
+
+        test('rechaza un webhook sin cabecera de firma', async () => {
+            const res = await request(app)
+                .post('/api/stripe/webhook')
+                .set('Content-Type', 'application/json')
+                .send(JSON.stringify(eventoCheckoutCompletado()));
+
+            expect(res.status).toBe(400);
+            expect(String(res.body.error)).toMatch(/signature/i);
+        });
+
+        test('rechaza un webhook con una firma inventada', async () => {
+            const res = await request(app)
+                .post('/api/stripe/webhook')
+                .set('stripe-signature', 'mock-signature')
+                .set('Content-Type', 'application/json')
+                .send(JSON.stringify(eventoCheckoutCompletado()));
+
+            expect(res.status).toBe(400);
+        });
+
+        test('rechaza un webhook cuyo cuerpo se alteró después de firmar', async () => {
+            const { firma } = webhookFirmado(eventoCheckoutCompletado());
+            const manipulado = eventoCheckoutCompletado();
+            manipulado.data.object.metadata.tokenAmount = '999999';
+
+            const res = await request(app)
+                .post('/api/stripe/webhook')
+                .set('stripe-signature', firma)
+                .set('Content-Type', 'application/json')
+                .send(JSON.stringify(manipulado));
+
+            expect(res.status).toBe(400);
+        });
+
+        test('acepta un webhook correctamente firmado', async () => {
+            stripeService.handleCheckoutCompleted.mockResolvedValue({ ok: true });
+
+            const res = await enviarWebhook(eventoCheckoutCompletado());
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('received', true);
+            expect(res.body).toHaveProperty('eventType', 'checkout.session.completed');
+        });
+    });
+
+    describe('Procesamiento de eventos', () => {
+        test('despacha checkout.session.completed al servicio de Stripe', async () => {
+            stripeService.handleCheckoutCompleted.mockResolvedValue({ ok: true });
+
+            await enviarWebhook(eventoCheckoutCompletado());
+
+            expect(stripeService.handleCheckoutCompleted).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: 'cs_test_123',
+                    metadata: expect.objectContaining({ walletAddress: WALLET }),
+                })
+            );
+        });
+
+        test('despacha payment_intent.payment_failed', async () => {
+            stripeService.handlePaymentFailed.mockResolvedValue({ ok: true });
+
+            const res = await enviarWebhook({
+                id: 'evt_failed',
                 type: 'payment_intent.payment_failed',
                 data: {
                     object: {
                         id: 'pi_test_failed',
                         amount: 1000,
-                        last_payment_error: {
-                            code: 'card_declined',
-                            message: 'Your card was declined'
-                        },
-                        metadata: {
-                            walletAddress: '0x1234567890123456789012345678901234567890'
-                        }
-                    }
-                }
-            };
+                        last_payment_error: { code: 'card_declined', message: 'Your card was declined' },
+                        metadata: { walletAddress: WALLET },
+                    },
+                },
+            });
 
-            const response = await request(app)
-                .post('/api/stripe/webhook')
-                .set('stripe-signature', 'mock-signature')
-                .send(mockEvent);
+            expect(res.status).toBe(200);
+            expect(stripeService.handlePaymentFailed).toHaveBeenCalled();
+        });
 
-            expect(response.status).toBe(200);
-            // Verificar que se registró el error
+        test('un tipo de evento desconocido se acepta pero se marca como no gestionado', async () => {
+            const res = await enviarWebhook({
+                id: 'evt_raro',
+                type: 'radar.early_fraud_warning.created',
+                data: { object: { id: 'issfr_1' } },
+            });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('handled', false);
+        });
+
+        test('espera a que termine el handler antes de contestar a Stripe', async () => {
+            // Regresión: el despachador tenía `await A ? B : C`, que por
+            // precedencia esperaba a `A` y dejaba la rama elegida SIN await.
+            // Se respondía 200 mientras el procesamiento seguía corriendo —y,
+            // si fallaba, con una promesa rechazada sin capturar que tumba el
+            // proceso—. Aquí se comprueba que la respuesta llega después.
+            let terminado = false;
+            stripeService.handleCheckoutCompleted.mockImplementation(
+                () => new Promise((resolve) => setTimeout(() => {
+                    terminado = true;
+                    resolve({ ok: true });
+                }, 50))
+            );
+
+            const res = await enviarWebhook(eventoCheckoutCompletado());
+
+            expect(terminado).toBe(true);
+            expect(res.status).toBe(200);
+        });
+
+        test('`handled` dice la verdad: falso cuando nadie gestionó el evento', async () => {
+            // Con el fallo anterior, `results` guardaba una promesa y la
+            // comprobación `r.handled !== false` leía `undefined !== false`:
+            // siempre respondía `handled: true`, incluso sin gestionar nada.
+            const res = await enviarWebhook({
+                id: 'evt_sin_handler',
+                type: 'charge.dispute.created',
+                data: { object: { id: 'dp_1' } },
+            });
+
+            expect(res.body.handled).toBe(false);
+        });
+
+        test('un handler que rechaza no deja promesas sin capturar', async () => {
+            const sinCapturar = [];
+            const escucha = (razon) => sinCapturar.push(razon);
+            process.on('unhandledRejection', escucha);
+
+            try {
+                stripeService.handleCheckoutCompleted.mockRejectedValue(new Error('boom'));
+                await enviarWebhook(eventoCheckoutCompletado());
+                // Margen para que el bucle de eventos emita el evento si lo hubiera.
+                await new Promise((r) => setTimeout(r, 50));
+            } finally {
+                process.off('unhandledRejection', escucha);
+            }
+
+            expect(sinCapturar).toEqual([]);
+        });
+
+        test('si el handler lanza, devuelve 200 para que Stripe no reintente en bucle', async () => {
+            stripeService.handleCheckoutCompleted.mockRejectedValue(new Error('fallo interno'));
+
+            const res = await enviarWebhook(eventoCheckoutCompletado());
+
+            // El router traga el error a propósito: reintentar indefinidamente
+            // un evento que siempre falla solo multiplica el problema.
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('received', true);
+        });
+
+        test('un evento sin monedero no tumba el endpoint', async () => {
+            stripeService.handleCheckoutCompleted.mockResolvedValue({ ok: true });
+
+            const sinMonedero = eventoCheckoutCompletado();
+            delete sinMonedero.data.object.metadata.walletAddress;
+
+            const res = await enviarWebhook(sinMonedero);
+            expect(res.status).toBe(200);
         });
     });
 
-    describe('BEZ-Coin Assignment', () => {
-        test('should assign BEZ-Coins to wallet after successful payment', async () => {
-            const walletAddress = '0x1234567890123456789012345678901234567890';
-            const tokenAmount = 100;
-
-            // Mock de transferencia exitosa
-            fiatGatewayService.processFiatPayment.mockResolvedValue({
+    describe('Consulta del estado de un pago', () => {
+        test('devuelve la sesión cuando existe', async () => {
+            stripeService.getCheckoutSession.mockResolvedValue({
                 success: true,
-                transactionHash: '0xabcdef123456',
-                amount: tokenAmount
+                session: { id: 'cs_test_query', payment_status: 'paid' },
             });
 
-            // Simular webhook de pago exitoso
-            const mockEvent = {
-                type: 'checkout.session.completed',
-                data: {
-                    object: {
-                        id: 'cs_test_success',
-                        payment_status: 'paid',
-                        amount_total: 1000,
-                        metadata: {
-                            type: 'token_purchase',
-                            userId: 'user123',
-                            walletAddress,
-                            tokenAmount: tokenAmount.toString()
-                        }
-                    }
-                }
-            };
+            const res = await request(app).get('/api/stripe/session/cs_test_query').set(auth);
 
-            await request(app)
-                .post('/api/stripe/webhook')
-                .set('stripe-signature', 'mock-signature')
-                .send(mockEvent);
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('success');
+        });
 
-            // Verificar que se procesó el pago
-            expect(fiatGatewayService.processFiatPayment).toHaveBeenCalledWith(
-                walletAddress,
-                expect.any(Number)
+        test('devuelve 404 si la sesión no existe', async () => {
+            stripeService.getCheckoutSession.mockResolvedValue({
+                success: false,
+                error: 'No such checkout session',
+            });
+
+            const res = await request(app).get('/api/stripe/session/cs_nonexistent').set(auth);
+
+            expect(res.status).toBe(404);
+        });
+
+        test('exige autenticación', async () => {
+            const res = await request(app).get('/api/stripe/session/cs_test_query');
+            expect(res.status).toBe(401);
+        });
+    });
+
+    // Estas necesitan PostgreSQL de verdad: comprueban el SQL del DAO, y
+    // contra un pool simulado no probarían nada.
+    const describeDB = EJECUTAR_PRUEBAS_DB ? describe : describe.skip;
+
+    describeDB('Persistencia en base de datos (RUN_DB_TESTS=true)', () => {
+        // `payments.user_id` tiene clave ajena contra `users`, así que el
+        // usuario de prueba tiene que existir antes de insertar ningún pago.
+        beforeAll(async () => {
+            await pool.query(
+                `INSERT INTO users (id, wallet_address, username, email)
+                 VALUES ($1, $2, 'usuario_pruebas_pagos', 'pagos@pruebas.local')
+                 ON CONFLICT (id) DO NOTHING`,
+                [USER_UUID, WALLET]
             );
         });
 
-        test('should retry on transfer failure', async () => {
-            // Mock de fallo en primera transferencia, éxito en segunda
-            fiatGatewayService.processFiatPayment
-                .mockRejectedValueOnce(new Error('Network error'))
-                .mockResolvedValueOnce({
-                    success: true,
-                    transactionHash: '0xretry123',
-                    amount: 100
-                });
-
-            const mockEvent = {
-                type: 'checkout.session.completed',
-                data: {
-                    object: {
-                        id: 'cs_test_retry',
-                        payment_status: 'paid',
-                        amount_total: 1000,
-                        metadata: {
-                            type: 'token_purchase',
-                            userId: 'user123',
-                            walletAddress: '0x1234567890123456789012345678901234567890',
-                            tokenAmount: '100'
-                        }
-                    }
-                }
-            };
-
-            await request(app)
-                .post('/api/stripe/webhook')
-                .set('stripe-signature', 'mock-signature')
-                .send(mockEvent);
-
-            // Debería haber intentado 2 veces
-            expect(fiatGatewayService.processFiatPayment).toHaveBeenCalledTimes(1);
-        });
-    });
-
-    describe('Payment Status Queries', () => {
-        test('should retrieve payment status by session ID', async () => {
-            const sessionId = 'cs_test_query';
-
-            const response = await request(app)
-                .get(`/api/stripe/session/${sessionId}`)
-                .set('Authorization', 'Bearer mock-jwt-token');
-
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveProperty('success');
+        afterAll(async () => {
+            await pool.query('DELETE FROM payments WHERE user_id = $1', [USER_UUID]);
+            await pool.query('DELETE FROM users WHERE id = $1', [USER_UUID]);
         });
 
-        test('should return 404 for non-existent session', async () => {
-            const response = await request(app)
-                .get('/api/stripe/session/cs_nonexistent')
-                .set('Authorization', 'Bearer mock-jwt-token');
-
-            expect(response.status).toBe(404);
+        beforeEach(async () => {
+            await pool.query('DELETE FROM payments WHERE user_id = $1', [USER_UUID]);
         });
-    });
 
-    describe('Database Persistence', () => {
-        test('should save payment record to database', async () => {
-            const paymentData = {
-                userId: 'user123',
-                walletAddress: '0x1234567890123456789012345678901234567890',
-                fiatAmount: 10.00,
-                fiatCurrency: 'USD',
+        test('guarda el registro de pago', async () => {
+            const pago = await Payment.create({
+                paymentIntentId: 'pi_test_123',
+                userId: USER_UUID,
+                walletAddress: WALLET,
+                fiatAmount: 10.0,
+                fiatCurrency: 'usd',
                 bezAmount: 100,
                 status: 'completed',
                 type: 'token_purchase',
-                paymentIntentId: 'pi_test_123',
-                txHash: '0xabcdef'
-            };
+            });
 
-            const payment = await Payment.create(paymentData);
+            expect(pago).toBeDefined();
+            expect(pago.id).toBeDefined();
+            expect(pago.status).toBe('completed');
 
-            expect(payment).toBeDefined();
-            expect(payment.id).toBeDefined();
-            expect(payment.status).toBe('completed');
-
-            // Verificar que se puede recuperar
-            const found = await Payment.findById(payment.id);
-            expect(found.wallet_address).toBe(paymentData.walletAddress);
+            const encontrado = await Payment.findById(pago.id);
+            expect(encontrado.wallet_address).toBe(WALLET);
         });
 
-        test('should update payment status', async () => {
-            const payment = await Payment.create({
-                userId: 'user123',
-                walletAddress: '0x1234567890123456789012345678901234567890',
-                fiatAmount: 10.00,
+        test('actualiza el estado a partir del payment intent', async () => {
+            const pago = await Payment.create({
+                paymentIntentId: 'pi_test_update',
+                userId: USER_UUID,
+                walletAddress: WALLET,
+                fiatAmount: 10.0,
                 status: 'pending',
-                type: 'token_purchase'
+                type: 'token_purchase',
             });
 
-            await Payment.updateByPaymentIntent(payment.payment_intent_id, {
+            await Payment.updateByPaymentIntent('pi_test_update', {
                 status: 'completed',
-                txHash: '0xabcdef'
+                txHash: '0xabcdef',
             });
 
-            const updated = await Payment.findById(payment.id);
-            expect(updated.status).toBe('completed');
-            expect(updated.tx_hash).toBe('0xabcdef');
-        });
-    });
-
-    describe('Error Scenarios', () => {
-        test('should handle missing wallet address', async () => {
-            const mockEvent = {
-                type: 'checkout.session.completed',
-                data: {
-                    object: {
-                        id: 'cs_test_no_wallet',
-                        payment_status: 'paid',
-                        amount_total: 1000,
-                        metadata: {
-                            type: 'token_purchase',
-                            userId: 'user123',
-                            // walletAddress faltante
-                            tokenAmount: '100'
-                        }
-                    }
-                }
-            };
-
-            const response = await request(app)
-                .post('/api/stripe/webhook')
-                .set('stripe-signature', 'mock-signature')
-                .send(mockEvent);
-
-            // Debe manejar el error gracefully
-            expect(response.status).toBe(200);
+            const actualizado = await Payment.findById(pago.id);
+            expect(actualizado.status).toBe('completed');
+            expect(actualizado.tx_hash).toBe('0xabcdef');
         });
 
-        test('should handle database connection errors', async () => {
-            // Simular error de DB
-            jest.spyOn(Payment, 'create').mockRejectedValueOnce(new Error('DB Error'));
-
-            const mockEvent = {
-                type: 'checkout.session.completed',
-                data: {
-                    object: {
-                        id: 'cs_test_db_error',
-                        payment_status: 'paid',
-                        amount_total: 1000,
-                        metadata: {
-                            type: 'token_purchase',
-                            userId: 'user123',
-                            walletAddress: '0x1234567890123456789012345678901234567890',
-                            tokenAmount: '100'
-                        }
-                    }
-                }
-            };
-
-            const response = await request(app)
-                .post('/api/stripe/webhook')
-                .set('stripe-signature', 'mock-signature')
-                .send(mockEvent);
-
-            // Debe retornar error pero no crashear
-            expect(response.status).toBe(200);
-        });
-    });
-
-    describe('Integration with Notifications', () => {
-        test('should send Discord notification on successful payment', async () => {
-            const mockEvent = {
-                type: 'checkout.session.completed',
-                data: {
-                    object: {
-                        id: 'cs_test_notification',
-                        payment_status: 'paid',
-                        amount_total: 1000,
-                        metadata: {
-                            type: 'token_purchase',
-                            userId: 'user123',
-                            walletAddress: '0x1234567890123456789012345678901234567890',
-                            tokenAmount: '100'
-                        }
-                    }
-                }
-            };
-
-            fiatGatewayService.processFiatPayment.mockResolvedValue({
-                success: true,
-                transactionHash: '0xnotify123',
-                amount: 100
+        test('encuentra el pago por su payment intent', async () => {
+            await Payment.create({
+                paymentIntentId: 'pi_test_lookup',
+                userId: USER_UUID,
+                walletAddress: WALLET,
+                fiatAmount: 25.5,
+                status: 'pending',
+                type: 'token_purchase',
             });
 
-            await request(app)
-                .post('/api/stripe/webhook')
-                .set('stripe-signature', 'mock-signature')
-                .send(mockEvent);
-
-            // Verificar que se enviaron notificaciones (mocked)
-            // const discordNotifier = require('../middleware/discordNotifier');
-            // expect(discordNotifier.notifyHigh).toHaveBeenCalled();
+            const encontrado = await Payment.findByPaymentIntent('pi_test_lookup');
+            expect(encontrado).toBeDefined();
+            expect(Number(encontrado.fiat_amount)).toBeCloseTo(25.5);
         });
     });
 });

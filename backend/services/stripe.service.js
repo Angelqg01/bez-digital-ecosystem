@@ -423,7 +423,6 @@ async function createRefund(paymentIntentId, amount, reason) {
  * Procesar webhook de Stripe
  */
 async function handleStripeWebhook(rawBody, signature) {
-    console.log('DEBUG: handleStripeWebhook called - FIX APPLIED');
     let event;
 
     try {
