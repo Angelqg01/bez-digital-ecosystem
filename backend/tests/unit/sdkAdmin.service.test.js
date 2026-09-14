@@ -49,12 +49,23 @@ mockConfig.webhooks.id = jest.fn((id) => mockConfig.webhooks.find(w => w._id ===
 mockConfig.aiModels.forEach(m => { m.deleteOne = jest.fn(); });
 mockConfig.webhooks.forEach(w => { w.deleteOne = jest.fn(); });
 
-jest.mock('../../models/SDKConfig.model', () => ({
+// El servicio requiere `models/pg/SDKConfig`, no `models/SDKConfig.model`:
+// se simulaba un módulo que el código bajo prueba nunca carga, así que las
+// llamadas iban al modelo real y `.mockResolvedValue` no existía.
+jest.mock('../../models/pg/SDKConfig', () => ({
     getConfig: jest.fn(() => Promise.resolve(mockConfig)),
     updateConfig: jest.fn((updates, adminId) => {
         Object.assign(mockConfig, updates, { updatedBy: adminId });
         return Promise.resolve(mockConfig);
     }),
+}));
+
+// El servicio exige una conexión de Mongoose viva antes de cada operación.
+// Estas pruebas son unitarias y no deben depender de una base de datos, así
+// que se simula la conexión como establecida (readyState 1).
+jest.mock('mongoose', () => ({
+    connection: { readyState: 1 },
+    Types: { ObjectId: String },
 }));
 
 jest.mock('../../utils/logger', () => ({

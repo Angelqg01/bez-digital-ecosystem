@@ -25,8 +25,13 @@ jest.mock('mongoose', () => {
         methods: {},
         statics: {},
     };
+    // `Schema.Types.ObjectId` lo usan los esquemas de Mongoose al definirse:
+    // sin él, cargar cualquier modelo revienta antes de llegar a la prueba.
+    const Schema = jest.fn(() => mockSchemaDef);
+    Schema.Types = { ObjectId: String, Mixed: Object, Decimal128: Number };
+
     return {
-        Schema: jest.fn(() => mockSchemaDef),
+        Schema,
         model: jest.fn(() => ({
             findOneAndUpdate: jest.fn().mockResolvedValue({ _id: 'mock_id' }),
             findOne: jest.fn(),
@@ -42,16 +47,26 @@ jest.mock('mongoose', () => {
     };
 });
 
-// Mock MongoDB models
-jest.mock('../models/BridgeSyncedItem.model', () => ({
+// Los adaptadores requieren `models/pg/<Modelo>`, no `models/<Modelo>.model`.
+// Se simulaban módulos que el código bajo prueba nunca carga, así que las
+// llamadas llegaban al modelo real y reventaban con «is not a function».
+jest.mock('../models/pg/BridgeSyncedItem', () => ({
     findOneAndUpdate: jest.fn().mockResolvedValue({ _id: 'mock_id' }),
 }));
 
-jest.mock('../models/BridgeOrder.model', () => ({
+jest.mock('../models/pg/BridgeOrder', () => ({
     findOneAndUpdate: jest.fn().mockResolvedValue({ _id: 'mock_order' }),
 }));
 
-jest.mock('../models/BridgeShipment.model', () => ({
+// bridgeCore usa el modelo de Mongoose; los adaptadores, el de pg.
+jest.mock('../models/BridgeOrder.model', () => ({
+    findOneAndUpdate: jest.fn().mockResolvedValue({ _id: 'mock_order' }),
+    findOne: jest.fn(),
+    find: jest.fn(),
+    create: jest.fn(),
+}));
+
+jest.mock('../models/pg/BridgeShipment', () => ({
     findOneAndUpdate: jest.fn().mockResolvedValue({ _id: 'mock_shipment' }),
 }));
 

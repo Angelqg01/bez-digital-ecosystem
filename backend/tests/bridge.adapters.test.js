@@ -18,7 +18,7 @@ jest.mock('../utils/logger', () => ({
 }));
 
 // Mock MongoDB models
-jest.mock('../models/BridgeSyncedItem.model', () => ({
+jest.mock('../models/pg/BridgeSyncedItem', () => ({
     findOneAndUpdate: jest.fn().mockResolvedValue({
         _id: 'mock_id',
         platform: 'vinted',
@@ -27,7 +27,7 @@ jest.mock('../models/BridgeSyncedItem.model', () => ({
     }),
 }));
 
-jest.mock('../models/BridgeOrder.model', () => ({
+jest.mock('../models/pg/BridgeOrder', () => ({
     findOneAndUpdate: jest.fn().mockResolvedValue({
         _id: 'mock_order_id',
         platform: 'vinted',
@@ -35,7 +35,7 @@ jest.mock('../models/BridgeOrder.model', () => ({
     }),
 }));
 
-jest.mock('../models/BridgeShipment.model', () => ({
+jest.mock('../models/pg/BridgeShipment', () => ({
     findOneAndUpdate: jest.fn().mockResolvedValue({
         _id: 'mock_shipment_id',
         platform: 'maersk',

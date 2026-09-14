@@ -130,6 +130,23 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
+      # Buena parte del backend ya migró de Mongoose a DAOs de PostgreSQL
+      # (pagos, ajustes globales, usuarios, puente). Sin este servicio, sus
+      # pruebas de persistencia se saltan y el SQL de los DAOs no lo valida
+      # nadie.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bezhas
+          POSTGRES_PASSWORD: bezhas_password
+          POSTGRES_DB: bezhas
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U bezhas"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Checkout code
@@ -158,12 +175,23 @@ jobs:
 
       # Antes se instalaba y se probaba `./api`, un paquete con
       # `jest --passWithNoTests` y cero pruebas: el job pasaba en verde sin
-      # ejecutar ni una de las 600 pruebas de `backend/`. Ahora se ejecutan de
-      # verdad — las que están sanas; ver backend/jest.ci.config.js, que lista
-      # una a una las suites rotas que quedan pendientes de reparar.
+      # ejecutar ni una de las 600 pruebas de `backend/`. Ahora se ejecutan
+      # todas: ver backend/jest.ci.config.js.
       - name: Install backend dependencies
         working-directory: ./backend
         run: pnpm install --no-frozen-lockfile
+
+      - name: Aplicar migraciones de PostgreSQL
+        working-directory: ./backend
+        env:
+          PGPASSWORD: bezhas_password
+        # En orden numérico y parando al primer error: si una migración se
+        # rompe, es mejor saberlo aquí que descubrirlo en un despliegue.
+        run: |
+          for f in $(ls db/migrations/*.sql | sort); do
+            echo "→ $f"
+            psql -h localhost -p 5433 -U bezhas -d bezhas -v ON_ERROR_STOP=1 -q -f "$f"
+          done
 
       - name: Run backend tests
         working-directory: ./backend
@@ -172,9 +200,10 @@ jobs:
           NODE_ENV: test
           MONGODB_URI: "mongodb://localhost:27017/bezhas_test"
           REDIS_URL: "redis://localhost:6379"
+          DATABASE_URL: "postgresql://bezhas:bezhas_password@localhost:5433/bezhas"
           JWT_SECRET: test_jwt_secret_key_for_ci
-          # Este job levanta MongoDB como servicio, así que las pruebas que
-          # necesitan base de datos sí pueden ejecutarse aquí.
+          # Este job levanta MongoDB y PostgreSQL como servicios, así que las
+          # pruebas que necesitan base de datos sí pueden ejecutarse aquí.
           RUN_DB_TESTS: "true"
 
   # ===================================================

@@ -37,12 +37,17 @@ describe('Diagnostic System Integration Tests', () => {
     });
 
     describe('DiagnosticTools', () => {
-        it('should calculate health scores correctly', () => {
+        // `DiagnosticTools` es una clase con métodos estáticos, no un objeto
+        // literal: `typeof` devuelve 'function'. Se comprueba lo que de verdad
+        // importa, que expone las herramientas que el agente invoca.
+        it('expone las herramientas de diagnóstico', () => {
             const { DiagnosticTools } = require('../../services/automation/diagnosticAgent.service');
 
-            // Test health score calculation logic
-            // This would need to be extracted to be testable independently
-            expect(typeof DiagnosticTools).toBe('object');
+            expect(typeof DiagnosticTools).toBe('function');
+            expect(typeof DiagnosticTools.generateHealthScore).toBe('function');
+            expect(typeof DiagnosticTools.verifyBlockchainTransaction).toBe('function');
+            expect(typeof DiagnosticTools.diagnoseCreditMismatch).toBe('function');
+            expect(typeof DiagnosticTools.analyzeErrorPatterns).toBe('function');
         });
     });
 });
