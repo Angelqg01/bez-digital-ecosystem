@@ -197,6 +197,58 @@ contract BezhasToken is ERC20Pausable, AccessControl {
         emit LPRewardsSplitUpdated(oldSplit, _newSplit);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // ALLOWANCE: PROTECCIÓN CONTRA LA CARRERA DEL APPROVE
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // `approve` sobrescribe la asignación anterior en vez de sumarla, y ahí está
+    // la carrera clásica del ERC-20: si el titular tiene aprobados N al gastador
+    // y firma un `approve(M)`, el gastador puede ver esa transacción en el
+    // mempool, gastar los N antes de que entre y gastar los M después. Se lleva
+    // N+M cuando el titular solo quiso autorizar M.
+    //
+    // OpenZeppelin ofrecía `increaseAllowance`/`decreaseAllowance` para
+    // esquivarlo, pero las **eliminó en la versión 5.0**: al heredar de OZ 5.x
+    // este token se quedó sin ellas y sin ninguna otra mitigación en cadena.
+    // Se recuperan aquí, con la misma semántica que tenían.
+    //
+    // No se toca `approve`: prohibir pasar de un valor distinto de cero a otro
+    // —como hace USDT— rompería integraciones que dan por buena la semántica
+    // estándar del ERC-20. Esto añade la salida segura sin quitar la de siempre.
+
+    /// @notice Se intentó bajar una asignación por debajo de cero.
+    error BezInsufficientAllowanceToDecrease(address spender, uint256 currentAllowance, uint256 requestedDecrease);
+
+    /**
+     * @notice Aumenta en `addedValue` lo que `spender` puede gastar.
+     * @dev Alternativa segura a `approve` cuando ya hay una asignación viva: al
+     *      partir del valor actual en el momento de ejecutarse, no hay ventana
+     *      que un gastador pueda aprovechar entre el valor viejo y el nuevo.
+     */
+    function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
+        address owner = _msgSender();
+        _approve(owner, spender, allowance(owner, spender) + addedValue);
+        return true;
+    }
+
+    /**
+     * @notice Reduce en `subtractedValue` lo que `spender` puede gastar.
+     * @dev Revierte si la reducción supera la asignación actual, en vez de
+     *      dejarla en cero en silencio: bajar de más casi siempre significa que
+     *      quien llama tenía una idea equivocada del estado.
+     */
+    function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
+        address owner = _msgSender();
+        uint256 currentAllowance = allowance(owner, spender);
+        if (currentAllowance < subtractedValue) {
+            revert BezInsufficientAllowanceToDecrease(spender, currentAllowance, subtractedValue);
+        }
+        unchecked {
+            _approve(owner, spender, currentAllowance - subtractedValue);
+        }
+        return true;
+    }
+
     function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }

@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { useWalletClient, usePublicClient } from 'wagmi';
 import BeZhasQualityEscrowABI from '../contracts/BeZhasQualityEscrow.json';
 import BezCoinABI from '../contracts/BezCoin.json';
+import { safeApprove } from '../utils/safeApprove';
 
 export const useQualityEscrow = () => {
     const { address, signer } = useWeb3Context();
@@ -54,10 +55,12 @@ export const useQualityEscrow = () => {
             // Convert amount to Wei (BEZ has 18 decimals)
             const amountWei = ethers.parseEther(amountInBEZ.toString());
 
-            // Step 1: Approve BezCoin spending
+            // Step 1: Approve BezCoin spending.
+            // `safeApprove` en vez de `approve` a secas: cambiar una asignación
+            // viva con `approve` abre la carrera del ERC-20 (el gastador puede
+            // gastar la vieja y la nueva). Ver frontend/src/utils/safeApprove.js.
             toast.loading('Approving BEZ tokens...', { id: 'create-service' });
-            const approveTx = await bezCoin.approve(ESCROW_ADDRESS, amountWei);
-            await approveTx.wait();
+            await safeApprove(bezCoin, address, ESCROW_ADDRESS, amountWei);
 
             // Step 2: Create service
             toast.loading('Creating quality escrow service...', { id: 'create-service' });

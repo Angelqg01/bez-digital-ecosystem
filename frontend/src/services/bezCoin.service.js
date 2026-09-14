@@ -15,6 +15,7 @@
  */
 
 import { ethers } from 'ethers';
+import { safeApprove } from '../utils/safeApprove';
 import { bezCoinAbi, networks } from '../lib/blockchain/contracts';
 import { BEZ_COIN_ADDRESS } from '../config/contracts';
 
@@ -151,17 +152,24 @@ export const approveBEZ = async (spenderAddress, amount, provider) => {
         // Convertir cantidad a wei
         const amountWei = ethers.parseEther(amount);
 
-        // Aprobar
-        const tx = await contract.approve(spenderAddress, amountWei);
+        // Aprobar sin abrir la carrera del ERC-20.
+        //
+        // `approve` sobrescribe la asignación anterior, así que cambiarla de un
+        // valor distinto de cero a otro deja una ventana en la que el gastador
+        // puede consumir la vieja y luego la nueva. `safeApprove` elige la vía
+        // segura según el token; ver frontend/src/utils/safeApprove.js.
+        const owner = await contract.runner.getAddress();
+        const resultado = await safeApprove(contract, owner, spenderAddress, amountWei);
 
-        console.log('Aprobación enviada:', tx.hash);
-
-        const receipt = await tx.wait();
+        const ultimoHash = resultado.txs[resultado.txs.length - 1] ?? null;
+        console.log('Aprobación completada:', resultado.strategy, resultado.txs);
 
         return {
             success: true,
-            txHash: receipt.hash,
-            explorerUrl: `https://polygonscan.com/tx/${receipt.hash}`,
+            txHash: ultimoHash,
+            txHashes: resultado.txs,
+            strategy: resultado.strategy,
+            explorerUrl: ultimoHash ? `https://polygonscan.com/tx/${ultimoHash}` : null,
             amount: amount,
             spender: spenderAddress
         };

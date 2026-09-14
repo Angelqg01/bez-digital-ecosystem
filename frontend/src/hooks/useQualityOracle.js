@@ -5,6 +5,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAccount, useContractRead, useContractWrite, useWaitForTransaction } from 'wagmi';
 import { ethers } from 'ethers';
+import { safeApprove, ALLOWANCE_ABI } from '../utils/safeApprove';
 import { toast } from 'react-hot-toast';
 
 // ABI simplificado del QualityOracle
@@ -248,18 +249,15 @@ export const useQualityOracle = () => {
             // El stake se envía en BEZ tokens, no en MATIC
             // Primero necesitamos aprobar el contrato para gastar nuestros tokens
             const bezCoinAddress = import.meta.env.VITE_BEZ_COIN_ADDRESS;
-            const bezCoin = new ethers.Contract(
-                bezCoinAddress,
-                ['function approve(address spender, uint256 amount) returns (bool)'],
-                signer
-            );
+            // El ABI mínimo solo traía `approve`; `safeApprove` necesita además
+            // leer `allowance` para decidir la vía segura.
+            const bezCoin = new ethers.Contract(bezCoinAddress, ALLOWANCE_ABI, signer);
 
             const stakeWei = ethers.parseEther(stakeAmount.toString());
 
-            // Aprobar
+            // Aprobar sin abrir la carrera del ERC-20; ver utils/safeApprove.js.
             toast.loading('Aprobando tokens...', { id: 'approve-stake' });
-            const approveTx = await bezCoin.approve(QUALITY_ORACLE_ADDRESS, stakeWei);
-            await approveTx.wait();
+            await safeApprove(bezCoin, await signer.getAddress(), QUALITY_ORACLE_ADDRESS, stakeWei);
             toast.success('Tokens aprobados', { id: 'approve-stake' });
 
             // Registrar

@@ -2,12 +2,18 @@
  * @deprecated — LEGACY SERVICE. Staking operations now live in bez-wallet SubApp.
  * Replacement: bez-wallet/src/services/walletBlockchainService.js
  * The Hub should link to bez-wallet/staking instead of handling staking directly.
+ *
+ * @dev A service module for interacting with the StakingPool smart contract.
+ * It encapsulates all the blockchain interaction logic, keeping components clean.
+ *
+ * NOTA: el bloque `@deprecated` y los imports se habían insertado en mitad de
+ * este comentario, dejando huérfanas las dos líneas de `@dev` y el cierre que
+ * venía detrás. El fichero no parseaba, y no saltaba en el build solo porque
+ * nada lo importa.
  */
 import { ethers } from 'ethers';
 import { toast } from 'react-hot-toast';
- * @dev A service module for interacting with the StakingPool smart contract.
- * It encapsulates all the blockchain interaction logic, keeping components clean.
- */
+import { safeApprove } from '../utils/safeApprove';
 
 /**
  * @dev Fetches staking data for a given user address.
@@ -45,12 +51,16 @@ export const fetchUserStakingData = async (stakingPoolContract, address) => {
 export const stakeTokens = async (stakingPoolContract, tokenContract, amount, userAddress) => {
   const parsedAmount = ethers.parseEther(amount);
 
-  // 1. Check allowance and approve if necessary
+  // 1. Check allowance and approve if necessary.
+  //
+  // Éste era el caso de libro de la carrera del ERC-20: al aprobar justo
+  // `parsedAmount` cuando ya había una asignación parcial viva, se pasaba de un
+  // valor distinto de cero a otro, y el gastador podía quedarse con los dos.
+  // `safeApprove` elige la vía segura según el token.
   const allowance = await tokenContract.allowance(userAddress, stakingPoolContract.target);
   if (allowance < parsedAmount) {
-    const approveTx = await tokenContract.approve(stakingPoolContract.target, parsedAmount);
     toast.loading('Approving token spend...', { id: 'approve' });
-    await approveTx.wait();
+    await safeApprove(tokenContract, userAddress, stakingPoolContract.target, parsedAmount);
     toast.success('Token approved!', { id: 'approve' });
   }
 

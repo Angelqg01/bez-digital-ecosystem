@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+import { safeApprove } from '../utils/safeApprove';
 import { useAuth } from '../context/AuthContext';
 import { BEZ_COIN_ADDRESS } from '../config/contracts';
 
@@ -137,17 +138,20 @@ export const useRWAContracts = () => {
                 location
             } = assetData;
 
-            // 1. Approve BEZ-Coin for tokenization fee
+            // 1. Approve BEZ-Coin for tokenization fee.
+            //
+            // Dos arreglos aquí. `allowance.lt(fee)` era sintaxis de ethers v5;
+            // en la v6 —la que usa este frontend— `allowance` es un `bigint` sin
+            // `.lt()`, así que esa línea reventaba con «allowance.lt is not a
+            // function». Y `approve` a secas sobre una asignación viva abre la
+            // carrera del ERC-20. `safeApprove` compara por dentro y elige la
+            // vía segura; ver frontend/src/utils/safeApprove.js.
             const fee = await factoryContract.tokenizationFee();
             const allowance = await bezCoinContract.allowance(walletAddress, RWA_FACTORY_ADDRESS);
 
-            if (allowance.lt(fee)) {
+            if (allowance < fee) {
                 console.log('Approving BEZ-Coin...');
-                const approveTx = await bezCoinContract.approve(
-                    RWA_FACTORY_ADDRESS,
-                    ethers.MaxUint256
-                );
-                await approveTx.wait();
+                await safeApprove(bezCoinContract, walletAddress, RWA_FACTORY_ADDRESS, ethers.MaxUint256);
             }
 
             // 2. Tokenize the asset

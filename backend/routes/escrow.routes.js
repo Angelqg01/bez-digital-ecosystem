@@ -4,6 +4,7 @@ const { validateCreateService, escrowLimiter } = require('../middleware/escrowVa
 const { apiKeyAuth, optionalApiKeyAuth } = require('../middleware/apiKeyAuth');
 const { ethers } = require('ethers');
 const crypto = require('crypto');
+const { safeApprove } = require('../utils/safeApprove');
 
 // Blockchain configuration
 const PROVIDER_URL = process.env.POLYGON_RPC_URL || 'https://rpc-amoy.polygon.technology';
@@ -105,12 +106,14 @@ router.post('/create', apiKeyAuth, escrowLimiter, validateCreateService, async (
         const escrowContract = getEscrowContract(wallet);
         const bezCoinContract = getBezCoinContract(wallet);
 
-        // Check allowance
+        // Check allowance.
+        //
+        // `safeApprove` en vez de `approve` a secas: cambiar una asignación viva
+        // con `approve` abre la carrera del ERC-20 —el gastador puede consumir
+        // la vieja y luego la nueva—. Ver backend/utils/safeApprove.js.
         const allowance = await bezCoinContract.allowance(wallet.address, CONTRACT_ADDRESS);
         if (allowance < BigInt(amount)) {
-            // Approve tokens
-            const approveTx = await bezCoinContract.approve(CONTRACT_ADDRESS, amount);
-            await approveTx.wait();
+            await safeApprove(bezCoinContract, wallet.address, CONTRACT_ADDRESS, amount);
         }
 
         // Create service
