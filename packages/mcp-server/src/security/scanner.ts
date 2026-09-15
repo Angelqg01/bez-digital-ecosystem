@@ -133,7 +133,24 @@ function walk(value: unknown, path: string, findings: Finding[], depth: number):
                 continue;
             }
 
-            out[k] = walk(v, path ? `${path}.${k}` : k, findings, depth + 1);
+            // Alerta revisada y descartada: «remote property injection».
+            //
+            // La clave viene de quien manda los datos, y eso es justo lo que
+            // esta función hace —copiar una estructura ajena, sea cual sea—,
+            // así que no cabe una lista blanca de claves. Lo que hay en su
+            // lugar son dos defensas que sí cierran el ataque:
+            //
+            //   1. `out` es `Object.create(null)`: no hay prototipo que
+            //      contaminar, ni setter de `__proto__` que disparar.
+            //   2. `__proto__`, `constructor` y `prototype` se descartan
+            //      arriba, antes de llegar aquí.
+            //
+            // Además `out` empieza vacío y las claves de `Object.entries` no
+            // se repiten, así que tampoco se puede sobrescribir nada. La
+            // prueba «la guarda desplegada cubre exactamente DANGEROUS_KEYS»
+            // fija las dos defensas.
+            // codeql[js/remote-property-injection]
+            out[k] = walk(v, path ? `${path}.${k}` : k, findings, depth + 1); // lgtm[js/remote-property-injection]
         }
         return out;
     }

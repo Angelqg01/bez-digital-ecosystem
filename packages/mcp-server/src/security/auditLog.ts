@@ -156,7 +156,23 @@ export class AuditLog {
 
         if (this.filePath) {
             try {
-                appendFileSync(this.filePath, JSON.stringify(entry) + '\n');
+                // Alerta revisada y descartada: «network data written to file».
+                //
+                // Que aquí se escriba dato ajeno no es un descuido, es la
+                // función: un registro de auditoría existe para dejar
+                // constancia de lo que se inspeccionó. Lo que importa es que
+                // no se pueda abusar de ello, y de eso se ocupan tres cosas:
+                //
+                //   1. La RUTA no es dato del usuario: sale de
+                //      `WATCHDOG_AUDIT_FILE` o del constructor, así que no hay
+                //      travesía de directorios.
+                //   2. Cada campo de texto pasa por `clamp`, que acota la
+                //      longitud y quita `\r` y `\n`. Sin eso se podría forjar
+                //      una línea entera, porque el fichero es JSONL.
+                //   3. No se vuelca el contenido inspeccionado, solo la
+                //      decisión y la forma del hallazgo.
+                // codeql[js/http-to-file-access]
+                appendFileSync(this.filePath, JSON.stringify(entry) + '\n'); // lgtm[js/http-to-file-access]
             } catch {
                 // Perder la copia en disco no debe tumbar la petición; queda
                 // la copia en memoria y el aviso por stderr.
