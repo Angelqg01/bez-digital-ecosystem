@@ -410,11 +410,26 @@ describe('escritura de datos ajenos', () => {
         }
     });
 
-    it('el objeto redactado no arrastra prototipo', () => {
+    it('el objeto redactado no arrastra prototipo, tampoco en lo anidado', () => {
         // Es la segunda mitad de la defensa: aunque una clave se colara, no
-        // habría prototipo que contaminar.
-        const r = scan({ normal: 1 });
-        expect(Object.getPrototypeOf(r.redacted as object)).toBe(null);
+        // habría prototipo que contaminar. Tiene que valer a cualquier
+        // profundidad, porque `walk` se llama a sí misma.
+        const r = scan({ normal: 1, dentro: { mas: { hondo: 2 } } }) as any;
+
+        expect(Object.getPrototypeOf(r.redacted)).toBe(null);
+        expect(Object.getPrototypeOf(r.redacted.dentro)).toBe(null);
+        expect(Object.getPrototypeOf(r.redacted.dentro.mas)).toBe(null);
+    });
+
+    it('la copia se materializa sin disparar setters', () => {
+        // `Object.fromEntries` usa CreateDataProperty, así que una clave
+        // `__proto__` acabaría como propiedad propia en vez de reemplazar el
+        // prototipo. Es lo que hace que el ataque siga cerrado aunque la
+        // guarda de claves llegara a fallar.
+        const trampa = Object.fromEntries([['__proto__', { contaminado: true }]]);
+
+        expect((Object.prototype as any).contaminado).toBeUndefined();
+        expect(Object.prototype.hasOwnProperty.call(trampa, '__proto__')).toBe(true);
     });
 
     it('recorta el path del hallazgo antes de anotarlo', () => {

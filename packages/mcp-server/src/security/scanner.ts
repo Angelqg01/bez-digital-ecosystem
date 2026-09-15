@@ -104,10 +104,19 @@ function walk(value: unknown, path: string, findings: Finding[], depth: number):
         return value.map((v, i) => walk(v, `${path}[${i}]`, findings, depth + 1));
     }
     if (value && typeof value === 'object') {
-        // Sin prototipo: escribir una clave `__proto__` sobre un objeto
-        // literal contaminaría Object.prototype para todo el proceso, y las
-        // claves aquí vienen del atacante.
-        const out: Record<string, unknown> = Object.create(null);
+        // Las claves vienen de quien manda los datos, así que la copia se
+        // arma como lista de pares y se materializa de una vez al final, en
+        // lugar de escribir `out[k]` clave por clave.
+        //
+        // No es un rodeo gratuito. `Object.fromEntries` usa CreateDataProperty,
+        // que NO dispara setters: una clave `__proto__` acaba como propiedad
+        // propia y corriente en vez de reemplazar el prototipo. Con la
+        // asignación dinámica, esa garantía dependía solo de que el destino no
+        // tuviera prototipo; así el ataque queda cerrado aunque la guarda de
+        // más abajo fallara. De paso, desaparece la escritura de propiedad con
+        // nombre ajeno, que es lo que un análisis estático no puede dar por
+        // seguro y marcaba en cada PR que tocara este camino.
+        const pares: Array<[string, unknown]> = [];
         for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
             // La clave también puede portar el ataque.
             scanString(k, `${path}.<clave>`, findings);
@@ -133,26 +142,12 @@ function walk(value: unknown, path: string, findings: Finding[], depth: number):
                 continue;
             }
 
-            // Alerta revisada y descartada: «remote property injection».
-            //
-            // La clave viene de quien manda los datos, y eso es justo lo que
-            // esta función hace —copiar una estructura ajena, sea cual sea—,
-            // así que no cabe una lista blanca de claves. Lo que hay en su
-            // lugar son dos defensas que sí cierran el ataque:
-            //
-            //   1. `out` es `Object.create(null)`: no hay prototipo que
-            //      contaminar, ni setter de `__proto__` que disparar.
-            //   2. `__proto__`, `constructor` y `prototype` se descartan
-            //      arriba, antes de llegar aquí.
-            //
-            // Además `out` empieza vacío y las claves de `Object.entries` no
-            // se repiten, así que tampoco se puede sobrescribir nada. La
-            // prueba «la guarda desplegada cubre exactamente DANGEROUS_KEYS»
-            // fija las dos defensas.
-            // codeql[js/remote-property-injection]
-            out[k] = walk(v, path ? `${path}.${k}` : k, findings, depth + 1); // lgtm[js/remote-property-injection]
+            pares.push([k, walk(v, path ? `${path}.${k}` : k, findings, depth + 1)]);
         }
-        return out;
+
+        // Y sin prototipo, que era la otra mitad de la defensa: nada que
+        // heredar, nada que contaminar.
+        return Object.setPrototypeOf(Object.fromEntries(pares), null);
     }
     return value;
 }

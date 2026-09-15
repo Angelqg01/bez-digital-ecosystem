@@ -156,7 +156,11 @@ export class AuditLog {
 
         if (this.filePath) {
             try {
-                // Alerta revisada y descartada: «network data written to file».
+                // CodeQL marca esta línea como «network data written to file»,
+                // y seguirá marcándola: las supresiones en línea
+                // (`// codeql[...]`, `// lgtm[...]`) NO las honra GitHub code
+                // scanning, eso era de LGTM. Para cerrarla hay que descartar
+                // la alerta desde la pestaña Security del repositorio.
                 //
                 // Que aquí se escriba dato ajeno no es un descuido, es la
                 // función: un registro de auditoría existe para dejar
@@ -171,8 +175,7 @@ export class AuditLog {
                 //      una línea entera, porque el fichero es JSONL.
                 //   3. No se vuelca el contenido inspeccionado, solo la
                 //      decisión y la forma del hallazgo.
-                // codeql[js/http-to-file-access]
-                appendFileSync(this.filePath, JSON.stringify(entry) + '\n'); // lgtm[js/http-to-file-access]
+                appendFileSync(this.filePath, JSON.stringify(entry) + '\n');
             } catch {
                 // Perder la copia en disco no debe tumbar la petición; queda
                 // la copia en memoria y el aviso por stderr.
