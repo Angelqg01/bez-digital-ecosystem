@@ -1,5 +1,23 @@
+# Lo que no debe entrar en el contexto de construcción.
+#
+# `dist/` se excluye a propósito: la imagen lo compila dentro. Si se colase el
+# de la máquina de quien construye, la imagen llevaría un compilado viejo sin
+# que nada lo delatase.
 node_modules
 dist
-*.log
+build
+
+# Pruebas y utilidades: no viajan a producción.
+src/__tests__
+test-telegram.ts
+vitest.config.ts
+
+# Secretos y ruido local.
 .env
-.env.local
+.env.*
+!.env.example
+*.log
+.git
+.gitignore
+Dockerfile
+.dockerignore

@@ -1,20 +1,27 @@
+/**
+ * Comprobación MANUAL del canal de Telegram. No forma parte de la suite:
+ * vitest solo recoge `src/**\/*.test.ts`, y este script envía un mensaje de
+ * verdad, así que necesita credenciales reales y un administrador al otro
+ * lado. Sirve para confirmar que TELEGRAM_BOT_TOKEN y
+ * TELEGRAM_SECURITY_CHAT_ID están bien puestos.
+ *
+ *   pnpm exec tsx test-telegram.ts
+ */
 import 'dotenv/config';
-import { handleTelegramTool } from './src/tools/telegramMcp.js';
+import { sendTelegramMessage } from './src/tools/telegramMcp.js';
 
-async function test() {
-    console.log("Testing send_telegram_message tool...");
+async function main() {
+    console.log('Enviando mensaje de prueba por send_telegram_message...');
 
-    const args = {
-        message: "🤖 *Test Message from AI/MCP*\n\nThis is an automated test to verify that the `send_telegram_message` tool is working correctly and the AI can communicate proactively with the Administrator.",
-        severity: "medium"
-    };
+    const resultado = await sendTelegramMessage({
+        message:
+            '🤖 *Prueba desde el servidor MCP*\n\n' +
+            'Mensaje automático para verificar que el administrador recibe los avisos.',
+        severity: 'medium',
+    });
 
-    try {
-        const result = await handleTelegramTool('send_telegram_message', args);
-        console.log("Result:", JSON.stringify(result, null, 2));
-    } catch (e) {
-        console.error("Test failed with exception:", e);
-    }
+    console.log(JSON.stringify(resultado, null, 2));
+    process.exit(resultado.isError ? 1 : 0);
 }
 
-test();
+main();

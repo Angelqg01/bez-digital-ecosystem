@@ -716,15 +716,54 @@ app.post('/api/mcp/alpaca-markets', async (req, res) => {
 
 // ─── Start Server ──────────────────────────────────────────
 const PORT = config.http.port;
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🧠 BeZhas Intelligence HTTP Server running on port ${PORT}`);
     console.log(`   Network: ${config.network.mode} (${config.network.activeRpc})`);
     console.log(`   BEZ Contract: ${config.token.address}`);
-    console.log(`   Tools: 13 MCP tools registered`);
+    // Son dos cifras distintas: `registerTools` da de alta 20 herramientas en
+    // el servidor MCP, pero este fichero solo publica ruta REST para 13. Las de
+    // pago y las de comunicación solo se alcanzan por STDIO.
+    console.log(`   Tools: 20 registradas en MCP · 13 expuestas por HTTP`);
     console.log(`   Endpoints: /api/mcp/health | /api/mcp/tools | /api/mcp/analyze-gas | /api/mcp/calculate-swap | /api/mcp/verify-compliance`);
     console.log(`              /api/mcp/github | /api/mcp/firecrawl | /api/mcp/playwright | /api/mcp/blockscout`);
     console.log(`              /api/mcp/skill-creator | /api/mcp/auditmos | /api/mcp/tally-dao | /api/mcp/obliq-sre`);
     console.log(`              /api/mcp/kinaxis | /api/mcp/alpaca-markets`);
 });
 
+/**
+ * Cierre ordenado.
+ *
+ * En un contenedor este proceso es el PID 1, y el PID 1 IGNORA las señales
+ * para las que no hay manejador instalado. Sin esto, un `docker stop` o un
+ * reciclado de Cloud Run mandaba SIGTERM, no pasaba nada, y diez segundos
+ * después llegaba un SIGKILL que cortaba en seco las peticiones en vuelo.
+ * Registrar el manejador es lo que hace que la señal llegue a alguna parte.
+ */
+let cerrando = false;
+
+function cerrar(senal: string): void {
+    if (cerrando) return;
+    cerrando = true;
+
+    console.log(`${senal} recibida: dejando de aceptar conexiones nuevas…`);
+
+    // Deja terminar lo que ya está en curso y luego sale.
+    server.close(() => {
+        console.log('Conexiones cerradas. Adiós.');
+        process.exit(0);
+    });
+
+    // Una petición colgada no puede retener el proceso indefinidamente: el
+    // orquestador acabaría matándolo igual, solo que más tarde y peor.
+    const plazo = setTimeout(() => {
+        console.error('Quedaban conexiones abiertas al agotarse el plazo; saliendo de todos modos.');
+        process.exit(1);
+    }, 10_000);
+    plazo.unref();
+}
+
+process.on('SIGTERM', () => cerrar('SIGTERM'));
+process.on('SIGINT', () => cerrar('SIGINT'));
+
 export default app;
+export { server };
