@@ -230,10 +230,37 @@ jobs:
       - name: Install MCP Server dependencies
         run: cd packages/mcp-server && pnpm install --no-frozen-lockfile || pnpm install
 
+      # OJO con lo que había aquí: `pnpm run build --if-present`.
+      #
+      # `--if-present` es una bandera de npm, no de pnpm, así que pnpm se la
+      # pasaba tal cual a tsc, que abortaba con «error TS5023: Unknown compiler
+      # option». El `||` caía entonces a `tsc --noEmit`, que comprueba tipos
+      # pero NO genera nada. El paso salía con código 0 y `dist/` no existía.
+      #
+      # Resultado: se publicaba en npm un paquete que declara
+      # `main: dist/index.js` sin ningún dist/, y con 49 fuentes .ts y 18
+      # ficheros de prueba dentro. Quien lo instalara no podía ni importarlo.
       - name: Build MCP Server (TypeScript)
+        run: cd packages/mcp-server && pnpm run build
+
+      # Y antes de publicar, las pruebas. Había 206 escritas y ninguna se
+      # ejecutaba en el camino de publicación: se subía a npm a ciegas.
+      - name: Test MCP Server
+        run: cd packages/mcp-server && pnpm test
+
+      - name: Comprobar que el paquete lleva lo que dice llevar
+        # Barrera final: si `dist/index.js` no acaba en el tarball, el paquete
+        # está roto aunque todo lo anterior haya salido verde.
         run: |
           cd packages/mcp-server
-          pnpm run build --if-present || pnpm exec tsc --noEmit
+          ficheros=$(npm pack --dry-run --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].files.map(f=>f.path).join('\n')")
+          principal=$(node -p "require('./package.json').main")
+          if ! echo "$ficheros" | grep -qx "$principal"; then
+            echo "::error::El paquete declara main=$principal pero ese fichero no está en el tarball."
+            echo "$ficheros" | head -20
+            exit 1
+          fi
+          echo "OK: $principal está en el paquete."
 
       - name: Publish @bezhas/mcp-server
         run: |

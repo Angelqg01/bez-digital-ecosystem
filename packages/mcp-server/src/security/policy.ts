@@ -119,10 +119,21 @@ export const policy = {
     },
 };
 
-/** Campos cuyo valor se interpreta como importe monetario. */
+/**
+ * Campos cuyo valor se interpreta como importe monetario.
+ *
+ * La lista tiene que cubrir cómo se llama el importe en CADA herramienta, no
+ * cómo debería llamarse. `process_stripe_payment` está clasificada como
+ * `critical` y recibe el importe en `amountFiat`: mientras ese nombre faltó
+ * aquí, `extractAmountUSD` devolvía `null` y el techo por operación
+ * (`WATCHDOG_MAX_TX_USD`) no llegaba a aplicarse justo en la herramienta que
+ * más dinero mueve. Al añadir una herramienta que cobre, su campo va aquí.
+ */
 const AMOUNT_FIELDS = [
     'amount',
     'amountUSD',
+    'amountFiat',
+    'amountInUSD',
     'estimatedValueUSD',
     'valueUSD',
     'total',

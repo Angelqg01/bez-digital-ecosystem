@@ -7,6 +7,31 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+/**
+ * Lee un número del entorno, o se queda con el de reserva.
+ *
+ * `parseFloat('abc')` devuelve `NaN` sin quejarse, y un `NaN` metido en un
+ * precio no revienta: se propaga en silencio por cada división hasta salir
+ * como `null` en el JSON de una herramienta, con `success: true` al lado. Un
+ * cero hace lo mismo con `Infinity`. Por eso aquí se exige un número finito
+ * y, cuando el valor va a acabar en un denominador, estrictamente positivo.
+ */
+function envNumber(name: string, fallback: number, { positivo = false } = {}): number {
+    const raw = process.env[name];
+    if (raw === undefined || raw.trim() === '') return fallback;
+
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return fallback;
+    if (positivo ? parsed <= 0 : parsed < 0) return fallback;
+    return parsed;
+}
+
+/** Igual que `envNumber`, pero para valores que han de ser enteros. */
+function envInt(name: string, fallback: number): number {
+    const n = envNumber(name, fallback);
+    return Number.isInteger(n) ? n : fallback;
+}
+
 export const config = {
     // ─── Network ───────────────────────────────────────────
     network: {
@@ -24,7 +49,7 @@ export const config = {
     // ─── BEZ Token (INMUTABLE) ─────────────────────────────
     token: {
         address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
-        priceUSD: parseFloat(process.env.BEZ_PRICE_USD || '0.50'),
+        priceUSD: envNumber('BEZ_PRICE_USD', 0.5, { positivo: true }),
         decimals: 18,
         abi: [
             'function transfer(address to, uint256 amount) returns (bool)',
@@ -44,14 +69,14 @@ export const config = {
 
     // ─── Platform Fees ─────────────────────────────────────
     fees: {
-        platformPercent: parseFloat(process.env.PLATFORM_FEE_PERCENT || '1.0'),
-        feeBurnPercent: parseFloat(process.env.FEE_BURN_PERCENT || '50'),
+        platformPercent: envNumber('PLATFORM_FEE_PERCENT', 1.0),
+        feeBurnPercent: envNumber('FEE_BURN_PERCENT', 50),
     },
 
     // ─── Stripe (Fiat Gateway) ─────────────────────────────
     stripe: {
-        feePercent: parseFloat(process.env.STRIPE_FEE_PERCENT || '2.9'),
-        feeFixedCents: parseInt(process.env.STRIPE_FEE_FIXED_CENTS || '30', 10),
+        feePercent: envNumber('STRIPE_FEE_PERCENT', 2.9),
+        feeFixedCents: envInt('STRIPE_FEE_FIXED_CENTS', 30),
     },
 
     // ─── MongoDB ───────────────────────────────────────────
@@ -61,7 +86,7 @@ export const config = {
 
     // ─── HTTP Server ───────────────────────────────────────
     http: {
-        port: parseInt(process.env.PORT || process.env.HTTP_PORT || '8080', 10),
+        port: envInt('PORT', envInt('HTTP_PORT', 8080)),
     },
 
     // ─── Gas Thresholds ────────────────────────────────────

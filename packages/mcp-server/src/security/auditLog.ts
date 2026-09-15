@@ -130,11 +130,19 @@ export class AuditLog {
             subject: clamp(input.subject),
             verdict: input.verdict,
             reason: clamp(input.reason),
+            // `path` se recorta igual que el resto.
+            //
+            // No es un campo interno: se construye con los NOMBRES DE CLAVE de
+            // los datos inspeccionados (`${path}.${k}`), así que lo escribe
+            // quien manda la petición. Sin recortarlo, un objeto muy anidado o
+            // con claves larguísimas escribía entradas de tamaño arbitrario en
+            // el fichero de auditoría — el único campo que se colaba sin pasar
+            // por `clamp`.
             findings: (input.findings ?? []).map((f) => ({
-                patternId: f.patternId,
+                patternId: clamp(f.patternId),
                 kind: f.kind,
                 severity: f.severity,
-                path: f.path,
+                path: clamp(f.path),
             })),
             amountUSD: input.amountUSD ?? null,
             prevHash: this.prevHash,
@@ -148,6 +156,25 @@ export class AuditLog {
 
         if (this.filePath) {
             try {
+                // CodeQL marca esta línea como «network data written to file»,
+                // y seguirá marcándola: las supresiones en línea
+                // (`// codeql[...]`, `// lgtm[...]`) NO las honra GitHub code
+                // scanning, eso era de LGTM. Para cerrarla hay que descartar
+                // la alerta desde la pestaña Security del repositorio.
+                //
+                // Que aquí se escriba dato ajeno no es un descuido, es la
+                // función: un registro de auditoría existe para dejar
+                // constancia de lo que se inspeccionó. Lo que importa es que
+                // no se pueda abusar de ello, y de eso se ocupan tres cosas:
+                //
+                //   1. La RUTA no es dato del usuario: sale de
+                //      `WATCHDOG_AUDIT_FILE` o del constructor, así que no hay
+                //      travesía de directorios.
+                //   2. Cada campo de texto pasa por `clamp`, que acota la
+                //      longitud y quita `\r` y `\n`. Sin eso se podría forjar
+                //      una línea entera, porque el fichero es JSONL.
+                //   3. No se vuelca el contenido inspeccionado, solo la
+                //      decisión y la forma del hallazgo.
                 appendFileSync(this.filePath, JSON.stringify(entry) + '\n');
             } catch {
                 // Perder la copia en disco no debe tumbar la petición; queda
