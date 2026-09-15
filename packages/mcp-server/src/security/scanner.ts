@@ -34,7 +34,14 @@ export interface ScanResult {
 const MAX_STRING_SCAN = 200_000; // corta entradas absurdas antes de regexear
 
 /** Claves que nunca deben copiarse: escribirlas contamina el prototipo. */
-const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+/**
+ * Claves que nunca se copian al objeto redactado.
+ *
+ * La guarda real de `walk` las compara desplegadas, una a una; esta lista es
+ * la referencia que documenta el conjunto y contra la que se comprueba en las
+ * pruebas que la guarda no se ha quedado corta.
+ */
+export const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const EVIDENCE_WINDOW = 60;
 
 /** Recorta y ofusca el fragmento para que el propio log no filtre el secreto. */
@@ -104,7 +111,17 @@ function walk(value: unknown, path: string, findings: Finding[], depth: number):
         for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
             // La clave también puede portar el ataque.
             scanString(k, `${path}.<clave>`, findings);
-            if (DANGEROUS_KEYS.has(k)) {
+
+            // Comparación explícita, no `DANGEROUS_KEYS.has(k)`.
+            //
+            // El conjunto sigue siendo la fuente de la lista —se usa en las
+            // pruebas y documenta la intención—, pero la guarda que protege
+            // la escritura de abajo se escribe aquí desplegada porque un
+            // análisis estático no sigue la pertenencia a un Set: con el
+            // `has()` delante, CodeQL marcaba esta línea como inyección de
+            // propiedad remota de severidad alta en cada PR que tocara este
+            // camino. El código era correcto y la alerta, ruido recurrente.
+            if (k === '__proto__' || k === 'constructor' || k === 'prototype') {
                 findings.push({
                     patternId: 'PROTO_POLLUTION_KEY',
                     kind: 'injection',
@@ -115,6 +132,7 @@ function walk(value: unknown, path: string, findings: Finding[], depth: number):
                 });
                 continue;
             }
+
             out[k] = walk(v, path ? `${path}.${k}` : k, findings, depth + 1);
         }
         return out;

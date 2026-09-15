@@ -130,11 +130,19 @@ export class AuditLog {
             subject: clamp(input.subject),
             verdict: input.verdict,
             reason: clamp(input.reason),
+            // `path` se recorta igual que el resto.
+            //
+            // No es un campo interno: se construye con los NOMBRES DE CLAVE de
+            // los datos inspeccionados (`${path}.${k}`), así que lo escribe
+            // quien manda la petición. Sin recortarlo, un objeto muy anidado o
+            // con claves larguísimas escribía entradas de tamaño arbitrario en
+            // el fichero de auditoría — el único campo que se colaba sin pasar
+            // por `clamp`.
             findings: (input.findings ?? []).map((f) => ({
-                patternId: f.patternId,
+                patternId: clamp(f.patternId),
                 kind: f.kind,
                 severity: f.severity,
-                path: f.path,
+                path: clamp(f.path),
             })),
             amountUSD: input.amountUSD ?? null,
             prevHash: this.prevHash,
