@@ -44,17 +44,32 @@ class TokenDisbursementAgent extends BaseAgent {
       return { status: 'blocked', reason: 'Importe de pago inválido o ausente.', customerEmail, sessionId };
     }
 
-    const price = Number(seedPriceUsd || process.env.BEZ_SEED_PRICE_USD || 0.0075);
+    // El precio sale de la configuración, NUNCA del payload de la tarea: lo que
+    // llega en el payload lo escribe quien encola la tarea (un webhook, otro
+    // agente), y un precio diez veces menor son diez veces más tokens. Si el
+    // payload trae uno distinto se avisa al humano que aprueba, pero no se usa.
+    const price = Number(process.env.BEZ_SEED_PRICE_USD || 0.0075);
     const tokens = Math.floor((Number(amountUsd) / price) * 1e6) / 1e6; // 6 decimales de precisión
 
     const compliance = screen({ amountUsd, walletAddress, customerEmail, country: task.payload?.country });
+    if (seedPriceUsd !== undefined && Number(seedPriceUsd) !== price) {
+      compliance.flags.push(`El payload proponía un precio de ${seedPriceUsd} USD; se ignora y se usa ${price} USD.`);
+    }
+    const { customerName, country } = task.payload || {};
 
     // Siempre cruza la línea roja crypto_asset_movement → espera al humano.
     const transfer = await this.act({
       category: 'crypto_transfer',
       tool: 'blockchain',
       method: 'transfer',
-      args: { to: walletAddress, amount: tokens },
+      args: {
+        to: walletAddress,
+        amount: tokens,
+        reference: sessionId || undefined,
+        // Travel rule: sin nombre y país del comprador, BeZhas deniega la
+        // intención (TRAVEL_RULE_DATA_MISSING) y el humano lo ve en la bandeja.
+        counterparty: customerName && /^[A-Z]{2}$/.test(String(country || '')) ? { legalName: customerName, country } : undefined,
+      },
       flags: compliance.flags,
       meta: { customerEmail, sessionId, amountUsd, seedPriceUsd: price, complianceRisk: compliance.riskLevel },
     });

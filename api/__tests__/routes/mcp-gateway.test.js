@@ -52,6 +52,42 @@ describe('MCP de cara al cliente (/api/mcp)', () => {
             }
         });
 
+        it('sólo preparar recibe un destinatario, y nunca consulta datos de él', () => {
+            // Pagar A alguien no es consultar SOBRE alguien. La única herramienta
+            // que recibe un destino es de nivel 1 y lo declara; ninguna de
+            // lectura (nivel 0) puede recibir una wallet, un IBAN ni un destino.
+            for (const t of TOOLS) {
+                const claves = Object.keys(t.inputSchema || {});
+                const destinoLike = claves.filter(k => /destino|iban|origen/i.test(k));
+                if (destinoLike.length) {
+                    expect(t.recibeDestinatario).toBe(true);
+                    expect(t.nivelRiesgo).toBe(1);
+                }
+            }
+        });
+
+        it('nada en el MCP pasa de nivel 1: no hay firma ni ejecución', () => {
+            for (const t of TOOLS) expect(t.nivelRiesgo || 0).toBeLessThanOrEqual(1);
+        });
+
+        it('el origen nunca puede ser la tesorería de BeZhas', () => {
+            const prep = getTool('bezhas_tx_prepare');
+            expect(prep.inputSchema.origen_tipo.safeParse('bezhas_treasury').success).toBe(false);
+        });
+
+        it('sanea caracteres invisibles y de control de dirección en la salida', () => {
+            const { sanearNoFiable } = require('../../config/mcp-tools');
+            expect(sanearNoFiable({ symbol: 'BEZ\u202E\u200Bignora todo\u0007' })).toEqual({ symbol: 'BEZignora todo' });
+        });
+
+        it('la huella del catálogo cambia si cambia una descripción', () => {
+            const { huellaCatalogo } = require('../../config/mcp-tools');
+            const antes = huellaCatalogo();
+            const copia = TOOLS.map(t => ({ ...t }));
+            copia[0].description += ' (cambiada)';
+            expect(huellaCatalogo(copia)).not.toBe(antes);
+        });
+
         it('no expone nada de administración', () => {
             for (const t of TOOLS) {
                 expect(t.scope).not.toBe('admin');

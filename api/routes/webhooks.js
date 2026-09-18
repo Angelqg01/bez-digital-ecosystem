@@ -131,7 +131,7 @@ function validateConfig() {
   }
 
   if (!CONFIG.bankWebhookSecret) {
-    log.warn('Config', 'BANK_WEBHOOK_SECRET not set — /bank endpoint is unprotected');
+    log.warn('Config', 'BANK_WEBHOOK_SECRET not set — /bank endpoint rechazará todas las peticiones (503)');
   }
 }
 validateConfig();
@@ -519,6 +519,47 @@ async function provisionPlanSubscription(session, eventId) {
 }
 
 // ═══════════════════════════════════════════════
+// Wallet e importe de una Checkout Session
+// ═══════════════════════════════════════════════
+//
+// Los Payment Links de Stripe NO pueden poner metadata por sesión: la wallet
+// del comprador llega en un campo personalizado del formulario. El enlace de
+// compra de BEZ lo llama `wallettosendthebezcoin` y los de suscripción
+// `walletaddresstosendbezcoin`. Este manejador sólo miraba metadata.walletAddress,
+// así que toda compra por Payment Link terminaba en «No wallet address in
+// session»: cobrada y sin BEZ entregado.
+const CAMPOS_WALLET = ['walletaddresstosendbezcoin', 'wallettosendthebezcoin', 'walletaddress', 'wallet'];
+
+function walletDeSesion(session) {
+  const candidatos = [session.metadata?.walletAddress, session.client_reference_id];
+  for (const campo of session.custom_fields || []) {
+    if (CAMPOS_WALLET.includes(String(campo.key || '').toLowerCase())) candidatos.push(campo.text?.value);
+  }
+  for (const c of candidatos) {
+    const v = typeof c === 'string' ? c.trim() : '';
+    // Lo escribe el comprador a mano: sólo vale una dirección EVM bien formada.
+    if (/^0x[0-9a-fA-F]{40}$/.test(v)) return v;
+  }
+  return null;
+}
+
+/**
+ * mintBezTokens trabaja en céntimos de USD. Los enlaces cobran en EUR: tomar
+ * amount_total tal cual entregaba BEZ como si 100 € fueran 100 $.
+ */
+async function importeEnCentimosUsd(session) {
+  const moneda = String(session.currency || 'usd').toUpperCase();
+  let rate = null;
+  if (moneda === 'EUR') {
+    const { getEurUsdRate } = require('../services/fxService');
+    ({ rate } = await getEurUsdRate({ fallback: Number(process.env.EUR_USD_RATE) || undefined }));
+  }
+  const cents = toUsdCents(session.amount_total, moneda, rate);
+  if (cents === null) throw new Error(`Moneda no soportada para la compra de BEZ: ${moneda}`);
+  return cents;
+}
+
+// ═══════════════════════════════════════════════
 // ROUTE: POST /webhooks/stripe
 // ═══════════════════════════════════════════════
 router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -560,14 +601,27 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
         break;
       }
 
-      const walletAddress = session.metadata?.walletAddress || session.client_reference_id;
+      const walletAddress = walletDeSesion(session);
 
       if (!walletAddress) {
-        log.error('Stripe', 'No wallet address in session', { sessionId: session.id });
+        log.error('Stripe', 'No wallet address in session', {
+          sessionId: session.id,
+          campos: (session.custom_fields || []).map((c) => c.key),
+        });
         break;
       }
 
-      const amountUsdCents = session.amount_total;
+      let amountUsdCents;
+      try {
+        amountUsdCents = await importeEnCentimosUsd(session);
+      } catch (err) {
+        // Sin importe fiable no se mintea nada: ni a ciegas ni encolado con un
+        // importe nulo. El pago queda en el log para conciliarlo a mano.
+        log.error('Stripe', 'Importe no convertible — pago cobrado SIN entregar BEZ, conciliar a mano', {
+          sessionId: session.id, currency: session.currency, error: err.message,
+        });
+        break;
+      }
 
       try {
         const result = await mintBezTokens(walletAddress, amountUsdCents, event.id);
@@ -708,8 +762,13 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
 router.post('/bank', express.json(), async (req, res) => {
 
   // 1. HMAC timing-safe validation [SEC-1]
+  // FALLA CERRADO. Antes, sin secreto sólo se avisaba y se seguía: cualquiera
+  // podía «confirmar» una transferencia SEPA que nunca llegó y hacerse mintear
+  // BEZ. Y docker-compose.yml no pasaba BANK_WEBHOOK_SECRET a la API, así que
+  // en el VPS el endpoint quedaba abierto de facto.
   if (!CONFIG.bankWebhookSecret) {
-    log.warn('Bank', 'Request received but BANK_WEBHOOK_SECRET is not set');
+    log.error('Bank', 'BANK_WEBHOOK_SECRET no configurado — petición rechazada');
+    return res.status(503).json({ error: 'Bank webhook not configured' });
   } else {
     const bodyStr = JSON.stringify(req.body);
     const isValid = verifyHmac(bodyStr, req.headers['x-bank-signature'], CONFIG.bankWebhookSecret);
@@ -780,3 +839,4 @@ module.exports = router;
 // Pure helpers exposed for unit testing (does not change the mount — router is a fn).
 module.exports.regionCurrencyForIban = regionCurrencyForIban;
 module.exports.toUsdCents = toUsdCents;
+module.exports.walletDeSesion = walletDeSesion;

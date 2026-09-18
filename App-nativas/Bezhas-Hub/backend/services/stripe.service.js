@@ -519,15 +519,24 @@ async function createRefund(paymentIntentId, amount, reason) {
  * Procesar webhook de Stripe
  */
 async function handleStripeWebhook(rawBody, signature) {
-    console.log('DEBUG: handleStripeWebhook called - FIX APPLIED');
     let event;
 
+    // La verificación de firma va aparte: si falla, no es un pago que se haya
+    // roto al procesarlo sino una petición que no viene de Stripe (o un secreto
+    // mal configurado). Se audita, pero no dispara la alerta HIGH de «Webhook
+    // processing failed», que queda para fallos reales con dinero de por medio.
     try {
         event = stripe.webhooks.constructEvent(
             rawBody,
             signature,
             STRIPE_CONFIG.WEBHOOK_SECRET
         );
+    } catch (error) {
+        audit.admin('STRIPE_WEBHOOK_SIGNATURE_INVALID', 'medium', { error: error.message });
+        return { success: false, code: 'SIGNATURE_INVALID', error: error.message };
+    }
+
+    try {
 
         audit.admin('STRIPE_WEBHOOK_RECEIVED', 'info', {
             eventType: event.type,

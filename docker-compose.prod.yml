@@ -93,6 +93,12 @@ services:
   bezhas-api:
     ports: !override []
     restart: always
+    # Sin escalada de privilegios y sin capacidades: un proceso Node que
+    # escucha en un puerto alto no necesita ninguna.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       NODE_ENV: production
     deploy:
@@ -127,6 +133,12 @@ services:
   business-ops:
     ports: !override []
     restart: always
+    # Sin escalada de privilegios y sin capacidades: un proceso Node que
+    # escucha en un puerto alto no necesita ninguna.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       NODE_ENV: production
     # Margen mayor que el resto: aquí viven los 10 departamentos y sus
@@ -141,6 +153,15 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  # ── Firmante aislado ───────────────────────────────
+  tx-signer:
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
 
   # ── MCPs internos ──────────────────────────────────
   messaging-mcp:
