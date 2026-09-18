@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { AuditLog, subjectFromRequest, subjectId } from '../../security/auditLog.js';
+import { AuditLog, normalizeIp, subjectFromRequest, subjectId } from '../../security/auditLog.js';
 import { Guardian, WatchdogError } from '../../security/guardian.js';
 import { hardenServer } from '../../security/harden.js';
 import { extractAmountUSD, riskOf } from '../../security/policy.js';
@@ -614,5 +614,37 @@ describe('coste y memoria del vigilante', () => {
         for (let i = 0; i < 200; i++) vistos.add(subjectId(`ip:10.0.0.${i}`));
 
         expect(vistos.size).toBe(200);
+    });
+});
+
+/**
+ * El cupo por sujeto solo vale si la misma máquina cuenta como un solo sujeto.
+ */
+describe('normalización de la dirección de origen', () => {
+    it('la forma IPv4 mapeada en IPv6 da el mismo sujeto que la plana', () => {
+        // Alternando las dos grafías se duplicaba el límite de ritmo. Es el
+        // mismo fallo que express-rate-limit corrigió en su 8.2.2, y aquí nos
+        // tocaba igual porque el limitador usa su propio keyGenerator.
+        expect(subjectFromRequest({ ip: '::ffff:203.0.113.9' })).toBe(subjectFromRequest({ ip: '203.0.113.9' }));
+    });
+
+    it('la caja de los hexadecimales tampoco crea un sujeto nuevo', () => {
+        expect(subjectFromRequest({ ip: '2001:DB8::1' })).toBe(subjectFromRequest({ ip: '2001:db8::1' }));
+    });
+
+    it('las dos grafías de localhost son el mismo origen', () => {
+        expect(subjectFromRequest({ ip: '::1' })).toBe(subjectFromRequest({ ip: '127.0.0.1' }));
+    });
+
+    it('direcciones distintas siguen siendo sujetos distintos', () => {
+        expect(subjectFromRequest({ ip: '203.0.113.9' })).not.toBe(subjectFromRequest({ ip: '203.0.113.10' }));
+    });
+
+    it('normaliza sin destrozar lo que ya viene bien', () => {
+        expect(normalizeIp('203.0.113.9')).toBe('203.0.113.9');
+        expect(normalizeIp('2001:db8::1')).toBe('2001:db8::1');
+        expect(normalizeIp('::ffff:10.0.0.1')).toBe('10.0.0.1');
+        expect(normalizeIp('[2001:db8::1]')).toBe('2001:db8::1');
+        expect(normalizeIp(undefined)).toBe('desconocida');
     });
 });

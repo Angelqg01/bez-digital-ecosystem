@@ -87,9 +87,40 @@ export function subjectId(raw: string): string {
  * ata, en vez de uno que aparenta atar. Cuando exista una capa que valide la
  * clave, `accountId` toma el relevo sin tocar nada más.
  */
+/**
+ * Normaliza la dirección antes de derivar el sujeto.
+ *
+ * El mismo cliente llega unas veces como `1.2.3.4` y otras como
+ * `::ffff:1.2.3.4` —la forma IPv4 mapeada en IPv6— según cómo esté configurado
+ * el socket o el proxy de delante. Sin normalizar, cada forma estrena su propio
+ * cupo: basta alternarlas para duplicar el límite de ritmo. Es exactamente el
+ * fallo que `express-rate-limit` corrigió en su 8.2.2, y aquí nos toca igual
+ * porque el limitador usa su propio `keyGenerator` sobre `req.ip`.
+ *
+ * Se normaliza también la caja de los hexadecimales, por el mismo motivo: dos
+ * grafías de la misma dirección no pueden ser dos sujetos.
+ */
+export function normalizeIp(ip?: string): string {
+    if (!ip) return 'desconocida';
+
+    let limpia = ip.trim().toLowerCase();
+
+    // Forma con corchetes de una IPv6 con puerto: [::1]:443
+    if (limpia.startsWith('[')) limpia = limpia.slice(1, limpia.indexOf(']') === -1 ? undefined : limpia.indexOf(']'));
+
+    // IPv4 mapeada en IPv6, con o sin el prefijo cero explícito.
+    const mapeada = /^(?:::ffff:|0{1,4}(?::0{1,4}){0,4}:ffff:)(\d{1,3}(?:\.\d{1,3}){3})$/.exec(limpia);
+    if (mapeada) return mapeada[1];
+
+    // Localhost en sus dos grafías: el mismo origen no puede contar doble.
+    if (limpia === '::1') return '127.0.0.1';
+
+    return limpia;
+}
+
 export function subjectFromRequest(opts: { ip?: string; accountId?: string }): string {
     if (opts.accountId) return subjectId(`account:${opts.accountId}`);
-    return subjectId(`ip:${opts.ip ?? 'desconocida'}`);
+    return subjectId(`ip:${normalizeIp(opts.ip)}`);
 }
 
 /**
