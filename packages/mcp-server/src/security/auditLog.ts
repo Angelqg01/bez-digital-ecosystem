@@ -45,9 +45,29 @@ const MAX_FIELD = 200;
  * parcial. El HMAC con sal de proceso permite seguir agrupando por sujeto sin
  * conservar nada reversible.
  */
+/**
+ * Memoria de sujetos ya calculados.
+ *
+ * El HMAC se pedía en CADA llamada a herramienta y en CADA petición HTTP, y
+ * siempre sobre el mismo puñado de valores —una IP, una clave—. Acotada para
+ * que una riada de orígenes distintos no la convierta en una fuga de memoria:
+ * al llenarse se vacía entera, que es más barato que llevar cuentas de uso y
+ * basta de sobra para lo que esto es.
+ */
+const MAX_SUJETOS_MEMORIZADOS = 4096;
+const sujetosMemorizados = new Map<string, string>();
+
 export function subjectId(raw: string): string {
     if (!raw) return 'anonymous';
-    return 'sbj_' + createHmac('sha256', SUBJECT_SALT).update(raw).digest('hex').slice(0, 16);
+
+    const memorizado = sujetosMemorizados.get(raw);
+    if (memorizado !== undefined) return memorizado;
+
+    const id = 'sbj_' + createHmac('sha256', SUBJECT_SALT).update(raw).digest('hex').slice(0, 16);
+
+    if (sujetosMemorizados.size >= MAX_SUJETOS_MEMORIZADOS) sujetosMemorizados.clear();
+    sujetosMemorizados.set(raw, id);
+    return id;
 }
 
 /**

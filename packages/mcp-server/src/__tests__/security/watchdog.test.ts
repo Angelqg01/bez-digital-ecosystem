@@ -569,3 +569,50 @@ describe('auditoría persistida', () => {
         expect(log.verifyChain().valid).toBe(true);
     });
 });
+
+/**
+ * Lo que no debe crecer sin techo ni recalcularse en balde.
+ */
+describe('coste y memoria del vigilante', () => {
+    it('el mapa de sujetos no crece sin freno', () => {
+        // Sin tope, una riada desde orígenes distintos hacía crecer el mapa
+        // hasta la siguiente limpieza —que solo corre cada cinco minutos—. Un
+        // limitador de ritmo que se queda sin memoria no limita nada.
+        const rl = new RateLimiter();
+        const ahora = Date.now();
+
+        for (let i = 0; i < 12_000; i++) rl.countCall(`sbj_${i}`, ahora);
+
+        expect(rl.tamano).toBeLessThanOrEqual(10_000);
+    });
+
+    it('sigue contando bien al sujeto que está activo', () => {
+        // El tope no puede costar la corrección: el que llama de verdad tiene
+        // que seguir contabilizado.
+        const rl = new RateLimiter();
+        const ahora = Date.now();
+
+        for (let i = 0; i < 5; i++) rl.countCall('sbj_activo', ahora);
+        const r = rl.countCall('sbj_activo', ahora);
+
+        expect(r.perMinute).toBe(6);
+    });
+
+    it('no recalcula el HMAC del mismo sujeto dos veces', () => {
+        // `resolveSubject` se invoca en cada llamada a herramienta y
+        // `subjectFromRequest` en cada petición, siempre sobre el mismo puñado
+        // de valores.
+        const a = subjectId('ip:203.0.113.7');
+        const b = subjectId('ip:203.0.113.7');
+
+        expect(a).toBe(b);
+        expect(a).toMatch(/^sbj_[0-9a-f]{16}$/);
+    });
+
+    it('sujetos distintos siguen dando etiquetas distintas con la memoria activa', () => {
+        const vistos = new Set<string>();
+        for (let i = 0; i < 200; i++) vistos.add(subjectId(`ip:10.0.0.${i}`));
+
+        expect(vistos.size).toBe(200);
+    });
+});

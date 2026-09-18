@@ -34,6 +34,15 @@ import { hardenServer, subjectFromApiKey } from './security/index.js';
  * para que una herramienta nueva quede protegida sin que nadie tenga que
  * acordarse en su fichero.
  */
+/**
+ * Sujeto de esta sesión, calculado UNA vez al armar el servidor.
+ *
+ * Dos motivos. Uno: `resolveSubject` se invoca en cada llamada a herramienta, y
+ * recalcular el HMAC cada vez era trabajo tirado. Dos, y más importante: la
+ * credencial se lee del entorno en un único punto y se convierte en su etiqueta
+ * opaca ahí mismo, de modo que el valor en claro no viaja a ninguna otra parte
+ * del proceso ni puede acabar por descuido en un registro.
+ */
 export function crearServidor(): McpServer {
     const server = new McpServer({
         name: 'bezhas-intelligence',
@@ -42,9 +51,11 @@ export function crearServidor(): McpServer {
             'BeZhas AI Intelligence Server - Gas optimization, Fiat/Crypto swap, payment processing, and regulatory compliance',
     });
 
+    const sujeto = subjectFromApiKey(process.env.BEZHAS_API_KEY);
+
     registerTools(
         hardenServer(server, {
-            resolveSubject: () => subjectFromApiKey(process.env.BEZHAS_API_KEY),
+            resolveSubject: () => sujeto,
         }),
     );
 
