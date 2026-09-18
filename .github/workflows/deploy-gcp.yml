@@ -302,9 +302,14 @@ jobs:
         working-directory: ./packages/mcp-server
         run: pnpm run build
 
-      - name: Run MCP tests
+      # Con cobertura, no sin ella. `vitest.config.ts` declara umbrales
+      # (60 % de ramas, 70 % de funciones, líneas y sentencias) desde siempre,
+      # pero el proveedor `@vitest/coverage-v8` no estaba instalado: `pnpm test`
+      # los ignoraba en silencio y nadie los había comprobado nunca. Con este
+      # paso, bajar de esos umbrales pone el job en rojo.
+      - name: Run MCP tests (con cobertura)
         working-directory: ./packages/mcp-server
-        run: pnpm test
+        run: pnpm run test:coverage
 
   # ===================================================
   # JOB 4: Frontend Build & Test

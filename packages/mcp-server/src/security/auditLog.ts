@@ -72,6 +72,19 @@ export function subjectFromRequest(opts: { ip?: string; accountId?: string }): s
     return subjectId(`ip:${opts.ip ?? 'desconocida'}`);
 }
 
+/**
+ * Sujeto de una sesión por STDIO, a partir de su clave de API.
+ *
+ * Existe para que nadie caiga en la tentación de usar un trozo de la clave
+ * como identificador. El sujeto acaba en cada entrada de la auditoría y la
+ * auditoría se escribe a disco: un prefijo de la credencial ahí es una
+ * credencial en un fichero de registro. El HMAC identifica igual de bien y no
+ * guarda nada que sirva para autenticarse.
+ */
+export function subjectFromApiKey(apiKey?: string): string {
+    return apiKey ? subjectId(`apikey:${apiKey}`) : subjectId('stdio');
+}
+
 /** Recorta los campos de texto antes de persistirlos. */
 function clamp(text: string): string {
     const flat = String(text).replace(/[\r\n]+/g, ' ');

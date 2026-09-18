@@ -120,6 +120,11 @@ El blindaje se aplica envolviendo el servidor, no herramienta a herramienta
 (`hardenServer`), así que una herramienta nueva queda protegida por omisión sin
 que nadie tenga que acordarse.
 
+El sujeto con el que se contabilizan los techos —la IP por HTTP, la clave de API
+por STDIO— nunca se guarda en claro: va por un HMAC con `WATCHDOG_SUBJECT_SALT`
+antes de llegar a la auditoría. La auditoría se escribe a disco, y una
+credencial en un fichero de registro es una credencial filtrada.
+
 Por HTTP hay tres rutas para mirarlo: `/api/mcp/watchdog/status`,
 `/api/mcp/watchdog/audit` y `/api/mcp/watchdog/inspect`.
 
@@ -138,11 +143,14 @@ un `docker stop` no corta peticiones en vuelo.
 ## Desarrollo
 
 ```bash
-pnpm test           # 242 pruebas
-pnpm run build      # compila a dist/
+pnpm test               # 272 pruebas
+pnpm run test:coverage  # las mismas, con cobertura y umbrales
+pnpm run build          # compila a dist/
 pnpm run lint
 ```
 
-Las pruebas corren en CI en el job **MCP Server Tests**, y la publicación a npm
-comprueba que el tarball contenga de verdad el fichero que `package.json`
-declara como `main`.
+La CI ejecuta la variante con cobertura en el job **MCP Server Tests**, así que
+bajar de los umbrales de `vitest.config.ts` (60 % de ramas, 70 % de funciones,
+líneas y sentencias) pone el job en rojo. Y la publicación a npm comprueba que
+el tarball contenga de verdad el fichero que `package.json` declara como
+`main`.
