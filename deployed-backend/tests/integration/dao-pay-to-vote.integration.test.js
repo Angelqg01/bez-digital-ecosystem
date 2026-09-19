@@ -4,7 +4,7 @@
  * Verifica la integración completa de:
  * - Sistema de votación DAO con pago
  * - Precio Pool BEZ/USDC
- * - Mínimo de votación (€150 / 300 BEZ)
+ * - Mínimo de votación (€150, convertido al precio vigente del BEZ)
  * - Compra directa de tokens (On-Ramp)
  * - Conexión Frontend/Backend/Database/Contracts
  * 
@@ -13,15 +13,20 @@
  */
 
 const request = require('supertest');
+const tokenomics = require('../../config/tokenomics.config');
 const express = require('express');
 
 // ========================
 // CONFIGURACIÓN DE PRECIOS
 // ========================
-const BEZ_PRICE_EUR = 0.50;
-const BEZ_PRICE_USD = 0.55;
+// El precio sale de la fuente única (config/tokenomics.config.js). Escrito a
+// mano, este fichero se quedó en 0,50 €/0,55 $, y con él la regla de negocio
+// que comprueba —«150 € mínimo para votar»— salía a 300 BEZ en vez de los
+// ~21.600 que hacen falta al precio real.
+const BEZ_PRICE_EUR = tokenomics.price.eur;
+const BEZ_PRICE_USD = tokenomics.price.usd;
 const MIN_VOTE_EUR = 150;
-const MIN_BEZ_REQUIRED = Math.ceil(MIN_VOTE_EUR / BEZ_PRICE_EUR); // 300 BEZ
+const MIN_BEZ_REQUIRED = Math.ceil(MIN_VOTE_EUR / BEZ_PRICE_EUR);
 
 // Mock de modelos DAO
 const mockDAOProposal = {
@@ -242,17 +247,17 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
-            expect(res.body.price.BEZ_EUR).toBe(0.50);
-            expect(res.body.price.BEZ_USD).toBe(0.55);
+            expect(res.body.price.BEZ_EUR).toBe(tokenomics.price.eur);
+            expect(res.body.price.BEZ_USD).toBe(tokenomics.price.usd);
             expect(res.body.price.MIN_VOTE_EUR).toBe(150);
-            expect(res.body.price.MIN_BEZ_REQUIRED).toBe(300);
+            expect(res.body.price.MIN_BEZ_REQUIRED).toBe(MIN_BEZ_REQUIRED);
             expect(res.body.source).toBe('pool-bez-usdc');
         });
 
-        test('✅ Minimum voting requirement is €150 (300 BEZ)', () => {
+        test('✅ Minimum voting requirement is €150', () => {
             expect(MIN_VOTE_EUR).toBe(150);
-            expect(MIN_BEZ_REQUIRED).toBe(300);
-            expect(MIN_BEZ_REQUIRED * BEZ_PRICE_EUR).toBe(150);
+            expect(MIN_BEZ_REQUIRED).toBe(Math.ceil(MIN_VOTE_EUR / BEZ_PRICE_EUR));
+            expect(MIN_BEZ_REQUIRED * BEZ_PRICE_EUR).toBeGreaterThanOrEqual(MIN_VOTE_EUR);
         });
     });
 
@@ -278,20 +283,20 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
     });
 
     describe('4. Pay-to-Vote System', () => {
-        test('✅ Vote on proposal with minimum contribution (300 BEZ = €150)', async () => {
+        test('✅ Vote on proposal with minimum contribution (€150 en BEZ)', async () => {
             const res = await request(app)
                 .post('/api/dao/vote')
                 .send({
                     proposalId: 'proposal-001',
                     support: true,
-                    contribution: 300, // Mínimo requerido
+                    contribution: MIN_BEZ_REQUIRED, // Mínimo requerido
                     walletAddress: mockUser.walletAddress
                 });
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
-            expect(res.body.vote.contribution).toBe(300);
-            expect(res.body.vote.contributionEUR).toBe(150);
+            expect(res.body.vote.contribution).toBe(MIN_BEZ_REQUIRED);
+            expect(res.body.vote.contributionEUR).toBeCloseTo(MIN_BEZ_REQUIRED * BEZ_PRICE_EUR, 6);
             expect(res.body.vote.txHash).toBeDefined();
         });
 
@@ -301,13 +306,13 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
                 .send({
                     proposalId: 'proposal-001',
                     support: true,
-                    contribution: 1000, // Mayor contribución
+                    contribution: MIN_BEZ_REQUIRED * 2, // Mayor contribución
                     walletAddress: mockUser.walletAddress
                 });
 
             expect(res.status).toBe(200);
-            expect(res.body.vote.contribution).toBe(1000);
-            expect(res.body.vote.contributionEUR).toBe(500);
+            expect(res.body.vote.contribution).toBe(MIN_BEZ_REQUIRED * 2);
+            expect(res.body.vote.contributionEUR).toBeCloseTo(MIN_BEZ_REQUIRED * 2 * BEZ_PRICE_EUR, 6);
         });
 
         test('❌ Reject vote with insufficient contribution', async () => {
@@ -316,7 +321,7 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
                 .send({
                     proposalId: 'proposal-001',
                     support: true,
-                    contribution: 100, // Menos del mínimo
+                    contribution: Math.floor(MIN_BEZ_REQUIRED / 3), // Menos del mínimo
                     walletAddress: mockUser.walletAddress
                 });
 
@@ -331,7 +336,7 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
                 .send({
                     proposalId: 'proposal-001',
                     support: false,
-                    contribution: 300,
+                    contribution: MIN_BEZ_REQUIRED,
                     walletAddress: mockUser.walletAddress
                 });
 
@@ -347,18 +352,18 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
                 .send({
                     initiativeId: 'banking-fintech',
                     support: true,
-                    contribution: 500,
+                    contribution: MIN_BEZ_REQUIRED * 2,
                     walletAddress: mockUser.walletAddress
                 });
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
-            expect(res.body.vote.voteWeight).toBe(500);
-            expect(res.body.vote.contributionEUR).toBe(250);
+            expect(res.body.vote.voteWeight).toBe(MIN_BEZ_REQUIRED * 2);
+            expect(res.body.vote.contributionEUR).toBeCloseTo(MIN_BEZ_REQUIRED * 2 * BEZ_PRICE_EUR, 6);
         });
 
         test('✅ Vote weight equals contribution amount', async () => {
-            const contribution = 750;
+            const contribution = MIN_BEZ_REQUIRED * 3;
             const res = await request(app)
                 .post('/api/dao/initiatives/vote')
                 .send({
@@ -377,15 +382,15 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
             const res = await request(app)
                 .post('/api/tokens/purchase')
                 .send({
-                    amount: 300,
+                    amount: MIN_BEZ_REQUIRED,
                     walletAddress: mockUser.walletAddress,
                     paymentMethod: 'card'
                 });
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
-            expect(res.body.purchase.tokensPurchased).toBe(300);
-            expect(res.body.purchase.totalEUR).toBe(150);
+            expect(res.body.purchase.tokensPurchased).toBe(MIN_BEZ_REQUIRED);
+            expect(res.body.purchase.totalEUR).toBeCloseTo(MIN_BEZ_REQUIRED * BEZ_PRICE_EUR, 6);
             expect(res.body.purchase.txHash).toBeDefined();
         });
 
@@ -399,8 +404,8 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
                     paymentMethod: 'card'
                 });
 
-            expect(res.body.purchase.tokensPurchased).toBe(300);
-            expect(res.body.purchase.totalEUR).toBe(MIN_VOTE_EUR);
+            expect(res.body.purchase.tokensPurchased).toBe(MIN_BEZ_REQUIRED);
+            expect(res.body.purchase.totalEUR).toBeGreaterThanOrEqual(MIN_VOTE_EUR);
         });
 
         test('❌ Reject invalid purchase amount', async () => {
@@ -435,9 +440,9 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
-            expect(res.body.balance.BEZ).toBe(500);
-            expect(res.body.balance.valueEUR).toBe(250);
-            expect(res.body.balance.valueUSD).toBe(275);
+            expect(res.body.balance.BEZ).toBe(mockUser.bezBalance);
+            expect(res.body.balance.valueEUR).toBeCloseTo(mockUser.bezBalance * BEZ_PRICE_EUR, 8);
+            expect(res.body.balance.valueUSD).toBeCloseTo(mockUser.bezBalance * BEZ_PRICE_USD, 8);
         });
     });
 
@@ -445,7 +450,7 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
         test('✅ Full flow: Check balance → Buy tokens → Vote', async () => {
             // 1. Check current balance
             const balanceRes = await request(app).get(`/api/user/${mockUser.walletAddress}/balance`);
-            expect(balanceRes.body.balance.BEZ).toBe(500);
+            expect(balanceRes.body.balance.BEZ).toBe(mockUser.bezBalance);
 
             // 2. User has enough, proceed to vote
             const voteRes = await request(app)
@@ -453,13 +458,13 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
                 .send({
                     proposalId: 'proposal-001',
                     support: true,
-                    contribution: 400,
+                    contribution: MIN_BEZ_REQUIRED,
                     walletAddress: mockUser.walletAddress
                 });
 
             expect(voteRes.status).toBe(200);
             expect(voteRes.body.success).toBe(true);
-            expect(voteRes.body.vote.contributionEUR).toBe(200);
+            expect(voteRes.body.vote.contributionEUR).toBeCloseTo(MIN_BEZ_REQUIRED * BEZ_PRICE_EUR, 6);
         });
 
         test('✅ Flow for user with insufficient balance: Buy first, then vote', async () => {
@@ -469,7 +474,7 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
             const purchaseRes = await request(app)
                 .post('/api/tokens/purchase')
                 .send({
-                    amount: 300,
+                    amount: MIN_BEZ_REQUIRED,
                     walletAddress: userWithLowBalance,
                     paymentMethod: 'card'
                 });
@@ -482,7 +487,7 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
                 .send({
                     proposalId: 'proposal-001',
                     support: true,
-                    contribution: 300,
+                    contribution: MIN_BEZ_REQUIRED,
                     walletAddress: userWithLowBalance
                 });
 
@@ -498,14 +503,14 @@ describe('DAO Pay-to-Vote System Integration Tests', () => {
 
 describe('Pay-to-Vote Configuration Validation', () => {
     test('Price calculations are correct', () => {
-        expect(BEZ_PRICE_EUR).toBe(0.50);
-        expect(MIN_VOTE_EUR / BEZ_PRICE_EUR).toBe(MIN_BEZ_REQUIRED);
+        expect(BEZ_PRICE_EUR).toBe(tokenomics.price.eur);
+        expect(MIN_BEZ_REQUIRED).toBe(Math.ceil(MIN_VOTE_EUR / BEZ_PRICE_EUR));
     });
 
-    test('€150 minimum equals 300 BEZ at current price', () => {
+    test('€150 minimum equals the BEZ that the current price demands', () => {
         const eurAmount = 150;
         const bezRequired = eurAmount / BEZ_PRICE_EUR;
-        expect(bezRequired).toBe(300);
+        expect(Math.ceil(bezRequired)).toBe(MIN_BEZ_REQUIRED);
     });
 
     test('Higher contribution means more voting power', () => {

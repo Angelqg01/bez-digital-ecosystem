@@ -5,7 +5,45 @@
  * @updated 2026-01-31
  */
 
+// ════════════════════════════════════════════════════════════
+// PRECIO OFICIAL DEL BEZ — FUENTE ÚNICA
+// ════════════════════════════════════════════════════════════
+// Precio definitivo del BEZ V1: 0,0075 $.
+//
+// Hasta esta unificación el precio estaba escrito a mano en catorce sitios
+// del backend, el frontend y el servidor MCP, con SIETE valores distintos
+// conviviendo en el mismo despliegue: 0,00075 · 0,0075 · 0,10 · 0,50 ·
+// 0,55 · 1,24 USD y 0,46 · 1,14 EUR. El importe que se cobraba dependía de
+// qué ruta atendiera la petición — comprar por /api/bezcoin/buy/stripe
+// costaba 67 veces más que comprar por /api/payment/bank-transfer.
+//
+// Nada vuelve a escribir el precio a mano: todo lee de aquí, y el oráculo
+// de QuickSwap (services/price-oracle.service.js) lo sobrescribe en
+// caliente cuando el pool responde. Este valor es el que se sirve cuando
+// el oráculo falla.
+const BEZ_PRICE_USD = Number(process.env.BEZ_PRICE_USD) > 0
+    ? Number(process.env.BEZ_PRICE_USD)
+    : 0.0075;
+
+// Tipo EUR/USD de referencia (1 EUR = 1,08 USD), el mismo que declara
+// packages/mcp-server/src/tools/payment-tools.ts. No es una cotización de
+// mercado; el oráculo calcula el EUR real a partir del USD cuando puede.
+const EUR_USD_RATE = Number(process.env.EUR_USD_RATE) > 0
+    ? Number(process.env.EUR_USD_RATE)
+    : 1.08;
+
+const BEZ_PRICE_EUR = Number((BEZ_PRICE_USD / EUR_USD_RATE).toFixed(8));
+
 module.exports = {
+    // ============================================================
+    // PRECIO (leer siempre de aquí, nunca escribirlo a mano)
+    // ============================================================
+    price: {
+        usd: BEZ_PRICE_USD,
+        eur: BEZ_PRICE_EUR,
+        eurUsdRate: EUR_USD_RATE,
+    },
+
     // ============================================================
     // TOKEN INFORMATION
     // ============================================================
@@ -31,9 +69,10 @@ module.exports = {
             token1Decimals: 6
         },
 
-        // Fallback price (usado cuando el oráculo falla)
-        fallbackPriceUSD: 0.00075,
-        fallbackPriceEUR: 0.00070,
+        // Fallback price (usado cuando el oráculo falla).
+        // Deriva del precio oficial de arriba: no lo dupliques aquí.
+        fallbackPriceUSD: BEZ_PRICE_USD,
+        fallbackPriceEUR: BEZ_PRICE_EUR,
 
         // Cache settings
         cacheTTL: 30000, // 30 segundos

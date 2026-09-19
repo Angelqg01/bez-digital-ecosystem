@@ -71,8 +71,26 @@ interface BezPayContextValue {
 }
 
 // â”€â”€â”€ Default Stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Precio oficial del BEZ V1: 0,0075 $. Debe coincidir con
+// backend/config/tokenomics.config.js. Es el valor de arranque y el que se
+// usa mientras el backend no ha respondido; el precio real llega de la API.
+export const BEZ_PRECIO_USD_INICIAL =
+    Number(process.env.NEXT_PUBLIC_BEZ_PRICE_USD) > 0
+        ? Number(process.env.NEXT_PUBLIC_BEZ_PRICE_USD)
+        : 0.0075;
+
+// Formatea el precio con cifras significativas en lugar de 4 decimales fijos.
+// A 0,0075 $, toFixed(4) deja solo dos cifras significativas y el ticker se
+// queda congelado: cualquier variacion por debajo de 0,00005 $ desaparece.
+export function formatearPrecioBez(valor: number, significativas = 4): string {
+    if (!Number.isFinite(valor) || valor === 0) return '0';
+    const magnitud = Math.floor(Math.log10(Math.abs(valor)));
+    const decimales = Math.min(Math.max(significativas - 1 - magnitud, 2), 100);
+    return valor.toFixed(decimales);
+}
+
 const DEFAULT_STATS: GlobalStats = {
-    bezPriceUSD:    1.24,
+    bezPriceUSD:    BEZ_PRECIO_USD_INICIAL,
     volumeBEZ:      2_840_420,
     totalPayments:  14_238,
     activeFarmers:  3_847,
@@ -92,7 +110,7 @@ export function BezPayProvider({ children }: { children: ReactNode }) {
     const [subPlanId,     setSubPlanId]     = useState<string | null>(null);
     const [escrowOptions, setEscrowOptions] = useState<EscrowOptions | null>(null);
 
-    const [livePrice,     setLivePrice]     = useState(1.24);
+    const [livePrice,     setLivePrice]     = useState(BEZ_PRECIO_USD_INICIAL);
     const [globalStats,   setGlobalStats]   = useState<GlobalStats>(DEFAULT_STATS);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
 
@@ -101,7 +119,10 @@ export function BezPayProvider({ children }: { children: ReactNode }) {
         const tick = () => {
             setLivePrice((prev) => {
                 const delta = (Math.random() - 0.498) * 0.008;
-                return Math.max(0.01, +(prev * (1 + delta)).toFixed(4));
+                // El suelo es relativo al precio: uno absoluto de 0,01 $
+                // quedaba por encima de 0,0075 $ y clavaba el ticker.
+                const suelo = BEZ_PRECIO_USD_INICIAL * 0.1;
+                return Math.max(suelo, Number(formatearPrecioBez(prev * (1 + delta), 6)));
             });
         };
         const iv = setInterval(tick, 5000);

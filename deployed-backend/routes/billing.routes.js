@@ -12,6 +12,7 @@ const {
 } = require('../services/bezCreditPackage.service');
 const { protect: authMiddleware } = require('../middleware/auth.middleware');
 
+const tokenomics = require('../config/tokenomics.config');
 // Obtener o crear Stripe client
 async function getStripeClient() {
     const stripeKey = process.env.STRIPE_SECRET_KEY || require('../config.json').payments?.stripe?.secretKey;
@@ -268,7 +269,7 @@ router.get('/balance',
                         totalSpent: 0,
                         totalRefunded: 0,
                         pendingCharges: 0,
-                        priceInfo: { bezEurPrice: 0.10, lastUpdated: new Date() }
+                        priceInfo: { bezEurPrice: tokenomics.price.eur, lastUpdated: new Date() }
                     },
                     warning: 'Base de datos no disponible - mostrando balance vacío'
                 });

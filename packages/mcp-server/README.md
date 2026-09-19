@@ -77,7 +77,7 @@ Copia `.env.example` a `.env`. Lo que más se toca:
 | `NETWORK_MODE` | `mainnet` · `amoy` · `localhost` | `amoy` |
 | `POLYGON_RPC_URL` | Nodo de mainnet | `https://polygon-rpc.com` |
 | `POLYGON_AMOY_RPC_URL` | Nodo de Amoy | `https://rpc-amoy.polygon.technology` |
-| `BEZ_PRICE_USD` | Precio del BEZ para toda cotización | `0.50` |
+| `BEZ_PRICE_USD` | Precio del BEZ para toda cotización | `0.0075` |
 | `BACKEND_URL` | Backend de BeZhas, para las herramientas de pago | `http://localhost:3001` |
 | `HTTP_PORT` | Puerto del transporte HTTP | `8080` |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_SECURITY_CHAT_ID` | Avisos al administrador | — |

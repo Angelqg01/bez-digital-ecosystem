@@ -29,6 +29,7 @@
 const { ethers } = require('ethers');
 const logger = require('../utils/logger');
 const PaymentPG = require('../models/pg/Payment');
+const tokenomics = require('../config/tokenomics.config');
 const bridge = require('../bridge'); // For ecosystem sync
 
 // ─── OPENCLAW BRIDGE (auto-provision al completar pagos) ─────────────────────
@@ -104,7 +105,7 @@ function getBezContract() {
 }
 
 // ─── PRECIO BEZ (cache simple 60s) ──────────────────────────────────────────
-let _bezPriceCache = { price: 1.24, ts: 0 };
+let _bezPriceCache = { price: tokenomics.price.usd, ts: 0 };
 
 async function getBezPriceUSD() {
   const now = Date.now();

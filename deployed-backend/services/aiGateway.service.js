@@ -16,6 +16,7 @@ const { ethers } = require('ethers');
 const { GoogleAuth } = require('google-auth-library');
 const pino = require('pino');
 
+const tokenomics = require('../config/tokenomics.config');
 const logger = pino({ name: 'AIGateway' });
 
 // ─── Configuration ─────────────────────────────────────────
@@ -170,7 +171,7 @@ class AIGatewayService {
             urgency = 'medium',
         } = intent;
 
-        const valueUSD = estimatedValueUSD || (amountBEZ * 0.50); // Fallback price
+        const valueUSD = estimatedValueUSD || (amountBEZ * tokenomics.price.usd);
 
         logger.info({ type, walletAddress, amountBEZ, valueUSD }, '🎯 Processing user intent');
 

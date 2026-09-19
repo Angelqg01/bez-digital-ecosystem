@@ -69,7 +69,7 @@ jest.mock('stripe', () => {
                         type: 'token_purchase',
                         userId: 'user_e2e_test',
                         walletAddress: '0x1234567890123456789012345678901234567890',
-                        tokenAmount: '144092'
+                        tokenAmount: String(Math.round(TEST_EUR_AMOUNT / require('../../config/tokenomics.config').price.eur))
                     }
                 })
             }
@@ -88,10 +88,10 @@ jest.mock('stripe', () => {
 
 // Mock price oracle
 jest.mock('../../services/price-oracle.service', () => ({
-    getBezPriceInEur: jest.fn().mockResolvedValue(0.000694),
-    getBezPriceInUsd: jest.fn().mockResolvedValue(0.00075),
+    getBezPriceInEur: jest.fn().mockResolvedValue(require('../../config/tokenomics.config').price.eur),
+    getBezPriceInUsd: jest.fn().mockResolvedValue(require('../../config/tokenomics.config').price.usd),
     getPriceWithFallback: jest.fn().mockResolvedValue({
-        price: 0.000694,
+        price: require('../../config/tokenomics.config').price.eur,
         source: 'quickswap',
         timestamp: Date.now()
     })
@@ -99,14 +99,16 @@ jest.mock('../../services/price-oracle.service', () => ({
 
 // Mock fiat gateway service
 jest.mock('../../services/fiat-gateway.service', () => ({
-    getBezPriceInEur: jest.fn().mockResolvedValue(0.000694),
-    calculateBezOutput: jest.fn().mockImplementation(async (eurAmount) => eurAmount / 0.000694),
+    getBezPriceInEur: jest.fn().mockResolvedValue(require('../../config/tokenomics.config').price.eur),
+    calculateBezOutput: jest.fn().mockImplementation(
+        async (eurAmount) => eurAmount / require('../../config/tokenomics.config').price.eur
+    ),
     processFiatPayment: jest.fn().mockResolvedValue({
         success: true,
         txHash: '0xe2e_test_tx_hash_fiat',
         blockNumber: 12345,
-        tokensSent: 144092.22,
-        rate: 0.000694,
+        tokensSent: 100 / require('../../config/tokenomics.config').price.eur,
+        rate: require('../../config/tokenomics.config').price.eur,
         eurProcessed: 100
     }),
     getSafeStatus: jest.fn().mockResolvedValue({
@@ -147,7 +149,7 @@ jest.mock('../../services/token-distribution.service', () => ({
     distributeTokens: jest.fn().mockResolvedValue({
         success: true,
         transfers: {
-            user: { txHash: '0xuser_tx', amount: 142363 },
+            user: { txHash: '0xuser_tx', amount: (100 / require('../../config/tokenomics.config').price.eur) * 0.988 },
             burn: { txHash: '0xburn_tx', amount: 288 },
             treasury: { txHash: '0xtreasury_tx', amount: 1441 }
         }
@@ -187,6 +189,7 @@ jest.mock('../../middleware/telegramNotifier', () => ({
 // ============================================================================
 
 const stripeService = require('../../services/stripe.service');
+const tokenomics = require('../../config/tokenomics.config');
 const fiatGatewayService = require('../../services/fiat-gateway.service');
 const tokenDistributionService = require('../../services/token-distribution.service');
 const priceOracleService = require('../../services/price-oracle.service');
@@ -198,7 +201,11 @@ const priceOracleService = require('../../services/price-oracle.service');
 const TEST_WALLET = '0x1234567890123456789012345678901234567890';
 const TEST_USER_ID = 'user_e2e_test';
 const TEST_EUR_AMOUNT = 100;
-const BEZ_PRICE_EUR = 0.000694;
+// El precio sale de la fuente única (config/tokenomics.config.js). Escrito a
+// mano, este fichero se quedó en 0,000694 € — la escala anterior, diez veces
+// por debajo del precio definitivo — y la prueba seguía verde comprobando una
+// conversión que ya no era la del sistema.
+const BEZ_PRICE_EUR = tokenomics.price.eur;
 const EXPECTED_BEZ = TEST_EUR_AMOUNT / BEZ_PRICE_EUR; // ~144,092 BEZ
 
 // ============================================================================
@@ -300,7 +307,7 @@ describe('Fiat to BEZ E2E Integration', () => {
                 });
 
                 const status = await fiatGatewayService.getSafeStatus();
-                const requestedAmount = 144092;
+                const requestedAmount = EXPECTED_BEZ;
 
                 expect(parseFloat(status.bezBalance)).toBeLessThan(requestedAmount);
             });
@@ -427,7 +434,7 @@ describe('Fiat to BEZ E2E Integration', () => {
             const bezAmount = eurAmount / price;
 
             expect(bezAmount).toBeGreaterThan(eurAmount);
-            expect(bezAmount).toBeCloseTo(1000 / 0.000694, -2);
+            expect(bezAmount).toBeCloseTo(1000 / BEZ_PRICE_EUR, -2);
         });
     });
 
@@ -436,14 +443,14 @@ describe('Fiat to BEZ E2E Integration', () => {
     // ========================================================================
     describe('E2E Flow Validation', () => {
 
-        test('complete flow: €100 purchase should result in ~142,363 BEZ to user', async () => {
+        test('complete flow: €100 purchase distributes 98,8 % al usuario', async () => {
             // Step 1: Get price
             const price = await priceOracleService.getBezPriceInEur();
-            expect(price).toBe(0.000694);
+            expect(price).toBe(BEZ_PRICE_EUR);
 
             // Step 2: Calculate raw BEZ
             const rawBez = TEST_EUR_AMOUNT / price;
-            expect(rawBez).toBeCloseTo(144092, 0);
+            expect(rawBez).toBeCloseTo(EXPECTED_BEZ, 0);
 
             // Step 3: Apply distribution
             const distribution = tokenDistributionService.calculateDistribution(rawBez);
@@ -451,15 +458,15 @@ describe('Fiat to BEZ E2E Integration', () => {
             // Step 4: Verify user receives 98.8%
             const expectedUserBez = rawBez * 0.988;
             expect(distribution.user).toBeCloseTo(expectedUserBez, 0);
-            expect(distribution.user).toBeCloseTo(142363, -1); // ~142,363 BEZ
+            expect(distribution.user).toBeCloseTo(EXPECTED_BEZ * 0.988, -1);
 
             // Step 5: Verify burn is 0.2%
             expect(distribution.burn).toBeCloseTo(rawBez * 0.002, 0);
-            expect(distribution.burn).toBeCloseTo(288, 0);
+            expect(distribution.burn).toBeCloseTo(EXPECTED_BEZ * 0.002, -1);
 
             // Step 6: Verify treasury is 1%
             expect(distribution.treasury).toBeCloseTo(rawBez * 0.01, 0);
-            expect(distribution.treasury).toBeCloseTo(1441, 0);
+            expect(distribution.treasury).toBeCloseTo(EXPECTED_BEZ * 0.01, -1);
         });
 
         test('complete flow: minimum €10 purchase', async () => {
@@ -474,7 +481,7 @@ describe('Fiat to BEZ E2E Integration', () => {
             expect(distribution.treasury).toBeGreaterThan(0);
 
             // User should receive ~14,236 BEZ
-            expect(distribution.user).toBeCloseTo(14236, -1);
+            expect(distribution.user).toBeCloseTo((10 / BEZ_PRICE_EUR) * 0.988, -1);
         });
     });
 });

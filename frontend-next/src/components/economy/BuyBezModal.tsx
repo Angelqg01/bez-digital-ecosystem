@@ -12,7 +12,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Zap, CheckCircle2, AlertCircle, ExternalLink, Loader2, ChevronRight } from 'lucide-react';
 import { useBuyBEZ, PayCurrency, BuyStep } from '../../hooks/useBuyBEZ';
-import { useBezPay } from '../../context/BezPayContext';
+import { useBezPay, formatearPrecioBez } from '../../context/BezPayContext';
 import { useAccount } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { BANK_TRANSFER_DETAILS, STRIPE_PAYMENT_LINKS, buildBankTransferInstructions } from '../../lib/bezhasPaymentConfig';
@@ -133,7 +133,7 @@ export default function BuyBezModal() {
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-green-400 flex items-center justify-center text-xl">ðŸª™</div>
                                 <div>
                                     <h2 className="text-xl font-bold text-white font-mono">Comprar BEZ-Coin</h2>
-                                    <p className="text-xs text-gray-400">1 BEZ = <span className="text-yellow-400 font-bold">${livePrice.toFixed(4)}</span> USD Â· En vivo</p>
+                                    <p className="text-xs text-gray-400">1 BEZ = <span className="text-yellow-400 font-bold">${formatearPrecioBez(livePrice)}</span> USD Â· En vivo</p>
                                 </div>
                             </div>
                             {!isProcessing && (

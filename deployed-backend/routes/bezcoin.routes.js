@@ -21,6 +21,7 @@ const router = express.Router();
 const { body, param, validationResult } = require('express-validator');
 const { protect: authMiddleware } = require('../middleware/auth.middleware');
 
+const tokenomics = require('../config/tokenomics.config');
 // Base de datos en memoria (reemplazar con MongoDB/PostgreSQL en producción)
 const transactionsDB = new Map();
 const rewardsDB = new Map();
@@ -310,7 +311,7 @@ router.get('/price/usd', async (req, res) => {
         // TODO: Integrar con API de precios (CoinGecko, CoinMarketCap, etc.)
         // Por ahora retornamos un precio fijo
 
-        const priceUSD = '0.10'; // $0.10 por BEZ
+        const priceUSD = String(tokenomics.price.usd);
 
         res.json({
             success: true,
@@ -433,15 +434,18 @@ async function recordDonationForRewards(walletAddress, amount) {
 
 // ==================== NUEVAS RUTAS DE COMPRA/VENTA ====================
 
-// Tasas de cambio (mock - en producción usar API de precios)
-const exchangeRates = {
-    ETH: 0.00015,
-    BTC: 0.000012,
-    USDT: 0.50,
-    USD: 0.50,
-    EUR: 0.46,
-    GBP: 0.40
-};
+// Precio del BEZ expresado en cada divisa.
+//
+// Deriva del precio único de tokenomics.config; las cotizaciones de las
+// divisas son constantes de referencia del servidor, NO precios de mercado
+// (las mismas que declara packages/mcp-server/src/tools/payment-tools.ts).
+// En producción hay que sustituirlas por el oráculo.
+const USD_POR_UNIDAD = { ETH: 2400, BTC: 45000, USDT: 1, USD: 1, EUR: 1.08, GBP: 1.27 };
+const exchangeRates = Object.fromEntries(
+    Object.entries(USD_POR_UNIDAD).map(
+        ([divisa, usd]) => [divisa, Number((tokenomics.price.usd / usd).toPrecision(8))]
+    )
+);
 
 /**
  * GET /api/bezcoin/balance/:address

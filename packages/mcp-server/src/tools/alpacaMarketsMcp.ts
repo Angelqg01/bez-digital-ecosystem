@@ -14,6 +14,22 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { config } from '../config.js';
 
+/**
+ * Redondea un valor monetario conservando cifras significativas.
+ *
+ * `toFixed(4)` bastaba cuando el BEZ valía ~1 $, pero a 0,0075 $ deja solo
+ * dos cifras significativas y desvía los indicadores hasta un 0,74 %
+ * (sma20 0,00735 -> 0,0073). Escalando los decimales al orden de magnitud
+ * del valor, el resultado mantiene la misma resolución relativa tanto a
+ * 0,0075 $ como a 2400 $.
+ */
+export function redondearPrecio(valor: number, significativas = 6): number {
+    if (!Number.isFinite(valor) || valor === 0) return 0;
+    const magnitud = Math.floor(Math.log10(Math.abs(valor)));
+    const decimales = Math.min(Math.max(significativas - 1 - magnitud, 0), 100);
+    return parseFloat(valor.toFixed(decimales));
+}
+
 export interface MarketResult {
     action: string;
     status: 'SUCCESS' | 'PARTIAL' | 'FAILED';
@@ -103,22 +119,22 @@ export function registerAlpacaMarketsMcp(server: McpServer): void {
                                 currentPrice: bezPrice,
                                 timeframe,
                                 technicalIndicators: {
-                                    sma20: parseFloat(sma20.toFixed(4)),
-                                    sma50: parseFloat(sma50.toFixed(4)),
+                                    sma20: redondearPrecio(sma20),
+                                    sma50: redondearPrecio(sma50),
                                     rsi,
-                                    macd: parseFloat(macd.toFixed(4)),
+                                    macd: redondearPrecio(macd),
                                     bollingerBands: {
-                                        upper: parseFloat((bezPrice * 1.05).toFixed(4)),
+                                        upper: redondearPrecio(bezPrice * 1.05),
                                         middle: bezPrice,
-                                        lower: parseFloat((bezPrice * 0.95).toFixed(4)),
+                                        lower: redondearPrecio(bezPrice * 0.95),
                                     },
                                 },
                                 signal,
-                                support: parseFloat((bezPrice * 0.90).toFixed(4)),
-                                resistance: parseFloat((bezPrice * 1.10).toFixed(4)),
+                                support: redondearPrecio(bezPrice * 0.90),
+                                resistance: redondearPrecio(bezPrice * 1.10),
                                 priceChange24h: '+1.2%',
                             },
-                            reasoning: `BEZ price analysis: $${bezPrice}. RSI: ${rsi} (${signal}). SMA20: $${sma20.toFixed(4)}, SMA50: $${sma50.toFixed(4)}.`,
+                            reasoning: `BEZ price analysis: $${bezPrice}. RSI: ${rsi} (${signal}). SMA20: $${redondearPrecio(sma20)}, SMA50: $${redondearPrecio(sma50)}.`,
                         };
                         break;
                     }

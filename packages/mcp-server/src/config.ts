@@ -49,7 +49,7 @@ export const config = {
     // ─── BEZ Token (INMUTABLE) ─────────────────────────────
     token: {
         address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
-        priceUSD: envNumber('BEZ_PRICE_USD', 0.5, { positivo: true }),
+        priceUSD: envNumber('BEZ_PRICE_USD', 0.0075, { positivo: true }),
         decimals: 18,
         abi: [
             'function transfer(address to, uint256 amount) returns (bool)',

@@ -10,6 +10,7 @@
 const { ethers } = require('ethers');
 const logger = require('../utils/logger');
 
+const tokenomics = require('../config/tokenomics.config');
 // Configuración de contratos
 const BEZ_CONTRACT_ADDRESS = process.env.BEZ_TOKEN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 const USDT_POLYGON_ADDRESS = process.env.USDT_POLYGON_ADDRESS || '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
@@ -52,7 +53,7 @@ class CryptoPaymentService {
         this.usdcContract = new ethers.Contract(USDC_POLYGON_ADDRESS, ERC20_ABI, this.wallet || this.provider);
 
         // Precio de BEZ en USD
-        this.BEZ_PRICE_USD = 0.10;
+        this.BEZ_PRICE_USD = tokenomics.price.usd;
     }
 
     /**

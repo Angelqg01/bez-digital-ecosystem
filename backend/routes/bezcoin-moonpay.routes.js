@@ -185,7 +185,7 @@ router.post('/buy/stripe', protect, async (req, res) => {
 
         const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-        const BEZ_PRICE_USD = 0.50;
+        const BEZ_PRICE_USD = tokenomics.price.usd;
         const bezAmount = amount / BEZ_PRICE_USD;
         const bonusAmount = (bezAmount * (vipBonus || 0)) / 100;
         const totalBez = bezAmount + bonusAmount;
@@ -300,8 +300,8 @@ router.get('/price', async (req, res) => {
     try {
         // En producción, obtener de Oracle o DEX
         const priceData = {
-            priceUSD: 0.50,
-            priceEUR: 0.46,
+            priceUSD: tokenomics.price.usd,
+            priceEUR: tokenomics.price.eur,
             change24h: 5.2,
             volume24h: 1250000,
             marketCap: 50000000,
@@ -334,11 +334,11 @@ router.get('/history/:period', async (req, res) => {
         // Generar datos simulados
         const dataPoints = period === '1h' ? 60 : period === '24h' ? 24 : 30;
         const prices = [];
-        let currentPrice = 0.50;
+        let currentPrice = tokenomics.price.usd;
 
         for (let i = 0; i < dataPoints; i++) {
-            const change = (Math.random() - 0.5) * 0.02;
-            currentPrice += change;
+            const change = (Math.random() - 0.5) * 0.04 * tokenomics.price.usd;
+            currentPrice = Math.max(currentPrice + change, tokenomics.price.usd * 0.01);
             prices.push({
                 timestamp: new Date(Date.now() - (dataPoints - i) * 60 * 60 * 1000),
                 price: currentPrice
