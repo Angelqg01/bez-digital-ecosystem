@@ -54,3 +54,49 @@ overrides:
   '@wagmi/connectors': 5.11.2
   '@wagmi/core': 2.22.1
   viem: ^2.47.10
+
+  # Dependencias transitivas con aviso de seguridad. Todas dentro del mismo
+  # major que la versión que ya se resolvía, para que ninguna API cambie: lo
+  # que se busca es el parche, no una actualización.
+  #
+  # Son transitivas, así que no se pueden arreglar tocando el `package.json`
+  # de nadie — ningún proyecto las declara, llegan arrastradas.
+  'path-to-regexp@<1': ^0.1.13
+  'path-to-regexp@>=8': ^8.4.0
+  ws: ^8.21.0
+  fast-uri: ^3.1.6
+  ip-address: ^10.3.1
+  ajv: ^8.18.0
+  qs: ^6.16.0
+  'body-parser@<2': ^1.20.6
+  express-rate-limit: ^8.2.2
+  hono: ^4.13.5
+  '@hono/node-server': ^1.19.15
+  lodash: ^4.17.24
+  adm-zip: ^0.6.0
+  serialize-javascript: ^7.0.3
+  undici: ^6.27.0
+  tmp: ^0.2.6
+  mysql2: ^3.22.0
+  postcss: ^8.5.18
+  cookie: ^0.7.0
+  # `elliptic` NO lleva override a propósito: el aviso pide >=6.6.2 y la última
+  # publicada es la 6.6.1, así que todavía no hay parche. Poner `^6.6.2` rompe
+  # la instalación entera con ERR_PNPM_NO_MATCHING_VERSION. Entra arrastrada por
+  # ethers 5 en `api/`; se revisa cuando el mantenedor publique el arreglo.
+  'bn.js@^4': ^4.12.3
+  nanoid: ^3.3.18
+  picomatch: ^4.0.4
+  'diff@<9': ^8.0.3
+  axios: ^1.18.0
+  deepmerge-ts: ^8.0.0
+  # @openzeppelin/contracts NO lleva override, y es deliberado. Nuestros
+  # contratos compilan contra la 5.x que declara la raíz. Las copias 4.7.3 y
+  # 4.8.3 que quedan entran ALIASADAS —`@openzeppelin/contracts-4.7.3`—, que es
+  # como un tercero fija la versión exacta contra la que escribió sus imports
+  # de Solidity. Forzarlas rompería esa compilación para silenciar un aviso
+  # sobre código fuente que nosotros no compilamos.
+  # Vite 5 NO lleva override: el aviso pide >=6.4.3 y la 5.4.21 es la última de
+  # su línea, así que dentro del major no hay parche. El frontend ya declara la
+  # 6.4.3; la 5 que queda entra arrastrada por la cadena de vitest, que es
+  # dependencia de desarrollo y no viaja a ningún despliegue.

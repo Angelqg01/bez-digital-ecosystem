@@ -120,10 +120,23 @@ El blindaje se aplica envolviendo el servidor, no herramienta a herramienta
 (`hardenServer`), así que una herramienta nueva queda protegida por omisión sin
 que nadie tenga que acordarse.
 
-El sujeto con el que se contabilizan los techos —la IP por HTTP, la clave de API
-por STDIO— nunca se guarda en claro: va por un HMAC con `WATCHDOG_SUBJECT_SALT`
-antes de llegar a la auditoría. La auditoría se escribe a disco, y una
-credencial en un fichero de registro es una credencial filtrada.
+El sujeto con el que se contabilizan los techos nunca se guarda en claro, y las
+dos vías se derivan distinto a propósito:
+
+- **Por HTTP, desde la IP**, con un HMAC sobre `WATCHDOG_SUBJECT_SALT`. Una IP
+  no es un secreto —viaja en claro en cada paquete—, así que lo que hace falta
+  es que sea rápido: derivarla con una función lenta convertiría cada petición
+  de un origen nuevo en trabajo caro, y el limitador sería el vector de
+  agotamiento. Antes de derivarla se normaliza (IPv4 mapeada en IPv6, caja de
+  los hexadecimales, las dos grafías de localhost), porque si no bastaba
+  alternar grafías para estrenar cupo.
+- **Por STDIO, desde la clave de API**, con `scrypt`. Esa sí es material de
+  credencial: con un hash rápido, quien se hiciera con el fichero de auditoría
+  podría probar claves candidatas a millones por segundo. El coste se paga una
+  sola vez, al armar el servidor.
+
+La auditoría se escribe a disco, y una credencial en un fichero de registro es
+una credencial filtrada.
 
 Por HTTP hay tres rutas para mirarlo: `/api/mcp/watchdog/status`,
 `/api/mcp/watchdog/audit` y `/api/mcp/watchdog/inspect`.
@@ -143,7 +156,7 @@ un `docker stop` no corta peticiones en vuelo.
 ## Desarrollo
 
 ```bash
-pnpm test               # 272 pruebas
+pnpm test               # 291 pruebas
 pnpm run test:coverage  # las mismas, con cobertura y umbrales
 pnpm run build          # compila a dist/
 pnpm run lint
