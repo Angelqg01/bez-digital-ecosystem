@@ -822,6 +822,25 @@ async function startServer() {
   } catch (err) {
     gcpLogger.error('[STARTUP] Kill switch ilegible: las operaciones con fondos quedarán bloqueadas', { error: err.message });
   }
+  // Entregas de compras con tarjeta: sólo con los fondos en la cuenta bancaria.
+  if (process.env.STRIPE_SECRET_KEY) {
+    require('./services/cardSettlementWorker').iniciar();
+    gcpLogger.info('[STARTUP] Liquidador de compras con tarjeta arrancado');
+  }
+  // Claves privadas en este proceso: fuera las que no hacen falta y las que
+  // controlan direcciones de tesorería. Sólo direcciones al log.
+  require('./services/hotKeyGuard').revisar();
+
+  // Anclaje periódico de la auditoría de seguridad (raíz merkle por tramo).
+  {
+    const intervalo = Number(process.env.SECURITY_AUDIT_ANCHOR_INTERVAL_MS) || 60 * 60 * 1000;
+    const temporizador = setInterval(() => {
+      require('./services/securityAudit').anclarPendiente()
+        .catch((err) => gcpLogger.warning('[SECURITY] Anclaje de auditoría fallido', { error: err.message }));
+    }, intervalo);
+    temporizador.unref?.();
+  }
+
   // No se aborta el arranque por el vault: tumbaría la API entera por una pieza
   // que sólo usa el alta FIAT. Se avisa alto y cada operación del vault falla.
   try {

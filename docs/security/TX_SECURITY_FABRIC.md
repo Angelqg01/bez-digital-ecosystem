@@ -138,8 +138,18 @@ API acepta la firma.
 2. Ejecutar `walletVaultService.reencryptAll()` hasta que `pendientesLeidas` sea 0.
 3. Retirar la versión antigua del llavero.
 
-### 6.5 Migración
-`api/db/migrations/058_tx_security_fabric.sql` (Postgres del VPS, después de la 057).
+### 6.5 Migraciones
+API: `058_tx_security_fabric.sql` y `059_fiat_delivery_indexes.sql` (Postgres del VPS,
+después de la 057). Hub: `020_bezpay_entrega_intencion.sql`. Probadas en Postgres 16:
+aplican, son idempotentes y los triggers bloquean UPDATE/DELETE/TRUNCATE.
+
+### 6.6 Entregas de BEZ por pagos FIAT
+1. Crear en `app_registry` la app interna de tesorería (scope `treasury`) y poner su id en
+   `BEZPAY_TREASURY_APP_ID`.
+2. Crear para el Hub una credencial de agente con carril `crypto_transfer` y `canExecute`
+   (`POST /api/gateway/v1/tx/agents` con la clave de esa app) → `BEZPAY_TX_AGENT_KEY`.
+3. Las entregas aparecen como intenciones `awaiting_approval`: dos aprobadores de tesorería
+   firman; el liberador (API) o el seguimiento (Hub) las ejecutan en el siguiente barrido.
 
 ## 7. Pendiente (no es código)
 
@@ -147,7 +157,51 @@ API acepta la firma.
 - Revisar en el panel de Stripe los tres endpoints de webhook (ver §8).
 - Tesorería principal en Safe multifirma 3 de 5 con timelock; el firmante solo maneja float.
 - Auditoría externa de contratos y pentest del MCP (inyección de prompt, abuso de agentes).
-- Confirmar la dirección de BEZ en BSC: CLAUDE.md dice `0x8a1e…5b55`, `smart-contracts/deployments/56.json` dice `0xEcBa…11A8`.
+- Corregir el texto del Payment Link de compra de BEZ en Stripe: anuncia «€0.00075» y el precio real es 0,0075 USD.
+- Dependencias con avisos altos que exigen salto de versión mayor, todas de desarrollo o build:
+  hardhat-toolbox (undici 5, adm-zip, serialize-javascript), vite 5 y vitest 1 del frontend del Hub,
+  deepmerge-ts (CLI de Prisma) y las fuentes Solidity de OpenZeppelin 4.7.3 que trae Chainlink.
+  Ninguna se ejecuta en el servidor.
+- Claves de operador que siguen en la API (anclas, CargoLink, L1, VPP, despliegue): sólo pagan gas.
+  `hotKeyGuard` las inventaría al arrancar y retira las que controlen la tesorería; vigilar que no acumulen saldo.
+
+## 9. BEZ solo existe en Polygon
+
+`0xEcBa…11A8`, verificado en Sourcify y Blockscout y confirmado el 2026-09-18. En BSC no hay
+contrato ni en `0x8a1e…5b55` ni en `0xEcBa…11A8` (tres RPC). Corregido en: registro de la API
+y del firmante, `PRODUCTION_CHAINS` y `BEZ_MARKETS` del Gateway (ya no se publica un mercado
+BSC), `smart-contracts/deployments/56.json` (`NOT_DEPLOYED`) y la tabla de CLAUDE.md.
+
+## 10. Entrega de BEZ por pagos FIAT (API y Hub, misma regla)
+
+Precio único: **0,0075 USD por BEZ** (`BEZ_PRICE_USD`, `api/config/bez-price.js`, en micro-USD
+con BigInt). Antes convivían 0,10 USD, 0,07 USD (entero de céntimos) y 1,24 USD (un token ajeno
+de CoinGecko en el Hub).
+
+```text
+cobro (Payment Link, BezPay, transferencia SEPA)
+  → compra RETENIDA, BEZ congelado al precio del momento. Nada se entrega en el webhook.
+  → cardFundsVerifier (fichero IDÉNTICO en api/ y en el Hub; un test lo exige):
+      importe y moneda exactos · sin reembolso ni disputa · autorizado · Radar sin riesgo elevado
+      · 3-D Secure (o Apple/Google Pay) · retención mínima · fondos DISPONIBLES en Stripe
+      · incluidos en un payout PAGADO a la cuenta bancaria
+    (la transferencia SEPA confirmada por el HMAC del banco entra ya como fondos confirmados)
+  → intención crypto_transfer desde tesorería (política, simulación, travel rule con el titular)
+  → dos aprobaciones EIP-712 de tesorería → tx-signer → difusión → compra completada
+  disputa o reembolso en cualquier punto antes de firmar → se cancela la intención y no sale nada
+```
+
+- La vía antigua de acuñar con una clave en la API (`mintBezTokens`) está apagada
+  (`LEGACY_HOT_MINT_ENABLED`); `hotKeyGuard` retira sus claves del entorno en producción.
+- El Hub ya no entrega desde su hot wallet salvo `BEZPAY_DELIVERY_MODE=hot_wallet`, y sin
+  `STRIPE_SECRET_KEY` no entrega (antes el verificador decía que sí).
+- Las sesiones de Stripe sin orden BezPay ya no se entregan en el acto: van a conciliación manual.
+
+Variables nuevas. API: `BEZ_PRICE_USD`, `BEZPAY_TREASURY_APP_ID`, `BEZPAY_TREASURY_PLAN`,
+`BEZPAY_DELIVERY_NETWORK`, `CARD_HOLD_HOURS`, `CARD_REQUIRE_BANK_PAYOUT`, `CARD_REQUIRE_3DS`,
+`CARD_SETTLEMENT_INTERVAL_MS`, `SECURITY_AUDIT_ANCHOR_INTERVAL_MS`. Hub: `BEZPAY_TX_AGENT_KEY`,
+`BEZHAS_API_URL`, `BEZPAY_DELIVERY_MODE`, `BEZPAY_REQUIRE_BANK_PAYOUT`, `BEZPAY_REQUIRE_3DS`,
+`BEZ_PRICE_USD`, `BEZ_COINGECKO_ID` (sólo si hay feed propio).
 
 ## 8. Incidente Stripe «Webhook processing failed» (2026-09)
 
@@ -168,3 +222,14 @@ API acepta la firma.
     Arreglado, y además se convierten EUR→USD, que antes se trataban 1:1.
   - `/api/webhooks/bank` aceptaba peticiones sin HMAC si faltaba `BANK_WEBHOOK_SECRET`, y el
     compose no lo pasaba. Ahora falla en cerrado (503) y el compose lo pasa.
+
+## 11. Otros arreglos (2026-09-19)
+
+- **2FA del Hub:** los secretos TOTP se cifraban con una clave derivada de `JWT_SECRET` (o del
+  literal `'default-key'`) y sal fija. Ahora v2 con clave propia `TOTP_ENCRYPTION_KEY` (≥ 32,
+  distinta de `JWT_SECRET`, HKDF); en producción sin ella no se cifra. Los registros v1 se leen.
+- **Frontend del Hub:** retirado `secureStorage.js` (sin uso, con clave de cifrado escrita en el
+  código; una clave en el navegador es pública de todas formas).
+- **Dependencias:** `pnpm audit --prod` sin avisos altos ni críticos en API, OPERANT y firmante;
+  en el Hub quedan los de §7 (sólo desarrollo/build o fuentes Solidity).
+- **Índices** para los barridos de entregas (migración API 059, Hub 020).

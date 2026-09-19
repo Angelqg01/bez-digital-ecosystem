@@ -47,6 +47,7 @@ const crypto = require('crypto');
 const fxService = require('../services/fxService');
 const { query } = require('../db/pool');
 const { getPlan } = require('../config/plans');
+const { centimosUsdABezWei, precioUsd } = require('../config/bez-price');
 const retryQueue = require('../services/webhookRetryQueue');
 const ledger = require('../services/providerPaymentLedger');
 const { refundPayment, SettlementError } = require('../services/paymentSettlement');
@@ -96,11 +97,10 @@ function parseMintGasLimit() {
 }
 
 const CONFIG = Object.freeze({
-  // BEZ-Coin v1 (LIVE on BSC) — BEZCoinV2 not deployed yet
+  // BEZ-Coin v1: vive SÓLO en Polygon (0xEcBa…11A8). En BSC no hay contrato BEZ.
   bezContractAddress: process.env.BEZ_TOKEN_ADDRESS ?? '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
   treasuryPk: process.env.BEZ_TREASURY_PK || process.env.ADMIN_PK || '',
   rpcUrl: process.env.RPC_URL || 'https://rpc-amoy.polygon.technology',
-  bezPriceUsdCents: parseInt(process.env.BEZ_PRICE_USD_CENTS || '7', 10),
   // FX: EUR→USD for European-region settlements. Explicit & configurable — never
   // a silent 1:1. Replace with a live oracle feed when available.
   eurUsdRate: parseFloat(process.env.EUR_USD_RATE || '1.08'),
@@ -120,7 +120,10 @@ const CONFIG = Object.freeze({
 function validateConfig() {
   const checks = [
     ['bezContractAddress', CONFIG.bezContractAddress, () => ethers.isAddress(CONFIG.bezContractAddress)],
-    ['treasuryPk', CONFIG.treasuryPk, () => CONFIG.treasuryPk.startsWith('0x') && CONFIG.treasuryPk.length === 66],
+    // La clave de minteo sólo se valida si la vía antigua está encendida a propósito.
+    ...(process.env.LEGACY_HOT_MINT_ENABLED === 'true'
+      ? [['treasuryPk', CONFIG.treasuryPk, () => CONFIG.treasuryPk.startsWith('0x') && CONFIG.treasuryPk.length === 66]]
+      : []),
     ['stripeWebhookSecret', CONFIG.stripeWebhookSecret, () => CONFIG.stripeWebhookSecret.startsWith('whsec_')],
   ];
 
@@ -356,8 +359,9 @@ function toUsdCents(amountCents, currency, eurUsdRate) {
  * Convierte USD cents → BEZ wei usando aritmética de enteros. [sin cambio]
  */
 function usdCentsToBezWei(amountUsdCents, decimals) {
-  const scaleFactor = 10n ** BigInt(decimals);
-  return (BigInt(amountUsdCents) * scaleFactor) / BigInt(CONFIG.bezPriceUsdCents);
+  // Precio único en micro-USD (config/bez-price.js). Antes: BEZ_PRICE_USD_CENTS
+  // entero con 7 por defecto, o sea 0,07 USD en vez de 0,0075.
+  return centimosUsdABezWei(amountUsdCents, process.env, decimals);
 }
 
 /**
@@ -419,7 +423,7 @@ async function _executeMint(walletAddress, amountUsdCents, eventId) {
   const amountWei = usdCentsToBezWei(amountUsdCents, decimals);
 
   if (amountWei === 0n) {
-    throw new Error(`Calculated 0 BEZ for ${amountUsdCents} cents. Check BEZ_PRICE_USD_CENTS (currently ${CONFIG.bezPriceUsdCents}).`);
+    throw new Error(`Calculated 0 BEZ for ${amountUsdCents} cents. Check BEZ_PRICE_USD (currently ${precioUsd()} USD).`);
   }
 
   const bezDisplay = ethers.formatUnits(amountWei, decimals);
@@ -466,6 +470,16 @@ async function _executeMint(walletAddress, amountUsdCents, eventId) {
  * Validates address and idempotency BEFORE entering the queue.
  */
 async function mintBezTokens(walletAddress, amountUsdCents, eventId) {
+  // Vía antigua: acuñar BEZ con una clave privada en este proceso, en el mismo
+  // instante del cobro. Apagada por defecto. Las entregas van por la capa de
+  // seguridad (intención desde tesorería, dos aprobaciones, tx-signer aislado)
+  // vía services/cardSettlementWorker. Los reintentos que quedaran en la cola
+  // fallan aquí y se concilian a mano en vez de acuñar a ciegas.
+  if (process.env.LEGACY_HOT_MINT_ENABLED !== 'true') {
+    const e = new Error('HOT_MINT_DISABLED: la entrega de BEZ va por la capa de seguridad transaccional');
+    e.code = 'HOT_MINT_DISABLED';
+    throw e;
+  }
   if (!ethers.isAddress(walletAddress)) {
     throw new Error(`Invalid Ethereum address: "${walletAddress}"`);
   }
@@ -623,40 +637,70 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
         break;
       }
 
+      // ── NO SE ENTREGA AQUÍ ────────────────────────────────────────────────
+      // Antes se minteaba en este mismo instante. Un cobro con tarjeta se puede
+      // revertir; el BEZ entregado, no. La compra queda RETENIDA con el BEZ
+      // congelado al precio de hoy, y services/cardSettlementWorker la entrega
+      // cuando cardFundsVerifier confirma —en Stripe, no en este evento— que el
+      // importe exacto se cobró, sigue en pie, está disponible y ha llegado a la
+      // cuenta bancaria de BeZhas. La misma regla que aplica BezPay en el Hub.
+      const bezWei = centimosUsdABezWei(amountUsdCents);
+      if (bezWei <= 0n) {
+        log.error('Stripe', 'Importe demasiado pequeño para 1 unidad de BEZ — conciliar a mano', { sessionId: session.id });
+        break;
+      }
+      const { ethers: eth } = require('ethers');
+      const bezDisplay = eth.formatUnits(bezWei, 18);
+      const referencia = (typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id) || session.id;
+
       try {
-        const result = await mintBezTokens(walletAddress, amountUsdCents, event.id);
-        if (result) {
-          log.info('Stripe', 'Mint successful', {
-            bezDisplay: result.bezDisplay,
-            txHash: result.txHash,
-            wallet: walletAddress,
-          });
-
-          // El pago entra en payment_transactions. Sin esta fila, un reembolso
-          // posterior no tendría ninguna orden que revertir y la compra no
-          // aparecería en el histórico del usuario.
-          await recordMintInLedger({
-            walletAddress,
-            amountUsdCents,
-            eventId: event.id,
-            result,
-            chargeId: session.payment_intent || null,
-          });
-
+        const fila = await ledger.recordHeldCardPurchase({
+          eventId: event.id,
+          chargeId: referencia,
+          walletAddress,
+          amountUsd: (amountUsdCents / 100).toFixed(2),
+          amountBez: bezDisplay,
+          entrega: {
+            estado: 'retenida',
+            referencia,
+            sesion: session.id,
+            importeMinor: session.amount_total,
+            moneda: String(session.currency || 'usd').toLowerCase(),
+            bezWei: bezWei.toString(),
+            precioUsd: precioUsd(),
+            cliente: {
+              nombre: session.customer_details?.name || null,
+              pais: session.customer_details?.address?.country || null,
+              email: session.customer_details?.email || null,
+            },
+            retenidaEn: new Date().toISOString(),
+          },
+        });
+        if (fila) {
+          log.info('Stripe', 'Compra con tarjeta retenida hasta confirmar fondos', { paymentId: fila.id, sessionId: session.id, bezDisplay });
           await ledger.notifyWalletOwner({
             walletAddress,
             type: 'transaction',
-            title: 'Compra de BEZ completada',
-            message: `Se han acreditado ${result.bezDisplay} BEZ en tu wallet.`,
-            metadata: { txHash: result.txHash, amountUsdCents, provider: 'stripe' },
+            title: 'Pago recibido',
+            message: `Tus ${bezDisplay} BEZ se entregarán cuando el banco confirme el cobro (normalmente en pocos días hábiles).`,
+            metadata: { paymentId: fila.id, provider: 'stripe' },
           }).catch(() => { /* la notificación nunca bloquea el cobro */ });
         }
       } catch (err) {
-        log.error('Stripe', 'Mint failed — enqueuing retry', {
-          sessionId: session.id,
-          error: err.message,
-        });
-        RetryQueue.enqueue(walletAddress, amountUsdCents, event.id);
+        log.error('Stripe', 'No se pudo registrar la compra retenida — conciliar a mano', { sessionId: session.id, error: err.message });
+      }
+      break;
+    }
+
+    case 'charge.dispute.created': {
+      // Una disputa durante la retención: esa compra no se entrega nunca.
+      const disputa = event.data.object;
+      const ref = disputa.payment_intent || disputa.charge;
+      try {
+        const r = await require('../services/cardSettlementWorker').bloquearPorReferencia(ref, 'DISPUTADO');
+        log.warn('Stripe', 'Disputa recibida', { ref, ...r });
+      } catch (err) {
+        log.error('Stripe', 'No se pudo bloquear la entrega por disputa', { ref, error: err.message });
       }
       break;
     }
@@ -711,6 +755,11 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
       // decide aquí. La orden queda en 'refunded' con la nota del reembolso, que
       // es el estado correcto para conciliarlo después.
       try {
+        const retenida = await require('../services/cardSettlementWorker').bloquearPorReferencia(paymentIntentId, 'REEMBOLSADO');
+        if (retenida.bloqueada) {
+          log.info('Stripe', 'Reembolso de una compra aún retenida: bloqueada, nada entregado', { paymentIntentId });
+          break;
+        }
         const order = await ledger.findByChargeId(paymentIntentId, 'stripe');
 
         if (!order) {
@@ -821,17 +870,35 @@ router.post('/bank', express.json(), async (req, res) => {
     reference,
   });
 
+  // El HMAC del banco confirma que el dinero está en la cuenta (una
+  // transferencia SEPA no se revierte sin nuestro consentimiento). Aun así, el
+  // BEZ no sale de aquí: se registra con los fondos confirmados y la entrega la
+  // hace services/cardSettlementWorker por la capa de seguridad, igual que con
+  // tarjeta (intención desde tesorería, aprobaciones EIP-712, tx-signer).
+  if (!ethers.isAddress(walletAddress)) {
+    return res.status(400).json({ error: 'walletAddress no es una dirección EVM válida.' });
+  }
+  const bezWei = centimosUsdABezWei(usdCents);
+  if (bezWei <= 0n) return res.status(422).json({ error: 'Importe demasiado pequeño.' });
+  const bezDisplay = ethers.formatUnits(bezWei, 18);
   try {
-    const result = await mintBezTokens(walletAddress, usdCents, eventId);
-    if (result) {
-      return res.json({ success: true, txHash: result.txHash, bezMinted: result.bezDisplay });
-    }
-    return res.json({ success: true, status: 'already_processed' });
+    const fila = await ledger.recordHeldPurchase({
+      provider: 'bank', paymentMethod: 'bank',
+      eventId, chargeId: reference || eventId, walletAddress,
+      amountUsd: (usdCents / 100).toFixed(2), amountBez: bezDisplay,
+      entrega: {
+        estado: 'fondos_confirmados', origen: 'banco', referencia: reference || eventId,
+        importeMinor: amountCents, moneda: String(currency).toLowerCase(), bezWei: bezWei.toString(),
+        precioUsd: precioUsd(),
+        cliente: { nombre: req.body.payerName || null, pais: String(iban).slice(0, 2).toUpperCase() },
+        confirmadosEn: new Date().toISOString(),
+      },
+    });
+    if (!fila) return res.json({ success: true, status: 'already_processed' });
+    return res.status(202).json({ success: true, status: 'held_for_delivery', paymentId: fila.id, bez: bezDisplay });
   } catch (err) {
-    log.error('Bank', 'Mint failed — enqueuing retry', { eventId, error: err.message });
-    RetryQueue.enqueue(walletAddress, usdCents, eventId);
-    // Return 202 Accepted: we received the event and will process it asynchronously
-    return res.status(202).json({ status: 'queued', message: 'Mint will be retried automatically.' });
+    log.error('Bank', 'No se pudo registrar el ingreso — conciliar a mano', { eventId, error: err.message });
+    return res.status(500).json({ error: 'No se pudo registrar el ingreso.' });
   }
 });
 

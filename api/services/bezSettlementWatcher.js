@@ -16,6 +16,7 @@
  *   - only blocks with >= CONFIRMATIONS confirmations are scanned
  */
 const { ethers } = require('ethers');
+const { precioUsd } = require('../config/bez-price');
 const { query } = require('../db/pool');
 const { settlePayment, expireStaleOrders } = require('./paymentSettlement');
 const logger = require('pino')({ level: 'info', name: 'bez-settlement-watcher' });
@@ -47,7 +48,7 @@ async function getBezPriceUSD() {
     const price = await query(
         "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
     ).catch(() => ({ rows: [] }));
-    return parseFloat(price.rows[0]?.price_usd || '0.10');
+    return parseFloat(price.rows[0]?.price_usd || String(precioUsd()));
 }
 
 /** Oldest pending crypto/qr buy order of this sender that the amount covers. */

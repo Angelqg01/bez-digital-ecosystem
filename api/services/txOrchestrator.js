@@ -521,7 +521,24 @@ function crearOrquestador(inyectadas = {}) {
         }
     }
 
-    return { crearIntencion, obtener, aprobar, ejecutar, vista };
+    /**
+     * Cancela una intención que aún no se ha ejecutado (disputa o reembolso del
+     * cobro que la originó). Lo que ya está firmado o difundido no se toca.
+     */
+    async function cancelar({ id, app, motivo }) {
+        const row = await cargarPropia(id, app);
+        for (const estado of ['awaiting_approval', 'approved', 'ready']) {
+            if (row.status !== estado) continue;
+            const hecha = await d.repo.actualizar(id, { status: 'rejected', error_code: String(motivo || 'CANCELLED').slice(0, 60) }, { siEstado: estado });
+            if (hecha) {
+                await d.auditoria.registrar({ eventType: 'intent.cancelled', appId: row.app_id, intentId: id, payload: { motivo } });
+                return vista(hecha);
+            }
+        }
+        throw new TxError('INTENT_NOT_CANCELLABLE', 409, `La intención está en «${row.status}» y ya no se puede cancelar.`);
+    }
+
+    return { crearIntencion, obtener, aprobar, ejecutar, cancelar, vista };
 }
 
 let porDefecto = null;

@@ -235,6 +235,11 @@ services:
       ALLOWED_CHAIN_IDS: ${ALLOWED_CHAIN_IDS:-}
       FIAT_PARTNER_API_URL: ${FIAT_PARTNER_API_URL:-}
       FIAT_PARTNER_API_KEY: ${FIAT_PARTNER_API_KEY:-}
+      # Entregas de BEZ por pagos FIAT: sólo con los fondos en la cuenta bancaria
+      # y por intención desde tesorería (docs/security/TX_SECURITY_FABRIC.md §10).
+      BEZ_PRICE_USD:           ${BEZ_PRICE_USD:-0.0075}
+      BEZPAY_TREASURY_APP_ID:  ${BEZPAY_TREASURY_APP_ID:-}
+      BEZPAY_DELIVERY_NETWORK: ${BEZPAY_DELIVERY_NETWORK:-polygon}
 
       PORT:             3001
     ports:

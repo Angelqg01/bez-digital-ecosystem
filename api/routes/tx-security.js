@@ -133,6 +133,16 @@ txRouter.post('/intents/:id/execute', requireScope(...SCOPES_DINERO), async (req
     }
 });
 
+txRouter.post('/intents/:id/cancel', requireScope(...SCOPES_DINERO), async (req, res) => {
+    if (!RE_UUID.test(req.params.id)) return res.status(404).json({ error: 'Intención no encontrada.', code: 'INTENT_NOT_FOUND' });
+    try {
+        const motivo = typeof req.body?.reason === 'string' ? req.body.reason.slice(0, 60) : 'CANCELLED';
+        res.json({ success: true, intencion: await orquestador().cancelar({ id: req.params.id, app: req.registeredApp, motivo }) });
+    } catch (err) {
+        responderError(res, err);
+    }
+});
+
 // ── Destinos ───────────────────────────────────────────────────────────────
 
 txRouter.get('/destinations', requireScope(...SCOPES_DINERO), async (req, res) => {

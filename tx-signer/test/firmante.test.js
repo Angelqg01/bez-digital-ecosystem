@@ -215,6 +215,24 @@ describe('verificarSolicitud', () => {
     });
 });
 
+describe('registro de activos del firmante', () => {
+    test('BEZ sólo en Polygon, como en la API', () => {
+        const { ACTIVOS_BASE } = require('../src/config');
+        const { activoCripto } = require(path.join(API, 'config/tx-rails'));
+        assert.equal(ACTIVOS_BASE[56].BEZ, undefined);
+        assert.equal(activoCripto('BEZ', 56), null);
+        for (const [chainId, mapa] of Object.entries(ACTIVOS_BASE)) {
+            for (const [simbolo, def] of Object.entries(mapa)) {
+                // Mismo contrato y decimales en los dos registros: si divergen, el
+                // firmante rechaza lo que la API aprueba (o al revés).
+                const api = activoCripto(simbolo, Number(chainId));
+                assert.equal(api.address, def.address, `${simbolo}@${chainId}`);
+                assert.equal(api.decimales, def.decimals, `${simbolo}@${chainId}`);
+            }
+        }
+    });
+});
+
 describe('HMAC de la petición', () => {
     test('rechaza firma incorrecta, fuera de ventana y repetida', () => {
         const nonces = crearRegistroNonces();

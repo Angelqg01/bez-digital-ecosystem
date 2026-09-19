@@ -53,6 +53,16 @@ describe('txIntent', () => {
         expect(() => norm(base({ destination: { type: 'evm_address', value: ethers.ZeroAddress } }))).toThrow(expect.objectContaining({ code: 'ADDRESS_INVALID' }));
         expect(() => norm(base({ destination: { type: 'evm_address', value: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' } }))).toThrow(expect.objectContaining({ code: 'ADDRESS_INVALID' }));
     });
+    it('BEZ sólo existe en Polygon: pedirlo en BSC se rechaza, no se «envía» a una dirección sin código', () => {
+        // Verificado on-chain (2026-09-18): en BSC no hay contrato BEZ en ninguna de
+        // las direcciones que citaban CLAUDE.md o deployments/56.json. Un transfer a
+        // una dirección sin código no revierte: saldría como éxito sin mover nada.
+        const { activoCripto } = require('../../config/tx-rails');
+        expect(activoCripto('BEZ', 137).address).toBe('0xecba873b534c54de2b62acde232adca4369f11a8');
+        expect(activoCripto('BEZ', 56)).toBeNull();
+        expect(() => norm(base({ asset: 'BEZ', network: 'bsc', amount: '10' }))).toThrow(expect.objectContaining({ code: 'ASSET_NOT_SUPPORTED' }));
+        expect(activoCripto('USDC', 56)).not.toBeNull();
+    });
     it('sin red no hay intención cripto, y una red de pruebas no pasa en producción', () => {
         expect(() => norm(base({ network: undefined }))).toThrow(expect.objectContaining({ code: 'NETWORK_REQUIRED' }));
         expect(() => norm(base({ network: 'bsc-testnet' }))).toThrow(expect.objectContaining({ code: 'CHAIN_NOT_ALLOWED' }));

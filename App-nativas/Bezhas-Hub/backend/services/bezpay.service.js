@@ -148,19 +148,28 @@ function getBezContract() {
 // ─── PRECIO BEZ (cache simple 60s, USD + EUR en una llamada) ─────────────────
 // Fallback FX si el feed no trae EUR (aprox. conservadora, override por env).
 const EUR_PER_USD_FALLBACK = parseFloat(process.env.EUR_PER_USD_FALLBACK || '0.92');
-let _bezPriceCache = { price: 1.24, eur: null, ts: 0 };
+
+// Precio real de la fase semilla: 0,0075 USD (confirmado por Yoel, 2026-09-18).
+// Antes el precio salía de CoinGecko con el id `bez-coin`, que es OTRO token, y
+// si el feed fallaba se usaba 1,24 USD. Con ese feed, un desplome ajeno hacía
+// entregar miles de veces más BEZ por el mismo pago. Ahora el feed externo sólo
+// se consulta si se configura a propósito con el id del token de BeZhas.
+const BEZ_PRICE_USD = parseFloat(process.env.BEZ_PRICE_USD || '0.0075');
+const BEZ_COINGECKO_ID = process.env.BEZ_COINGECKO_ID || '';
+let _bezPriceCache = { price: BEZ_PRICE_USD, eur: null, ts: 0 };
 
 async function refreshBezPrices() {
   const now = Date.now();
+  if (!BEZ_COINGECKO_ID) return _bezPriceCache;
   if (now - _bezPriceCache.ts < 60_000) return _bezPriceCache;
   try {
     const resp = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bez-coin&vs_currencies=usd,eur',
+      `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(BEZ_COINGECKO_ID)}&vs_currencies=usd,eur`,
       { signal: AbortSignal.timeout(4000) }
     );
     const data = await resp.json();
-    const usd = data?.['bez-coin']?.usd;
-    const eur = data?.['bez-coin']?.eur;
+    const usd = data?.[BEZ_COINGECKO_ID]?.usd;
+    const eur = data?.[BEZ_COINGECKO_ID]?.eur;
     if (usd && usd > 0) {
       _bezPriceCache = { price: usd, eur: eur && eur > 0 ? eur : null, ts: now };
     }
@@ -491,6 +500,14 @@ async function createPayment(req, res) {
           const surchargeAmount = Number((
             amounts.amountUSD * stripeService.CARD_SURCHARGE_PCT + stripeService.CARD_SURCHARGE_FIXED
           ).toFixed(2));
+          // Lo que se va a cobrar, exactamente como lo calcula la sesión (base +
+          // recargo, redondeados por separado a céntimos). La entrega sólo se
+          // hará si Stripe cobró ESTO: ni menos, ni en otra moneda.
+          const importeEsperado = Math.round(Number(amounts.amountUSD) * 100)
+            + Math.round((Number(amounts.amountUSD) * stripeService.CARD_SURCHARGE_PCT + stripeService.CARD_SURCHARGE_FIXED) * 100);
+          await PaymentPG.setExpectedCharge(paymentId, {
+            importe: importeEsperado, moneda: String(payToken).toLowerCase(), sesion: session.sessionId,
+          }).catch((err) => logger.error({ err: err.message, paymentId }, '[BezPay] No se pudo guardar el cobro esperado — la entrega irá a revisión manual'));
           card = {
             provider: 'stripe',
             url: session.url,

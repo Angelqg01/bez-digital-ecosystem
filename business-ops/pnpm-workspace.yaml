@@ -10,3 +10,5 @@ overrides:
   fast-uri: '^3.1.2'
   form-data@<2.5.4: '^2.5.5'
   form-data@>=3.0.0 <3.0.4: '^3.0.4'
+  # brace-expansion 5 < 5.0.9: DoS por expansión sin límite. Acotado a la rama 5.
+  brace-expansion@5: '^5.0.9'

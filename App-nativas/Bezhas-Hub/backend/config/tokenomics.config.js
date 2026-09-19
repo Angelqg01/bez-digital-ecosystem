@@ -32,8 +32,9 @@ module.exports = {
         },
 
         // Fallback price (usado cuando el oráculo falla)
-        fallbackPriceUSD: 0.00075,
-        fallbackPriceEUR: 0.00070,
+        // Precio real de la fase semilla: 0,0075 USD (antes 0,00075, diez veces menos).
+        fallbackPriceUSD: parseFloat(process.env.BEZ_PRICE_USD || '0.0075'),
+        fallbackPriceEUR: parseFloat(process.env.BEZ_PRICE_EUR || '0.0069'),
 
         // Cache settings
         cacheTTL: 30000, // 30 segundos

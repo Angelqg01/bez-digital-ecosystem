@@ -69,6 +69,34 @@ async function recordCompletedPurchase({
  * el banco rechaza es información que el usuario y soporte necesitan ver, y
  * hasta ahora sólo quedaba en una línea de log.
  */
+/**
+ * Compra con tarjeta cobrada pero NO entregada. Queda en 'processing' con la
+ * ficha de entrega en la nota; la entrega la hace services/cardSettlementWorker
+ * cuando cardFundsVerifier confirma que el dinero está en la cuenta de BeZhas.
+ * Idempotente por evento: Stripe reenvía hasta recibir un 2xx.
+ */
+async function recordHeldPurchase({
+    provider, paymentMethod, eventId, chargeId, walletAddress, amountUsd, amountBez, entrega,
+}) {
+    if (!provider || !paymentMethod || !eventId || !walletAddress || !entrega) {
+        throw new Error('recordHeldPurchase requiere provider, paymentMethod, eventId, walletAddress y entrega');
+    }
+    const { rows } = await query(
+        `INSERT INTO payment_transactions
+             (wallet_address, amount_usd, amount_bez, payment_method, type, status,
+              note, provider, provider_event_id, provider_charge_id)
+         VALUES ($1, $2, $3, $4, 'buy', 'processing', $5, $6, $7, $8)
+         ON CONFLICT (provider, provider_event_id)
+             WHERE provider_event_id IS NOT NULL
+             DO NOTHING
+         RETURNING id, status, wallet_address`,
+        [walletAddress, amountUsd, amountBez, paymentMethod, JSON.stringify({ entrega }), provider, eventId, chargeId]
+    );
+    return realRow(rows);
+}
+
+const recordHeldCardPurchase = (datos) => recordHeldPurchase({ ...datos, provider: 'stripe', paymentMethod: 'card' });
+
 async function recordFailedPurchase({
     provider = 'stripe',
     eventId,
@@ -137,6 +165,8 @@ async function notifyWalletOwner({ walletAddress, type, title, message, metadata
 }
 
 module.exports = {
+    recordHeldPurchase,
+    recordHeldCardPurchase,
     recordCompletedPurchase,
     recordFailedPurchase,
     findByChargeId,

@@ -88,12 +88,13 @@ const FIAT_ASSETS = Object.freeze({
 /**
  * Activos cripto por cadena.
  *
- * BEZ en 56 y 137: direcciones de la tabla «CONTRATOS DEPLOYADOS» de CLAUDE.md,
- * que es la fuente que el proyecto declara intocable sin confirmación.
- * OJO: smart-contracts/deployments/56.json lista BEZCoin en 0xEcBa…11A8 (la de
- * Polygon), no en 0x8a1e…5b55. Una de las dos fuentes está mal; hasta que se
- * confirme, un envío de BEZ en BSC que use la otra dirección no casará con este
- * registro y se denegará, que es el fallo seguro.
+ * BEZ sólo existe en Polygon: 0xEcBa…11A8, verificado en Sourcify y Blockscout
+ * y confirmado por Yoel (2026-09-18). En BSC NO hay contrato BEZ: ni 0x8a1e…5b55
+ * (tabla de CLAUDE.md) ni 0xEcBa…11A8 (deployments/56.json) tienen código,
+ * comprobado en tres RPC independientes. Por eso no hay entrada 56: un
+ * `transfer` a una dirección sin código no revierte, así que un «pago en BEZ por
+ * BSC» saldría como éxito sin mover nada. Si algún día se despliega BEZ en BSC,
+ * se añade aquí con su dirección verificada.
  *
  * USDC/USDT: contratos oficiales (Circle nativo en Polygon; Binance-Peg en BSC,
  * que usa 18 decimales, no 6).
@@ -103,7 +104,6 @@ const CRYPTO_ASSETS = Object.freeze({
         estable: null,
         porCadena: {
             137: { address: '0xecba873b534c54de2b62acde232adca4369f11a8', decimales: 18 },
-            56: { address: '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55', decimales: 18 },
         },
     },
     USDC: {

@@ -110,7 +110,7 @@ BeZhas es un ecosistema blockchain empresarial B2B con:
 | Contrato | Red | Address |
 | :---- | :---- | :---- |
 | BEZ Token | **Polygon** | `0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8` |
-| BEZ Token | **BNB Chain** | `0x8a1e3930fde1f151471c368fdbb39f3f63a65b55` |
+| BEZ Token | **BNB Chain** | **No desplegado.** `0x8a1e…5b55` no tiene código (comprobado on-chain el 2026-09-18). BEZ-Coin sólo existe en Polygon. |
 | Treasury DAO | BSC+Polygon | `0x89c23890c742d710265dD61be789C71dC8999b12` |
 | QualityEscrow/Safe | BSC+Polygon | `0x3EfC42095E8503d41Ad8001328FC23388E00e8a3` |
 | Hot Wallet | BSC+Polygon | `0x52Df82920CBAE522880dD7657e43d1A754eD044E` |

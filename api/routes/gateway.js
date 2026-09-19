@@ -19,6 +19,7 @@
  *   /api/gateway/v1/webhooks/*   — Outbound signed payment events (register, deliveries, retry)
  */
 const { Router } = require('express');
+const { precioUsd } = require('../config/bez-price');
 const { chainCall } = require('../utils/chainCall');
 const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
@@ -62,9 +63,12 @@ const router = Router();
 // en la cadena de cada ruta: para entonces el auth ya habrá poblado el request.
 router.use(meterUsage('api_call'));
 
-// BEZ Token resolution: v1 (LIVE on BSC) vs v2 (not deployed)
+// BEZ Token resolution: v1 vive SÓLO en Polygon (0xEcBa…11A8, verificado en
+// Sourcify/Blockscout). En BSC no hay contrato BEZ (comprobado on-chain el
+// 2026-09-18): tratar 56 como red «de producción de BEZ» construía llamadas a
+// una dirección sin código, que no revierten y no mueven nada.
 const BEZ_COIN_V1_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
-const PRODUCTION_CHAINS = [56, 97];
+const PRODUCTION_CHAINS = [137];
 const PLATFORM_FEE_BPS = TOKENOMICS_FEE.platformFeeBps;
 function resolveBEZToken(chainId) {
     return PRODUCTION_CHAINS.includes(chainId) ? 'BEZCoin' : 'BEZCoinV2';
@@ -1189,7 +1193,7 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
             const price = await query(
                 "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
             ).catch(() => ({ rows: [] }));
-            const priceUSD = parseFloat(price.rows[0]?.price_usd || '0.10');
+            const priceUSD = parseFloat(price.rows[0]?.price_usd || String(precioUsd()));
             onchainInstructions = {
                 provider: 'onchain',
                 token: 'BEZ',
@@ -1379,7 +1383,7 @@ router.get('/payments/bank-transfer-details', authenticateGateway, requireScope(
 
 router.get('/payments/tokenomics', authenticateGateway, requireScope('wallet'), (req, res) => {
     const amountUSD = req.query.amountUSD ? parseFloat(req.query.amountUSD) : 100;
-    const priceUSD = req.query.priceUSD ? parseFloat(req.query.priceUSD) : 0.10;
+    const priceUSD = req.query.priceUSD ? parseFloat(req.query.priceUSD) : precioUsd();
     res.json({
         success: true,
         model: 'rwa-real-yield-fiat-to-fiat',
@@ -1533,7 +1537,8 @@ const priceTtlMs = () => {
     const v = parseInt(process.env.ORACLE_PRICE_TTL_MS, 10);
     return Number.isFinite(v) ? v : 15_000;
 };
-const SEED_PRICE_USD = 0.10;
+// Precio real de la fase semilla (config/bez-price.js), no un 0,10 inventado.
+const SEED_PRICE_USD = precioUsd();
 let priceMemo = { at: 0, body: null };
 
 // Ventana de frescura publicada junto al precio. La landing la usa para marcar
@@ -1544,12 +1549,12 @@ const freshnessWindowS = () => {
     return Number.isFinite(v) && v > 0 ? v : 900;
 };
 
-// Mercados por cadena. Mientras no exista pool de liquidez se publican en
+// Mercados por cadena. Sólo Polygon: publicar como «BEZ en BSC» una dirección
+// donde no hay contrato invita a enviar fondos a ninguna parte. Mientras no exista pool de liquidez se publican en
 // `pending` con liquidez 0: es el estado real, y el consumidor ya sabe pintarlo
 // ("Pendiente de pool") sin inventarse una cotizacion que no existe.
 const BEZ_MARKETS = [
     { chainId: 137, pool: 'QuickSwap V3', address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
-    { chainId: 56, pool: 'PancakeSwap V3', address: '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55' },
 ];
 
 const MARKET_STATUSES = new Set(['active', 'paused', 'pending']);
@@ -1679,7 +1684,7 @@ router.get('/token/price', authenticateGateway, requireScope('token'), async (re
         // Fallback: initial price from config
         res.json({
             success: true,
-            priceUSD: 0.10,
+            priceUSD: precioUsd(),
             change24h: 0,
             updatedAt: new Date().toISOString(),
         });
@@ -2459,7 +2464,7 @@ router.get('/network/stats', async (req, res) => {
             query('SELECT * FROM daily_analytics ORDER BY date DESC LIMIT 1').catch(() => ({ rows: [] })),
         ]);
 
-        const priceUSD = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].price_usd) : 0.10;
+        const priceUSD = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].price_usd) : precioUsd();
         const change24h = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].change_24h || 0) : 0;
         const totalSupply = 100_000_000; // 100M BEZ from deploy-config
         const totalStaked = parseFloat(stakingAgg.rows[0].total_staked);

@@ -29,8 +29,8 @@ jest.mock('../services/payment-openclaw-bridge', () => ({
 const PaymentPG = require('../models/pg/Payment');
 const bezpay = require('../services/bezpay.service');
 
-// Precio BEZ de fallback cuando fetch falla (ver _bezPriceCache inicial).
-const BEZ_PRICE_FALLBACK = 1.24;
+// Precio real de BEZ (BEZ_PRICE_USD, 0,0075 USD). Ya no depende de ningún feed.
+const BEZ_PRICE_FALLBACK = 0.0075;
 const TREASURY_DEFAULT = '0x89c23890c742d710265dD61be789C71dC8999b12';
 const USDT_POLYGON = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
 
@@ -61,7 +61,7 @@ describe('getQuote — cálculo de montos', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.feeRate).toBe(0.015);
     expect(res.body.bezPriceUSD).toBe(BEZ_PRICE_FALLBACK);
-    // bezAmount = (100 * (1 - 0.015)) / 1.24
+    // bezAmount = (100 * (1 - 0.015)) / 0.0075
     const expectedBez = parseFloat(((100 * (1 - 0.015)) / BEZ_PRICE_FALLBACK).toFixed(6));
     expect(res.body.bezAmount).toBeCloseTo(expectedBez, 5);
     // 100 USD en USDT (1:1) → envías 100 USDT

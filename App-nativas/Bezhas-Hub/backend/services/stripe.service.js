@@ -283,9 +283,11 @@ async function createBezPayCheckoutSession({
 
 async function createTokenPurchaseSession(tokenAmount, userInfo) {
     try {
-        // Precio por token BZS: $0.10 (10 centavos)
-        const pricePerToken = 10; // centavos
-        const totalAmount = tokenAmount * pricePerToken;
+        // Precio real de BEZ (BEZ_PRICE_USD, 0,0075 USD = 0,75 céntimos). Antes
+        // 10 céntimos: se cobraba más de trece veces el precio. Como 0,75 no es
+        // un entero de céntimos, va en unit_amount_decimal.
+        const pricePerTokenCents = (parseFloat(process.env.BEZ_PRICE_USD || '0.0075') * 100).toFixed(4);
+        const totalAmount = Math.round(tokenAmount * Number(pricePerTokenCents));
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -302,7 +304,7 @@ async function createTokenPurchaseSession(tokenAmount, userInfo) {
                                 tokenAmount: tokenAmount.toString()
                             }
                         },
-                        unit_amount: pricePerToken,
+                        unit_amount_decimal: pricePerTokenCents,
                     },
                     quantity: tokenAmount,
                 },
@@ -676,43 +678,23 @@ async function handleCheckoutCompleted(session) {
                     break;
                 }
 
-                // ── Camino heredado (sesiones sin orden BezPay) ─────────────
-                // Entrega inmediata, sin retención. Se mantiene para no romper
-                // integraciones existentes, pero toda sesión nueva debería
-                // llevar bezpayPaymentId y pasar por la retención de arriba.
-                if (!metadata.walletAddress) {
-                    throw new Error('Wallet address missing in metadata');
-                }
-
-                if (!metadata.tokenAmount) {
-                    throw new Error('Token amount missing in metadata');
-                }
-
-                // Calcular cantidad en EUR (Stripe usa USD, convertir si es necesario)
-                const amountEur = amount_total / 100; // Asumiendo 1:1 por simplicidad
-
-                // Ejecutar transferencia automática desde Hot Wallet
-                const transferResult = await fiatGatewayService.processFiatPayment(
-                    metadata.walletAddress,
-                    amountEur
-                );
-
-                console.log('✅ Token transfer successful:', transferResult);
-
-                // Notificar éxito a Discord
+                // ── Sesiones sin orden BezPay: NO se entregan aquí ──────────
+                // Antes se dispensaba desde el hot wallet en este mismo
+                // instante, sin retención ni comprobación de fondos. Ahora toda
+                // entrega pasa por la regla unificada (cardFundsVerifier): una
+                // sesión sin orden no tiene contra qué verificarse, así que va
+                // a conciliación manual. El dinero está cobrado y registrado.
+                audit.admin('STRIPE_TOKEN_PURCHASE_SIN_ORDEN', 'critical', {
+                    sessionId: session.id,
+                    paymentIntent: session.payment_intent || null,
+                    walletAddress: metadata.walletAddress || null,
+                    tokenAmount: metadata.tokenAmount || null,
+                    amount: amount_total / 100,
+                });
                 await notifyHigh(
-                    'Token Purchase Completed',
-                    `User ${metadata.userId} received ${metadata.tokenAmount} BEZ tokens\nTx: ${transferResult.transactionHash}`
+                    'Compra de BEZ sin orden BezPay',
+                    `Sesión ${session.id} cobrada sin orden asociada: NO se ha entregado BEZ. Conciliar a mano tras confirmar fondos.`
                 ).catch(err => console.error('Discord notification failed:', err));
-
-                // Notificar éxito a Telegram
-                await telegram.notifyPaymentSuccess(
-                    amountEur,
-                    'EUR',
-                    metadata.walletAddress,
-                    transferResult.transactionHash
-                ).catch(err => console.error('Telegram notification failed:', err));
-
                 break;
         }
 

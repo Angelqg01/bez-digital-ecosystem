@@ -20,7 +20,10 @@ function error(message) {
     return e;
 }
 
-/** Activos que el firmante conoce sin configuración (mismos que api/config/tx-rails.js). */
+/**
+ * Activos que el firmante conoce sin configuración (mismos que api/config/tx-rails.js).
+ * BEZ sólo en Polygon: en BSC no hay contrato BEZ desplegado (ver tx-rails.js).
+ */
 const ACTIVOS_BASE = Object.freeze({
     137: {
         BEZ: { address: '0xecba873b534c54de2b62acde232adca4369f11a8', decimals: 18 },
@@ -28,7 +31,6 @@ const ACTIVOS_BASE = Object.freeze({
         USDT: { address: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f', decimals: 6 },
     },
     56: {
-        BEZ: { address: '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55', decimals: 18 },
         USDC: { address: '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d', decimals: 18 },
         USDT: { address: '0x55d398326f99059ff775485246999027b3197955', decimals: 18 },
     },
