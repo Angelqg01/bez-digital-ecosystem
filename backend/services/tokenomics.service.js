@@ -17,6 +17,8 @@ const { getTierConfig, BEZ_TO_USD_RATE, GAS_CONFIG, BASE_STAKING_APY } = require
 const Redis = require('ioredis');
 const axios = require('axios');
 
+const referenceRates = require('./reference-rates.service');
+
 // Redis client para cache
 let redis = null;
 try {
@@ -259,10 +261,13 @@ class TokenomicsService {
         // Calcular costo base en MATIC
         const gasCostMatic = (gasLimit * gasPrice) / 1e9;
 
-        // Precio del MATIC: tasa de referencia única (config/tokenomics.config.js).
-        // Estaba a 1,00 $ aquí y a 0,80 $ en crypto-payment: el coste de gas que
-        // se le cobraba al usuario cambiaba según qué servicio lo calculase.
-        const maticPriceUSD = tokenomics.rates.usdPerUnit.MATIC;
+        // Precio del MATIC al cambio vigente. Estaba a 1,00 $ aquí y a 0,80 $
+        // en crypto-payment: el coste de gas que se le cobraba al usuario
+        // cambiaba según qué servicio lo calculase, y ninguno miraba el
+        // mercado. Una cotización vieja se acepta para estimar gas —es una
+        // estimación, no un cobro— pero se declara en la respuesta.
+        const cambioMatic = await referenceRates.getUsdPerUnit('MATIC');
+        const maticPriceUSD = cambioMatic.rate;
         const gasCostUSD = gasCostMatic * maticPriceUSD;
 
         // Aplicar subsidio del tier
@@ -283,7 +288,14 @@ class TokenomicsService {
             userPayUSD: this._round(userPayUSD, 4),
             userPayBEZ: this._round(userPayBEZ, 2),
             tier: userTier,
-            gasFree: subsidyPercent >= 1.0
+            gasFree: subsidyPercent >= 1.0,
+            // De dónde sale el precio del MATIC, para que una estimación con
+            // una cotización vieja no se presente como si fuera de ahora.
+            maticPriceUSD,
+            rateSource: cambioMatic.source,
+            rateAsOf: cambioMatic.asOf,
+            rateAgeSeconds: cambioMatic.ageMs === null ? null : Math.round(cambioMatic.ageMs / 1000),
+            rateStale: cambioMatic.stale
         };
     }
 

@@ -11,6 +11,8 @@ const { ethers } = require('ethers');
 const logger = require('../utils/logger');
 
 const tokenomics = require('../config/tokenomics.config');
+const referenceRates = require('./reference-rates.service');
+
 // Configuración de contratos
 const BEZ_CONTRACT_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 const USDT_POLYGON_ADDRESS = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
@@ -60,22 +62,23 @@ class CryptoPaymentService {
      */
     async getQuote(amount, currency) {
         try {
-            let amountInUSD;
+            // El cambio sale del oráculo, al precio vigente en el momento de
+            // cotizar. Ni las stablecoins se dan por hecho a 1:1: un USDT
+            // despegado deja de valer un dólar y el oráculo lo refleja.
+            const cambio = await referenceRates.toUsd(amount, currency);
 
-            switch (currency) {
-                case 'USDT':
-                case 'USDC':
-                    amountInUSD = amount; // 1:1 con USD
-                    break;
-                case 'MATIC':
-                    // En producción, usar oracle de precios (Chainlink, CoinGecko, etc.)
-                    const maticPriceUSD = tokenomics.rates.usdPerUnit.MATIC;
-                    amountInUSD = amount * maticPriceUSD;
-                    break;
-                default:
-                    throw new Error(`Unsupported currency: ${currency}`);
+            if (cambio.usd === null) {
+                throw new Error(`Unsupported currency: ${currency}`);
             }
 
+            // Una cotización vieja no se usa para cobrar.
+            if (cambio.stale) {
+                throw new Error(
+                    `No hay cotización reciente de ${currency}: ${cambio.disclaimer}`
+                );
+            }
+
+            const amountInUSD = cambio.usd;
             const bezAmount = amountInUSD / this.BEZ_PRICE_USD;
 
             return {
@@ -87,7 +90,12 @@ class CryptoPaymentService {
                     toCurrency: 'BEZ',
                     exchangeRate: amountInUSD / this.BEZ_PRICE_USD,
                     pricePerBEZ: this.BEZ_PRICE_USD,
-                    estimatedGasFee: 0.001 // MATIC
+                    estimatedGasFee: 0.001, // MATIC
+                    rateUsdPerUnit: cambio.rate,
+                    rateSource: cambio.source,
+                    rateAsOf: cambio.asOf,
+                    rateAgeSeconds: cambio.ageMs === null ? null : Math.round(cambio.ageMs / 1000),
+                    rateDisclaimer: cambio.disclaimer
                 }
             };
         } catch (error) {
@@ -184,9 +192,15 @@ class CryptoPaymentService {
 
             logger.info(`Processing MATIC payment: ${amountMatic} from ${userWalletAddress}`);
 
-            // 1. Calcular valor en USD (usar oracle en producción)
-            const maticPriceUSD = tokenomics.rates.usdPerUnit.MATIC;
-            const amountUSD = amountMatic * maticPriceUSD;
+            // 1. Valor en USD al cambio vigente del MATIC.
+            const cambio = await referenceRates.toUsd(amountMatic, 'MATIC');
+            if (cambio.usd === null || cambio.stale) {
+                throw new Error(
+                    `No hay cotización reciente de MATIC para acreditar el pago: ${cambio.disclaimer}`
+                );
+            }
+            const maticPriceUSD = cambio.rate;
+            const amountUSD = cambio.usd;
 
             // 2. Calcular cantidad de BEZ
             const bezAmount = amountUSD / this.BEZ_PRICE_USD;

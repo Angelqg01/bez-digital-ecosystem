@@ -24,6 +24,8 @@ const BEZCoinTransaction = require('../models/BEZCoinTransaction.model');
 const VIPSubscription = require('../models/VIPSubscription.model');
 const tokenomics = require('../config/tokenomics.config');
 
+const referenceRates = require('../services/reference-rates.service');
+
 // ============================================================
 // MOONPAY DISABLED
 // ============================================================
@@ -250,15 +252,25 @@ router.post('/swap', protect, async (req, res) => {
         // La tabla anterior decía 1 USDT = 2 BEZ y 1 ETH = 4000 BEZ, lo que
         // implicaba un BEZ a 0,50 $ y a 0,60 $ a la vez, y ninguno de los dos
         // era el precio del sistema.
-        const usdPorUnidad = tokenomics.rates.usdPerUnit[String(fromToken || '').toUpperCase()];
-        if (!Number.isFinite(usdPorUnidad) || !(tokenomics.price.usd > 0)) {
+        const cambio = await referenceRates.getUsdPerUnit(fromToken);
+
+        if (!Number.isFinite(cambio.rate) || !(tokenomics.price.usd > 0)) {
             return res.status(400).json({
                 success: false,
                 message: `No hay tasa de referencia para ${fromToken}`
             });
         }
 
-        const rate = usdPorUnidad / tokenomics.price.usd;
+        // Un swap mueve dinero: no se ejecuta con una cotización caducada.
+        if (cambio.stale) {
+            return res.status(503).json({
+                success: false,
+                message: `No hay cotización reciente de ${fromToken}`,
+                rateDisclaimer: cambio.disclaimer
+            });
+        }
+
+        const rate = cambio.rate / tokenomics.price.usd;
         const amountOut = amount * rate;
         const priceImpact = 0.5; // 0.5%
 

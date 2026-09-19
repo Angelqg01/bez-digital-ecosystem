@@ -30,6 +30,8 @@ const { ethers } = require('ethers');
 const logger = require('../utils/logger');
 const PaymentPG = require('../models/pg/Payment');
 const tokenomics = require('../config/tokenomics.config');
+const referenceRates = require('./reference-rates.service');
+
 const bridge = require('../bridge'); // For ecosystem sync
 
 // ─── OPENCLAW BRIDGE (auto-provision al completar pagos) ─────────────────────
@@ -147,8 +149,17 @@ async function calculatePaymentAmounts({ payToken, amountUSD, type, planId }) {
     bezAmount = (effectiveUSD * (1 - feeRate)) / bezPriceUSD;
   }
 
-  // Calcular el equivalente en el token a pagar
-  const tokenPriceUSD = TOKEN_PRICE_FALLBACK[payToken] || 1.0;
+  // Equivalente en el token a pagar, al cambio vigente. El `|| 1.0` de antes
+  // era el fallo silencioso: un token sin tasa se cobraba como si valiera un
+  // dólar, así que 100 unidades de cualquier cosa pagaban 100 $.
+  const cambioToken = await referenceRates.getUsdPerUnit(payToken);
+  const tokenPriceUSD = Number.isFinite(cambioToken.rate)
+    ? cambioToken.rate
+    : TOKEN_PRICE_FALLBACK[payToken];
+
+  if (!Number.isFinite(tokenPriceUSD) || tokenPriceUSD <= 0) {
+    throw new Error(`No hay precio para ${payToken}: no se puede calcular el importe.`);
+  }
   const tokenDecimals = TOKEN_DECIMALS[payToken] || 18;
 
   // Cantidad del token que el usuario debe enviar

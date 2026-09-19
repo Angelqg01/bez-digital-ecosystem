@@ -13,6 +13,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { config } from '../config.js';
+import { getUsdPerUnit } from '../rates.js';
 
 /**
  * Redondea un valor monetario conservando cifras significativas.
@@ -60,15 +61,13 @@ export function registerAlpacaMarketsMcp(server: McpServer): void {
 
                 switch (action) {
                     case 'market_overview': {
-                        // Fetch crypto market data from public APIs
-                        let maticPrice = config.rates.usdPerUnit.MATIC;
-                        try {
-                            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd', {
-                                signal: AbortSignal.timeout(5000),
-                            });
-                            const data = await res.json() as Record<string, { usd: number }>;
-                            maticPrice = data['matic-network']?.usd || config.rates.usdPerUnit.MATIC;
-                        } catch { /* use fallback */ }
+                        // Esta herramienta llamaba a CoinGecko por su cuenta,
+                        // sin caché y sin decir si la respuesta era buena: un
+                        // 429 la dejaba con la constante presentada como precio
+                        // de mercado. El oráculo ya hace esa consulta con caché
+                        // de media hora, validación y procedencia.
+                        const cambioMatic = await getUsdPerUnit('MATIC');
+                        const maticPrice = cambioMatic.rate as number;
 
                         result = {
                             action, status: 'SUCCESS',
@@ -90,6 +89,12 @@ export function registerAlpacaMarketsMcp(server: McpServer): void {
                                     { symbol: 'ETH', correlation: 0.72 },
                                 ],
                                 timestamp: new Date().toISOString(),
+                                // De dónde sale el precio del MATIC y de
+                                // cuándo es, para que no se lea como una
+                                // cotización del momento si no lo es.
+                                rateSource: cambioMatic.source,
+                                rateAsOf: cambioMatic.asOf,
+                                rateStale: cambioMatic.stale,
                             },
                             reasoning: `Market overview: BEZ=$${config.token.priceUSD}, MATIC=$${maticPrice}. Trend: NEUTRAL, Volatility: LOW.`,
                         };

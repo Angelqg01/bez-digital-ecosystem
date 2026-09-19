@@ -61,12 +61,34 @@ sentido colgadas de un endpoint sin autenticación propia.
 
 ### Sobre los precios
 
-`get_payment_quote` e `initiate_crypto_payment` convierten con **constantes de
-configuración**, no con un mercado en vivo. La respuesta lo dice en
-`rateSource` y `rateDisclaimer`, y hay que trasladarlo a quien reciba la
-cotización: sirven para orientar, no para liquidar una operación real. El
-precio del BEZ sale siempre de `BEZ_PRICE_USD`; ninguna herramienta lleva el
-suyo propio.
+Hay dos precios en juego y no se comportan igual.
+
+**El cambio de cada cripto y divisa sale de un oráculo de mercado**
+(`src/rates.ts`), que consulta CoinGecko y se refresca cada media hora. Una
+compra o una venta se cotiza contra el precio vigente del MATIC o del ETH en
+ese momento. Toda respuesta lleva de dónde sale y de cuándo es:
+
+| Campo | Qué dice |
+|---|---|
+| `rateSource` | `market` (cotización fresca) · `stale` (pasó la edad máxima) · `fallback` (el mercado no respondió nunca en este proceso) |
+| `rateAsOf` | Momento de la cotización, en ISO 8601 |
+| `rateAgeSeconds` | Cuánto ha envejecido |
+| `rateStale` | Si supera la edad máxima aceptada |
+| `rateDisclaimer` | Texto para trasladar a quien reciba la cotización |
+
+Hay que trasladarlos: una cotización caducada sirve para orientar, no para
+liquidar. `initiate_crypto_payment` se niega directamente si el cambio está
+caducado, porque prepara una operación con dinero.
+
+El oráculo no se cree cualquier lectura: descarta un cero o un `NaN` del
+proveedor, comprueba que las stablecoins estén en una banda alrededor del
+dólar —un USDT leído a 0,0001 $ acreditaría diez mil veces más BEZ de la
+cuenta— y, si la consulta falla, conserva el último precio bueno marcado como
+viejo en vez de volver en silencio a las constantes.
+
+**El precio del BEZ sigue siendo una constante de configuración**
+(`BEZ_PRICE_USD`), y las rutas que solo cobran en fiat lo declaran con
+`rateSource: 'precio-configurado'`. Ninguna herramienta lleva el suyo propio.
 
 ## Configuración
 
@@ -78,6 +100,11 @@ Copia `.env.example` a `.env`. Lo que más se toca:
 | `POLYGON_RPC_URL` | Nodo de mainnet | `https://polygon-rpc.com` |
 | `POLYGON_AMOY_RPC_URL` | Nodo de Amoy | `https://rpc-amoy.polygon.technology` |
 | `BEZ_PRICE_USD` | Precio del BEZ para toda cotización | `0.0075` |
+| `REFERENCE_RATES_TTL_MS` | Cada cuánto se refresca el mercado | `1800000` (30 min) |
+| `REFERENCE_RATES_MAX_AGE_MS` | Edad a partir de la cual una cotización es `stale` | `3600000` (2× TTL) |
+| `REFERENCE_RATES_TIMEOUT_MS` | Corte de la consulta al oráculo | `8000` |
+| `COINGECKO_API_URL` | Base de la API de precios | `https://api.coingecko.com/api/v3` |
+| `REFERENCE_RATE_MATIC`, `_ETH`, `_BTC`, `_BNB`, `_EUR`, `_GBP`, `_MXN` | Constante de reserva de cada símbolo, solo para cuando el mercado no responde | ver `config.rates` |
 | `BACKEND_URL` | Backend de BeZhas, para las herramientas de pago | `http://localhost:3001` |
 | `HTTP_PORT` | Puerto del transporte HTTP | `8080` |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_SECURITY_CHAT_ID` | Avisos al administrador | — |
