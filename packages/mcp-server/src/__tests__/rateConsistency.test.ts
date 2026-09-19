@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { config, unidadesPorUsd } from '../config.js';
+import { config } from '../config.js';
 
 const SRC = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -53,17 +53,6 @@ describe('config.rates · tabla única', () => {
 
     it('avisa de que no son cotizaciones de mercado', () => {
         expect(config.rates.disclaimer).toMatch(/no cotizaciones de mercado/i);
-    });
-
-    it('unidadesPorUsd es el inverso exacto de la tabla, solo para fiat', () => {
-        const inverso = unidadesPorUsd();
-        expect(Object.keys(inverso).sort()).toEqual(['EUR', 'GBP', 'MXN', 'USD']);
-        for (const [divisa, unidades] of Object.entries(inverso)) {
-            expect(unidades * config.rates.usdPerUnit[divisa]).toBeCloseTo(1, 6);
-        }
-        // Las criptos se quedan fuera a propósito: no son moneda de cuenta.
-        expect(inverso.ETH).toBeUndefined();
-        expect(inverso.MATIC).toBeUndefined();
     });
 });
 

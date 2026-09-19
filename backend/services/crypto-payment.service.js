@@ -214,7 +214,6 @@ class CryptoPaymentService {
                     `No hay cotización reciente de MATIC para acreditar el pago: ${cambio.disclaimer}`
                 );
             }
-            const maticPriceUSD = cambio.rate;
             const amountUSD = cambio.usd;
 
             // 2. Calcular cantidad de BEZ
@@ -243,7 +242,14 @@ class CryptoPaymentService {
                 bezAmount,
                 maticAmount: amountMatic,
                 userWallet: userWalletAddress,
-                blockNumber: receipt.blockNumber
+                blockNumber: receipt.blockNumber,
+                // A qué cambio se acreditaron los BEZ. Sin esto, reconstruir
+                // después por qué un pago dio esa cantidad exige adivinar qué
+                // precio tenía el MATIC en ese momento.
+                amountUSD,
+                maticPriceUSD: cambio.rate,
+                rateSource: cambio.source,
+                rateAsOf: cambio.asOf
             };
         } catch (error) {
             logger.error('Error processing MATIC payment:', error);
