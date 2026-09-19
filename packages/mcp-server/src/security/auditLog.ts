@@ -162,6 +162,28 @@ function clamp(text: string): string {
     return flat.length > MAX_FIELD ? flat.slice(0, MAX_FIELD) + '…' : flat;
 }
 
+/**
+ * Eslabón de la cadena de integridad de la auditoría.
+ *
+ * CodeQL marca este SHA-256 como «password hash with insufficient computational
+ * effort», porque sigue el rastro `BEZHAS_API_KEY` → `subjectFromApiKey` →
+ * `subject` → entrada → aquí, y concluye que se está resumiendo una contraseña
+ * con un hash rápido. No es lo que pasa, por dos motivos:
+ *
+ *   1. Esto NO es un hash de credencial, es el encadenado que hace la auditoría
+ *      a prueba de manipulación: cada entrada resume la anterior, y por eso
+ *      tiene que cubrir la entrada ENTERA, `subject` incluido. Si se excluyera,
+ *      quien alterase el fichero podría cambiar a quién se le imputa una
+ *      operación sin romper la cadena, que es justo lo que esto impide.
+ *   2. Lo que llega en `subject` no es la credencial: es la etiqueta opaca que
+ *      `subjectFromApiKey` ya derivó con `scrypt`. El factor de trabajo está
+ *      puesto una capa antes; repetirlo aquí no añadiría nada y haría que cada
+ *      entrada del registro costara decenas de milisegundos.
+ *
+ * Un hash rápido es lo correcto para una cadena de integridad. La alerta no se
+ * puede silenciar desde el código —code scanning no honra los comentarios de
+ * supresión— y hay que descartarla desde la pestaña Security del repositorio.
+ */
 function hashEntry(e: Omit<AuditEntry, 'hash'>): string {
     return createHash('sha256').update(JSON.stringify(e)).digest('hex');
 }
