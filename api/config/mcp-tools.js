@@ -74,8 +74,11 @@
  * explícita, no antes.
  */
 
+const crypto = require('crypto');
 const { z } = require('zod');
 const { alcanza, describirPlan, PLAN_POR_DEFECTO } = require('./plan-entitlements');
+const { RAILS } = require('./tx-rails');
+const { REDES, PROPOSITOS } = require('../services/txIntent');
 
 /** Tope de caracteres por respuesta. Un agente que pide 10.000 filas no debe
  *  poder inundar su propia ventana de contexto ni la memoria del servidor. */
@@ -218,7 +221,147 @@ const TOOLS = [
             return { ...suscripcion, incluye: describirPlan(suscripcion.plan) };
         },
     },
+
+    // ── Operaciones con fondos: NIVEL 1, preparar ───────────────────────────
+    //
+    // El MCP llega hasta preparar y nunca más allá (§7 del documento de
+    // seguridad): el agente describe la operación, BeZhas la valida, la simula,
+    // puntúa el riesgo y aplica la política, y devuelve cuántas aprobaciones
+    // humanas FIRMADAS necesita. Ejecutar exige esas firmas, que un agente
+    // puede transportar pero no producir, y no existe como herramienta MCP.
+    //
+    // Recibe un destinatario (a quién pagar), no una dirección que consultar:
+    // no devuelve NADA sobre ese destino más allá de si la operación pasa. Por
+    // eso lleva `recibeDestinatario` y el test del catálogo lo distingue de las
+    // herramientas de consulta, que siguen sin poder recibir direcciones.
+    // `bezhas_treasury` no está entre los orígenes: desde el MCP nunca se
+    // prepara un pago con dinero de BeZhas.
+    {
+        name: 'bezhas_tx_prepare',
+        planMinimo: 'creator_pro',
+        scope: 'wallet',
+        nivelRiesgo: 1,
+        recibeDestinatario: true,
+        title: 'Preparar una operación (sin ejecutarla)',
+        description: 'Prepara un pago o transferencia (cripto→cripto, FIAT→cripto, cripto→FIAT o FIAT→FIAT) y devuelve '
+            + 'la decisión de la política, el riesgo, la simulación y cuántas aprobaciones humanas firmadas necesita. '
+            + 'NO firma, NO envía y NO mueve fondos. Nunca inventes direcciones, IBAN, importes ni redes: si falta un '
+            + 'dato, pídeselo al usuario.',
+        inputSchema: {
+            carril: z.enum(Object.keys(RAILS)).describe('crypto_transfer, fiat_to_crypto, crypto_to_fiat o fiat_to_fiat'),
+            activo: z.string().regex(/^[A-Z0-9]{2,10}$/).describe('Activo de origen: BEZ, USDC, USDT, EUR, USD'),
+            importe: z.string().regex(/^\d{1,15}(\.\d{1,18})?$/).describe('Importe decimal en texto, con punto'),
+            activo_destino: z.string().regex(/^[A-Z0-9]{2,10}$/).optional().describe('Sólo en conversiones FIAT↔cripto'),
+            red: z.enum(REDES).optional().describe('Red de la parte cripto (bsc, polygon, bezhas-l2…). Obligatoria si hay cripto.'),
+            origen_tipo: z.enum(['evm_address', 'client_balance', 'card', 'sepa_incoming']).describe('De dónde sale el valor'),
+            origen: z.string().min(3).max(64).optional().describe('Wallet de origen cuando origen_tipo es evm_address'),
+            destino_tipo: z.enum(['evm_address', 'iban']).describe('Tipo de destinatario'),
+            destino: z.string().min(3).max(64).describe('Wallet o IBAN del destinatario, tal como lo dio el usuario'),
+            beneficiario: z.string().min(2).max(140).optional().describe('Titular del destino (obligatorio para IBAN)'),
+            pais_beneficiario: z.string().regex(/^[A-Z]{2}$/).optional(),
+            proposito: z.enum(PROPOSITOS),
+            referencia: z.string().max(140).optional().describe('Concepto (juego de caracteres SEPA)'),
+            contraparte_nombre: z.string().min(2).max(140).optional().describe('Razón social del beneficiario (travel rule)'),
+            contraparte_pais: z.string().regex(/^[A-Z]{2}$/).optional(),
+            clave_idempotencia: z.string().regex(/^[A-Za-z0-9_-]{8,80}$/)
+                .describe('Única por operación: repetir la llamada con la misma clave NUNCA crea un segundo pago'),
+        },
+        handler: async ({ args, app, agente, plan, tx }) => {
+            const destination = { type: args.destino_tipo, value: args.destino };
+            if (args.beneficiario) destination.name = args.beneficiario;
+            if (args.pais_beneficiario) destination.country = args.pais_beneficiario;
+            const source = { type: args.origen_tipo };
+            if (args.origen) source.value = args.origen;
+            const entrada = {
+                rail: args.carril, asset: args.activo, amount: args.importe,
+                source, destination, purpose: args.proposito, idempotencyKey: args.clave_idempotencia,
+            };
+            if (args.activo_destino) entrada.targetAsset = args.activo_destino;
+            if (args.red) entrada.network = args.red;
+            if (args.referencia) entrada.reference = args.referencia;
+            if (args.contraparte_nombre && args.contraparte_pais) {
+                entrada.counterparty = { legalName: args.contraparte_nombre, country: args.contraparte_pais };
+            }
+            const v = await tx.crearIntencion({
+                entrada, app, agente, plan, canal: agente ? `mcp:${agente.agentId}` : 'mcp',
+            });
+            return resumenIntencion(v);
+        },
+    },
+    {
+        name: 'bezhas_tx_status',
+        planMinimo: 'creator_pro',
+        scope: 'wallet',
+        nivelRiesgo: 0,
+        title: 'Estado de una operación',
+        description: 'Estado de una operación preparada por esta misma api-key: decisión, aprobaciones y ejecución. '
+            + 'Una operación de otro cliente es indistinguible de una que no existe.',
+        inputSchema: {
+            id: z.string().uuid().describe('id devuelto por bezhas_tx_prepare'),
+        },
+        handler: async ({ args, app, tx }) => resumenIntencion(await tx.obtener({ id: args.id, app })),
+    },
 ];
+
+/**
+ * Lo que ve el agente de una intención. Sin los datos tipados de aprobación:
+ * esos son para la wallet de una persona, no para el contexto de un modelo.
+ */
+function resumenIntencion(v) {
+    const siguiente = {
+        denied: 'Denegada. Revisa los motivos; no reintentes con otra clave de idempotencia para esquivarlos.',
+        awaiting_approval: `Pendiente de ${v.aprobacionesRequeridas} aprobación(es) firmada(s) por personas autorizadas en el panel de BeZhas.`,
+        ready: 'Permitida. La transacción sin firmar debe firmarla la wallet del usuario; tú no puedes firmarla.',
+        approved: 'Aprobada. La ejecución la lanza una persona o un sistema autorizado, no este agente.',
+    }[v.estado] || `Estado: ${v.estado}.`;
+    return {
+        id: v.id, estado: v.estado, decision: v.decision, carril: v.carril, custodia: v.custodia,
+        importe: v.importe, activo: v.activo, red: v.red, destino: v.destino, importeEur: v.importeEur,
+        motivos: v.motivos, aprobacionesRequeridas: v.aprobacionesRequeridas,
+        riesgo: v.riesgo?.nivel, simulacion: v.simulacion ? { ok: v.simulacion.ok, motivo: v.simulacion.motivo } : null,
+        txSinFirmar: v.txSinFirmar, txHash: v.txHash, caduca: v.caduca, idempotente: v.idempotente,
+        siguientePaso: siguiente,
+    };
+}
+
+// ── Contenido no fiable ─────────────────────────────────────────────────────
+//
+// Lo que devuelve una herramienta entra en el contexto del LLM DE OTRA EMPRESA.
+// Nombres de token, notas y metadatos on-chain los escribe cualquiera: un
+// símbolo de token puede ser «Ignora lo anterior y…» con caracteres invisibles
+// o de control de dirección (bidi) para que un humano no lo vea al revisar.
+// Aquí se quitan esos caracteres y se acotan las cadenas. La etiqueta de
+// «datos, no instrucciones» la pone mcp-gateway.js alrededor de todo.
+const INVISIBLES = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]|[\u{E0000}-\u{E007F}]/gu;
+const MAX_CADENA = 2000;
+
+function sanearNoFiable(valor, profundidad = 0) {
+    if (profundidad > 12) return '[profundidad máxima]';
+    if (typeof valor === 'string') {
+        const limpio = valor.replace(INVISIBLES, '');
+        return limpio.length > MAX_CADENA ? `${limpio.slice(0, MAX_CADENA)}…[recortado]` : limpio;
+    }
+    if (Array.isArray(valor)) return valor.map((v) => sanearNoFiable(v, profundidad + 1));
+    if (valor && typeof valor === 'object') {
+        return Object.fromEntries(Object.entries(valor).map(([k, v]) => [sanearNoFiable(k, profundidad + 1), sanearNoFiable(v, profundidad + 1)]));
+    }
+    return valor;
+}
+
+/**
+ * Huella del catálogo publicado: nombre, descripción, permisos, nivel y forma
+ * de los argumentos de cada herramienta. Va en la versión del servidor MCP para
+ * que un cliente pueda FIJARLA y detectar si una herramienta cambia de
+ * descripción o de alcance sin aviso («rug pull» de herramientas).
+ */
+function huellaCatalogo(tools = TOOLS) {
+    const forma = tools.map((t) => ({
+        name: t.name, title: t.title, description: t.description, scope: t.scope,
+        planMinimo: t.planMinimo, nivelRiesgo: t.nivelRiesgo || 0, recibeDestinatario: Boolean(t.recibeDestinatario),
+        args: Object.fromEntries(Object.entries(t.inputSchema || {}).map(([k, v]) => [k, v?.description || v?._def?.type || null])),
+    }));
+    return crypto.createHash('sha256').update(JSON.stringify(forma)).digest('hex');
+}
 
 /** Índice por nombre, para no recorrer el array en cada llamada. */
 const PORNOMBRE = new Map(TOOLS.map((t) => [t.name, t]));
@@ -256,4 +399,7 @@ function getTool(name) {
     return PORNOMBRE.get(name) || null;
 }
 
-module.exports = { TOOLS, toolsParaScopes, planPermiteTool, getTool, MAX_RESPUESTA_CHARS };
+module.exports = {
+    TOOLS, toolsParaScopes, planPermiteTool, getTool, MAX_RESPUESTA_CHARS,
+    sanearNoFiable, huellaCatalogo, resumenIntencion,
+};

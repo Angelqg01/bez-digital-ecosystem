@@ -16,8 +16,17 @@ const { audit } = require('./auditLogger');
 
 // Configuración del webhook
 const DISCORD_CONFIG = {
-    WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1448627231625838745/afE6XbHBr4e9oZFhbn7WOHuQ5MWvuJHuDdrwPS_s0673s2j3DlRvmd73IbcO-wcShgnf',
-    ENABLED: process.env.DISCORD_NOTIFICATIONS_ENABLED !== 'false',
+    // Sin valor por defecto: la URL de un webhook de Discord ES la credencial
+    // para publicar en el canal. Estuvo escrita aquí (y en git) y cualquier
+    // copia del repo podía mandar alertas falsas al canal de seguridad.
+    WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL || '',
+    // Nunca desde los tests: un test del webhook de Stripe disparaba una
+    // alerta real «STRIPE WEBHOOK ERROR — Webhook processing failed» en cada
+    // ejecución de la suite.
+    ENABLED: process.env.DISCORD_NOTIFICATIONS_ENABLED !== 'false'
+        && Boolean(process.env.DISCORD_WEBHOOK_URL)
+        && process.env.NODE_ENV !== 'test'
+        && !process.env.JEST_WORKER_ID,
     MIN_SEVERITY: process.env.DISCORD_MIN_SEVERITY || 'medium', // low, medium, high, critical
     RATE_LIMIT: 5, // Máximo 5 notificaciones por minuto
     COOLDOWN: 60000 // 1 minuto

@@ -67,7 +67,7 @@ describe('Gateway oracle prices (público)', () => {
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
         const res = await request(app).get(PATH);
         expect(res.status).toBe(200);
-        expect(res.body.tokens.BEZ).toMatchObject({ priceUSD: 0.1, seed: true });
+        expect(res.body.tokens.BEZ).toMatchObject({ priceUSD: 0.0075, seed: true });
     });
 
     it('si la consulta falla tampoco devuelve 500', async () => {
@@ -134,7 +134,7 @@ describe('Gateway oracle prices (público)', () => {
         mockQuery.mockRejectedValueOnce(new Error('relation "token_market_cache" does not exist'));
         const res = await request(app).get(PATH);
         expect(Array.isArray(res.body.markets)).toBe(true);
-        expect(res.body.markets.map((m) => m.chainId).sort((a, b) => a - b)).toEqual([56, 137]);
+        expect(res.body.markets.map((m) => m.chainId).sort((a, b) => a - b)).toEqual([137]);
     });
 
     it('sin pool declara el par pendiente en vez de inventarse precio', async () => {
@@ -162,8 +162,8 @@ describe('Gateway oracle prices (público)', () => {
         expect(polygon).toMatchObject({
             pool: 'QuickSwap V3', price: 0.25, liquidityUsd: 42000, status: 'active',
         });
-        // La cadena sin fila sigue saliendo, en pendiente: el panel pinta dos tarjetas.
-        expect(res.body.markets.find((m) => m.chainId === 56).status).toBe('pending');
+        // BEZ no existe en BSC: no se publica un mercado BSC con una dirección sin contrato.
+        expect(res.body.markets.find((m) => m.chainId === 56)).toBeUndefined();
     });
 
     it('los campos nuevos no desplazan a los que ya consumía la portada', async () => {
@@ -207,7 +207,7 @@ describe('Gateway oracle prices (público)', () => {
             rowCount: 1,
         });
         const res = await request(app).get(PATH);
-        expect(res.body.markets.map((m) => m.chainId).sort((a, b) => a - b)).toEqual([56, 137]);
+        expect(res.body.markets.map((m) => m.chainId).sort((a, b) => a - b)).toEqual([137]);
     });
 
     it('cada mercado publica la direccion del token en su cadena', async () => {
@@ -215,17 +215,17 @@ describe('Gateway oracle prices (público)', () => {
         const res = await request(app).get(PATH);
         const byChain = Object.fromEntries(res.body.markets.map((m) => [m.chainId, m.address]));
         expect(byChain[137]).toBe('0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8');
-        expect(byChain[56]).toBe('0x8a1e3930fde1f151471c368fdbb39f3f63a65b55');
+        expect(byChain[56]).toBeUndefined();
     });
 
     it('una liquidez ilegible cuenta como cero, no como NaN', async () => {
         mockQuery.mockResolvedValueOnce({ rows: [priceRow()], rowCount: 1 });
         mockQuery.mockResolvedValueOnce({
-            rows: [{ chain_id: 56, pool: 'PancakeSwap V3', price_usd: null, liquidity_usd: null, status: 'pending' }],
+            rows: [{ chain_id: 137, pool: 'QuickSwap V3', price_usd: null, liquidity_usd: null, status: 'pending' }],
             rowCount: 1,
         });
         const res = await request(app).get(PATH);
-        const bnb = res.body.markets.find((m) => m.chainId === 56);
+        const bnb = res.body.markets.find((m) => m.chainId === 137);
         expect(bnb.liquidityUsd).toBe(0);
         expect(bnb.price).toBeNull();
     });

@@ -112,42 +112,64 @@ async function puedeAcceder(req, address) {
  * ESTA dirección». Son controles distintos y hacen falta los dos: tener el
  * scope `wallet` nunca debió significar poder leer la cartera de cualquiera.
  */
+/**
+ * Comprueba el acceso a `address` y, si se deniega, responde 403.
+ * Devuelve true si la petición puede seguir.
+ */
+async function exigirAccesoADireccion(req, res, address, { mensaje } = {}) {
+    const resultado = await puedeAcceder(req, address);
+
+    if (resultado.permitido) return true;
+
+    const app = req.registeredApp;
+
+    // Modo legacy: pasa, pero deja rastro en cada uso. Es una salida de
+    // emergencia para desatascar una integración concreta, no un sitio
+    // donde quedarse — por eso avisa siempre y no una vez.
+    if (app?.addressAccessMode === 'legacy') {
+        logger.warn(
+            { appId: app.id, appName: app.name, address: normalizar(address), path: req.path },
+            'ACCESO A DIRECCIÓN AJENA PERMITIDO POR MODO LEGACY — vincula la clave a su titular y pásala a strict'
+        );
+        return true;
+    }
+
+    logger.warn(
+        { appId: app?.id, appName: app?.name, address: normalizar(address), path: req.path, via: resultado.via },
+        'address access denied'
+    );
+
+    // 403 y no 404: un 404 o una lista vacía serían indistinguibles de
+    // «esa dirección no tiene datos», y eso permite enumerar direcciones
+    // con actividad a base de probar.
+    res.status(403).json({
+        error: mensaje || 'No tienes acceso a los datos de esa dirección.',
+        code: 'ADDRESS_ACCESS_DENIED',
+    });
+    return false;
+}
+
 function requireAddressAccess(paramName = 'address') {
     return async (req, res, next) => {
-        const address = req.params[paramName];
-        const resultado = await puedeAcceder(req, address);
-
-        if (resultado.permitido) return next();
-
-        const app = req.registeredApp;
-
-        // Modo legacy: pasa, pero deja rastro en cada uso. Es una salida de
-        // emergencia para desatascar una integración concreta, no un sitio
-        // donde quedarse — por eso avisa siempre y no una vez.
-        if (app?.addressAccessMode === 'legacy') {
-            logger.warn(
-                { appId: app.id, appName: app.name, address: normalizar(address), path: req.path },
-                'ACCESO A DIRECCIÓN AJENA PERMITIDO POR MODO LEGACY — vincula la clave a su titular y pásala a strict'
-            );
-            return next();
-        }
-
-        logger.warn(
-            { appId: app?.id, appName: app?.name, address: normalizar(address), path: req.path, via: resultado.via },
-            'address access denied'
-        );
-
-        // 403 y no 404: un 404 o una lista vacía serían indistinguibles de
-        // «esa dirección no tiene datos», y eso permite enumerar direcciones
-        // con actividad a base de probar.
-        return res.status(403).json({
-            error: 'No tienes acceso a los datos de esa dirección.',
-            code: 'ADDRESS_ACCESS_DENIED',
-        });
+        if (await exigirAccesoADireccion(req, res, req.params[paramName])) next();
     };
+}
+
+/**
+ * Lo mismo para una dirección que llega en el CUERPO y en nombre de la cual se
+ * va a ACTUAR (p. ej. `sender` de un pago). Leer datos ajenos es una fuga;
+ * iniciar un pago o una venta en nombre de una wallet ajena es suplantación.
+ * Llamar después de validar el cuerpo.
+ */
+function exigirTitularidadEnCuerpo(req, res, address) {
+    return exigirAccesoADireccion(req, res, address, {
+        mensaje: 'No puedes operar en nombre de esa dirección.',
+    });
 }
 
 /** Para pruebas: vacía la caché de pertenencia. */
 function _resetCache() { cacheEmpresa.clear(); }
 
-module.exports = { requireAddressAccess, puedeAcceder, _resetCache };
+module.exports = {
+    requireAddressAccess, exigirAccesoADireccion, exigirTitularidadEnCuerpo, puedeAcceder, _resetCache,
+};

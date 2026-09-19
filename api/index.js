@@ -92,7 +92,8 @@ const organizationBillingRoutes = require('./routes/organization-billing');
 const adminConfigRoutes = require('./routes/admin-config');
 const adminGovernanceRoutes = require('./routes/admin-governance');
 const mcpGatewayRoutes = require('./routes/mcp-gateway');
-const mcpPublicRoutes = require('./routes/mcp-public');   // ← MCP de alta asistida (auth opcional)
+const mcpPublicRoutes = require('./routes/mcp-public');
+const { txRouter, securityRouter } = require('./routes/tx-security'); // ← operaciones con fondos + kill switch   // ← MCP de alta asistida (auth opcional)
 const webhookRoutes = require('./routes/webhooks');
 const energyRoutes = require('./routes/energy');          // ← VPP Energy Layer
 const mtfcRoutes = require('./routes/mtfc');
@@ -411,6 +412,10 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/qr', qrRoutes);
 
 // ── Gateway ───────────────────────────────────────────────────────────────────
+// Operaciones con fondos (intención → política → aprobación firmada → firmante
+// aislado). Antes que el Gateway general para que /tx no caiga en sus rutas.
+app.use('/api/gateway/v1/tx', txRouter);
+app.use('/api/security', securityRouter);
 app.use('/api/gateway/v1', gatewayRoutes);
 // MCP de cara al cliente. Misma autenticación por api-key y mismos scopes que
 // el Gateway REST, en el mismo proceso: un servicio aparte obligaría a
@@ -806,6 +811,42 @@ async function startServer() {
     } catch (err) {
       gcpLogger.warning('[STARTUP] Arbitrage agent failed to start', { error: err.message });
     }
+  }
+
+  // ── PASO 7.9: Seguridad transaccional ────────────────────────────────────────
+  // El kill switch se carga ANTES de escuchar: las rutas heredadas leen su caché
+  // en memoria y, sin esta carga, verían NORMAL hasta el primer refresco.
+  try {
+    await require('./services/killSwitch').iniciar();
+    gcpLogger.info('[STARTUP] Kill switch cargado');
+  } catch (err) {
+    gcpLogger.error('[STARTUP] Kill switch ilegible: las operaciones con fondos quedarán bloqueadas', { error: err.message });
+  }
+  // Entregas de compras con tarjeta: sólo con los fondos en la cuenta bancaria.
+  if (process.env.STRIPE_SECRET_KEY) {
+    require('./services/cardSettlementWorker').iniciar();
+    gcpLogger.info('[STARTUP] Liquidador de compras con tarjeta arrancado');
+  }
+  // Claves privadas en este proceso: fuera las que no hacen falta y las que
+  // controlan direcciones de tesorería. Sólo direcciones al log.
+  require('./services/hotKeyGuard').revisar();
+
+  // Anclaje periódico de la auditoría de seguridad (raíz merkle por tramo).
+  {
+    const intervalo = Number(process.env.SECURITY_AUDIT_ANCHOR_INTERVAL_MS) || 60 * 60 * 1000;
+    const temporizador = setInterval(() => {
+      require('./services/securityAudit').anclarPendiente()
+        .catch((err) => gcpLogger.warning('[SECURITY] Anclaje de auditoría fallido', { error: err.message }));
+    }, intervalo);
+    temporizador.unref?.();
+  }
+
+  // No se aborta el arranque por el vault: tumbaría la API entera por una pieza
+  // que sólo usa el alta FIAT. Se avisa alto y cada operación del vault falla.
+  try {
+    require('./services/walletVaultService').comprobarConfiguracion();
+  } catch (err) {
+    gcpLogger.error('[STARTUP] Vault de wallets mal configurado', { error: err.message });
   }
 
   // ── PASO 8: Escuchar (SIEMPRE el último paso) ─────────────────────────────────

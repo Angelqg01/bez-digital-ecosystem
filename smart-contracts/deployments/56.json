@@ -2,16 +2,17 @@
   "chainId": 56,
   "network": "bsc-mainnet",
   "timestamp": "2026-05-11T19:35:00.000Z",
-  "_note": "Production deployment — BSC Mainnet. BEZ-Coin (v1) is the live token. BEZCoinV2 is NOT deployed yet.",
+  "_note": "BSC Mainnet. BEZ-Coin NO está desplegado en esta red (ver tokens.BEZCoin.note).",
   "tokens": {
     "BEZCoin": {
-      "address": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+      "address": null,
       "symbol": "BEZ",
       "decimals": 18,
       "version": "v1",
       "chain": "BSC",
-      "status": "LIVE",
-      "note": "Primary token used across all production services"
+      "status": "NOT_DEPLOYED",
+      "note": "Verificado on-chain el 2026-09-18 en tres RPC: en BSC NO hay contrato BEZ. 0xEcBa…11A8 es BEZ-Coin en POLYGON (137), verificado en Sourcify/Blockscout y confirmado por Yoel. Registrarlo aquí como LIVE en BSC hacía que la plataforma construyera transferencias a una dirección sin código, que no revierten.",
+      "polygonAddress": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8"
     },
     "BEZCoinV2": {
       "address": null,
@@ -24,7 +25,7 @@
     }
   },
   "core": {
-    "BEZCoin": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+    "BEZCoin": null,
     "BEZCoinV2": null,
     "BeZhasLogisticsNFT": null,
     "QualityEscrow": null,

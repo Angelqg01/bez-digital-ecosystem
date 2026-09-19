@@ -15,6 +15,74 @@ const logger = require('pino')({ level: 'info', name: 'gateway-auth' });
 const { JWT_SECRET, AUTH_BYPASS } = require('../config/secrets');
 
 /**
+ * Credenciales de agente (§41 del documento de seguridad del MCP).
+ *
+ * La api-key de una empresa identifica a la empresa, no a cuál de sus agentes
+ * habla. Con una sola clave, el agente de marketing y el de tesorería tienen el
+ * mismo poder, y si uno se desvía no hay forma de pararlo sin parar a todos.
+ *
+ * Una clave `bzag_…` es una subclave de la empresa para UN agente:
+ *   · sus scopes son la INTERSECCIÓN con los de la empresa (nunca más), y
+ *     nunca incluyen `admin`;
+ *   · lleva carriles de dinero, límites propios y si puede ejecutar o sólo
+ *     preparar (txPolicyEngine aplica el más restrictivo);
+ *   · caduca siempre y se revoca sola, sin tocar la clave de la empresa.
+ */
+const PREFIJO_AGENTE = 'bzag_';
+
+async function authenticateAgent(req, res, next, clave) {
+    try {
+        const { rows } = await query(
+            `SELECT a.agent_id, a.scopes AS agent_scopes, a.rails, a.per_tx_limit_eur, a.daily_limit_eur,
+                    a.can_execute, a.status AS agent_status, a.expires_at,
+                    r.id, r.app_name, r.scopes, r.tier, r.is_active,
+                    r.enterprise_id, r.authorized_addresses, r.address_access_mode
+               FROM app_agents a JOIN app_registry r ON r.id = a.app_id
+              WHERE a.key_hash = encode(digest($1, 'sha256'), 'hex')`,
+            [clave]
+        );
+        if (rows.length === 0) {
+            logger.warn({ ip: req.ip }, 'Invalid agent key attempt');
+            return res.status(401).json({ error: 'Invalid API key' });
+        }
+        const f = rows[0];
+        if (!f.is_active) return res.status(403).json({ error: 'App is deactivated' });
+        if (f.agent_status !== 'active' || !f.expires_at || new Date(f.expires_at).getTime() <= Date.now()) {
+            return res.status(401).json({ error: 'Agent credential revoked or expired', code: 'AGENT_KEY_INACTIVE' });
+        }
+
+        const deEmpresa = f.scopes || [];
+        const pedidos = (f.agent_scopes || []).filter((s) => s !== 'admin');
+        const efectivos = deEmpresa.includes('admin') ? pedidos : pedidos.filter((s) => deEmpresa.includes(s));
+        const numero = (v) => (v === null || v === undefined ? undefined : Number(v));
+
+        req.registeredApp = {
+            id: f.id,
+            name: f.app_name,
+            scopes: efectivos,
+            tier: f.tier,
+            enterpriseId: f.enterprise_id || null,
+            authorizedAddresses: f.authorized_addresses || [],
+            addressAccessMode: f.address_access_mode || 'strict',
+            viaAgente: true,
+        };
+        req.agent = {
+            agentId: f.agent_id,
+            rails: f.rails || [],
+            porOperacionEur: numero(f.per_tx_limit_eur),
+            diarioEur: numero(f.daily_limit_eur),
+            canExecute: f.can_execute === true,
+        };
+        query('UPDATE app_agents SET last_used_at = NOW() WHERE key_hash = encode(digest($1, \'sha256\'), \'hex\')', [clave])
+            .catch(() => {});
+        return next();
+    } catch (error) {
+        logger.error({ error: error.message }, 'Gateway agent auth failed');
+        return res.status(500).json({ error: 'Authentication service error' });
+    }
+}
+
+/**
  * Authenticate a registered app via x-api-key header.
  * Populates req.app with { id, name, scopes, tier }.
  */
@@ -22,6 +90,9 @@ async function authenticateApp(req, res, next) {
     const apiKey = req.headers['x-api-key'];
     if (!apiKey) {
         return res.status(401).json({ error: 'Missing x-api-key header' });
+    }
+    if (typeof apiKey === 'string' && apiKey.startsWith(PREFIJO_AGENTE)) {
+        return authenticateAgent(req, res, next, apiKey);
     }
 
     try {
