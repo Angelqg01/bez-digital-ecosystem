@@ -5,7 +5,7 @@
  * rompe la cadena y `verifyChain` lo detecta, así que un atacante que consiga
  * ejecución no puede limpiar su rastro sin dejar señal.
  */
-import { createHash, createHmac, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes, scryptSync } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Finding } from './scanner.js';
@@ -124,16 +124,36 @@ export function subjectFromRequest(opts: { ip?: string; accountId?: string }): s
 }
 
 /**
- * Sujeto de una sesión por STDIO, a partir de su clave de API.
+ * Sujeto derivado de una CREDENCIAL, con derivación lenta.
  *
- * Existe para que nadie caiga en la tentación de usar un trozo de la clave
- * como identificador. El sujeto acaba en cada entrada de la auditoría y la
- * auditoría se escribe a disco: un prefijo de la credencial ahí es una
- * credencial en un fichero de registro. El HMAC identifica igual de bien y no
- * guarda nada que sirva para autenticarse.
+ * Se separa de `subjectId` a propósito, porque el material de partida es
+ * distinto. Una IP no es un secreto: nadie gana nada invirtiendo el hash de
+ * algo que ya viaja en claro en cada paquete, y por eso ahí basta un HMAC
+ * rápido. Una clave de API sí lo es, y un hash rápido de un secreto con poca
+ * entropía se rompe por fuerza bruta: quien se hiciera con el fichero de
+ * auditoría podría ir probando claves candidatas a millones por segundo hasta
+ * dar con la que produce esa etiqueta.
+ *
+ * `scrypt` hace que cada intento cueste, con los parámetros que recomienda el
+ * propio Node. El coste no se paga en caliente: esta función se llama UNA vez
+ * al armar el servidor, y el resultado queda memorizado.
  */
+const SCRYPT_COSTE = { N: 16_384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
+const credencialesMemorizadas = new Map<string, string>();
+
 export function subjectFromApiKey(apiKey?: string): string {
-    return apiKey ? subjectId(`apikey:${apiKey}`) : subjectId('stdio');
+    if (!apiKey) return subjectId('stdio');
+
+    const memorizado = credencialesMemorizadas.get(apiKey);
+    if (memorizado !== undefined) return memorizado;
+
+    const derivado = scryptSync(apiKey, SUBJECT_SALT, 16, SCRYPT_COSTE).toString('hex');
+    const id = 'sbj_' + derivado.slice(0, 16);
+
+    // Acotada: son claves de API, no hay muchas, pero tampoco se deja crecer.
+    if (credencialesMemorizadas.size >= 64) credencialesMemorizadas.clear();
+    credencialesMemorizadas.set(apiKey, id);
+    return id;
 }
 
 /** Recorta los campos de texto antes de persistirlos. */

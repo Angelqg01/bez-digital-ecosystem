@@ -33,15 +33,12 @@ import { hardenServer, subjectFromApiKey } from './security/index.js';
  * El blindaje se aplica envolviendo el servidor, no herramienta a herramienta,
  * para que una herramienta nueva quede protegida sin que nadie tenga que
  * acordarse en su fichero.
- */
-/**
- * Sujeto de esta sesión, calculado UNA vez al armar el servidor.
  *
- * Dos motivos. Uno: `resolveSubject` se invoca en cada llamada a herramienta, y
- * recalcular el HMAC cada vez era trabajo tirado. Dos, y más importante: la
- * credencial se lee del entorno en un único punto y se convierte en su etiqueta
- * opaca ahí mismo, de modo que el valor en claro no viaja a ninguna otra parte
- * del proceso ni puede acabar por descuido en un registro.
+ * El sujeto del vigilante se calcula UNA vez aquí, no en cada llamada. Además
+ * de ahorrar la derivación —que con `scrypt` cuesta de verdad—, deja la
+ * credencial leída del entorno en un único punto del proceso: se convierte en
+ * su etiqueta opaca ahí mismo y el valor en claro no viaja a ninguna otra
+ * parte ni puede acabar por descuido en un registro.
  */
 export function crearServidor(): McpServer {
     const server = new McpServer({

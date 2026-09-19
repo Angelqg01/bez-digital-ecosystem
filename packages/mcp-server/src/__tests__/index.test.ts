@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { crearServidor } from '../index.js';
-import { auditLog, subjectFromApiKey } from '../security/index.js';
+import { auditLog, subjectFromApiKey, subjectFromRequest } from '../security/index.js';
 
 const CLAVE = 'bzh_live_clave_de_prueba_1234567890';
 
@@ -75,5 +75,43 @@ describe('el sujeto del vigilante no lleva la credencial', () => {
         const anotado = JSON.stringify(auditLog.recent(5));
         expect(anotado).not.toContain(CLAVE);
         expect(anotado).not.toContain(CLAVE.slice(0, 12));
+    });
+});
+
+describe('la derivación de la credencial cuesta a propósito', () => {
+    it('usa una función lenta, no un hash rápido', () => {
+        // Una IP no es un secreto y ahí basta un HMAC. Una clave de API sí lo
+        // es: con un hash rápido, quien se hiciera con el fichero de auditoría
+        // podría probar claves candidatas a millones por segundo hasta dar con
+        // la que produce la etiqueta. `scrypt` hace que cada intento cueste.
+        const t0 = process.hrtime.bigint();
+        subjectFromApiKey('clave_sin_memorizar_' + Date.now());
+        const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+
+        // Un SHA-256 tarda microsegundos; scrypt con estos parámetros, decenas
+        // de milisegundos. El umbral va holgado para no depender de la máquina.
+        expect(ms).toBeGreaterThan(5);
+    });
+
+    it('no vuelve a pagar el coste para la misma clave', () => {
+        const clave = 'clave_repetida_' + Date.now();
+        subjectFromApiKey(clave);
+
+        const t0 = process.hrtime.bigint();
+        const segunda = subjectFromApiKey(clave);
+        const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+
+        expect(segunda).toBe(subjectFromApiKey(clave));
+        expect(ms).toBeLessThan(2);
+    });
+
+    it('la vía de la IP sigue siendo rápida', () => {
+        // Derivar la IP con scrypt convertiría cada petición de un origen nuevo
+        // en trabajo caro: el propio limitador sería el vector de agotamiento.
+        const t0 = process.hrtime.bigint();
+        for (let i = 0; i < 500; i++) subjectFromRequest({ ip: `198.51.100.${i % 256}` });
+        const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+
+        expect(ms).toBeLessThan(500);
     });
 });
