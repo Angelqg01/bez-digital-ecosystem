@@ -4,6 +4,8 @@
 export {
     auditLog,
     AuditLog,
+    normalizeIp,
+    subjectFromApiKey,
     subjectFromRequest,
     subjectId,
     type AuditEntry,

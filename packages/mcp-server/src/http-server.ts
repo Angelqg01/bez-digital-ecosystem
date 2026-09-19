@@ -21,6 +21,8 @@
  *   GET  /api/mcp/health              → Health check
  *   GET  /api/mcp/tools               → List available tools
  */
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { pathToFileURL } from 'node:url';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
@@ -32,12 +34,28 @@ import {
     hardenServer,
     policy,
     subjectFromRequest,
+    WatchdogError,
     GLOBAL_LIMIT_PER_MINUTE,
     watchdogLimiter,
 } from './security/index.js';
 import { config } from './config.js';
 
 const app: ReturnType<typeof express> = express();
+
+/**
+ * Confiar en UN salto de proxy.
+ *
+ * Sin esto, `req.ip` es la dirección del proxy —Cloud Run, un balanceador, el
+ * ingress de Docker— para TODAS las peticiones. Y como el sujeto del vigilante
+ * y la clave del limitador salen de ahí, todo el tráfico del mundo caía en el
+ * mismo cubo: el techo por sujeto dejaba de separar a nadie y bastaba un
+ * cliente ruidoso para agotar la cuota de todos los demás.
+ *
+ * Un solo salto, no `true`: con `true` Express se cree el primer valor de
+ * `X-Forwarded-For`, que lo pone el cliente y por tanto se falsifica a
+ * voluntad para saltarse el límite.
+ */
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
 
 /**
  * Limitadores. `rateLimit()` se llama aquí, a la vista de las rutas que
@@ -69,13 +87,27 @@ app.use(rateLimit(limiterOptions(GLOBAL_LIMIT_PER_MINUTE, true)));
 // la forma habitual de esconder una inyección entre miles de líneas.
 app.use(express.json({ limit: process.env.MCP_BODY_LIMIT || '1mb' }));
 
+/**
+ * Sujeto de la petición en curso.
+ *
+ * Va en un `AsyncLocalStorage` y no en una variable de módulo. Con una
+ * variable suelta, dos peticiones solapadas se pisan: la A la fija, cede el
+ * turno en su primer `await` —y estas rutas hacen llamadas de red, así que lo
+ * ceden siempre—, la B la sobrescribe, y cuando A continúa atribuye su
+ * actividad al sujeto de B. Los techos por sujeto del vigilante quedaban
+ * contabilizados contra quien no era.
+ */
+const contexto = new AsyncLocalStorage<{ subject: string }>();
+
+/** Sujeto actual, o `undefined` fuera de una petición. */
+const sujetoActual = (): string | undefined => contexto.getStore()?.subject;
+
 // Identifica al solicitante para los techos por sujeto del vigilante.
 // Deriva de la IP, no de la cabecera de clave: este servidor no la valida, así
 // que un tope indexado por ella se esquiva enviando una clave distinta cada
 // vez. Ver `subjectFromRequest`.
 app.use((req, _res, next) => {
-    currentSubject = subjectFromRequest({ ip: req.ip });
-    next();
+    contexto.run({ subject: subjectFromRequest({ ip: req.ip }) }, next);
 });
 
 // Initialize MCP Server (internal, not connected to transport)
@@ -84,10 +116,85 @@ const mcpServer = new McpServer({
     version: '1.0.0',
 });
 
-// Mismo blindaje que en STDIO. El sujeto sale de la cabecera de la petición
-// en curso, que fija el middleware de más abajo.
-let currentSubject: string | undefined;
-registerTools(hardenServer(mcpServer, { resolveSubject: () => currentSubject }));
+// Mismo blindaje que en STDIO, para quien consuma este servidor como MCP.
+registerTools(hardenServer(mcpServer, { resolveSubject: sujetoActual }));
+
+/**
+ * ─── El vigilante, también por HTTP ─────────────────────────────────────────
+ *
+ * `hardenServer` protege las herramientas registradas en `mcpServer`. Pero las
+ * rutas REST de este fichero NO pasan por ahí: reimplementan la lógica en
+ * línea, y `mcpServer` ni siquiera se conecta a un transporte. El resultado era
+ * que por HTTP no se aplicaba NADA del vigilante —ni detección de inyección, ni
+ * redacción de secretos, ni techo de dinero, ni el corte en caliente de
+ * `WATCHDOG_DISABLED_TOOLS`— mientras `/api/mcp/watchdog/status`, en el mismo
+ * servidor, informaba de que la política estaba activa.
+ *
+ * Este middleware cierra esa diferencia: cada ruta de herramienta declara qué
+ * herramienta es, y la petición pasa por el mismo guardián que la vía STDIO.
+ */
+const HERRAMIENTA_POR_RUTA: Record<string, string> = {
+    '/api/mcp/analyze-gas': 'analyze_gas_strategy',
+    '/api/mcp/calculate-swap': 'calculate_smart_swap',
+    '/api/mcp/verify-compliance': 'verify_regulatory_compliance',
+    '/api/mcp/github': 'github_repo_manager',
+    '/api/mcp/firecrawl': 'firecrawl_scraper',
+    '/api/mcp/playwright': 'playwright_automation',
+    '/api/mcp/blockscout': 'blockscout_explorer',
+    '/api/mcp/skill-creator': 'skill_creator_ai',
+    '/api/mcp/auditmos': 'auditmos_security',
+    '/api/mcp/tally-dao': 'tally_dao_governance',
+    '/api/mcp/obliq-sre': 'obliq_ai_sre',
+    '/api/mcp/kinaxis': 'kinaxis_supply_chain',
+    '/api/mcp/alpaca-markets': 'alpaca_markets',
+};
+
+/** Cuerpo con el que se responde a una llamada retenida. */
+function cuerpoBloqueado(reason: string) {
+    return {
+        success: false,
+        blockedBy: 'BeZhas Watchdog',
+        reason,
+        hint: 'Si la petición es legítima, revisa los parámetros o pídela por un canal con autorización explícita.',
+    };
+}
+
+app.use((req, res, next) => {
+    const tool = HERRAMIENTA_POR_RUTA[req.path];
+    if (!tool || req.method !== 'POST') return next();
+
+    const ctx = { tool, subject: sujetoActual() };
+
+    // Entrada: inyección en los parámetros, filtración de entorno, techo de
+    // dinero, ritmo y herramientas cortadas en caliente.
+    try {
+        guardian.enforce(guardian.inspectInput(ctx, req.body));
+    } catch (err) {
+        if (err instanceof WatchdogError) {
+            return res.status(403).json(cuerpoBloqueado(err.message));
+        }
+        throw err;
+    }
+
+    // Salida: un secreto crítico se retiene; un texto con forma de instrucción
+    // se entrega marcado como dato para que nadie lo lea como una orden.
+    const jsonOriginal = res.json.bind(res);
+    res.json = (payload: unknown) => {
+        const decision = guardian.inspectOutput(ctx, payload);
+        if (decision.verdict === 'block') {
+            return jsonOriginal(cuerpoBloqueado(decision.reason));
+        }
+        if (decision.verdict === 'redact') {
+            return jsonOriginal({
+                ...(decision.sanitized as object),
+                _watchdog: { verdict: 'redact', reason: decision.reason, untrusted: true },
+            });
+        }
+        return jsonOriginal(payload);
+    };
+
+    next();
+});
 
 // ─── Health Check ──────────────────────────────────────────
 app.get('/api/mcp/health', (_req, res) => {
@@ -126,7 +233,7 @@ app.get('/api/mcp/watchdog/audit', auditLimiter, (req, res) => {
  */
 app.post('/api/mcp/watchdog/inspect', inspectLimiter, (req, res) => {
     const decision = guardian.inspectOutput(
-        { tool: 'watchdog_inspect', subject: currentSubject },
+        { tool: 'watchdog_inspect', subject: sujetoActual() },
         req.body?.content ?? req.body,
     );
     res.json({
@@ -716,15 +823,76 @@ app.post('/api/mcp/alpaca-markets', async (req, res) => {
 
 // ─── Start Server ──────────────────────────────────────────
 const PORT = config.http.port;
-app.listen(PORT, '0.0.0.0', () => {
+
+/**
+ * Solo se abre el puerto cuando este fichero ES el programa que se ejecuta.
+ *
+ * Importarlo —desde una prueba, o desde otro módulo que solo quiera el `app`—
+ * no debe dejar un listener colgado: haría fallar la suite por puerto ocupado
+ * y la mantendría viva al terminar.
+ */
+const ejecutadoDirectamente = (() => {
+    const entrada = process.argv[1];
+    if (!entrada) return false;
+    return import.meta.url === pathToFileURL(entrada).href;
+})();
+
+const server = ejecutadoDirectamente
+    ? app.listen(PORT, '0.0.0.0', () => {
     console.log(`🧠 BeZhas Intelligence HTTP Server running on port ${PORT}`);
     console.log(`   Network: ${config.network.mode} (${config.network.activeRpc})`);
     console.log(`   BEZ Contract: ${config.token.address}`);
-    console.log(`   Tools: 13 MCP tools registered`);
+    // Son dos cifras distintas: `registerTools` da de alta 20 herramientas en
+    // el servidor MCP, pero este fichero solo publica ruta REST para 13. Las de
+    // pago y las de comunicación solo se alcanzan por STDIO.
+    console.log(`   Tools: 20 registradas en MCP · 13 expuestas por HTTP`);
     console.log(`   Endpoints: /api/mcp/health | /api/mcp/tools | /api/mcp/analyze-gas | /api/mcp/calculate-swap | /api/mcp/verify-compliance`);
     console.log(`              /api/mcp/github | /api/mcp/firecrawl | /api/mcp/playwright | /api/mcp/blockscout`);
     console.log(`              /api/mcp/skill-creator | /api/mcp/auditmos | /api/mcp/tally-dao | /api/mcp/obliq-sre`);
     console.log(`              /api/mcp/kinaxis | /api/mcp/alpaca-markets`);
-});
+      })
+    : null;
+
+/**
+ * Cierre ordenado.
+ *
+ * En un contenedor este proceso es el PID 1, y el PID 1 IGNORA las señales
+ * para las que no hay manejador instalado. Sin esto, un `docker stop` o un
+ * reciclado de Cloud Run mandaba SIGTERM, no pasaba nada, y diez segundos
+ * después llegaba un SIGKILL que cortaba en seco las peticiones en vuelo.
+ * Registrar el manejador es lo que hace que la señal llegue a alguna parte.
+ */
+let cerrando = false;
+
+function cerrar(senal: string): void {
+    if (cerrando) return;
+    cerrando = true;
+
+    console.log(`${senal} recibida: dejando de aceptar conexiones nuevas…`);
+
+    if (!server) {
+        process.exit(0);
+    }
+
+    // Deja terminar lo que ya está en curso y luego sale.
+    server.close(() => {
+        console.log('Conexiones cerradas. Adiós.');
+        process.exit(0);
+    });
+
+    // Una petición colgada no puede retener el proceso indefinidamente: el
+    // orquestador acabaría matándolo igual, solo que más tarde y peor.
+    const plazo = setTimeout(() => {
+        console.error('Quedaban conexiones abiertas al agotarse el plazo; saliendo de todos modos.');
+        process.exit(1);
+    }, 10_000);
+    plazo.unref();
+}
+
+if (server) {
+    process.on('SIGTERM', () => cerrar('SIGTERM'));
+    process.on('SIGINT', () => cerrar('SIGINT'));
+}
 
 export default app;
+export { server };

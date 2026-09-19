@@ -54,3 +54,62 @@ overrides:
   '@wagmi/connectors': 5.11.2
   '@wagmi/core': 2.22.1
   viem: ^2.47.10
+
+  # ─── Transitivas con aviso de seguridad ────────────────────────────────────
+  #
+  # TODAS van acotadas al major que ya se resolvía. Un override sin acotar se
+  # aplica a CUALQUIER consumidor, incluido el que pide otro major, y ahí las
+  # APIs no coinciden. Pasó con `ajv`: un `ajv: ^8.18.0` a secas forzó la 8
+  # sobre la cadena de eslint, que pide la 6, y `next lint` murió con
+  # «NOT SUPPORTED: option missingRefs» —una opción que existía en ajv v6 y
+  # desapareció en la 8—. Se arregla acotando, no quitando la protección.
+  'path-to-regexp@<1': ^0.1.13
+  'path-to-regexp@>=8': ^8.4.0
+  'ws@>=8': ^8.21.0
+  'ajv@>=8': ^8.18.0
+  'body-parser@<2': ^1.20.6
+  'express-rate-limit@>=8': ^8.2.2
+  'bn.js@^4': ^4.12.3
+  'diff@<9': ^8.0.3
+  fast-uri: ^3.1.6
+  ip-address: ^10.3.1
+  qs: ^6.16.0
+  hono: ^4.13.5
+  '@hono/node-server': ^1.19.15
+  lodash: ^4.17.24
+  mysql2: ^3.22.0
+  postcss: ^8.5.18
+  axios: ^1.18.0
+
+  # ─── Avisos SIN override, y no por descuido ────────────────────────────────
+  #
+  # En estos el parche solo existe en un major posterior al que se resuelve
+  # hoy. Forzarlo no arregla nada: cambia una vulnerabilidad por una
+  # incompatibilidad de API en un paquete que ni siquiera declaramos. Quedan
+  # anotados para revisarlos cuando su consumidor suba de major por su cuenta.
+  #
+  #   undici                5.29.0 → el aviso pide >=6.23
+  #   tmp                   0.0.33 → pide >=0.2.4
+  #   cookie                 0.4.2 → pide >=0.7.0
+  #   picomatch              2.3.2 → pide >=4.0.4
+  #   adm-zip               0.4.16 → pide >=0.6.0
+  #   serialize-javascript   6.0.2 → pide >=7.0.3
+  #   deepmerge-ts           7.1.5 → pide >=8.0.0
+  #
+  # `nanoid` tampoco lo lleva, pero por lo contrario: la 3.3.19 que se resuelve
+  # ya cumple el parche, y un override a `^3` habría DEGRADADO la 5.1.16 que
+  # usa otro consumidor.
+  #
+  # `elliptic`: el aviso pide >=6.6.2 y la última publicada es la 6.6.1, así que
+  # no hay parche todavía. Fijarlo rompe la instalación entera con
+  # ERR_PNPM_NO_MATCHING_VERSION — comprobado.
+  #
+  # `vite` en su línea 5: el aviso pide >=6.4.3, o sea que dentro del major no
+  # hay parche. El frontend ya declara la 6.4.3; la 5 que queda entra por la
+  # cadena de vitest, que es de desarrollo y no viaja a ningún despliegue.
+  #
+  # `@openzeppelin/contracts` 4.7.3 y 4.8.3: entran ALIASADAS
+  # (`@openzeppelin/contracts-4.7.3`), que es como un tercero fija la versión
+  # exacta contra la que escribió sus imports de Solidity. Nuestros contratos
+  # compilan contra la 5.x de la raíz; forzarlas rompería esa compilación para
+  # silenciar un aviso sobre fuentes que no compilamos.
