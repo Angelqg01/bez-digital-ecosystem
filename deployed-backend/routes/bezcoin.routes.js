@@ -436,13 +436,11 @@ async function recordDonationForRewards(walletAddress, amount) {
 
 // Precio del BEZ expresado en cada divisa.
 //
-// Deriva del precio único de tokenomics.config; las cotizaciones de las
-// divisas son constantes de referencia del servidor, NO precios de mercado
-// (las mismas que declara packages/mcp-server/src/tools/payment-tools.ts).
-// En producción hay que sustituirlas por el oráculo.
-const USD_POR_UNIDAD = { ETH: 2400, BTC: 45000, USDT: 1, USD: 1, EUR: 1.08, GBP: 1.27 };
+// Todo deriva de tokenomics.config: el precio único del BEZ y la tabla única
+// de tasas de referencia. Esas tasas son constantes del servidor, NO precios
+// de mercado; en producción las sustituye el oráculo.
 const exchangeRates = Object.fromEntries(
-    Object.entries(USD_POR_UNIDAD).map(
+    Object.entries(tokenomics.rates.usdPerUnit).map(
         ([divisa, usd]) => [divisa, Number((tokenomics.price.usd / usd).toPrecision(8))]
     )
 );

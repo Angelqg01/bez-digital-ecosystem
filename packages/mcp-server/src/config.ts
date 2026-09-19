@@ -61,6 +61,35 @@ export const config = {
         ],
     },
 
+    // ─── Tasas de referencia (FUENTE ÚNICA) ────────────────
+    //
+    // Dólares por unidad. NO son cotizaciones de mercado: son constantes del
+    // servidor, el valor que se usa cuando no hay oráculo o cuando falla.
+    // Donde ya existe una llamada en vivo (CoinGecko), esa llamada manda y
+    // esta tabla solo cubre el fallo.
+    //
+    // Hasta unificarlas, este mismo paquete tenía el MATIC a 0,40 $ en las
+    // herramientas de gas y a 0,80 $ en las de pago: el coste que se le
+    // reportaba al usuario dependía de qué herramienta preguntase. Deben
+    // coincidir con backend/config/tokenomics.config.js.
+    rates: {
+        usdPerUnit: {
+            USD: 1,
+            USDT: 1,
+            USDC: 1,
+            EUR: envNumber('REFERENCE_RATE_EUR', 1.08, { positivo: true }),
+            GBP: envNumber('REFERENCE_RATE_GBP', 1.27, { positivo: true }),
+            MXN: envNumber('REFERENCE_RATE_MXN', 0.0583, { positivo: true }),
+            MATIC: envNumber('REFERENCE_RATE_MATIC', 0.8, { positivo: true }),
+            ETH: envNumber('REFERENCE_RATE_ETH', 2400, { positivo: true }),
+            BTC: envNumber('REFERENCE_RATE_BTC', 45000, { positivo: true }),
+            BNB: envNumber('REFERENCE_RATE_BNB', 430, { positivo: true }),
+        } as Record<string, number>,
+        disclaimer:
+            'Constantes del servidor, no cotizaciones de mercado. ' +
+            'Sustituir por el oráculo en producción.',
+    },
+
     // ─── Relayer (Gasless for ToolBEZ/IoT) ─────────────────
     relayer: {
         privateKey: process.env.RELAYER_PRIVATE_KEY || '',
@@ -111,3 +140,28 @@ export const config = {
         alpacaSecretKey: process.env.ALPACA_SECRET_KEY || '',
     },
 } as const;
+
+/**
+ * Unidades de cada divisa por dólar: el inverso de `config.rates.usdPerUnit`.
+ *
+ * Las herramientas de conversión fiat llevaban su propia tabla escrita a mano
+ * (`{ USD: 1.0, EUR: 0.92, GBP: 0.79, MXN: 17.15 }`), duplicada en dos
+ * ficheros. Derivarla de la tabla única evita que las dos versiones se
+ * separen y que el importe dependa de cuál de las dos atienda la petición.
+ *
+ * Solo incluye las divisas fiat: convertir un importe a ETH o BTC no es lo
+ * que hacen estas rutas, y ofrecerlo aquí invitaría a tratarlos como moneda
+ * de cuenta.
+ */
+const DIVISAS_FIAT = ['USD', 'EUR', 'GBP', 'MXN'] as const;
+
+export function unidadesPorUsd(): Record<string, number> {
+    const salida: Record<string, number> = {};
+    for (const divisa of DIVISAS_FIAT) {
+        const usdPorUnidad = config.rates.usdPerUnit[divisa];
+        if (Number.isFinite(usdPorUnidad) && usdPorUnidad > 0) {
+            salida[divisa] = Number((1 / usdPorUnidad).toPrecision(8));
+        }
+    }
+    return salida;
+}

@@ -42,15 +42,7 @@ const TIMEOUT_MS = 10_000;
  * referencia aproximada. Están aquí para que la conversión sea la misma en
  * todas las herramientas, no para dar un precio real.
  */
-const TASAS_USD: Record<string, number> = {
-    USD: 1,
-    EUR: 1.08,
-    ETH: 2400,
-    USDT: 1,
-    USDC: 1,
-    BTC: 45000,
-    MATIC: 0.8,
-};
+const TASAS_USD: Record<string, number> = config.rates.usdPerUnit;
 
 /** Cómo se obtuvo el cambio, para que la respuesta no aparente ser un mercado. */
 const ORIGEN_TASAS = {

@@ -259,8 +259,10 @@ class TokenomicsService {
         // Calcular costo base en MATIC
         const gasCostMatic = (gasLimit * gasPrice) / 1e9;
 
-        // Obtener precio de MATIC (simplificado, usar oracle real en producción)
-        const maticPriceUSD = 1.0; // TODO: Integrar con price oracle
+        // Precio del MATIC: tasa de referencia única (config/tokenomics.config.js).
+        // Estaba a 1,00 $ aquí y a 0,80 $ en crypto-payment: el coste de gas que
+        // se le cobraba al usuario cambiaba según qué servicio lo calculase.
+        const maticPriceUSD = tokenomics.rates.usdPerUnit.MATIC;
         const gasCostUSD = gasCostMatic * maticPriceUSD;
 
         // Aplicar subsidio del tier

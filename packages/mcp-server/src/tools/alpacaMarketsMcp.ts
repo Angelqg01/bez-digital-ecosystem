@@ -61,13 +61,13 @@ export function registerAlpacaMarketsMcp(server: McpServer): void {
                 switch (action) {
                     case 'market_overview': {
                         // Fetch crypto market data from public APIs
-                        let maticPrice = 0.40;
+                        let maticPrice = config.rates.usdPerUnit.MATIC;
                         try {
                             const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd', {
                                 signal: AbortSignal.timeout(5000),
                             });
                             const data = await res.json() as Record<string, { usd: number }>;
-                            maticPrice = data['matic-network']?.usd || 0.40;
+                            maticPrice = data['matic-network']?.usd || config.rates.usdPerUnit.MATIC;
                         } catch { /* use fallback */ }
 
                         result = {

@@ -14,6 +14,16 @@ vi.mock('../../config.js', () => ({
         token: { address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8', priceUSD: 0.5, decimals: 18 },
         network: { mode: 'amoy', activeRpc: 'https://rpc-amoy.polygon.technology', rpc: {} },
         integrations: {},
+        // Espeja la forma de config.rates: las herramientas leen la tabla
+        // única de tasas en vez de llevar la suya.
+        rates: {
+            usdPerUnit: {
+                USD: 1, USDT: 1, USDC: 1,
+                EUR: 1.08, GBP: 1.27, MXN: 0.0583,
+                MATIC: 0.8, ETH: 2400, BTC: 45000, BNB: 430,
+            } as Record<string, number>,
+            disclaimer: 'Constantes del servidor, no cotizaciones de mercado.',
+        },
     },
 }));
 
@@ -67,10 +77,23 @@ describe('get_payment_quote', () => {
     });
 
     it('rechaza una divisa que no esté en la tabla en vez de devolver NaN', async () => {
-        const r = await llamar('get_payment_quote', { amount: 10, fromCurrency: 'GBP', toCurrency: 'BEZ' });
+        // JPY no está ni en el enum ni en la tabla de tasas. Antes esta
+        // prueba usaba GBP, que sí entró en la tabla al unificarla: la
+        // prueba habría seguido en verde comprobando otra cosa.
+        const r = await llamar('get_payment_quote', { amount: 10, fromCurrency: 'JPY', toCurrency: 'BEZ' });
 
         expect(r.success).toBe(false);
         expect(r.error).toMatch(/no soportada/i);
+    });
+
+    it('cotiza todas las divisas que su enum admite', async () => {
+        // Si alguien añade una divisa al enum sin darle tasa, la herramienta
+        // devuelve un error en vez de cotizar. Esto lo detecta.
+        for (const divisa of ['USD', 'EUR', 'ETH', 'USDT', 'USDC', 'BTC', 'MATIC']) {
+            const r = await llamar('get_payment_quote', { amount: 10, fromCurrency: divisa, toCurrency: 'BEZ' });
+            expect({ divisa, success: r.success }).toEqual({ divisa, success: true });
+            expect(Number.isFinite(r.quote.toAmount)).toBe(true);
+        }
     });
 });
 
@@ -194,6 +217,10 @@ describe('precio mal configurado', () => {
                 token: { address: '0x' + '0'.repeat(40), priceUSD: NaN, decimals: 18 },
                 network: { mode: 'amoy', activeRpc: 'http://localhost:8545', rpc: {} },
                 integrations: {},
+                rates: {
+                    usdPerUnit: { USD: 1, USDT: 1, USDC: 1, MATIC: 0.8 } as Record<string, number>,
+                    disclaimer: 'Constantes del servidor, no cotizaciones de mercado.',
+                },
             },
         }));
 

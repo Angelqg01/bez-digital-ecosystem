@@ -63,8 +63,9 @@ export function registerGasStrategy(server: McpServer): void {
                 // Estimate gas units for this tx type
                 const estimatedGas = GAS_ESTIMATES[transactionType] ?? 100_000;
 
-                // Calculate network cost in USD (MATIC price ~$0.40 estimated)
-                const maticPriceUSD = 0.40;
+                // Precio del MATIC: tasa de referencia única (config.rates).
+                // Estaba a 0,40 $ aquí y a 0,80 $ en payment-tools, en el mismo paquete.
+                const maticPriceUSD = config.rates.usdPerUnit.MATIC;
                 const gasCostMatic = parseFloat(ethers.formatUnits(gasPrice * BigInt(estimatedGas), 'ether'));
                 const networkCostUSD = gasCostMatic * maticPriceUSD;
 

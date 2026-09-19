@@ -169,3 +169,98 @@ describe('Stripe · compra de tokens a escala sub-céntimo', () => {
         expect(mockSesionesCreadas).toHaveLength(0);
     });
 });
+
+
+// ════════════════════════════════════════════════════════════
+// TASAS DE REFERENCIA
+// ════════════════════════════════════════════════════════════
+describe('tasas de referencia · fuente única', () => {
+    it('declara todas las divisas que usan los servicios', () => {
+        for (const simbolo of ['USD', 'USDT', 'USDC', 'EUR', 'GBP', 'MXN', 'MATIC', 'ETH', 'BTC', 'BNB']) {
+            const tasa = tokenomics.rates.usdPerUnit[simbolo];
+            expect({ simbolo, valida: Number.isFinite(tasa) && tasa > 0 })
+                .toEqual({ simbolo, valida: true });
+        }
+    });
+
+    it('mantiene las stablecoins a la par con el dólar', () => {
+        expect(tokenomics.rates.usdPerUnit.USD).toBe(1);
+        expect(tokenomics.rates.usdPerUnit.USDT).toBe(1);
+        expect(tokenomics.rates.usdPerUnit.USDC).toBe(1);
+    });
+
+    it('el tipo EUR del precio y el de la tabla son el mismo número', () => {
+        expect(tokenomics.rates.usdPerUnit.EUR).toBe(tokenomics.price.eurUsdRate);
+    });
+
+    it('toUsd convierte, y devuelve null en vez de NaN si no conoce el símbolo', () => {
+        expect(tokenomics.rates.toUsd(10, 'MATIC')).toBeCloseTo(10 * tokenomics.rates.usdPerUnit.MATIC, 10);
+        expect(tokenomics.rates.toUsd(10, 'matic')).toBeCloseTo(10 * tokenomics.rates.usdPerUnit.MATIC, 10);
+        expect(tokenomics.rates.toUsd(10, 'DOGE')).toBeNull();
+        expect(tokenomics.rates.toUsd(NaN, 'MATIC')).toBeNull();
+    });
+});
+
+describe('tesorería DeFi · valorada con la fuente única', () => {
+    it('suma cada activo a su precio de la tabla, no a una tabla propia', () => {
+        const defi = require('../services/defi-integration.service');
+        const saldos = defi.treasuryBalance;
+
+        const esperado = Object.entries(saldos).reduce((total, [token, cantidad]) => {
+            const simbolo = token.toUpperCase();
+            const precio = simbolo === 'BEZ'
+                ? tokenomics.price.usd
+                : tokenomics.rates.usdPerUnit[simbolo];
+            return Number.isFinite(precio) ? total + cantidad * precio : total;
+        }, 0);
+
+        expect(defi.calculateTotalValueUSD()).toBeCloseTo(esperado, 6);
+        // Con la tabla vieja (BEZ 0,50 $ · ETH 2000 $) el millón de BEZ valía
+        // 500.000 $; al precio real vale 7.500.
+        expect(defi.calculateTotalValueUSD()).not.toBeCloseTo(600000, 0);
+    });
+
+    it('ignora un activo sin precio en vez de sumarle NaN', () => {
+        const defi = require('../services/defi-integration.service');
+        const original = { ...defi.treasuryBalance };
+        try {
+            defi.treasuryBalance.DOGE = 1_000_000;
+            expect(Number.isFinite(defi.calculateTotalValueUSD())).toBe(true);
+        } finally {
+            defi.treasuryBalance = original;
+        }
+    });
+});
+
+describe('tasas de referencia · sin valores escritos a mano', () => {
+    // Ficheros de producción que antes llevaban su propia tasa.
+    const FICHEROS = [
+        'services/crypto-payment.service.js',
+        'services/tokenomics.service.js',
+        'services/bezpay.service.js',
+        'routes/bezcoin.routes.js',
+        'routes/bezcoin-moonpay.routes.js',
+        'services/defi-integration.service.js',
+    ];
+
+    const TASAS_ANTIGUAS = [
+        { patron: /maticPriceUSD\s*=\s*0\.80\b/, etiqueta: 'MATIC a 0,80 $' },
+        { patron: /maticPriceUSD\s*=\s*1\.0\b/, etiqueta: 'MATIC a 1,00 $' },
+        { patron: /\bMATIC\s*:\s*0\.[0-9]/, etiqueta: 'tabla propia con MATIC' },
+        { patron: /\bETH\s*:\s*[0-9]{4}\b/, etiqueta: 'tabla propia con ETH' },
+    ];
+
+    it.each(FICHEROS)('%s no escribe ninguna tasa a mano', (relativo) => {
+        const texto = fs.readFileSync(path.join(RAIZ, relativo), 'utf8');
+        const codigo = texto
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .split('\n')
+            .filter((linea) => !linea.trimStart().startsWith('//'))
+            .join('\n');
+
+        for (const { patron, etiqueta } of TASAS_ANTIGUAS) {
+            expect({ fichero: relativo, tasa: etiqueta, encontrado: patron.test(codigo) })
+                .toEqual({ fichero: relativo, tasa: etiqueta, encontrado: false });
+        }
+    });
+});

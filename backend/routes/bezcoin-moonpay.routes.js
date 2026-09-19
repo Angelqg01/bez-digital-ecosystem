@@ -245,15 +245,20 @@ router.post('/swap', protect, async (req, res) => {
     try {
         const { fromToken, amount, slippage, deadline } = req.body;
 
-        // Simular swap (en producción usar Uniswap/QuickSwap)
-        const exchangeRates = {
-            'USDT': 2.0,  // 1 USDT = 2 BEZ
-            'USDC': 2.0,
-            'ETH': 4000,  // 1 ETH = 4000 BEZ
-            'MATIC': 1.5
-        };
+        // Cuántos BEZ da cada unidad: se deriva del precio único del BEZ y de
+        // la tasa de referencia de cada cripto, en vez de escribirse a mano.
+        // La tabla anterior decía 1 USDT = 2 BEZ y 1 ETH = 4000 BEZ, lo que
+        // implicaba un BEZ a 0,50 $ y a 0,60 $ a la vez, y ninguno de los dos
+        // era el precio del sistema.
+        const usdPorUnidad = tokenomics.rates.usdPerUnit[String(fromToken || '').toUpperCase()];
+        if (!Number.isFinite(usdPorUnidad) || !(tokenomics.price.usd > 0)) {
+            return res.status(400).json({
+                success: false,
+                message: `No hay tasa de referencia para ${fromToken}`
+            });
+        }
 
-        const rate = exchangeRates[fromToken] || 1;
+        const rate = usdPorUnidad / tokenomics.price.usd;
         const amountOut = amount * rate;
         const priceImpact = 0.5; // 0.5%
 

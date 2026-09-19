@@ -2,6 +2,7 @@
  * DeFi Integration Service
  * Gestiona la integración entre DAO y protocolos DeFi (Staking/Farming)
  */
+const tokenomics = require('../config/tokenomics.config');
 
 class DeFiIntegrationService {
     constructor() {
@@ -287,14 +288,17 @@ class DeFiIntegrationService {
      * Calcular valor total en USD (mock)
      */
     calculateTotalValueUSD() {
-        const prices = {
-            BEZ: 0.5,
-            USDC: 1.0,
-            ETH: 2000,
-        };
-
+        // Precio del BEZ y tasas de referencia: fuente única en
+        // config/tokenomics.config.js. Este método llevaba su propia tabla
+        // (BEZ a 0,50 $, ETH a 2000 $) y valoraba la tesorería con unos
+        // números que no coincidían con los de ningún otro servicio.
         return Object.entries(this.treasuryBalance).reduce((total, [token, amount]) => {
-            return total + (amount * (prices[token] || 0));
+            const simbolo = String(token || '').toUpperCase();
+            const precio = simbolo === 'BEZ'
+                ? tokenomics.price.usd
+                : tokenomics.rates.usdPerUnit[simbolo];
+
+            return Number.isFinite(precio) ? total + (amount * precio) : total;
         }, 0);
     }
 }

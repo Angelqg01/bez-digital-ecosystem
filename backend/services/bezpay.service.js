@@ -126,10 +126,10 @@ async function getBezPriceUSD() {
   return _bezPriceCache.price;
 }
 
-// Token price fallbacks (para cuando no hay oracle)
-const TOKEN_PRICE_FALLBACK = {
-  USDT: 1.0, USDC: 1.0, MATIC: 0.85, ETH: 3400, BNB: 430,
-};
+// Precios de fallback cuando no hay oráculo. Salen de la tasa de referencia
+// única (config/tokenomics.config.js): este fichero tenía su propia tabla,
+// con el MATIC a 0,85 $ y el ETH a 3400 $, divergiendo del resto.
+const TOKEN_PRICE_FALLBACK = tokenomics.rates.usdPerUnit;
 
 // ─── CALCULAR MONTOS DE PAGO ─────────────────────────────────────────────────
 async function calculatePaymentAmounts({ payToken, amountUSD, type, planId }) {

@@ -69,7 +69,7 @@ class CryptoPaymentService {
                     break;
                 case 'MATIC':
                     // En producción, usar oracle de precios (Chainlink, CoinGecko, etc.)
-                    const maticPriceUSD = 0.80; // Placeholder
+                    const maticPriceUSD = tokenomics.rates.usdPerUnit.MATIC;
                     amountInUSD = amount * maticPriceUSD;
                     break;
                 default:
@@ -185,7 +185,7 @@ class CryptoPaymentService {
             logger.info(`Processing MATIC payment: ${amountMatic} from ${userWalletAddress}`);
 
             // 1. Calcular valor en USD (usar oracle en producción)
-            const maticPriceUSD = 0.80; // Placeholder
+            const maticPriceUSD = tokenomics.rates.usdPerUnit.MATIC;
             const amountUSD = amountMatic * maticPriceUSD;
 
             // 2. Calcular cantidad de BEZ

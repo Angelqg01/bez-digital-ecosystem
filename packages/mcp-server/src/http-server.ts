@@ -38,7 +38,7 @@ import {
     GLOBAL_LIMIT_PER_MINUTE,
     watchdogLimiter,
 } from './security/index.js';
-import { config } from './config.js';
+import { config, unidadesPorUsd } from './config.js';
 
 const app: ReturnType<typeof express> = express();
 
@@ -419,7 +419,7 @@ app.post('/api/mcp/analyze-gas', async (req, res) => {
             token_transfer: 55_000, nft_mint: 200_000, staking_deposit: 120_000,
         };
         const estimatedGas = GAS_ESTIMATES[transactionType] ?? 100_000;
-        const maticPriceUSD = 0.40;
+        const maticPriceUSD = config.rates.usdPerUnit.MATIC;
         const gasCostMatic = parseFloat(ethers.formatUnits(gasPrice * BigInt(estimatedGas), 'ether'));
         const networkCostUSD = gasCostMatic * maticPriceUSD;
         const platformFeeUSD = estimatedValueUSD * (config.fees.platformPercent / 100);
@@ -471,12 +471,12 @@ app.post('/api/mcp/calculate-swap', async (req, res) => {
         const feeData = await provider.getFeeData();
         const gasPrice = feeData.gasPrice ?? BigInt(0);
         const gasPriceGwei = parseFloat(ethers.formatUnits(gasPrice, 'gwei'));
-        const maticPriceUSD = 0.40;
+        const maticPriceUSD = config.rates.usdPerUnit.MATIC;
         const gasCostMatic = parseFloat(ethers.formatUnits(gasPrice * BigInt(55_000), 'ether'));
         const gasCostUSD = gasCostMatic * maticPriceUSD;
         const bezPriceUSD = config.token.priceUSD;
 
-        const fiatRates: Record<string, number> = { USD: 1.0, EUR: 0.92, GBP: 0.79, MXN: 17.15 };
+        const fiatRates = unidadesPorUsd();
         const fiatRate = fiatRates[fiatCurrency] ?? 1.0;
 
         const grossValueUSD = direction === 'BEZ_TO_FIAT' ? amount * bezPriceUSD : amount / fiatRate;
@@ -806,11 +806,11 @@ app.post('/api/mcp/alpaca-markets', async (req, res) => {
         }
 
         if (action === 'market_overview' || action === 'price_analysis') {
-            let maticPrice = 0.40;
+            let maticPrice = config.rates.usdPerUnit.MATIC;
             try {
                 const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd', { signal: AbortSignal.timeout(5000) });
                 const d = await r.json() as Record<string, { usd: number }>;
-                maticPrice = d['matic-network']?.usd || 0.40;
+                maticPrice = d['matic-network']?.usd || config.rates.usdPerUnit.MATIC;
             } catch { /* fallback */ }
             return res.json({ action, status: 'SUCCESS', data: { bezPrice: config.token.priceUSD, maticPrice, asset, timeframe } });
         }
