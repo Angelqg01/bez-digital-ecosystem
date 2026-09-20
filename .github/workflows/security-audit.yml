@@ -398,6 +398,18 @@ jobs:
       - name: Analizar el código de producción
         id: eslint-sec
         run: |
+          # `set +e` es imprescindible aquí, no un descuido.
+          #
+          # GitHub arranca el shell con `bash -e {0}`. ESLint sale con 1 en
+          # cuanto hay CUALQUIER error, incluidos los de reglas que llegan por
+          # comentarios en línea del código analizado y que no son de
+          # seguridad. Con `-e` puesto, esa salida abortaba el paso entero
+          # antes de leer el informe: el job caía sin decir por qué, y el
+          # motivo real —cero hallazgos de seguridad— no llegaba a imprimirse.
+          #
+          # Quien decide si esto falla es la cuenta de abajo, no el código de
+          # salida de eslint.
+          set +e
           set -uo pipefail
 
           # Sin `continue-on-error` ni `|| true`: si eslint no llega a producir
@@ -431,11 +443,20 @@ jobs:
                         | select(.ruleId | test("^(security|no-unsanitized)/"))] | length' eslint-security.json)
           ficheros=$(jq 'length' eslint-security.json)
 
+          # Las supresiones en línea son una salida legítima —las hay, con su
+          # justificación al lado— pero tienen que verse. Si empiezan a
+          # acumularse, el número sube y queda en el resumen de cada ejecución.
+          supresiones=$(grep -rEl 'eslint-disable.*(security|no-unsanitized)/' \
+            --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' \
+            backend frontend/src frontend-next/src packages/mcp-server/src api 2>/dev/null \
+            | wc -l)
+
           {
             echo "## 🔒 Reglas de seguridad de ESLint"
             echo "- Ficheros analizados: $ficheros"
             echo "- 🔴 Bloqueantes: $bloqueantes"
             echo "- 🟡 Informativos: $avisos"
+            echo "- 🔇 Ficheros con supresiones en línea: $supresiones"
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$bloqueantes" -gt 0 ]; then
