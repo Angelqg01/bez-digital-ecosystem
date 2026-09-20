@@ -109,6 +109,10 @@ export function normalizeIp(ip?: string): string {
     if (limpia.startsWith('[')) limpia = limpia.slice(1, limpia.indexOf(']') === -1 ? undefined : limpia.indexOf(']'));
 
     // IPv4 mapeada en IPv6, con o sin el prefijo cero explícito.
+    // Los cuantificadores están acotados (0{1,4} repetido como mucho 4 veces)
+    // y el patrón está anclado por los dos extremos; además solo recibe
+    // `req.ip`, de longitud acotada por el propio socket.
+    // eslint-disable-next-line security/detect-unsafe-regex
     const mapeada = /^(?:::ffff:|0{1,4}(?::0{1,4}){0,4}:ffff:)(\d{1,3}(?:\.\d{1,3}){3})$/.exec(limpia);
     if (mapeada) return mapeada[1];
 

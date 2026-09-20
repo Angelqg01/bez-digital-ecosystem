@@ -45,23 +45,25 @@ jobs:
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.npm
-            ~/.local/share/pnpm/store
-          key: pnpm-deps-${{ hashFiles('**/pnpm-lock.yaml') }}
+          # `~/.npm` es el almacén de npm; aquí se instala con pnpm, que guarda
+          # lo suyo en `~/.local/share/pnpm/store`. Se deja solo el que sirve.
+          path: ~/.local/share/pnpm/store
+          key: pnpm-deps-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-deps-
 
-      - name: Install root dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Install api dependencies
-        working-directory: ./api
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Install frontend dependencies
-        working-directory: ./frontend-next
-        run: pnpm install --no-frozen-lockfile
+      # Una instalación, no tres.
+      #
+      # Esto es un workspace de pnpm: `pnpm install` en la raíz instala todos
+      # los paquetes —`backend`, `frontend`, `frontend-next`, `api`, `sdk` y
+      # `packages/*`— desde el mismo lockfile. Las dos instalaciones que venían
+      # después, en `api/` y en `frontend-next/`, repetían el mismo trabajo.
+      #
+      # Y `--frozen-lockfile`, no `--no-frozen-lockfile`: la CI tiene que
+      # probar las versiones que están comprometidas. Si el lockfile está
+      # desincronizado, este paso falla, que es justo lo que debe pasar.
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       # ==========================================
       # 1. smart-contracts (Foundry at root)

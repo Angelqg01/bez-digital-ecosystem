@@ -463,7 +463,7 @@ router.post('/stripe/create-payment-intent', async (req, res) => {
 router.post('/bank-transfer/create-order', async (req, res) => {
     try {
         const { amountBez, userEmail, userWallet } = req.body;
-        const PRICE_PER_TOKEN_USD = 0.10;
+        const PRICE_PER_TOKEN_USD = tokenomics.price.usd;
 
         if (!amountBez || amountBez <= 0) {
             return res.status(400).json({

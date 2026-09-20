@@ -49,7 +49,7 @@ export const config = {
     // ─── BEZ Token (INMUTABLE) ─────────────────────────────
     token: {
         address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
-        priceUSD: envNumber('BEZ_PRICE_USD', 0.5, { positivo: true }),
+        priceUSD: envNumber('BEZ_PRICE_USD', 0.0075, { positivo: true }),
         decimals: 18,
         abi: [
             'function transfer(address to, uint256 amount) returns (bool)',
@@ -59,6 +59,35 @@ export const config = {
             'function decimals() view returns (uint8)',
             'function totalSupply() view returns (uint256)',
         ],
+    },
+
+    // ─── Tasas de referencia (FUENTE ÚNICA) ────────────────
+    //
+    // Dólares por unidad. NO son cotizaciones de mercado: son constantes del
+    // servidor, el valor que se usa cuando no hay oráculo o cuando falla.
+    // Donde ya existe una llamada en vivo (CoinGecko), esa llamada manda y
+    // esta tabla solo cubre el fallo.
+    //
+    // Hasta unificarlas, este mismo paquete tenía el MATIC a 0,40 $ en las
+    // herramientas de gas y a 0,80 $ en las de pago: el coste que se le
+    // reportaba al usuario dependía de qué herramienta preguntase. Deben
+    // coincidir con backend/config/tokenomics.config.js.
+    rates: {
+        usdPerUnit: {
+            USD: 1,
+            USDT: 1,
+            USDC: 1,
+            EUR: envNumber('REFERENCE_RATE_EUR', 1.08, { positivo: true }),
+            GBP: envNumber('REFERENCE_RATE_GBP', 1.27, { positivo: true }),
+            MXN: envNumber('REFERENCE_RATE_MXN', 0.0583, { positivo: true }),
+            MATIC: envNumber('REFERENCE_RATE_MATIC', 0.8, { positivo: true }),
+            ETH: envNumber('REFERENCE_RATE_ETH', 2400, { positivo: true }),
+            BTC: envNumber('REFERENCE_RATE_BTC', 45000, { positivo: true }),
+            BNB: envNumber('REFERENCE_RATE_BNB', 430, { positivo: true }),
+        } as Record<string, number>,
+        disclaimer:
+            'Constantes del servidor, no cotizaciones de mercado. ' +
+            'Sustituir por el oráculo en producción.',
     },
 
     // ─── Relayer (Gasless for ToolBEZ/IoT) ─────────────────
@@ -111,3 +140,4 @@ export const config = {
         alpacaSecretKey: process.env.ALPACA_SECRET_KEY || '',
     },
 } as const;
+

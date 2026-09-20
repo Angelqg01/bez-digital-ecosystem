@@ -16,7 +16,17 @@
 /**
  * Tasa de conversión BEZ ↔ USD
  */
-const BEZ_TO_USD_RATE = parseFloat(process.env.BEZ_TO_USD_RATE) || 0.05;
+// Precio del BEZ en dólares. Sale de la fuente única: este fichero llevaba su
+// propio `0.05`, un octavo valor que convivía con los otros siete y que movía
+// el coste en BEZ de las suscripciones, del gas y de las recompensas.
+//
+// `BEZ_TO_USD_RATE` se mantiene como variable de entorno por compatibilidad,
+// pero `BEZ_PRICE_USD` es la que manda: es la que lee todo lo demás.
+const tokenomics = require('./tokenomics.config');
+
+const BEZ_TO_USD_RATE = parseFloat(process.env.BEZ_TO_USD_RATE) > 0
+    ? parseFloat(process.env.BEZ_TO_USD_RATE)
+    : tokenomics.price.usd;
 
 /**
  * Base APY del staking pool (sin multiplicador)

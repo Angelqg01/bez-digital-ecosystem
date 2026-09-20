@@ -168,6 +168,9 @@ function countWords(message) {
     const withoutUrls = message.replace(/https?:\/\/[^\s]+/g, '');
 
     // Remover emojis (no contabilizan como palabras)
+    // Es una clase de caracteres sin ningún cuantificador: `safe-regex` marca
+    // los rangos de pares suplentes, no un retroceso. Coste lineal.
+    // eslint-disable-next-line security/detect-unsafe-regex
     const withoutEmojis = withoutUrls.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
     // Contar palabras (split por espacios y filtrar vacíos)

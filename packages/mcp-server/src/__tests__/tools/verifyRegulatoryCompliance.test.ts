@@ -6,6 +6,19 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createMockMcpServer, parseToolResult } from '../helpers/mockMcpServer.js';
 import { registerCompliance } from '../../tools/verifyRegulatoryCompliance.js';
 import type { ComplianceResult } from '../../tools/verifyRegulatoryCompliance.js';
+import { config } from '../../config.js';
+
+/**
+ * Los umbrales de cumplimiento (KYC > 10.000 $, estructuración 9.000-10.000 $,
+ * importe alto sin verificar > 5.000 $) están en DÓLARES, no en tokens. Estas
+ * pruebas escribían la cantidad en BEZ suponiendo 0,50 $/BEZ, así que al fijar
+ * el precio en 0,0075 $ dejaron de cruzar ningún umbral y pasaban a verde
+ * comprobando nada. Ahora la cantidad se deriva del precio configurado: la
+ * prueba sigue siendo válida sea cual sea el precio.
+ */
+function bezPorUsd(usd: number): number {
+    return usd / config.token.priceUSD;
+}
 
 describe('verify_regulatory_compliance', () => {
     let handler: Function;
@@ -60,9 +73,8 @@ describe('verify_regulatory_compliance', () => {
 
     describe('KYC requirements', () => {
         it('should require KYC for transactions > $10,000', async () => {
-            // BEZ price ~$0.50, so 25000 BEZ ≈ $12,500
             const response = await handler({
-                walletAddress: UNKNOWN_WALLET, amountBEZ: 25000, fiatRegion: 'US', transactionType: 'transfer',
+                walletAddress: UNKNOWN_WALLET, amountBEZ: bezPorUsd(12_500), fiatRegion: 'US', transactionType: 'transfer',
             });
             const result = parseToolResult<ComplianceResult>(response);
             expect(result.kycRequired).toBe(true);
@@ -72,7 +84,7 @@ describe('verify_regulatory_compliance', () => {
 
         it('should APPROVE high-value tx with verified KYC wallet', async () => {
             const response = await handler({
-                walletAddress: KYC_WALLET, amountBEZ: 25000, fiatRegion: 'US', transactionType: 'transfer',
+                walletAddress: KYC_WALLET, amountBEZ: bezPorUsd(12_500), fiatRegion: 'US', transactionType: 'transfer',
             });
             const result = parseToolResult<ComplianceResult>(response);
             expect(result.kycVerified).toBe(true);
@@ -91,9 +103,8 @@ describe('verify_regulatory_compliance', () => {
 
     describe('structuring detection', () => {
         it('should flag possible structuring ($9,000 - $10,000 range)', async () => {
-            // $9,500 worth ≈ 19000 BEZ at $0.50
             const response = await handler({
-                walletAddress: UNKNOWN_WALLET, amountBEZ: 19000, fiatRegion: 'US', transactionType: 'transfer',
+                walletAddress: UNKNOWN_WALLET, amountBEZ: bezPorUsd(9_500), fiatRegion: 'US', transactionType: 'transfer',
             });
             const result = parseToolResult<ComplianceResult>(response);
             expect(result.flags).toContain('POSSIBLE_STRUCTURING');
@@ -120,16 +131,15 @@ describe('verify_regulatory_compliance', () => {
 
         it('should cap risk score at 100', async () => {
             const response = await handler({
-                walletAddress: UNKNOWN_WALLET, amountBEZ: 25000, fiatRegion: 'KP', transactionType: 'transfer',
+                walletAddress: UNKNOWN_WALLET, amountBEZ: bezPorUsd(12_500), fiatRegion: 'KP', transactionType: 'transfer',
             });
             const result = parseToolResult<ComplianceResult>(response);
             expect(result.riskScore).toBeLessThanOrEqual(100);
         });
 
         it('should flag UNVERIFIED_HIGH_AMOUNT for unverified wallets > $5,000', async () => {
-            // $6,000 = 12000 BEZ at $0.50
             const response = await handler({
-                walletAddress: UNKNOWN_WALLET, amountBEZ: 12000, fiatRegion: 'US', transactionType: 'swap',
+                walletAddress: UNKNOWN_WALLET, amountBEZ: bezPorUsd(6_000), fiatRegion: 'US', transactionType: 'swap',
             });
             const result = parseToolResult<ComplianceResult>(response);
             expect(result.flags).toContain('UNVERIFIED_HIGH_AMOUNT');
@@ -156,10 +166,9 @@ describe('verify_regulatory_compliance', () => {
 
         it('should calculate totalValueUSD correctly', async () => {
             const response = await handler({
-                walletAddress: KYC_WALLET, amountBEZ: 200, fiatRegion: 'US', transactionType: 'transfer',
+                walletAddress: KYC_WALLET, amountBEZ: bezPorUsd(100), fiatRegion: 'US', transactionType: 'transfer',
             });
             const result = parseToolResult<ComplianceResult>(response);
-            // 200 BEZ * $0.50 = $100
             expect(result.totalValueUSD).toBe(100);
         });
     });

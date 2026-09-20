@@ -57,17 +57,20 @@ jobs:
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.npm
-            ~/.local/share/pnpm/store
-          key: pnpm-orch-deps-${{ hashFiles('backend/pnpm-lock.yaml') }}
+          # `~/.npm` es el almacén de npm; aquí se instala con pnpm, que guarda
+          # lo suyo en `~/.local/share/pnpm/store`. Se deja solo el que sirve.
+          path: ~/.local/share/pnpm/store
+          # La clave sale del lockfile de la raíz, que es el que manda en el
+          # workspace: `backend/pnpm-lock.yaml` es un resto de cuando el
+          # backend se instalaba solo, y ya no describe lo que se instala.
+          key: pnpm-orch-deps-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-orch-deps-
 
       - name: Install backend dependencies
         working-directory: ./backend
         run: |
-          pnpm install --no-frozen-lockfile --prefer-offline 2>/dev/null || pnpm install
+          pnpm install --frozen-lockfile --prefer-offline
 
       - name: Run E2E Smoke Test
         run: |

@@ -20,6 +20,7 @@ const router  = express.Router();
 const logger  = require('../utils/logger');
 const { createPayment, handleWebhook, getQuote, getHotWalletStatus } = require('../services/bezpay.service');
 
+const tokenomics = require('../config/tokenomics.config');
 // Rate limiting básico (sin Redis) para endpoints críticos
 const _ipCounts = new Map();
 function rateLimit(maxReq, windowMs) {
@@ -109,11 +110,11 @@ router.get('/bez-price', async (req, res) => {
       { signal: AbortSignal.timeout(5000) }
     );
     const data    = await resp.json();
-    const priceUSD = data?.['bez-coin']?.usd || 1.24;
-    const priceEUR = data?.['bez-coin']?.eur || 1.14;
+    const priceUSD = data?.['bez-coin']?.usd || tokenomics.price.usd;
+    const priceEUR = data?.['bez-coin']?.eur || tokenomics.price.eur;
     return res.json({ success: true, priceUSD, priceEUR, source: 'coingecko', ts: Date.now() });
   } catch (_) {
-    return res.json({ success: true, priceUSD: 1.24, priceEUR: 1.14, source: 'fallback', ts: Date.now() });
+    return res.json({ success: true, priceUSD: tokenomics.price.usd, priceEUR: tokenomics.price.eur, source: 'fallback', ts: Date.now() });
   }
 });
 

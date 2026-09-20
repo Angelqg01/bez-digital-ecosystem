@@ -58,6 +58,10 @@ export const INJECTION_PATTERNS: Pattern[] = [
         id: 'INJ_HIDDEN_CHANNEL',
         severity: 'high',
         description: 'Texto oculto mediante caracteres invisibles o de control de dirección',
+        // El patrón ES la lista de caracteres bidireccionales e invisibles que
+        // busca: para detectarlos hay que nombrarlos. Quitarlos desactivaría
+        // INJ_HIDDEN_CHANNEL, que es la defensa contra Trojan Source.
+        // eslint-disable-next-line security/detect-bidi-characters
         regex: /[​-‏‪-‮⁠-⁯﻿]/,
     },
     {
@@ -120,6 +124,10 @@ export const SECRET_PATTERNS: Pattern[] = [
         id: 'SEC_MNEMONIC',
         severity: 'critical',
         description: 'Frase semilla BIP-39 (12 o más palabras seguidas en minúscula)',
+        // Medido sobre el tope de 200 000 caracteres que aplica el propio
+        // escáner: el peor caso construido tarda 0,7 ms. `safe-regex` marca la
+        // forma del patrón, no su coste real; aquí el coste está acotado.
+        // eslint-disable-next-line security/detect-unsafe-regex
         regex: /\b(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/g,
     },
     {

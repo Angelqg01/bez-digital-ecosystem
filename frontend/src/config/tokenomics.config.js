@@ -8,7 +8,31 @@
  * Esta configuración contiene valores de fallback y constantes de UI
  */
 
+// ════════════════════════════════════════════════════════════
+// PRECIO OFICIAL DEL BEZ — FUENTE ÚNICA (frontend)
+// ════════════════════════════════════════════════════════════
+// Precio definitivo del BEZ V1: 0,0075 $. Debe coincidir con
+// backend/config/tokenomics.config.js; el precio en vivo llega del backend
+// vía PriceService y este valor solo se usa mientras esa llamada no ha
+// respondido o ha fallado.
+const BEZ_PRICE_USD = Number(import.meta.env.VITE_BEZ_PRICE_USD) > 0
+    ? Number(import.meta.env.VITE_BEZ_PRICE_USD)
+    : 0.0075;
+
+// 1 EUR = 1,08 USD. Tipo de referencia, no una cotización de mercado.
+const EUR_USD_RATE = 1.08;
+const BEZ_PRICE_EUR = Number((BEZ_PRICE_USD / EUR_USD_RATE).toFixed(8));
+
 const tokenomicsConfig = {
+    // ============================================================
+    // PRECIO (leer siempre de aquí, nunca escribirlo a mano)
+    // ============================================================
+    price: {
+        usd: BEZ_PRICE_USD,
+        eur: BEZ_PRICE_EUR,
+        eurUsdRate: EUR_USD_RATE,
+    },
+
     // ============================================================
     // TOKEN INFORMATION
     // ============================================================
@@ -31,8 +55,8 @@ const tokenomicsConfig = {
         poolUrl: 'https://dapp.quickswap.exchange/pool/positions/v2/0x4edc77de01f2a2c87611c2f8e9249be43df745a9?chainId=137',
 
         // Fallback prices (USD) - Se actualizan desde el oráculo
-        fallbackPriceUSD: 0.00075,
-        fallbackPriceEUR: 0.00070,
+        fallbackPriceUSD: BEZ_PRICE_USD,
+        fallbackPriceEUR: BEZ_PRICE_EUR,
 
         // Spread de protección anti-arbitraje (2%)
         spreadPercent: 2,

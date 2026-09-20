@@ -12,6 +12,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { ethers } from 'ethers';
 import { config } from '../config.js';
+import { getUsdPerUnit } from '../rates.js';
 
 // Gas estimation per transaction type (in gas units)
 const GAS_ESTIMATES: Record<string, number> = {
@@ -63,8 +64,12 @@ export function registerGasStrategy(server: McpServer): void {
                 // Estimate gas units for this tx type
                 const estimatedGas = GAS_ESTIMATES[transactionType] ?? 100_000;
 
-                // Calculate network cost in USD (MATIC price ~$0.40 estimated)
-                const maticPriceUSD = 0.40;
+                // Precio del MATIC al cambio vigente. Estaba a 0,40 $ aquí y a
+                // 0,80 $ en payment-tools, dentro del mismo paquete, y ninguno
+                // de los dos miraba el mercado. Para una estimación de gas se
+                // acepta una cotización vieja, pero se declara en la respuesta.
+                const cambioMatic = await getUsdPerUnit('MATIC');
+                const maticPriceUSD = cambioMatic.rate as number;
                 const gasCostMatic = parseFloat(ethers.formatUnits(gasPrice * BigInt(estimatedGas), 'ether'));
                 const networkCostUSD = gasCostMatic * maticPriceUSD;
 

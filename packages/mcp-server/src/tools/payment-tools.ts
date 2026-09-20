@@ -29,6 +29,7 @@ import { z } from 'zod';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import { config } from '../config.js';
+import { toUsd } from '../rates.js';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
@@ -42,23 +43,21 @@ const TIMEOUT_MS = 10_000;
  * referencia aproximada. Están aquí para que la conversión sea la misma en
  * todas las herramientas, no para dar un precio real.
  */
-const TASAS_USD: Record<string, number> = {
-    USD: 1,
-    EUR: 1.08,
-    ETH: 2400,
-    USDT: 1,
-    USDC: 1,
-    BTC: 45000,
-    MATIC: 0.8,
-};
+const TASAS_USD: Record<string, number> = config.rates.usdPerUnit;
 
 /** Cómo se obtuvo el cambio, para que la respuesta no aparente ser un mercado. */
-const ORIGEN_TASAS = {
-    rateSource: 'constantes-del-servidor',
+/**
+ * Procedencia del precio del BEZ en las rutas que solo cobran en fiat.
+ *
+ * Las tasas de las criptos ya vienen del oráculo, pero el precio del BEZ
+ * sigue siendo una constante de configuración: conviene decirlo en vez de
+ * dejar que se lea como si fuera una cotización.
+ */
+const ORIGEN_PRECIO_BEZ = {
+    rateSource: 'precio-configurado',
     rateDisclaimer:
-        'Las tasas de cambio y el precio del BEZ son constantes de configuración, ' +
-        'no cotizaciones de mercado. No sirven para liquidar una operación real ' +
-        'sin contrastarlas con un oráculo de precios.',
+        'El precio del BEZ es una constante de configuración (BEZ_PRICE_USD), ' +
+        'no una cotización de mercado.',
 } as const;
 
 interface Fallo {
@@ -88,11 +87,26 @@ const ERROR_PRECIO =
     'El precio del BEZ no está configurado con un número positivo (BEZ_PRICE_USD). ' +
     'Sin él no se puede cotizar nada.';
 
-/** Convierte a dólares, o `null` si la divisa no está en la tabla. */
-function aDolares(cantidad: number, divisa: string): number | null {
-    const tasa = TASAS_USD[divisa];
-    if (!Number.isFinite(tasa)) return null;
-    return cantidad * tasa;
+/**
+ * Convierte a dólares al cambio vigente, o `null` si la divisa no tiene tasa.
+ *
+ * Antes leía una constante del repositorio. Ahora consulta el oráculo, que
+ * refresca el mercado cada media hora, y arrastra la procedencia para que la
+ * respuesta diga si el cambio es de ahora o de hace rato.
+ */
+async function aDolares(cantidad: number, divisa: string) {
+    return toUsd(cantidad, divisa);
+}
+
+/** Los metadatos de procedencia que acompañan a toda cotización. */
+function origenDe(cambio: { source: string; asOf: string | null; ageMs: number | null; stale: boolean; disclaimer: string }) {
+    return {
+        rateSource: cambio.source,
+        rateAsOf: cambio.asOf,
+        rateAgeSeconds: cambio.ageMs === null ? null : Math.round(cambio.ageMs / 1000),
+        rateStale: cambio.stale,
+        rateDisclaimer: cambio.disclaimer,
+    };
 }
 
 const MONEDAS_FIAT_Y_CRIPTO = ['USD', 'EUR', 'ETH', 'USDT', 'USDC', 'BTC', 'MATIC'] as const;
@@ -106,8 +120,10 @@ export const getPaymentQuoteTool = {
     name: 'get_payment_quote',
     description:
         'Calcula cuántos BEZ-Coins se obtienen por una cantidad de Fiat o Crypto. ' +
-        'Usa tasas de cambio constantes del servidor, no un mercado en vivo: la respuesta ' +
-        'incluye el campo rateSource, que hay que trasladar a quien reciba la cotización.',
+        'El cambio de la divisa sale de un oráculo de mercado que se refresca cada media ' +
+        'hora; el precio del BEZ es una constante de configuración. La respuesta lleva ' +
+        'rateSource, rateAsOf y rateStale: hay que trasladarlos a quien reciba la ' +
+        'cotización, porque una cotización caducada no sirve para liquidar.',
     inputSchema: z.object({
         amount: z.number().positive().finite().describe('Cantidad a convertir'),
         fromCurrency: z.enum(MONEDAS_FIAT_Y_CRIPTO).describe('Moneda de origen'),
@@ -120,13 +136,14 @@ export const getPaymentQuoteTool = {
             const precio = precioBez();
             if (precio === null) return fallo(ERROR_PRECIO);
 
-            const amountInUSD = aDolares(amount, fromCurrency);
-            if (amountInUSD === null) {
+            const cambio = await aDolares(amount, fromCurrency);
+            if (cambio.usd === null) {
                 return fallo(
                     `Moneda no soportada: ${fromCurrency}. Admitidas: ${Object.keys(TASAS_USD).join(', ')}.`,
                 );
             }
 
+            const amountInUSD = cambio.usd;
             const bezCoins = amountInUSD / precio;
 
             return {
@@ -137,10 +154,11 @@ export const getPaymentQuoteTool = {
                     toAmount: bezCoins,
                     toCurrency: 'BEZ',
                     amountInUSD,
-                    exchangeRate: TASAS_USD[fromCurrency] / precio,
+                    exchangeRate: (cambio.rate as number) / precio,
                     pricePerBEZ: precio,
                     estimatedGasFee: fromCurrency === 'ETH' || fromCurrency === 'MATIC' ? 0.001 : 0,
-                    ...ORIGEN_TASAS,
+                    rateUsdPerUnit: cambio.rate,
+                    ...origenDe(cambio),
                 },
             };
         } catch (error: any) {
@@ -218,7 +236,7 @@ export const processStripePaymentTool = {
                 tokenAmount,
                 amountFiat,
                 pricePerBEZ: precio,
-                ...ORIGEN_TASAS,
+                ...ORIGEN_PRECIO_BEZ,
             };
         } catch (error: any) {
             return fallo(mensajeHttp(error));
@@ -352,11 +370,18 @@ export const initiateCryptoPaymentTool = {
 
             // La misma conversión que `get_payment_quote`. MATIC no es una
             // stablecoin: tratarlo 1:1 con el dólar acreditaba de más.
-            const amountInUSD = aDolares(amount, currency);
-            if (amountInUSD === null) {
+            const cambio = await aDolares(amount, currency);
+            if (cambio.usd === null) {
                 return fallo(`Moneda no soportada: ${currency}. Admitidas: ${MONEDAS_CRIPTO.join(', ')}.`);
             }
 
+            // Una operación que mueve dinero no se prepara con un cambio
+            // caducado: el usuario recibiría los BEZ de un precio de ayer.
+            if (cambio.stale) {
+                return fallo(`No hay cotización reciente de ${currency}. ${cambio.disclaimer}`);
+            }
+
+            const amountInUSD = cambio.usd;
             const tokenAmount = amountInUSD / precio;
 
             return {
@@ -377,7 +402,8 @@ export const initiateCryptoPaymentTool = {
                 },
                 contractAddress: config.token.address,
                 rpcUrl: config.network.activeRpc,
-                ...ORIGEN_TASAS,
+                rateUsdPerUnit: cambio.rate,
+                ...origenDe(cambio),
             };
         } catch (error: any) {
             return fallo(error.message);

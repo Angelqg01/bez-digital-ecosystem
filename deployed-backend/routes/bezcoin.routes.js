@@ -21,6 +21,9 @@ const router = express.Router();
 const { body, param, validationResult } = require('express-validator');
 const { protect: authMiddleware } = require('../middleware/auth.middleware');
 
+const tokenomics = require('../config/tokenomics.config');
+const referenceRates = require('../services/reference-rates.service');
+
 // Base de datos en memoria (reemplazar con MongoDB/PostgreSQL en producción)
 const transactionsDB = new Map();
 const rewardsDB = new Map();
@@ -310,7 +313,7 @@ router.get('/price/usd', async (req, res) => {
         // TODO: Integrar con API de precios (CoinGecko, CoinMarketCap, etc.)
         // Por ahora retornamos un precio fijo
 
-        const priceUSD = '0.10'; // $0.10 por BEZ
+        const priceUSD = String(tokenomics.price.usd);
 
         res.json({
             success: true,
@@ -433,15 +436,24 @@ async function recordDonationForRewards(walletAddress, amount) {
 
 // ==================== NUEVAS RUTAS DE COMPRA/VENTA ====================
 
-// Tasas de cambio (mock - en producción usar API de precios)
-const exchangeRates = {
-    ETH: 0.00015,
-    BTC: 0.000012,
-    USDT: 0.50,
-    USD: 0.50,
-    EUR: 0.46,
-    GBP: 0.40
-};
+/**
+ * Precio del BEZ expresado en cada divisa, al cambio vigente.
+ *
+ * Antes era una constante de módulo calculada una vez al arrancar: el proceso
+ * servía la misma tabla durante días. Ahora se calcula por petición sobre la
+ * cotización del oráculo, que se refresca cada media hora.
+ */
+async function calcularTasas() {
+    const cotizacion = await referenceRates.getRates();
+
+    const rates = Object.fromEntries(
+        Object.entries(cotizacion.usdPerUnit)
+            .filter(([, usd]) => Number.isFinite(usd) && usd > 0)
+            .map(([divisa, usd]) => [divisa, Number((tokenomics.price.usd / usd).toPrecision(8))])
+    );
+
+    return { rates, cotizacion };
+}
 
 /**
  * GET /api/bezcoin/balance/:address
@@ -658,12 +670,25 @@ router.post('/donate', async (req, res) => {
  * GET /api/bezcoin/rates
  * Obtener tasas de cambio
  */
-router.get('/rates', (req, res) => {
-    res.json({
-        success: true,
-        rates: exchangeRates,
-        timestamp: new Date().toISOString()
-    });
+router.get('/rates', async (req, res) => {
+    try {
+        const { rates, cotizacion } = await calcularTasas();
+
+        res.json({
+            success: true,
+            rates,
+            // La respuesta dice de cuándo es el cambio: sin esto, una tabla de
+            // hace horas se lee igual que una de hace un minuto.
+            rateSource: cotizacion.source,
+            rateAsOf: cotizacion.asOf,
+            rateAgeSeconds: cotizacion.ageMs === null ? null : Math.round(cotizacion.ageMs / 1000),
+            rateStale: cotizacion.stale,
+            rateDisclaimer: cotizacion.disclaimer,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(503).json({ success: false, error: error.message });
+    }
 });
 
 module.exports = router;

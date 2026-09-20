@@ -15,10 +15,13 @@ const VIPSubscription = require('../../models/VIPSubscription.model');
 // Services
 const UnifiedAI = require('../unified-ai.service');
 
+const tokenomics = require('../../config/tokenomics.config');
 // Configuration
 const REWARD_THRESHOLD_BEZ = 100;
 const REWARD_THRESHOLD_EUR = 9.99;
-const BEZ_TO_EUR_RATE = 0.50; // Placeholder rate, should come from Oracle
+// Precio del BEZ en EUR. Sale de la fuente única; el oráculo de QuickSwap
+// lo sustituye cuando está disponible.
+const BEZ_TO_EUR_RATE = tokenomics.price.eur;
 
 class RewardAutomationService {
     constructor() {

@@ -15,6 +15,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { ethers } from 'ethers';
 import { config } from '../config.js';
+import { getUsdPerUnit, unidadesPorUsdVivo } from '../rates.js';
 
 export interface SwapResult {
     direction: 'BEZ_TO_FIAT' | 'FIAT_TO_BEZ';
@@ -53,20 +54,16 @@ export function registerSmartSwap(server: McpServer): void {
                 const gasPriceGwei = parseFloat(ethers.formatUnits(gasPrice, 'gwei'));
 
                 // Gas cost for an ERC20 transfer (~55k gas)
-                const maticPriceUSD = 0.40;
+                const cambioMatic = await getUsdPerUnit('MATIC');
+                const maticPriceUSD = cambioMatic.rate as number;
                 const gasCostMatic = parseFloat(ethers.formatUnits(gasPrice * BigInt(55_000), 'ether'));
                 const gasCostUSD = gasCostMatic * maticPriceUSD;
 
                 // BEZ price (would come from oracle in production)
                 const bezPriceUSD = config.token.priceUSD;
 
-                // Fiat conversion rates (simplified, production would use live rates)
-                const fiatRates: Record<string, number> = {
-                    USD: 1.0,
-                    EUR: 0.92,
-                    GBP: 0.79,
-                    MXN: 17.15,
-                };
+                // Unidades por dólar al cambio vigente del oráculo.
+                const fiatRates = await unidadesPorUsdVivo();
                 const fiatRate = fiatRates[fiatCurrency] ?? 1.0;
 
                 let inputAmount: number;

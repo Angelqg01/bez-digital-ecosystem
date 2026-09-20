@@ -13,6 +13,23 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { config } from '../config.js';
+import { getUsdPerUnit } from '../rates.js';
+
+/**
+ * Redondea un valor monetario conservando cifras significativas.
+ *
+ * `toFixed(4)` bastaba cuando el BEZ valía ~1 $, pero a 0,0075 $ deja solo
+ * dos cifras significativas y desvía los indicadores hasta un 0,74 %
+ * (sma20 0,00735 -> 0,0073). Escalando los decimales al orden de magnitud
+ * del valor, el resultado mantiene la misma resolución relativa tanto a
+ * 0,0075 $ como a 2400 $.
+ */
+export function redondearPrecio(valor: number, significativas = 6): number {
+    if (!Number.isFinite(valor) || valor === 0) return 0;
+    const magnitud = Math.floor(Math.log10(Math.abs(valor)));
+    const decimales = Math.min(Math.max(significativas - 1 - magnitud, 0), 100);
+    return parseFloat(valor.toFixed(decimales));
+}
 
 export interface MarketResult {
     action: string;
@@ -44,15 +61,13 @@ export function registerAlpacaMarketsMcp(server: McpServer): void {
 
                 switch (action) {
                     case 'market_overview': {
-                        // Fetch crypto market data from public APIs
-                        let maticPrice = 0.40;
-                        try {
-                            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd', {
-                                signal: AbortSignal.timeout(5000),
-                            });
-                            const data = await res.json() as Record<string, { usd: number }>;
-                            maticPrice = data['matic-network']?.usd || 0.40;
-                        } catch { /* use fallback */ }
+                        // Esta herramienta llamaba a CoinGecko por su cuenta,
+                        // sin caché y sin decir si la respuesta era buena: un
+                        // 429 la dejaba con la constante presentada como precio
+                        // de mercado. El oráculo ya hace esa consulta con caché
+                        // de media hora, validación y procedencia.
+                        const cambioMatic = await getUsdPerUnit('MATIC');
+                        const maticPrice = cambioMatic.rate as number;
 
                         result = {
                             action, status: 'SUCCESS',
@@ -74,6 +89,12 @@ export function registerAlpacaMarketsMcp(server: McpServer): void {
                                     { symbol: 'ETH', correlation: 0.72 },
                                 ],
                                 timestamp: new Date().toISOString(),
+                                // De dónde sale el precio del MATIC y de
+                                // cuándo es, para que no se lea como una
+                                // cotización del momento si no lo es.
+                                rateSource: cambioMatic.source,
+                                rateAsOf: cambioMatic.asOf,
+                                rateStale: cambioMatic.stale,
                             },
                             reasoning: `Market overview: BEZ=$${config.token.priceUSD}, MATIC=$${maticPrice}. Trend: NEUTRAL, Volatility: LOW.`,
                         };
@@ -103,22 +124,22 @@ export function registerAlpacaMarketsMcp(server: McpServer): void {
                                 currentPrice: bezPrice,
                                 timeframe,
                                 technicalIndicators: {
-                                    sma20: parseFloat(sma20.toFixed(4)),
-                                    sma50: parseFloat(sma50.toFixed(4)),
+                                    sma20: redondearPrecio(sma20),
+                                    sma50: redondearPrecio(sma50),
                                     rsi,
-                                    macd: parseFloat(macd.toFixed(4)),
+                                    macd: redondearPrecio(macd),
                                     bollingerBands: {
-                                        upper: parseFloat((bezPrice * 1.05).toFixed(4)),
+                                        upper: redondearPrecio(bezPrice * 1.05),
                                         middle: bezPrice,
-                                        lower: parseFloat((bezPrice * 0.95).toFixed(4)),
+                                        lower: redondearPrecio(bezPrice * 0.95),
                                     },
                                 },
                                 signal,
-                                support: parseFloat((bezPrice * 0.90).toFixed(4)),
-                                resistance: parseFloat((bezPrice * 1.10).toFixed(4)),
+                                support: redondearPrecio(bezPrice * 0.90),
+                                resistance: redondearPrecio(bezPrice * 1.10),
                                 priceChange24h: '+1.2%',
                             },
-                            reasoning: `BEZ price analysis: $${bezPrice}. RSI: ${rsi} (${signal}). SMA20: $${sma20.toFixed(4)}, SMA50: $${sma50.toFixed(4)}.`,
+                            reasoning: `BEZ price analysis: $${bezPrice}. RSI: ${rsi} (${signal}). SMA20: $${redondearPrecio(sma20)}, SMA50: $${redondearPrecio(sma50)}.`,
                         };
                         break;
                     }

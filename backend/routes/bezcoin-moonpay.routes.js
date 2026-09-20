@@ -24,6 +24,8 @@ const BEZCoinTransaction = require('../models/pg/BEZCoinTransaction');
 const VIPSubscription = require('../models/VIPSubscription.model');
 const tokenomics = require('../config/tokenomics.config');
 
+const referenceRates = require('../services/reference-rates.service');
+
 // ============================================================
 // MOONPAY DISABLED
 // ============================================================
@@ -185,7 +187,7 @@ router.post('/buy/stripe', protect, async (req, res) => {
 
         const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-        const BEZ_PRICE_USD = 0.50;
+        const BEZ_PRICE_USD = tokenomics.price.usd;
         const bezAmount = amount / BEZ_PRICE_USD;
         const bonusAmount = (bezAmount * (vipBonus || 0)) / 100;
         const totalBez = bezAmount + bonusAmount;
@@ -245,15 +247,30 @@ router.post('/swap', protect, async (req, res) => {
     try {
         const { fromToken, amount, slippage, deadline } = req.body;
 
-        // Simular swap (en producción usar Uniswap/QuickSwap)
-        const exchangeRates = {
-            'USDT': 2.0,  // 1 USDT = 2 BEZ
-            'USDC': 2.0,
-            'ETH': 4000,  // 1 ETH = 4000 BEZ
-            'MATIC': 1.5
-        };
+        // Cuántos BEZ da cada unidad: se deriva del precio único del BEZ y de
+        // la tasa de referencia de cada cripto, en vez de escribirse a mano.
+        // La tabla anterior decía 1 USDT = 2 BEZ y 1 ETH = 4000 BEZ, lo que
+        // implicaba un BEZ a 0,50 $ y a 0,60 $ a la vez, y ninguno de los dos
+        // era el precio del sistema.
+        const cambio = await referenceRates.getUsdPerUnit(fromToken);
 
-        const rate = exchangeRates[fromToken] || 1;
+        if (!Number.isFinite(cambio.rate) || !(tokenomics.price.usd > 0)) {
+            return res.status(400).json({
+                success: false,
+                message: `No hay tasa de referencia para ${fromToken}`
+            });
+        }
+
+        // Un swap mueve dinero: no se ejecuta con una cotización caducada.
+        if (cambio.stale) {
+            return res.status(503).json({
+                success: false,
+                message: `No hay cotización reciente de ${fromToken}`,
+                rateDisclaimer: cambio.disclaimer
+            });
+        }
+
+        const rate = cambio.rate / tokenomics.price.usd;
         const amountOut = amount * rate;
         const priceImpact = 0.5; // 0.5%
 
@@ -300,8 +317,8 @@ router.get('/price', async (req, res) => {
     try {
         // En producción, obtener de Oracle o DEX
         const priceData = {
-            priceUSD: 0.50,
-            priceEUR: 0.46,
+            priceUSD: tokenomics.price.usd,
+            priceEUR: tokenomics.price.eur,
             change24h: 5.2,
             volume24h: 1250000,
             marketCap: 50000000,
@@ -334,11 +351,11 @@ router.get('/history/:period', async (req, res) => {
         // Generar datos simulados
         const dataPoints = period === '1h' ? 60 : period === '24h' ? 24 : 30;
         const prices = [];
-        let currentPrice = 0.50;
+        let currentPrice = tokenomics.price.usd;
 
         for (let i = 0; i < dataPoints; i++) {
-            const change = (Math.random() - 0.5) * 0.02;
-            currentPrice += change;
+            const change = (Math.random() - 0.5) * 0.04 * tokenomics.price.usd;
+            currentPrice = Math.max(currentPrice + change, tokenomics.price.usd * 0.01);
             prices.push({
                 timestamp: new Date(Date.now() - (dataPoints - i) * 60 * 60 * 1000),
                 price: currentPrice

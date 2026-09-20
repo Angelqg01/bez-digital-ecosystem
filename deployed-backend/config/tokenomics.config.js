@@ -5,7 +5,106 @@
  * @updated 2026-01-31
  */
 
+// ════════════════════════════════════════════════════════════
+// PRECIO OFICIAL DEL BEZ — FUENTE ÚNICA
+// ════════════════════════════════════════════════════════════
+// Precio definitivo del BEZ V1: 0,0075 $.
+//
+// Hasta esta unificación el precio estaba escrito a mano en catorce sitios
+// del backend, el frontend y el servidor MCP, con SIETE valores distintos
+// conviviendo en el mismo despliegue: 0,00075 · 0,0075 · 0,10 · 0,50 ·
+// 0,55 · 1,24 USD y 0,46 · 1,14 EUR. El importe que se cobraba dependía de
+// qué ruta atendiera la petición — comprar por /api/bezcoin/buy/stripe
+// costaba 67 veces más que comprar por /api/payment/bank-transfer.
+//
+// Nada vuelve a escribir el precio a mano: todo lee de aquí, y el oráculo
+// de QuickSwap (services/price-oracle.service.js) lo sobrescribe en
+// caliente cuando el pool responde. Este valor es el que se sirve cuando
+// el oráculo falla.
+const BEZ_PRICE_USD = Number(process.env.BEZ_PRICE_USD) > 0
+    ? Number(process.env.BEZ_PRICE_USD)
+    : 0.0075;
+
+// Tipo EUR/USD de referencia (1 EUR = 1,08 USD), el mismo que declara
+// packages/mcp-server/src/tools/payment-tools.ts. No es una cotización de
+// mercado; el oráculo calcula el EUR real a partir del USD cuando puede.
+const EUR_USD_RATE = Number(process.env.EUR_USD_RATE) > 0
+    ? Number(process.env.EUR_USD_RATE)
+    : 1.08;
+
+const BEZ_PRICE_EUR = Number((BEZ_PRICE_USD / EUR_USD_RATE).toFixed(8));
+
+// ════════════════════════════════════════════════════════════
+// TASAS DE REFERENCIA — FUENTE ÚNICA
+// ════════════════════════════════════════════════════════════
+// Dólares por unidad de cada divisa o criptomoneda.
+//
+// NO SON COTIZACIONES DE MERCADO. Son constantes del servidor: el valor que
+// se usa cuando no hay oráculo o cuando el oráculo falla. Donde ya existe
+// una llamada en vivo (services/data-oracle.service.js, CoinGecko), esa
+// llamada manda y esta tabla solo cubre el fallo.
+//
+// Antes de unificarlas, el MATIC tenía CUATRO precios distintos en el mismo
+// despliegue —0,40 · 0,80 · 0,85 · 1,00 $— y el ETH tres —2000 · 2400 ·
+// 3400 $—, según qué servicio hiciera la conversión. El coste de gas que se
+// le cobraba a un usuario dependía de qué ruta lo calculase.
+//
+// Cada una se puede sobrescribir por entorno: REFERENCE_RATE_MATIC,
+// REFERENCE_RATE_ETH, etc. Ese es el sitio para poner el número real
+// mientras no haya oráculo para todas.
+const TASAS_POR_DEFECTO = {
+    USD: 1,
+    USDT: 1,
+    USDC: 1,
+    EUR: EUR_USD_RATE,
+    GBP: 1.27,
+    MXN: 0.0583,
+    MATIC: 0.8,
+    ETH: 2400,
+    BTC: 45000,
+    BNB: 430,
+};
+
+const USD_POR_UNIDAD = Object.fromEntries(
+    Object.entries(TASAS_POR_DEFECTO).map(([simbolo, porDefecto]) => {
+        const delEntorno = Number(process.env[`REFERENCE_RATE_${simbolo}`]);
+        return [simbolo, delEntorno > 0 ? delEntorno : porDefecto];
+    })
+);
+
+/**
+ * Convierte una cantidad de `simbolo` a dólares usando la tasa de referencia.
+ * Devuelve null si el símbolo no está en la tabla, para que quien llame
+ * decida qué hacer en vez de multiplicar por undefined y propagar un NaN.
+ *
+ * @param {number} cantidad
+ * @param {string} simbolo
+ * @returns {number|null}
+ */
+function aUsd(cantidad, simbolo) {
+    const tasa = USD_POR_UNIDAD[String(simbolo || '').toUpperCase()];
+    if (!Number.isFinite(tasa) || !Number.isFinite(cantidad)) return null;
+    return cantidad * tasa;
+}
+
 module.exports = {
+    // ============================================================
+    // PRECIO (leer siempre de aquí, nunca escribirlo a mano)
+    // ============================================================
+    price: {
+        usd: BEZ_PRICE_USD,
+        eur: BEZ_PRICE_EUR,
+        eurUsdRate: EUR_USD_RATE,
+    },
+
+    // ============================================================
+    // TASAS DE REFERENCIA (leer siempre de aquí, nunca a mano)
+    // ============================================================
+    rates: {
+        usdPerUnit: USD_POR_UNIDAD,
+        toUsd: aUsd,
+    },
+
     // ============================================================
     // TOKEN INFORMATION
     // ============================================================
@@ -31,9 +130,10 @@ module.exports = {
             token1Decimals: 6
         },
 
-        // Fallback price (usado cuando el oráculo falla)
-        fallbackPriceUSD: 0.00075,
-        fallbackPriceEUR: 0.00070,
+        // Fallback price (usado cuando el oráculo falla).
+        // Deriva del precio oficial de arriba: no lo dupliques aquí.
+        fallbackPriceUSD: BEZ_PRICE_USD,
+        fallbackPriceEUR: BEZ_PRICE_EUR,
 
         // Cache settings
         cacheTTL: 30000, // 30 segundos

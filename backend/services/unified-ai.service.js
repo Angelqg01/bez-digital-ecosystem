@@ -548,6 +548,10 @@ Responde de manera amigable, clara y profesional en español. Si no sabes algo, 
 
             // Limpiar Markdown si el modelo lo incluyó
             let code = response.content;
+            // Cuantificador perezoso y un solo grupo; además solo recibe la
+            // salida del modelo, no entrada de usuario. Medido: por debajo del
+            // milisegundo a 200 kB.
+            // eslint-disable-next-line security/detect-unsafe-regex
             const match = code.match(/```(?:[a-z]+)?\n([\s\S]*?)```/);
             if (match) {
                 code = match[1];

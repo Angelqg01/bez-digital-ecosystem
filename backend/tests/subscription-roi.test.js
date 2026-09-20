@@ -18,6 +18,7 @@ const {
     calculatePotentialROI,
     compareROIAcrossTiers
 } = require('../config/tier.config');
+const tokenomics = require('../config/tokenomics.config');
 
 describe('Tier Configuration', () => {
 
@@ -91,8 +92,11 @@ describe('Tier Configuration', () => {
             expect(BASE_STAKING_APY).toBe(12.5);
         });
 
-        test('BEZ_TO_USD_RATE should be $0.05', () => {
-            expect(BEZ_TO_USD_RATE).toBe(0.05);
+        test('BEZ_TO_USD_RATE sale del precio único del BEZ', () => {
+            // Este fichero exigía 0,05 $: un octavo precio del BEZ que convivía
+            // con los otros siete. La constante ya no es suya, viene de
+            // config/tokenomics.config.js.
+            expect(BEZ_TO_USD_RATE).toBe(tokenomics.price.usd);
         });
 
     });
@@ -217,8 +221,9 @@ describe('calculatePotentialROI', () => {
         test('subscription cost should be converted to BEZ correctly', () => {
             const roi = calculatePotentialROI(10000, 'CREATOR', 12);
 
-            // 1188 / 0.05 = 23 760 BEZ
-            expect(roi.subscriptionCostInBEZ).toBeCloseTo(23760, 1);
+            // La regla es la conversión, no una cifra concreta: el coste anual
+            // dividido por el precio vigente del BEZ.
+            expect(roi.subscriptionCostInBEZ).toBeCloseTo(1188 / BEZ_TO_USD_RATE, 1);
         });
 
     });
@@ -243,15 +248,17 @@ describe('calculatePotentialROI', () => {
 
         test('large stake should be profitable for CREATOR', () => {
             // Hay que apostar lo bastante para cubrir 1188/año de suscripción.
-            // Al 18,75 % de APY el punto de equilibrio ronda los 126 720 BEZ.
-            const roi = calculatePotentialROI(200000, 'CREATOR', 12);
+            // La cantidad depende del precio del BEZ, así que se deriva del
+            // propio punto de equilibrio en vez de escribirse a mano.
+            const equilibrio = calculatePotentialROI(10000, 'CREATOR', 12).breakEvenStake;
+            const roi = calculatePotentialROI(equilibrio * 1.6, 'CREATOR', 12);
 
             expect(roi.isProfitable).toBe(true);
         });
 
         test('very large stake should be profitable for BUSINESS', () => {
-            // 5988/año al 31,25 % de APY: equilibrio en unos 383 232 BEZ.
-            const roi = calculatePotentialROI(500000, 'BUSINESS', 12);
+            const equilibrio = calculatePotentialROI(10000, 'BUSINESS', 12).breakEvenStake;
+            const roi = calculatePotentialROI(equilibrio * 1.4, 'BUSINESS', 12);
 
             expect(roi.isProfitable).toBe(true);
         });
@@ -265,22 +272,22 @@ describe('calculatePotentialROI', () => {
             expect(roi.breakEvenStake).toBe(0);
         });
 
-        test('CREATOR break-even should be around 126,720 BEZ', () => {
+        test('CREATOR break-even sale del coste anual, el precio y el APY', () => {
             const roi = calculatePotentialROI(10000, 'CREATOR', 12);
 
-            // 1188 / 0,05 = 23 760 BEZ de coste
-            // 23 760 / 0,1875 = 126 720 BEZ
-            expect(roi.breakEvenStake).toBeGreaterThan(120000);
-            expect(roi.breakEvenStake).toBeLessThan(135000);
+            // 1188 $/año / precio del BEZ = coste en BEZ; dividido por el APY
+            // efectivo (18,75 %) da la cantidad que hay que apostar.
+            const esperado = (1188 / BEZ_TO_USD_RATE) / 0.1875;
+
+            expect(roi.breakEvenStake).toBeCloseTo(esperado, -2);
         });
 
-        test('BUSINESS break-even should be around 383,232 BEZ', () => {
+        test('BUSINESS break-even sale del coste anual, el precio y el APY', () => {
             const roi = calculatePotentialROI(10000, 'BUSINESS', 12);
 
-            // 5988 / 0,05 = 119 760 BEZ de coste
-            // 119 760 / 0,3125 = 383 232 BEZ
-            expect(roi.breakEvenStake).toBeGreaterThan(370000);
-            expect(roi.breakEvenStake).toBeLessThan(395000);
+            const esperado = (5988 / BEZ_TO_USD_RATE) / 0.3125;
+
+            expect(roi.breakEvenStake).toBeCloseTo(esperado, -2);
         });
 
     });

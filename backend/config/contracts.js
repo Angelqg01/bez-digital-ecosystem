@@ -23,9 +23,28 @@ const CONTRACTS = {
 };
 
 // ABIs - Importar desde artifacts compilados
+//
+// Los nombres se validan antes de entrar en la ruta. Vienen de constantes de
+// este mismo fichero, así que hoy no hay agujero; pero la firma aceptaba
+// cualquier cadena, y un `..` en el nombre habría permitido cargar un JSON de
+// cualquier punto del disco. El validador lo cierra por construcción.
+const NOMBRE_VALIDO = /^[A-Za-z0-9_]+$/;
+
+const rutaDeArtefacto = (partes) => {
+    for (const parte of partes) {
+        if (!NOMBRE_VALIDO.test(parte)) {
+            throw new Error(`Nombre de artefacto no válido: ${parte}`);
+        }
+    }
+    return `../../artifacts/contracts/${partes.slice(0, -2).concat(partes[partes.length - 2] + '.sol', partes[partes.length - 1] + '.json').join('/')}`;
+};
+
 const getABI = (contractName, fileName = contractName) => {
     try {
-        const artifact = require(`../../artifacts/contracts/${fileName}.sol/${contractName}.json`);
+        // La ruta la construye `rutaDeArtefacto`, que exige /^[A-Za-z0-9_]+$/
+        // en cada parte: no puede salir de artifacts/contracts/.
+        // eslint-disable-next-line security/detect-non-literal-require
+        const artifact = require(rutaDeArtefacto([fileName, contractName]));
         return artifact.abi;
     } catch (error) {
         console.warn(`⚠️  No se pudo cargar ABI de ${contractName}:`, error.message);
@@ -35,7 +54,10 @@ const getABI = (contractName, fileName = contractName) => {
 
 const getABIFromSubfolder = (subfolder, contractName, fileName = contractName) => {
     try {
-        const artifact = require(`../../artifacts/contracts/${subfolder}/${fileName}.sol/${contractName}.json`);
+        // La ruta la construye `rutaDeArtefacto`, que exige /^[A-Za-z0-9_]+$/
+        // en cada parte: no puede salir de artifacts/contracts/.
+        // eslint-disable-next-line security/detect-non-literal-require
+        const artifact = require(rutaDeArtefacto([subfolder, fileName, contractName]));
         return artifact.abi;
     } catch (error) {
         console.warn(`⚠️  No se pudo cargar ABI de ${contractName} desde ${subfolder}:`, error.message);

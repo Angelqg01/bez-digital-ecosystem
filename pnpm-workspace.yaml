@@ -5,6 +5,7 @@ packages:
   - 'api'
   - 'sdk'
   - 'packages/*'
+  - 'tools/*'
 allowBuilds:
   '@arbitrum/nitro-contracts': set this to true or false
   '@prisma/engines': set this to true or false

@@ -27,36 +27,56 @@ env:
 
 jobs:
   # ==========================================
-  # 1. NPM AUDIT - Frontend & Backend
+  # 1. AUDITORÍA DE DEPENDENCIAS (todo el workspace)
   # ==========================================
+  #
+  # Antes esto era una matriz de tres jobs que parecía auditar cada paquete por
+  # separado. Dos cosas iban mal, y cada una por sí sola bastaba para que el
+  # check verde no significara lo que decía:
+  #
+  #   1. LAS ETIQUETAS NO CORRESPONDÍAN CON LO AUDITADO. El job llamado
+  #      «NPM Security Audit (backend)» apuntaba a `api/`, que tiene UN fichero
+  #      fuente; el llamado «(frontend)» apuntaba a `frontend-next/`, con 45.
+  #      Los directorios `backend/` (440 ficheros) y `frontend/` (325) no
+  #      aparecían en la matriz: 765 de los 811 ficheros del repositorio
+  #      quedaban fuera, bajo dos checks verdes que llevaban sus nombres.
+  #
+  #   2. AUNQUE HUBIERAN CORRESPONDIDO, DABA IGUAL. Esto es un workspace de
+  #      pnpm: `pnpm audit` resuelve desde el lockfile de la raíz y audita el
+  #      workspace entero, sea cual sea el directorio desde el que se lance.
+  #      Comprobado: los informes generados desde `api/`, `backend/` y
+  #      `packages/mcp-server/` salen byte a byte idénticos (mismo sha256,
+  #      135 544 bytes, 2576 dependencias). La matriz corría tres veces la
+  #      misma auditoría y presentaba el resultado como tres comprobaciones
+  #      distintas.
+  #
+  # Un solo job, con el nombre de lo que realmente hace. Cubre todos los
+  # paquetes del workspace —`backend`, `frontend`, `frontend-next`, `api`,
+  # `sdk` y `packages/*`— incluido `packages/mcp-server`, el único que se
+  # publica a npm y cuyas vulnerabilidades viajan a quien lo instale.
   npm-security-audit:
-    name: NPM Security Audit (${{ matrix.name }})
+    name: Auditoría de dependencias (workspace)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false # Continue other jobs even if one fails
-      matrix:
-        include:
-          - name: backend
-            path: api
-          - name: frontend
-            path: frontend-next
-          # `packages/mcp-server` es el ÚNICO paquete del repositorio que se
-          # publica a npm, y era el único que no se auditaba: una
-          # vulnerabilidad suya no se queda en casa, viaja a quien lo instale.
-          - name: mcp-server
-            path: packages/mcp-server
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # pnpm antes que Node: `cache: 'pnpm'` de setup-node necesita que pnpm
+      # ya esté instalado para localizar su almacén.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          # Sustituye a un `actions/cache` sobre `~/.npm` que no cacheaba nada:
+          # ese es el almacén de npm, y aquí se instala con pnpm, que guarda lo
+          # suyo en `~/.local/share/pnpm/store`. El paso se ejecutaba, salía
+          # verde y no ahorraba una sola descarga.
+          cache: 'pnpm'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
       - name: Usar HTTPS para dependencias git alojadas en GitHub
         # @chainlink/contracts declara @zksync/contracts con una URL SSH
         # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
@@ -64,22 +84,18 @@ jobs:
         # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
         run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-      - name: Cache npm dependencies
-        uses: actions/cache@v4
-        id: npm-cache
-        with:
-          path: ~/.npm
-          key: npm-${{ matrix.name }}-${{ hashFiles(format('{0}/pnpm-lock.yaml', matrix.path)) }}
-          restore-keys: |
-            npm-${{ matrix.name }}-
-
+      # `--frozen-lockfile`, no `--no-frozen-lockfile`.
+      #
+      # Una auditoría solo vale si mira exactamente las versiones que están
+      # comprometidas. Con `--no-frozen-lockfile`, pnpm puede resolver otras
+      # distintas y el informe pasa a describir un árbol que no es el del
+      # repositorio. Si el lockfile está desincronizado, este paso falla: eso
+      # es información, no un estorbo.
       - name: Install Dependencies
-        working-directory: ./${{ matrix.path }}
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Run NPM Audit (JSON Report)
+      - name: Auditar dependencias (informe JSON)
         id: npm-audit
-        working-directory: ./${{ matrix.path }}
         continue-on-error: true
         run: pnpm audit --json > npm-audit-report.json 2>&1 || true
 
@@ -92,31 +108,29 @@ jobs:
       # «critical=0, high=0, moderate=0» y el job salía VERDE sin haber
       # consultado un solo aviso. Comprobado con la carga real de un 503.
       - name: Comprobar que la auditoría llegó a ejecutarse
-        working-directory: ./${{ matrix.path }}
         run: |
           if [ ! -s npm-audit-report.json ]; then
-            echo "::error::La auditoría de ${{ matrix.name }} no produjo informe."
+            echo "::error::La auditoría de workspace no produjo informe."
             exit 1
           fi
           if ! jq empty npm-audit-report.json 2>/dev/null; then
-            echo "::error::El informe de ${{ matrix.name }} no es JSON válido:"
+            echo "::error::El informe de workspace no es JSON válido:"
             head -c 2000 npm-audit-report.json
             exit 1
           fi
           if jq -e 'has("error")' npm-audit-report.json >/dev/null 2>&1; then
-            echo "::error::La auditoría de ${{ matrix.name }} NO pudo consultar los avisos:"
+            echo "::error::La auditoría de workspace NO pudo consultar los avisos:"
             jq -r '.error.message // .error' npm-audit-report.json
             exit 1
           fi
           if ! jq -e 'has("metadata")' npm-audit-report.json >/dev/null 2>&1; then
-            echo "::error::El informe de ${{ matrix.name }} no trae metadata; no se puede contar nada."
+            echo "::error::El informe de workspace no trae metadata; no se puede contar nada."
             head -c 2000 npm-audit-report.json
             exit 1
           fi
 
       - name: Parse Audit Results
         id: parse-audit
-        working-directory: ./${{ matrix.path }}
         run: |
           CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit-report.json)
           HIGH=$(jq '.metadata.vulnerabilities.high // 0' npm-audit-report.json)
@@ -126,7 +140,7 @@ jobs:
           echo "high=$HIGH" >> $GITHUB_OUTPUT
           echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
 
-          echo "## 🔒 Security Audit - ${{ matrix.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔒 Security Audit - workspace" >> $GITHUB_STEP_SUMMARY
           echo "- 🔴 Critical: $CRITICAL" >> $GITHUB_STEP_SUMMARY
           echo "- 🟠 High: $HIGH" >> $GITHUB_STEP_SUMMARY
           echo "- 🟡 Moderate: $MODERATE" >> $GITHUB_STEP_SUMMARY
@@ -134,8 +148,8 @@ jobs:
       - name: Upload Audit Report
         uses: actions/upload-artifact@v4
         with:
-          name: npm-audit-${{ matrix.name }}
-          path: ./${{ matrix.path }}/npm-audit-report.json
+          name: npm-audit-workspace
+          path: ./npm-audit-report.json
           retention-days: 30
           if-no-files-found: ignore
 
@@ -305,7 +319,7 @@ jobs:
 
       - name: Install Script Dependencies
         working-directory: scripts
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run Security Monitor Script
         id: security-monitor
@@ -340,13 +354,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
       - name: Usar HTTPS para dependencias git alojadas en GitHub
         # @chainlink/contracts declara @zksync/contracts con una URL SSH
         # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
@@ -354,32 +370,112 @@ jobs:
         # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
         run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-      - name: Install Frontend Dependencies
-        working-directory: ./frontend-next
-        run: pnpm install --no-frozen-lockfile
+      # Lo que había aquí escaneaba `frontend-next/src` y nada más: 45 ficheros
+      # de los 928 de producción. Los 440 del backend y los 325 de `frontend/`
+      # quedaban fuera, bajo un check verde llamado «ESLint Security Rules».
+      #
+      # Y aunque hubiera cubierto todo, no podía fallar: `continue-on-error`,
+      # un `|| true` detrás de eslint y, si el fichero no salía, un
+      # `echo '[]'` que convertía el fallo en «ningún hallazgo».
+      #
+      # Ahora cubre todo el código de producción y falla si encuentra algo de
+      # la lista bloqueante. Las reglas están en `eslint.security.config.mjs`,
+      # en la raíz, para que en local se ejecute exactamente lo mismo.
+      # La cadena de ESLint vive en `tools/security-lint`, su propio paquete del
+      # workspace, comprometida en el lockfile. No se instala aquí: un
+      # `pnpm add` en la CI reescribiría el lockfile que `--frozen-lockfile`
+      # acaba de exigir intacto, y traería la versión de ese día en vez de la
+      # probada.
+      #
+      # Está aislada a propósito. ESLint 9 entre las dependencias de la raíz
+      # rompe `next lint`: cambia la resolución de `eslint-config-next` y
+      # `eslint-plugin-import` deja de ser alcanzable. Así, la raíz no lleva
+      # ESLint, los frontales conservan el 8 para su propio lint, y estas
+      # reglas usan el 9 que necesita la configuración plana.
+      - name: Instalar dependencias del workspace
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Install ESLint Security Plugins
-        working-directory: ./frontend-next
-        run: pnpm install --save-dev eslint-plugin-security eslint-plugin-no-unsanitized
-
-      - name: Run ESLint Security Scan
-        working-directory: ./frontend-next
-        continue-on-error: true
+      - name: Analizar el código de producción
+        id: eslint-sec
         run: |
-          pnpm exec eslint src --ext .js,.jsx,.ts,.tsx \
-            --plugin security --plugin no-unsanitized \
-            --format json --output-file eslint-security.json 2>&1 || true
+          # `set +e` es imprescindible aquí, no un descuido.
+          #
+          # GitHub arranca el shell con `bash -e {0}`. ESLint sale con 1 en
+          # cuanto hay CUALQUIER error, incluidos los de reglas que llegan por
+          # comentarios en línea del código analizado y que no son de
+          # seguridad. Con `-e` puesto, esa salida abortaba el paso entero
+          # antes de leer el informe: el job caía sin decir por qué, y el
+          # motivo real —cero hallazgos de seguridad— no llegaba a imprimirse.
+          #
+          # Quien decide si esto falla es la cuenta de abajo, no el código de
+          # salida de eslint.
+          set +e
+          set -uo pipefail
 
-          # Ensure valid JSON output
-          if [ ! -f "eslint-security.json" ] || ! jq empty eslint-security.json 2>/dev/null; then
-            echo '[]' > eslint-security.json
+          # Sin `continue-on-error` ni `|| true`: si eslint no llega a producir
+          # un informe, este paso falla. «No he podido mirarlo» no es «no hay
+          # nada».
+          # El binario sale del paquete aislado, pero se ejecuta desde la raíz
+          # para que las rutas de abajo sean las del repositorio.
+          ./tools/security-lint/node_modules/.bin/eslint \
+            --no-config-lookup --config eslint.security.config.mjs \
+            --format json --output-file eslint-security.json \
+            --ignore-pattern '**/tests/**' \
+            --ignore-pattern '**/__tests__/**' \
+            --ignore-pattern '**/*.test.*' \
+            --ignore-pattern '**/scripts/**' \
+            backend frontend/src frontend-next/src packages/mcp-server/src api
+          salida=$?
+
+          if [ ! -s eslint-security.json ] || ! jq empty eslint-security.json 2>/dev/null; then
+            echo "::error::ESLint no produjo un informe utilizable (salida $salida)."
+            exit 1
           fi
 
+          # Solo cuentan los hallazgos de los dos complementos de seguridad:
+          # cualquier otra regla que llegue por un comentario en línea no debe
+          # tumbar este job.
+          bloqueantes=$(jq '[.[].messages[] | select(.severity == 2)
+                             | select(.ruleId != null)
+                             | select(.ruleId | test("^(security|no-unsanitized)/"))] | length' eslint-security.json)
+          avisos=$(jq '[.[].messages[] | select(.severity == 1)
+                        | select(.ruleId != null)
+                        | select(.ruleId | test("^(security|no-unsanitized)/"))] | length' eslint-security.json)
+          ficheros=$(jq 'length' eslint-security.json)
+
+          # Las supresiones en línea son una salida legítima —las hay, con su
+          # justificación al lado— pero tienen que verse. Si empiezan a
+          # acumularse, el número sube y queda en el resumen de cada ejecución.
+          supresiones=$(grep -rEl 'eslint-disable.*(security|no-unsanitized)/' \
+            --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' \
+            backend frontend/src frontend-next/src packages/mcp-server/src api 2>/dev/null \
+            | wc -l)
+
+          {
+            echo "## 🔒 Reglas de seguridad de ESLint"
+            echo "- Ficheros analizados: $ficheros"
+            echo "- 🔴 Bloqueantes: $bloqueantes"
+            echo "- 🟡 Informativos: $avisos"
+            echo "- 🔇 Ficheros con supresiones en línea: $supresiones"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$bloqueantes" -gt 0 ]; then
+            echo "::error::$bloqueantes hallazgo(s) de seguridad bloqueantes."
+            jq -r '.[] | .filePath as $f | .messages[]
+                   | select(.severity == 2 and .ruleId != null)
+                   | select(.ruleId | test("^(security|no-unsanitized)/"))
+                   | "\($f):\(.line)  \(.ruleId)  \(.message)"' eslint-security.json
+            exit 1
+          fi
+
+          echo "Sin hallazgos bloqueantes en $ficheros ficheros."
+
       - name: Upload ESLint Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: eslint-security-report
-          path: ./frontend-next/eslint-security.json
+          path: ./eslint-security.json
           retention-days: 30
           if-no-files-found: ignore
 

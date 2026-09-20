@@ -24,6 +24,12 @@ const { notifyPaymentFailed, notifyStripeWebhookError, notifyHigh } = require('.
 const telegram = require('../middleware/telegramNotifier');
 const fiatGatewayService = require('./fiat-gateway.service');
 
+const tokenomics = require('../config/tokenomics.config');
+
+// Importe mínimo que acepta Stripe por cargo (0,50 USD / EUR / GBP), en céntimos.
+// https://docs.stripe.com/currencies#minimum-and-maximum-charge-amounts
+const STRIPE_IMPORTE_MINIMO_CENTIMOS = 50;
+
 /**
  * Configuración de Stripe
  * IMPORTANTE: Todas las claves deben venir de variables de entorno
@@ -187,9 +193,23 @@ async function createSubscriptionCheckoutSession(plan, userInfo) {
  */
 async function createTokenPurchaseSession(tokenAmount, userInfo) {
     try {
-        // Precio por token BZS: $0.10 (10 centavos)
-        const pricePerToken = 10; // centavos
-        const totalAmount = tokenAmount * pricePerToken;
+        // Precio del BEZ: fuente única en config/tokenomics.config.js.
+        //
+        // Antes esta función cobraba `unit_amount: 10` céntimos por token con
+        // `quantity: tokenAmount`. A 0,0075 $ un token vale 0,75 céntimos, y
+        // `unit_amount` tiene que ser un entero de céntimos: cualquier precio
+        // por debajo de un céntimo se convertía en 1 (un 33 % de sobrecoste)
+        // o en 0 (tokens gratis). Por eso se cobra el total en una sola línea
+        // y se redondea una única vez, al final.
+        const totalAmount = Math.round(tokenAmount * tokenomics.price.usd * 100); // céntimos
+
+        if (!Number.isFinite(totalAmount) || totalAmount < STRIPE_IMPORTE_MINIMO_CENTIMOS) {
+            throw new Error(
+                `El importe (${totalAmount} céntimos) no llega al mínimo que acepta Stripe ` +
+                `(${STRIPE_IMPORTE_MINIMO_CENTIMOS} céntimos). A ${tokenomics.price.usd} $/BEZ ` +
+                `hacen falta al menos ${Math.ceil(STRIPE_IMPORTE_MINIMO_CENTIMOS / 100 / tokenomics.price.usd)} tokens.`
+            );
+        }
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -206,9 +226,9 @@ async function createTokenPurchaseSession(tokenAmount, userInfo) {
                                 tokenAmount: tokenAmount.toString()
                             }
                         },
-                        unit_amount: pricePerToken,
+                        unit_amount: totalAmount,
                     },
-                    quantity: tokenAmount,
+                    quantity: 1,
                 },
             ],
             mode: 'payment',
