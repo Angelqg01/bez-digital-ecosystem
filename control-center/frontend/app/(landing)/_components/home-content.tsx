@@ -30,45 +30,48 @@ export const tickerItems: [string, string][] = [
     ['Protocolos', '7 verticales'],
     ['Contratos', '30+ Solidity'],
     ['Puentes', 'Polygon · BNB Chain'],
+    ['Privacidad', '0 datos personales on-chain'],
     ['Cumplimiento', 'MiCA · DAC8 · AEAT'],
     ['Seguridad', 'AEGIS fail-closed'],
+    ['Comercio', 'Puentes activos Polygon · BNB'],
+    ['Tesoreria', 'MultiSig 2-of-N · timelock']
 ];
 
 /* ── Paneles ancla ──────────────────────────────────────────────────────── */
 
 export const missionPills: AnchorPill[] = [
     {
-        n: 'Anclar',
-        t: 'El evento nace donde ya nace',
-        d: 'El ERP no cambia. Se le anade una salida firmada.',
+        n: 'Privacidad',
+        t: 'Tus datos no salen de tu casa',
+        d: 'Factura, PHI, PII y ruta se quedan en tu ERP. On-chain solo un hash firmado.',
     },
     {
-        n: 'Validar',
-        t: 'Nadie firma su propia prueba',
-        d: 'Esquema, politica y oraculo se comprueban antes de escribir.',
+        n: 'Independencia',
+        t: 'Sin intermediarios que te tarifiquen',
+        d: 'Tu clave, tu tesoreria, tu contrato. Nadie cobra por dejarte firmar.',
     },
     {
-        n: 'Probar',
-        t: 'La evidencia sobrevive a las partes',
-        d: 'Exportable por el auditor aunque la relacion comercial termine.',
+        n: 'Comercio libre',
+        t: 'Un solo hilo, cualquier frontera',
+        d: 'Puertos, aduanas y bancos leen la misma prueba, aunque cambien de pais.',
     },
 ];
 
 export const aegisPills: AnchorPill[] = [
     {
         n: 'Ante la duda',
-        t: 'Se detiene, no se arriesga',
-        d: 'Oraculo obsoleto o contradictorio: el pago automatico no sale.',
+        t: 'Bloquea el pago, protege tu dinero',
+        d: 'Oraculo obsoleto o contradictorio: la liquidacion no sale. Ni tu ni tu contraparte se exponen.',
     },
     {
         n: 'Ante el incidente',
-        t: 'Se pausa por capas',
-        d: 'Primero las escrituras, despues la liquidacion. La lectura sigue.',
+        t: 'Aisla el fuego, no la operacion',
+        d: 'Primero las escrituras, despues la liquidacion. La lectura sigue, tu negocio no para.',
     },
     {
         n: 'Ante el auditor',
-        t: 'Se abre entero',
-        d: 'Cada escritura lleva su hash de auditoria enlazado.',
+        t: 'Un solo paquete, cualquier jurisdiccion',
+        d: 'Evidencia exportable con hashes trazables. Aduana, fisco o comprador leen lo mismo.',
     },
 ];
 
@@ -84,7 +87,7 @@ export const chainSteps: ChainStep[] = [
     {
         n: 'PASO 02',
         title: 'El Edge Node valida antes de firmar',
-        desc: 'Comprueba esquema, politica, senales de riesgo de la IA y la evidencia del oraculo. Anonimiza lo que sea dato regulado y solo deja pasar el hash.',
+        desc: 'Comprueba esquema, politica, senales de riesgo de la IA y la evidencia del oraculo. Anonimiza lo regulado y solo deja pasar el hash: tus datos comerciales no cruzan la puerta.',
         tags: ['EDGE_NODE_ROLE', 'schema check', 'anonimizacion'],
     },
     {
@@ -102,13 +105,13 @@ export const chainSteps: ChainStep[] = [
     {
         n: 'PASO 05',
         title: 'El contrato sectorial registra la evidencia',
-        desc: 'Hashes, atestaciones, IDs de token, certificados y estados de escrow. Lo que queda escrito es irreversible y no contiene datos personales.',
+        desc: 'Hashes, atestaciones, IDs de token, certificados y estados de escrow. Irreversible y sin datos personales — la prueba es publica, tu operacion sigue privada.',
         tags: ['SupplyTracker', 'QualityCertificateNFT', 'EvidenceVault'],
     },
     {
         n: 'PASO 06',
         title: 'El auditor exporta la prueba',
-        desc: 'Dashboards y paquete de evidencia construidos desde los artefactos de despliegue y los logs de eventos. El auditor lee; nunca escribe.',
+        desc: 'Dashboards y paquete de evidencia listos para aduana, fisco, banco o comprador — en cualquier jurisdiccion. El auditor lee; nunca escribe.',
         tags: ['AUDITOR_ROLE', 'evidence pack', 'ISO / SOC'],
     },
 ];
@@ -117,7 +120,7 @@ export const chainStats: StatItem[] = [
     { to: 7, text: 'protocolos verticales especificados y versionados' },
     { to: 30, suffix: '+', text: 'contratos Solidity en el repositorio del nucleo' },
     { to: 7, text: 'roles de permiso definidos en toda la red' },
-    { to: 5, text: 'agentes de IA operando bajo aprobacion humana' },
+    { to: 5, text: 'agentes de IA bajo aprobacion humana (HITL) por diseno' },
 ];
 
 /* ── Protocolos verticales ──────────────────────────────────────────────── */
@@ -138,7 +141,7 @@ const ico = (children: ReactNode) => (
 export const verticals: Vertical[] = [
     {
         title: 'Logistica global',
-        desc: 'Tokenizacion de SKU, reputacion de proveedor, checkpoints de transporte, despacho aduanero y liquidacion instantanea en puertos y hubs.',
+        desc: 'Cruza aduanas sin ceder tus datos comerciales. Tokenizacion de SKU, checkpoints de transporte, despacho aduanero y liquidacion instantanea entre puertos y hubs — sin banco intermediario.',
         contracts: (
             <>
                 <b>SupplyTracker</b> · WarehouseManager · ProcurementNFT
@@ -159,7 +162,7 @@ export const verticals: Vertical[] = [
     },
     {
         title: 'Manufactura industrial',
-        desc: 'Gemelos digitales de linea, tokens de planificacion de materiales, mantenimiento predictivo firmado y certificados de calidad con escrow de disputas.',
+        desc: 'Prueba tu calidad sin abrir la fabrica. Gemelos digitales de linea, planificacion de materiales, mantenimiento firmado y certificados con escrow de disputas — cobras cuando el comprador acepta.',
         contracts: (
             <>
                 <b>DigitalTwinRegistry</b> · MaterialTokenMRP
@@ -180,7 +183,7 @@ export const verticals: Vertical[] = [
     },
     {
         title: 'RWA, finanzas y fiscalidad',
-        desc: 'Catastro y titulos, identidad de flota, factoring de facturas, prestamo con colateral real, tesoreria institucional y paquete de evidencia fiscal.',
+        desc: 'Financiate con tu evidencia, no con tu balance. Titulos y flota tokenizados, factoring de facturas, prestamo con colateral real y tesoreria multi-firma bajo tu control.',
         contracts: (
             <>
                 <b>LandCadastralRegistry</b> · LandTitleNFT · VehicleIdentityNFT
@@ -198,7 +201,7 @@ export const verticals: Vertical[] = [
     },
     {
         title: 'Energia y ESG',
-        desc: 'Tokenizacion de activo renovable, mercado P2P de energia, creditos de carbono con evidencia de registro y atestacion de score ESG.',
+        desc: 'Vende energia y carbono directamente. Tokens de activo renovable, mercado P2P entre paises y creditos de carbono con evidencia auditable — sin broker que se lleve el margen.',
         contracts: (
             <>
                 <b>SolarFarmToken</b> · P2PEnergyMarket
@@ -211,7 +214,7 @@ export const verticals: Vertical[] = [
     },
     {
         title: 'Salud y bio',
-        desc: 'Anclaje de historia clinica sin PHI en cadena, mercado de datasets con consentimiento revocable, custodia farmaceutica y escrow asegurador.',
+        desc: 'La historia clinica se queda en el hospital. Anclaje sin PHI on-chain, mercado de datasets con consentimiento revocable, custodia farmaceutica y escrow asegurador.',
         contracts: (
             <>
                 <b>HealthRecordSBT</b> · ClinicalDataMarketplace
@@ -232,7 +235,7 @@ export const verticals: Vertical[] = [
     },
     {
         title: 'Seguros y bovedas DeFi',
-        desc: 'Poliza como NFT, seguro parametrico con disparador por oraculo, ajuste de siniestros, pool de reaseguro y bovedas con limite de tesoreria.',
+        desc: 'Poliza como NFT, seguro parametrico que dispara solo con evidencia, ajuste de siniestros y reaseguro on-chain — la aseguradora libera el pago sin discutir.',
         contracts: (
             <>
                 <b>PolicyNFT</b> · ParametricInsurance · ClaimAdjuster
@@ -250,7 +253,7 @@ export const verticals: Vertical[] = [
     },
     {
         title: 'Legal, IP y gobierno',
-        desc: 'Boveda de evidencia documental, registro de propiedad intelectual, identidad on-chain y gobernanza DAO con voto verificable.',
+        desc: 'Boveda documental irreversible, registro de propiedad intelectual sellado por hash, identidad on-chain sin PII y gobernanza DAO con voto verificable — tu firma vale en cualquier jurisdiccion.',
         contracts: (
             <>
                 <b>EvidenceVault</b> · IPRegistryNFT
@@ -269,7 +272,7 @@ export const verticals: Vertical[] = [
     },
     {
         title: 'Modelo de oraculo',
-        desc: 'Los oraculos son servicios permisionados hasta que un vertical pueda descentralizarse con seguridad. Todos declaran fuente, esquema, frescura y fallback.',
+        desc: 'Cada dato entra con fuente, esquema, frescura y plan de fallback. Sin oraculo no hay pago: ninguna contraparte puede colarte una lectura fantasma.',
         contracts: (
             <>
                 <b>ORACLE_ROLE</b> · replay protection
@@ -294,7 +297,7 @@ export const securityControls: Control[] = [
     {
         badge: 'Fail-closed',
         title: 'Ventana de frescura y anti-replay',
-        desc: 'Cada atestacion declara su antiguedad maxima. Fuera de ventana, el contrato rechaza la escritura en lugar de asumirla valida.',
+        desc: 'Cada atestacion caduca. Fuera de ventana el contrato rechaza la escritura: nadie te cobra dos veces por la misma entrega.',
     },
     {
         badge: 'Contencion',
@@ -303,8 +306,8 @@ export const securityControls: Control[] = [
     },
     {
         badge: 'Custodia',
-        title: 'Separacion de funciones',
-        desc: 'Claves listas para HSM/KMS, MultiSig de tesoreria, timelock en cambios de parametro y runbooks firmados antes de produccion.',
+        title: 'Tu tesoreria, tus llaves',
+        desc: 'Claves para HSM/KMS, MultiSig 2-of-N y timelock antes de mover un centimo. Ningun proveedor puede vaciar tu tesoreria — tampoco tu proveedor de nube.',
     },
     {
         badge: 'Claves',
@@ -313,13 +316,13 @@ export const securityControls: Control[] = [
     },
     {
         badge: 'Datos',
-        title: 'Lo regulado no toca la cadena',
-        desc: 'PHI, PII, facturas comerciales y rutas sensibles permanecen fuera. On-chain solo van hashes irreversibles y referencias no sensibles.',
+        title: 'Lo regulado nunca toca la cadena',
+        desc: 'PHI, PII, facturas y rutas sensibles se quedan en tu casa. On-chain solo hashes irreversibles: privacidad por diseno, no por promesa.',
     },
     {
         badge: 'Normativa',
         title: 'MiCA · DAC8 · AEAT · AML/KYC',
-        desc: 'El agente de cumplimiento evalua cada flujo contra el marco europeo y espanol, y el oraculo KYC escribe solo estado de elegibilidad — nunca datos personales.',
+        desc: 'Cumplimiento sin ceder datos: el oraculo KYC solo escribe elegibilidad, no identidad. Operas en Europa y America sin duplicar papeleo.',
     },
     {
         badge: 'IA',

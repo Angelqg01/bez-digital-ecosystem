@@ -49,33 +49,33 @@ const ecosystemCards = [
   {
     href: '/commerce',
     icon: 'local_shipping',
-    title: 'Logistica tokenizada',
-    desc: 'Trazabilidad, liquidacion y pruebas de entrega conectadas a contratos inteligentes.',
+    title: 'Comercio internacional',
+    desc: 'Puertos, aduanas y bancos leen la misma prueba. Trazabilidad y liquidacion instantanea sin ceder tus datos comerciales.',
   },
   {
     href: '/network',
     icon: 'psychology',
-    title: 'AI Oracles',
-    desc: 'Validacion de sensores, rutas, inventarios y riesgo operativo en tiempo real.',
+    title: 'Oraculos de IA privados',
+    desc: 'Sensores, rutas, inventarios y riesgo operativo validados con confianza medible — sin exponer tus datos crudos a la cadena.',
   },
   {
     href: '/enterprise',
     icon: 'domain',
-    title: 'Activos reales',
-    desc: 'Hubs industriales, almacenes y maquinaria listos para modelos RWA y B2B.',
+    title: 'Activos bajo tu llave',
+    desc: 'Hubs, almacenes y maquinaria tokenizados como RWA. Tu tesoreria en MultiSig, tu firma, tu contrato — ningun custodio decide por ti.',
   },
   {
     href: '/validators',
     icon: 'verified_user',
-    title: 'Red y validadores',
-    desc: 'Gobernanza, nodos, RPC y seguridad para la infraestructura del protocolo.',
+    title: 'Red independiente',
+    desc: 'Gobernanza, nodos, RPC y AEGIS operados en abierto. Ninguna empresa controla la red; ningun proveedor puede apagarla.',
   },
 ];
 
 const audienceTracks = [
-  { title: 'Empresas', text: 'Integra pagos, documentacion y auditoria de cadena de suministro.', href: '/enterprise', icon: 'business' },
-  { title: 'Developers', text: 'SDKs, APIs, RPC y guias para construir sobre BeZhas.', href: '/developers', icon: 'code' },
-  { title: 'Comunidad', text: 'Soporte, FAQ, Telegram, Discord y recursos de aprendizaje.', href: '/support', icon: 'groups' },
+  { title: 'Empresas', text: 'Integra pagos, evidencia y auditoria de tu cadena internacional sin ceder datos ni exclusividad.', href: '/enterprise', icon: 'business' },
+  { title: 'Developers', text: 'SDKs, APIs, RPC y guias para construir productos abiertos sobre BeZhas — codigo publico, contratos verificables.', href: '/developers', icon: 'code' },
+  { title: 'Comunidad', text: 'Soporte humano, Telegram, Discord y documentacion abierta. La red es de todos: nadie es solo cliente.', href: '/support', icon: 'groups' },
 ];
 
 const liveFeed = [
@@ -96,7 +96,7 @@ const tokenMarkets = [
   {
     symbol: 'BEZ-COIN',
     name: 'Polygon mainnet',
-    source: 'Oraculo BEZ',
+    source: 'Venta directa · Fase 1',
     chain: 'Polygon 137',
   },
   {
@@ -226,10 +226,16 @@ export default function Home() {
   const bezPrice = toOracleNumber(bezOracle?.priceUSD ?? bezOracle?.usd ?? bezOracle?.price ?? oraclePrices?.bezCoinPriceUSD ?? oraclePrices?.priceUSD);
   const bezChange = toOracleNumber(bezOracle?.change24h ?? oraclePrices?.bezCoinChange24h);
   const v2Price = toOracleNumber(v2Oracle?.priceUSD ?? v2Oracle?.usd ?? v2Oracle?.price);
-  const bezPriceLabel = typeof bezPrice === 'number' ? `$${bezPrice.toFixed(3)}` : 'Oraculo pendiente';
-  const bezChangeLabel = typeof bezChange === 'number' ? `${bezChange >= 0 ? '+' : ''}${bezChange.toFixed(1)}%` : 'Fuente Oracle';
+  // Precio definitivo de la fase semilla, confirmado por Yoel 2026-09-18
+  // (api/config/bez-price.js). Este widget del hero muestra el precio de VENTA
+  // — que es FIJO, no cotizacion —, asi que no depende del oraculo: el
+  // OraclePanel de mas abajo si sigue leyendo mercados en vivo cuando existan.
+  const bezPriceLabel = '$0.0075';
+  const bezChangeLabel = 'Fase semilla · precio fijo';
   const v2PriceLabel = typeof v2Price === 'number' ? `$${v2Price.toFixed(3)}` : 'Pre-mainnet';
   const v2ChangeLabel = typeof v2Price === 'number' ? 'Oracle V2' : 'Sin precio activo';
+  // El precio ya no depende de estos hooks; el linter los reclamaria si no se referencian.
+  void bezPrice; void bezChange;
 
   const [nativeAppsList, setNativeAppsList] = useState(nativeApps);
 
@@ -290,21 +296,44 @@ export default function Home() {
             </div>
 
             <h1 className="max-w-5xl text-5xl font-black uppercase leading-[0.92] tracking-normal text-white md:text-7xl lg:text-8xl">
-              Creando el estandar digital entre la empresa y la cadena de bloques.
+              Comercia sin ceder tus datos. Cobra sin pedir permiso.
             </h1>
             <p className="mt-7 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
-              Una L2 sobre Ethereum donde los eventos de tu ERP se convierten en evidencia firmada, auditable e irreversible — sin sacar de tu casa ni un solo dato sensible.
+              <b className="text-white">BeZhas es una red B2B firmada</b> que conecta tu ERP con puertos, aduanas,
+              bancos y clientes de cualquier pais. Cada operacion se prueba con un hash — tus datos comerciales
+              se quedan en casa, tu pago se libera cuando la contraparte acepta, y ningun intermediario decide
+              por ti.
             </p>
+            <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-200/90">
+              <span>Privacidad por diseno</span>
+              <span className="text-white/30">·</span>
+              <span>Seguridad AEGIS fail-closed</span>
+              <span className="text-white/30">·</span>
+              <span>Comercio internacional sin fronteras</span>
+              <span className="text-white/30">·</span>
+              <span>Independencia total</span>
+            </div>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link href="/solutions" className="flex h-14 items-center justify-center rounded-lg bg-[#0d33f2] px-7 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_0_28px_rgba(13,51,242,0.36)] transition hover:translate-y-[-2px] hover:brightness-110">
-                Explorar ecosistema
-              </Link>
-              <a href={STRIPE_PAYMENT_LINKS.tokenPurchase} target="_blank" rel="noopener noreferrer" className="flex h-14 items-center justify-center rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-7 text-xs font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-300/15">
+              <a
+                href="mailto:info.angelqg@gmail.com?subject=BeZhas%20—%20Solicitar%20demo"
+                className="flex h-14 items-center justify-center rounded-lg bg-[#0d33f2] px-7 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_0_28px_rgba(13,51,242,0.36)] transition hover:translate-y-[-2px] hover:brightness-110"
+              >
+                Solicitar demo
+              </a>
+              <a
+                href={STRIPE_PAYMENT_LINKS.tokenPurchase}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-14 items-center justify-center rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-7 text-xs font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-300/15"
+              >
                 Comprar BEZ-Coin
               </a>
-              <Link href="/docs" className="flex h-14 items-center justify-center rounded-lg border border-white/15 bg-white/5 px-7 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:bg-white/10">
-                Documentacion
+              <Link
+                href="/solutions"
+                className="flex h-14 items-center justify-center rounded-lg border border-white/15 bg-white/5 px-7 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+              >
+                Explorar ecosistema
               </Link>
             </div>
           </div>
@@ -316,8 +345,8 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <img src="/bezhas-token-logo.png" alt="Logo token BEZ" className="h-14 w-14 rounded-full object-cover shadow-[0_0_28px_rgba(245,190,60,0.32)]" />
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-200">Oracle price</p>
-                    <h2 className="mt-1 text-xl font-black uppercase italic text-white">BEZ Oraculo</h2>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-200">Precio semilla · BEZ-Coin</p>
+                    <h2 className="mt-1 text-xl font-black uppercase italic text-white">$0.0075 fijo</h2>
                   </div>
                 </div>
                 <span className="material-symbols-outlined text-amber-200">candlestick_chart</span>
@@ -398,19 +427,20 @@ export default function Home() {
             <p className={s.lede}>
               Hoy la trazabilidad vive dentro de cada ERP. Cuando aduanas, un auditor, una aseguradora o
               el comprador piden pruebas, cada parte presenta su propia version y alguien tiene que
-              conciliarlas a mano. Eso cuesta dias y deja huecos que nadie firma.
+              conciliarlas a mano. Eso cuesta dias, deja huecos y te obliga a ceder datos al intermediario
+              que los concilie.
             </p>
             <p className={s.lede}>
-              BeZhas no sustituye tu ERP: lo ancla. Cada evento operativo sale por un Edge Node, se valida
-              contra el esquema del sector y aterriza en la cadena como un hash firmado con su ventana de
-              frescura. La operacion sigue donde estaba; la prueba se vuelve comun.
+              BeZhas no sustituye tu ERP: lo ancla. Cada evento sale por tu propio Edge Node, se anonimiza y
+              aterriza en la cadena como un hash firmado. <b>Tu operacion no se mueve de casa; tu prueba se
+              vuelve comun</b> — y cualquier contraparte, en cualquier pais, la lee sin negociar con nadie.
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 6 }}>
               <Link className={`${s.btn} ${s.btnSolid}`} href="/docs">
                 Como funciona <span className={s.arw}>→</span>
               </Link>
               <Link className={`${s.btn} ${s.btnGhost}`} href="/validators">
-                Modelo de seguridad
+                Ver AEGIS y privacidad
               </Link>
             </div>
           </Reveal>
@@ -475,8 +505,8 @@ export default function Home() {
             <p className={s.eyebrow}>Arquitectura compartida</p>
             <h2 className={s.secTitle}>La cadena de evidencia</h2>
             <p className={s.lede}>
-              Seis pasos identicos para los siete sectores. Cambian los contratos y los oraculos; nunca
-              cambia el orden ni quien puede firmar cada tramo.
+              Seis pasos identicos para los siete sectores. Ningun dato regulado sale de tu casa, ningun
+              intermediario se lleva un peaje, ninguna prueba depende de la palabra de una sola parte.
             </p>
           </Reveal>
 
@@ -490,10 +520,11 @@ export default function Home() {
         <div className={s.wrap}>
           <Reveal className={s.secHead}>
             <p className={s.eyebrow}>Core protocol</p>
-            <h2 className={s.secTitle}>Ecosistema Chain-Flow</h2>
+            <h2 className={s.secTitle}>Cuatro columnas, un solo estandar</h2>
             <p className={s.lede}>
-              Un mapa de productos publicos para entender BeZhas sin entrar en paneles sensibles: red,
-              comercio, activos reales, validadores y soporte.
+              Comercio internacional firmado, oraculos de IA sin ceder datos, activos reales bajo tu llave
+              y una red de validadores independiente. Cada pieza vale por si sola; juntas quitan al
+              intermediario del medio.
             </p>
           </Reveal>
 
@@ -521,10 +552,11 @@ export default function Home() {
         <div className={s.wrap}>
           <Reveal className={s.secHead}>
             <p className={s.eyebrow}>Protocolos sectoriales</p>
-            <h2 className={s.secTitle}>Trabajando juntos para resolver tus necesidades</h2>
+            <h2 className={s.secTitle}>Siete industrias, una sola libertad</h2>
             <p className={s.lede}>
-              Cada vertical llega con su mapa de contratos, sus actores, sus requisitos de oraculo y su
-              suite de tests. No es una plataforma generica esperando a que alguien la configure.
+              Cada vertical llega con su mapa de contratos, sus actores, su oraculo y su suite de tests —
+              listo para operar fuera de tu pais sin cambiar de plataforma. La privacidad y la firma
+              son las mismas; lo que cambia son las reglas de tu sector.
             </p>
           </Reveal>
 
@@ -539,11 +571,12 @@ export default function Home() {
       <section className={`${s.slab} ${s.slabDeep}`} id="seguridad">
         <div className={s.wrap}>
           <Reveal className={s.secHead}>
-            <p className={`${s.eyebrow} ${s.onDark}`}>Seguridad y cumplimiento</p>
-            <h2 className={`${s.secTitle} ${s.onDark}`}>El protocolo falla cerrado</h2>
+            <p className={`${s.eyebrow} ${s.onDark}`}>AEGIS · seguridad por diseno</p>
+            <h2 className={`${s.secTitle} ${s.onDark}`}>El protocolo protege tu dinero</h2>
             <p className={`${s.lede} ${s.onDark}`}>
-              Si un oraculo esta obsoleto o se contradice, los pagos automaticos se detienen y el caso
-              pasa a revision manual. Preferimos una liquidacion bloqueada a una liquidacion equivocada.
+              Si un oraculo esta obsoleto o se contradice, el pago automatico se detiene y el caso pasa a
+              revision humana. Preferimos una liquidacion bloqueada a una liquidacion equivocada — y
+              preferimos que tu contraparte no cobre a costa de tu descuido.
             </p>
           </Reveal>
 
@@ -558,10 +591,11 @@ export default function Home() {
           <div className={s.panel}>
             <Reveal className={s.secHead} style={{ marginBottom: 8 }}>
               <p className={s.eyebrow}>Interoperabilidad</p>
-              <h2 className={`${s.secTitle} ${s.secTitleSm}`}>Se conecta donde ya trabajas</h2>
+              <h2 className={`${s.secTitle} ${s.secTitleSm}`}>Tu operacion no cambia. Tu evidencia deja de estar sola.</h2>
               <p className={s.lede}>
-                Universal Bridge API para los sistemas de gestion, nodos MCP dedicados para aislamiento de
-                datos, y puentes nativos hacia las redes donde ya tienes liquidez.
+                Universal Bridge API sobre tu ERP, nodos MCP dedicados para aislar los datos de cada cliente
+                y puentes nativos a las redes donde ya tienes liquidez. Cambias de pais o de banco sin
+                rehacer nada.
               </p>
             </Reveal>
 
@@ -584,10 +618,12 @@ export default function Home() {
         <div className={s.wrap}>
           <Reveal className={s.secHead}>
             <p className={s.eyebrow}>BEZ-Coin</p>
-            <h2 className={s.secTitle}>El activo de utilidad de la red</h2>
+            <h2 className={s.secTitle}>La llave del comercio libre</h2>
             <p className={s.lede}>
-              BEZ-Coin es el combustible operativo de BeZhas: paga el gas, liquida entre proveedores,
-              bloquea escrows y da acceso al SDK y a la gobernanza. No es un producto de inversion.
+              BEZ-Coin es el combustible operativo de la red: paga el gas, liquida entre proveedores en
+              cualquier pais, bloquea escrows sin banco intermediario y da voto en la gobernanza que
+              decide como evoluciona el protocolo. No es un producto de inversion — es tu acceso a una
+              infraestructura que ni tu ni tu contraparte controlan.
             </p>
           </Reveal>
 
@@ -663,10 +699,10 @@ export default function Home() {
         <div className={s.wrap}>
           <Reveal className={s.secHead}>
             <p className={s.eyebrow}>Para quien es</p>
-            <h2 className={s.secTitle}>Tres caminos de entrada</h2>
+            <h2 className={s.secTitle}>Tres formas de entrar sin ataduras</h2>
             <p className={s.lede}>
-              Quien compra, quien construye y quien necesita soporte encuentran su siguiente paso sin
-              pasar por dashboard.
+              Si compras, si construyes o si necesitas soporte, el siguiente paso esta a un clic — sin
+              onboarding forzoso, sin dependencia de un proveedor.
             </p>
           </Reveal>
 
@@ -694,10 +730,10 @@ export default function Home() {
         <div className={s.wrap}>
           <Reveal className={s.secHead}>
             <p className={s.eyebrow}>Ecosistema</p>
-            <h2 className={s.secTitle}>Aplicaciones sobre el estandar</h2>
+            <h2 className={s.secTitle}>Aplicaciones ya en produccion</h2>
             <p className={s.lede}>
-              Cinco aplicaciones ya desplegadas que consumen los mismos contratos y el mismo modelo de
-              roles. Lo que aprende una, lo hereda el resto.
+              Cinco aplicaciones desplegadas que comparten contratos, roles y politicas de privacidad. Lo
+              que aprende una, lo hereda el resto — y todo lo que tocan es tuyo, no de la plataforma.
             </p>
           </Reveal>
 
@@ -729,10 +765,11 @@ export default function Home() {
           {/* Apps Nativas del portal unificado (rutas internas + API docs) */}
           <Reveal className={s.secHead} style={{ marginTop: 'clamp(48px, 6vw, 88px)', marginBottom: 24 }}>
             <p className={s.eyebrow}>App Nativas</p>
-            <h2 className={`${s.secTitle} ${s.secTitleSm}`}>Dentro del portal unificado</h2>
+            <h2 className={`${s.secTitle} ${s.secTitleSm}`}>Tu portal, sin salir de la red</h2>
             <p className={s.lede}>
               Hub para comunidad y marketplace, DeFi para servicios financieros Web3, y Vision Scan para
-              IA, trazabilidad y oraculos de datos verificables.
+              IA, trazabilidad y oraculos verificables — todo bajo la misma identidad, sin volver a ceder
+              tus datos.
             </p>
           </Reveal>
 
@@ -767,7 +804,7 @@ export default function Home() {
         <div className={s.wrap}>
           <Reveal className={s.secHead}>
             <p className={s.eyebrow}>Que esta pasando</p>
-            <h2 className={s.secTitle}>Feed del ecosistema</h2>
+            <h2 className={s.secTitle}>Movimiento real, evidencia publica</h2>
           </Reveal>
 
           <div className={s.res}>
@@ -792,7 +829,7 @@ export default function Home() {
         <div className={s.wrap}>
           <Reveal className={s.secHead}>
             <p className={s.eyebrow}>Documentacion</p>
-            <h2 className={s.secTitle}>Ultimos recursos</h2>
+            <h2 className={s.secTitle}>Lee antes de firmar</h2>
           </Reveal>
 
           <ResourceCards resources={resources} />
@@ -807,12 +844,12 @@ export default function Home() {
               <Reveal className={s.ctaCopy}>
                 <p className={s.eyebrow}>Unete a la red</p>
                 <h2 className={`${s.secTitle} ${s.secTitleSm}`}>
-                  Un estandar solo vale lo que vale su lista de firmantes
+                  El comercio libre no se declara. Se firma.
                 </h2>
                 <p className={s.lede}>
                   Buscamos operadores logisticos, plantas industriales, aseguradoras e integradores de ERP
-                  dispuestos a anclar un proceso real. Empezamos por un flujo, con datos propios y
-                  evidencia exportable desde el primer dia.
+                  dispuestos a anclar un proceso real. Empezamos por un flujo, con tus datos, tus llaves y
+                  evidencia exportable desde el primer dia — sin ceder control ni exclusividad.
                 </p>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 6 }}>
                   <a
