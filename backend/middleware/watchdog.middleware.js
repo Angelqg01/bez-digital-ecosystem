@@ -21,6 +21,10 @@ const INJECTION_PATTERNS = [
     { id: 'INJ_SYSTEM_IMPERSONATION', severity: 'critical', regex: /(\[\s*(system|assistant|developer)\s*\]|<\s*\/?\s*(system|assistant|im_start|im_end)\s*>|^\s*(system|sistema)\s*:)/im },
     { id: 'INJ_EXFILTRATE_SECRETS', severity: 'critical', regex: /\b(reveal|show|print|dump|envía|manda|send|leak|exfiltra\w*|muestra|dime)\b[^.\n]{0,60}\b(api[_\s-]?key|secret|token|password|contraseña|private[_\s-]?key|clave privada|seed|mnemonic|env|environment|\.env|credential\w*|credencial\w*)\b/i },
     { id: 'INJ_TOOL_COERCION', severity: 'high', regex: /\b(call|invoke|ejecuta|llama a|usa la herramienta|use the tool|transfer|transfiere|withdraw|retira|refund|reembolsa|payout)\b[^.\n]{0,60}\b(tool|herramienta|all funds|todos los fondos|balance|wallet|saldo|stripe|treasury|tesorería)\b/i },
+    // El patrón ES la lista de caracteres bidireccionales e invisibles que
+    // busca: para detectarlos hay que nombrarlos. Quitarlos desactivaría la
+    // defensa contra Trojan Source.
+    // eslint-disable-next-line security/detect-bidi-characters
     { id: 'INJ_HIDDEN_CHANNEL', severity: 'high', regex: /[​-‏‪-‮⁠-⁯﻿]/ },
     { id: 'INJ_URL_EXFIL', severity: 'high', regex: /https?:\/\/[^\s"']*[?&](?:q|data|payload|token|key|secret|body)=[^\s"'&]{16,}/i },
 ];

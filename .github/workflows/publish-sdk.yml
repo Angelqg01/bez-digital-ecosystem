@@ -1,48 +1,68 @@
-name: Publish SDK to npm & pnpm
+name: Publish SDK to npm
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Triggers:
-#   - Automatic: push a version tag (v*) from the sdk/ directory
-#   - Manual:    workflow_dispatch con opción de prerelease
+# Disparadores:
+#   - Automático: una etiqueta `sdk/v*`
+#   - Manual:     workflow_dispatch, con opción de prelanzamiento y de ensayo
 # ──────────────────────────────────────────────────────────────────────────────
+#
+# Este fichero publica paquetes a un registro público. Lo que se sube no se
+# puede retirar sin dejar rastro, así que cada barrera de abajo está para que
+# no salga nada que no debería.
+#
+# Lo que había antes y por qué ya no está:
+#
+#   · `publish-pnpm` volvía a publicar @bezhas/sdk en el MISMO registro justo
+#     después de que `publish-npm` lo hubiera publicado, con la misma versión.
+#     El registro rechaza una versión repetida (EPUBLISHCONFLICT), así que ese
+#     job no podía terminar en verde nunca. Se ha eliminado: una publicación,
+#     hecha con pnpm, que es lo que usa este repositorio.
+#
+#   · `publish-npm` no instalaba pnpm y luego ejecutaba `pnpm install`. Habría
+#     fallado con «pnpm: command not found» en la primera publicación real.
+#
+#   · `github-release` leía `needs.validate.outputs.sdk_version` sin tener
+#     `validate` entre sus `needs`. El contexto `needs` solo trae los jobs de
+#     los que se depende, así que ese valor llegaba VACÍO y el lanzamiento se
+#     habría creado con el nombre «@bezhas/sdk v».
+#
+#   · Los `pnpm install --no-frozen-lockfile` y los `|| pnpm install` de
+#     recambio permitían publicar un árbol de dependencias distinto del
+#     comprometido, y se tragaban el fallo del primer intento.
+
 on:
   push:
     tags:
-      - 'sdk/v*'          # e.g. sdk/v2.0.1, sdk/v3.0.0-beta.1
+      - 'sdk/v*'          # p. ej. sdk/v2.0.1, sdk/v3.0.0-beta.1
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Version tag to publish (e.g. 2.0.1)'
-        required: true
       prerelease:
-        description: 'Publish as prerelease (beta/next)'
+        description: 'Publicar como prelanzamiento (beta)'
         type: boolean
         default: false
       dry_run:
-        description: 'Dry run (no actual publish)'
+        description: 'Ensayo: no publica nada'
         type: boolean
-        default: false
+        default: true
 
 env:
-  SDK_DIR: ./sdk
-  MCP_DIR: ./packages/mcp-server
   NODE_VERSION: '24'
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 permissions:
-  contents: write   # To create GitHub releases
-  packages: write   # For GitHub Packages registry
+  contents: write   # Para crear el lanzamiento en GitHub
 
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
-  # JOB 1: Validate & Build
+  # JOB 1: Validar y construir
   # ────────────────────────────────────────────────────────────────────────────
   validate:
-    name: Validate & Build SDK
+    name: Validar y construir
     runs-on: ubuntu-latest
     outputs:
       sdk_version: ${{ steps.version.outputs.sdk_version }}
       mcp_version: ${{ steps.version.outputs.mcp_version }}
+      sdk_publicable: ${{ steps.version.outputs.sdk_publicable }}
 
     steps:
       - name: Checkout
@@ -52,12 +72,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-      - name: Usar HTTPS para dependencias git alojadas en GitHub
-        # @chainlink/contracts declara @zksync/contracts con una URL SSH
-        # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
-        # clave SSH, así que sin esta reescritura `pnpm install` falla con
-        # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
-        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -65,148 +79,185 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Determine versions
+      - name: Usar HTTPS para dependencias git alojadas en GitHub
+        # @chainlink/contracts declara @zksync/contracts con una URL SSH
+        # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
+        # clave SSH, así que sin esta reescritura `pnpm install` falla con
+        # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+      # ─────────────────────────────────────────────────────────────────────
+      # La barrera que faltaba: no publicar un marcador de posición.
+      #
+      # `sdk/` NO contiene el SDK. Es un stub declarado como tal: versión
+      # `0.0.0-placeholder`, sin scripts, y un `index.js` cuyo proxy devuelve
+      # `undefined` para cualquier método que se le pida. Existe solo para que
+      # `frontend-next` resuelva su `import { BeZhasSDK }` y el workspace
+      # instale.
+      #
+      # Publicarlo con el nombre real sería peor que no publicar nada: quien
+      # instalara @bezhas/sdk obtendría un paquete que no falla, simplemente
+      # no hace nada, y los errores aparecerían lejos de aquí.
+      #
+      # Este paso decide si el SDK es publicable. Si no lo es, el job sigue
+      # —el servidor MCP sí se publica— pero el SDK se salta con un aviso.
+      # ─────────────────────────────────────────────────────────────────────
+      - name: Determinar versiones y si el SDK es publicable
         id: version
         run: |
-          cd sdk
-          SDK_VERSION=$(node -p "require('./package.json').version")
-          echo "sdk_version=$SDK_VERSION" >> $GITHUB_OUTPUT
-          if [ -f "../packages/mcp-server/package.json" ]; then
-            MCP_VERSION=$(node -p "require('../packages/mcp-server/package.json').version")
-            echo "mcp_version=$MCP_VERSION" >> $GITHUB_OUTPUT
+          set -euo pipefail
+
+          SDK_VERSION=$(node -p "require('./sdk/package.json').version")
+          echo "sdk_version=$SDK_VERSION" >> "$GITHUB_OUTPUT"
+
+          MCP_VERSION=$(node -p "require('./packages/mcp-server/package.json').version")
+          echo "mcp_version=$MCP_VERSION" >> "$GITHUB_OUTPUT"
+
+          motivo=""
+          case "$SDK_VERSION" in
+            *placeholder*|0.0.0*) motivo="la versión es $SDK_VERSION" ;;
+          esac
+
+          if [ -z "$motivo" ] && grep -qi 'placeholder' sdk/package.json; then
+            motivo="package.json se declara PLACEHOLDER"
           fi
-          echo "📦 @bezhas/sdk@$SDK_VERSION"
 
-      - name: Install SDK dependencies
-        run: cd sdk && pnpm install --no-frozen-lockfile
+          if [ -z "$motivo" ] && ! node -e "
+            const s = require('./sdk/package.json').scripts || {};
+            process.exit(s.build ? 0 : 1);
+          "; then
+            motivo="no tiene script de build"
+          fi
 
-      - name: Build SDK (webpack bundle)
-        run: cd sdk && pnpm run build
-
-      - name: Run SDK tests
-        run: |
-          cd sdk
-          if [ -f "package.json" ] && grep -q '"test"' package.json; then
-            pnpm test --if-present
+          if [ -n "$motivo" ]; then
+            echo "sdk_publicable=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No se publicará @bezhas/sdk: $motivo."
+            echo "El directorio sdk/ es un marcador de posición, no el SDK real."
           else
-            echo "No test script configured, skipping..."
+            echo "sdk_publicable=true" >> "$GITHUB_OUTPUT"
+            echo "📦 @bezhas/sdk@$SDK_VERSION"
           fi
 
-      - name: Upload build artifacts
+          echo "📦 @bezhas/mcp-server@$MCP_VERSION"
+
+      # `--frozen-lockfile`: lo que se publica tiene que construirse con las
+      # versiones comprometidas, no con las que pnpm resuelva ese día.
+      - name: Instalar dependencias del workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Construir el SDK
+        if: steps.version.outputs.sdk_publicable == 'true'
+        run: pnpm --filter @bezhas/sdk run build
+
+      - name: Probar el SDK
+        if: steps.version.outputs.sdk_publicable == 'true'
+        run: |
+          set -euo pipefail
+          # `--if-present` es una bandera de npm; pnpm se la pasaría al script
+          # y el script abortaría. Se decide aquí, con node, si hay que correr.
+          if node -e "const s=require('./sdk/package.json').scripts||{};process.exit(s.test?0:1)"; then
+            pnpm --filter @bezhas/sdk run test
+          else
+            echo "::warning::@bezhas/sdk no declara script de test."
+          fi
+
+      - name: Subir artefactos del SDK
+        if: steps.version.outputs.sdk_publicable == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: sdk-build
           path: |
             sdk/dist/
-            sdk/*.js
+            sdk/index.js
+            sdk/index.d.ts
             sdk/package.json
             sdk/README.md
           retention-days: 1
+          if-no-files-found: error
 
   # ────────────────────────────────────────────────────────────────────────────
-  # JOB 2: Publish @bezhas/sdk to npm registry
+  # JOB 2: Publicar @bezhas/sdk
   # ────────────────────────────────────────────────────────────────────────────
-  publish-npm:
-    name: Publish to npm Registry
+  publish-sdk:
+    name: Publicar @bezhas/sdk
     runs-on: ubuntu-latest
     needs: validate
+    if: needs.validate.outputs.sdk_publicable == 'true'
     environment: npm-production
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (npm registry)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Download build artifacts
+      - name: Usar HTTPS para dependencias git alojadas en GitHub
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+      - name: Instalar dependencias del workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Descargar artefactos del SDK
         uses: actions/download-artifact@v4
         with:
           name: sdk-build
           path: sdk/
 
-      - name: Install dependencies
-        run: cd sdk && pnpm install --no-frozen-lockfile
+      - name: Comprobar que el paquete lleva lo que dice llevar
+        # Si el fichero que `main` declara no acaba en el tarball, el paquete
+        # está roto aunque todo lo anterior haya salido verde.
+        working-directory: sdk
+        run: |
+          set -euo pipefail
+          ficheros=$(npm pack --dry-run --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].files.map(f=>f.path).join('\n')")
+          principal=$(node -p "require('./package.json').main")
+          if ! echo "$ficheros" | grep -qx "$principal"; then
+            echo "::error::El paquete declara main=$principal pero ese fichero no está en el tarball."
+            echo "$ficheros" | head -20
+            exit 1
+          fi
+          echo "OK: $principal está en el paquete."
 
-      - name: Set npm tag
+      - name: Etiqueta de npm
         id: npm_tag
         run: |
           if [ "${{ inputs.prerelease }}" = "true" ]; then
-            echo "tag=beta" >> $GITHUB_OUTPUT
+            echo "tag=beta" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish @bezhas/sdk to npm
+      - name: Publicar
+        working-directory: sdk
         run: |
-          cd sdk
+          set -euo pipefail
           if [ "${{ inputs.dry_run }}" = "true" ]; then
-            npm publish --dry-run --access public --tag ${{ steps.npm_tag.outputs.tag }}
-            echo "🔍 Dry run completed — nothing was published"
+            pnpm publish --dry-run --access public --no-git-checks --tag ${{ steps.npm_tag.outputs.tag }}
+            echo "🔍 Ensayo terminado — no se ha publicado nada"
           else
-            npm publish --access public --tag ${{ steps.npm_tag.outputs.tag }}
-            echo "✅ Published @bezhas/sdk@${{ needs.validate.outputs.sdk_version }} to npm"
+            pnpm publish --access public --no-git-checks --tag ${{ steps.npm_tag.outputs.tag }}
+            echo "✅ Publicado @bezhas/sdk@${{ needs.validate.outputs.sdk_version }}"
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # ────────────────────────────────────────────────────────────────────────────
-  # JOB 3: Publish @bezhas/sdk to pnpm registry (same npm registry via pnpm)
-  # ────────────────────────────────────────────────────────────────────────────
-  publish-pnpm:
-    name: Publish via pnpm
-    runs-on: ubuntu-latest
-    needs: [validate, publish-npm]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-      - name: Usar HTTPS para dependencias git alojadas en GitHub
-        # @chainlink/contracts declara @zksync/contracts con una URL SSH
-        # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
-        # clave SSH, así que sin esta reescritura `pnpm install` falla con
-        # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
-        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install SDK dependencies via pnpm
-        run: cd sdk && pnpm install --no-frozen-lockfile --ignore-scripts || pnpm install
-
-      - name: Build SDK bundle via pnpm
-        run: cd sdk && pnpm run build --if-present
-
-      - name: Publish via pnpm to npm registry
-        run: |
-          cd sdk
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            pnpm publish --dry-run --access public --no-git-checks
-            echo "🔍 pnpm dry run completed"
-          else
-            pnpm publish --access public --no-git-checks
-            echo "✅ Published @bezhas/sdk via pnpm"
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  # ────────────────────────────────────────────────────────────────────────────
-  # JOB 4: Publish @bezhas/mcp-server to npm
+  # JOB 3: Publicar @bezhas/mcp-server
   # ────────────────────────────────────────────────────────────────────────────
   publish-mcp:
-    name: Publish @bezhas/mcp-server to npm
+    name: Publicar @bezhas/mcp-server
     runs-on: ubuntu-latest
     needs: validate
     if: needs.validate.outputs.mcp_version != ''
+    environment: npm-production
 
     steps:
       - name: Checkout
@@ -214,21 +265,19 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-      - name: Usar HTTPS para dependencias git alojadas en GitHub
-        # @chainlink/contracts declara @zksync/contracts con una URL SSH
-        # (git@github.com:matter-labs/era-contracts.git). El runner no tiene
-        # clave SSH, así que sin esta reescritura `pnpm install` falla con
-        # "Permission denied (publickey)" en cuanto el lockfile fija esa URL.
-        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install MCP Server dependencies
-        run: cd packages/mcp-server && pnpm install --no-frozen-lockfile || pnpm install
+      - name: Usar HTTPS para dependencias git alojadas en GitHub
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+      - name: Instalar dependencias del workspace
+        run: pnpm install --frozen-lockfile
 
       # OJO con lo que había aquí: `pnpm run build --if-present`.
       #
@@ -240,19 +289,18 @@ jobs:
       # Resultado: se publicaba en npm un paquete que declara
       # `main: dist/index.js` sin ningún dist/, y con 49 fuentes .ts y 18
       # ficheros de prueba dentro. Quien lo instalara no podía ni importarlo.
-      - name: Build MCP Server (TypeScript)
-        run: cd packages/mcp-server && pnpm run build
+      - name: Construir el servidor MCP (TypeScript)
+        run: pnpm --filter @bezhas/mcp-server run build
 
       # Y antes de publicar, las pruebas. Había 206 escritas y ninguna se
       # ejecutaba en el camino de publicación: se subía a npm a ciegas.
-      - name: Test MCP Server
-        run: cd packages/mcp-server && pnpm test
+      - name: Probar el servidor MCP
+        run: pnpm --filter @bezhas/mcp-server run test
 
       - name: Comprobar que el paquete lleva lo que dice llevar
-        # Barrera final: si `dist/index.js` no acaba en el tarball, el paquete
-        # está roto aunque todo lo anterior haya salido verde.
+        working-directory: packages/mcp-server
         run: |
-          cd packages/mcp-server
+          set -euo pipefail
           ficheros=$(npm pack --dry-run --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].files.map(f=>f.path).join('\n')")
           principal=$(node -p "require('./package.json').main")
           if ! echo "$ficheros" | grep -qx "$principal"; then
@@ -262,59 +310,64 @@ jobs:
           fi
           echo "OK: $principal está en el paquete."
 
-      - name: Publish @bezhas/mcp-server
+      - name: Publicar
+        working-directory: packages/mcp-server
         run: |
-          cd packages/mcp-server
+          set -euo pipefail
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             pnpm publish --dry-run --access public --no-git-checks
+            echo "🔍 Ensayo terminado — no se ha publicado nada"
           else
             pnpm publish --access public --no-git-checks
-            echo "✅ Published @bezhas/mcp-server@${{ needs.validate.outputs.mcp_version }}"
+            echo "✅ Publicado @bezhas/mcp-server@${{ needs.validate.outputs.mcp_version }}"
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # ────────────────────────────────────────────────────────────────────────────
-  # JOB 5: Create GitHub Release with changelogs
+  # JOB 4: Lanzamiento en GitHub
   # ────────────────────────────────────────────────────────────────────────────
   github-release:
-    name: Create GitHub Release
+    name: Crear lanzamiento en GitHub
     runs-on: ubuntu-latest
-    needs: [publish-npm, publish-pnpm]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    # `validate` tiene que estar aquí: el contexto `needs` solo trae los jobs
+    # de los que se depende. Sin él, `needs.validate.outputs.*` llega vacío.
+    needs: [validate, publish-sdk, publish-mcp]
+    # `always()` con la comprobación explícita: el lanzamiento se crea aunque
+    # el SDK se haya saltado por ser un marcador de posición, pero NO si algo
+    # ha fallado de verdad.
+    if: |
+      always()
+      && github.event_name == 'push'
+      && startsWith(github.ref, 'refs/tags/')
+      && needs.validate.result == 'success'
+      && needs.publish-mcp.result == 'success'
+      && (needs.publish-sdk.result == 'success' || needs.publish-sdk.result == 'skipped')
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create Release
+      - name: Crear lanzamiento
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: "@bezhas/sdk v${{ needs.validate.outputs.sdk_version }}"
+          name: "@bezhas/mcp-server v${{ needs.validate.outputs.mcp_version }}"
           generate_release_notes: true
-          files: |
-            sdk/dist/*
-            sdk/bezhas-sdk-*.tgz
           body: |
-            ## @bezhas/sdk v${{ needs.validate.outputs.sdk_version }}
+            ## Paquetes de esta etiqueta
 
-            ### Install
+            - `@bezhas/mcp-server@${{ needs.validate.outputs.mcp_version }}` — publicado
+            - `@bezhas/sdk@${{ needs.validate.outputs.sdk_version }}` — ${{ needs.publish-sdk.result == 'success' && 'publicado' || 'NO publicado (sdk/ es un marcador de posición en este repositorio)' }}
+
+            ### Instalación
+
             ```bash
-            # npm
-            pnpm install @bezhas/sdk@${{ needs.validate.outputs.sdk_version }}
-
-            # pnpm
-            pnpm add @bezhas/sdk@${{ needs.validate.outputs.sdk_version }}
-
-            # yarn
-            yarn add @bezhas/sdk@${{ needs.validate.outputs.sdk_version }}
+            pnpm add @bezhas/mcp-server@${{ needs.validate.outputs.mcp_version }}
             ```
 
-            ### What's included
-            - 🔗 BeZhas Web3 SDK with 13 modules (marketplace, governance, defi, logistics, rwa, nft, vip...)
-            - 🤖 @bezhas/mcp-server: 13 MCP tools (blockscout, github, tally, firecrawl, alpaca...)
-            - 🌐 Polygon Mainnet & Amoy testnet support
-            - 📦 CommonJS + ESM + browser bundle (UMD)
+            ### Qué incluye el servidor MCP
 
-            See [QUICKSTART.md](./sdk/QUICKSTART.md) for usage examples.
+            - Herramientas MCP para blockscout, github, tally, firecrawl, alpaca y pagos
+            - Polygon mainnet y Amoy
+            - Cotizaciones contra oráculo de mercado, con procedencia y caducidad

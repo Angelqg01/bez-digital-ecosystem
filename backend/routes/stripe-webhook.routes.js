@@ -528,9 +528,34 @@ async function handleBillingPayment(paymentIntent) {
 // HELPER: Safe require (don't crash if a service is not available)
 // ============================================================================
 
+// Los módulos opcionales se declaran aquí, cada uno con su `require` literal.
+//
+// Antes esto era `require(modulePath)` con la ruta como parámetro. Todas las
+// llamadas pasaban literales, así que no había un agujero real, pero la firma
+// aceptaba cualquier cadena: bastaba con que alguien, algún día, pasara algo
+// que viniera del webhook para convertir una ruta de Stripe en carga
+// arbitraria de módulos. Con el mapa, eso deja de ser posible por
+// construcción, y el análisis estático puede verlo.
+const MODULOS_OPCIONALES = Object.freeze({
+    '../services/stripe.service': () => require('../services/stripe.service'),
+    '../services/vip.service': () => require('../services/vip.service'),
+    '../services/subscription.service': () => require('../services/subscription.service'),
+    '../models/adBalance.model': () => require('../models/adBalance.model'),
+    '../models/billingTransaction.model': () => require('../models/billingTransaction.model'),
+});
+
 function safeRequire(modulePath) {
+    const cargar = Object.prototype.hasOwnProperty.call(MODULOS_OPCIONALES, modulePath)
+        ? MODULOS_OPCIONALES[modulePath]
+        : null;
+
+    if (!cargar) {
+        console.warn(`[STRIPE WEBHOOK] Módulo no declarado en MODULOS_OPCIONALES: ${modulePath}`);
+        return null;
+    }
+
     try {
-        return require(modulePath);
+        return cargar();
     } catch (error) {
         console.warn(`[STRIPE WEBHOOK] Could not load ${modulePath}: ${error.message}`);
         return null;

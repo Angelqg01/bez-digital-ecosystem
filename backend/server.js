@@ -935,9 +935,35 @@ try {
     });
 }
 // logisticsRoutes is already declared at line 568
+// Rutas que pueden no existir en un despliegue concreto. Cada una con su
+// `require` literal: antes era `require(modulePath)` con la ruta como
+// parámetro, lo que dejaba la puerta abierta a que alguien pasara algo que no
+// fuera una constante. Con el mapa deja de ser posible, y el análisis
+// estático puede comprobarlo.
+const RUTAS_OPCIONALES = Object.freeze({
+    './routes/ai-chat.routes': () => require('./routes/ai-chat.routes'),
+    './routes/automation.routes': () => require('./routes/automation.routes'),
+    './routes/developer/revenue.routes': () => require('./routes/developer/revenue.routes'),
+    './routes/webhook.routes': () => require('./routes/webhook.routes'),
+});
+
 function optionalRuntimeRoutes(modulePath, label) {
+    const cargar = Object.prototype.hasOwnProperty.call(RUTAS_OPCIONALES, modulePath)
+        ? RUTAS_OPCIONALES[modulePath]
+        : null;
+
+    if (!cargar) {
+        console.warn(`⚠️ ${label}: ruta no declarada en RUTAS_OPCIONALES (${modulePath})`);
+        return express.Router().use((_req, res) => {
+            res.status(503).json({
+                success: false,
+                error: `${label} no está declarada como ruta opcional`,
+            });
+        });
+    }
+
     try {
-        return require(modulePath);
+        return cargar();
     } catch (error) {
         console.warn(`⚠️ ${label} unavailable in Hub Control Plane:`, error.message);
         return express.Router().use((_req, res) => {
