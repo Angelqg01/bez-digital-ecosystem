@@ -381,11 +381,19 @@ jobs:
       # Ahora cubre todo el código de producción y falla si encuentra algo de
       # la lista bloqueante. Las reglas están en `eslint.security.config.mjs`,
       # en la raíz, para que en local se ejecute exactamente lo mismo.
+      # La cadena de ESLint vive en `tools/security-lint`, su propio paquete del
+      # workspace, comprometida en el lockfile. No se instala aquí: un
+      # `pnpm add` en la CI reescribiría el lockfile que `--frozen-lockfile`
+      # acaba de exigir intacto, y traería la versión de ese día en vez de la
+      # probada.
+      #
+      # Está aislada a propósito. ESLint 9 entre las dependencias de la raíz
+      # rompe `next lint`: cambia la resolución de `eslint-config-next` y
+      # `eslint-plugin-import` deja de ser alcanzable. Así, la raíz no lleva
+      # ESLint, los frontales conservan el 8 para su propio lint, y estas
+      # reglas usan el 9 que necesita la configuración plana.
       - name: Instalar dependencias del workspace
         run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Instalar los complementos de seguridad de ESLint
-        run: pnpm add -w -D eslint-plugin-security eslint-plugin-no-unsanitized @typescript-eslint/parser
 
       - name: Analizar el código de producción
         id: eslint-sec
@@ -395,7 +403,9 @@ jobs:
           # Sin `continue-on-error` ni `|| true`: si eslint no llega a producir
           # un informe, este paso falla. «No he podido mirarlo» no es «no hay
           # nada».
-          pnpm exec eslint \
+          # El binario sale del paquete aislado, pero se ejecuta desde la raíz
+          # para que las rutas de abajo sean las del repositorio.
+          ./tools/security-lint/node_modules/.bin/eslint \
             --no-config-lookup --config eslint.security.config.mjs \
             --format json --output-file eslint-security.json \
             --ignore-pattern '**/tests/**' \

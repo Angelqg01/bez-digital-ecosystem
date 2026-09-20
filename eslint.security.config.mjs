@@ -19,9 +19,22 @@
  * respectivamente. Convertirlas en bloqueantes no añadiría seguridad: taparía
  * las doce que sí importan bajo cuatrocientas que no.
  */
-import security from 'eslint-plugin-security';
-import noUnsanitized from 'eslint-plugin-no-unsanitized';
-import tsParser from '@typescript-eslint/parser';
+import { createRequire } from 'node:module';
+
+// Los complementos se resuelven desde `tools/security-lint`, no desde la raíz.
+//
+// Poner ESLint 9 entre las dependencias de la raíz rompe `next lint`: cambia
+// la resolución de `eslint-config-next` y `eslint-plugin-import` deja de ser
+// alcanzable. Comprobado guardando el cambio y volviendo a lanzar el lint.
+// Con la cadena aislada en su propio paquete, cada uno conserva su versión
+// —la raíz ninguna, los frontales ESLint 8, esta configuración ESLint 9— y
+// este fichero se queda en la raíz para que los patrones `files` de abajo
+// sigan siendo relativos al repositorio.
+const requerir = createRequire(new URL('./tools/security-lint/package.json', import.meta.url));
+
+const security = requerir('eslint-plugin-security');
+const noUnsanitized = requerir('eslint-plugin-no-unsanitized');
+const tsParser = requerir('@typescript-eslint/parser');
 
 const BLOQUEANTES = {
     'no-unsanitized/method': 'error',
