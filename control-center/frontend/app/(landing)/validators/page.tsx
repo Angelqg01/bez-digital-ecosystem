@@ -1,6 +1,7 @@
 'use client';
 
 import { usePublicStats } from '@/lib/public-hooks';
+import SectorContactFooter from '../_components/SectorContactFooter';
 
 export default function ValidatorsPage() {
   const { data } = usePublicStats();
@@ -291,6 +292,8 @@ export default function ValidatorsPage() {
         </div>
       </footer>
 
-    </>
+    
+            <SectorContactFooter department="infraestructura" />
+        </>
   );
 }

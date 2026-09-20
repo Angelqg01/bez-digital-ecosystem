@@ -1,3 +1,5 @@
+import SectorContactFooter from '../_components/SectorContactFooter';
+
 export default function EnterprisePage() {
     return (
         <>
@@ -292,6 +294,8 @@ export default function EnterprisePage() {
                 </div>
             </footer>
 
+        
+            <SectorContactFooter department="ventas" />
         </>
     );
 }

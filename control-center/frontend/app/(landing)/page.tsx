@@ -18,6 +18,8 @@ import IntegrationsWall from './_components/IntegrationsWall';
 import OraclePanel from './_components/OraclePanel';
 import ResourceCards from './_components/ResourceCards';
 import HeroNetCanvas from './_components/HeroNetCanvas';
+import DepartmentContact from './_components/DepartmentContact';
+import { DEPARTMENT_CONTACTS } from '@/lib/contact-emails';
 import {
     tickerItems,
     missionPills,
@@ -317,7 +319,7 @@ export default function Home() {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a
                 href="mailto:info.angelqg@gmail.com?subject=BeZhas%20—%20Solicitar%20demo"
-                className="flex h-14 items-center justify-center rounded-lg bg-[#0d33f2] px-7 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_0_28px_rgba(13,51,242,0.36)] transition hover:translate-y-[-2px] hover:brightness-110"
+                className="flex h-14 items-center justify-center rounded-lg bg-[#0d33f2] px-7 text-xs font-black uppercase tracking-[0.18em] !text-white shadow-[0_0_28px_rgba(13,51,242,0.36)] transition hover:translate-y-[-2px] hover:brightness-110"
               >
                 Solicitar demo
               </a>
@@ -325,13 +327,13 @@ export default function Home() {
                 href={STRIPE_PAYMENT_LINKS.tokenPurchase}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-14 items-center justify-center rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-7 text-xs font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-300/15"
+                className="flex h-14 items-center justify-center rounded-lg bg-emerald-400 px-7 text-xs font-black uppercase tracking-[0.18em] text-[#052e1e] shadow-[0_0_28px_rgba(52,211,153,0.42)] transition hover:translate-y-[-2px] hover:bg-emerald-300"
               >
                 Comprar BEZ-Coin
               </a>
               <Link
                 href="/solutions"
-                className="flex h-14 items-center justify-center rounded-lg border border-white/15 bg-white/5 px-7 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+                className="flex h-14 items-center justify-center rounded-lg bg-orange-400 px-7 text-xs font-black uppercase tracking-[0.18em] text-[#3a1a06] shadow-[0_0_24px_rgba(251,146,60,0.36)] transition hover:translate-y-[-2px] hover:bg-orange-300"
               >
                 Explorar ecosistema
               </Link>
@@ -891,13 +893,32 @@ export default function Home() {
               </Reveal>
 
               <Reveal index={1} className={s.ctaArt}>
-                <div className={s.mosaic} aria-hidden="true">
-                  <i className={s.m1} />
-                  <i className={s.m2} />
-                  <i className={s.m3} />
-                  <i className={s.m4} />
-                  <i className={s.m5} />
-                  <i className={s.m6} />
+                {/*
+                  Antes: mosaico decorativo (seis bloques sin destino).
+                  Ahora: directorio de correos por departamento. Fuente unica
+                  en `lib/contact-emails.ts`; si cambia un buzon se cambia alli
+                  y se propaga a home + cada pagina sectorial.
+                */}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-300">
+                    Correos por departamento
+                  </p>
+                  <h3 className="mt-2 text-xl font-black uppercase italic text-white">
+                    Directorio directo
+                  </h3>
+                  <p className="mt-3 text-xs leading-6 text-slate-400">
+                    Cada bandeja llega a un equipo concreto, con sus agentes
+                    ya asignados. No hay filtros ni recepcion generica.
+                  </p>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {DEPARTMENT_CONTACTS.map((contact) => (
+                      <DepartmentContact
+                        key={contact.key}
+                        contact={contact}
+                        subject={`BeZhas — ${contact.label}`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </Reveal>
             </div>

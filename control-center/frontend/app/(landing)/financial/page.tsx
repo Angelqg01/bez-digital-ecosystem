@@ -1,6 +1,7 @@
 'use client';
 
 import { usePublicStats } from '@/lib/public-hooks';
+import SectorContactFooter from '../_components/SectorContactFooter';
 
 export default function FinancialPage() {
   const { data } = usePublicStats();
@@ -270,6 +271,8 @@ export default function FinancialPage() {
         <div className="absolute top-0 right-0 h-full bg-tertiary/40 w-1/4"></div>
       </div>
 
-    </>
+    
+            <SectorContactFooter department="facturacion" />
+        </>
   );
 }
