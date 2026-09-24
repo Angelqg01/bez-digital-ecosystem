@@ -104,3 +104,6 @@ backup_docs*/
 backup_*/
 sandbox/
 eslint-security.json
+
+# Copias de la zona DNS (04-hostinger-dns.sh): contienen la configuración real del dominio
+deploy/gcp/dns-backups/

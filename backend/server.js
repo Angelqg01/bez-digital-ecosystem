@@ -298,6 +298,8 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s
 // Always allow production and standard dev origins
 if (!allowedOrigins.includes('https://bez.digital')) allowedOrigins.push('https://bez.digital');
 if (!allowedOrigins.includes('https://www.bez.digital')) allowedOrigins.push('https://www.bez.digital');
+if (!allowedOrigins.includes('https://bezhas.com')) allowedOrigins.push('https://bezhas.com');
+if (!allowedOrigins.includes('https://www.bezhas.com')) allowedOrigins.push('https://www.bezhas.com');
 
 if (process.env.NODE_ENV !== 'production') {
     allowedOrigins.push(
@@ -433,7 +435,16 @@ if (process.env.NODE_ENV === 'production') {
 // Se confía exactamente en un salto (el balanceador). Poner `true` haría lo
 // contrario de lo que parece: cualquiera podría falsear su IP con una cabecera
 // `X-Forwarded-For` y saltarse los límites por IP.
-app.set('trust proxy', 1);
+//
+// Cuántos saltos hay depende de cómo se llega a Cloud Run:
+//   - directo a `*.run.app`: el GFE añade la IP del cliente  -> 1 salto.
+//   - por el balanceador HTTPS externo (www/api.bezhas.com): el balanceador
+//     añade «<cliente>, <IP del balanceador>»                -> 2 saltos.
+// Con 1 salto detrás del balanceador, `req.ip` sería la IP del balanceador y
+// volveríamos al cubo único de arriba. Se fija con TRUST_PROXY_HOPS; un valor
+// inválido cae a 1, nunca a `true`.
+const trustProxyHops = Number.parseInt(process.env.TRUST_PROXY_HOPS ?? '1', 10);
+app.set('trust proxy', Number.isInteger(trustProxyHops) && trustProxyHops >= 0 && trustProxyHops <= 5 ? trustProxyHops : 1);
 
 // Rutas de webhook: las llama una máquina, no una persona, y su emisor
 // reintenta si le contestamos 429. Limitarlas con el cubo pensado para
