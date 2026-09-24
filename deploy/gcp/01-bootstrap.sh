@@ -50,6 +50,19 @@ gcloud artifacts repositories set-cleanup-policies "$ARTIFACT_REPO" \
   --location="$REGION" --policy="$POLITICA" --no-dry-run >/dev/null
 rm -f "$POLITICA"
 
+# Una cuenta de servicio recién creada tarda unos segundos en ser visible para
+# IAM: asignarle un rol justo después falla con «does not exist». Se reintenta
+# con espera creciente en vez de abortar a mitad del bootstrap.
+reintentar() {
+  local intento
+  for intento in 1 2 3 4 5 6; do
+    "$@" && return 0
+    echo "   (IAM aún no ve la cuenta; reintento $intento/6 en $((intento * 5)) s)" >&2
+    sleep $((intento * 5))
+  done
+  "$@"
+}
+
 crear_sa() {
   local nombre="$1" descripcion="$2"
   if ! gcloud iam service-accounts describe "${nombre}@${PROJECT_ID}.iam.gserviceaccount.com" >/dev/null 2>&1; then
@@ -65,7 +78,7 @@ crear_sa "$SA_MCP"      "BeZhas MCP Intelligence (Cloud Run)"
 # Las tres escriben logs y métricas; nada más a nivel de proyecto.
 for sa in "$SA_BACKEND" "$SA_FRONTEND" "$SA_MCP"; do
   for rol in roles/logging.logWriter roles/monitoring.metricWriter; do
-    gcloud projects add-iam-policy-binding "$PROJECT_ID" --condition=None --quiet \
+    reintentar gcloud projects add-iam-policy-binding "$PROJECT_ID" --condition=None --quiet \
       --member="serviceAccount:${sa}@${PROJECT_ID}.iam.gserviceaccount.com" --role="$rol" >/dev/null
   done
 done
@@ -76,7 +89,7 @@ DEPLOYER="${SA_DEPLOYER}@${PROJECT_ID}.iam.gserviceaccount.com"
 for rol in roles/run.admin roles/artifactregistry.writer roles/cloudbuild.builds.editor \
            roles/logging.logWriter roles/logging.viewer roles/serviceusage.serviceUsageConsumer \
            roles/secretmanager.viewer; do
-  gcloud projects add-iam-policy-binding "$PROJECT_ID" --condition=None --quiet \
+  reintentar gcloud projects add-iam-policy-binding "$PROJECT_ID" --condition=None --quiet \
     --member="serviceAccount:${DEPLOYER}" --role="$rol" >/dev/null
 done
 # secretmanager.viewer ve QUÉ secretos tienen versión (para decidir cuáles
@@ -87,19 +100,19 @@ done
 BUCKET="gs://${PROJECT_ID}_cloudbuild"
 gcloud storage buckets describe "$BUCKET" >/dev/null 2>&1 || \
   gcloud storage buckets create "$BUCKET" --location="$REGION" --uniform-bucket-level-access --public-access-prevention
-gcloud storage buckets add-iam-policy-binding "$BUCKET" --quiet \
+reintentar gcloud storage buckets add-iam-policy-binding "$BUCKET" --quiet \
   --member="serviceAccount:${DEPLOYER}" --role=roles/storage.objectAdmin >/dev/null
-gcloud storage buckets add-iam-policy-binding "$BUCKET" --quiet \
+reintentar gcloud storage buckets add-iam-policy-binding "$BUCKET" --quiet \
   --member="serviceAccount:${DEPLOYER}" --role=roles/storage.legacyBucketReader >/dev/null
 
 # Puede "actuar como" las cuentas de ejecución (necesario para desplegar con
 # --service-account), pero solo sobre esas tres, no sobre todo el proyecto.
 for sa in "$SA_BACKEND" "$SA_FRONTEND" "$SA_MCP"; do
-  gcloud iam service-accounts add-iam-policy-binding "${sa}@${PROJECT_ID}.iam.gserviceaccount.com" --quiet \
+  reintentar gcloud iam service-accounts add-iam-policy-binding "${sa}@${PROJECT_ID}.iam.gserviceaccount.com" --quiet \
     --member="serviceAccount:${DEPLOYER}" --role=roles/iam.serviceAccountUser >/dev/null
 done
 # Cloud Build ejecuta los pasos con la cuenta de despliegue.
-gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER" --quiet \
+reintentar gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER" --quiet \
   --member="serviceAccount:${DEPLOYER}" --role=roles/iam.serviceAccountUser >/dev/null
 
 echo "→ Workload Identity Federation para GitHub ($GITHUB_REPO)"
@@ -117,7 +130,7 @@ if ! gcloud iam workload-identity-pools providers describe bezhas-repo \
     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" \
     --attribute-condition="assertion.repository=='${GITHUB_REPO}'"
 fi
-gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER" --quiet \
+reintentar gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER" --quiet \
   --role=roles/iam.workloadIdentityUser \
   --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github/attribute.repository/${GITHUB_REPO}" >/dev/null
 
