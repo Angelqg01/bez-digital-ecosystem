@@ -57,8 +57,7 @@ if ! existe gcloud sql instances describe "$SQL_INSTANCE"; then
     --maintenance-window-day=SUN --maintenance-window-hour=4 \
     --deletion-protection \
     --database-flags=log_min_duration_statement=1000,log_connections=on,log_disconnections=on \
-    --insights-config-query-insights-enabled \
-    --labels=app=bezhas
+    --insights-config-query-insights-enabled
 fi
 IP_PRIVADA=$(gcloud sql instances describe "$SQL_INSTANCE" --format=json \
   | jq -r '.ipAddresses[] | select(.type == "PRIVATE") | .ipAddress' | head -n1)
