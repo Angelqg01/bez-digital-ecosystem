@@ -365,9 +365,6 @@ jobs:
           retention-days: 7
 
   # ===================================================
-  # JOB 5: Build & Push Docker Images
-  # ===================================================
-  # ===================================================
   # JOB 4.5: ¿Está configurado el despliegue?
   # ===================================================
   #
@@ -435,19 +432,33 @@ jobs:
             echo "Configuración de Google Cloud presente; el despliegue continúa."
           fi
 
-  build-images:
-    name: Build Docker Images
+  # ===================================================
+  # JOB 5: Construir y desplegar (Cloud Build → Cloud Run)
+  # ===================================================
+  #
+  # Ejecuta deploy/gcp/cloudbuild.yaml, el mismo pipeline que se lanza a mano
+  # con deploy/gcp/deploy.sh: una sola definición de cómo se construye y se
+  # despliega, en vez de dos que divergen. Antes este job construía `api/`
+  # (un paquete sin rutas reales) como si fuera el backend, y desplegaba con
+  # la cuenta de servicio por defecto de Compute (rol Editor del proyecto).
+  #
+  # Se construye en Cloud Build y no en el runner para que la imagen se haga
+  # dentro del proyecto, con la cuenta de despliegue y su registro de auditoría.
+  deploy-production:
+    name: Deploy to Production (www.bezhas.com)
     runs-on: ubuntu-latest
-    needs: [lint-and-security, test-contracts, test-backend, test-frontend, test-mcp, check-deploy-config]
+    needs: [check-deploy-config]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && needs.check-deploy-config.outputs.configurado == 'true'
+    environment:
+      name: production
+      url: https://www.bezhas.com
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
 
     permissions:
       contents: read
       id-token: write
-
-    outputs:
-      backend_image: ${{ steps.build-backend.outputs.image }}
-      frontend_image: ${{ steps.build-frontend.outputs.image }}
 
     steps:
       - name: Checkout code
@@ -464,160 +475,18 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
-
-      - name: Build and push backend image
-        id: build-backend
-        run: |
-          IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/bezhas/${{ env.BACKEND_SERVICE }}:${{ github.sha }}"
-          docker build -t $IMAGE -f api/Dockerfile api/
-          docker push $IMAGE
-          docker tag $IMAGE ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/bezhas/${{ env.BACKEND_SERVICE }}:latest
-          docker push ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/bezhas/${{ env.BACKEND_SERVICE }}:latest
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
-
-      - name: Build and push frontend image
-        id: build-frontend
-        run: |
-          IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/bezhas/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}"
-          docker build -t $IMAGE -f frontend-next/Dockerfile frontend-next/ \
-            --build-arg VITE_API_URL=https://api.bez.digital \
-            --build-arg VITE_CHAIN_ID=137 \
-            --build-arg VITE_NETWORK=polygon
-          docker push $IMAGE
-          docker tag $IMAGE ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/bezhas/${{ env.FRONTEND_SERVICE }}:latest
-          docker push ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/bezhas/${{ env.FRONTEND_SERVICE }}:latest
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
-
-  # ===================================================
-  # JOB 6: Deploy to Staging
-  # ===================================================
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [build-images]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    environment:
-      name: staging
-      url: https://staging.bez.digital
-
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Deploy Backend to Cloud Run (Staging)
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: ${{ env.BACKEND_SERVICE }}-staging
-          region: ${{ env.REGION }}
-          image: ${{ needs.build-images.outputs.backend_image }}
-          flags: |
-            --allow-unauthenticated
-            --min-instances=0
-            --max-instances=5
-            --memory=512Mi
-            --cpu=1
-            --set-env-vars=NODE_ENV=staging
-            --set-secrets=STRIPE_WEBHOOK_SECRET=stripe-webhook-secret:latest,STRIPE_SECRET_KEY=stripe-secret-key:latest
-
-      - name: Deploy Frontend to Cloud Run (Staging)
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: ${{ env.FRONTEND_SERVICE }}-staging
-          region: ${{ env.REGION }}
-          image: ${{ needs.build-images.outputs.frontend_image }}
-          flags: |
-            --allow-unauthenticated
-            --min-instances=0
-            --max-instances=3
-
-  # ===================================================
-  # JOB 7: Deploy to Production
-  # ===================================================
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build-images]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    environment:
-      name: production
-      url: https://bez.digital
-
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Deploy Backend to Cloud Run (Production)
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: ${{ env.BACKEND_SERVICE }}
-          region: ${{ env.REGION }}
-          image: ${{ needs.build-images.outputs.backend_image }}
-          flags: |
-            --allow-unauthenticated
-            --min-instances=1
-            --max-instances=100
-            --memory=1Gi
-            --cpu=2
-            --concurrency=80
-            --set-env-vars=NODE_ENV=production
-            --set-secrets=MONGODB_URI=mongodb-uri:latest,REDIS_URL=redis-url:latest,JWT_SECRET=jwt-secret:latest,STRIPE_SECRET_KEY=stripe-secret-key:latest,STRIPE_WEBHOOK_SECRET=stripe-webhook-secret:latest
-
-      - name: Deploy Frontend to Cloud Run (Production)
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: ${{ env.FRONTEND_SERVICE }}
-          region: ${{ env.REGION }}
-          image: ${{ needs.build-images.outputs.frontend_image }}
-          flags: |
-            --allow-unauthenticated
-            --min-instances=1
-            --max-instances=50
-
-      - name: Notify deployment success
-        if: success()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {
-              "text": "✅ BeZhas Production Deployment Successful",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*✅ Production Deployment Complete*\n\n• Backend: `${{ env.BACKEND_SERVICE }}`\n• Frontend: `${{ env.FRONTEND_SERVICE }}`\n• Commit: `${{ github.sha }}`"
-                  }
-                }
-              ]
-            }
+      - name: Build & deploy (Cloud Build)
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        continue-on-error: true
+          TAG: ${{ github.sha }}
+          # Identificadores públicos del frontend (van al bundle del navegador).
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          GITHUB_CLIENT_ID: ${{ vars.OAUTH_GITHUB_CLIENT_ID }}
+          WALLET_CONNECT_PROJECT_ID: ${{ vars.WALLET_CONNECT_PROJECT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ vars.STRIPE_PUBLIC_KEY }}
+        run: ./deploy/gcp/deploy.sh
 
   # ===================================================
-  # JOB 8: Post-Deployment Verification
+  # JOB 6: Post-Deployment Verification
   # ===================================================
   verify-deployment:
     name: Verify Deployment
@@ -626,30 +495,16 @@ jobs:
     if: success()
 
     steps:
-      - name: Health check - Backend
+      - name: Health checks
         run: |
-          for i in {1..10}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://api.bez.digital/api/health || echo "000")
-            if [ "$response" = "200" ]; then
-              echo "✅ Backend health check passed"
-              exit 0
-            fi
-            echo "Attempt $i: Backend returned $response, retrying..."
-            sleep 10
-          done
-          echo "❌ Backend health check failed"
-          exit 1
-
-      - name: Health check - Frontend
-        run: |
-          for i in {1..10}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://bez.digital || echo "000")
-            if [ "$response" = "200" ]; then
-              echo "✅ Frontend health check passed"
-              exit 0
-            fi
-            echo "Attempt $i: Frontend returned $response, retrying..."
-            sleep 10
-          done
-          echo "❌ Frontend health check failed"
-          exit 1
+          comprobar() {
+            for i in $(seq 1 10); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$1" || echo "000")
+              if [ "$code" = "200" ]; then echo "✅ $1"; return 0; fi
+              echo "Intento $i: $1 → $code"; sleep 10
+            done
+            echo "❌ $1"; return 1
+          }
+          comprobar https://api.bezhas.com/api/health
+          comprobar https://www.bezhas.com/health
+          comprobar https://mcp.bezhas.com/api/mcp/health

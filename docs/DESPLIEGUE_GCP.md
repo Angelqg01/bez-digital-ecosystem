@@ -1,5 +1,10 @@
 # Configurar el despliegue a Google Cloud
 
+> **Despliegue en `project-a2f60001-ecbb-49af-8c2` / www.bezhas.com:** la guía
+> completa y los scripts están en [`deploy/gcp/README.md`](../deploy/gcp/README.md).
+> `01-bootstrap.sh` crea el proveedor de identidad descrito aquí (con el nombre
+> `bezhas-repo`) e imprime los tres secretos que pide GitHub.
+
 El workflow `.github/workflows/deploy-gcp.yml` construye las imágenes y las
 despliega en Cloud Run. Hoy **no se ejecuta**: faltan tres secretos en el
 repositorio, así que el job de comprobación lo salta con un aviso.
