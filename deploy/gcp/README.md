@@ -26,6 +26,7 @@ romper nada.
 | Paso | Script | Qué hace | Cuándo |
 |---|---|---|---|
 | 1 | `01-bootstrap.sh` | APIs, Artifact Registry, cuentas de servicio, federación con GitHub | Una vez |
+| 1b | `01b-database.sh` | PostgreSQL (Cloud SQL, solo IP privada), copias y `DATABASE_URL` en Secret Manager | Una vez |
 | 2 | `02-secrets.sh <.env>` | Sube los secretos a Secret Manager con acceso mínimo | Una vez y al rotar |
 | 3 | `deploy.sh` | Construye las 3 imágenes y despliega en Cloud Run | Cada versión |
 | 4 | `03-load-balancer.sh` | IP, balanceador, certificado, Cloud Armor | Una vez |
@@ -51,6 +52,9 @@ cd bez-digital-ecosystem
 
 # 1. Preparar el proyecto
 ./deploy/gcp/01-bootstrap.sh
+
+# 1b. PostgreSQL gestionado (tarda 5-10 min)
+./deploy/gcp/01b-database.sh
 
 # 2. Secretos: prepara un .env de producción FUERA del repositorio
 cp .env.example ~/bezhas.env.production && chmod 600 ~/bezhas.env.production
@@ -87,15 +91,22 @@ opcionales sin valor simplemente no se montan en el contenedor.
 
 ### Bases de datos
 
-Estos scripts no crean bases de datos: el backend las recibe por
-`DATABASE_URL`, `MONGODB_URI` y `REDIS_URL`. Opciones:
-
-- **PostgreSQL**: Cloud SQL (recomendado: IP privada + conector VPC) o un
-  proveedor gestionado. Aplica las migraciones de `backend/db/migrations/` en
-  orden numérico antes del primer despliegue.
-- **MongoDB**: MongoDB Atlas, restringiendo el acceso por IP (para una IP de
-  salida fija desde Cloud Run hace falta Cloud NAT).
-- **Redis**: opcional (Memorystore o Upstash). Sin él, BullMQ queda desactivado.
+- **PostgreSQL** → `01b-database.sh` crea Cloud SQL (PostgreSQL 16) **sin IP
+  pública**: solo se llega desde la VPC, y el backend entra por Direct VPC
+  egress. Copias diarias (14 días), recuperación a un punto en el tiempo
+  (7 días) y protección contra borrado. La contraseña se genera al azar y va
+  directa a Secret Manager como `DATABASE_URL`: no la pongas en el `.env`.
+  Coste orientativo: ~50 USD/mes con `db-custom-1-3840`; para empezar,
+  `DB_TIER=db-g1-small` (~25 USD/mes, núcleo compartido, sin SLA). `HA=1` duplica la instancia en
+  otra zona (alta disponibilidad, doble coste).
+- **Migraciones** → cada `deploy.sh` ejecuta el job `bezhas-migrate` dentro de
+  la VPC *antes* de desplegar el backend. Aplica solo las migraciones nuevas
+  (tabla `schema_migrations`), cada una en su transacción; si una falla, el
+  backend no se despliega.
+- **MongoDB** → opcional. Sin `MONGODB_URI`, el backend arranca y solo quedan
+  desactivados la Developer Console y el SDK Admin. Si lo necesitas, crea un
+  clúster en MongoDB Atlas en GCP `us-central1` y añade `MONGODB_URI` al `.env`.
+- **Redis** → opcional (Memorystore o Upstash). Sin él, BullMQ queda desactivado.
 
 ## Despliegue automático desde GitHub
 

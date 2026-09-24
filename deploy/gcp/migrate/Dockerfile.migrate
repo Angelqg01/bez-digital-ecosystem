@@ -1,0 +1,7 @@
+# Imagen mínima para aplicar las migraciones de PostgreSQL (Cloud Run Job).
+# Contexto: raíz del repositorio.
+FROM postgres:16-alpine
+COPY backend/db/migrations/ /migrations/
+COPY deploy/gcp/migrate/run-migrations /usr/local/bin/run-migrations
+USER postgres
+ENTRYPOINT ["/usr/local/bin/run-migrations"]
