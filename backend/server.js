@@ -296,10 +296,16 @@ app.use(httpsEnforcement);
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 
 // Always allow production and standard dev origins
-if (!allowedOrigins.includes('https://bez.digital')) allowedOrigins.push('https://bez.digital');
-if (!allowedOrigins.includes('https://www.bez.digital')) allowedOrigins.push('https://www.bez.digital');
-if (!allowedOrigins.includes('https://bezhas.com')) allowedOrigins.push('https://bezhas.com');
-if (!allowedOrigins.includes('https://www.bezhas.com')) allowedOrigins.push('https://www.bezhas.com');
+const ORIGENES_PRODUCCION = [
+    'https://bez.digital',
+    'https://www.bez.digital',
+    'https://bezhas.com',
+    'https://www.bezhas.com',
+];
+const origenesConocidos = new Set(allowedOrigins);
+for (const origen of ORIGENES_PRODUCCION) {
+    if (!origenesConocidos.has(origen)) allowedOrigins.push(origen);
+}
 
 if (process.env.NODE_ENV !== 'production') {
     allowedOrigins.push(
