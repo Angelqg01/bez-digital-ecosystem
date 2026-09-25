@@ -35,8 +35,17 @@ LB_IP="${LB_IP:-$(gcloud compute addresses describe "$LB_IP_NAME" --global \
 [[ "$LB_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "IP del balanceador no válida: '$LB_IP'" >&2; exit 1; }
 
 if [[ -z "${HOSTINGER_API_TOKEN:-}" ]]; then
+  echo "(En Cloud Shell se pega con Ctrl+Shift+V o clic derecho; no se verá nada al pegar.)"
   read -rsp "Token de la API de Hostinger: " HOSTINGER_API_TOKEN; echo
 fi
+# Al copiar desde el panel se cuelan espacios o saltos de línea: Hostinger
+# responde 401 y no hay forma de verlo, porque el campo no tiene eco.
+HOSTINGER_API_TOKEN="$(printf '%s' "$HOSTINGER_API_TOKEN" | tr -d '[:space:]')"
+if [[ -z "$HOSTINGER_API_TOKEN" ]]; then
+  echo "❌ El token está vacío: no se pegó nada. Repite pegando con Ctrl+Shift+V." >&2
+  exit 1
+fi
+echo "   Token recibido (${#HOSTINGER_API_TOKEN} caracteres)."
 CABECERAS=$(mktemp); chmod 600 "$CABECERAS"
 trap 'rm -f "$CABECERAS"' EXIT
 printf 'Authorization: Bearer %s\nAccept: application/json\nContent-Type: application/json\n' \
@@ -50,6 +59,7 @@ hapi() {  # hapi MÉTODO [RUTA] [CUERPO]
            ${cuerpo:+--data-binary "$cuerpo"} "${API}${ruta}")
   if [[ "$codigo" != 2* ]]; then
     echo "❌ Hostinger $metodo ${ruta:-/} → HTTP $codigo" >&2
+    [[ "$codigo" == 401 ]] && echo "   Token no válido (revocado, incompleto o de otra cuenta). Crea uno en hPanel → Perfil → API." >&2
     jq . "$salida" >&2 2>/dev/null || cat "$salida" >&2
     rm -f "$salida"; return 1
   fi
