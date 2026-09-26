@@ -19,6 +19,7 @@ source ./config.env
 gcloud config set project "$PROJECT_ID" >/dev/null
 
 existe() { "$@" >/dev/null 2>&1; }
+source ./lib.sh
 
 echo "→ IP estática global"
 existe gcloud compute addresses describe "$LB_IP_NAME" --global || \
@@ -110,19 +111,39 @@ YAML
 gcloud compute url-maps import "$LB_NAME" --global --source="$MAPA" --quiet
 rm -f "$MAPA"
 
-echo "→ Certificado gestionado por Google"
-existe gcloud compute ssl-certificates describe "$CERT_NAME" --global || \
-  gcloud compute ssl-certificates create "$CERT_NAME" --global \
-    --domains="${DOMAIN},${WWW_HOST},${API_HOST},${MCP_HOST}"
+echo "→ Certificados gestionados por Google (uno por dominio)"
+# Uno por dominio, no uno con los cuatro: un certificado multidominio solo se
+# activa cuando Google valida TODOS sus dominios, así que basta con que uno
+# tarde (p. ej. `api`, si los resolutores aún guardan en caché la IP antigua)
+# para que la web entera siga sin HTTPS. Separados, cada uno se activa en
+# cuanto su DNS es visible.
+CERTS=()
+for host in "$DOMAIN" "$WWW_HOST" "$API_HOST" "$MCP_HOST"; do
+  nombre=$(nombre_cert "$host")
+  existe gcloud compute ssl-certificates describe "$nombre" --global || \
+    gcloud compute ssl-certificates create "$nombre" --global --domains="$host"
+  CERTS+=("$nombre")
+done
+LISTA_CERTS=$(IFS=,; echo "${CERTS[*]}")
 
 echo "→ Política TLS (mínimo TLS 1.2, perfil MODERN)"
 existe gcloud compute ssl-policies describe bezhas-tls || \
   gcloud compute ssl-policies create bezhas-tls --profile=MODERN --min-tls-version=1.2
 
 echo "→ Proxy y regla HTTPS"
-existe gcloud compute target-https-proxies describe "${LB_NAME}-https" --global || \
+if existe gcloud compute target-https-proxies describe "${LB_NAME}-https" --global; then
+  gcloud compute target-https-proxies update "${LB_NAME}-https" --global \
+    --ssl-certificates="$LISTA_CERTS" --ssl-policy=bezhas-tls >/dev/null
+else
   gcloud compute target-https-proxies create "${LB_NAME}-https" --global \
-    --url-map="$LB_NAME" --ssl-certificates="$CERT_NAME" --ssl-policy=bezhas-tls
+    --url-map="$LB_NAME" --ssl-certificates="$LISTA_CERTS" --ssl-policy=bezhas-tls
+fi
+# Versiones anteriores de este script creaban un único certificado con los
+# cuatro dominios (`$CERT_NAME`). Ya no está en el proxy: se borra.
+if existe gcloud compute ssl-certificates describe "$CERT_NAME" --global; then
+  gcloud compute ssl-certificates delete "$CERT_NAME" --global --quiet \
+    && echo "   Certificado multidominio antiguo ($CERT_NAME) sustituido."
+fi
 existe gcloud compute forwarding-rules describe "${LB_NAME}-https" --global || \
   gcloud compute forwarding-rules create "${LB_NAME}-https" --global \
     --load-balancing-scheme=EXTERNAL_MANAGED --address="$LB_IP_NAME" \
@@ -154,7 +175,7 @@ cat <<MSG
 Siguiente paso (DNS en Hostinger):
   HOSTINGER_API_TOKEN=... ./deploy/gcp/04-hostinger-dns.sh
 
-El certificado pasa a ACTIVE entre 15 y 60 min después de que el DNS apunte
-a ${LB_IP}. Estado:
-  gcloud compute ssl-certificates describe ${CERT_NAME} --global --format='yaml(managed)'
+Cada certificado pasa a ACTIVE entre 15 y 60 min después de que su dominio
+apunte a ${LB_IP}. Para esperar y comprobarlo todo:
+  ./deploy/gcp/05-verify.sh --wait
 MSG
