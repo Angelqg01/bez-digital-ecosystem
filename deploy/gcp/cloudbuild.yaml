@@ -47,6 +47,9 @@ substitutions:
   # accesible (BEZHAS_L2_RPC_URL). La api elige contratos por este número
   # (smart-contracts/deployments/<chain>.json).
   _BEZHAS_CHAIN_ID: "137"
+  # Precio medido del plan Starter (pago por uso). usageBilling.js lo lee de
+  # la variable de entorno; es el mismo que api/config/plans.js (no es secreto).
+  _STRIPE_STARTER_METERED_PRICE_ID: price_1TtuplFomr6oeXVgt8XVUQDW
   _PUBLIC_RPC_URL: https://polygon-rpc.com
   _BEZ_TOKEN: "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8"
   _ADMIN_WALLET: ""
@@ -272,7 +275,7 @@ steps:
           --execution-environment=gen2 --cpu-boost --session-affinity \
           --network=${_VPC_NETWORK} --subnet=${_VPC_SUBNET} --vpc-egress=private-ranges-only \
           --labels=app=bezhas,component=api,commit=${_TAG} \
-          --set-env-vars="^~^NODE_ENV=production~GCP_PROJECT_ID=$PROJECT_ID~GCP_REGION=${_REGION}~BEZHAS_CHAIN_ID=${_BEZHAS_CHAIN_ID}~TRUST_PROXY_HOPS=2~CORS_EXTRA_ORIGINS=${_CORS_ORIGINS}~COOKIE_DOMAIN=.bezhas.com~OAUTH_ISSUER=https://${_MCP_HOST}~MCP_ALLOWED_HOSTS=${_MCP_HOST}~AEGIS_API_URL=$$(url_run bezhas-aegis)/api/aegis~AI_ENGINE_URL=$$(url_run bezhas-ai-gateway)~AGENT_RUNTIME_URL=$$(url_run bezhas-agent-runtime)~HITL_CALLBACK_URL=${_API_URL}/api/hitl~PUBLIC_PAY_BASE_URL=${_WWW_URL}~PUBLIC_ONBOARDING_BASE_URL=${_WWW_URL}" \
+          --set-env-vars="^~^NODE_ENV=production~GCP_PROJECT_ID=$PROJECT_ID~GCP_REGION=${_REGION}~BEZHAS_CHAIN_ID=${_BEZHAS_CHAIN_ID}~STRIPE_STARTER_METERED_PRICE_ID=${_STRIPE_STARTER_METERED_PRICE_ID}~TRUST_PROXY_HOPS=2~CORS_EXTRA_ORIGINS=${_CORS_ORIGINS}~COOKIE_DOMAIN=.bezhas.com~OAUTH_ISSUER=https://${_MCP_HOST}~MCP_ALLOWED_HOSTS=${_MCP_HOST}~AEGIS_API_URL=$$(url_run bezhas-aegis)/api/aegis~AI_ENGINE_URL=$$(url_run bezhas-ai-gateway)~AGENT_RUNTIME_URL=$$(url_run bezhas-agent-runtime)~HITL_CALLBACK_URL=${_API_URL}/api/hitl~PUBLIC_PAY_BASE_URL=${_WWW_URL}~PUBLIC_ONBOARDING_BASE_URL=${_WWW_URL}" \
           $$(flag_secretos api) --quiet
 
   - id: deploy-edge

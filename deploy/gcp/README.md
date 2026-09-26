@@ -37,6 +37,7 @@ romper nada.
 | 5 | `04-hostinger-dns.sh` | Apunta bezhas.com al balanceador por la API de Hostinger | Una vez |
 | 6 | `05-verify.sh` | Comprueba DNS, certificados, salud y seguridad | Siempre |
 | 7 | `06-monitoring.sh` | Comprobación cada minuto de www, api y mcp y aviso por email si caen | Una vez |
+| 8 | `07-stripe.sh` | Comprueba la clave live y el catálogo, crea el webhook y guarda su secreto | Una vez y al rotar la clave |
 
 ## Paso de la versión anterior (BeZhas Hub) a esta
 
@@ -95,8 +96,9 @@ en dos servicios, claves donde van direcciones o la clave del deployer.
   queda en tu `.env` y no se sube), claves del edge node y de los agentes.
   **Los tres de los vaults cifran datos**: si se pierden, lo cifrado no se
   recupera. Guarda una copia del `.env` fuera de GCP (gestor de contraseñas).
-- **De terceros, opcionales**: RPC (`POLYGON_RPC_URL`, `RPC_URL`), Stripe (el
-  webhook debe apuntar a `https://api.bezhas.com/api/webhooks/stripe`), Gemini,
+- **De terceros, opcionales**: RPC (`POLYGON_RPC_URL`, `RPC_URL`), Stripe
+  (`07-stripe.sh` crea el webhook `https://api.bezhas.com/api/webhooks/stripe`
+  y rellena `STRIPE_WEBHOOK_SECRET`), Gemini,
   DeepSeek, Anthropic, Pinata, Telegram, Discord, Redis.
 - **Wallets calientes** (`OPERATOR_PRIVATE_KEY`, `AGENT_PRIVATE_KEY`,
   `EDGE_NODE_PRIVATE_KEY`): nuevas, una por servicio, con saldo mínimo de gas
