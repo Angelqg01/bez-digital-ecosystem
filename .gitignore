@@ -114,5 +114,6 @@ api/agent-lib/
 control-center/frontend/modules/
 control-center/frontend/sdk/
 bezhas-edge-node/sdk/
+api/smart-contracts/
 # Copias de seguridad de la zona DNS (deploy/gcp/04-hostinger-dns.sh)
 deploy/gcp/dns-backups/

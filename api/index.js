@@ -292,7 +292,7 @@ app.get('/api/metrics', metricsHandler);
 app.get('/api/health', async (_req, res) => {
   const checks = await Promise.allSettled([
     query('SELECT 1'),                                   // PostgreSQL
-    redisClient?.ping(),                                 // Redis
+    redisClient ? redisClient.ping() : Promise.reject(new Error('Redis no configurado')), // Redis
     // En producción añadir:
     // fetch('https://api.esios.ree.es/indicators/1', { signal: AbortSignal.timeout(3000) }),
   ]);
