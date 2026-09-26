@@ -138,6 +138,18 @@
         "cold chain",
         "reefer"
       ]
+    },
+    {
+      "key": "eau_free_zone",
+      "label": "Operador de zona franca EAU (Jebel Ali / DMCC)",
+      "keywords": [
+        "dmcc",
+        "jebel ali",
+        "jafza",
+        "adgm",
+        "free zone dubai",
+        "trading house dubai"
+      ]
     }
   ],
   "scoringBands": [
@@ -181,11 +193,6 @@
       "label": "BEZ Token",
       "network": "Polygon",
       "address": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8"
-    },
-    {
-      "label": "BEZ Token",
-      "network": "BNB Chain",
-      "address": "0x8a1e3930fde1f151471c368fdbb39f3f63a65b55"
     },
     {
       "label": "Treasury DAO",
@@ -262,25 +269,22 @@
   ],
   "entryOffer": "Piloto acotado: 1 caso de uso, 1 flujo operativo, 1 sponsor interno, 14-21 días, con KPI de éxito definidos (tiempo de validación, reducción de conciliación manual, trazabilidad, visibilidad operativa).",
   "email": {
-    "domain": "bez.digital",
+    "domain": "bezhas.com",
     "displayName": "BeZhas",
-    "default": "hola@bez.digital",
+    "default": "yoelceo@bezhas.com",
     "byDepartment": {
-      "sales": "ventas@bez.digital",
-      "support": "soporte@bez.digital",
-      "marketing": "marketing@bez.digital",
-      "finance": "facturacion@bez.digital",
-      "hr": "rrhh@bez.digital",
-      "operations": "operaciones@bez.digital",
-      "blockchain": "infraestructura@bez.digital",
-      "legal": "legal@bez.digital",
-      "treasury": "tesoreria@bez.digital",
-      "fundraising": "inversores@bez.digital"
-    }
+      "sales": "ventas@bezhas.com",
+      "support": "support@bezhas.com",
+      "marketing": "marketing@bezhas.com",
+      "finance": "facturacion@bezhas.com",
+      "blockchain": "infrastructure@bezhas.com"
+    },
+    "_nota": "Solo hay un buzón (yoelceo@) y estos 5 alias en Hostinger; Hostinger rechaza con 553 cualquier otro remitente. Los departamentos sin alias (hr, operations, legal, treasury, fundraising) caen al general, sin etiqueta de departamento. Si se crea un alias nuevo, añadirlo aquí y a la lista de test/business-profile.test.js."
   },
   "markets": [
     "España",
     "Europa",
+    "Emiratos Árabes Unidos",
     "Singapur",
     "Malasia",
     "Hong Kong",
@@ -288,6 +292,12 @@
     "Yokohama"
   ],
   "outreachTemplates": [
+    {
+      "key": "eau_free_zone",
+      "para": "Trading houses y operadores de reexportación en zonas francas de EAU (Jebel Ali, DMCC)",
+      "asunto": "[Company] | Document verification for your re-export corridor",
+      "angulo": "Redactar en inglés. Mismo problema que ya resolvemos en el puerto de Algeciras -- fraude documental y demoras aduaneras -- aplicado a su volumen de reexportación. Sin mencionar activos digitales en el primer contacto. CTA: 15 minutos con quien lleve comercio exterior."
+    },
     {
       "key": "productores",
       "para": "Lonjas, cooperativas y asociaciones de productores",
@@ -363,6 +373,13 @@
       9,
       16,
       25
+    ],
+    "eau_free_zone": [
+      0,
+      4,
+      9,
+      16,
+      25
     ]
   },
   "sequenceAngles": {
@@ -380,6 +397,26 @@
       "Certificar un lote con BeZhas frente a la via notarial.",
       "Antes de la proxima campana: ventana corta para un piloto.",
       "Cierre sin presion."
+    ],
+    "eau_free_zone": [
+      "Redactar en ingles. Problema concreto de fraude documental o demora aduanera en zona franca; dato de mejora; CTA de 15 minutos.",
+      "Caso practico verificable del corredor Algeciras-Jebel Ali, ya en produccion.",
+      "Contexto del memorando entre el regulador local y DMCC sobre trazabilidad de mercancia fisica, sin hablar en nombre de ninguno de los dos.",
+      "Pregunta breve: eres tu la persona adecuada o me derivas a comercio exterior.",
+      "Cierre sin presion: quedamos aqui cuando os venga bien."
+    ]
+  },
+  "expansionPlaybooks": {
+    "_nota": "Generado en la sesion de expansion BEZ-Coin (sep-2026). El motivo de venta del TOKEN nunca pasa por el escuadron de Ventas automatizado -- ver humanEscalation. Ventas solo trabaja el motivo B2B/SaaS de este perfil.",
+    "priorityMarket": "eau_free_zone",
+    "parallelMarket": "LatAm (via comunidad/contenido, sin automatizar en Ventas todavia)",
+    "foundationJurisdiction": "ADGM (Abu Dabi) -- DLT Foundation, pendiente de constituir",
+    "documents": [
+      "BEZHAS_FUNDING_EXPANSION_PLAN.md",
+      "MEMO_ESTRUCTURA_MICA_EXENTA.md",
+      "LITEPAPER_EN.md",
+      "CALENDARIO_CONTENIDO_LATAM.md",
+      "RUTINA_CAPTACION_CLIENTES.md"
     ]
   }
 }

@@ -157,6 +157,114 @@ test('Email: la comprobación se cachea y el canal se recupera solo', async () =
   assert.equal(e.degraded, false);
 });
 
+// ── SMTP: el envío deja copia en "Enviados" ─────────────────────────────────
+
+function conectorSmtp(extra = {}) {
+  const enviados = [];
+  const e = new EmailConnector({
+    tenantId: 't',
+    config: { host: 'smtp.bezhas.test', port: 465, user: 'yoelceo@bezhas.com', pass: 'x', from: 'yoelceo@bezhas.com', ...extra },
+  });
+  e._transport = {
+    verify: async () => true,
+    sendMail: async (m) => { enviados.push(m); return { messageId: m.messageId }; },
+  };
+  return { e, enviados };
+}
+
+function imapFalso({ falla = null, carpetas = [{ path: 'INBOX.Sent', specialUse: '\\Sent' }] } = {}) {
+  const llamadas = { appends: [], conexiones: 0, cierres: 0 };
+  return {
+    llamadas,
+    factory: () => ({
+      connect: async () => { llamadas.conexiones++; if (falla) throw new Error(falla); },
+      list: async () => carpetas,
+      append: async (carpeta, raw, flags, fecha) => { llamadas.appends.push({ carpeta, raw, flags, fecha }); },
+      logout: async () => { llamadas.cierres++; },
+    }),
+  };
+}
+
+test('Email SMTP: tras enviar, guarda el mismo mensaje en Enviados', async () => {
+  const imap = imapFalso();
+  const { e, enviados } = conectorSmtp({ imapFactory: imap.factory });
+  assert.equal(e.mode, 'smtp');
+  assert.equal(e.imapHost, 'imap.bezhas.test', 'con SMTP_HOST=smtp.X el IMAP se deduce como imap.X');
+
+  const r = await e.send({ to: 'lead@puerto.es', subject: 'Propuesta ñ', body: 'Hola', from: 'BeZhas Ventas <ventas@bezhas.com>' });
+
+  assert.equal(r.sent, true);
+  assert.equal(enviados.length, 1, 'se envía una sola vez');
+  assert.deepEqual(r.sentCopy, { saved: true, folder: 'INBOX.Sent' }, 'carpeta \\Sent autodetectada');
+
+  const copia = imap.llamadas.appends[0];
+  assert.deepEqual(copia.flags, ['\\Seen']);
+  const texto = copia.raw.toString();
+  assert.ok(texto.includes(`Message-ID: ${enviados[0].messageId}`), 'la copia lleva el Message-ID real del envío');
+  assert.match(texto, /ventas@bezhas\.com/);
+  assert.equal(copia.fecha, enviados[0].date, 'y la misma fecha');
+  assert.equal(imap.llamadas.cierres, 1, 'la conexión IMAP se cierra');
+  assert.match(enviados[0].messageId, /^<[0-9a-f-]{36}@bezhas\.com>$/, 'Message-ID con el dominio del remitente');
+});
+
+test('Email SMTP: si falla el guardado en Enviados, el correo sigue contando como enviado y NO se reenvía', async () => {
+  const imap = imapFalso({ falla: 'login rechazado' });
+  const { e, enviados } = conectorSmtp({ imapFactory: imap.factory, imapRetryDelayMs: 0 });
+
+  const r = await e.send({ to: 'lead@puerto.es', subject: 'x', body: 'y' });
+
+  assert.equal(r.sent, true, 'el correo ya salió');
+  assert.equal(enviados.length, 1, 'un fallo de IMAP jamás provoca un segundo envío');
+  assert.equal(r.sentCopy.saved, false);
+  assert.match(r.sentCopy.reason, /login rechazado/);
+  assert.equal(imap.llamadas.conexiones, 2, 'el guardado se reintenta una vez');
+  assert.equal(imap.llamadas.cierres, 2);
+});
+
+test('Email SMTP: un corte suelto de IMAP se recupera reintentando el guardado', async () => {
+  let intento = 0;
+  const llamadas = { appends: 0 };
+  const imapIntermitente = () => ({
+    connect: async () => { if (++intento === 1) { const err = new Error(''); err.code = 'ECONNRESET'; throw err; } },
+    list: async () => [{ path: 'INBOX.Sent', specialUse: '\\Sent' }],
+    append: async () => { llamadas.appends++; },
+    logout: async () => {},
+  });
+  const { e, enviados } = conectorSmtp({ imapFactory: imapIntermitente, imapRetryDelayMs: 0 });
+
+  const r = await e.send({ to: 'a@b.c', subject: 'x', body: 'y' });
+
+  assert.equal(r.sentCopy.saved, true, 'el segundo intento guarda la copia');
+  assert.equal(llamadas.appends, 1, 'una sola copia');
+  assert.equal(enviados.length, 1, 'y un solo envío');
+});
+
+test('Email SMTP: la carpeta configurada manda sobre la autodetección y sin IMAP no se intenta', async () => {
+  const imap = imapFalso();
+  const { e } = conectorSmtp({ imapFactory: imap.factory, sentFolder: 'Enviados' });
+  const r = await e.send({ to: 'a@b.c', subject: 'x', body: 'y' });
+  assert.equal(r.sentCopy.folder, 'Enviados');
+
+  // Servidor que no es smtp.* y sin IMAP_HOST: no hay dónde guardar, y se dice.
+  const otro = new EmailConnector({ tenantId: 't', config: { host: 'mail.bezhas.test', port: 465, user: 'u', pass: 'p', from: 'u@bezhas.com' } });
+  otro._transport = { verify: async () => true, sendMail: async (m) => ({ messageId: m.messageId }) };
+  const r2 = await otro.send({ to: 'a@b.c', subject: 'x', body: 'y' });
+  assert.equal(r2.sent, true);
+  assert.equal(r2.sentCopy.skipped, true);
+});
+
+test('Email SMTP: un remitente que no es alias del buzón se reporta como no enviado, con el motivo', async () => {
+  const { e } = conectorSmtp();
+  e._transport.sendMail = async () => {
+    const err = new Error('rechazado'); err.responseCode = 553;
+    err.response = '553 5.7.1 <legal@bezhas.com>: Sender address rejected: not owned by user yoelceo@bezhas.com';
+    throw err;
+  };
+  const r = await e.send({ to: 'a@b.c', subject: 'x', body: 'y', from: 'BeZhas Legal <legal@bezhas.com>' });
+  assert.equal(r.sent, false);
+  assert.match(r.reason, /legal@bezhas\.com no es un buzón ni un alias/);
+});
+
 test('Email: describe() no filtra credenciales', async () => {
   const e = new EmailConnector({
     tenantId: 't',

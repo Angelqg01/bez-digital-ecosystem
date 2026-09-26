@@ -1,5 +1,7 @@
 node_modules/
 .env
+.env.local
+hostinger.env.local
 logs/
 *.log
 .DS_Store
