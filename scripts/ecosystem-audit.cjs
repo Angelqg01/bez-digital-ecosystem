@@ -267,13 +267,13 @@ for (const tf of tokenFiles) {
     check(`BEZ-Coin v1 in ${tf.desc}`, has);
 }
 
-// Production deployment file
-const prodDeploy = path.join(ROOT, 'smart-contracts', 'deployments', '56.json');
+// Production deployment file (BEZ sólo existe en Polygon; BNB será un bridge)
+const prodDeploy = path.join(ROOT, 'smart-contracts', 'deployments', '137.json');
 const hasProdDeploy = fs.existsSync(prodDeploy);
-check('BSC deployment file (56.json)', hasProdDeploy);
+check('Polygon deployment file (137.json)', hasProdDeploy);
 if (hasProdDeploy) {
     const prod = JSON.parse(fs.readFileSync(prodDeploy, 'utf-8'));
-    check('BSC deployment has BEZCoin address', prod.core?.BEZCoin?.includes(BEZ_V1) || false);
+    check('Polygon deployment has BEZCoin address', prod.core?.BEZCoin?.includes(BEZ_V1) || false);
 }
 
 // .env.example

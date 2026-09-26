@@ -684,7 +684,11 @@ test('El perfil de negocio se puede recargar desde fichero, y solo por admin', a
   const recarga = await post('/tenants/perfil-bezhas/business/reload', { key: ADMIN });
   assert.equal(recarga.status, 200);
   assert.equal(recarga.body.businessId, 'bezhas');
-  assert.ok(recarga.body.buzones.length >= 10, 'devuelve los buzones declarados, para poder darlos de alta en el servidor de correo');
+  // El perfil solo declara direcciones que existen en Hostinger (un buzón y sus alias).
+  assert.ok(
+    ['yoelceo@bezhas.com', 'ventas@bezhas.com', 'support@bezhas.com'].every((b) => recarga.body.buzones.includes(b)),
+    'devuelve los buzones declarados, para poder darlos de alta en el servidor de correo',
+  );
 
   // Sin perfil asociado no se inventa uno.
   assert.equal((await post('/tenants/perfil-recarga/business/reload', { key: ADMIN })).status, 400);
@@ -700,7 +704,7 @@ test('Recargar el perfil alcanza a los agentes ya creados', async () => {
   assert.equal(space.business.senderFor('sales'), null, 'el perfil viejo no tiene buzones');
 
   await post('/tenants/perfil-vivo/business/reload', { key: ADMIN });
-  assert.match(space.business.senderFor('sales'), /ventas@bez\.digital/,
+  assert.match(space.business.senderFor('sales'), /ventas@bezhas\.com/,
     'tras recargar, el mismo objeto que ven los agentes ya trae los buzones');
 });
 

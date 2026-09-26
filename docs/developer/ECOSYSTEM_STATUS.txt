@@ -88,8 +88,8 @@
   ✅ BEZ-Coin v1 in OpenClaw Resolver
   ✅ BEZ-Coin v1 in Bridge Relay
   ✅ BEZ-Coin v1 in Shared Client
-  ✅ BSC deployment file (56.json)
-  ✅ BSC deployment has BEZCoin address
+  ✅ Polygon deployment file (137.json)
+  ✅ Polygon deployment has BEZCoin address
   ✅ .env.example has BEZ-Coin v1
 
 ════════════════════════════════════════════════════════════

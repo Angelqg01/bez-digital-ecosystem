@@ -35,7 +35,6 @@ BEZHAS_PROJECT_ROOT = Path(r"D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Blockc
 BEZHAS_WEB3_ROOT    = Path(r"D:\Documentos D\Documentos Yoe\BeZhas\BeZhas Web\bezhas-web3")
 
 BEZ_CONTRACT_POLYGON = "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8"
-BEZ_CONTRACT_BNB     = "0x8a1e3930fde1f151471c368fdbb39f3f63a65b55"
 TREASURY_DAO         = "0x89c23890c742d710265dD61be789C71dC8999b12"
 
 
@@ -220,7 +219,7 @@ class BeZhasAgentManager:
     - Fallback automático entre proveedores
     - Circuit breakers por proveedor  
     - Compresión real de contexto (no falsa como turboquant)
-    - Integración con contratos BeZhas en BNB Chain y Polygon
+    - Integración con contratos BeZhas en Polygon (BNB Chain llegará mediante un bridge)
     - Skill registry para análisis técnico, fundamental, bots de trading
     """
 
@@ -247,8 +246,8 @@ class BeZhasAgentManager:
         return f"""Eres el agente IA de la plataforma BeZhas.com.
 Contratos activos:
   - BEZ Token Polygon: {BEZ_CONTRACT_POLYGON}
-  - BEZ Token BNB:     {BEZ_CONTRACT_BNB}  
   - Treasury DAO:      {TREASURY_DAO}
+BEZ sólo existe en Polygon; BNB Chain se conectará mediante un bridge (pendiente).
 Eres experto en DeFi, análisis técnico de mercados, bots de trading, y Web3.
 Responde siempre en el idioma del usuario."""
 

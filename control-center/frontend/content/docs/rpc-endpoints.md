@@ -7,7 +7,7 @@
 | BeZhas L2 | `2708` | Red del protocolo, gas en BEZ, bloque de 2 s |
 | Local (Anvil) | `31337` | Desarrollo con Foundry |
 | Polygon | `137` | BEZ ERC-20 |
-| BNB Chain | `56` | BEZ BEP-20 |
+| BNB Chain | `56` | Bridge (próximamente); BEZ no está desplegado en BNB |
 
 Las direcciones de contrato **no coinciden entre redes**. Resuélvelas siempre por SDK o por API, nunca hardcodeadas.
 

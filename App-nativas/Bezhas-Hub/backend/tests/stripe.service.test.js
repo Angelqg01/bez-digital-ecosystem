@@ -3,7 +3,17 @@
  * Tests for payment processing functionality
  */
 
+// Sin esto, el caso de firma inválida de abajo mandaba una alerta REAL a Discord.
+jest.mock('../middleware/discordNotifier', () => ({
+    notifyPaymentFailed: jest.fn().mockResolvedValue({}),
+    notifyStripeWebhookError: jest.fn().mockResolvedValue({}),
+    notifyHigh: jest.fn().mockResolvedValue({}),
+    notifyMedium: jest.fn().mockResolvedValue({}),
+    notifyCritical: jest.fn().mockResolvedValue({}),
+}));
+
 const stripeService = require('../services/stripe.service');
+const discord = require('../middleware/discordNotifier');
 
 // Mock Stripe
 jest.mock('stripe', () => {
@@ -181,13 +191,15 @@ describe('Stripe Service', () => {
     });
 
     describe('handleStripeWebhook', () => {
-        it('should handle checkout.session.completed event', async () => {
+        it('rechaza una firma inválida sin tratarla como fallo de procesamiento', async () => {
+            // Antes este test «pasaba» con cualquier resultado y, por el camino,
+            // publicaba una alerta HIGH en Discord. Una firma inválida es ruido o
+            // un sondeo, no un pago roto: no alerta como si lo fuera.
             const rawBody = JSON.stringify({ type: 'checkout.session.completed' });
-            const signature = 'test_signature';
+            const result = await stripeService.handleStripeWebhook(rawBody, 'test_signature');
 
-            const result = await stripeService.handleStripeWebhook(rawBody, signature);
-
-            expect(result).toBeDefined();
+            expect(result).toEqual(expect.objectContaining({ success: false, code: 'SIGNATURE_INVALID' }));
+            expect(discord.notifyStripeWebhookError).not.toHaveBeenCalled();
         });
     });
 });

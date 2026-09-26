@@ -25,6 +25,7 @@
 const express = require('express');
 const cors = require('cors');
 const { makeCorsOriginFn, parseExtraOrigins } = require('./config/cors');
+const { globalLimiterOptions } = require('./config/rateLimit');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
@@ -92,7 +93,8 @@ const organizationBillingRoutes = require('./routes/organization-billing');
 const adminConfigRoutes = require('./routes/admin-config');
 const adminGovernanceRoutes = require('./routes/admin-governance');
 const mcpGatewayRoutes = require('./routes/mcp-gateway');
-const mcpPublicRoutes = require('./routes/mcp-public');   // ← MCP de alta asistida (auth opcional)
+const mcpPublicRoutes = require('./routes/mcp-public');
+const { txRouter, securityRouter } = require('./routes/tx-security'); // ← operaciones con fondos + kill switch   // ← MCP de alta asistida (auth opcional)
 const webhookRoutes = require('./routes/webhooks');
 const energyRoutes = require('./routes/energy');          // ← VPP Energy Layer
 const mtfcRoutes = require('./routes/mtfc');
@@ -101,6 +103,14 @@ const operantRoutes = require('./routes/operant');   // ← OPERANT (gestión em
 // ─────────────────────────────────────────────────────────────────────────────
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3001;
+
+// Detrás de un balanceador (GCP: balanceador externo + Cloud Run) req.ip sería
+// la del proxy: todos los visitantes compartirían el cubo del limitador y 100
+// peticiones cada 15 min bastarían para dejar la web entera en 429. Se confía
+// en un número FIJO de saltos, nunca en `true`: con `true` la IP la elegiría el
+// cliente escribiendo su propia cabecera X-Forwarded-For.
+const TRUST_PROXY_HOPS = Math.min(Math.max(parseInt(process.env.TRUST_PROXY_HOPS, 10) || 0, 0), 5);
+if (TRUST_PROXY_HOPS > 0) app.set('trust proxy', TRUST_PROXY_HOPS);
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -159,22 +169,8 @@ app.use(cors({
 //  SECCIÓN 3: RATE LIMITERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Rate limiter global */
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX, 10) || (IS_PROD ? 100 : 5000),
-  skip: req => (!IS_PROD && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.ip))
-    // El War Room sondea cada 8 s por diseño: son 112 peticiones cada 15
-    // minutos contra un límite de 100. A los trece minutos de encender el
-    // kiosko, la pantalla se quedaba en blanco con un 429 y ahí seguía hasta
-    // que expiraba la ventana. Tiene su propio limitador, más abajo, dimensionado
-    // para ese sondeo — y además su propio token.
-    || req.path.startsWith('/api/monitor'),
-  message: { error: 'Too many requests, please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: req => req.headers['x-api-key'] || req.ip,  // agrupar por API key si existe
-});
+/** Rate limiter global (opciones y motivos en config/rateLimit.js) */
+const globalLimiter = rateLimit(globalLimiterOptions({ isProduction: IS_PROD }));
 
 /**
  * Rate limiter estricto para endpoints SCADA y arbitraje.
@@ -225,6 +221,11 @@ app.use('/api/webhooks', webhookRoutes);          // raw body — DEBE ir antes 
 // JSON por petición antes de que nada haya comprobado quién es. Su router monta
 // su propio parser acotado. Ver routes/mcp-public.js.
 app.use('/api/mcp/onboarding', mcpPublicRoutes);
+// Misma ruta sin el prefijo /api: es la URL pública que se anuncia a los clientes
+// (https://mcp.bez.digital/mcp/onboarding) cuando ese dominio apunta a este
+// servicio. En Cloud Run no hay nginx que reescriba rutas, así que la API
+// tiene que atender la ruta publicada tal cual.
+app.use('/mcp/onboarding', mcpPublicRoutes);
 
 app.use(compression({                             // gzip respuestas > 1 KB
   level: 6,
@@ -291,7 +292,7 @@ app.get('/api/metrics', metricsHandler);
 app.get('/api/health', async (_req, res) => {
   const checks = await Promise.allSettled([
     query('SELECT 1'),                                   // PostgreSQL
-    redisClient?.ping(),                                 // Redis
+    redisClient ? redisClient.ping() : Promise.reject(new Error('Redis no configurado')), // Redis
     // En producción añadir:
     // fetch('https://api.esios.ree.es/indicators/1', { signal: AbortSignal.timeout(3000) }),
   ]);
@@ -411,6 +412,10 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/qr', qrRoutes);
 
 // ── Gateway ───────────────────────────────────────────────────────────────────
+// Operaciones con fondos (intención → política → aprobación firmada → firmante
+// aislado). Antes que el Gateway general para que /tx no caiga en sus rutas.
+app.use('/api/gateway/v1/tx', txRouter);
+app.use('/api/security', securityRouter);
 app.use('/api/gateway/v1', gatewayRoutes);
 // MCP de cara al cliente. Misma autenticación por api-key y mismos scopes que
 // el Gateway REST, en el mismo proceso: un servicio aparte obligaría a
@@ -421,6 +426,17 @@ app.use('/api/gateway/v1', gatewayRoutes);
 // authenticateApp por delante atendería también '/api/mcp/onboarding' y
 // devolvería 401 justo a quien todavía no tiene clave.
 app.use('/api/mcp', mcpGatewayRoutes);
+app.use('/mcp', mcpGatewayRoutes);   // URL pública del conector: https://mcp.bez.digital/mcp
+
+// Authorization Server OAuth 2.1 + PKCE del MCP — segunda vía de
+// autenticación junto a la api-key, para ChatGPT/Codex/Antigravity y
+// cualquier cliente MCP que necesite que una persona autorice desde su
+// navegador. gateway-auth.js hace terminar ambas vías en el mismo
+// req.registeredApp; routes/mcp-gateway.js no sabe ni le importa cuál se usó.
+const oauthRoutes = require('./routes/oauth');
+app.use('/', oauthRoutes.wellKnown); // /.well-known/oauth-authorization-server, /jwks.json, ...
+app.use('/oauth', oauthRoutes.router);
+
 app.use('/api/erp', require('./routes/erp'));   // conexiones gestionadas con el ERP del cliente
 app.use('/c', require('./routes/checkout')); // hosted checkout (pay.bez.digital/c/<token>)
 app.use('/o', require('./routes/onboarding-pages')); // alta guiada (onb.bez.digital/o/<token>)
@@ -806,6 +822,42 @@ async function startServer() {
     } catch (err) {
       gcpLogger.warning('[STARTUP] Arbitrage agent failed to start', { error: err.message });
     }
+  }
+
+  // ── PASO 7.9: Seguridad transaccional ────────────────────────────────────────
+  // El kill switch se carga ANTES de escuchar: las rutas heredadas leen su caché
+  // en memoria y, sin esta carga, verían NORMAL hasta el primer refresco.
+  try {
+    await require('./services/killSwitch').iniciar();
+    gcpLogger.info('[STARTUP] Kill switch cargado');
+  } catch (err) {
+    gcpLogger.error('[STARTUP] Kill switch ilegible: las operaciones con fondos quedarán bloqueadas', { error: err.message });
+  }
+  // Entregas de compras con tarjeta: sólo con los fondos en la cuenta bancaria.
+  if (process.env.STRIPE_SECRET_KEY) {
+    require('./services/cardSettlementWorker').iniciar();
+    gcpLogger.info('[STARTUP] Liquidador de compras con tarjeta arrancado');
+  }
+  // Claves privadas en este proceso: fuera las que no hacen falta y las que
+  // controlan direcciones de tesorería. Sólo direcciones al log.
+  require('./services/hotKeyGuard').revisar();
+
+  // Anclaje periódico de la auditoría de seguridad (raíz merkle por tramo).
+  {
+    const intervalo = Number(process.env.SECURITY_AUDIT_ANCHOR_INTERVAL_MS) || 60 * 60 * 1000;
+    const temporizador = setInterval(() => {
+      require('./services/securityAudit').anclarPendiente()
+        .catch((err) => gcpLogger.warning('[SECURITY] Anclaje de auditoría fallido', { error: err.message }));
+    }, intervalo);
+    temporizador.unref?.();
+  }
+
+  // No se aborta el arranque por el vault: tumbaría la API entera por una pieza
+  // que sólo usa el alta FIAT. Se avisa alto y cada operación del vault falla.
+  try {
+    require('./services/walletVaultService').comprobarConfiguracion();
+  } catch (err) {
+    gcpLogger.error('[STARTUP] Vault de wallets mal configurado', { error: err.message });
   }
 
   // ── PASO 8: Escuchar (SIEMPRE el último paso) ─────────────────────────────────

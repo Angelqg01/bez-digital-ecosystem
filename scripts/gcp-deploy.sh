@@ -204,6 +204,23 @@ EDGE_NODE_API_KEY="${EDGE_NODE_API_KEY:-${API_KEY:-$(random_secret 48)}}"
 CONTROL_JWT="${CONTROL_JWT:-$(random_secret 48)}"
 GOOGLE_API_KEY="${GOOGLE_API_KEY:-${GEMINI_API_KEY:-}}"
 
+# Par EC P-256 para firmar los access token OAuth 2.1 del MCP
+# (api/services/oauthTokens.js). A diferencia de JWT_SECRET, no es un secreto
+# aleatorio: tiene que ser un keypair EC de verdad, así que no vale
+# random_secret. Se genera sólo si no viene ya definido en .env — igual que el
+# resto de secretos de este bloque, para no rotarlo en cada redeploy y romper
+# las sesiones OAuth activas.
+if [ -z "${OAUTH_JWT_PRIVATE_KEY:-}" ] || [ -z "${OAUTH_JWT_PUBLIC_KEY:-}" ]; then
+  warn "OAUTH_JWT_PRIVATE_KEY/OAUTH_JWT_PUBLIC_KEY no definidas: generando un par EC P-256 nuevo para el MCP."
+  _oauth_tmp="$(mktemp -d)"
+  openssl ecparam -name prime256v1 -genkey -noout -out "${_oauth_tmp}/ec.pem" 2>/dev/null
+  openssl pkcs8 -topk8 -nocrypt -in "${_oauth_tmp}/ec.pem" -out "${_oauth_tmp}/pkcs8.pem" 2>/dev/null
+  openssl ec -in "${_oauth_tmp}/ec.pem" -pubout -out "${_oauth_tmp}/pub.pem" 2>/dev/null
+  OAUTH_JWT_PRIVATE_KEY="$(base64 -w0 "${_oauth_tmp}/pkcs8.pem")"
+  OAUTH_JWT_PUBLIC_KEY="$(base64 -w0 "${_oauth_tmp}/pub.pem")"
+  rm -rf "${_oauth_tmp}"
+fi
+
 require_secret_value "ADMIN_PASSWORD_HASH"
 
 if [ "${DEPLOY_EDGE_SIGNER:-false}" = "true" ]; then
@@ -219,6 +236,8 @@ create_or_update_secret "bezhas-edge-node-api-key"     "${EDGE_NODE_API_KEY}"
 create_or_update_secret "bezhas-control-jwt"           "${CONTROL_JWT}"
 create_or_update_secret "bezhas-bridge-api-key"        "${BRIDGE_API_KEY:-${EDGE_NODE_API_KEY}}"
 create_or_update_secret "bezhas-admin-password-hash"   "${ADMIN_PASSWORD_HASH}"
+create_or_update_secret "bezhas-oauth-jwt-private-key" "${OAUTH_JWT_PRIVATE_KEY}"
+create_or_update_secret "bezhas-oauth-jwt-public-key"  "${OAUTH_JWT_PUBLIC_KEY}"
 
 [ -n "${DEEPSEEK_API_KEY:-}" ] && create_or_update_secret "bezhas-deepseek-api-key" "${DEEPSEEK_API_KEY}" || warn "DEEPSEEK_API_KEY not set; DeepSeek fallback disabled."
 [ -n "${GOOGLE_API_KEY}" ] && create_or_update_secret "bezhas-google-api-key" "${GOOGLE_API_KEY}" || warn "GOOGLE_API_KEY/GEMINI_API_KEY not set; Gemini fallback disabled."
@@ -321,7 +340,7 @@ rm -rf "control-center/frontend/modules" "control-center/frontend/sdk"
 log "Deploying services to Cloud Run..."
 
 COMMON_ENV_VARS="^~^GCP_PROJECT_ID=${GCP_PROJECT_ID}~GCP_ENABLED=true~GCP_REGION=${GCP_REGION}~NODE_ENV=production~GCS_BUCKET=${GCS_BUCKET}~PUBSUB_TOPIC=bezhas-blockchain-events~REDIS_HOST=${REDIS_HOST}~REDIS_PORT=6379~CORS_ORIGINS=${PUBLIC_SITE_URL},${APP_SITE_URL}~GCP_BLOCKCHAIN_RPC_URL=${GCP_BLOCKCHAIN_RPC_URL}"
-COMMON_SECRET_VARS="DATABASE_URL=bezhas-postgres-url:latest,REDIS_URL=bezhas-redis-url:latest,JWT_SECRET=bezhas-jwt-secret:latest,INTERNAL_API_KEY=bezhas-internal-api-key:latest,GOOGLE_API_KEY=bezhas-google-api-key:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest"
+COMMON_SECRET_VARS="DATABASE_URL=bezhas-postgres-url:latest,REDIS_URL=bezhas-redis-url:latest,JWT_SECRET=bezhas-jwt-secret:latest,INTERNAL_API_KEY=bezhas-internal-api-key:latest,GOOGLE_API_KEY=bezhas-google-api-key:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest,OAUTH_JWT_PRIVATE_KEY=bezhas-oauth-jwt-private-key:latest,OAUTH_JWT_PUBLIC_KEY=bezhas-oauth-jwt-public-key:latest"
 
 BASE_FLAGS=(
   --region "${GCP_REGION}"
@@ -358,19 +377,48 @@ if [ "${RUN_DB_MIGRATIONS:-true}" = "true" ]; then
     --quiet
 fi
 
+# Dominio público del MCP. El issuer OAuth TIENE que ser la URL por la que los
+# clientes (Claude, ChatGPT, Codex…) llegan al servidor: la metadata de
+# /.well-known/* se construye a partir de él, y si apunta a un dominio que no
+# resuelve a este servicio, el conector no puede completar el login.
+if [ -z "${MCP_DOMAIN+x}" ] && [[ "${PUBLIC_SITE_URL}" == *"bez.digital"* ]]; then
+  MCP_DOMAIN="mcp.bez.digital"
+fi
+API_ENV_VARS="${COMMON_ENV_VARS}"
+[ -n "${MCP_DOMAIN:-}" ] && API_ENV_VARS="${API_ENV_VARS}~OAUTH_ISSUER=https://${MCP_DOMAIN}"
+
 # API backend
 gcloud run deploy bezhas-api \
   --image "${IMAGE_BASE}/bezhas-api:${BUILD_TAG}" \
   --port 3001 \
   --memory 512Mi --cpu 1 \
   --max-instances 10 \
-  --set-env-vars "${COMMON_ENV_VARS}" \
+  --set-env-vars "${API_ENV_VARS}" \
   --set-secrets "${COMMON_SECRET_VARS}" \
   "${BASE_FLAGS[@]}" \
   "${PUBLIC_FLAGS[@]}"
 
 API_URL=$(gcloud run services describe bezhas-api --region "${GCP_REGION}" --format "value(status.url)")
 ok "API: ${API_URL}"
+
+if [ -n "${MCP_DOMAIN:-}" ]; then
+  # El mapeo exige el dominio verificado en la cuenta de Google y un registro
+  # DNS que el propio comando indica: por eso es opcional y no aborta.
+  if [ "${CREATE_MCP_DOMAIN_MAPPING:-false}" = "true" ]; then
+    gcloud beta run domain-mappings create --service bezhas-api --domain "${MCP_DOMAIN}" \
+      --region "${GCP_REGION}" --quiet \
+      || warn "No se pudo mapear ${MCP_DOMAIN} (¿dominio sin verificar o ya mapeado?)."
+  else
+    warn "Recuerda mapear ${MCP_DOMAIN} → bezhas-api (CREATE_MCP_DOMAIN_MAPPING=true) o el conector MCP no completará el OAuth."
+  fi
+  ok "MCP: https://${MCP_DOMAIN}/mcp (issuer OAuth https://${MCP_DOMAIN})"
+else
+  # Sin dominio propio, el issuer es la URL de Cloud Run: hay que conocerla,
+  # así que se fija después del primer despliegue.
+  gcloud run services update bezhas-api --region "${GCP_REGION}" \
+    --update-env-vars "OAUTH_ISSUER=${API_URL}" --quiet
+  ok "MCP: ${API_URL}/mcp (issuer OAuth ${API_URL})"
+fi
 
 # Configure final API URL for frontend (use custom subdomain if bez.digital is configured)
 FINAL_API_URL="${API_URL}"

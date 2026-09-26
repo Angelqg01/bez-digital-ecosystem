@@ -6,8 +6,8 @@
 ## DIAGNÓSTICO INICIAL
 
 **Activos reales que ya tienes:**
-- L2 blockchain propia desplegada (BNB + Polygon)
-- Token BEZ-Coin en dos redes (`0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8`)
+- L2 blockchain propia; BEZ desplegado en Polygon (BNB Chain será un bridge, pendiente)
+- Token BEZ-Coin en Polygon (`0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8`)
 - Smart contracts auditables: staking, DAO, marketplace, pagos, vesting
 - Dominio + marca: `bez.digital`
 - Stack tecnológico completo (OpenClaw, AEGIS, control-center, 14 sub-apps)
@@ -26,7 +26,7 @@
 | Acción | Detalle |
 |--------|---------|
 | QuickSwap V3 (Polygon) | Crear pool BEZ/USDC o BEZ/MATIC. Liquidez mínima: $5,000 USDC para precio estable |
-| PancakeSwap V3 (BNB) | Pool BEZ/USDT. Liquidez mínima: $5,000 USDT |
+| PancakeSwap V3 (BNB) | Sólo tras el bridge a BNB Chain (hoy no hay BEZ en BNB). Pool BEZ/USDT. Liquidez mínima: $5,000 USDT |
 | Configurar LP vesting | Lockear liquidez 12 meses → CertiK/Team.Finance → genera confianza automáticamente |
 
 **Lo que yo puedo hacer ahora:**
@@ -77,8 +77,8 @@ Un token listado en CG/CMC genera credibilidad gratuita y tráfico orgánico.
 |------------|-----|---------|
 | **DAO Maker** | Multi-chain | Mayor reputación EU, comunidad activa |
 | **Polkastarter** | Polygon nativo | Perfecto para BEZ en Polygon |
-| **PinkSale** | BNB + Polygon | Más fácil de acceder, menos KYC para el proyecto |
-| **Gempad** | BNB | Rapidez de listing, comunidad BSC |
+| **PinkSale** | Polygon (BNB tras el bridge) | Más fácil de acceder, menos KYC para el proyecto |
+| **Gempad** | BNB (tras el bridge) | Rapidez de listing, comunidad BSC |
 
 **Estructura IDO recomendada:**
 - Precio IDO: X (definir según valoración objetivo)
@@ -98,7 +98,7 @@ Fuentes de grants específicas para blockchain B2B:
 | Grant | Monto | Requisito |
 |-------|-------|-----------|
 | **Polygon Village Grants** | $10K–$100K | Proyecto en Polygon (✅ ya estás) |
-| **BNB Chain MVB Program** | $50K+ | Proyecto en BNB (✅ ya estás) |
+| **BNB Chain MVB Program** | $50K+ | Proyecto en BNB (⏳ tras el bridge: hoy BEZ no está en BNB) |
 | **Filecoin Foundation** | $10K–$250K | Integrar IPFS/Filecoin en RWA |
 | **Arbitrum LTIPP** | $50K–$500K | Migrar/deployar en Arbitrum |
 | **European Blockchain Sandbox** | Acceso + visibilidad EU | Caso de uso regulatorio |
@@ -208,7 +208,7 @@ Si el tokenomics actual no está optimizado para crecimiento, hay que ajustarlo:
 
 1. **Hoy:** Whitepaper + Litepaper → necesario para TODO lo demás
 2. **Día 2–3:** Verificar contrato en Polygonscan + crear pool de liquidez
-3. **Día 4–5:** Aplicar a Polygon Village Grants + BNB Chain MVB
+3. **Día 4–5:** Aplicar a Polygon Village Grants (BNB Chain MVB, cuando el bridge esté activo)
 4. **Día 5–7:** Pitch deck para angels + aplicar a Lanzadera
 
 ---

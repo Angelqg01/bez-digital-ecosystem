@@ -79,7 +79,7 @@ for item in [
     'Selección visual de planes con icono, precio y lista de features.',
     'Pago con BEZ o criptos: BEZ, USDT, USDC, BNB, ETH.',
     'Descuento 20% al pagar con BEZ-Coin.',
-    'Auto-renovación mensual mediante Smart Contract en BNB Chain.',
+    'Auto-renovación mensual mediante Smart Contract on-chain.',
     'Botón de suscripción con texto dinámico según el plan.',
 ]:
     doc.add_paragraph(item, style='List Bullet')

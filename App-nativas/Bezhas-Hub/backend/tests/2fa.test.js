@@ -197,6 +197,36 @@ describe('TOTP Service', () => {
         });
     });
 
+    describe('cifrado v2 del secreto TOTP', () => {
+        const crypto = require('crypto');
+        it('los registros v1 (clave derivada de JWT_SECRET) se siguen leyendo y se marcan como heredados', () => {
+            const clave = crypto.scryptSync(process.env.JWT_SECRET || 'default-key', 'salt', 32);
+            const iv = crypto.randomBytes(16);
+            const c = crypto.createCipheriv('aes-256-gcm', clave, iv);
+            let enc = c.update('LEGACYSECRET', 'utf8', 'hex'); enc += c.final('hex');
+            const v1 = `${iv.toString('hex')}:${c.getAuthTag().toString('hex')}:${enc}`;
+            expect(totpService.decryptSecret(v1)).toBe('LEGACYSECRET');
+            expect(totpService.isLegacySecret(v1)).toBe(true);
+            expect(totpService.isLegacySecret(totpService.encryptSecret('X'))).toBe(false);
+        });
+
+        it('en producción no cifra sin TOTP_ENCRYPTION_KEY propia', () => {
+            const previo = { env: process.env.NODE_ENV, k: process.env.TOTP_ENCRYPTION_KEY, jwt: process.env.JWT_SECRET };
+            process.env.NODE_ENV = 'production';
+            delete process.env.TOTP_ENCRYPTION_KEY;
+            try {
+                expect(() => totpService.encryptSecret('X')).toThrow(/TOTP_ENCRYPTION_KEY/);
+                process.env.TOTP_ENCRYPTION_KEY = process.env.JWT_SECRET || 'j'.repeat(40);
+                process.env.JWT_SECRET = process.env.TOTP_ENCRYPTION_KEY;
+                expect(() => totpService.encryptSecret('X')).toThrow(/JWT_SECRET/);
+            } finally {
+                process.env.NODE_ENV = previo.env;
+                if (previo.k) process.env.TOTP_ENCRYPTION_KEY = previo.k; else delete process.env.TOTP_ENCRYPTION_KEY;
+                if (previo.jwt) process.env.JWT_SECRET = previo.jwt; else delete process.env.JWT_SECRET;
+            }
+        });
+    });
+
     describe('is2FAEnabled', () => {
         it('should return true when ENABLE_2FA is set', () => {
             process.env.ENABLE_2FA = 'true';

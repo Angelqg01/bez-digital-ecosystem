@@ -482,7 +482,7 @@ Genera un informe de compliance trimestral para BeZhas Blockchain (${period}):
 
 Contexto de la empresa:
 - Plataforma blockchain L2 con token BEZ-Coin
-- Operación en BNB Chain y Polygon
+- Operación en Polygon (BNB Chain llegará mediante un bridge; BEZ no está desplegado en BNB)
 - Sede en España → sujeta a regulación española y europea
 - Clientes B2B (aduanas, supply chain, RWA)
 - Token BEZ clasificado como Utility Token bajo MiCA

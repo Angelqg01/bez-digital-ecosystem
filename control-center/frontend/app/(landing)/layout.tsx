@@ -21,6 +21,7 @@ const sidebarSections = [
     title: 'Desarrolladores',
     items: [
       { path: '/developers', icon: 'code', label: 'Dev Portal' },
+      { path: '/mcp', icon: 'smart_toy', label: 'BeZhas MCP' },
       { path: '/learn', icon: 'school', label: 'Docs & Tutoriales' },
       { path: '/docs', icon: 'description', label: 'API & SDK Docs' },
       { path: '/rpc', icon: 'lan', label: 'RPC & Nodos' },
@@ -67,6 +68,7 @@ const headerMenus: Record<string, { label: string; href: string; icon: string; d
   ],
   Developers: [
     { label: 'Developer Portal', href: '/developers', icon: 'code', desc: 'SDK, APIs, Smart Contracts' },
+    { label: 'BeZhas MCP', href: '/mcp', icon: 'smart_toy', desc: 'Conecta Claude, ChatGPT, Codex y Gemini' },
     { label: 'Documentación', href: '/learn', icon: 'school', desc: 'Docs, Tutoriales, Governance' },
     { label: 'RPC & Nodos', href: '/rpc', icon: 'lan', desc: 'Endpoints RPC, Nodos Dedicados' },
     { label: 'Descargar SDK', href: '/developers#sdk', icon: 'download', desc: 'BeZhas.js, Python, Rust SDK' },
@@ -125,6 +127,7 @@ const startProfiles: Record<StartProfileKey, {
     icon: 'code',
     actions: [
       { label: 'Abrir el portal de desarrollo', href: '/developers' },
+      { label: 'Conectar tu IA con BeZhas MCP', href: '/mcp' },
       { label: 'Aprender con guías y tutoriales', href: '/learn' },
       { label: 'Consultar API y SDK Docs', href: '/docs' },
       { label: 'Revisar RPC y nodos', href: '/rpc' },

@@ -1,0 +1,28 @@
+{
+  "_comentario": "Copia a /etc/bezhas/tx-signer/signer.json en el VPS (fuera del repo) y móntalo en solo lectura. Direcciones de ejemplo: sustitúyelas.",
+  "allowedChainIds": [137, 56],
+  "minApprovals": 2,
+  "dualApprovalAbove": { "BEZ": "100000", "USDC": "5000", "USDT": "5000" },
+  "maxGasLimit": 200000,
+  "maxFeePerGasGwei": 500,
+  "maxIntentTtlSeconds": 86400,
+  "approvers": [
+    { "address": "0x0000000000000000000000000000000000000001", "roles": ["treasury"], "label": "CEO (hardware wallet)" },
+    { "address": "0x0000000000000000000000000000000000000002", "roles": ["treasury"], "label": "CFO (hardware wallet)" },
+    { "address": "0x0000000000000000000000000000000000000003", "roles": ["treasury"], "label": "Seguridad (hardware wallet)" }
+  ],
+  "wallets": [
+    {
+      "id": "tesoreria-operativa-polygon",
+      "address": "0x0000000000000000000000000000000000000004",
+      "chainIds": [137],
+      "key": { "provider": "aws-kms", "keyId": "arn:aws:kms:eu-central-1:000000000000:key/00000000-0000-0000-0000-000000000000", "region": "eu-central-1" },
+      "limits": {
+        "BEZ": { "perTx": "250000", "daily": "1000000" },
+        "USDC": { "perTx": "10000", "daily": "25000" }
+      },
+      "allowedDestinations": null
+    }
+  ],
+  "assets": {}
+}

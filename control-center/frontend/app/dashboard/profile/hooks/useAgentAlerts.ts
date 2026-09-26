@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { API_BASE, API_ORIGIN } from '@/lib/api';
 
 export interface AgentAlert {
   id: string;
@@ -18,7 +19,7 @@ export function useAgentAlerts() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const socketInstance = io('http://localhost:3001');
+    const socketInstance = io(API_ORIGIN);
 
     socketInstance.on('connect', () => {
       setIsConnected(true);
@@ -44,7 +45,7 @@ export function useAgentAlerts() {
 
     setSocket(socketInstance);
 
-    fetch('http://localhost:3001/api/alerts')
+    fetch(`${API_BASE}/alerts`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setAlerts(data);
@@ -58,7 +59,7 @@ export function useAgentAlerts() {
 
   const resolveAlert = async (taskId: string, approved: boolean) => {
     try {
-        const res = await fetch(`http://localhost:3001/api/hitl/${taskId}/resolve`, {
+        const res = await fetch(`${API_BASE}/hitl/${taskId}/resolve`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ approved, response: 'Confirmed via Dashboard' })

@@ -1,0 +1,44 @@
+/* Tokens de la página /mcp para los dos temas de la capa pública.
+   Mismo criterio que el chrome (app/globals.css): sin `data-bz-theme` se ve
+   oscuro, y `[data-bz-theme='light']` lo pasa a claro. La página usa SOLO estas
+   variables para texto, superficies y bordes; así un cambio de tema no deja
+   texto oscuro sobre tarjeta oscura ni blanco sobre fondo claro. */
+.page {
+    --mcp-text: #f5f6f8;
+    --mcp-dim: #c5c5da;
+    --mcp-mut: rgba(245, 246, 248, 0.5);
+    --mcp-card: rgba(255, 255, 255, 0.025);
+    --mcp-card-strong: #12131c;
+    --mcp-line: rgba(255, 255, 255, 0.1);
+    --mcp-code-bg: rgba(0, 0, 0, 0.4);
+    --mcp-accent: #22d3ee;
+    --mcp-nav-bg: rgba(8, 9, 17, 0.85);
+    --mcp-hero-glow: 0.3;
+    color: var(--mcp-text);
+}
+
+:global([data-bz-theme='light']) .page {
+    --mcp-text: #08161a;
+    --mcp-dim: #46595e;
+    --mcp-mut: #6b7d82;
+    --mcp-card: #ffffff;
+    --mcp-card-strong: #ffffff;
+    --mcp-line: #d8e0e1;
+    --mcp-code-bg: #0b1418;
+    --mcp-accent: #046c7a;
+    --mcp-nav-bg: rgba(255, 255, 255, 0.9);
+    --mcp-hero-glow: 0.12;
+}
+
+/* El código se lee sobre fondo oscuro en ambos temas: en claro, un bloque de
+   terminal oscuro es lo que el usuario espera y mantiene el contraste. */
+.code {
+    color: #22d3ee;
+}
+.codeLabel {
+    color: rgba(245, 246, 248, 0.55);
+}
+
+.glow {
+    opacity: var(--mcp-hero-glow);
+}

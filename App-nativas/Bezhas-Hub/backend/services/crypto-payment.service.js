@@ -51,8 +51,9 @@ class CryptoPaymentService {
         this.usdtContract = new ethers.Contract(USDT_POLYGON_ADDRESS, ERC20_ABI, this.wallet || this.provider);
         this.usdcContract = new ethers.Contract(USDC_POLYGON_ADDRESS, ERC20_ABI, this.wallet || this.provider);
 
-        // Precio de BEZ en USD
-        this.BEZ_PRICE_USD = 0.10;
+        // Precio real de BEZ (fase semilla, 0,0075 USD). Antes 0,10: el mismo
+        // pago entregaba 13 veces menos BEZ que por las otras vías.
+        this.BEZ_PRICE_USD = parseFloat(process.env.BEZ_PRICE_USD || '0.0075');
     }
 
     /**

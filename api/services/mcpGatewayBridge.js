@@ -19,10 +19,11 @@
  */
 
 const { query } = require('../db/pool');
+const { precioUsd } = require('../config/bez-price');
 const contractService = require('./contractService');
 
 /** Precio semilla cuando aún no hay fila de caché. Mismo valor que el Gateway. */
-const PRECIO_SEMILLA_USD = 0.10;
+const PRECIO_SEMILLA_USD = precioUsd();
 
 // ── Token ────────────────────────────────────────────────────────────────────
 

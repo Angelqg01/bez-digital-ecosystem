@@ -128,6 +128,13 @@ services:
       REDIS_URL:        redis://redis:6379
       JWT_SECRET:       ${JWT_SECRET}
       BEZHAS_API_KEY:   ${BEZHAS_API_KEY}
+      # Firma de los access token OAuth 2.1 del MCP. Sin ellas el proceso cae a
+      # un par EC efímero (config/oauthTokens.js) y todo token emitido deja de
+      # verificar en el siguiente reinicio del contenedor — inaceptable en
+      # producción, donde el contenedor SÍ se reinicia (deploys, crashes).
+      OAUTH_JWT_PRIVATE_KEY: ${OAUTH_JWT_PRIVATE_KEY:-}
+      OAUTH_JWT_PUBLIC_KEY:  ${OAUTH_JWT_PUBLIC_KEY:-}
+      OAUTH_ISSUER:          ${OAUTH_ISSUER:-https://mcp.bez.digital}
       # config/secrets.js aborta el arranque en producción sin esta variable, y
       # el compose solo pasaba BEZHAS_API_KEY, que es OTRA cosa. Resultado: la
       # API no llegaba a levantar nunca desde este compose —moría en bucle con
@@ -142,6 +149,9 @@ services:
       # fallan al usarse — pero la API arranca igual, que antes no era el caso.
       STRIPE_SECRET_KEY:     ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      # HMAC del webhook bancario (/api/webhooks/bank). Sin él la ruta responde
+      # 503: antes seguía adelante sin verificar y acuñaba BEZ con cualquier POST.
+      BANK_WEBHOOK_SECRET:   ${BANK_WEBHOOK_SECRET:-}
       # Nodo de la cadena. SIN esto la API caía al valor por defecto
       # `http://localhost:8545`, que DENTRO del contenedor es el propio
       # contenedor — donde no escucha nadie. De ahí que el indexador nunca
@@ -211,11 +221,40 @@ services:
       # fingir que apunta a algo.
       MONITOR_AEGIS_HEALTH_URL: ${MONITOR_AEGIS_HEALTH_URL:-}
 
+      # ── Seguridad transaccional (docs/security/TX_SECURITY_FABRIC.md) ─────
+      # Clave propia del vault de wallets gestionadas: ya NO vale JWT_SECRET.
+      # Los registros antiguos se leen igual (el vault prueba el secreto que
+      # usaba v1); migrar con walletVaultService.reencryptAll().
+      WALLET_VAULT_SECRET:        ${WALLET_VAULT_SECRET:-}
+      WALLET_VAULT_LEGACY_SECRET: ${WALLET_VAULT_LEGACY_SECRET:-}
+      # Firmante aislado. Sin él, ninguna operación custodiada se ejecuta
+      # (falla cerrado con SIGNER_UNAVAILABLE); nunca se firma en este proceso.
+      TX_SIGNER_URL:          http://tx-signer:4100
+      TX_SIGNER_REQUEST_KEY:  ${TX_SIGNER_REQUEST_KEY:-}
+      TX_TREASURY_ADDRESS:    ${TX_TREASURY_ADDRESS:-}
+      # Quórum de RPC: dos o más proveedores independientes por red. Con uno
+      # solo, producción se niega a firmar (RPC_NOT_REDUNDANT).
+      RPC_URLS_56:   ${RPC_URLS_56:-}
+      RPC_URLS_137:  ${RPC_URLS_137:-}
+      RPC_URLS_2708: ${RPC_URLS_2708:-}
+      # Vacío = sólo redes principales (56, 137, 2708). Para operar contra la
+      # L2 local o una testnet hay que decirlo aquí, explícitamente.
+      ALLOWED_CHAIN_IDS: ${ALLOWED_CHAIN_IDS:-}
+      FIAT_PARTNER_API_URL: ${FIAT_PARTNER_API_URL:-}
+      FIAT_PARTNER_API_KEY: ${FIAT_PARTNER_API_KEY:-}
+      # Entregas de BEZ por pagos FIAT: sólo con los fondos en la cuenta bancaria
+      # y por intención desde tesorería (docs/security/TX_SECURITY_FABRIC.md §10).
+      BEZ_PRICE_USD:           ${BEZ_PRICE_USD:-0.0075}
+      BEZPAY_TREASURY_APP_ID:  ${BEZPAY_TREASURY_APP_ID:-}
+      BEZPAY_DELIVERY_NETWORK: ${BEZPAY_DELIVERY_NETWORK:-polygon}
+
       PORT:             3001
     ports:
       - "3001:3001"
     networks:
       - bezhas-net
+      # Única red desde la que se llega al firmante.
+      - signer-net
     # Direcciones y ABIs de los contratos.
     #
     # La API los lee de `../../smart-contracts`, que queda FUERA del contexto de
@@ -303,6 +342,11 @@ services:
       # Lectura del stack de BeZhas (solo GET, endpoints públicos).
       BEZHAS_API_URL: http://bezhas-api:3001
       BEZHAS_TENANT_ID: bezhas
+      # Credencial de AGENTE (bzag_…) para pedir transferencias de tesorería a
+      # la API como intenciones. business-ops ya no firma: su antigua
+      # DISBURSEMENT_WALLET_PRIVATE_KEY se ignora y hay que retirarla.
+      OPERANT_TX_AGENT_KEY: ${OPERANT_TX_AGENT_KEY:-}
+      OPERANT_TX_NETWORK: ${OPERANT_TX_NETWORK:-polygon}
       # Avisos por departamento. Sin chat, el aviso se construye y no sale: la
       # aprobación se queda esperando en el panel.
       TELEGRAM_ENABLED: ${TELEGRAM_ENABLED:-true}
@@ -358,6 +402,38 @@ services:
       - "4000:4000"
     networks:
       - bezhas-net
+
+  # ── CONTROL CENTER (Frontend Next.js) ─────────────────────────────────────
+  # nginx/nginx.conf ya proxeaba a `control-center:3000` desde hace tiempo,
+  # pero el servicio nunca se declaró en este compose: la ruta `/` del borde
+  # devolvía 502 contra un nombre DNS que Docker no podía resolver.
+  control-center:
+    build:
+      context: ./control-center/frontend
+      dockerfile: Dockerfile
+    container_name: bezhas-control-center
+    restart: unless-stopped
+    depends_on:
+      bezhas-api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # El frontend habla con la API por el propio borde de nginx (mismo
+      # origen), no directo al contenedor: así funciona igual en dev y prod
+      # sin hardcodear el host de bezhas-api en el bundle del cliente.
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+      # Sin nodo L2 propio desplegado en este alcance: apunta a un RPC público
+      # de la red donde SÍ están los contratos (ver tabla de CLAUDE.md).
+      NEXT_PUBLIC_RPC_URL: ${NEXT_PUBLIC_RPC_URL:-https://bsc-dataseed.binance.org}
+    ports:
+      - "3000:3000"
+    networks:
+      - bezhas-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ── BEZHAS CORE MCP (existente) ───────────────────────────────────────────
   bezhas-core-mcp:
@@ -438,13 +514,65 @@ services:
       - bezhas-net
 
 # ── REDES ──────────────────────────────────────────────────────────────────────
+  # ── TX-SIGNER (firmante aislado de la tesorería) ─────────────────────────
+  # Perfil `signer`: no arranca con `up` hasta que exista su configuración
+  # (TX_SIGNER_CONFIG_FILE, fuera del repo) y su clave en KMS. Sin puertos
+  # publicados, sistema de ficheros de solo lectura, sin capacidades.
+  #   docker compose --profile signer up -d tx-signer
+  tx-signer:
+    build:
+      context: ./tx-signer
+      dockerfile: Dockerfile
+    container_name: bezhas-tx-signer
+    profiles: ["signer"]
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      SIGNER_CONFIG_PATH: /etc/tx-signer/signer.json
+      TX_SIGNER_REQUEST_KEY: ${TX_SIGNER_REQUEST_KEY:-}
+      # Usuario IAM con permiso SOLO para kms:Sign y kms:GetPublicKey sobre la
+      # clave de la tesorería. Estas credenciales no pueden sacar la clave.
+      AWS_REGION: ${TX_SIGNER_AWS_REGION:-eu-central-1}
+      AWS_ACCESS_KEY_ID: ${TX_SIGNER_AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${TX_SIGNER_AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - ${TX_SIGNER_CONFIG_FILE:-./tx-signer/config/signer.example.json}:/etc/tx-signer/signer.json:ro
+      - tx-signer-data:/data
+    networks:
+      - signer-net
+      - signer-egress
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
 networks:
   bezhas-net:
     driver: bridge
     name: bezhas-network
+  # Red INTERNA (sin salida a Internet) entre la API y el firmante. Nada más
+  # se une a ella: ni nginx, ni business-ops, ni los MCP.
+  signer-net:
+    driver: bridge
+    internal: true
+    name: bezhas-signer-net
+  # Salida del firmante hacia KMS. Ningún otro servicio está en esta red, así
+  # que nadie puede alcanzar al firmante por ella.
+  signer-egress:
+    driver: bridge
+    name: bezhas-signer-egress
 
 # ── VOLÚMENES ──────────────────────────────────────────────────────────────────
 volumes:
+  tx-signer-data:
   redis-data:
   postgres-data:
   operant-postgres-data:

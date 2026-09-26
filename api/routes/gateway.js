@@ -19,11 +19,14 @@
  *   /api/gateway/v1/webhooks/*   — Outbound signed payment events (register, deliveries, retry)
  */
 const { Router } = require('express');
+const { precioUsd } = require('../config/bez-price');
 const { chainCall } = require('../utils/chainCall');
 const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
 const { authenticateGateway, requireScope, authenticateSSOToken } = require('../middleware/gateway-auth');
-const { requireAddressAccess } = require('../middleware/address-access');
+const { requireAddressAccess, exigirTitularidadEnCuerpo } = require('../middleware/address-access');
+const { cadenaOResponder400, cadenaPorDefecto } = require('../config/chain-policy');
+const killSwitch = require('../services/killSwitch');
 const { meterUsage } = require('../middleware/gateway-metering');
 const ssoService = require('../services/ssoService');
 const walletService = require('../services/walletService');
@@ -60,9 +63,12 @@ const router = Router();
 // en la cadena de cada ruta: para entonces el auth ya habrá poblado el request.
 router.use(meterUsage('api_call'));
 
-// BEZ Token resolution: v1 (LIVE on BSC) vs v2 (not deployed)
+// BEZ Token resolution: v1 vive SÓLO en Polygon (0xEcBa…11A8, verificado en
+// Sourcify/Blockscout). En BSC no hay contrato BEZ (comprobado on-chain el
+// 2026-09-18): tratar 56 como red «de producción de BEZ» construía llamadas a
+// una dirección sin código, que no revierten y no mueven nada.
 const BEZ_COIN_V1_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
-const PRODUCTION_CHAINS = [56, 97];
+const PRODUCTION_CHAINS = [137];
 const PLATFORM_FEE_BPS = TOKENOMICS_FEE.platformFeeBps;
 function resolveBEZToken(chainId) {
     return PRODUCTION_CHAINS.includes(chainId) ? 'BEZCoin' : 'BEZCoinV2';
@@ -119,6 +125,21 @@ const requirePaymentSettlementKey = (req, res, next) => {
     next();
 };
 
+/**
+ * Kill switch en las rutas heredadas que abren órdenes de dinero. Lee la caché
+ * en memoria (la refresca killSwitch.iniciar() al arrancar): estas rutas no
+ * pueden añadir una consulta sin descolocar sus propios tests. El camino
+ * completo —política, límites, riesgo, aprobación firmada— es /tx/intents.
+ */
+function bloqueadoPorEmergencia(req, res, rail) {
+    const { estado } = killSwitch.consultarCache({ appId: req.registeredApp?.id, rail });
+    if (estado === 'LOCKDOWN' || estado === 'UNKNOWN') {
+        res.status(423).json({ error: 'Operativa bloqueada temporalmente por seguridad.', code: 'LOCKDOWN' });
+        return true;
+    }
+    return false;
+}
+
 // Validation helper
 const validate = (req, res) => {
     const errors = validationResult(req);
@@ -139,7 +160,7 @@ async function buildUnsignedContractTx(contractName, method, args = [], value = 
         to: address,
         data: iface.encodeFunctionData(method, args),
         value,
-        chainId: chainId || parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+        chainId: chainId || cadenaPorDefecto(),
         contract: contractName,
         method,
     };
@@ -348,7 +369,8 @@ router.get('/wallet/history/:address', authenticateGateway, requireScope('wallet
 
 router.get('/staking/positions/:address', authenticateGateway, requireScope('staking'), requireAddressAccess(), async (req, res) => {
     try {
-        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.query.chainId);
+        if (chainId === null) return;
         try {
             const info = await contractService.getStakingInfo(req.params.address);
             const hasPosition = parseFloat(info.stakedAmount || '0') > 0 || parseFloat(info.rewards || '0') > 0;
@@ -397,8 +419,13 @@ router.post('/staking/stake', authenticateGateway, requireScope('staking'), [
 
     try {
         const { walletAddress, amount } = req.body;
+        // Se hace staking EN NOMBRE de walletAddress (y sin cadena, se registra
+        // una posición a su nombre): hay que acreditar que es de quien llama.
+        if (!(await exigirTitularidadEnCuerpo(req, res, walletAddress))) return;
+        const chainId = cadenaOResponder400(res, req.body.chainId);
+        if (chainId === null) return;
         const { ethers } = require('ethers');
-        const txRequest = await buildUnsignedContractTx('StakingPool', 'stake', [ethers.parseEther(String(amount))], '0', parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337'));
+        const txRequest = await buildUnsignedContractTx('StakingPool', 'stake', [ethers.parseEther(String(amount))], '0', chainId);
 
         if (txRequest) {
             return res.json({
@@ -408,7 +435,7 @@ router.post('/staking/stake', authenticateGateway, requireScope('staking'), [
                 amount,
                 txRequest,
                 requiredApproval: {
-                    contract: resolveBEZToken(parseInt(process.env.BEZHAS_CHAIN_ID || '31337')),
+                    contract: resolveBEZToken(txRequest.chainId),
                     spender: txRequest.to,
                     amount,
                 },
@@ -444,7 +471,9 @@ router.post('/staking/unstake', authenticateGateway, requireScope('staking'), [
     try {
         const { ethers } = require('ethers');
         if (req.body.amount) {
-            const txRequest = await buildUnsignedContractTx('StakingPool', 'withdraw', [ethers.parseEther(String(req.body.amount))], '0', parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337'));
+            const chainId = cadenaOResponder400(res, req.body.chainId);
+            if (chainId === null) return;
+            const txRequest = await buildUnsignedContractTx('StakingPool', 'withdraw', [ethers.parseEther(String(req.body.amount))], '0', chainId);
             if (txRequest) {
                 return res.json({ success: true, mode: 'onchain', txRequest, nextAction: 'wallet_sign_and_send' });
             }
@@ -518,13 +547,15 @@ router.post('/farming/deposit', authenticateGateway, requireScope('farming'), [
 
     try {
         const { walletAddress, poolId, amount } = req.body;
+        const farmingChainId = cadenaOResponder400(res, req.body.chainId);
+        if (farmingChainId === null) return;
         const { ethers } = require('ethers');
         const txRequest = await buildUnsignedContractTx(
             'LiquidityFarming',
             'deposit',
             [poolId, ethers.parseEther(String(amount)), parseInt(req.body.lockDays || 0)],
             '0',
-            parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337')
+            farmingChainId
         );
         if (txRequest) {
             return res.json({
@@ -585,7 +616,8 @@ router.post('/governance/vote', authenticateGateway, requireScope('governance'),
     try {
         const { proposalId, walletAddress, vote } = req.body;
         const support = vote === 'for' ? 1 : vote === 'against' ? 0 : 2;
-        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.body.chainId);
+        if (chainId === null) return;
         if (/^\d+$/.test(String(proposalId))) {
             const txRequest = await buildUnsignedContractTx(
                 'GovernanceSystem',
@@ -782,7 +814,8 @@ router.get('/treasury/overview', authenticateGateway, requireScope('treasury'), 
 
 router.get('/token/info', authenticateGateway, requireScope('token'), async (req, res) => {
     try {
-        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.query.chainId);
+        if (chainId === null) return;
         const bezTokenName = resolveBEZToken(chainId);
         const token = await contractService.getTokenInfo(bezTokenName, chainId);
         res.json({
@@ -829,7 +862,8 @@ router.post('/governance/propose', authenticateGateway, requireScope('governance
 
     try {
         const { ethers } = require('ethers');
-        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.body.chainId);
+        if (chainId === null) return;
         const txRequest = await buildUnsignedContractTx(
             'GovernanceSystem',
             'propose',
@@ -859,7 +893,8 @@ router.post('/governance/queue', authenticateGateway, requireScope('governance')
 
     try {
         const { ethers } = require('ethers');
-        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.body.chainId);
+        if (chainId === null) return;
         const descriptionHash = ethers.id(req.body.description);
         const txRequest = await buildUnsignedContractTx(
             'GovernanceSystem',
@@ -890,7 +925,8 @@ router.post('/governance/execute', authenticateGateway, requireScope('governance
 
     try {
         const { ethers } = require('ethers');
-        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.body.chainId);
+        if (chainId === null) return;
         const descriptionHash = ethers.id(req.body.description);
         const txRequest = await buildUnsignedContractTx(
             'GovernanceSystem',
@@ -917,7 +953,8 @@ router.post('/governance/execute', authenticateGateway, requireScope('governance
 
 router.get('/contracts/list', authenticateGateway, requireScope('contracts'), async (req, res) => {
     try {
-        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.query.chainId);
+        if (chainId === null) return;
         const { rows } = await query(
             'SELECT name, category, address, deployed_at FROM contract_addresses WHERE chain_id = $1 ORDER BY category, name',
             [chainId]
@@ -931,7 +968,8 @@ router.get('/contracts/list', authenticateGateway, requireScope('contracts'), as
         res.json({ success: true, source: 'deployments', contracts });
     } catch (error) {
         try {
-            const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+            const chainId = cadenaOResponder400(res, req.query.chainId);
+            if (chainId === null) return;
             const grouped = await contractService.getAllAddresses(chainId);
             const contracts = Object.entries(grouped).flatMap(([category, items]) =>
                 Object.entries(items).map(([name, address]) => ({ name, category, address }))
@@ -945,7 +983,8 @@ router.get('/contracts/list', authenticateGateway, requireScope('contracts'), as
 
 router.get('/contracts/:name', authenticateGateway, requireScope('contracts'), async (req, res) => {
     try {
-        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.query.chainId);
+        if (chainId === null) return;
         const { rows } = await query(
             'SELECT * FROM contract_addresses WHERE name = $1 AND chain_id = $2',
             [req.params.name, chainId]
@@ -971,7 +1010,8 @@ router.get('/dex/pool', authenticateGateway, requireScope('contracts'), [
     if (!tokenA || !tokenB) return res.status(400).json({ error: 'tokenA and tokenB are required' });
 
     try {
-        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.query.chainId);
+        if (chainId === null) return;
         const pool = await contractService.getDEXPool(tokenA, tokenB, chainId);
         res.json({ success: true, pool });
     } catch (error) {
@@ -986,7 +1026,8 @@ router.get('/dex/quote', authenticateGateway, requireScope('contracts'), async (
     }
 
     try {
-        const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.query.chainId);
+        if (chainId === null) return;
         const quote = await contractService.quoteDEXSwap(tokenIn, tokenOut, amountIn, chainId);
         res.json({ success: true, quote });
     } catch (error) {
@@ -1004,7 +1045,8 @@ router.post('/dex/swap', authenticateGateway, requireScope('contracts'), [
 
     try {
         const { ethers } = require('ethers');
-        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.body.chainId);
+        if (chainId === null) return;
         const txRequest = await buildUnsignedContractTx('BeZhasDEX', 'swap', [
             req.body.tokenIn,
             req.body.tokenOut,
@@ -1029,7 +1071,8 @@ router.post('/dex/add-liquidity', authenticateGateway, requireScope('contracts')
 
     try {
         const { ethers } = require('ethers');
-        const chainId = parseInt(req.body.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+        const chainId = cadenaOResponder400(res, req.body.chainId);
+        if (chainId === null) return;
         const txRequest = await buildUnsignedContractTx('BeZhasDEX', 'addLiquidity', [
             req.body.tokenA,
             req.body.tokenB,
@@ -1091,6 +1134,7 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
 ], async (req, res) => {
     if (!validate(req, res)) return;
     const { amountUSD, paymentMethod, stripeUseCase, email } = req.body;
+    if (bloqueadoPorEmergencia(req, res, 'fiat_to_crypto')) return;
 
     // Stripe-style idempotency: same key → replay the original order instead
     // of creating a duplicate (network retries must be safe).
@@ -1149,7 +1193,7 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
             const price = await query(
                 "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
             ).catch(() => ({ rows: [] }));
-            const priceUSD = parseFloat(price.rows[0]?.price_usd || '0.10');
+            const priceUSD = parseFloat(price.rows[0]?.price_usd || String(precioUsd()));
             onchainInstructions = {
                 provider: 'onchain',
                 token: 'BEZ',
@@ -1339,7 +1383,7 @@ router.get('/payments/bank-transfer-details', authenticateGateway, requireScope(
 
 router.get('/payments/tokenomics', authenticateGateway, requireScope('wallet'), (req, res) => {
     const amountUSD = req.query.amountUSD ? parseFloat(req.query.amountUSD) : 100;
-    const priceUSD = req.query.priceUSD ? parseFloat(req.query.priceUSD) : 0.10;
+    const priceUSD = req.query.priceUSD ? parseFloat(req.query.priceUSD) : precioUsd();
     res.json({
         success: true,
         model: 'rwa-real-yield-fiat-to-fiat',
@@ -1359,6 +1403,9 @@ router.post('/payments/sell', authenticateGateway, requireScope('wallet'), [
 ], async (req, res) => {
     if (!validate(req, res)) return;
     const { walletAddress, amountBEZ, receiveMethod } = req.body;
+    if (bloqueadoPorEmergencia(req, res, 'crypto_to_fiat')) return;
+    // Vender BEZ de una wallet ajena es suplantación, no una consulta.
+    if (!(await exigirTitularidadEnCuerpo(req, res, walletAddress))) return;
     try {
         const result = await query(
             `INSERT INTO payment_transactions (wallet_address, amount_bez, payment_method, type, status)
@@ -1381,6 +1428,10 @@ router.post('/payments/send', authenticateGateway, requireScope('wallet'), [
 ], async (req, res) => {
     if (!validate(req, res)) return;
     const { sender, recipient, amount, note } = req.body;
+    if (bloqueadoPorEmergencia(req, res, 'crypto_transfer')) return;
+    // Antes cualquier clave con scope `wallet` abría un pago con `sender` = la
+    // wallet de otro cliente.
+    if (!(await exigirTitularidadEnCuerpo(req, res, sender))) return;
     try {
         const result = await query(
             `INSERT INTO payment_transactions (wallet_address, recipient, amount_bez, type, status, note)
@@ -1486,7 +1537,8 @@ const priceTtlMs = () => {
     const v = parseInt(process.env.ORACLE_PRICE_TTL_MS, 10);
     return Number.isFinite(v) ? v : 15_000;
 };
-const SEED_PRICE_USD = 0.10;
+// Precio real de la fase semilla (config/bez-price.js), no un 0,10 inventado.
+const SEED_PRICE_USD = precioUsd();
 let priceMemo = { at: 0, body: null };
 
 // Ventana de frescura publicada junto al precio. La landing la usa para marcar
@@ -1497,12 +1549,12 @@ const freshnessWindowS = () => {
     return Number.isFinite(v) && v > 0 ? v : 900;
 };
 
-// Mercados por cadena. Mientras no exista pool de liquidez se publican en
+// Mercados por cadena. Sólo Polygon: publicar como «BEZ en BSC» una dirección
+// donde no hay contrato invita a enviar fondos a ninguna parte. Mientras no exista pool de liquidez se publican en
 // `pending` con liquidez 0: es el estado real, y el consumidor ya sabe pintarlo
 // ("Pendiente de pool") sin inventarse una cotizacion que no existe.
 const BEZ_MARKETS = [
     { chainId: 137, pool: 'QuickSwap V3', address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
-    { chainId: 56, pool: 'PancakeSwap V3', address: '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55' },
 ];
 
 const MARKET_STATUSES = new Set(['active', 'paused', 'pending']);
@@ -1632,7 +1684,7 @@ router.get('/token/price', authenticateGateway, requireScope('token'), async (re
         // Fallback: initial price from config
         res.json({
             success: true,
-            priceUSD: 0.10,
+            priceUSD: precioUsd(),
             change24h: 0,
             updatedAt: new Date().toISOString(),
         });
@@ -2412,7 +2464,7 @@ router.get('/network/stats', async (req, res) => {
             query('SELECT * FROM daily_analytics ORDER BY date DESC LIMIT 1').catch(() => ({ rows: [] })),
         ]);
 
-        const priceUSD = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].price_usd) : 0.10;
+        const priceUSD = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].price_usd) : precioUsd();
         const change24h = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].change_24h || 0) : 0;
         const totalSupply = 100_000_000; // 100M BEZ from deploy-config
         const totalStaked = parseFloat(stakingAgg.rows[0].total_staked);

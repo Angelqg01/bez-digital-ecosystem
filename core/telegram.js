@@ -183,7 +183,7 @@ export class TelegramClient {
     const status = {
       api: '✅ Online',
       trading: '✅ IBKR conectado',
-      blockchain: '✅ Polygon + BNB',
+      blockchain: '✅ Polygon (BNB: bridge pendiente)',
       ml: '✅ XGBoost activo',
       memory: this.redis ? '✅ Redis OK' : '⚠️ Redis offline'
     };

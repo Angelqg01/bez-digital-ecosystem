@@ -1,0 +1,379 @@
+# ============================================================================
+# BeZhas Blockchain — Cloud Build: construir y desplegar en Cloud Run
+# ============================================================================
+# Se lanza desde la RAÍZ del repositorio con deploy/gcp/deploy.sh.
+#
+#   www.bezhas.com ─┐                       ┌─ bezhas-control-center (Next.js)
+#   api.bezhas.com ─┼─ balanceador + WAF ───┤
+#   mcp.bezhas.com ─┘                       └─ bezhas-api (REST + MCP + OAuth)
+#                                                 │ OIDC
+#                     privados ──> bezhas-aegis · bezhas-ai-gateway ·
+#                                  bezhas-agent-runtime · bezhas-edge-node
+#
+# Decisiones de seguridad:
+#   - Cada servicio corre con SU cuenta de servicio (01-bootstrap.sh), no con
+#     la cuenta por defecto de Compute, que tiene rol de editor del proyecto.
+#   - Públicos con ingress `internal-and-cloud-load-balancing`: solo se entra
+#     por el balanceador (y su Cloud Armor); *.run.app no responde desde fuera.
+#   - Privados con `--no-allow-unauthenticated`: solo responden a peticiones con
+#     un token OIDC de una cuenta de servicio con run.invoker sobre ellos
+#     (gcpServiceAuth.js lo añade solo). Nadie más, ni desde Internet.
+#   - Solo se montan los secretos que tienen versión en Secret Manager; los
+#     valores nunca pasan por este fichero ni por los logs.
+#   - Imágenes etiquetadas con el commit: cada revisión es trazable y reversible.
+# ============================================================================
+
+substitutions:
+  _REGION: us-central1
+  _ARTIFACT_REPO: bezhas
+  _TAG: manual
+  _WWW_URL: https://www.bezhas.com
+  _API_URL: https://api.bezhas.com
+  _MCP_HOST: mcp.bezhas.com
+  _CORS_ORIGINS: https://www.bezhas.com,https://bezhas.com
+  _INGRESS: internal-and-cloud-load-balancing
+  _SECRET_PREFIX: BC_
+  _SA_BACKEND: bezhas-backend-run
+  _SA_FRONTEND: bezhas-frontend-run
+  _SA_MCP: bezhas-mcp-run
+  _SA_EDGE: bezhas-edge-run
+  _VPC_NETWORK: default
+  _VPC_SUBNET: default
+  # Valores públicos que Next.js incrusta en el JavaScript del navegador AL
+  # COMPILAR (no son secretos). Por defecto, el BEZ de Polygon mainnet.
+  _CHAIN_ID: "137"
+  # Cadena con la que opera la api (BEZHAS_CHAIN_ID): 137 = Polygon mainnet,
+  # donde está el BEZ. 2708 = L2 propia de BeZhas, cuando haya un nodo L2
+  # accesible (BEZHAS_L2_RPC_URL). La api elige contratos por este número
+  # (smart-contracts/deployments/<chain>.json).
+  _BEZHAS_CHAIN_ID: "137"
+  # Precio medido del plan Starter (pago por uso). usageBilling.js lo lee de
+  # la variable de entorno; es el mismo que api/config/plans.js (no es secreto).
+  _STRIPE_STARTER_METERED_PRICE_ID: price_1TtuplFomr6oeXVgt8XVUQDW
+  _PUBLIC_RPC_URL: https://polygon-rpc.com
+  _BEZ_TOKEN: "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8"
+  _ADMIN_WALLET: ""
+  _GA_MEASUREMENT_ID: ""
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+  dynamicSubstitutions: true
+
+timeout: 3600s
+
+steps:
+  # ── Preparar los contextos ───────────────────────────────────────────────
+  # La api carga agent-lib desde dentro de su imagen y el control-center
+  # compila modules/agents-ui y sdk: se copian dentro de cada contexto (igual
+  # que hacía scripts/gcp-deploy.sh), sin node_modules.
+  - id: contextos
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -euo
+      - pipefail
+      - -c
+      - |
+        copiar() { mkdir -p "$$2"; tar -cf - --exclude=node_modules --exclude=.git -C "$$(dirname "$$1")" "$$(basename "$$1")" | tar -xf - -C "$$2"; }
+        rm -rf api/agent-lib api/smart-contracts control-center/frontend/modules control-center/frontend/sdk bezhas-edge-node/sdk
+        copiar agent-lib api
+        # ABI y direcciones desplegadas que lee contractService.js.
+        mkdir -p api/smart-contracts
+        copiar smart-contracts/abi api/smart-contracts
+        copiar smart-contracts/deployments api/smart-contracts
+        copiar modules/agents-ui control-center/frontend/modules
+        copiar sdk control-center/frontend
+        # El edge node solo usa del SDK el cliente MCP, el cargador de
+        # contratos y los ABI (auto-signer.js).
+        mkdir -p bezhas-edge-node/sdk
+        cp sdk/mcp-integration.js sdk/contracts.js bezhas-edge-node/sdk/
+        copiar sdk/artifacts bezhas-edge-node/sdk
+        ls -d api/agent-lib api/smart-contracts/abi api/smart-contracts/deployments control-center/frontend/modules/agents-ui control-center/frontend/sdk bezhas-edge-node/sdk/artifacts
+
+  # ── Construcción (en paralelo) ───────────────────────────────────────────
+  - id: build-api
+    name: gcr.io/cloud-builders/docker
+    waitFor: [contextos]
+    args: [build, -t, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-api:${_TAG}", api]
+
+  - id: build-web
+    name: gcr.io/cloud-builders/docker
+    waitFor: [contextos]
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-control-center:${_TAG}
+      - --build-arg=NEXT_PUBLIC_API_URL=${_API_URL}/api
+      - --build-arg=NEXT_PUBLIC_SITE_URL=${_WWW_URL}
+      - --build-arg=NEXT_PUBLIC_RPC_URL=${_PUBLIC_RPC_URL}
+      - --build-arg=NEXT_PUBLIC_CHAIN_ID=${_CHAIN_ID}
+      - --build-arg=NEXT_PUBLIC_BEZ_TOKEN=${_BEZ_TOKEN}
+      - --build-arg=NEXT_PUBLIC_ADMIN_WALLET=${_ADMIN_WALLET}
+      - --build-arg=NEXT_PUBLIC_GA_MEASUREMENT_ID=${_GA_MEASUREMENT_ID}
+      - control-center/frontend
+
+  - id: build-aegis
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -t, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-aegis:${_TAG}", aegis]
+
+  - id: build-aigw
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -t, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-ai-gateway:${_TAG}", ai-engine]
+
+  - id: build-agent
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -t, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-agent-runtime:${_TAG}", agent-lib]
+
+  - id: build-edge
+    name: gcr.io/cloud-builders/docker
+    waitFor: [contextos]
+    args: [build, -t, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-edge-node:${_TAG}", bezhas-edge-node]
+
+  # ── Publicación ──────────────────────────────────────────────────────────
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    waitFor: [build-api, build-web, build-aegis, build-aigw, build-agent, build-edge]
+    entrypoint: bash
+    args:
+      - -euo
+      - pipefail
+      - -c
+      - |
+        for img in bezhas-api bezhas-control-center bezhas-aegis bezhas-ai-gateway bezhas-agent-runtime bezhas-edge-node; do
+          docker push -q "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/$$img:${_TAG}"
+        done
+
+  # ── Despliegue ───────────────────────────────────────────────────────────
+  # Lo esencial para los clientes (api, agent-runtime, control-center y
+  # edge-node) NO depende de que aegis o el ai-gateway arranquen: esos dos se
+  # despliegan «con aviso» (si fallan, se apunta y se sigue) y el paso final
+  # `resumen` marca el build en rojo con el motivo. Las URLs de los servicios
+  # privados son deterministas (https://SERVICIO-NUMERO.REGION.run.app), así
+  # que nadie tiene que esperar a otro para conocerlas.
+  #
+  # cloudrun-lib.sh:
+  #   flag_secretos <servicio> → --set-secrets=… con los secretos de
+  #                               secrets.list que tienen versión (solo metadatos)
+  #   invocador <srv> <sa>     → run.invoker de una cuenta sobre un servicio
+  #   con_aviso <nombre> <cmd> → ejecuta; si falla, lo apunta para `resumen`
+
+  - id: deploy-aegis
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [push]
+    entrypoint: bash
+    args:
+      - -uo
+      - pipefail
+      - -c
+      - |
+        export REGION=${_REGION} SECRET_PREFIX=${_SECRET_PREFIX} PROJECT_NUMBER=$PROJECT_NUMBER
+        source deploy/gcp/cloudrun-lib.sh
+        con_aviso bezhas-aegis gcloud run deploy bezhas-aegis \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-aegis:${_TAG} \
+          --region=${_REGION} --ingress=all --no-allow-unauthenticated \
+          --service-account=${_SA_MCP}@$PROJECT_ID.iam.gserviceaccount.com \
+          --port=8001 --cpu=2 --memory=2Gi --min-instances=0 --max-instances=3 \
+          --execution-environment=gen2 \
+          --labels=app=bezhas,component=aegis,commit=${_TAG} \
+          --set-env-vars="^~^ENV=production~CORS_ORIGINS=${_CORS_ORIGINS}" \
+          $$(flag_secretos aegis) --quiet
+
+  - id: deploy-aigw
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [push]
+    entrypoint: bash
+    args:
+      - -uo
+      - pipefail
+      - -c
+      - |
+        export REGION=${_REGION} SECRET_PREFIX=${_SECRET_PREFIX} PROJECT_NUMBER=$PROJECT_NUMBER
+        source deploy/gcp/cloudrun-lib.sh
+        con_aviso bezhas-ai-gateway gcloud run deploy bezhas-ai-gateway \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-ai-gateway:${_TAG} \
+          --region=${_REGION} --ingress=all --no-allow-unauthenticated \
+          --service-account=${_SA_MCP}@$PROJECT_ID.iam.gserviceaccount.com \
+          --port=3002 --cpu=1 --memory=512Mi --min-instances=0 --max-instances=5 \
+          --execution-environment=gen2 \
+          --labels=app=bezhas,component=ai-gateway,commit=${_TAG} \
+          --set-env-vars="^~^NODE_ENV=production~AEGIS_URL=$$(url_run bezhas-aegis)~CORS_ORIGINS=${_CORS_ORIGINS}" \
+          $$(flag_secretos aigw) --quiet
+
+  # Agentes IA: esencial. min-instances=1 para que los agentes sigan vivos
+  # entre peticiones (monitorizan cadena y tokenomics en segundo plano).
+  - id: deploy-agent
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [push]
+    entrypoint: bash
+    args:
+      - -euo
+      - pipefail
+      - -c
+      - |
+        export REGION=${_REGION} SECRET_PREFIX=${_SECRET_PREFIX} PROJECT_NUMBER=$PROJECT_NUMBER
+        source deploy/gcp/cloudrun-lib.sh
+        gcloud run deploy bezhas-agent-runtime \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-agent-runtime:${_TAG} \
+          --region=${_REGION} --ingress=all --no-allow-unauthenticated \
+          --service-account=${_SA_MCP}@$PROJECT_ID.iam.gserviceaccount.com \
+          --port=8080 --cpu=1 --memory=1Gi --min-instances=1 --max-instances=3 \
+          --no-cpu-throttling --execution-environment=gen2 \
+          --labels=app=bezhas,component=agent-runtime,commit=${_TAG} \
+          --set-env-vars="^~^NODE_ENV=production~API_URL=${_API_URL}/api~AEGIS_API_URL=$$(url_run bezhas-aegis)~AI_ENGINE_URL=$$(url_run bezhas-ai-gateway)~HITL_CALLBACK_URL=${_API_URL}/api/hitl~CORE_CORS_ORIGINS=${_CORS_ORIGINS}" \
+          $$(flag_secretos agent) --quiet
+
+  # Migraciones ANTES de la api: si una falla, el job sale con error y la api
+  # nueva no llega a desplegarse. Dentro de la VPC (Cloud SQL sin IP pública).
+  - id: migrate
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [push]
+    entrypoint: bash
+    args:
+      - -euo
+      - pipefail
+      - -c
+      - |
+        gcloud run jobs deploy bezhas-db-migrate \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-api:${_TAG} \
+          --region=${_REGION} \
+          --service-account=${_SA_BACKEND}@$PROJECT_ID.iam.gserviceaccount.com \
+          --command=node --args=db/migrate.js \
+          --network=${_VPC_NETWORK} --subnet=${_VPC_SUBNET} --vpc-egress=private-ranges-only \
+          --set-env-vars=NODE_ENV=production \
+          --set-secrets=DATABASE_URL=${_SECRET_PREFIX}DATABASE_URL:latest \
+          --max-retries=0 --task-timeout=900s \
+          --labels=app=bezhas,component=migrate,commit=${_TAG} \
+          --execute-now --wait --quiet
+
+  - id: deploy-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [push, migrate]
+    entrypoint: bash
+    args:
+      - -euo
+      - pipefail
+      - -c
+      - |
+        export REGION=${_REGION} SECRET_PREFIX=${_SECRET_PREFIX} PROJECT_NUMBER=$PROJECT_NUMBER
+        source deploy/gcp/cloudrun-lib.sh
+        # TRUST_PROXY_HOPS=2: detrás del balanceador X-Forwarded-For llega como
+        # «<cliente>, <balanceador>»; así el limitador ve la IP del visitante.
+        # CORS_EXTRA_ORIGINS: la api solo admite *.bez.digital por defecto.
+        # OAUTH_ISSUER / MCP_ALLOWED_HOSTS: el MCP se publica en mcp.bezhas.com.
+        # GCP_ENABLED sin fijar: los secretos llegan montados por Cloud Run.
+        gcloud run deploy bezhas-api \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-api:${_TAG} \
+          --region=${_REGION} \
+          --service-account=${_SA_BACKEND}@$PROJECT_ID.iam.gserviceaccount.com \
+          --ingress=${_INGRESS} --allow-unauthenticated \
+          --port=3001 --cpu=2 --memory=2Gi \
+          --min-instances=1 --max-instances=10 --concurrency=80 --timeout=3600 \
+          --execution-environment=gen2 --cpu-boost --session-affinity \
+          --network=${_VPC_NETWORK} --subnet=${_VPC_SUBNET} --vpc-egress=private-ranges-only \
+          --labels=app=bezhas,component=api,commit=${_TAG} \
+          --set-env-vars="^~^NODE_ENV=production~GCP_PROJECT_ID=$PROJECT_ID~GCP_REGION=${_REGION}~BEZHAS_CHAIN_ID=${_BEZHAS_CHAIN_ID}~STRIPE_STARTER_METERED_PRICE_ID=${_STRIPE_STARTER_METERED_PRICE_ID}~TRUST_PROXY_HOPS=2~CORS_EXTRA_ORIGINS=${_CORS_ORIGINS}~COOKIE_DOMAIN=.bezhas.com~OAUTH_ISSUER=https://${_MCP_HOST}~MCP_ALLOWED_HOSTS=${_MCP_HOST}~AEGIS_API_URL=$$(url_run bezhas-aegis)/api/aegis~AI_ENGINE_URL=$$(url_run bezhas-ai-gateway)~AGENT_RUNTIME_URL=$$(url_run bezhas-agent-runtime)~HITL_CALLBACK_URL=${_API_URL}/api/hitl~PUBLIC_PAY_BASE_URL=${_WWW_URL}~PUBLIC_ONBOARDING_BASE_URL=${_WWW_URL}" \
+          $$(flag_secretos api) --quiet
+
+  - id: deploy-edge
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [push]
+    entrypoint: bash
+    args:
+      - -euo
+      - pipefail
+      - -c
+      - |
+        export REGION=${_REGION} SECRET_PREFIX=${_SECRET_PREFIX} PROJECT_NUMBER=$PROJECT_NUMBER
+        source deploy/gcp/cloudrun-lib.sh
+        # Privado: no tiene dominio y nadie de fuera debe llegar a él.
+        # min-instances=1 y CPU siempre asignada: el latido hacia la api y la
+        # firma automática corren en segundo plano, sin peticiones entrantes.
+        gcloud run deploy bezhas-edge-node \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-edge-node:${_TAG} \
+          --region=${_REGION} \
+          --service-account=${_SA_EDGE}@$PROJECT_ID.iam.gserviceaccount.com \
+          --ingress=all --no-allow-unauthenticated \
+          --port=4000 --cpu=1 --memory=512Mi --min-instances=1 --max-instances=3 \
+          --no-cpu-throttling --execution-environment=gen2 \
+          --labels=app=bezhas,component=edge-node,commit=${_TAG} \
+          --set-env-vars="^~^NODE_ENV=production~CONTROL_API_URL=${_API_URL}~API_URL=${_API_URL}/api~MCP_URL=$$(url_run bezhas-ai-gateway)~CORS_ORIGINS=${_CORS_ORIGINS}" \
+          $$(flag_secretos edge) --quiet
+
+  - id: deploy-web
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [deploy-api]
+    entrypoint: bash
+    args:
+      - -euo
+      - pipefail
+      - -c
+      - |
+        export REGION=${_REGION} SECRET_PREFIX=${_SECRET_PREFIX} PROJECT_NUMBER=$PROJECT_NUMBER
+        source deploy/gcp/cloudrun-lib.sh
+        # API_INTERNAL_URL: las rutas de servidor del panel llaman a la api por
+        # el balanceador, como cualquier cliente (la api no acepta *.run.app).
+        gcloud run deploy bezhas-control-center \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-control-center:${_TAG} \
+          --region=${_REGION} \
+          --service-account=${_SA_FRONTEND}@$PROJECT_ID.iam.gserviceaccount.com \
+          --ingress=${_INGRESS} --allow-unauthenticated \
+          --port=3000 --cpu=1 --memory=1Gi \
+          --min-instances=1 --max-instances=20 --concurrency=80 \
+          --execution-environment=gen2 --cpu-boost \
+          --labels=app=bezhas,component=control-center,commit=${_TAG} \
+          --set-env-vars="^~^NODE_ENV=production~API_INTERNAL_URL=${_API_URL}/api~HOSTNAME=0.0.0.0" \
+          $$(flag_secretos web) --quiet
+
+  # Quién puede llamar a quién (y nadie más), cuando ya existen los servicios:
+  #   api        → aegis, ai-gateway, agent-runtime
+  #   internos   → aegis, ai-gateway (ai-gateway y agentes llaman a aegis)
+  #   edge-node  → ai-gateway (su MCP_URL)
+  - id: permisos
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [deploy-aegis, deploy-aigw, deploy-agent, deploy-edge]
+    entrypoint: bash
+    args:
+      - -uo
+      - pipefail
+      - -c
+      - |
+        export REGION=${_REGION} SECRET_PREFIX=${_SECRET_PREFIX} PROJECT_NUMBER=$PROJECT_NUMBER
+        source deploy/gcp/cloudrun-lib.sh
+        API=${_SA_BACKEND}@$PROJECT_ID.iam.gserviceaccount.com
+        INT=${_SA_MCP}@$PROJECT_ID.iam.gserviceaccount.com
+        EDGE=${_SA_EDGE}@$PROJECT_ID.iam.gserviceaccount.com
+        for srv in bezhas-aegis bezhas-ai-gateway bezhas-agent-runtime; do
+          con_aviso "permiso api→$$srv" invocador $$srv $$API
+        done
+        con_aviso "permiso internos→aegis" invocador bezhas-aegis $$INT
+        con_aviso "permiso internos→ai-gateway" invocador bezhas-ai-gateway $$INT
+        con_aviso "permiso edge→ai-gateway" invocador bezhas-ai-gateway $$EDGE
+
+  # Resumen: si algo «con aviso» falló, el build acaba en rojo diciendo qué,
+  # aunque lo esencial ya esté desplegado y sirviendo.
+  - id: resumen
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [permisos, deploy-web, deploy-api]
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [[ -s /workspace/avisos.txt ]]; then
+          echo "⚠️  Desplegado lo esencial (api, agent-runtime, edge-node, control-center), pero falló:"
+          sed 's/^/   - /' /workspace/avisos.txt
+          echo "   Logs: gcloud run services logs read <servicio> --region=${_REGION} --limit=100"
+          exit 1
+        fi
+        echo "✅ Todos los servicios desplegados."
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-api:${_TAG}
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-control-center:${_TAG}
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-aegis:${_TAG}
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-ai-gateway:${_TAG}
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-agent-runtime:${_TAG}
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-edge-node:${_TAG}

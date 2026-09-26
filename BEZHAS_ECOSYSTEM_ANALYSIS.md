@@ -212,7 +212,7 @@ No existe un whitepaper en el repositorio. Es el documento #1 que piden CoinGeck
 - Necesitas: whitepaper ✅ + pitch deck + métricas de uso
 
 **BNB Chain MVB Program** → Hasta $50K+
-- Contrato en BNB: `0x8a1e3930fde1f151471c368fdbb39f3f63a65b55` ✅
+- Contrato en BNB: no desplegado. BNB Chain será un bridge desde Polygon; aplicar cuando esté activo ⏳
 - Igual que Polygon, necesita documentación formal
 
 **Claude puede generar hoy:** Formularios de aplicación completos para ambos grants.

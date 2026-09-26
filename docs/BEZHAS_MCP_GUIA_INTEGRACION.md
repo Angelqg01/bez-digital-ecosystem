@@ -28,7 +28,7 @@ tokenización, trazabilidad— con los permisos exactos de tu suscripción.
         ┌───────────────┼────────────────┐
         ▼               ▼                ▼
    Blockchain      SubApps BeZhas    Tu ERP (SAP, Odoo…)
-   BNB · Polygon   Pay · CargoLink   opcional, desde plan Business
+   Polygon         Pay · CargoLink   opcional, desde plan Business
                    Energy · PureScan
 ```
 
@@ -76,15 +76,23 @@ nombre de" sin firma es un agente que decide por su cuenta.
 #### Claude (web, escritorio) y ChatGPT — conector remoto
 
 1. Ajustes → **Conectores** → *Añadir conector personalizado*.
-2. Nombre: `BeZhas`. URL: `https://mcp.bez.digital`.
-3. **Conectar** → autenticación OAuth contra tu cuenta BeZhas.
-4. En la pantalla de consentimiento eliges **organización** y **entorno**
-   (sandbox / producción).
+2. Nombre: `BeZhas`. URL: `https://mcp.bez.digital/mcp`.
+3. **Conectar** → autenticación OAuth 2.1 (con PKCE) contra tu cuenta BeZhas.
+   El cliente descubre solo el login a partir de la URL: no hay que copiar
+   client_id ni secretos.
+4. En la pantalla de consentimiento te identificas y eliges la
+   **organización**. El conector recibe como máximo los permisos de consulta
+   `token`, `contracts` y `wallet`; ampliarlos se hace en el panel, no en esta
+   pantalla. (El entorno sandbox/producción se elige al pedir una api-key, no
+   en el consentimiento OAuth.)
 5. Deja las herramientas en confirmación manual la primera semana. Sólo cuando
    tu equipo reconozca el comportamiento, marca como permitidas las de lectura.
    **Nunca marques "permitir siempre" en una herramienta de escritura.**
 
 #### Claude Code, Codex, Cursor, Antigravity, VS Code — MCP remoto o CLI
+
+> Las configuraciones exactas de cada cliente, listas para copiar, están en
+> la página pública [bez.digital/mcp](https://bez.digital/mcp).
 
 ```bash
 claude mcp add --transport http bezhas https://mcp.bez.digital/mcp
@@ -148,7 +156,7 @@ Cinco decisiones que se toman **una vez** y ahorran todos los sustos:
 
 ## 3. Qué herramientas hay, y qué significa cada una
 
-**Disponibles hoy (v1, sólo lectura):**
+**Disponibles hoy:**
 
 | Herramienta | Para qué sirve | Scope |
 |---|---|---|
@@ -160,11 +168,13 @@ Cinco decisiones que se toman **una vez** y ahorran todos los sustos:
 | `bezhas_network_stats` | altura de bloque, id de cadena y gas de la L2 | `contracts` |
 | `bezhas_contracts_list` | contratos desplegados y su dirección por cadena | `contracts` |
 | `bezhas_subscription` | tu plan y módulos activos — **siempre el tuyo**, no acepta consultar otro | `wallet` |
+| `bezhas_cost_estimate` | **coste antes de actuar**: precio de lista y qué pagarías con tu plan (API, IA, oráculo, relay, webhooks, OPERANT, compra de BEZ). No consume créditos | `wallet` |
+| `bezhas_tx_prepare` | **prepara** un pago o transferencia: valida, simula, puntúa el riesgo y dice cuántas aprobaciones humanas necesita. No firma ni mueve fondos (desde Creator Pro) | `wallet` |
+| `bezhas_tx_status` | estado de una operación preparada por tu propia clave | `wallet` |
 
 **Previstas en v2 (escritura, siempre con aprobación humana):**
 `bezhas_payment_prepare`, `bezhas_stake_prepare`, `bezhas_bridge_prepare`,
-`bezhas_rwa_tokenize_prepare`, `bezhas_cost_estimate`,
-`bezhas_approval_status`.
+`bezhas_rwa_tokenize_prepare`, `bezhas_approval_status`.
 
 Cada una de las `_prepare` devuelve un **`approvalId`** y **no ejecuta nada**.
 La ejecución la lanza una persona desde el panel de BeZhas o con una segunda
@@ -198,7 +208,7 @@ debajo.
 | 3 | `bezhas_dex_pool` | reservas del pool: ¿aguanta el importe? | 1 crédito |
 | 4 | `bezhas_dex_quote` | cotización real del cambio, con deslizamiento | 1 crédito |
 | 5 | `bezhas_network_stats` | gas actual en BNB y Polygon | 1 crédito |
-| 6 | *(v2)* `bezhas_cost_estimate` | coste total de la operación antes de hacerla | 1 crédito |
+| 6 | `bezhas_cost_estimate` | coste total de la operación antes de hacerla | no consume |
 
 **Lo que responde:**
 
@@ -464,8 +474,10 @@ el equipo ya confía en el agente.
 - Cada plan incluye una cuota; al agotarla **se factura por créditos, no se
   corta el servicio**. Un agente cortado a mitad de un flujo deja el proceso a
   medias, y eso cuesta más que el consumo.
-- `bezhas_cost_estimate` (v2) permite a la IA saber el coste **antes** de actuar.
-  Enséñale a tu equipo a pedirlo en operaciones grandes.
+- `bezhas_cost_estimate` permite a la IA saber el coste **antes** de actuar, con
+  las mismas tarifas con las que se factura, y separa lo que pagarías por uso
+  de lo que ya cubre tu cuota. Enséñale a tu equipo a pedirlo en operaciones
+  grandes. Consultarlo no consume créditos.
 - El panel muestra consumo por herramienta y por usuario, con aviso al 70% del
   tope.
 
@@ -628,7 +640,7 @@ acepta identificar a un tercero.
 **¿Qué pasa si cambio de Claude a ChatGPT?** Nada. Es el mismo conector MCP
 estándar. Cambias de cliente, no de integración.
 
-**¿Y si BeZhas desaparece?** Lo anclado en BNB Chain y Polygon sigue ahí y es
+**¿Y si BeZhas desaparece?** Lo anclado en Polygon sigue ahí y es
 verificable en cualquier explorador público, sin nosotros. Es la diferencia
 entre un SaaS y una infraestructura.
 

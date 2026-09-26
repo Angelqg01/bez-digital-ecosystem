@@ -204,7 +204,7 @@ openclaw/
 | Contrato | Red | Estado | Address |
 |---|---|---|---|
 | BEZ Token | Polygon | ✅ Deployed | `0xEcBa873B...f11A8` |
-| BEZ Token | BNB Chain | ✅ Deployed | `0x8a1e3930...65b55` |
+| BEZ Token | BNB Chain | ⏳ No desplegado (bridge pendiente) | — |
 | Treasury DAO | Polygon | ✅ Deployed | `0x89c23890...9b12` |
 | QualityEscrow | Polygon | ✅ Deployed | `0x3EfC4209...0e8a3` |
 | BeZhasCore | Polygon | ✅ Deployed | — |

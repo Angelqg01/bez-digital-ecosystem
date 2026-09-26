@@ -56,17 +56,22 @@
  *     con scope `admin` salta el scope por ser interna, pero no compra plan.
  */
 
+const { randomUUID } = require('crypto');
 const { Router } = require('express');
 const rateLimit = require('express-rate-limit');
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 
 const { authenticateApp } = require('../middleware/gateway-auth');
-const { toolsParaScopes, planPermiteTool, getTool, MAX_RESPUESTA_CHARS } = require('../config/mcp-tools');
-const { getEntitlements, PLAN_POR_DEFECTO } = require('../config/plan-entitlements');
+const {
+    toolsParaScopes, planPermiteTool, getTool, MAX_RESPUESTA_CHARS, sanearNoFiable, huellaCatalogo,
+} = require('../config/mcp-tools');
+const { getEntitlements } = require('../config/plan-entitlements');
+const { resolverPlan } = require('../middleware/resolve-plan');
+const { orquestador } = require('../services/txOrchestrator');
 const bridge = require('../services/mcpGatewayBridge');
 const telemetry = require('../services/telemetryPipeline');
-const { query } = require('../db/pool');
+const { recordUsage } = require('../services/usageBilling');
 const logger = require('../utils/logger');
 
 const router = Router();
@@ -89,31 +94,8 @@ const mcpLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-/**
- * Resuelve el plan contratado de la api-key y deja sus derechos en la petición.
- *
- * Va después de `authenticateApp` y antes del limitador, porque el techo de
- * llamadas depende del plan. Si la consulta falla se cae al plan MÁS
- * RESTRICTIVO, no al más generoso: una base que no responde no es motivo para
- * regalar el catálogo de enterprise.
- */
-async function resolverPlan(req, _res, next) {
-    let plan = PLAN_POR_DEFECTO;
-    try {
-        const { rows } = await query(
-            `SELECT plan_id FROM gateway_subscriptions
-              WHERE app_id = $1 AND status = 'active' LIMIT 1`,
-            [req.registeredApp.id]
-        );
-        if (rows.length > 0 && rows[0].plan_id) plan = rows[0].plan_id;
-    } catch (err) {
-        logger.warn({ appId: req.registeredApp.id, error: err.message },
-            'No se pudo resolver el plan; se aplica el más restrictivo');
-    }
-    req.plan = plan;
-    req.entitlements = getEntitlements(plan);
-    next();
-}
+// resolverPlan vive en middleware/resolve-plan.js: la capa transaccional lo
+// comparte, y dos copias acabarían concediendo límites distintos.
 
 /** Trunca con aviso explícito, para que el agente sepa que falta cola. */
 function acotar(texto) {
@@ -130,7 +112,9 @@ function acotar(texto) {
  * encabezado deja explícito que es contenido a interpretar, no a obedecer.
  */
 function resultadoDato(nombre, datos) {
-    const cuerpo = JSON.stringify(datos, null, 2);
+    // Además de la etiqueta, se limpian caracteres invisibles y de control de
+    // dirección: ver sanearNoFiable en config/mcp-tools.js.
+    const cuerpo = JSON.stringify(sanearNoFiable(datos), null, 2);
     return {
         content: [{
             type: 'text',
@@ -139,6 +123,28 @@ function resultadoDato(nombre, datos) {
             ),
         }],
     };
+}
+
+/**
+ * Medición del uso para el plan Starter (pago por uso), igual que el Gateway
+ * REST (middleware/gateway-metering.js): sin esto, la misma consulta salía
+ * gratis por MCP y se cobraba por REST.
+ *
+ * Qué se cobra: cada `tools/call` que termina bien. NO se cobra el protocolo
+ * —initialize, tools/list, notificaciones—, que el cliente MCP envía por su
+ * cuenta y el usuario no controla; ni lo que la política deniega o falla, igual
+ * que REST no cobra un 4xx/5xx; ni las herramientas marcadas `gratuita` (estimar
+ * el coste no puede costar). Los demás planes pagan cuota fija y no se miden.
+ *
+ * Nunca bloquea ni retrasa la respuesta: se lanza sin esperar, y usageBilling
+ * deja el apunte en el ledger local aunque Stripe falle. La referencia es
+ * aleatoria del servidor: si la eligiera el cliente podría repetirla y Stripe
+ * descartaría los eventos duplicados.
+ */
+function medirUso(app, plan, tool) {
+    if (plan !== 'starter' || tool.gratuita) return;
+    recordUsage(app.id, { action: tool.accionCoste || 'api_call', ref: `mcp:${randomUUID()}` })
+        .catch((err) => logger.warn({ appId: app.id, tool: tool.name, error: err?.message }, 'MCP usage metering failed'));
 }
 
 /** Error para el cliente: una frase. El detalle, al log. */
@@ -155,12 +161,17 @@ function resultadoError(nombre, err, appId) {
  * usar. Se crea uno por petición: es barato (registrar ocho funciones) y
  * garantiza que el catálogo de un cliente no puede acabar sirviéndose a otro.
  */
-function construirServidor(app, plan) {
+const HUELLA_CATALOGO = huellaCatalogo();
+
+function construirServidor(app, plan, agente = null) {
     const entitlements = getEntitlements(plan);
     const mcp = new McpServer({
         name: 'bezhas-gateway',
-        version: '1.0.0',
-        description: 'Acceso de solo lectura al ecosistema BeZhas: token, mercado, red, contratos y tu suscripción.',
+        // La huella del catálogo va en la versión: un cliente puede fijarla y
+        // enterarse si una herramienta cambia de descripción o de alcance.
+        version: `1.1.0+${HUELLA_CATALOGO.slice(0, 16)}`,
+        description: 'Ecosistema BeZhas: consulta (token, mercado, red, contratos, suscripción) y preparación de '
+            + 'operaciones con fondos. Nada de lo que hay aquí firma ni mueve dinero.',
     });
 
     const visibles = toolsParaScopes(app.scopes, plan);
@@ -170,10 +181,11 @@ function construirServidor(app, plan) {
             title: tool.title,
             description: tool.description,
             inputSchema: tool.inputSchema,
-            // Todo v1 es de solo lectura. Se declara para que el cliente pueda
-            // automatizar sin pedir confirmación con conocimiento de causa.
+            // Nivel 0 es lectura. Nivel 1 (preparar) escribe una intención pero
+            // no mueve fondos, y es idempotente por su clave. No existe nivel 2+
+            // en el MCP: ejecutar exige firmas humanas fuera del agente.
             annotations: {
-                readOnlyHint: true,
+                readOnlyHint: (tool.nivelRiesgo || 0) === 0,
                 destructiveHint: false,
                 idempotentHint: true,
                 openWorldHint: false,
@@ -227,10 +239,19 @@ function construirServidor(app, plan) {
             };
 
             try {
-                const datos = await definicion.handler({ args: args || {}, app, bridge, entitlements });
+                const datos = await definicion.handler({
+                    args: args || {}, app, bridge, entitlements, plan, agente, tx: orquestador(),
+                });
                 anotar('ok');
+                medirUso(app, plan, definicion);
                 return resultadoDato(tool.name, datos);
             } catch (err) {
+                // Una denegación de la política no es un fallo del servidor: el
+                // agente necesita el motivo para decírselo al usuario.
+                if (['TxError', 'CostEstimateError'].includes(err?.name) && err.status < 500) {
+                    anotar('denegado', err.code);
+                    return resultadoDato(tool.name, { error: err.message, code: err.code, detalles: err.detalles });
+                }
                 anotar('error_servidor', err?.code);
                 return resultadoError(tool.name, err, app.id);
             }
@@ -258,7 +279,7 @@ router.post('/', authenticateApp, resolverPlan, mcpLimiter, async (req, res) => 
         });
     }
 
-    const mcp = construirServidor(app, req.plan);
+    const mcp = construirServidor(app, req.plan, req.agent || null);
 
     // Sin estado: sin identificador de sesión, cada petición se autentica sola
     // y no queda nada del inquilino anterior en memoria entre llamadas.
