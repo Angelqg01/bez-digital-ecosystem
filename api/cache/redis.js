@@ -10,6 +10,12 @@ let connectPromise = null;
 function buildClient() {
     const client = createClient({
         url: REDIS_URL,
+        // Sin esto, mientras Redis no está disponible cada comando se encola a
+        // la espera de una conexión que puede no llegar nunca: cacheGet, el
+        // limitador del login y /api/health se quedaban colgados en vez de
+        // degradar como está previsto. Así fallan al momento y cada llamador
+        // aplica su plan B (null, dejar pasar, 'down').
+        disableOfflineQueue: true,
         socket: {
             reconnectStrategy: (retries) => Math.min(retries * 100, 3000),
         },

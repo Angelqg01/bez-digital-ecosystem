@@ -1,0 +1,25 @@
+# Qué sube `gcloud builds submit` (deploy/gcp/deploy.sh) a Cloud Build.
+# Lista blanca: solo los servicios que construye deploy/gcp/cloudbuild.yaml.
+# Sin este fichero se subían también App-nativas, docs, contratos, informes y
+# documentos internos (~330 MB) a un bucket de build.
+/*
+!/api/
+!/agent-lib/
+!/aegis/
+!/ai-engine/
+!/bezhas-edge-node/
+!/control-center/
+!/modules/
+!/sdk/
+!/deploy/
+
+# Nunca: dependencias, artefactos, secretos locales
+**/node_modules/
+**/.next/
+**/.git/
+**/__pycache__/
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+deploy/gcp/dns-backups/

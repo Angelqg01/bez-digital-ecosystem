@@ -107,3 +107,11 @@ api/scripts/.cargolink-sim.json
 # proyecto y algunas guardan valores que ya se han rotado.
 *.bak-*
 *.bak
+
+# Copias que prepara el despliegue dentro de los contextos de Docker
+# (deploy/gcp/cloudbuild.yaml y scripts/gcp-deploy.sh): no se versionan.
+api/agent-lib/
+control-center/frontend/modules/
+control-center/frontend/sdk/
+# Copias de seguridad de la zona DNS (deploy/gcp/04-hostinger-dns.sh)
+deploy/gcp/dns-backups/
