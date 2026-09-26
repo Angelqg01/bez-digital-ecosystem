@@ -3,12 +3,15 @@
 # ============================================
 
 # Stage 1: Builder
-FROM node:20-alpine AS builder
+# frontend/package.json exige node >=22 y pnpm >=11 (`engines`): con node 20 y
+# pnpm 9 la instalación se detenía con ERR_PNPM_UNSUPPORTED_ENGINE y la imagen
+# no llegaba a construirse.
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 # Instalar pnpm
-RUN npm install -g pnpm@9
+RUN npm install -g pnpm@11
 
 # Copiar archivos de dependencias del frontend
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
@@ -19,7 +22,16 @@ COPY sdk/ /sdk/
 # Reemplazar workspace:* con file: para que pnpm pueda resolver el SDK en Docker
 RUN sed -i 's|"workspace:\*"|"file:/sdk"|g' package.json
 
-# Instalar dependencias (sin frozen-lockfile para compatibilidad)
+# Instalar dependencias (sin frozen-lockfile para compatibilidad).
+# pnpm 11 aborta (ERR_PNPM_IGNORED_BUILDS) si alguna dependencia trae scripts
+# de instalación no autorizados. Aquí no se ejecuta ninguno a propósito: el
+# build de Vite no los necesita (esbuild trae su binario como dependencia
+# opcional) y no dejar correr código de terceros al instalar reduce la
+# superficie de ataque de la cadena de suministro.
+# Como variable de entorno (y no como flag) para que también se aplique cuando
+# `pnpm run build` revisa las dependencias antes de ejecutar el script.
+ENV npm_config_strict_dep_builds=false \
+    pnpm_config_strict_dep_builds=false
 RUN pnpm install --no-frozen-lockfile
 
 # Copiar código fuente del frontend
