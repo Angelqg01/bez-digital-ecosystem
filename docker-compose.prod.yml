@@ -154,6 +154,28 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  control-center:
+    ports: !override []
+    restart: always
+    # Sin escalada de privilegios y sin capacidades: un proceso Node que
+    # escucha en un puerto alto no necesita ninguna.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NODE_ENV: production
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
   # ── Firmante aislado ───────────────────────────────
   tx-signer:
     restart: always
@@ -164,15 +186,15 @@ services:
         max-file: "10"
 
   # ── MCPs internos ──────────────────────────────────
-  messaging-mcp:
-    ports: !override []
-    restart: always
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
+  #
+  # messaging-mcp NO va aquí: el base (docker-compose.yml) es explícito en que
+  # ese servidor se sirve por stdio (.mcp.json lo lanza como subproceso), no
+  # como contenedor de red. Un override sin `image`/`build` para un servicio
+  # que no existe en el base rompe TODO el proyecto compose con
+  # "has neither an image nor a build context specified: invalid compose
+  # project" — y como scripts/deploy-prod.sh usa exactamente este par de
+  # ficheros, el despliegue entero abortaba antes de construir nada. Se
+  # detectó al validar este compose para el VPS de Hostinger (2026-09).
   obsidian-mcp:
     ports: !override []
     restart: always
@@ -203,7 +225,9 @@ services:
 #
 #   aegis            → aegis/ existe y tiene Dockerfile. Falta el servicio en
 #                      el base. Es el candidato más cercano a poder volver.
-#   control-center   → control-center/ existe y tiene Dockerfile. Igual.
+#   control-center   → YA NO está aquí: se dio de alta en docker-compose.yml
+#                      y tiene su override real arriba (migración a Hostinger
+#                      VPS, 2026-09).
 #   bezhas-geth      → definido en enterprise-node/docker-compose.yml, que es
 #                      un proyecto de compose aparte, no este base.
 #   ai-gateway       → el directorio ai-gateway/ NO existe. Nunca se construyó.
@@ -215,15 +239,6 @@ services:
 #     ports: !override []
 #     restart: always
 #     deploy: { resources: { limits: { cpus: "1", memory: 1G } } }
-#
-#   control-center:
-#     ports: !override []
-#     restart: always
-#     environment:
-#       - NODE_ENV=production
-#       - NEXT_PUBLIC_API_URL=/api
-#       - NEXT_PUBLIC_RPC_URL=http://bezhas-geth:8545
-#     deploy: { resources: { limits: { cpus: "0.5", memory: 512M } } }
 #
 #   bezhas-geth:
 #     ports: !override []

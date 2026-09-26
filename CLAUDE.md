@@ -145,6 +145,23 @@ POLYGON\_MUMBAI: { chainId: 80001, rpc: 'https://rpc-mumbai.maticvigil.com' }
 
 ## 🖥️ INFRAESTRUCTURA Y ENDPOINTS
 
+> [!IMPORTANT]
+> **Hosting de producción (2026-09-26): vuelta a GCP.** La facturación de GCP
+> que causó la suspensión de Cloud SQL está resuelta, así que la plataforma
+> vuelve a desplegarse en GCP (Cloud Run + Cloud SQL + Memorystore + Secret
+> Manager) según [`docs/developer/GCP_DEPLOYMENT_GUIDE.md`](../docs/developer/GCP_DEPLOYMENT_GUIDE.md)
+> — es de nuevo la guía vigente — usando `scripts/gcp-deploy.sh`. Las
+> migraciones 049-051, pendientes desde la suspensión, se aplican contra el
+> Cloud SQL de producción (el propio script las ejecuta vía el Cloud Run Job
+> `bezhas-db-migrate`; nadie las ha lanzado todavía, hacerlo es una acción
+> deliberada, no automática de este cambio de documentación).
+>
+> El VPS Hostinger KVM 4 (4 vCPU/16GB, Frankfurt) que se aprovisionó como
+> alternativa mientras GCP estaba descartado **se mantiene documentado como
+> plan B** de bajo coste — ver
+> [`docs/developer/HOSTINGER_DEPLOYMENT_GUIDE.md`](../docs/developer/HOSTINGER_DEPLOYMENT_GUIDE.md) —
+> pero deja de ser el destino por defecto.
+
 | Servicio | Endpoint |
 | :---- | :---- |
 | API Backend | `api.bez.digital:3001` |

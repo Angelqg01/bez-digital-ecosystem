@@ -128,6 +128,13 @@ services:
       REDIS_URL:        redis://redis:6379
       JWT_SECRET:       ${JWT_SECRET}
       BEZHAS_API_KEY:   ${BEZHAS_API_KEY}
+      # Firma de los access token OAuth 2.1 del MCP. Sin ellas el proceso cae a
+      # un par EC efímero (config/oauthTokens.js) y todo token emitido deja de
+      # verificar en el siguiente reinicio del contenedor — inaceptable en
+      # producción, donde el contenedor SÍ se reinicia (deploys, crashes).
+      OAUTH_JWT_PRIVATE_KEY: ${OAUTH_JWT_PRIVATE_KEY:-}
+      OAUTH_JWT_PUBLIC_KEY:  ${OAUTH_JWT_PUBLIC_KEY:-}
+      OAUTH_ISSUER:          ${OAUTH_ISSUER:-https://mcp.bez.digital}
       # config/secrets.js aborta el arranque en producción sin esta variable, y
       # el compose solo pasaba BEZHAS_API_KEY, que es OTRA cosa. Resultado: la
       # API no llegaba a levantar nunca desde este compose —moría en bucle con
@@ -395,6 +402,38 @@ services:
       - "4000:4000"
     networks:
       - bezhas-net
+
+  # ── CONTROL CENTER (Frontend Next.js) ─────────────────────────────────────
+  # nginx/nginx.conf ya proxeaba a `control-center:3000` desde hace tiempo,
+  # pero el servicio nunca se declaró en este compose: la ruta `/` del borde
+  # devolvía 502 contra un nombre DNS que Docker no podía resolver.
+  control-center:
+    build:
+      context: ./control-center/frontend
+      dockerfile: Dockerfile
+    container_name: bezhas-control-center
+    restart: unless-stopped
+    depends_on:
+      bezhas-api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # El frontend habla con la API por el propio borde de nginx (mismo
+      # origen), no directo al contenedor: así funciona igual en dev y prod
+      # sin hardcodear el host de bezhas-api en el bundle del cliente.
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+      # Sin nodo L2 propio desplegado en este alcance: apunta a un RPC público
+      # de la red donde SÍ están los contratos (ver tabla de CLAUDE.md).
+      NEXT_PUBLIC_RPC_URL: ${NEXT_PUBLIC_RPC_URL:-https://bsc-dataseed.binance.org}
+    ports:
+      - "3000:3000"
+    networks:
+      - bezhas-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ── BEZHAS CORE MCP (existente) ───────────────────────────────────────────
   bezhas-core-mcp:

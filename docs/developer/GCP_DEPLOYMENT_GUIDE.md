@@ -1,5 +1,19 @@
 # Guía de Despliegue en GCP (Google Cloud Platform) para BeZhas Blockchain
 
+> [!IMPORTANT]
+> **Vigente de nuevo (2026-09-26).** Esta guía había quedado marcada como
+> obsoleta en 2026-09 porque la facturación de GCP se suspendió (Cloud SQL
+> dejó de responder y las migraciones 049-051 quedaron pendientes). Esa
+> facturación está resuelta y GCP vuelve a ser el destino de producción — ver
+> la nota en `CLAUDE.md`. `docs/developer/HOSTINGER_DEPLOYMENT_GUIDE.md` queda
+> como plan B documentado, no como destino activo.
+>
+> Antes de volver a ejecutar `scripts/gcp-deploy.sh` contra el proyecto de
+> producción: confirmar que la cuenta de facturación está realmente activa
+> (no sólo que la tarjeta esté puesta — la vez anterior falló por impago, no
+> por falta de configuración) y decidir explícitamente cuándo se lanzan las
+> migraciones 049-051 pendientes contra el Cloud SQL real.
+
 Este documento define la estructura y arquitectura oficial para migrar el monorepo de BeZhas desde un entorno local (`docker-compose.yml`) hacia un entorno de producción de nivel empresarial (Cloud-Native) en GCP, garantizando alta disponibilidad y optimización extrema de costos.
 
 ---
@@ -70,7 +84,7 @@ El proyecto cuenta con un script de Bash preparado para hacer todo el trabajo du
 3. Instalar la CLI de Google Cloud (`gcloud`) en tu máquina o usar Google Cloud Shell.
 4. Autenticarte en terminal: `gcloud auth login`
 5. Usar **pnpm** como gestor único de paquetes. No usar `npm install`, `npm ci` ni `package-lock.json` para los servicios que se despliegan en Cloud Run.
-6. Preparar `.env` desde `.env.example` y completar al menos `ADMIN_PASSWORD_HASH`. El script generará `JWT_SECRET`, `INTERNAL_API_KEY`, `EDGE_NODE_API_KEY` y `CONTROL_JWT` si no existen.
+6. Preparar `.env` desde `.env.example` y completar al menos `ADMIN_PASSWORD_HASH`. El script generará `JWT_SECRET`, `INTERNAL_API_KEY`, `EDGE_NODE_API_KEY`, `CONTROL_JWT` y el par `OAUTH_JWT_PRIVATE_KEY`/`OAUTH_JWT_PUBLIC_KEY` (firma de los access token OAuth 2.1 del MCP) si no existen — para reutilizar un par ya generado en local, cópialos tal cual al `.env` antes de ejecutar.
 7. Si el Edge Node va a firmar transacciones directamente, definir `DEPLOY_EDGE_SIGNER=true`, `EDGE_NODE_PRIVATE_KEY` y `ESCROW_CONTRACT_ADDRESS`.
 
 ### Ejecución del Despliegue Automatizado:

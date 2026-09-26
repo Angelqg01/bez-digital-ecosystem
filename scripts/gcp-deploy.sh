@@ -204,6 +204,23 @@ EDGE_NODE_API_KEY="${EDGE_NODE_API_KEY:-${API_KEY:-$(random_secret 48)}}"
 CONTROL_JWT="${CONTROL_JWT:-$(random_secret 48)}"
 GOOGLE_API_KEY="${GOOGLE_API_KEY:-${GEMINI_API_KEY:-}}"
 
+# Par EC P-256 para firmar los access token OAuth 2.1 del MCP
+# (api/services/oauthTokens.js). A diferencia de JWT_SECRET, no es un secreto
+# aleatorio: tiene que ser un keypair EC de verdad, así que no vale
+# random_secret. Se genera sólo si no viene ya definido en .env — igual que el
+# resto de secretos de este bloque, para no rotarlo en cada redeploy y romper
+# las sesiones OAuth activas.
+if [ -z "${OAUTH_JWT_PRIVATE_KEY:-}" ] || [ -z "${OAUTH_JWT_PUBLIC_KEY:-}" ]; then
+  warn "OAUTH_JWT_PRIVATE_KEY/OAUTH_JWT_PUBLIC_KEY no definidas: generando un par EC P-256 nuevo para el MCP."
+  _oauth_tmp="$(mktemp -d)"
+  openssl ecparam -name prime256v1 -genkey -noout -out "${_oauth_tmp}/ec.pem" 2>/dev/null
+  openssl pkcs8 -topk8 -nocrypt -in "${_oauth_tmp}/ec.pem" -out "${_oauth_tmp}/pkcs8.pem" 2>/dev/null
+  openssl ec -in "${_oauth_tmp}/ec.pem" -pubout -out "${_oauth_tmp}/pub.pem" 2>/dev/null
+  OAUTH_JWT_PRIVATE_KEY="$(base64 -w0 "${_oauth_tmp}/pkcs8.pem")"
+  OAUTH_JWT_PUBLIC_KEY="$(base64 -w0 "${_oauth_tmp}/pub.pem")"
+  rm -rf "${_oauth_tmp}"
+fi
+
 require_secret_value "ADMIN_PASSWORD_HASH"
 
 if [ "${DEPLOY_EDGE_SIGNER:-false}" = "true" ]; then
@@ -219,6 +236,8 @@ create_or_update_secret "bezhas-edge-node-api-key"     "${EDGE_NODE_API_KEY}"
 create_or_update_secret "bezhas-control-jwt"           "${CONTROL_JWT}"
 create_or_update_secret "bezhas-bridge-api-key"        "${BRIDGE_API_KEY:-${EDGE_NODE_API_KEY}}"
 create_or_update_secret "bezhas-admin-password-hash"   "${ADMIN_PASSWORD_HASH}"
+create_or_update_secret "bezhas-oauth-jwt-private-key" "${OAUTH_JWT_PRIVATE_KEY}"
+create_or_update_secret "bezhas-oauth-jwt-public-key"  "${OAUTH_JWT_PUBLIC_KEY}"
 
 [ -n "${DEEPSEEK_API_KEY:-}" ] && create_or_update_secret "bezhas-deepseek-api-key" "${DEEPSEEK_API_KEY}" || warn "DEEPSEEK_API_KEY not set; DeepSeek fallback disabled."
 [ -n "${GOOGLE_API_KEY}" ] && create_or_update_secret "bezhas-google-api-key" "${GOOGLE_API_KEY}" || warn "GOOGLE_API_KEY/GEMINI_API_KEY not set; Gemini fallback disabled."
@@ -321,7 +340,7 @@ rm -rf "control-center/frontend/modules" "control-center/frontend/sdk"
 log "Deploying services to Cloud Run..."
 
 COMMON_ENV_VARS="^~^GCP_PROJECT_ID=${GCP_PROJECT_ID}~GCP_ENABLED=true~GCP_REGION=${GCP_REGION}~NODE_ENV=production~GCS_BUCKET=${GCS_BUCKET}~PUBSUB_TOPIC=bezhas-blockchain-events~REDIS_HOST=${REDIS_HOST}~REDIS_PORT=6379~CORS_ORIGINS=${PUBLIC_SITE_URL},${APP_SITE_URL}~GCP_BLOCKCHAIN_RPC_URL=${GCP_BLOCKCHAIN_RPC_URL}"
-COMMON_SECRET_VARS="DATABASE_URL=bezhas-postgres-url:latest,REDIS_URL=bezhas-redis-url:latest,JWT_SECRET=bezhas-jwt-secret:latest,INTERNAL_API_KEY=bezhas-internal-api-key:latest,GOOGLE_API_KEY=bezhas-google-api-key:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest"
+COMMON_SECRET_VARS="DATABASE_URL=bezhas-postgres-url:latest,REDIS_URL=bezhas-redis-url:latest,JWT_SECRET=bezhas-jwt-secret:latest,INTERNAL_API_KEY=bezhas-internal-api-key:latest,GOOGLE_API_KEY=bezhas-google-api-key:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest,OAUTH_JWT_PRIVATE_KEY=bezhas-oauth-jwt-private-key:latest,OAUTH_JWT_PUBLIC_KEY=bezhas-oauth-jwt-public-key:latest"
 
 BASE_FLAGS=(
   --region "${GCP_REGION}"
