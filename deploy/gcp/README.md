@@ -38,6 +38,7 @@ romper nada.
 | 6 | `05-verify.sh` | Comprueba DNS, certificados, salud y seguridad | Siempre |
 | 7 | `06-monitoring.sh` | Comprobación cada minuto de www, api y mcp y aviso por email si caen | Una vez |
 | 8 | `07-stripe.sh` | Comprueba la clave live y el catálogo, crea el webhook y guarda su secreto | Una vez y al rotar la clave |
+| — | `08-reset-admin.sh` | Aplica a la base el usuario/contraseña del admin de Secret Manager (tras cambiarlos con 00 + 02) | Al cambiar el admin sin poder entrar al panel |
 
 ## Paso de la versión anterior (BeZhas Hub) a esta
 
