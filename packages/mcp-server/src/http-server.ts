@@ -36,6 +36,7 @@ import {
     subjectFromRequest,
     WatchdogError,
     GLOBAL_LIMIT_PER_MINUTE,
+    trustProxyHops,
     watchdogLimiter,
 } from './security/index.js';
 import { config } from './config.js';
@@ -44,7 +45,7 @@ import { getUsdPerUnit, unidadesPorUsdVivo, getRates } from './rates.js';
 const app: ReturnType<typeof express> = express();
 
 /**
- * Confiar en UN salto de proxy.
+ * Confiar en un número FIJO de saltos de proxy.
  *
  * Sin esto, `req.ip` es la dirección del proxy —Cloud Run, un balanceador, el
  * ingress de Docker— para TODAS las peticiones. Y como el sujeto del vigilante
@@ -52,11 +53,19 @@ const app: ReturnType<typeof express> = express();
  * mismo cubo: el techo por sujeto dejaba de separar a nadie y bastaba un
  * cliente ruidoso para agotar la cuota de todos los demás.
  *
- * Un solo salto, no `true`: con `true` Express se cree el primer valor de
+ * Un número de saltos, no `true`: con `true` Express se cree el primer valor de
  * `X-Forwarded-For`, que lo pone el cliente y por tanto se falsifica a
  * voluntad para saltarse el límite.
  */
-app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
+//
+// Cuántos saltos hay depende de cómo se llega a Cloud Run (igual que en
+// backend/server.js):
+//   - directo a `*.run.app`: el GFE añade la IP del cliente   -> 1 salto.
+//   - por el balanceador HTTPS externo (mcp.bezhas.com): llega
+//     «<cliente>, <IP del balanceador>»                        -> 2 saltos.
+// deploy/gcp/cloudbuild.yaml fija TRUST_PROXY_HOPS=2. Un valor inválido cae
+// a 1, nunca a `true`.
+app.set('trust proxy', trustProxyHops(process.env.TRUST_PROXY_HOPS));
 
 /**
  * Limitadores. `rateLimit()` se llama aquí, a la vista de las rutas que
