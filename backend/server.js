@@ -916,6 +916,13 @@ app.post('/api/email/send', authenticateToken, (req, res) => {
 
 app.use('/api/auth', authRoutes);
 
+// Authorization Server OAuth 2.1 + PKCE del MCP público (mcp.bezhas.com):
+// login y consentimiento de una persona para Claude, ChatGPT, Codex, Gemini…
+// El MCP verifica los tokens con /.well-known/jwks.json.
+const oauthMcp = require('./routes/oauth-mcp.routes');
+app.use('/', oauthMcp.wellKnown);
+app.use('/oauth', oauthMcp.router);
+
 // Two-Factor Authentication (2FA) routes - TOTP and WebAuthn/Passkeys
 const twoFactorRoutes = require('./routes/2fa.routes');
 app.use('/api/2fa', twoFactorRoutes);
