@@ -1,7 +1,7 @@
 'use client';
 import useSWR from 'swr';
 import { useState, useEffect } from 'react';
-import { fetcher, ApiError } from './api';
+import { fetcher, ApiError, API_ORIGIN } from './api';
 import type {
     DashboardStats, ChartDataPoint, Transaction, GasBalance, GasStatus,
     NFT, DeployedContract, Sector, AILog, Notification,
@@ -404,7 +404,7 @@ export function useBlockchainSSE(eventType?: string) {
 
     useEffect(() => {
         const params = eventType ? `?type=${eventType}` : '';
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const API_BASE = API_ORIGIN;
         const es = new EventSource(`${API_BASE}/api/blockchain/stream${params}`);
 
         es.addEventListener('blockchain_event', (e) => {

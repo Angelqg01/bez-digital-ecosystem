@@ -12,6 +12,7 @@ import { useRuntimeHealth, useRuntimeTools, useRuntimeCommands, useRuntimePlugin
 import { api } from '@/lib/api';
 import type { AgentConfig } from '@/lib/types';
 import AIEcosystemNav from '@/components/AIEcosystemNav';
+import { API_ORIGIN } from '@/lib/api';
 
 /* ── Reusable UI Pieces ── */
 
@@ -175,7 +176,7 @@ export default function AIAgentPage() {
         // We use fetch with streaming because EventSource doesn't support custom headers
         const abortController = new AbortController();
 
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${url}`, {
+        fetch(`${API_ORIGIN}${url}`, {
             method: 'GET',
             headers: {
                 Accept: 'text/event-stream',

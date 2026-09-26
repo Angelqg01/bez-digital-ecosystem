@@ -42,6 +42,8 @@ const NAV_ITEMS = [
     { href: '/dashboard/settings', label: 'Configuracion', icon: Settings },
 ];
 
+const SHOW_DEV_ITEMS = process.env.NODE_ENV !== 'production';
+
 const DEV_ITEMS = [
     { href: 'http://localhost:3000', label: 'Control Center (Local)', icon: LayoutDashboard },
     { href: 'http://localhost:3001/api-docs', label: 'API Swagger Docs', icon: ScrollText },
@@ -120,8 +122,10 @@ export default function Sidebar() {
                     />
                 ))}
 
-                {!collapsed && <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 px-3 pt-4 pb-1 border-t border-white/5 mt-4">DevOps & Infra L2</div>}
-                {DEV_ITEMS.map((item) => (
+                {/* Enlaces a herramientas en localhost: en producción apuntaban al
+                    ordenador del visitante, así que solo se muestran en desarrollo. */}
+                {SHOW_DEV_ITEMS && !collapsed && <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 px-3 pt-4 pb-1 border-t border-white/5 mt-4">DevOps & Infra L2</div>}
+                {SHOW_DEV_ITEMS && DEV_ITEMS.map((item) => (
                     <SidebarLink
                         key={item.href}
                         {...item}

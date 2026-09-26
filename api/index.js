@@ -102,6 +102,14 @@ const operantRoutes = require('./routes/operant');   // ← OPERANT (gestión em
 // ─────────────────────────────────────────────────────────────────────────────
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3001;
+
+// Detrás de un balanceador (GCP: balanceador externo + Cloud Run) req.ip sería
+// la del proxy: todos los visitantes compartirían el cubo del limitador y 100
+// peticiones cada 15 min bastarían para dejar la web entera en 429. Se confía
+// en un número FIJO de saltos, nunca en `true`: con `true` la IP la elegiría el
+// cliente escribiendo su propia cabecera X-Forwarded-For.
+const TRUST_PROXY_HOPS = Math.min(Math.max(parseInt(process.env.TRUST_PROXY_HOPS, 10) || 0, 0), 5);
+if (TRUST_PROXY_HOPS > 0) app.set('trust proxy', TRUST_PROXY_HOPS);
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 // ═══════════════════════════════════════════════════════════════════════════════
