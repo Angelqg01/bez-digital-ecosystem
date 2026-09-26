@@ -26,7 +26,7 @@
 BeZhas es un ecosistema blockchain empresarial B2B con:
 
 - Plataforma SaaS de trading (bots IA, análisis técnico/fundamental, carteras)  
-- Blockchain L2 propia desplegada en BNB Chain (BEP-20) y Polygon (ERC-20)  
+- Blockchain L2 propia; BEZ-Coin desplegado sólo en Polygon (ERC-20). BNB Chain será un bridge (pendiente; hoy no hay contrato BEZ en BNB)  
 - Token nativo BEZ-Coin con utilidad real (gas fees, staking, DAO, pagos)  
 - SDK B2B para sectores: logística, aduanas, RWA, pagos internacionales  
 - Capa de IA: OpenClaw (orquestador multi-LLM propio)  
@@ -110,7 +110,7 @@ BeZhas es un ecosistema blockchain empresarial B2B con:
 | Contrato | Red | Address |
 | :---- | :---- | :---- |
 | BEZ Token | **Polygon** | `0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8` |
-| BEZ Token | **BNB Chain** | **No desplegado.** `0x8a1e…5b55` no tiene código (comprobado on-chain el 2026-09-18). BEZ-Coin sólo existe en Polygon. |
+| BEZ Token | **BNB Chain** | **No desplegado.** `0x8a1e…5b55` no tiene código (comprobado on-chain el 2026-09-18). BEZ-Coin sólo existe en Polygon; BNB Chain será un bridge (pendiente), no un despliegue nativo. |
 | Treasury DAO | BSC+Polygon | `0x89c23890c742d710265dD61be789C71dC8999b12` |
 | QualityEscrow/Safe | BSC+Polygon | `0x3EfC42095E8503d41Ad8001328FC23388E00e8a3` |
 | Hot Wallet | BSC+Polygon | `0x52Df82920CBAE522880dD7657e43d1A754eD044E` |
@@ -119,7 +119,7 @@ BeZhas es un ecosistema blockchain empresarial B2B con:
 
 | Contrato | Función |
 | :---- | :---- |
-| `BezhasToken` | Token BEZ-Coin (ERC-20/BEP-20) |
+| `BezhasToken` | Token BEZ-Coin (ERC-20, sólo Polygon) |
 | `BeZhasCore` | Lógica central plataforma |
 | `BeZhasMarketplace` | Marketplace de servicios |
 | `StakingPoolV2` | Staking BEZ \+ rewards |

@@ -28,7 +28,7 @@ tokenización, trazabilidad— con los permisos exactos de tu suscripción.
         ┌───────────────┼────────────────┐
         ▼               ▼                ▼
    Blockchain      SubApps BeZhas    Tu ERP (SAP, Odoo…)
-   BNB · Polygon   Pay · CargoLink   opcional, desde plan Business
+   Polygon         Pay · CargoLink   opcional, desde plan Business
                    Energy · PureScan
 ```
 
@@ -628,7 +628,7 @@ acepta identificar a un tercero.
 **¿Qué pasa si cambio de Claude a ChatGPT?** Nada. Es el mismo conector MCP
 estándar. Cambias de cliente, no de integración.
 
-**¿Y si BeZhas desaparece?** Lo anclado en BNB Chain y Polygon sigue ahí y es
+**¿Y si BeZhas desaparece?** Lo anclado en Polygon sigue ahí y es
 verificable en cualquier explorador público, sin nosotros. Es la diferencia
 entre un SaaS y una infraestructura.
 

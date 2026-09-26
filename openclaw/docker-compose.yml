@@ -37,7 +37,6 @@ services:
       - REDIS_URL=redis://redis:6379/0
       # Contratos BeZhas
       - BEZ_CONTRACT_POLYGON=0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8
-      - BEZ_CONTRACT_BNB=0x8a1e3930fde1f151471c368fdbb39f3f63a65b55
       - TREASURY_DAO=0x89c23890c742d710265dD61be789C71dC8999b12
       # RPC endpoints
       - RPC_BNB=https://bsc-dataseed.binance.org

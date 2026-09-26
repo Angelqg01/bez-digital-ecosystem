@@ -29,11 +29,11 @@ export const tickerItems: [string, string][] = [
     ['Supply', '3.000.000.000 BEZ'],
     ['Protocolos', '7 verticales'],
     ['Contratos', '30+ Solidity'],
-    ['Puentes', 'Polygon · BNB Chain'],
+    ['Puentes', 'Polygon · BNB Chain (proximamente)'],
     ['Privacidad', '0 datos personales on-chain'],
     ['Cumplimiento', 'MiCA · DAC8 · AEAT'],
     ['Seguridad', 'AEGIS fail-closed'],
-    ['Comercio', 'Puentes activos Polygon · BNB'],
+    ['Comercio', 'Puente Polygon activo · BNB proximamente'],
     ['Tesoreria', 'MultiSig 2-of-N · timelock']
 ];
 
@@ -363,7 +363,7 @@ export const integrationGroups: LogoGroup[] = [
             { name: 'Ethereum', note: 'L1 de asentamiento' },
             { name: 'BeZhas L2', note: 'chainId 2708' },
             { name: 'Polygon', note: 'Bridge activo' },
-            { name: 'BNB Chain', note: 'Bridge activo' },
+            { name: 'BNB Chain', note: 'Bridge proximamente' },
             { name: 'IPFS', note: 'Documentos' },
         ],
     },
@@ -375,8 +375,8 @@ export const tokenFacts: [string, string][] = [
     ['Red de asentamiento', 'Ethereum L1'],
     ['Capa de ejecucion', 'BeZhas L2 · chainId 2708'],
     ['Supply total', '3.000.000.000 BEZ'],
-    ['Estandar', 'ERC-20 · BEP-20'],
-    ['Puentes', 'Polygon · BNB Chain'],
+    ['Estandar', 'ERC-20 (Polygon)'],
+    ['Puentes', 'Polygon · BNB Chain (proximamente)'],
     ['Gobernanza', 'GovernanceSystem on-chain'],
     ['Marco regulatorio', 'MiCA (UE) · AEAT (ES)'],
 ];
@@ -401,7 +401,6 @@ export const tokenUses: { title: string; text: string }[] = [
 ];
 
 export const BEZ_POLYGON_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
-export const BEZ_BNB_ADDRESS = '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55';
 
 export const oracleContracts: ContractCard[] = [
     {
@@ -420,22 +419,6 @@ export const oracleContracts: ContractCard[] = [
                     strokeLinejoin="round"
                 />
                 <path d="M16 11.5 21.5 15v6L16 24l-5.5-3v-6z" fill="#8B5CF6" opacity=".85" />
-            </svg>
-        ),
-    },
-    {
-        chainId: 56,
-        name: 'BNB Chain',
-        address: BEZ_BNB_ADDRESS,
-        explorerLabel: 'BscScan',
-        explorerUrl: `https://bscscan.com/token/${BEZ_BNB_ADDRESS}`,
-        mark: (
-            <svg className={s.ccMark} viewBox="0 0 32 32" aria-hidden="true">
-                <path d="M16 4.5 20.2 8.7 16 12.9 11.8 8.7z" fill="#F0B90B" />
-                <path d="M23.3 11.8 27.5 16l-4.2 4.2L19.1 16z" fill="#F0B90B" />
-                <path d="M8.7 11.8 12.9 16l-4.2 4.2L4.5 16z" fill="#F0B90B" />
-                <path d="M16 19.1 20.2 23.3 16 27.5l-4.2-4.2z" fill="#F0B90B" />
-                <path d="M16 11.8 20.2 16 16 20.2 11.8 16z" fill="#F0B90B" opacity=".6" />
             </svg>
         ),
     },

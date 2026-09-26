@@ -681,7 +681,7 @@ lo tenga de referencia cuando lo necesite?"
 ```
 "La pregunta correcta. Tres garantías concretas:
 1. El piloto de 30 días sin compromiso financiero — si no funciona, cero coste.
-2. La infraestructura BeZhas está desplegada en BNB Chain y Polygon — redes con 
+2. El token BEZ está desplegado en Polygon (BNB Chain se conectará mediante un bridge) — una red pública con
    miles de millones de transacciones de respaldo, no una cadena privada nuestra.
 3. Los contratos que usamos son auditables y verificables públicamente.
 ¿Le parece si durante el piloto el equipo técnico valida la arquitectura directamente?"

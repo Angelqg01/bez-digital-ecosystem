@@ -89,7 +89,7 @@ Si hay ABI sin address → advertencia en consola con nombre del contrato.
 
 | Contrato | Función | Redes |
 |---|---|---|
-| `BezhasToken` | Token BEZ-Coin (ERC-20/BEP-20) | BSC + Polygon |
+| `BezhasToken` | Token BEZ-Coin (ERC-20) | Polygon (BNB: bridge pendiente) |
 | `BeZhasCore` | Lógica central de la plataforma | BSC + Polygon |
 | `BeZhasMarketplace` | Marketplace de servicios | BSC + Polygon |
 | `StakingPoolV2` | Staking de BEZ con rewards | BSC + Polygon |

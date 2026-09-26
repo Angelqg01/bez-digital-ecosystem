@@ -212,7 +212,7 @@ Hola,
 Te contacto porque sigues proyectos de blockchain real y creo que BeZhas te puede interesar.
 
 Resumen rápido:
-→ L2 blockchain propia (BNB + Polygon ya activo)
+→ L2 blockchain propia; BEZ activo en Polygon (bridge a BNB Chain próximamente)
 → 5 sub-apps en producción (hub, capital, cargolink, purescan, energy)
 → Token BEZ a $0.0075 — precio semilla directo sin DEX aún
 → Smart contracts auditables: staking, DAO, farming, bridge
@@ -232,7 +232,7 @@ Info completa: bez.digital/token/buy
 Para quien quiera hacer due diligence:
 
 Contrato Polygon: 0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8
-BNB Chain: 0x8a1e3930fde1f151471c368fdbb39f3f63a65b55
+BNB Chain: bridge en desarrollo (BEZ no está desplegado en BNB todavía)
 
 Lo que ya existe:
 ✅ GovernanceSystem.sol — DAO on-chain

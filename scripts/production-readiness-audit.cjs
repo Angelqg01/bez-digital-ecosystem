@@ -99,11 +99,12 @@ const envExample = fs.existsSync(path.join(ROOT, '.env.example')) ? fs.readFileS
 const envAddressMatch = envExample.match(/^BEZ_TOKEN_ADDRESS=(0x[a-fA-F0-9]{40})/m);
 const envAddress = envAddressMatch ? envAddressMatch[1] : null;
 const readmePolygon = readme.match(/\| BEZ Token \| Polygon \| `(0x[a-fA-F0-9]{40})` \|/);
-const readmeBnb = readme.match(/\| BEZ Token \| BNB Chain \| `(0x[a-fA-F0-9]{40})` \|/);
-const envClaimsBsc = /BSC Mainnet|BEZ-Coin v1 on BSC Mainnet/i.test(envExample);
-const envMatchesBnb = !!envAddress && !!readmeBnb && envAddress.toLowerCase() === readmeBnb[1].toLowerCase();
+// BEZ solo existe en Polygon: BNB Chain será un bridge, así que ni el README ni el
+// env pueden publicar una dirección BEZ en BNB.
+const readmeBnbAddress = readme.match(/\| BEZ Token \| BNB Chain \| `(0x[a-fA-F0-9]{40})` \|/);
+const envClaimsBsc = /BEZ-Coin v1 on BSC|BEZHAS_CHAIN_ID=56/i.test(envExample);
 const envMatchesPolygon = !!envAddress && !!readmePolygon && envAddress.toLowerCase() === readmePolygon[1].toLowerCase();
-check('BEZ token address is documented consistently', envMatchesBnb && !envMatchesPolygon && envClaimsBsc, `env=${envAddress || 'missing'}`);
+check('BEZ token address is documented consistently (Polygon only)', envMatchesPolygon && !readmeBnbAddress && !envClaimsBsc, `env=${envAddress || 'missing'}`);
 
 // 5. ABI/deployment readiness.
 const foundryOut = path.join(ROOT, 'smart-contracts', 'out');

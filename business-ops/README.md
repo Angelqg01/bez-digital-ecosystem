@@ -185,7 +185,7 @@ identidad, propuesta de valor, segmentación de mercado, guía de scoring, cuent
 Todo agente compone su prompt sobre ese perfil.
 
 **Sus activos on-chain están declarados, no adivinados.** El perfil lista las direcciones
-reales (BEZ-Coin en Polygon y BNB Chain, Treasury DAO, QualityEscrow, Hot Wallet) y se
+reales (BEZ-Coin en Polygon, Treasury DAO, QualityEscrow, Hot Wallet) y se
 inyectan en el preámbulo de cada agente con una advertencia explícita: nunca autorizar un
 movimiento sin aprobación humana.
 
