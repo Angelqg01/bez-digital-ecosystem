@@ -117,6 +117,8 @@ describe('pantalla de consentimiento', () => {
         expect(res.text).toContain(`<script nonce="${nonce}">`);
         expect(csp).toMatch(/frame-ancestors 'none'/);
         expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/);
+        // Nada de la URL reflejado en el HTML: el script lee la sesión de location.
+        expect(res.text).not.toContain(SESION);
     });
 
     it('contraseña incorrecta: mensaje genérico y cuenta el intento', async () => {

@@ -108,8 +108,10 @@ export async function verificarToken(token: string): Promise<Claims> {
     if (typeof claims.exp !== 'number' || claims.exp + LEEWAY_S < ahora) throw new TokenError('Token caducado');
     if (typeof claims.nbf === 'number' && claims.nbf - LEEWAY_S > ahora) throw new TokenError('Token aún no válido');
     if (claims.iss !== OAUTH_ISSUER) throw new TokenError('Emisor no válido');
-    const aud = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-    if (!aud.includes(MCP_PUBLIC_URL)) throw new TokenError('Audiencia no válida');
+    // Igualdad exacta por elemento: `aud` puede llegar como cadena, y un
+    // `includes` sobre ella aceptaría «https://mcp.bezhas.com.evil.example».
+    const aud: unknown[] = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+    if (!aud.some((a) => a === MCP_PUBLIC_URL)) throw new TokenError('Audiencia no válida');
     if (typeof claims.sub !== 'string' || !claims.sub) throw new TokenError('Token sin sujeto');
     return claims;
 }

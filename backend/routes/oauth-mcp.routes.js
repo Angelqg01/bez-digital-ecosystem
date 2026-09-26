@@ -157,7 +157,9 @@ function cspConNonce(res) {
     return nonce;
 }
 
-function pagina(sesion, nonce) {
+// La página no lleva nada de la petición: el script saca la sesión de su propia
+// URL. Así no hay dato del cliente reflejado en el HTML que escapar.
+function pagina(nonce) {
     return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex"><meta name="referrer" content="no-referrer"><title>BeZhas — Autorizar conector</title>
@@ -190,7 +192,7 @@ button{width:100%;border:0;padding:13px;border-radius:12px;font-size:15px;cursor
 </div>
 <script nonce="${nonce}">
 (function(){
-var API='/oauth/authorize/'+${JSON.stringify(sesion)};
+var API=location.pathname.replace(/\/+$/,'');
 function show(id){['cargando','login','consentir','error'].forEach(function(s){document.getElementById(s).hidden=s!==id;});}
 function txt(id,v){document.getElementById(id).textContent=v;}
 function post(ruta,cuerpo){return fetch(API+ruta,{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(cuerpo||{})}).then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});});}
@@ -220,7 +222,7 @@ const TOKEN_RE = '[0-9a-f]{64}';
 router.get(`/authorize/:sesion(${TOKEN_RE})`, (req, res) => {
     res.set('Cache-Control', 'no-store');
     res.set('X-Robots-Tag', 'noindex');
-    res.type('html').send(pagina(req.params.sesion, cspConNonce(res)));
+    res.type('html').send(pagina(cspConNonce(res)));
 });
 
 router.get(`/authorize/:sesion(${TOKEN_RE})/status`, async (req, res) => {

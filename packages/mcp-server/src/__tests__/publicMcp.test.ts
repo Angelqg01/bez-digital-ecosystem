@@ -69,6 +69,7 @@ describe('verificación del token', () => {
         ['caducado', () => firmar({ scope: 'chain.read', exp: Math.floor(Date.now() / 1000) - 120 })],
         ['de otro emisor', () => firmar({ scope: 'chain.read', iss: 'https://evil.example' })],
         ['para otra audiencia', () => firmar({ scope: 'chain.read', aud: 'https://otro.example' })],
+        ['con la audiencia como prefijo de otro host', () => firmar({ scope: 'chain.read', aud: `${RECURSO}.evil.example` })],
         ['con alg distinto de ES256', () => firmar({ scope: 'chain.read' }, par.privateKey, 'HS256')],
     ])('rechaza un token %s', async (_caso, token) => {
         const r = await rpc(token(), 'tools/list').expect(401);
