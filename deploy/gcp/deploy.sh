@@ -10,6 +10,8 @@
 #   GA_MEASUREMENT_ID   Google Analytics
 #   PUBLIC_RPC_URL, CHAIN_ID, BEZ_TOKEN   red que ve el navegador (por defecto,
 #                       Polygon mainnet y el BEZ de Polygon)
+#   BEZHAS_CHAIN_ID     cadena de la api: 137 (Polygon, por defecto) o 2708 (L2
+#                       propia, cuando BEZHAS_L2_RPC_URL apunte a un nodo L2)
 # Todas son PÚBLICAS: Next.js las incrusta en el JavaScript del navegador.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -55,6 +57,7 @@ SUBS+="~_VPC_NETWORK=${VPC_NETWORK}~_VPC_SUBNET=${VPC_SUBNET}"
 [[ -n "${PUBLIC_RPC_URL:-}" ]]    && SUBS+="~_PUBLIC_RPC_URL=${PUBLIC_RPC_URL}"
 [[ -n "${CHAIN_ID:-}" ]]          && SUBS+="~_CHAIN_ID=${CHAIN_ID}"
 [[ -n "${BEZ_TOKEN:-}" ]]         && SUBS+="~_BEZ_TOKEN=${BEZ_TOKEN}"
+[[ -n "${BEZHAS_CHAIN_ID:-}" ]]   && SUBS+="~_BEZHAS_CHAIN_ID=${BEZHAS_CHAIN_ID}"
 [[ -n "${INGRESS:-}" ]]           && SUBS+="~_INGRESS=${INGRESS}"
 
 echo "→ Cloud Build: $PROJECT_ID, tag $TAG (sube solo lo que permite .gcloudignore)"

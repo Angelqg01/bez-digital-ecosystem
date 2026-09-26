@@ -64,7 +64,7 @@ done
 [[ "$(v DB_MOCK_FALLBACK)" == true ]] && errores+=("DB_MOCK_FALLBACK=true serviría datos falsos si cae la base de datos: quítalo")
 [[ -n "$(v DEPLOYER_PRIVATE_KEY)" ]] && avisos+=("DEPLOYER_PRIVATE_KEY está en el .env: NO se sube (la clave que despliega contratos no debe vivir en un servidor). Bórrala del fichero.")
 
-for k in POLYGON_RPC_URL RPC_URL; do
+for k in POLYGON_RPC_URL RPC_URL BEZHAS_L2_RPC_URL; do
   [[ "$(v "$k")" =~ amoy|mumbai|sepolia|goerli|testnet|localhost|127\.0\.0\.1 ]] && \
     errores+=("$k apunta a una testnet o a local; producción es mainnet")
 done
