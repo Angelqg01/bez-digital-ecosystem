@@ -78,6 +78,12 @@ const stats = {
 async function startConsumer() {
     if (subscriber) return;
 
+    // Sin REDIS_URL en producción no hay a quién suscribirse (ver
+    // cache/redis.js): se avisa una vez en vez de reintentar para siempre.
+    if (!process.env.REDIS_URL && process.env.NODE_ENV === 'production') {
+        throw new Error('Redis no configurado (REDIS_URL vacío): sin bus de eventos entre procesos');
+    }
+
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     subscriber = createClient({ url: redisUrl });
 

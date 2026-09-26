@@ -12,6 +12,11 @@
 !/modules/
 !/sdk/
 !/deploy/
+# De los contratos solo los ABI y las direcciones desplegadas (los lee la api).
+!/smart-contracts/
+/smart-contracts/*
+!/smart-contracts/abi/
+!/smart-contracts/deployments/
 
 # Nunca: dependencias, artefactos, secretos locales
 **/node_modules/
