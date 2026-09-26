@@ -139,7 +139,7 @@ acepta tokens de este repositorio.
   validarse, por ejemplo por la caché DNS de un registro antiguo, los demás se
   activan igualmente), política MODERN, mínimo TLS 1.2,
   redirección HTTP → HTTPS y bezhas.com → www.
-- **IP real del cliente**: el backend usa `TRUST_PROXY_HOPS=2` detrás del
+- **IP real del cliente**: el backend y el MCP usan `TRUST_PROXY_HOPS=2` detrás del
   balanceador; con 1, todas las peticiones compartirían la IP del balanceador
   y el limitador por IP las metería en el mismo cubo.
 - **Secretos**: nunca en el repositorio, ni en argumentos de línea de

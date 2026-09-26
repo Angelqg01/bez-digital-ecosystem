@@ -8,6 +8,7 @@
 import { createHash, createHmac, randomBytes, scryptSync } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { ipKeyGenerator } from 'express-rate-limit';
 import type { Finding } from './scanner.js';
 
 export type Verdict = 'allow' | 'block' | 'redact';
@@ -95,7 +96,8 @@ export function subjectId(raw: string): string {
  * el socket o el proxy de delante. Sin normalizar, cada forma estrena su propio
  * cupo: basta alternarlas para duplicar el límite de ritmo. Es exactamente el
  * fallo que `express-rate-limit` corrigió en su 8.2.2, y aquí nos toca igual
- * porque el limitador usa su propio `keyGenerator` sobre `req.ip`.
+ * porque el limitador usa su propio `keyGenerator` sobre `req.ip`. La
+ * agrupación por subred IPv6 va aparte, en `ipAddressKey`.
  *
  * Se normaliza también la caja de los hexadecimales, por el mismo motivo: dos
  * grafías de la misma dirección no pueden ser dos sujetos.
@@ -122,9 +124,27 @@ export function normalizeIp(ip?: string): string {
     return limpia;
 }
 
+/**
+ * Clave de dirección del llamante: la IP normalizada y, si es IPv6, reducida
+ * a su subred /56 con `ipKeyGenerator`.
+ *
+ * Un solo cliente IPv6 recibe normalmente un /64 o mayor, y puede estrenar
+ * una dirección distinta en cada petición sin coste. Contar por dirección
+ * individual le daba un cupo nuevo por petición; contar por subred ata al
+ * cliente, que es lo que se pretende limitar. Las IPv4 no cambian.
+ *
+ * Primero se normaliza y luego se agrupa, en ese orden: `::1` ha de acabar
+ * como `127.0.0.1`, no como la subred `::/56`. Es idempotente —una subred ya
+ * agrupada no es una IPv6 válida y `ipKeyGenerator` la devuelve tal cual—, así
+ * que aplicarla dos veces da la misma clave.
+ */
+export function ipAddressKey(ip?: string): string {
+    return ipKeyGenerator(normalizeIp(ip));
+}
+
 export function subjectFromRequest(opts: { ip?: string; accountId?: string }): string {
     if (opts.accountId) return subjectId(`account:${opts.accountId}`);
-    return subjectId(`ip:${normalizeIp(opts.ip)}`);
+    return subjectId(`ip:${ipAddressKey(opts.ip)}`);
 }
 
 /**
