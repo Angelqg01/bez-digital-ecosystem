@@ -174,7 +174,7 @@ steps:
           --min-instances=0 --max-instances=5 --concurrency=40 --timeout=300 \
           --execution-environment=gen2 \
           --labels=app=bezhas,component=mcp,commit=${_TAG} \
-          --set-env-vars=NODE_ENV=production,HTTP_PORT=8080,TRUST_PROXY_HOPS=2,BACKEND_URL=${_API_URL} \
+          --set-env-vars=NODE_ENV=production,HTTP_PORT=8080,TRUST_PROXY_HOPS=2,BACKEND_URL=${_API_URL},OAUTH_ISSUER=${_API_URL},MCP_PUBLIC_URL=${_MCP_URL} \
           --set-secrets="$$(secretos_de mcp)"
 
   # Migraciones de PostgreSQL ANTES de desplegar el backend: si una falla, el
@@ -234,7 +234,7 @@ steps:
           --execution-environment=gen2 --cpu-boost --session-affinity \
           --network=${_VPC_NETWORK} --subnet=${_VPC_SUBNET} --vpc-egress=private-ranges-only \
           --labels=app=bezhas,component=backend,commit=${_TAG} \
-          --set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,DISABLE_BULLMQ=true,DISABLE_QUEUE_WORKER=true,AUTH_BYPASS_ENABLED=false,TRUST_PROXY_HOPS=2,FRONTEND_URL=${_WWW_URL},MCP_SERVER_URL=${_MCP_URL} \
+          --set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,DISABLE_BULLMQ=true,DISABLE_QUEUE_WORKER=true,AUTH_BYPASS_ENABLED=false,TRUST_PROXY_HOPS=2,FRONTEND_URL=${_WWW_URL},MCP_SERVER_URL=${_MCP_URL},OAUTH_ISSUER=${_API_URL},MCP_PUBLIC_URL=${_MCP_URL} \
           --set-secrets="$$(secretos_de backend)"
 
   - id: deploy-frontend
