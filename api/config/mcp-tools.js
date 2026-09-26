@@ -79,6 +79,10 @@ const { z } = require('zod');
 const { alcanza, describirPlan, PLAN_POR_DEFECTO } = require('./plan-entitlements');
 const { RAILS } = require('./tx-rails');
 const { REDES, PROPOSITOS } = require('../services/txIntent');
+const {
+    estimarCoste, TIPOS: TIPOS_COSTE, MAX_LINEAS: MAX_LINEAS_COSTE, MAX_CANTIDAD: MAX_CANTIDAD_COSTE,
+} = require('../services/costEstimate');
+const { DEPARTMENT_BY_ID } = require('./operant-services');
 
 /** Tope de caracteres por respuesta. Un agente que pide 10.000 filas no debe
  *  poder inundar su propia ventana de contexto ni la memoria del servidor. */
@@ -220,6 +224,37 @@ const TOOLS = [
             // vez de presentarlo como precio de ejecución.
             return { ...suscripcion, incluye: describirPlan(suscripcion.plan) };
         },
+    },
+    // Coste ANTES de actuar. Usa las mismas funciones con las que se factura
+    // (services/costEstimate.js): si cambia una tarifa, la estimación cambia con
+    // ella. El plan lo pone la api-key, no un argumento: un agente no puede
+    // estimar «como si» fuera de otro plan para vender una cifra que no es.
+    {
+        name: 'bezhas_cost_estimate',
+        planMinimo: 'starter',
+        scope: 'wallet',
+        nivelRiesgo: 0,
+        title: 'Estimar el coste antes de actuar',
+        description: 'Calcula cuánto cuesta un conjunto de operaciones antes de hacerlas: llamadas a la API, acciones de '
+            + 'IA, consultas al oráculo, envíos on-chain, webhooks, tareas de OPERANT o la comisión de una compra de '
+            + 'BEZ-Coin. Devuelve el precio de lista y qué pagarías de verdad con tu plan (por uso, incluido en la cuota '
+            + 'o no incluido). No ejecuta nada y no consume créditos.',
+        inputSchema: {
+            operaciones: z.array(z.object({
+                tipo: z.enum(Object.keys(TIPOS_COSTE))
+                    .describe('llamada_api, accion_ia, consulta_oraculo, relay_onchain, entrega_webhook, tarea_operant o compra_bez'),
+                cantidad: z.number().int().min(1).max(MAX_CANTIDAD_COSTE).optional().describe('Unidades; por defecto 1'),
+                departamento: z.enum(Object.keys(DEPARTMENT_BY_ID)).optional()
+                    .describe('Obligatorio en tarea_operant: sales, support, marketing, finance, hr, operations, legal, blockchain, treasury, fundraising'),
+                importe_usd: z.string().regex(/^\d{1,9}(\.\d{1,2})?$/).optional()
+                    .describe('Obligatorio en compra_bez: importe neto en USD'),
+                tokens_entrada: z.number().int().min(0).max(2_000_000).optional()
+                    .describe('Sólo accion_ia: tokens de entrada previstos, para incluir el coste del modelo'),
+                tokens_salida: z.number().int().min(0).max(2_000_000).optional()
+                    .describe('Sólo accion_ia: tokens de salida previstos'),
+            })).min(1).max(MAX_LINEAS_COSTE).describe('Lista de operaciones a estimar (máx. 20)'),
+        },
+        handler: async ({ args, plan }) => estimarCoste({ operaciones: args.operaciones, plan }),
     },
 
     // ── Operaciones con fondos: NIVEL 1, preparar ───────────────────────────

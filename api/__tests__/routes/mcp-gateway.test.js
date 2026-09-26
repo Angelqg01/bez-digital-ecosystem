@@ -252,6 +252,35 @@ describe('MCP de cara al cliente (/api/mcp)', () => {
         });
     });
 
+    describe('bezhas_cost_estimate', () => {
+        const estimar = (plan, operaciones) => {
+            conApp(['wallet'], plan);
+            return rpc('k', 'tools/call', { name: 'bezhas_cost_estimate', arguments: { operaciones } });
+        };
+
+        it('está en el catálogo desde Starter con scope wallet', async () => {
+            conApp(['wallet'], 'starter');
+            expect(listar(await rpc('k', 'tools/list'))).toContain('bezhas_cost_estimate');
+        });
+
+        it('usa el plan de la api-key, no uno que el agente declare', async () => {
+            const t = cuerpo(await estimar('business', [{ tipo: 'llamada_api', cantidad: 10 }]))
+                ?.result?.content?.[0]?.text || '';
+            expect(t).toMatch(/"plan": "business"/);
+            expect(t).toMatch(/incluido_en_cuota/);
+        });
+
+        it('una combinación inválida devuelve el motivo, no un error genérico', async () => {
+            const r = cuerpo(await estimar('starter', [{ tipo: 'tarea_operant' }]))?.result;
+            expect(r?.content?.[0]?.text).toMatch(/departamento/);
+        });
+
+        it('rechaza tipos fuera de la lista cerrada', async () => {
+            const r = cuerpo(await estimar('starter', [{ tipo: 'borrar_todo' }]));
+            expect(r?.result?.isError === true || Boolean(r?.error)).toBe(true);
+        });
+    });
+
     describe('entrada hostil', () => {
         it('rechaza una cantidad que no sea numérica', async () => {
             conApp(['token']);

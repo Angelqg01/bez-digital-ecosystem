@@ -56,6 +56,14 @@ const CAPABILITIES: { icon: string; title: string; text: string; tools: string[]
         prompt: '¿En qué estado está el pago que preparamos esta mañana?',
     },
     {
+        icon: 'calculate',
+        title: 'Saber el coste antes de actuar',
+        text: 'Cuánto cuesta una operación con las mismas tarifas con las que se factura, y qué pagarías de verdad con tu plan.',
+        tools: ['bezhas_cost_estimate'],
+        plan: 'Starter',
+        prompt: '¿Cuánto nos costarían 50 tareas de marketing en OPERANT y comprar 500 USD de BEZ?',
+    },
+    {
         icon: 'workspace_premium',
         title: 'Tu suscripción y consumo',
         text: 'Qué incluye tu plan, qué módulos tienes activos y qué te falta para lo que quieres hacer.',
@@ -189,7 +197,7 @@ const PLANS: {
         period: 'sin cuota · pago por uso',
         cta: { label: 'Empezar 15 días gratis', href: '/register' },
         features: [
-            '4 herramientas de consulta',
+            '5 herramientas de consulta, incluido el coste antes de actuar',
             '30 llamadas MCP por minuto',
             '150 acciones de IA al mes',
             'Dato de mercado con 15 min de retraso',
@@ -204,7 +212,7 @@ const PLANS: {
         yearly: '990 € / año',
         cta: { label: 'Contratar Creator Pro', href: '/register' },
         features: [
-            'Las 10 herramientas, incluido preparar operaciones',
+            'Las 11 herramientas, incluido preparar operaciones',
             '120 llamadas MCP por minuto',
             '1.500 acciones de IA al mes',
             'Mercado en tiempo real',

@@ -223,7 +223,7 @@ function construirServidor(app, plan, agente = null) {
             } catch (err) {
                 // Una denegación de la política no es un fallo del servidor: el
                 // agente necesita el motivo para decírselo al usuario.
-                if (err?.name === 'TxError' && err.status < 500) {
+                if (['TxError', 'CostEstimateError'].includes(err?.name) && err.status < 500) {
                     anotar('denegado', err.code);
                     return resultadoDato(tool.name, { error: err.message, code: err.code, detalles: err.detalles });
                 }
