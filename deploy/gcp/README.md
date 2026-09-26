@@ -36,6 +36,7 @@ romper nada.
 | 4 | `03-load-balancer.sh` | Balanceador, certificados y Cloud Armor (o los reapunta) | Una vez |
 | 5 | `04-hostinger-dns.sh` | Apunta bezhas.com al balanceador por la API de Hostinger | Una vez |
 | 6 | `05-verify.sh` | Comprueba DNS, certificados, salud y seguridad | Siempre |
+| 7 | `06-monitoring.sh` | Comprobación cada minuto de www, api y mcp y aviso por email si caen | Una vez |
 
 ## Paso de la versión anterior (BeZhas Hub) a esta
 
@@ -48,7 +49,7 @@ En **Cloud Shell**:
 
 ```bash
 cd ~ && rm -rf bezhas-blockchain
-git clone -b claude/deploy-gcp-bezhas-blockchain \
+git clone -b feat/seguridad-transaccional-mcp \
   https://github.com/Angelqg01/bez-digital-ecosystem.git bezhas-blockchain
 cd bezhas-blockchain
 
@@ -62,6 +63,7 @@ nano ~/bezhas-blockchain.env     # claves de terceros que uses (todas opcionales
 ./deploy/gcp/deploy.sh           # 20-30 min la primera vez
 ./deploy/gcp/03-load-balancer.sh # www → control-center, api/mcp → bezhas-api
 ./deploy/gcp/05-verify.sh
+ALERT_EMAIL=tu@correo ./deploy/gcp/06-monitoring.sh
 ```
 
 El `.env` de la versión anterior (`~/bezhas.env.production`) no se toca: esta
@@ -113,9 +115,9 @@ en dos servicios, claves donde van direcciones o la clave del deployer.
 - **Cloud Armor**: OWASP, 600 peticiones/min por IP con bloqueo de 10 min,
   defensa L7. Los webhooks firmados (`/api/webhooks/stripe`, `/api/webhooks/bank`)
   pasan antes de las reglas OWASP; su firma la comprueba la api.
-- **IP real del cliente**: la api usa `TRUST_PROXY_HOPS=2`; sin ello todos los
-  visitantes compartían el cubo del limitador (100 peticiones / 15 min) y la
-  web entera acababa en 429.
+- **Limitador de la api** (`api/config/rateLimit.js`): 1000 peticiones cada
+  15 min por IP real (`TRUST_PROXY_HOPS=2`), sin atajos por cabecera; los
+  webhooks firmados no pasan por él. Cloud Armor limita por encima.
 - **Redis opcional de verdad**: sin Redis la api responde (caché y limitador
   degradan) en vez de quedarse esperando.
 - **Cabeceras** del panel: `nosniff`, `X-Frame-Options`, `Referrer-Policy`, HSTS.

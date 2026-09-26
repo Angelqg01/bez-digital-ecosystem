@@ -25,6 +25,7 @@
 const express = require('express');
 const cors = require('cors');
 const { makeCorsOriginFn, parseExtraOrigins } = require('./config/cors');
+const { globalLimiterOptions } = require('./config/rateLimit');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
@@ -168,22 +169,8 @@ app.use(cors({
 //  SECCIÓN 3: RATE LIMITERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Rate limiter global */
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX, 10) || (IS_PROD ? 100 : 5000),
-  skip: req => (!IS_PROD && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.ip))
-    // El War Room sondea cada 8 s por diseño: son 112 peticiones cada 15
-    // minutos contra un límite de 100. A los trece minutos de encender el
-    // kiosko, la pantalla se quedaba en blanco con un 429 y ahí seguía hasta
-    // que expiraba la ventana. Tiene su propio limitador, más abajo, dimensionado
-    // para ese sondeo — y además su propio token.
-    || req.path.startsWith('/api/monitor'),
-  message: { error: 'Too many requests, please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: req => req.headers['x-api-key'] || req.ip,  // agrupar por API key si existe
-});
+/** Rate limiter global (opciones y motivos en config/rateLimit.js) */
+const globalLimiter = rateLimit(globalLimiterOptions({ isProduction: IS_PROD }));
 
 /**
  * Rate limiter estricto para endpoints SCADA y arbitraje.
