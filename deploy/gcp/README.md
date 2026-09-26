@@ -26,6 +26,7 @@ romper nada.
 | Paso | Script | Qué hace | Cuándo |
 |---|---|---|---|
 | 1 | `01-bootstrap.sh` | APIs, Artifact Registry, cuentas de servicio, federación con GitHub | Una vez |
+| 0 | `00-generar-env.sh` | Crea/completa `~/bezhas.env.production`: secretos internos al azar, par OAuth, huecos para claves de terceros | Una vez y tras cada cambio de la plataforma |
 | 1b | `01b-database.sh` | PostgreSQL (Cloud SQL, solo IP privada), copias y `DATABASE_URL` en Secret Manager | Una vez |
 | 2 | `02-secrets.sh <.env>` | Sube los secretos a Secret Manager con acceso mínimo | Una vez y al rotar |
 | 3 | `deploy.sh` | Construye las 3 imágenes y despliega en Cloud Run | Cada versión |
@@ -56,9 +57,10 @@ cd bez-digital-ecosystem
 # 1b. PostgreSQL gestionado (tarda 5-10 min)
 ./deploy/gcp/01b-database.sh
 
-# 2. Secretos: prepara un .env de producción FUERA del repositorio
-cp .env.example ~/bezhas.env.production && chmod 600 ~/bezhas.env.production
-#    …rellénalo (lista completa en deploy/gcp/secrets.list)…
+# 2. Secretos: genera el .env FUERA del repositorio, rellena las claves de
+#    terceros y súbelo (02 rechaza valores de desarrollo antes de subir nada)
+./deploy/gcp/00-generar-env.sh
+nano ~/bezhas.env.production
 ./deploy/gcp/02-secrets.sh ~/bezhas.env.production
 
 # 3. Primer despliegue de los servicios
