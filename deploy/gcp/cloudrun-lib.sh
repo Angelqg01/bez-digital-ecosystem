@@ -27,8 +27,24 @@ flag_secretos() {
   [[ -n "$s" ]] && echo "--set-secrets=$s" || true
 }
 
-url_de() {
-  gcloud run services describe "$1" --region="${REGION:-us-central1}" --format='value(status.url)'
+# url_run <servicio>: URL *.run.app. Es determinista (servicio, número de
+# proyecto y región), así que no hace falta que el servicio exista ni esperar
+# a que otro paso lo despliegue.
+url_run() {
+  local num="${PROJECT_NUMBER:-}"
+  [[ -n "$num" ]] || num=$(gcloud projects describe "${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}" --format='value(projectNumber)')
+  echo "https://$1-${num}.${REGION:-us-central1}.run.app"
+}
+
+# con_aviso <nombre> <comando…>: si el comando falla, lo apunta en
+# /workspace/avisos.txt y devuelve 0; el paso `resumen` lo reporta al final.
+con_aviso() {
+  local nombre="$1"; shift
+  if ! "$@"; then
+    echo "❌ $nombre falló (se sigue con el resto)" >&2
+    echo "$nombre" >> "${AVISOS:-/workspace/avisos.txt}"
+  fi
+  return 0
 }
 
 invocador() {  # invocador <servicio> <cuenta de servicio>

@@ -21,6 +21,28 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 TAG="${TAG:-$(git rev-parse --short=12 HEAD)}"
 
+# ── Comprobación previa: secretos obligatorios ─────────────────────────────
+# Sin ellos los contenedores no arrancan (la api y el ai-gateway se cierran
+# al ver que falta JWT_SECRET o INTERNAL_API_KEY) y el balanceador da 404/503.
+# Pasa cuando 02-secrets.sh rechazó el .env y no subió nada: mejor pararse
+# aquí, en segundos, que tras 20 minutos de build.
+echo "→ Comprobando secretos obligatorios en Secret Manager (${SECRET_PREFIX}*)"
+faltan=()
+while read -r clave _ requisito _; do
+  [[ -z "${clave:-}" || "$clave" == \#* || "$requisito" != obligatorio ]] && continue
+  if [[ -z "$(gcloud secrets versions list "${SECRET_PREFIX}${clave}" --project="$PROJECT_ID" \
+               --filter=state=ENABLED --limit=1 --format='value(name)' 2>/dev/null)" ]]; then
+    faltan+=("$clave")
+  fi
+done < deploy/gcp/secrets.list
+if ((${#faltan[@]})); then
+  echo "❌ Faltan secretos obligatorios (sin versión en Secret Manager):" >&2
+  printf '   - %s\n' "${faltan[@]}" >&2
+  echo "   Ejecuta ./deploy/gcp/00-generar-env.sh y ./deploy/gcp/02-secrets.sh ~/bezhas-blockchain.env" >&2
+  echo "   (si 02 muestra errores de validación, corrígelos en el .env: no sube nada hasta que pasa)." >&2
+  exit 1
+fi
+
 # Comas dentro de un valor: gcloud usa ^~^ para cambiar el separador.
 SUBS="^~^_REGION=${REGION}~_ARTIFACT_REPO=${ARTIFACT_REPO}~_TAG=${TAG}"
 SUBS+="~_WWW_URL=https://${WWW_HOST}~_API_URL=https://${API_HOST}~_MCP_HOST=${MCP_HOST}"
