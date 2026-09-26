@@ -71,8 +71,8 @@ cp .env.example ~/bezhas.env.production && chmod 600 ~/bezhas.env.production
 DRY_RUN=1 ./deploy/gcp/04-hostinger-dns.sh   # ver el plan
 ./deploy/gcp/04-hostinger-dns.sh             # aplicar
 
-# 6. Esperar al certificado (15–60 min) y verificar
-./deploy/gcp/05-verify.sh
+# 6. Esperar a los certificados (15–60 min tras el DNS) y verificar
+./deploy/gcp/05-verify.sh --wait
 ```
 
 ### Valores imprescindibles en el `.env` de producción
@@ -135,7 +135,9 @@ acepta tokens de este repositorio.
   permiten antes de las reglas OWASP para evitar falsos positivos.
   Para empezar en modo observación: `ARMOR_PREVIEW=1 ./deploy/gcp/03-load-balancer.sh`
   (solo tiene efecto al crear la política).
-- **TLS**: certificado gestionado por Google, política MODERN, mínimo TLS 1.2,
+- **TLS**: un certificado gestionado por Google **por dominio** (si uno tarda en
+  validarse, por ejemplo por la caché DNS de un registro antiguo, los demás se
+  activan igualmente), política MODERN, mínimo TLS 1.2,
   redirección HTTP → HTTPS y bezhas.com → www.
 - **IP real del cliente**: el backend usa `TRUST_PROXY_HOPS=2` detrás del
   balanceador; con 1, todas las peticiones compartirían la IP del balanceador
@@ -163,4 +165,11 @@ gcloud run services update-traffic bezhas-backend --region=us-central1 --to-revi
 gcloud logging read 'resource.type="http_load_balancer" AND jsonPayload.enforcedSecurityPolicy.outcome="DENY"' --limit=50
 
 # Deshacer el DNS: la zona anterior está en deploy/gcp/dns-backups/
+
+# Certificado atascado en FAILED_NOT_VISIBLE más de 2 h con el DNS ya correcto:
+# se recrea ese dominio (ej. api) y se vuelve a enlazar al proxy
+gcloud compute target-https-proxies update bezhas-lb-https --global \
+  --ssl-certificates=bezhas-cert-apex,bezhas-cert-www,bezhas-cert-mcp
+gcloud compute ssl-certificates delete bezhas-cert-api --global --quiet
+./deploy/gcp/03-load-balancer.sh
 ```
