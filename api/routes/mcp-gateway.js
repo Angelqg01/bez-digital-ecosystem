@@ -56,6 +56,7 @@
  *     con scope `admin` salta el scope por ser interna, pero no compra plan.
  */
 
+const { randomUUID } = require('crypto');
 const { Router } = require('express');
 const rateLimit = require('express-rate-limit');
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
@@ -70,6 +71,7 @@ const { resolverPlan } = require('../middleware/resolve-plan');
 const { orquestador } = require('../services/txOrchestrator');
 const bridge = require('../services/mcpGatewayBridge');
 const telemetry = require('../services/telemetryPipeline');
+const { recordUsage } = require('../services/usageBilling');
 const logger = require('../utils/logger');
 
 const router = Router();
@@ -121,6 +123,28 @@ function resultadoDato(nombre, datos) {
             ),
         }],
     };
+}
+
+/**
+ * Medición del uso para el plan Starter (pago por uso), igual que el Gateway
+ * REST (middleware/gateway-metering.js): sin esto, la misma consulta salía
+ * gratis por MCP y se cobraba por REST.
+ *
+ * Qué se cobra: cada `tools/call` que termina bien. NO se cobra el protocolo
+ * —initialize, tools/list, notificaciones—, que el cliente MCP envía por su
+ * cuenta y el usuario no controla; ni lo que la política deniega o falla, igual
+ * que REST no cobra un 4xx/5xx; ni las herramientas marcadas `gratuita` (estimar
+ * el coste no puede costar). Los demás planes pagan cuota fija y no se miden.
+ *
+ * Nunca bloquea ni retrasa la respuesta: se lanza sin esperar, y usageBilling
+ * deja el apunte en el ledger local aunque Stripe falle. La referencia es
+ * aleatoria del servidor: si la eligiera el cliente podría repetirla y Stripe
+ * descartaría los eventos duplicados.
+ */
+function medirUso(app, plan, tool) {
+    if (plan !== 'starter' || tool.gratuita) return;
+    recordUsage(app.id, { action: tool.accionCoste || 'api_call', ref: `mcp:${randomUUID()}` })
+        .catch((err) => logger.warn({ appId: app.id, tool: tool.name, error: err?.message }, 'MCP usage metering failed'));
 }
 
 /** Error para el cliente: una frase. El detalle, al log. */
@@ -219,6 +243,7 @@ function construirServidor(app, plan, agente = null) {
                     args: args || {}, app, bridge, entitlements, plan, agente, tx: orquestador(),
                 });
                 anotar('ok');
+                medirUso(app, plan, definicion);
                 return resultadoDato(tool.name, datos);
             } catch (err) {
                 // Una denegación de la política no es un fallo del servidor: el

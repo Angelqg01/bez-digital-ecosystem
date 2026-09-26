@@ -17,6 +17,7 @@
 'use strict';
 
 const { query } = require('../db/pool');
+const { randomUUID } = require('crypto');
 const { recordUsage } = require('../services/usageBilling');
 
 const PLAN_CACHE_TTL_MS = 60_000;
@@ -60,7 +61,12 @@ function meterUsage(action = 'api_call') {
             isStarterApp(app.id)
                 .then((isStarter) => {
                     if (!isStarter) return;
-                    return recordUsage(app.id, { action, ref: req.id || undefined });
+                    // La referencia la genera SIEMPRE el servidor. Antes era req.id, que
+                    // sale de la cabecera X-Request-Id si el cliente la envía: Stripe
+                    // descarta los meter events con un identifier repetido, así que
+                    // mandar siempre el mismo X-Request-Id dejaba sin facturar todas
+                    // las llamadas salvo la primera.
+                    return recordUsage(app.id, { action, ref: randomUUID() });
                 })
                 .catch((e) => {
                     // Nunca debe tumbar el request — el ledger local en

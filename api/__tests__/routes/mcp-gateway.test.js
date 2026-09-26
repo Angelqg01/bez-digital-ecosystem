@@ -1,5 +1,10 @@
 const request = require('supertest');
 const { mockQuery } = require('../helpers');
+
+// La medición se lanza sin esperar: con el pool real mockeado, sus consultas
+// podrían consumir respuestas encoladas por el test siguiente. Se aísla aquí.
+const mockRecordUsage = jest.fn().mockResolvedValue({ credits: 1 });
+jest.mock('../../services/usageBilling', () => ({ recordUsage: (...a) => mockRecordUsage(...a) }));
 const app = require('../../index');
 const { TOOLS, toolsParaScopes, getTool } = require('../../config/mcp-tools');
 
@@ -249,6 +254,53 @@ describe('MCP de cara al cliente (/api/mcp)', () => {
                 name: 'bezhas_token_price', arguments: {},
             }))?.result?.content?.[0]?.text || '';
             expect(t).toMatch(/"tiempoReal": true/);
+        });
+    });
+
+    describe('medición de uso (Starter paga por uso, también por MCP)', () => {
+        const llamar = (plan, name, args = {}) => {
+            conApp(['token', 'wallet'], plan);
+            return rpc('k', 'tools/call', { name, arguments: args });
+        };
+
+        it('cobra cada tools/call que termina bien en Starter, con referencia del servidor', async () => {
+            const r = cuerpo(await llamar('starter', 'bezhas_token_price'));
+            expect(r?.result?.isError).toBeFalsy();
+            expect(mockRecordUsage).toHaveBeenCalledTimes(1);
+            expect(mockRecordUsage).toHaveBeenCalledWith('app-1', { action: 'api_call', ref: expect.stringMatching(/^mcp:[0-9a-f-]{36}$/) });
+        });
+
+        it('no cobra en planes de cuota fija', async () => {
+            await llamar('business', 'bezhas_token_price');
+            expect(mockRecordUsage).not.toHaveBeenCalled();
+        });
+
+        it('no cobra el protocolo: tools/list no es una llamada de herramienta', async () => {
+            conApp(['token', 'wallet'], 'starter');
+            await rpc('k', 'tools/list');
+            expect(mockRecordUsage).not.toHaveBeenCalled();
+        });
+
+        it('no cobra bezhas_cost_estimate: promete no consumir créditos', async () => {
+            await llamar('starter', 'bezhas_cost_estimate', { operaciones: [{ tipo: 'llamada_api' }] });
+            expect(mockRecordUsage).not.toHaveBeenCalled();
+        });
+
+        it('no cobra lo que se deniega ni lo que falla', async () => {
+            await llamar('starter', 'bezhas_dex_pool');                                  // fuera del plan
+            await llamar('starter', 'bezhas_cost_estimate', { operaciones: [{ tipo: 'tarea_operant' }] }); // inválida
+            await llamar('starter', 'bezhas_no_existe');
+            expect(mockRecordUsage).not.toHaveBeenCalled();
+        });
+
+        it('la gratuidad forma parte de la huella del catálogo', () => {
+            // Si una herramienta pasara de gratuita a de pago sin aviso, un
+            // cliente que fija la huella tiene que poder detectarlo.
+            const { huellaCatalogo } = require('../../config/mcp-tools');
+            const copia = TOOLS.map((t) => ({ ...t }));
+            const i = copia.findIndex((t) => t.name === 'bezhas_cost_estimate');
+            copia[i].gratuita = false;
+            expect(huellaCatalogo(copia)).not.toBe(huellaCatalogo());
         });
     });
 

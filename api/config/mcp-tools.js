@@ -234,6 +234,9 @@ const TOOLS = [
         planMinimo: 'starter',
         scope: 'wallet',
         nivelRiesgo: 0,
+        // Su propia respuesta promete que no consume créditos: mcp-gateway.js
+        // no la mide.
+        gratuita: true,
         title: 'Estimar el coste antes de actuar',
         description: 'Calcula cuánto cuesta un conjunto de operaciones antes de hacerlas: llamadas a la API, acciones de '
             + 'IA, consultas al oráculo, envíos on-chain, webhooks, tareas de OPERANT o la comisión de una compra de '
@@ -393,6 +396,7 @@ function huellaCatalogo(tools = TOOLS) {
     const forma = tools.map((t) => ({
         name: t.name, title: t.title, description: t.description, scope: t.scope,
         planMinimo: t.planMinimo, nivelRiesgo: t.nivelRiesgo || 0, recibeDestinatario: Boolean(t.recibeDestinatario),
+        gratuita: Boolean(t.gratuita),
         args: Object.fromEntries(Object.entries(t.inputSchema || {}).map(([k, v]) => [k, v?.description || v?._def?.type || null])),
     }));
     return crypto.createHash('sha256').update(JSON.stringify(forma)).digest('hex');
