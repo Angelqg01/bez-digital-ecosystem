@@ -28,6 +28,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools } from './tools/index.js';
+import { crearRouterMcpPublico } from './public-mcp.js';
 import {
     auditLog,
     guardian,
@@ -110,6 +111,10 @@ const sujetoActual = (): string | undefined => contexto.getStore()?.subject;
 app.use((req, _res, next) => {
     contexto.run({ subject: subjectFromRequest({ ip: req.ip }) }, next);
 });
+
+// MCP público para clientes (Claude, Codex, Gemini) con OAuth 2.1. Lleva su
+// propio blindaje con el sujeto del token; ver `public-mcp.ts`.
+app.use(crearRouterMcpPublico());
 
 // Initialize MCP Server (internal, not connected to transport)
 const mcpServer = new McpServer({
