@@ -14,10 +14,14 @@ remappings = [
 local = "http://localhost:8545"
 sepolia = "https://rpc.sepolia.org"
 bezhas_testnet = "${BEZHAS_L2_RPC_URL}"
+polygon = "${POLYGON_RPC_URL:-https://polygon-rpc.com}"
+bsc = "${BSC_RPC_URL:-https://bsc-dataseed.binance.org}"
 
 [etherscan]
 bezhas_testnet = { key = "${BLOCKSCOUT_API_KEY}", url = "${BLOCKSCOUT_API_URL}", chain = 2708 }
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
+polygon = { key = "${POLYGONSCAN_API_KEY}" }
+bsc = { key = "${BSCSCAN_API_KEY}" }
 
 [fuzz]
 runs = 512
