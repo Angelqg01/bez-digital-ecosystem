@@ -83,31 +83,58 @@ while read -r h n st; do
   esac
 done < <(estado_certs)
 
+# ── Servicios de Cloud Run ──────────────────────────────────────────────────
+# Si un servicio no existe, el balanceador responde 404 él mismo (sin pasar
+# por nginx ni Express): eso es lo que se ve cuando deploy.sh no ha terminado.
+echo "Servicios"
+declare -A SVC_OK=()
+for svc in "$FRONTEND_SERVICE" "$BACKEND_SERVICE" "$MCP_SERVICE"; do
+  info=$(gcloud run services describe "$svc" --region="$REGION" --project="$PROJECT_ID" \
+           --format='value(status.conditions[0].status,status.latestReadyRevisionName)' 2>/dev/null)
+  listo=${info%%$'\t'*}; rev=${info#*$'\t'}
+  if [[ -z "$info" ]]; then
+    mal "$svc no existe: ejecuta ./deploy/gcp/deploy.sh (el balanceador da 404 mientras tanto)"
+  elif [[ "$listo" != True ]]; then
+    mal "$svc no está listo. Logs: gcloud run services logs read $svc --region=$REGION --limit=50"
+  else
+    ok "$svc ($rev)"; SVC_OK[$svc]=1
+  fi
+done
+if gcloud run jobs describe bezhas-migrate --region="$REGION" --project="$PROJECT_ID" >/dev/null 2>&1; then
+  ult=$(gcloud run jobs executions list --job=bezhas-migrate --region="$REGION" --project="$PROJECT_ID" \
+          --limit=1 --format='value(status.conditions[0].status)' 2>/dev/null)
+  [[ "$ult" == True ]] && ok "migraciones aplicadas (bezhas-migrate)" \
+    || mal "la última migración falló: gcloud run jobs executions list --job=bezhas-migrate --region=$REGION"
+else
+  mal "no hay job de migraciones: deploy.sh no ha llegado a ejecutarse"
+fi
+
 # ── HTTP ────────────────────────────────────────────────────────────────────
 echo "HTTP"
-comprobar() {  # comprobar HOST RUTA CÓDIGO
+comprobar() {  # comprobar HOST RUTA CÓDIGO [SERVICIO]
   local h="$1" url="https://$1$2" c
   if [[ -z "${CERT_OK[$h]:-}" ]]; then espera "$url (sin certificado activo todavía)"; return; fi
+  if [[ -n "${4:-}" && -z "${SVC_OK[$4]:-}" ]]; then espera "$url (el servicio $4 no está desplegado)"; return; fi
   c=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$url")
   [[ "$c" == "$3" ]] && ok "$url → $c" || mal "$url → $c (esperado $3)"
 }
-comprobar "$WWW_HOST" /health 200
-comprobar "$API_HOST" /api/health 200
-comprobar "$MCP_HOST" /api/mcp/health 200
+comprobar "$WWW_HOST" /health 200 "$FRONTEND_SERVICE"
+comprobar "$API_HOST" /api/health 200 "$BACKEND_SERVICE"
+comprobar "$MCP_HOST" /api/mcp/health 200 "$MCP_SERVICE"
 comprobar "$DOMAIN"   /       301
 c=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "http://$WWW_HOST/")
 [[ "$c" == 301 ]] && ok "http://$WWW_HOST/ → 301 (redirige a HTTPS)" || mal "http://$WWW_HOST/ → $c (esperado 301)"
 
 # ── Seguridad ───────────────────────────────────────────────────────────────
 echo "Seguridad"
-if [[ -n "${CERT_OK[$WWW_HOST]:-}" ]]; then
+if [[ -n "${CERT_OK[$WWW_HOST]:-}" && -n "${SVC_OK[$FRONTEND_SERVICE]:-}" ]]; then
   cab=$(curl -sI --max-time 15 "https://$WWW_HOST/")
   grep -qi '^x-content-type-options: nosniff' <<< "$cab" && ok "X-Content-Type-Options" || mal "falta X-Content-Type-Options"
   grep -qi '^x-frame-options' <<< "$cab" && ok "X-Frame-Options" || mal "falta X-Frame-Options"
   proto=$(curl -s -o /dev/null -w '%{ssl_version}' --tlsv1.1 --tls-max 1.1 --max-time 10 "https://$WWW_HOST/" 2>/dev/null)
   [[ -z "$proto" || "$proto" == 0 ]] && ok "TLS 1.0/1.1 rechazados" || mal "acepta $proto"
 else
-  espera "cabeceras y TLS: se comprueban cuando ${WWW_HOST} tenga certificado"
+  espera "cabeceras y TLS: se comprueban cuando ${WWW_HOST} tenga certificado y frontend"
 fi
 url=$(gcloud run services describe "$BACKEND_SERVICE" --region="$REGION" --project="$PROJECT_ID" --format='value(status.url)' 2>/dev/null)
 if [[ -n "$url" ]]; then

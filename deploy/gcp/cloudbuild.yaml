@@ -37,6 +37,9 @@ substitutions:
   # Direcciones públicas de contratos en Polygon (no son secretos: van al
   # bundle del navegador).
   _POLYGON_CHAIN_ID: "137"
+  # Red del MCP (mainnet | amoy). Por defecto el MCP usa amoy (testnet), que no
+  # es donde viven los contratos de producción (chain 137).
+  _NETWORK_MODE: mainnet
   _BEZCOIN_ADDRESS: "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8"
   _QUALITY_ORACLE_ADDRESS: "0x0C4291c40Aaaded2207b3C3118B6afc9cc10EBE7"
   _QUALITY_ESCROW_ADDRESS: "0x5101ab251f17F8948069b74fd59eCf2C150b29EF"
@@ -171,7 +174,7 @@ steps:
           --min-instances=0 --max-instances=5 --concurrency=40 --timeout=300 \
           --execution-environment=gen2 \
           --labels=app=bezhas,component=mcp,commit=${_TAG} \
-          --set-env-vars=NODE_ENV=production,HTTP_PORT=8080,BACKEND_URL=${_API_URL} \
+          --set-env-vars=NODE_ENV=production,HTTP_PORT=8080,NETWORK_MODE=${_NETWORK_MODE},BACKEND_URL=${_API_URL} \
           --set-secrets="$$(secretos_de mcp)"
 
   # Migraciones de PostgreSQL ANTES de desplegar el backend: si una falla, el
