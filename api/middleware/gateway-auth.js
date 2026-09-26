@@ -13,6 +13,18 @@ const logger = require('pino')({ level: 'info', name: 'gateway-auth' });
 
 // Single source of truth for secrets (never read process.env independently here).
 const { JWT_SECRET, AUTH_BYPASS } = require('../config/secrets');
+const oauthTokens = require('../services/oauthTokens');
+
+/**
+ * Especificación de autorización de MCP (RFC 9728 §5.1): un 401 del recurso
+ * protegido dice DÓNDE está su metadata OAuth. Es lo que permite a Claude,
+ * ChatGPT o Codex descubrir solos el login al añadir el conector con solo la
+ * URL; sin la cabecera, algunos clientes no llegan a iniciar el flujo.
+ */
+function anunciarMetadataOAuth(res) {
+    res.set('WWW-Authenticate',
+        `Bearer resource_metadata="${oauthTokens.ISSUER}/.well-known/oauth-protected-resource"`);
+}
 
 /**
  * Credenciales de agente (§41 del documento de seguridad del MCP).
@@ -83,13 +95,77 @@ async function authenticateAgent(req, res, next, clave) {
 }
 
 /**
- * Authenticate a registered app via x-api-key header.
+ * Autentica un access token OAuth 2.1 emitido por routes/oauth.js
+ * (Authorization: Bearer <jwt>).
+ *
+ * El `sub` del JWT es el MISMO app_registry.id que usa el camino de api-key,
+ * así que se reutiliza la consulta de siempre en vez de duplicar lógica —
+ * mismo principio que documenta la cabecera de routes/mcp-gateway.js. El
+ * scope efectivo es la INTERSECCIÓN entre lo concedido en el consentimiento y
+ * lo que la fila tiene HOY: si a la empresa le quitan un scope después de
+ * autorizar el conector, un token todavía válido no lo resucita.
+ */
+async function authenticateOAuthToken(req, res, next, token) {
+    let claims;
+    try {
+        claims = oauthTokens.verificarAccessToken(token);
+    } catch (err) {
+        anunciarMetadataOAuth(res);
+        return res.status(401).json({ error: 'Invalid or expired access token', code: 'OAUTH_TOKEN_INVALID' });
+    }
+
+    try {
+        const { rows: denylist } = await query('SELECT 1 FROM oauth_token_denylist WHERE jti = $1', [claims.jti]);
+        if (denylist.length > 0) {
+            anunciarMetadataOAuth(res);
+            return res.status(401).json({ error: 'Token revoked', code: 'OAUTH_TOKEN_REVOKED' });
+        }
+
+        const { rows } = await query(
+            `SELECT id, app_name, scopes, tier, is_active,
+                    enterprise_id, authorized_addresses, address_access_mode
+               FROM app_registry WHERE id = $1`,
+            [claims.sub]
+        );
+        if (rows.length === 0 || !rows[0].is_active) {
+            return res.status(403).json({ error: 'App is deactivated', code: 'OAUTH_APP_INACTIVE' });
+        }
+
+        const app = rows[0];
+        const scopeToken = String(claims.scope || '').split(' ').filter(Boolean);
+        req.registeredApp = {
+            id: app.id,
+            name: app.app_name,
+            scopes: scopeToken.filter((s) => app.scopes.includes(s) || app.scopes.includes('admin')),
+            tier: app.tier,
+            enterpriseId: app.enterprise_id || null,
+            authorizedAddresses: app.authorized_addresses || [],
+            addressAccessMode: app.address_access_mode || 'strict',
+            viaOAuth: true,
+            oauthClientId: claims.client_id,
+        };
+        return next();
+    } catch (error) {
+        logger.error({ error: error.message }, 'OAuth token auth failed');
+        return res.status(500).json({ error: 'Authentication service error' });
+    }
+}
+
+/**
+ * Authenticate a registered app via x-api-key header, OR via an OAuth 2.1
+ * access token (Authorization: Bearer <jwt> — ver authenticateOAuthToken).
  * Populates req.app with { id, name, scopes, tier }.
  */
 async function authenticateApp(req, res, next) {
     const apiKey = req.headers['x-api-key'];
+    const authHeader = req.headers['authorization'];
+
     if (!apiKey) {
-        return res.status(401).json({ error: 'Missing x-api-key header' });
+        if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+            return authenticateOAuthToken(req, res, next, authHeader.slice(7).trim());
+        }
+        anunciarMetadataOAuth(res);
+        return res.status(401).json({ error: 'Missing x-api-key header or Authorization: Bearer token' });
     }
     if (typeof apiKey === 'string' && apiKey.startsWith(PREFIJO_AGENTE)) {
         return authenticateAgent(req, res, next, apiKey);
@@ -242,6 +318,7 @@ function authenticateGateway(req, res, next) {
 
 module.exports = {
     authenticateApp,
+    authenticateOAuthToken,
     requireScope,
     authenticateSSOToken,
     authenticateGateway,

@@ -10,10 +10,11 @@
  * Mounted at /c in index.js.
  */
 const { Router } = require('express');
+const { cspConNonce } = require('../utils/hostedPageCsp');
 
 const router = Router();
 
-function pageHtml(token) {
+function pageHtml(token, nonce) {
     // Token validated by the route regex; safe to interpolate.
     return `<!doctype html>
 <html lang="es">
@@ -109,7 +110,7 @@ function pageHtml(token) {
 
   <div class="foot">Liquidación on-chain por BeZhas Network · no compartas esta URL</div>
 </div>
-<script>
+<script nonce="${nonce}">
 (function () {
   var TOKEN = ${JSON.stringify(token)};
   var API = '/api/gateway/v1/checkout/' + TOKEN;
@@ -204,7 +205,7 @@ function pageHtml(token) {
 
 router.get('/:token([0-9a-f]{32})', (req, res) => {
     res.set('Cache-Control', 'no-store');
-    res.type('html').send(pageHtml(req.params.token));
+    res.type('html').send(pageHtml(req.params.token, cspConNonce(res)));
 });
 
 module.exports = router;

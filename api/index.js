@@ -426,6 +426,16 @@ app.use('/api/gateway/v1', gatewayRoutes);
 // authenticateApp por delante atendería también '/api/mcp/onboarding' y
 // devolvería 401 justo a quien todavía no tiene clave.
 app.use('/api/mcp', mcpGatewayRoutes);
+
+// Authorization Server OAuth 2.1 + PKCE del MCP — segunda vía de
+// autenticación junto a la api-key, para ChatGPT/Codex/Antigravity y
+// cualquier cliente MCP que necesite que una persona autorice desde su
+// navegador. gateway-auth.js hace terminar ambas vías en el mismo
+// req.registeredApp; routes/mcp-gateway.js no sabe ni le importa cuál se usó.
+const oauthRoutes = require('./routes/oauth');
+app.use('/', oauthRoutes.wellKnown); // /.well-known/oauth-authorization-server, /jwks.json, ...
+app.use('/oauth', oauthRoutes.router);
+
 app.use('/api/erp', require('./routes/erp'));   // conexiones gestionadas con el ERP del cliente
 app.use('/c', require('./routes/checkout')); // hosted checkout (pay.bez.digital/c/<token>)
 app.use('/o', require('./routes/onboarding-pages')); // alta guiada (onb.bez.digital/o/<token>)

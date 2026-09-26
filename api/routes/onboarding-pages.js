@@ -33,6 +33,7 @@
  */
 
 const { Router } = require('express');
+const { cspConNonce } = require('../utils/hostedPageCsp');
 
 const router = Router();
 
@@ -72,7 +73,7 @@ const COPY = {
     },
 };
 
-function pageHtml(token) {
+function pageHtml(token, nonce) {
     // El token viene validado por la expresión regular de la ruta; interpolarlo
     // como literal JSON es seguro y evita reconstruirlo en el cliente.
     return `<!doctype html>
@@ -203,7 +204,7 @@ function pageHtml(token) {
 
   <div class="foot">Pantalla segura de BeZhas · no compartas esta URL</div>
 </div>
-<script>
+<script nonce="${nonce}">
 (function () {
   var TOKEN = ${JSON.stringify(token)};
   var API = '/api/gateway/v1/onboarding/' + TOKEN;
@@ -440,7 +441,7 @@ router.get('/:token([0-9a-f]{64})', (req, res) => {
     // al endpoint público, que es quien valida el token y su caducidad.
     res.set('Cache-Control', 'no-store');
     res.set('X-Robots-Tag', 'noindex');
-    res.type('html').send(pageHtml(req.params.token));
+    res.type('html').send(pageHtml(req.params.token, cspConNonce(res)));
 });
 
 /** Un token con otra forma no llega ni a consultarse. */
