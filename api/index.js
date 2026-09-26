@@ -226,6 +226,11 @@ app.use('/api/webhooks', webhookRoutes);          // raw body — DEBE ir antes 
 // JSON por petición antes de que nada haya comprobado quién es. Su router monta
 // su propio parser acotado. Ver routes/mcp-public.js.
 app.use('/api/mcp/onboarding', mcpPublicRoutes);
+// Misma ruta sin el prefijo /api: es la URL pública que se anuncia a los clientes
+// (https://mcp.bez.digital/mcp/onboarding) cuando ese dominio apunta a este
+// servicio. En Cloud Run no hay nginx que reescriba rutas, así que la API
+// tiene que atender la ruta publicada tal cual.
+app.use('/mcp/onboarding', mcpPublicRoutes);
 
 app.use(compression({                             // gzip respuestas > 1 KB
   level: 6,
@@ -426,6 +431,7 @@ app.use('/api/gateway/v1', gatewayRoutes);
 // authenticateApp por delante atendería también '/api/mcp/onboarding' y
 // devolvería 401 justo a quien todavía no tiene clave.
 app.use('/api/mcp', mcpGatewayRoutes);
+app.use('/mcp', mcpGatewayRoutes);   // URL pública del conector: https://mcp.bez.digital/mcp
 
 // Authorization Server OAuth 2.1 + PKCE del MCP — segunda vía de
 // autenticación junto a la api-key, para ChatGPT/Codex/Antigravity y

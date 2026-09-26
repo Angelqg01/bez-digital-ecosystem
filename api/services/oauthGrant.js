@@ -124,6 +124,36 @@ async function revocarAccessToken({ jti, expiraEn }) {
     );
 }
 
+/**
+ * Purga lo que ya no puede servir para nada. La llama el barrido periódico
+ * (services/onboardingSweeper.js).
+ *
+ *  · Códigos y sesiones de consentimiento: un día después de caducar. Guardan
+ *    la IP de quien autorizó, que es dato personal y sólo se recogió para el
+ *    límite de intentos.
+ *  · Denylist: en cuanto el access token habría caducado de todas formas.
+ *  · Refresh tokens: al caducar, y los revocados a la semana. Los ROTADOS
+ *    (used_at) se conservan hasta su caducidad a propósito: son los que
+ *    permiten detectar un replay y revocar la familia. Borrarlos antes haría
+ *    que una copia robada fallara en silencio en vez de delatarse.
+ */
+async function purgarOAuth() {
+    const codigos = await query(
+        `DELETE FROM oauth_authorization_codes WHERE expires_at < NOW() - INTERVAL '1 day'`
+    );
+    const denylist = await query(`DELETE FROM oauth_token_denylist WHERE expires_at < NOW()`);
+    const refresh = await query(
+        `DELETE FROM oauth_refresh_tokens
+          WHERE expires_at < NOW()
+             OR (revoked_at IS NOT NULL AND revoked_at < NOW() - INTERVAL '7 days')`
+    );
+    return {
+        oauthCodigos: codigos.rowCount || 0,
+        oauthDenylist: denylist.rowCount || 0,
+        oauthRefresh: refresh.rowCount || 0,
+    };
+}
+
 module.exports = {
-    emitirParInicial, rotarRefresh, revocarRefresh, revocarAccessToken, OAuthGrantError,
+    emitirParInicial, rotarRefresh, revocarRefresh, revocarAccessToken, purgarOAuth, OAuthGrantError,
 };

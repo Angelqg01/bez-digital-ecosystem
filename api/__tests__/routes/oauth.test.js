@@ -389,6 +389,26 @@ describe('Authorization Server OAuth 2.1 + PKCE (/oauth, /.well-known)', () => {
             return m ? JSON.parse(m[1]) : null;
         };
 
+        it('la URL pública /mcp (sin /api) es el mismo servidor MCP', async () => {
+            // Es la que se anuncia a los clientes: en Cloud Run no hay nginx que
+            // la reescriba a /api/mcp, así que la API tiene que atenderla.
+            const res = await request(app).post('/mcp')
+                .set('Content-Type', 'application/json')
+                .set('Accept', 'application/json, text/event-stream')
+                .send({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} });
+            expect(res.status).toBe(401);
+            expect(res.headers['www-authenticate']).toMatch(/resource_metadata=/);
+        });
+
+        it('la URL pública /mcp/onboarding sigue siendo anónima', async () => {
+            const res = await request(app).post('/mcp/onboarding')
+                .set('Content-Type', 'application/json')
+                .set('Accept', 'application/json, text/event-stream')
+                .send({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} });
+            expect(res.status).toBe(200);
+            expect(cuerpo(res)?.result?.tools?.length).toBeGreaterThan(0);
+        });
+
         it('un 401 anuncia dónde está la metadata OAuth (descubrimiento de Claude/ChatGPT/Codex)', async () => {
             // Sin esta cabecera, un cliente que solo tiene la URL del MCP no
             // sabe a qué servidor de autorización mandar a la persona.

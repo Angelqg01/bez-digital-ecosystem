@@ -377,19 +377,48 @@ if [ "${RUN_DB_MIGRATIONS:-true}" = "true" ]; then
     --quiet
 fi
 
+# Dominio público del MCP. El issuer OAuth TIENE que ser la URL por la que los
+# clientes (Claude, ChatGPT, Codex…) llegan al servidor: la metadata de
+# /.well-known/* se construye a partir de él, y si apunta a un dominio que no
+# resuelve a este servicio, el conector no puede completar el login.
+if [ -z "${MCP_DOMAIN+x}" ] && [[ "${PUBLIC_SITE_URL}" == *"bez.digital"* ]]; then
+  MCP_DOMAIN="mcp.bez.digital"
+fi
+API_ENV_VARS="${COMMON_ENV_VARS}"
+[ -n "${MCP_DOMAIN:-}" ] && API_ENV_VARS="${API_ENV_VARS}~OAUTH_ISSUER=https://${MCP_DOMAIN}"
+
 # API backend
 gcloud run deploy bezhas-api \
   --image "${IMAGE_BASE}/bezhas-api:${BUILD_TAG}" \
   --port 3001 \
   --memory 512Mi --cpu 1 \
   --max-instances 10 \
-  --set-env-vars "${COMMON_ENV_VARS}" \
+  --set-env-vars "${API_ENV_VARS}" \
   --set-secrets "${COMMON_SECRET_VARS}" \
   "${BASE_FLAGS[@]}" \
   "${PUBLIC_FLAGS[@]}"
 
 API_URL=$(gcloud run services describe bezhas-api --region "${GCP_REGION}" --format "value(status.url)")
 ok "API: ${API_URL}"
+
+if [ -n "${MCP_DOMAIN:-}" ]; then
+  # El mapeo exige el dominio verificado en la cuenta de Google y un registro
+  # DNS que el propio comando indica: por eso es opcional y no aborta.
+  if [ "${CREATE_MCP_DOMAIN_MAPPING:-false}" = "true" ]; then
+    gcloud beta run domain-mappings create --service bezhas-api --domain "${MCP_DOMAIN}" \
+      --region "${GCP_REGION}" --quiet \
+      || warn "No se pudo mapear ${MCP_DOMAIN} (¿dominio sin verificar o ya mapeado?)."
+  else
+    warn "Recuerda mapear ${MCP_DOMAIN} → bezhas-api (CREATE_MCP_DOMAIN_MAPPING=true) o el conector MCP no completará el OAuth."
+  fi
+  ok "MCP: https://${MCP_DOMAIN}/mcp (issuer OAuth https://${MCP_DOMAIN})"
+else
+  # Sin dominio propio, el issuer es la URL de Cloud Run: hay que conocerla,
+  # así que se fija después del primer despliegue.
+  gcloud run services update bezhas-api --region "${GCP_REGION}" \
+    --update-env-vars "OAUTH_ISSUER=${API_URL}" --quiet
+  ok "MCP: ${API_URL}/mcp (issuer OAuth ${API_URL})"
+fi
 
 # Configure final API URL for frontend (use custom subdomain if bez.digital is configured)
 FINAL_API_URL="${API_URL}"

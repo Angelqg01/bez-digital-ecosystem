@@ -35,15 +35,14 @@
  * módulo. Cambia en cada arranque — normal en dev, e irrelevante en test
  * porque cada suite carga su propio proceso.
  *
- * NOTA: a diferencia de JWT_SECRET/INTERNAL_API_KEY en config/secrets.js, aquí
- * NO se rechaza el arranque en IS_PRODUCTION cuando faltan las variables. La
- * razón es puramente de este entorno: NODE_ENV llega como 'production' bajo
- * jest (ver la misma nota en __tests__/helpers.js), así que un throw
- * condicionado a IS_PRODUCTION tumbaría la suite entera, no sólo avisaría en
- * el despliegue real. Se sustituye por un aviso alto en consola, igual que
- * AUTH_BYPASS: MUY VISIBLE, pero no bloqueante. Pendiente antes de producción
- * de verdad: separar "es jest" de "es producción" (p. ej. detectando
- * JEST_WORKER_ID) para poder devolver el throw duro sin este riesgo.
+ * Jest: NODE_ENV llega como 'production' también bajo jest en esta máquina
+ * (ver __tests__/helpers.js). Para que eso no tumbe la suite, la exigencia se
+ * condiciona a producción FUERA de jest (JEST_WORKER_ID, que jest fija en cada
+ * worker y ningún despliegue define).
+ *
+ * Si hay claves, se comprueba al arrancar que la privada es P-256 y que la
+ * pública es su pareja: un par cruzado emitiría tokens que nunca verifican, y
+ * el síntoma —«invalid token» en todos los clientes— no delataría la causa.
  */
 
 const crypto = require('crypto');
@@ -66,12 +65,38 @@ function _pem(valor) {
     }
 }
 
+const EXIGIR_CLAVES = process.env.NODE_ENV === 'production' && !process.env.JEST_WORKER_ID;
+
+function _validarPar(privada, publica) {
+    const priv = crypto.createPrivateKey(privada);
+    if (priv.asymmetricKeyDetails?.namedCurve !== 'prime256v1') {
+        throw new Error('FATAL: OAUTH_JWT_PRIVATE_KEY debe ser una clave EC P-256 (ES256).');
+    }
+    const muestra = Buffer.from('bezhas-oauth-par');
+    const firma = crypto.sign('sha256', muestra, priv);
+    if (!crypto.verify('sha256', muestra, crypto.createPublicKey(publica), firma)) {
+        throw new Error('FATAL: OAUTH_JWT_PUBLIC_KEY no es la pareja de OAUTH_JWT_PRIVATE_KEY.');
+    }
+}
+
 function _cargarClaves() {
     const privadaEnv = _pem(process.env.OAUTH_JWT_PRIVATE_KEY);
     const publicaEnv = _pem(process.env.OAUTH_JWT_PUBLIC_KEY);
 
     if (privadaEnv && publicaEnv) {
+        _validarPar(privadaEnv, publicaEnv);
         return { privada: privadaEnv, publica: publicaEnv, efimera: false };
+    }
+    if (process.env.OAUTH_JWT_PRIVATE_KEY || process.env.OAUTH_JWT_PUBLIC_KEY) {
+        // Media configuración (o un valor que no es PEM ni PEM en base64): es un
+        // error de despliegue, no un motivo para caer a un par efímero en silencio.
+        throw new Error('FATAL: OAUTH_JWT_PRIVATE_KEY y OAUTH_JWT_PUBLIC_KEY deben venir las dos, en PEM o PEM en base64.');
+    }
+    if (EXIGIR_CLAVES) {
+        throw new Error(
+            'FATAL: OAUTH_JWT_PRIVATE_KEY y OAUTH_JWT_PUBLIC_KEY son obligatorias en producción '
+            + '(par EC P-256). Sin ellas cada reinicio invalidaría todas las sesiones OAuth del MCP.'
+        );
     }
 
     // eslint-disable-next-line no-console

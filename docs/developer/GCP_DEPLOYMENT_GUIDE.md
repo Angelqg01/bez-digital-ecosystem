@@ -106,7 +106,17 @@ PUBLIC_SITE_URL="https://bez.digital"
 APP_SITE_URL="https://app.bez.digital"
 GCS_BUCKET="bezhas-assets-prod"
 RUN_DB_MIGRATIONS="true"
+MCP_DOMAIN="mcp.bez.digital"          # por defecto si PUBLIC_SITE_URL es bez.digital; vacío = URL de Cloud Run
+CREATE_MCP_DOMAIN_MAPPING="true"      # crea el mapeo MCP_DOMAIN → bezhas-api (dominio verificado en Google)
 ```
+
+> **MCP y OAuth.** El conector de los clientes es `https://<MCP_DOMAIN>/mcp` y
+> el script fija `OAUTH_ISSUER=https://<MCP_DOMAIN>` en `bezhas-api`. Ese
+> dominio **tiene que resolver a `bezhas-api`**: la metadata OAuth
+> (`/.well-known/*`) se construye con él, y si apunta a otro sitio Claude,
+> ChatGPT o Codex no pueden completar el login. Sin mapeo automático, créalo a
+> mano (Cloud Run → Gestionar dominios personalizados) antes de publicar la
+> página `/mcp`.
 
 ### ¿Qué hará el script exactamente?
 1. Habilitará todas las APIs necesarias en tu cuenta de GCP (Cloud Run, Cloud SQL, Secret Manager, etc).

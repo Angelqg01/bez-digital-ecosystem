@@ -76,15 +76,23 @@ nombre de" sin firma es un agente que decide por su cuenta.
 #### Claude (web, escritorio) y ChatGPT — conector remoto
 
 1. Ajustes → **Conectores** → *Añadir conector personalizado*.
-2. Nombre: `BeZhas`. URL: `https://mcp.bez.digital`.
-3. **Conectar** → autenticación OAuth contra tu cuenta BeZhas.
-4. En la pantalla de consentimiento eliges **organización** y **entorno**
-   (sandbox / producción).
+2. Nombre: `BeZhas`. URL: `https://mcp.bez.digital/mcp`.
+3. **Conectar** → autenticación OAuth 2.1 (con PKCE) contra tu cuenta BeZhas.
+   El cliente descubre solo el login a partir de la URL: no hay que copiar
+   client_id ni secretos.
+4. En la pantalla de consentimiento te identificas y eliges la
+   **organización**. El conector recibe como máximo los permisos de consulta
+   `token`, `contracts` y `wallet`; ampliarlos se hace en el panel, no en esta
+   pantalla. (El entorno sandbox/producción se elige al pedir una api-key, no
+   en el consentimiento OAuth.)
 5. Deja las herramientas en confirmación manual la primera semana. Sólo cuando
    tu equipo reconozca el comportamiento, marca como permitidas las de lectura.
    **Nunca marques "permitir siempre" en una herramienta de escritura.**
 
 #### Claude Code, Codex, Cursor, Antigravity, VS Code — MCP remoto o CLI
+
+> Las configuraciones exactas de cada cliente, listas para copiar, están en
+> la página pública [bez.digital/mcp](https://bez.digital/mcp).
 
 ```bash
 claude mcp add --transport http bezhas https://mcp.bez.digital/mcp
