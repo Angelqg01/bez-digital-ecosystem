@@ -44,7 +44,7 @@ const PLANS = [
         aiActions: 15000, gasSubsidy: 50, apy: 25,
         stripe: {
             productId: 'prod_UOSDVEzpPuxHux',
-            monthlyPriceId: 'price_1TPfJUFomr6oeXVgMfB321Hf',
+            monthlyPriceId: 'price_1UKERjFomr6oeXVgZFYsQ98u',
             annualPriceId: 'price_1TtuE9Fomr6oeXVguKlDbScU',
         },
     },

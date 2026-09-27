@@ -15,7 +15,7 @@ const STRIPE_PAYMENT_LINKS = Object.freeze({
         pro: Object.freeze({
             id: 'pro',
             label: 'BeZhas Pro',
-            url: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+            url: 'https://buy.stripe.com/00w3cv7UsggSfA22Ibew80f',
         }),
         starter: Object.freeze({
             id: 'starter',

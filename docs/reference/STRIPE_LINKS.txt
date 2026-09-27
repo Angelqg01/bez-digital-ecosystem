@@ -3,7 +3,7 @@ Payment Links
 
 Planes para empresas
 BeZhas Enterprise:https://buy.stripe.com/aFa4gzb6E4ya1Jc4Qjew809
-BeZhas Pro:https://buy.stripe.com/aFa3cvb6E0hUafI82vew808
+BeZhas Pro:https://buy.stripe.com/00w3cv7UsggSfA22Ibew80f
 BeZhas Starter: https://buy.stripe.com/8x2aEXgqY2q29bEeqTew807
 
 Compra directa de BEZ-Coin con Fiat
