@@ -46,7 +46,7 @@ const { ethers } = require('ethers');
 const crypto = require('crypto');
 const fxService = require('../services/fxService');
 const { query } = require('../db/pool');
-const { getPlan } = require('../config/plans');
+const planSubscriptions = require('../services/planSubscriptions');
 const { centimosUsdABezWei, precioUsd } = require('../config/bez-price');
 const retryQueue = require('../services/webhookRetryQueue');
 const ledger = require('../services/providerPaymentLedger');
@@ -506,36 +506,9 @@ async function mintBezTokens(walletAddress, amountUsdCents, eventId) {
 // el webhook sepa a qué app registrada pertenece la compra.
 // ═══════════════════════════════════════════════
 async function provisionPlanSubscription(session, eventId) {
-  const planId = session.metadata?.plan_id;
-  const billing = session.metadata?.billing === 'annual' ? 'annual' : 'monthly';
-  const appId = session.client_reference_id;
-
-  const plan = getPlan(planId);
-  if (!plan) {
-    log.error('Stripe', 'Unknown plan_id in session metadata', { sessionId: session.id, planId });
-    return;
-  }
-  if (!appId) {
-    // Sin app_id no podemos asociar la suscripción — queda para reconciliación
-    // manual vía customer email en el dashboard de Stripe.
-    log.warn('Stripe', 'Plan checkout without client_reference_id — manual reconciliation needed', {
-      sessionId: session.id, planId, customerEmail: session.customer_details?.email,
-    });
-    return;
-  }
-
-  const renewInterval = billing === 'annual' ? "INTERVAL '1 year'" : "INTERVAL '1 month'";
-  await query(
-    `INSERT INTO gateway_subscriptions (app_id, plan_id, status, renews_at)
-     VALUES ($1, $2, 'active', NOW() + ${renewInterval})
-     ON CONFLICT (app_id) DO UPDATE
-       SET plan_id = $2, status = 'active',
-           renews_at = NOW() + ${renewInterval}, updated_at = NOW()`,
-    [appId, planId]
-  );
-  log.info('Stripe', 'Plan subscription provisioned', {
-    eventId, appId, planId, billing, stripeCustomer: session.customer,
-  });
+  // Registro, asignación y activación: services/planSubscriptions. Una compra
+  // sin client_reference_id ya no se pierde: queda pendiente de reclamar.
+  return planSubscriptions.registrarCompra(session, { eventId });
 }
 
 // ═══════════════════════════════════════════════
@@ -773,9 +746,30 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
       break;
     }
 
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted': {
+      try {
+        await planSubscriptions.alCambiarSuscripcion(event.data.object, { borrada: event.type === 'customer.subscription.deleted' });
+      } catch (err) {
+        log.error('Stripe', 'No se pudo actualizar el plan de la suscripción', { subscriptionId: event.data.object?.id, error: err.message });
+      }
+      break;
+    }
+
     case 'charge.refunded': {
       const charge = event.data.object;
       const paymentIntentId = charge.payment_intent || charge.id;
+
+      // ¿Era la factura de un plan? Entonces se corta el acceso y se cancela la
+      // suscripción en Stripe; no hay compra de BEZ que revertir.
+      try {
+        let clienteStripe = null;
+        try { clienteStripe = getStripe(); } catch { /* sin clave: no se puede comprobar */ }
+        const r = await planSubscriptions.alReembolsar(charge, clienteStripe);
+        if (r.accion === 'plan_cancelado') break;
+      } catch (err) {
+        log.error('Stripe', 'No se pudo comprobar si el reembolso era de un plan', { chargeId: charge.id, error: err.message });
+      }
 
       // El reembolso completo (estado, nota y webhook payment.refunded a la app
       // creadora) ya lo implementa refundPayment(); aquí sólo hay que resolver el

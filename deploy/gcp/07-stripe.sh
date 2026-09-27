@@ -27,7 +27,8 @@ API="${STRIPE_API:-https://api.stripe.com}"   # STRIPE_API solo para pruebas
 URL_WEBHOOK="https://${API_HOST}/api/webhooks/stripe"
 # Los eventos que trata api/routes/webhooks.js (ni uno más: cada evento
 # enviado y no tratado es tráfico y ruido).
-EVENTOS=(checkout.session.completed payment_intent.payment_failed charge.refunded charge.dispute.created)
+EVENTOS=(checkout.session.completed payment_intent.payment_failed charge.refunded charge.dispute.created
+         customer.subscription.updated customer.subscription.deleted)
 command -v jq >/dev/null || { echo "Falta jq" >&2; exit 1; }
 [[ -f "$F" ]] || { echo "No existe $F (ejecuta 00-generar-env.sh)" >&2; exit 2; }
 
