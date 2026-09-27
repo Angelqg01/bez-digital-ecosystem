@@ -28,12 +28,12 @@
 - **Tipografía:** sans geométrica en negrita para los titulares (p. ej. *Montserrat ExtraBold* o *Space Grotesk*) y *Inter* para el texto.
 - **Logo:** esquina superior derecha con un 60 % de opacidad durante todo el vídeo, y animado en la intro y el cierre.
 
-### ⚠️ Revisar antes de producir (incoherencias detectadas en el PDF)
-1. **Ortografía:** en la portada pone «Bolckchain» y debe ser «Blockchain». También hay que confirmar si el nombre de marca oficial es «BlockConnetion» o «BlockConnection».
-2. **Precios:** la pág. 8 dice «precio mínimo de entrada €5000» y «máximo 2500 €/mes», pero la pág. 10 indica planes de 0 €, 99 €, 499 € y 2.499 €/mes. **En este guion se usan los planes de la pág. 10.** Hay que confirmar cuál es la cifra vigente.
-3. **Ahorro:** en la pág. 11, el «escenario máximo» (4.007.200 €) es menor que el «mínimo» (72.003.600 €). **Este guion no usa esas cifras** hasta que se corrijan.
-4. **Cumplimiento normativo:** frases como «alineada con RGPD y ENS» son afirmaciones legales. Si BeZhas aún no tiene la certificación ENS, conviene decir «diseñada para cumplir» (así aparece en el guion) y no «certificada».
-5. **Rutas de la plataforma:** las rutas de la columna «Captura» salen del router del frontend (`frontend/src/App.jsx`). Antes de grabar, hay que verificar que cada pantalla esté completa en *staging* y usar **datos de demostración, nunca datos reales de clientes, claves ni wallets**.
+### ✅ Datos validados por BeZhas (revisión del PDF)
+1. **Ortografía:** en todo el material se escribe **«Blockchain»**. La errata «Bolckchain» de la portada del PDF queda corregida y no debe aparecer en ningún rótulo.
+2. **Precios:** no hay contradicción. Los **5.000 €** de la pág. 8 son la **inversión mínima de entrada** (capital) por servicio blockchain, y los **2.500 €/mes** son el **máximo de suscripción**. Las suscripciones son los planes de la pág. 10: 0 €, 99 €, 499 € y 2.499 €/mes.
+3. **Ahorro:** las etiquetas de la pág. 11 estaban invertidas. El ahorro anual conjunto de las empresas clientes va de un **mínimo de 4.007.200 €** a un **máximo de 72.003.600 €**. Estas cifras se usan en la escena 8. Hay que corregir también el PDF.
+4. **Cumplimiento normativo:** en el vídeo se dice que la blockchain está **«diseñada y certificada»** para RGPD y ENS. Conviene tener a mano la referencia del certificado ENS (categoría y entidad certificadora) por si un cliente la pide.
+5. **Rutas de la plataforma** (sin cambios): las rutas de la columna «Captura» salen del router del frontend (`frontend/src/App.jsx`). Antes de grabar, hay que verificar que cada pantalla esté completa en *staging* y usar **datos de demostración, nunca datos reales de clientes, claves ni wallets**.
 
 ---
 
@@ -313,7 +313,7 @@ documentary style, warm sunrise with teal shadows, 16:9, 6 seconds
 > «¿En qué se diferencia BeZhas de las grandes nubes o de las redes públicas?
 > **Costes:** allí el precio de cada transacción sube y baja según la congestión de la red. Con BeZhas pagas una **tarifa plana mensual en euros**, y tu contabilidad lo agradece.
 > **Integración:** otras redes obligan a reescribir tus sistemas y contratar desarrolladores Web3. BeZhas se conecta a tu ERP con un **SDK, una API universal o un plugin**.
-> **Soberanía:** tus datos no salen a servidores fuera de la UE. BeZhas trabaja con **nodos locales** y una blockchain soberana **diseñada para cumplir el RGPD y el ENS**.
+> **Soberanía:** tus datos no salen a servidores fuera de la UE. BeZhas trabaja con **nodos locales** y una blockchain soberana **diseñada y certificada para cumplir el RGPD y el ENS**.
 > **Sencillez:** nada de wallets ni de comprar criptomonedas. Tu equipo usa una web normal.»
 
 | Tiempo | Visual |
@@ -321,7 +321,7 @@ documentary style, warm sunrise with teal shadows, 16:9, 6 seconds
 | 4:50–5:25 | Tabla comparativa animada (pág. 8) con dos columnas: «Redes públicas / Big Cloud» en gris y rojo, y «BeZhas» en cian y verde. Las filas entran una a una: **Costes · Integración · Soberanía · Fricción**. Al terminar cada fila, un ✔ verde en la columna BeZhas. |
 | Insertos | Gráfico de *gas* volátil en rojo frente a una línea plana en verde con «€/mes». Bandera de la UE con candado. 🖥️ **CAPTURA:** `/developer-console`, sección SDK o plugins. |
 
-🔤 **RÓTULOS:** «Tarifa plana en €» · «Sin reescribir tu IT» · «Datos en la UE» · «Gas invisible»
+🔤 **RÓTULOS:** «Tarifa plana en €» · «Sin reescribir tu IT» · «Datos en la UE · Certificada RGPD y ENS» · «Gas invisible»
 
 > ⚖️ **Nota legal:** no se deben mostrar los logotipos de Solana, Avalanche o Ripple. Hay que usar el texto genérico «Redes públicas / Grandes nubes» para evitar problemas de marca y de publicidad comparativa.
 
@@ -335,16 +335,19 @@ documentary style, warm sunrise with teal shadows, 16:9, 6 seconds
 > **Creator Pro**, por 99 euros al mes, pensado para la pequeña PYME, con un ahorro estimado del 34 % en gestión manual.
 > **Business**, por 499 euros al mes, con integración total con tu ERP vía API.
 > Y **Enterprise VIP**, para holdings y autoridades portuarias: marca blanca, multigestión y pago por uso.
-> BeZhas convierte tu gasto operativo en **rentabilidad neta**.»
+> BeZhas convierte tu gasto operativo en **rentabilidad neta**: en conjunto, nuestras empresas clientes pueden ahorrar **entre 4 y 72 millones de euros al año** en costes administrativos, multas, tiempos muertos e ineficiencias logísticas.»
 
 | Tiempo | Visual |
 |---|---|
 | 5:25–5:50 | Cuatro tarjetas de precio que suben una a una con un leve rebote: **Starter 0 €** · **Creator Pro 99 €/mes** · **Business 499 €/mes** (destacada con la etiqueta «Más popular») · **Enterprise VIP 2.499 €/mes**. |
-| 5:50–5:55 | 🖥️ **CAPTURA:** `/be-vip` o `/vip` (BeVIP), con la página de planes real. |
+| 5:50–5:55 | 🖥️ **CAPTURA:** `/be-vip` o `/vip` (BeVIP), con la página de planes real. Contador animado de ahorro: de 4.007.200 € a 72.003.600 €. |
 
-🔤 **RÓTULO:** «De OPEX a rentabilidad neta»
+🔤 **RÓTULOS:**
+- «De OPEX a rentabilidad neta»
+- «Servicio blockchain desde 5.000 € de inversión de entrada · Suscripción máx. 2.500 €/mes»
+- «Ahorro anual conjunto: de 4 M€ a 72 M€»
 
-> ⚠️ Antes de publicar hay que confirmar los precios (ver incoherencia n.º 2). En YouTube conviene añadir la nota «Precios sin IVA. Consulta condiciones en la web».
+> ℹ️ En YouTube conviene añadir la nota «Precios sin IVA. Consulta condiciones en la web».
 
 ---
 
@@ -405,7 +408,7 @@ Lista de grabación para el operador de pantalla. Hay que grabar a 1920×1080, c
 
 ## 4. Plan de producción paso a paso
 
-1. **Validar el contenido.** Resolver las 5 incoherencias de la sección 0 (precios, cifras, ortografía y afirmaciones de cumplimiento).
+1. **Validar el contenido.** Corregir en el PDF la errata «Bolckchain» y las etiquetas de ahorro de la pág. 11 (sección 0), y tener a mano la referencia del certificado ENS.
 2. **Grabar la locución de prueba.** Voz IA con Higgsfield `generate_audio` para el *animatic* y ajuste de tiempos. La locución final puede ser humana o IA mejorada con Adobe *Enhance Speech*.
 3. **Generar el B-roll en Higgsfield.** Son 12 *prompts* **[HF]**, que se pueden lanzar en lote con `generate_video_batch`. Conviene revisar el saldo de créditos antes (`balance`).
 4. **Descargar el stock de Adobe.** Buscar las entradas **[AS]** y licenciar solo lo que se use.
@@ -442,7 +445,7 @@ digital para PYMEs, la economía azul y la logística global.
 ✅ Conexión con SAP, Odoo, Salesforce y WordPress (API / SDK)
 ✅ Aegis AI: auditoría y detección de anomalías
 ✅ Tarifa plana en euros · Gas invisible
-✅ Nodos en la UE · Diseñada para RGPD y ENS
+✅ Nodos en la UE · Diseñada y certificada para RGPD y ENS
 
 📩 Solicita tu demo: [enlace]
 ```
@@ -455,7 +458,7 @@ digital para PYMEs, la economía azul y la logística global.
 
 ## 6. Texto completo de locución (para el locutor o la voz IA)
 
-Son unas 900 palabras, unos 6:15 minutos a 145 palabras por minuto.
+Son unas 930 palabras, unos 6:25 minutos a 145 palabras por minuto.
 
 ```
 ¿Y si tu próximo gran cliente te pidiera mañana demostrar, con pruebas imposibles de
@@ -522,14 +525,16 @@ pagas una tarifa plana mensual en euros, y tu contabilidad lo agradece. Integrac
 otras redes obligan a reescribir tus sistemas y contratar desarrolladores Web3. BeZhas se
 conecta a tu ERP con un SDK, una API universal o un plugin. Soberanía: tus datos no
 salen a servidores fuera de la UE. BeZhas trabaja con nodos locales y una blockchain
-soberana diseñada para cumplir el RGPD y el ENS. Sencillez: nada de wallets ni de comprar
+soberana diseñada y certificada para cumplir el RGPD y el ENS. Sencillez: nada de wallets ni de comprar
 criptomonedas. Tu equipo usa una web normal.
 
 Y hay un plan para cada tamaño de empresa. Starter, gratis, para empezar sin fricción.
 Creator Pro, por 99 euros al mes, pensado para la pequeña PYME, con un ahorro estimado
 del 34 % en gestión manual. Business, por 499 euros al mes, con integración total con tu
 ERP vía API. Y Enterprise VIP, para holdings y autoridades portuarias: marca blanca,
-multigestión y pago por uso. BeZhas convierte tu gasto operativo en rentabilidad neta.
+multigestión y pago por uso. BeZhas convierte tu gasto operativo en rentabilidad neta: en
+conjunto, nuestras empresas clientes pueden ahorrar entre 4 y 72 millones de euros al año
+en costes administrativos, multas, tiempos muertos e ineficiencias logísticas.
 
 ¿Por qué BeZhas? Porque la digitalización inalterable de los datos ya no es opcional.
 Porque pagas una tarifa plana en euros, sin sorpresas. Porque tus datos se quedan en
@@ -544,4 +549,4 @@ Solicita tu demo hoy.
 
 ## 7. Contenido del PDF que queda fuera del vídeo comercial
 
-Las págs. 9 (TAM/SAM/SOM), 11 (proyecciones financieras), 12 (equipo) y 13 (necesidades de inversión: 575.000 €) están dirigidas a **inversores**, no a clientes. Se recomienda usarlas en un **segundo vídeo, «BeZhas para inversores»**, y no en este explainer comercial. Mezclar ambos mensajes confunde al cliente y expone datos de la ronda de inversión.
+Las págs. 9 (TAM/SAM/SOM), 11 (proyecciones financieras, salvo las cifras de ahorro, que sí se usan en la escena 8), 12 (equipo) y 13 (necesidades de inversión: 575.000 €) están dirigidas a **inversores**, no a clientes. Se recomienda usarlas en un **segundo vídeo, «BeZhas para inversores»**, y no en este explainer comercial. Mezclar ambos mensajes confunde al cliente y expone datos de la ronda de inversión.
