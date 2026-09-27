@@ -577,5 +577,5 @@ Proyecto: **«BeZhas - Video explicativo YouTube»**.
 
 | B-roll | Modelo | Job | Estado |
 |---|---|---|---|
-| Escena 1 · Puerto al amanecer con sello holográfico | `seedance_2_5` 720p · 6 s | `6c7e48c7-489c-44cc-83e4-372666f2479d` | ⏳ en cola |
+| Escena 1 · Puerto al amanecer con sello holográfico | `seedance_2_5` 720p · 6 s | `6c7e48c7-489c-44cc-83e4-372666f2479d` | ✅ |
 | Resto de B-roll **[HF]** (11 prompts) | `seedance_2_5` | — | ⏳ pendiente de créditos (~42 créditos/clip en 720p) |
