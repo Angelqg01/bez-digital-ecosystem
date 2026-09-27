@@ -47,7 +47,18 @@ function crearLiquidador(inyectadas = {}) {
     const env = d.env;
     const cachePayouts = new Map();
 
-    const stripe = () => {
+    // Cada compra se verifica en la cuenta de Stripe que cobró: la principal
+    // (STRIPE_SECRET_KEY) o la de BeZhas (STRIPE_SECRET_KEY_BEZHAS, basta una
+    // clave restringida de sólo lectura). Sin clave para esa cuenta no hay
+    // verificador y la compra sigue retenida: nunca se entrega sin comprobar.
+    const clientes = {};
+    const stripe = (cuenta = 'principal') => {
+        if (cuenta === 'bezhas') {
+            if (d.stripeBezhas) return d.stripeBezhas;
+            if (!env.STRIPE_SECRET_KEY_BEZHAS) return null;
+            clientes.bezhas = clientes.bezhas || require('stripe')(env.STRIPE_SECRET_KEY_BEZHAS);
+            return clientes.bezhas;
+        }
         if (d.stripe) return d.stripe;
         if (!env.STRIPE_SECRET_KEY) return null;
         d.stripe = require('stripe')(env.STRIPE_SECRET_KEY);
@@ -143,7 +154,7 @@ function crearLiquidador(inyectadas = {}) {
             // En `pendiente_aprobacion` se vuelve a mirar el cobro: una disputa
             // o un reembolso durante la aprobación cancelan la entrega.
             const r = await d.verificar({
-                stripe: stripe(),
+                stripe: stripe(entrega.cuentaStripe),
                 referencia: entrega.referencia,
                 esperado: { importe: entrega.importeMinor, moneda: entrega.moneda },
                 ahora: d.ahora(),
