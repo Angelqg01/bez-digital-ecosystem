@@ -550,3 +550,32 @@ Solicita tu demo hoy.
 ## 7. Contenido del PDF que queda fuera del vídeo comercial
 
 Las págs. 9 (TAM/SAM/SOM), 11 (proyecciones financieras, salvo las cifras de ahorro, que sí se usan en la escena 8), 12 (equipo) y 13 (necesidades de inversión: 575.000 €) están dirigidas a **inversores**, no a clientes. Se recomienda usarlas en un **segundo vídeo, «BeZhas para inversores»**, y no en este explainer comercial. Mezclar ambos mensajes confunde al cliente y expone datos de la ronda de inversión.
+
+---
+
+## 8. Estado de producción en Higgsfield
+
+Proyecto: **«BeZhas - Video explicativo YouTube»**.
+
+**Pronunciación:** la marca se escribe **BeZhas** en rótulos y subtítulos, pero se pronuncia **«BiZhas»**. En los *prompts* de voz hay que escribir `BiZhas` para forzar esa pronunciación.
+
+**Voz elegida:** *Fraser* (preset `6705e465-7b52-5915-a1d8-b1222885e01d`), modelo `seed_audio`, acento castellano neutro. Las cifras se escriben en letra para que se lean bien.
+
+| Escena | Locución (Fraser) | Duración | Estado |
+|---|---|---|---|
+| 1 · Gancho | `0ed66b3a-49b5-4188-99fa-69e5afa3af48` | 22,5 s | ✅ (2,5 s más larga de lo previsto: recortar pausas o usar `speech_rate` +10) |
+| 2 · Problema | `adbb1430-8775-4e0e-9de1-b3f8e928079f` | 36,0 s | ✅ |
+| 3 · Qué es BeZhas | `a7c88c72-bb3d-4215-8e34-339fd570dec4` | 41,5 s | ✅ |
+| 4 · Cómo funciona | — | — | ⏳ pendiente de créditos |
+| 5 · Aplicaciones | — | — | ⏳ pendiente de créditos |
+| 6 · Sectores | — | — | ⏳ pendiente de créditos |
+| 7 · Comparativa | — | — | ⏳ pendiente de créditos |
+| 8 · Planes | — | — | ⏳ pendiente de créditos |
+| 9 · Cierre y CTA | `c70eb9ea-3a09-4272-9e10-f07db51735db` | 29,4 s | ✅ |
+
+**Descartadas:** existe una primera versión de las escenas 1–9 con la voz *Julian*, que pronuncia «BeZhas» tal cual se escribe. No se usa en el montaje.
+
+| B-roll | Modelo | Job | Estado |
+|---|---|---|---|
+| Escena 1 · Puerto al amanecer con sello holográfico | `seedance_2_5` 720p · 6 s | `6c7e48c7-489c-44cc-83e4-372666f2479d` | ⏳ en cola |
+| Resto de B-roll **[HF]** (11 prompts) | `seedance_2_5` | — | ⏳ pendiente de créditos (~42 créditos/clip en 720p) |
