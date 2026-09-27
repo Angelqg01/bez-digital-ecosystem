@@ -22,9 +22,9 @@ const PLANS = [
         // API-SDK (coste Claude + cómputo BeZhas) +25%. Ver usage-pricing.js.
         billingModel: 'payg', trialDays: 15,
         stripe: {
-            productId: 'prod_VKsL9hS91fpZbz',
-            meteredPriceId: 'price_1UKCb5B0WAywWIe1TacUWmsQ',
-            meterId: 'mtr_61VTaYMrfSkMuaoJH41B0WAywWIe13xY',
+            productId: 'prod_UtiGhSbf1HDIIi',
+            meteredPriceId: 'price_1TtuplFomr6oeXVgt8XVUQDW',
+            meterId: 'mtr_61V3In6nNzuAak6jh41Fomr6oeXVg0zQ',
             meterEventName: 'bezhas_api_credits',
         },
     },
@@ -33,9 +33,9 @@ const PLANS = [
         priceEUR: 99, priceIVA: 119.79, yearlyEUR: 990, bezPerMonth: 200,
         aiActions: 1500, gasSubsidy: 25, apy: 18.75,
         stripe: {
-            productId: 'prod_VKsLNgEN40KOPw',
-            monthlyPriceId: 'price_1UKCb1B0WAywWIe16OzcNOlB',
-            annualPriceId: 'price_1UKCb1B0WAywWIe1f2OgfR6U',
+            productId: 'prod_UOS89liy2MjObG',
+            monthlyPriceId: 'price_1TPfDyFomr6oeXVgBxoyUJwn',
+            annualPriceId: 'price_1TtuE7Fomr6oeXVgHjQ5AkXT',
         },
     },
     {
@@ -43,9 +43,9 @@ const PLANS = [
         priceEUR: 499, priceIVA: 603.79, yearlyEUR: 4990, bezPerMonth: 1000,
         aiActions: 15000, gasSubsidy: 50, apy: 25,
         stripe: {
-            productId: 'prod_VKsLDGwu6UStUp',
-            monthlyPriceId: 'price_1UKCb2B0WAywWIe13zUvmLVW',
-            annualPriceId: 'price_1UKCb3B0WAywWIe1ui9JDcpS',
+            productId: 'prod_UOSDVEzpPuxHux',
+            monthlyPriceId: 'price_1TPfJUFomr6oeXVgMfB321Hf',
+            annualPriceId: 'price_1TtuE9Fomr6oeXVguKlDbScU',
         },
     },
     {
@@ -53,9 +53,9 @@ const PLANS = [
         priceEUR: 2499, priceIVA: 3023.79, yearlyEUR: 24990, bezPerMonth: 5000,
         aiActions: null, gasSubsidy: 100, apy: 31.25,
         stripe: {
-            productId: 'prod_VKsLKhIhLm5EUQ',
-            monthlyPriceId: 'price_1UKCb3B0WAywWIe1nqFOnq9B',
-            annualPriceId: 'price_1UKCb4B0WAywWIe1s3Ww5l5Y',
+            productId: 'prod_UOSJJi93dIuZ7q',
+            monthlyPriceId: 'price_1TPfPMFomr6oeXVgjrKzeAmm',
+            annualPriceId: 'price_1TtuECFomr6oeXVgMGz8gK9v',
         },
     },
 ];

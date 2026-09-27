@@ -1,8 +1,8 @@
 export const STRIPE_PAYMENT_LINKS = {
-    enterprise: 'https://buy.stripe.com/bJe3cucmrgGIfJOdag0kE0e',
-    pro: 'https://buy.stripe.com/aFaeVcaej1LO2X2b280kE0c',
-    starter: 'https://buy.stripe.com/5kQ6oG7272PSeFKeek0kE0a',
-    tokenPurchase: 'https://buy.stripe.com/5kQ6oG5Y3duw0OU8U00kE0g',
+    enterprise: 'https://buy.stripe.com/aFa4gzb6E4ya1Jc4Qjew809',
+    pro: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+    starter: 'https://buy.stripe.com/8x2aEXgqY2q29bEeqTew807',
+    tokenPurchase: 'https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806',
     beVipPlus: 'https://buy.stripe.com/bJe3cveiQ1lY3Rkgz1ew805',
     beVip: 'https://buy.stripe.com/3cIdR9a2A3u673waaDew804',
     foundingPartner: 'https://book.stripe.com/bJefZh3Ec7Km1JcaaDew803',

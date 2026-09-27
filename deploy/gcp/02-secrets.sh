@@ -154,6 +154,10 @@ while read -r clave servicios requisito _; do
     else
       echo "  = $nombre sin cambios"
     fi
+  elif [[ -n "$actual" && "$requisito" == opcional ]]; then
+    # Vaciarlo en el .env no lo retira: la versión activa se sigue montando.
+    echo "  ! $nombre no está en el .env pero sigue activo en Secret Manager. Para retirarlo:"
+    echo "      for v in \$(gcloud secrets versions list $nombre --filter=state=ENABLED --format='value(name)'); do gcloud secrets versions disable \$v --secret=$nombre; done"
   elif [[ -z "$actual" ]]; then
     if [[ "$requisito" == obligatorio ]]; then
       faltan+=("$clave")
