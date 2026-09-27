@@ -157,7 +157,7 @@ Usa los botones del teclado para fijar un agente.
 
 *BEZ-Coin:*
 💰 Precio: €0,10 | ROI año 1: +32%
-🛒 Comprar: https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806
+🛒 Comprar: https://buy.stripe.com/5kQ6oG5Y3duw0OU8U00kE0g
   `, { parse_mode: "Markdown" });
 });
 
