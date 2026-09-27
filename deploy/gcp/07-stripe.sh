@@ -114,24 +114,30 @@ else
 fi
 
 echo "→ Payment Links: a dónde vuelve el cliente tras pagar"
-# Tras pagar, el cliente debe volver a esta web. Los que apunten a otro
-# dominio (p. ej. el antiguo bez.digital) se pueden corregir aquí.
-VUELTA="${VUELTA_PAGO:-https://${WWW_HOST}/payments}"
+# Solo se corrigen los que REDIRIGEN a otro dominio (p. ej. el antiguo
+# hub.bez.digital): se cambia el origen por https://www.bezhas.com y se
+# conservan ruta y parámetros ({CHECKOUT_SESSION_ID}, plan). Los que muestran
+# la página de confirmación de Stripe (con o sin mensaje propio) no se tocan.
 LINKS=$(stripe GET "/v1/payment_links?limit=100")
-corregir=()
+declare -A NUEVO=()
 for u in $(grep -ohE "https://buy.stripe.com/[A-Za-z0-9]+" api/config/stripe-payment-links.js | sort -u); do
   pl=$(jq -c --arg u "$u" '.data[]? | select(.url == $u)' <<< "$LINKS")
   if [[ -z "$pl" ]]; then echo "   ❌ $u no está en esta cuenta"; continue; fi
   destino=$(jq -r 'if .after_completion.type == "redirect" then .after_completion.redirect.url else "" end' <<< "$pl")
   echo "   $u → ${destino:-página de confirmación de Stripe}$(jq -r 'if .active then "" else " (INACTIVO)" end' <<< "$pl")"
-  [[ "$destino" =~ ^https://([a-z0-9-]+\.)*${DOMAIN//./\\.}(/|$) ]] || corregir+=("$(jq -r '.id' <<< "$pl")")
+  if [[ -n "$destino" && ! "$destino" =~ ^https://([a-z0-9-]+\.)*${DOMAIN//./\\.}(/|$) ]]; then
+    resto=$(sed -E 's#^https?://[^/?]+##' <<< "$destino")
+    NUEVO[$(jq -r '.id' <<< "$pl")]="https://${WWW_HOST}${resto:-/}"
+  fi
 done
-if ((${#corregir[@]})); then
-  read -rp "   ¿Hacer que esos ${#corregir[@]} vuelvan a ${VUELTA}? [s/N] " r
+if ((${#NUEVO[@]})); then
+  echo "   Estos redirigen fuera de ${DOMAIN}; propuesta:"
+  for id in "${!NUEVO[@]}"; do echo "     ${id} → ${NUEVO[$id]}"; done
+  read -rp "   ¿Aplicar? [s/N] " r
   if [[ "$r" =~ ^[sSyY]$ ]]; then
-    for id in "${corregir[@]}"; do
+    for id in "${!NUEVO[@]}"; do
       stripe POST "/v1/payment_links/$id" --data-urlencode "after_completion[type]=redirect" \
-        --data-urlencode "after_completion[redirect][url]=${VUELTA}" >/dev/null
+        --data-urlencode "after_completion[redirect][url]=${NUEVO[$id]}" >/dev/null
     done
     echo "   Actualizados."
   fi
