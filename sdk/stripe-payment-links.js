@@ -10,24 +10,24 @@ const STRIPE_PAYMENT_LINKS = Object.freeze({
         enterprise: Object.freeze({
             id: 'enterprise',
             label: 'BeZhas Enterprise',
-            url: 'https://buy.stripe.com/aFa4gzb6E4ya1Jc4Qjew809',
+            url: 'https://buy.stripe.com/bJe3cucmrgGIfJOdag0kE0e',
         }),
         pro: Object.freeze({
             id: 'pro',
             label: 'BeZhas Pro',
-            url: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+            url: 'https://buy.stripe.com/aFaeVcaej1LO2X2b280kE0c',
         }),
         starter: Object.freeze({
             id: 'starter',
             label: 'BeZhas Starter',
-            url: 'https://buy.stripe.com/8x2aEXgqY2q29bEeqTew807',
+            url: 'https://buy.stripe.com/5kQ6oG7272PSeFKeek0kE0a',
         }),
     }),
     bezCoin: Object.freeze({
         directPurchase: Object.freeze({
             id: 'bez_coin_direct_purchase',
             label: 'Obtén BEZ-Coin',
-            url: 'https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806',
+            url: 'https://buy.stripe.com/5kQ6oG5Y3duw0OU8U00kE0g',
         }),
     }),
     hubSubscriptions: Object.freeze({

@@ -28,7 +28,7 @@ function createPaymentsWithMock(routes) {
 test('PaymentsManager exposes real payment configs through the SDK', () => {
     assert.equal(sdk.BANK_TRANSFER_DETAILS.iban, 'ES77 1465 0100 91 1766376210');
     assert.equal(sdk.BANK_TRANSFER_DETAILS.bic, 'INGDESMMXXX');
-    assert.equal(sdk.getStripePaymentLink('token_purchase').url, 'https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806');
+    assert.equal(sdk.getStripePaymentLink('token_purchase').url, 'https://buy.stripe.com/5kQ6oG5Y3duw0OU8U00kE0g');
 });
 
 test('PaymentsManager crypto quote and direct crypto payment call the crypto backend', async () => {
