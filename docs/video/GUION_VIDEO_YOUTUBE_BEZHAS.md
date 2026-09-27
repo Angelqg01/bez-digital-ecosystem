@@ -579,3 +579,27 @@ Proyecto: **«BeZhas - Video explicativo YouTube»**.
 |---|---|---|---|
 | Escena 1 · Puerto al amanecer con sello holográfico | `seedance_2_5` 720p · 6 s | `6c7e48c7-489c-44cc-83e4-372666f2479d` | ✅ |
 | Resto de B-roll **[HF]** (11 prompts) | `seedance_2_5` | — | ⏳ pendiente de créditos (~42 créditos/clip en 720p) |
+
+### 8.1 Pendiente para la nueva cuenta de Higgsfield
+
+Estas son las instrucciones para continuar en la nueva cuenta, dentro de un proyecto nuevo:
+
+- **Voz:** Fraser (`voice_type: preset`, `voice_id: 6705e465-7b52-5915-a1d8-b1222885e01d`), modelo `seed_audio`. Es un *preset* global, así que sirve en cualquier cuenta.
+- **Formato del texto:** escribir `BiZhas` en lugar de «BeZhas» y las cifras en letra.
+- **Clips:** `seedance_2_5`, modo `t2v`, 16:9, 720p, `generate_audio: false`, con los *prompts* **[HF]** de la sección 2.
+- **Referencia de estilo:** el clip de la escena 1 está en la cuenta antigua. Para usarlo como referencia (`video_references`, modo `omni_reference`), hay que descargar el MP4 y subirlo a la nueva cuenta.
+- **Presupuesto:** ~25 créditos de locución y ~460 de clips en 720p.
+
+**Locución pendiente (escenas 4–8), texto listo para `seed_audio`:**
+
+4 · «¿Cómo funciona? En cuatro pasos. Uno: conectas. Los datos llegan desde tu ERP, como SAP, Odoo o Salesforce, a través de la API universal, el SDK o incluso un plugin de WordPress. También desde sensores IoT. Dos: se valida. El BiZhas Edge Node recibe los datos, calcula su huella digital única y los firma. Tres: la IA audita. Antes de registrar nada, Aegis AI revisa que cumpla la normativa y detecta anomalías. Si algo no cuadra, te avisa. Así, a la cadena solo llega información fiable. Cuatro: queda registrado para siempre. Los contratos inteligentes de BiZhas guardan la prueba en la blockchain. Nadie puede modificarla, ni siquiera nosotros. ¿Y el coste de cada transacción? Lo cubre el Corporate Gas Tank: un saldo corporativo en euros, recargable y predecible. Es un gas invisible que se paga por debajo, sin que tu equipo tenga que pensar en ello.»
+
+5 · «Sobre esta red funciona un ecosistema de aplicaciones listas para usar. BiZhas Hub es tu centro de mando: gestionas en un solo lugar las operaciones digitales, financieras y logísticas, con conectores ERP y herramientas Web3, sin conocimientos técnicos. BZ CargoLink es la terminal de validación para la logística, las aduanas y la última milla: cada carga, trazada y optimizada. BiZhas Energy monitoriza el consumo energético con IoT, valida los nodos y rentabiliza los tokens energéticos. BZ PureScan lleva la trazabilidad alimentaria al siguiente nivel: la IA escanea y analiza el producto y genera su Pasaporte Digital de Producto, el DPP que exige la Unión Europea. BZ Capital es el brazo financiero: tokeniza activos del mundo real, como inmuebles, maquinaria o mercancía, y los convierte en liquidez. Y BiZhas Vision Scan es el ojo de la red: una IA que valida visualmente contenedores e infraestructuras y conecta el mundo físico con los contratos inteligentes.»
+
+6 · «BiZhas nace en la economía azul: puertos, sector marítimo-pesquero, acuicultura y trazabilidad de la carga en origen. Pero su tecnología resuelve problemas reales en muchos sectores. En logística y supply chain, adiós a los proveedores sin auditoría: checkpoints, IoT y registros de inventario verificables. En salud, los datos médicos fragmentados se unifican con credenciales seguras y trazabilidad farmacéutica. En energía, la sostenibilidad ESG por fin se puede verificar: créditos de carbono tokenizados y mercados de energía entre particulares. En gobierno, identidad digital ciudadana y presupuestos públicos transparentes. En seguros, ajustes automáticos y pagos rápidos con pólizas paramétricas. En legal, contratos que se ejecutan solos y evidencias custodiadas. Y más: automoción, manufactura, agricultura, educación, inmobiliario, entretenimiento y servicios.»
+
+7 · «¿En qué se diferencia BiZhas de las grandes nubes o de las redes públicas? Costes: allí el precio de cada transacción sube y baja según la congestión de la red. Con BiZhas pagas una tarifa plana mensual en euros, y tu contabilidad lo agradece. Integración: otras redes obligan a reescribir tus sistemas y contratar desarrolladores Web3. BiZhas se conecta a tu ERP con un SDK, una API universal o un plugin. Soberanía: tus datos no salen a servidores fuera de la UE. BiZhas trabaja con nodos locales y una blockchain soberana diseñada y certificada para cumplir el RGPD y el ENS. Sencillez: nada de wallets ni de comprar criptomonedas. Tu equipo usa una web normal.»
+
+8 · «Y hay un plan para cada tamaño de empresa. Starter, gratis, para empezar sin fricción. Creator Pro, por noventa y nueve euros al mes, pensado para la pequeña PYME, con un ahorro estimado del treinta y cuatro por ciento en gestión manual. Business, por cuatrocientos noventa y nueve euros al mes, con integración total con tu ERP vía API. Y Enterprise VIP, para holdings y autoridades portuarias: marca blanca, multigestión y pago por uso. BiZhas convierte tu gasto operativo en rentabilidad neta: en conjunto, nuestras empresas clientes pueden ahorrar entre cuatro y setenta y dos millones de euros al año en costes administrativos, multas, tiempos muertos e ineficiencias logísticas.»
+
+**Escenas ya generadas en la cuenta antigua** (1, 2, 3 y 9 con Fraser, y el clip de la escena 1): hay que descargarlas desde el proyecto «BeZhas - Video explicativo YouTube» antes de cerrar esa cuenta.
