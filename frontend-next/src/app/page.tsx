@@ -141,18 +141,17 @@ export default function HomePage() {
                     transition={{ duration: 0.7 }}
                     className="text-center max-w-4xl mx-auto relative z-10"
                 >
-                    <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
-                        <span style={{ color: '#E8F4FF' }}>El ecosistema</span>{' '}
-                        <span style={{ background: 'linear-gradient(135deg, #FFB800, #00C896)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                            Web3
-                        </span>{' '}
+                    <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight tracking-tight">
+                        <span style={{ color: '#E8F4FF' }}>Privacidad que protege tu capital,</span>{' '}
                         <br />
-                        <span style={{ color: '#E8F4FF' }}>que lo une todo</span>
+                        <span style={{ background: 'linear-gradient(135deg, #FFB800, #00C896)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                            libertad que acelera tu negocio
+                        </span>
                     </h1>
 
-                    <p style={{ color: '#A8C4E0', fontSize: '1.2rem', lineHeight: 1.7 }} className="mb-10 max-w-2xl mx-auto">
-                        Pagos multi-token, activos del mundo real, marketplace con escrow y una IA autÃ³noma.
-                        Todo en la <strong style={{ color: '#00C896' }}>BeZhas Blockchain Core</strong> sobre Polygon.
+                    <p style={{ color: '#A8C4E0', fontSize: '1.2rem', lineHeight: 1.7 }} className="mb-10 max-w-3xl mx-auto">
+                        El <strong style={{ color: '#00C896' }}>puente definitivo</strong> hacia la economía digital
+                        para empresarios e instituciones con visión de futuro.
                     </p>
 
                     <div className="flex flex-wrap justify-center gap-4">
