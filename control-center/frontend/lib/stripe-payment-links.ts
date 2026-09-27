@@ -1,6 +1,6 @@
 export const STRIPE_PAYMENT_LINKS = {
     enterprise: 'https://buy.stripe.com/aFa4gzb6E4ya1Jc4Qjew809',
-    pro: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+    pro: 'https://buy.stripe.com/00w3cv7UsggSfA22Ibew80f',
     starter: 'https://buy.stripe.com/8x2aEXgqY2q29bEeqTew807',
     tokenPurchase: 'https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806',
     beVipPlus: 'https://buy.stripe.com/bJe3cveiQ1lY3Rkgz1ew805',
