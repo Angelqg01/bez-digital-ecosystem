@@ -105,6 +105,9 @@ const CONFIG = Object.freeze({
   // a silent 1:1. Replace with a live oracle feed when available.
   eurUsdRate: parseFloat(process.env.EUR_USD_RATE || '1.08'),
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+  // La plataforma cobra en dos cuentas de Stripe: la principal (planes) y la de
+  // BeZhas (BEZ-Coin, Be-VIP, inversores). Cada endpoint firma con su secreto.
+  stripeWebhookSecretBezhas: process.env.STRIPE_WEBHOOK_SECRET_BEZHAS ?? '',
   bankWebhookSecret: process.env.BANK_WEBHOOK_SECRET ?? '',
   mintGasLimit: parseMintGasLimit(),
   // Timeout for tx.wait() in ms — default 3 minutes [REL-1]
@@ -125,6 +128,9 @@ function validateConfig() {
       ? [['treasuryPk', CONFIG.treasuryPk, () => CONFIG.treasuryPk.startsWith('0x') && CONFIG.treasuryPk.length === 66]]
       : []),
     ['stripeWebhookSecret', CONFIG.stripeWebhookSecret, () => CONFIG.stripeWebhookSecret.startsWith('whsec_')],
+    ...(CONFIG.stripeWebhookSecretBezhas
+      ? [['stripeWebhookSecretBezhas', CONFIG.stripeWebhookSecretBezhas, () => CONFIG.stripeWebhookSecretBezhas.startsWith('whsec_')]]
+      : []),
   ];
 
   for (const [name, value, validate] of checks) {
@@ -573,6 +579,29 @@ async function importeEnCentimosUsd(session) {
   return cents;
 }
 
+/**
+ * Verifica la firma contra el secreto de cada cuenta configurada y devuelve el
+ * evento y la cuenta que lo firmó. La verificación es local (HMAC): no llama a
+ * Stripe. Un secreto que no es whsec_ no se prueba nunca.
+ */
+function verificarFirmaStripe(payload, sig) {
+  const cuentas = [
+    ['principal', CONFIG.stripeWebhookSecret],
+    ['bezhas', CONFIG.stripeWebhookSecretBezhas],
+  ].filter(([, secreto]) => typeof secreto === 'string' && secreto.startsWith('whsec_'));
+  if (!cuentas.length) throw new Error('No hay ningún STRIPE_WEBHOOK_SECRET configurado');
+
+  let ultimo;
+  for (const [cuenta, secreto] of cuentas) {
+    try {
+      return { event: getStripe().webhooks.constructEvent(payload, sig, secreto), cuenta };
+    } catch (err) {
+      ultimo = err;
+    }
+  }
+  throw ultimo;
+}
+
 // ═══════════════════════════════════════════════
 // ROUTE: POST /webhooks/stripe
 // ═══════════════════════════════════════════════
@@ -580,8 +609,9 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
   const sig = req.headers['stripe-signature'];
   let event;
 
+  let cuentaStripe;
   try {
-    event = getStripe().webhooks.constructEvent(req.body, sig, CONFIG.stripeWebhookSecret);
+    ({ event, cuenta: cuentaStripe } = verificarFirmaStripe(req.body, sig));
   } catch (err) {
     log.error('Stripe', 'Signature verification failed', { error: err.message });
     return res.status(400).json({ error: `Webhook signature error: ${err.message}` });
@@ -664,6 +694,8 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
             estado: 'retenida',
             referencia,
             sesion: session.id,
+            // El verificador consulta el cobro en la cuenta que lo recibió.
+            cuentaStripe,
             importeMinor: session.amount_total,
             moneda: String(session.currency || 'usd').toLowerCase(),
             bezWei: bezWei.toString(),

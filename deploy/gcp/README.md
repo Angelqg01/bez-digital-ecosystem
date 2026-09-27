@@ -100,7 +100,11 @@ en dos servicios, claves donde van direcciones o la clave del deployer.
   recupera. Guarda una copia del `.env` fuera de GCP (gestor de contraseñas).
 - **De terceros, opcionales**: RPC (`POLYGON_RPC_URL`, `RPC_URL`), Stripe
   (`07-stripe.sh` crea el webhook `https://api.bezhas.com/api/webhooks/stripe`
-  y rellena `STRIPE_WEBHOOK_SECRET`), Gemini,
+  y rellena `STRIPE_WEBHOOK_SECRET`). Si también se cobra en la cuenta de
+  BeZhas (BEZ-Coin, Be-VIP, inversores), su webhook apunta a la misma URL y
+  su secreto va en `STRIPE_WEBHOOK_SECRET_BEZHAS`, con una clave restringida
+  de solo lectura en `STRIPE_SECRET_KEY_BEZHAS` para verificar los fondos
+  antes de entregar BEZ. Gemini,
   DeepSeek, Anthropic, Pinata, Telegram, Discord, Redis.
 - **Wallets calientes** (`OPERATOR_PRIVATE_KEY`, `AGENT_PRIVATE_KEY`,
   `EDGE_NODE_PRIVATE_KEY`): nuevas, una por servicio, con saldo mínimo de gas

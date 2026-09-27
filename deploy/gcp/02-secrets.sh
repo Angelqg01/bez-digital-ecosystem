@@ -106,6 +106,15 @@ sk=$(v STRIPE_SECRET_KEY)
 wh=$(v STRIPE_WEBHOOK_SECRET)
 [[ -n "$wh" && ! "$wh" =~ ^whsec_ ]] && errores+=("STRIPE_WEBHOOK_SECRET debe empezar por whsec_")
 [[ -n "$sk" && -z "$wh" ]] && avisos+=("STRIPE_SECRET_KEY sin STRIPE_WEBHOOK_SECRET: los pagos no se confirmarán")
+# Segunda cuenta (BeZhas): su secreto de webhook y su clave de lectura.
+whb=$(v STRIPE_WEBHOOK_SECRET_BEZHAS)
+[[ -n "$whb" && ! "$whb" =~ ^whsec_ ]] && errores+=("STRIPE_WEBHOOK_SECRET_BEZHAS debe empezar por whsec_")
+[[ -n "$whb" && "$whb" == "$wh" ]] && errores+=("STRIPE_WEBHOOK_SECRET_BEZHAS es igual a STRIPE_WEBHOOK_SECRET: cópialo del webhook de la cuenta BeZhas")
+skb=$(v STRIPE_SECRET_KEY_BEZHAS)
+[[ -n "$skb" && ! "$skb" =~ ^(sk|rk)_(live|test)_ ]] && errores+=("STRIPE_SECRET_KEY_BEZHAS no es una clave de Stripe (rk_live_/sk_live_)")
+[[ -n "$skb" && -n "$sk" && "$skb" == "$sk" ]] && errores+=("STRIPE_SECRET_KEY_BEZHAS es igual a STRIPE_SECRET_KEY: debe ser una clave de la cuenta BeZhas")
+[[ "$skb" =~ ^sk_ ]] && avisos+=("STRIPE_SECRET_KEY_BEZHAS es una clave completa: basta una restringida de solo lectura (rk_live_)")
+[[ -n "$whb" && -z "$skb" ]] && avisos+=("STRIPE_WEBHOOK_SECRET_BEZHAS sin STRIPE_SECRET_KEY_BEZHAS: las compras de BEZ de la cuenta BeZhas quedarán retenidas sin verificar")
 
 if ((${#avisos[@]})); then printf '⚠️  %s\n' "${avisos[@]}" >&2; fi
 if ((${#errores[@]})); then
