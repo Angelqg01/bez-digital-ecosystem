@@ -81,7 +81,7 @@ TOKEN & BLOCKCHAIN:
 - ROI total año 1: +32%
 - DAO governance: posiciones ≥ €1.000.000
 - Listado DeFi: 1 Julio 2026
-- Compra: https://buy.stripe.com/5kQ6oG5Y3duw0OU8U00kE0g
+- Compra: https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806
 - Fundador: Yoel A. Hernandez | LinkedIn: https://www.linkedin.com/company/80822195
 - Email: info.bezcoin@bez.digital
 

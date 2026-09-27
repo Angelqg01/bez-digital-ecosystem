@@ -70,6 +70,13 @@ fi
 echo "   $(jq -r '"\(.settings.dashboard.display_name // .business_profile.name // .id) (\(.id)) — cobros: \(if .charges_enabled then "activos" else "NO activos" end)"' <<< "$cuenta")"
 [[ "$(jq -r '.charges_enabled' <<< "$cuenta")" == true ]] || \
   echo "⚠️  La cuenta aún no puede cobrar: completa la verificación en el panel de Stripe." >&2
+if [[ -n "${STRIPE_ACCOUNT_ID:-}" && "$(jq -r '.id' <<< "$cuenta")" != "$STRIPE_ACCOUNT_ID" ]]; then
+  echo "❌ La clave es de la cuenta $(jq -r '.id' <<< "$cuenta"), no de la de BeZhas ($STRIPE_ACCOUNT_ID)." >&2
+  echo "   Los clientes verían la marca de otra empresa. Pon en STRIPE_SECRET_KEY la clave de la cuenta BeZhas." >&2
+  exit 1
+fi
+# Lo que ve el cliente: nombre, extracto de la tarjeta y logo.
+echo "   Marca: $(jq -r '"nombre «\(.business_profile.name // "—")» · extracto «\(.settings.payments.statement_descriptor // .settings.card_payments.statement_descriptor_prefix // "—")» · icono \(if .settings.branding.icon then "sí" else "NO" end) · logo \(if .settings.branding.logo then "sí" else "NO" end)"' <<< "$cuenta")"
 [[ "${GUARDAR_SK:-0}" == 1 ]] && poner STRIPE_SECRET_KEY "$SK"
 
 echo "→ Catálogo (precios de api/config)"
@@ -87,6 +94,18 @@ if ((mal)); then
   echo "❌ $mal precios no existen en esta cuenta/modo: la clave es de otra cuenta o de modo test." >&2
   exit 1
 fi
+
+# El medidor del Starter por uso: tiene que existir y contar el evento que
+# envía la api (usageBilling.js).
+for m in $(grep -ohE "mtr_[A-Za-z0-9]+" api/config/plans.js | sort -u); do
+  r=$(stripe GET "/v1/billing/meters/$m")
+  ev=$(jq -r '.event_name // empty' <<< "$r")
+  if [[ "$ev" == "bezhas_api_credits" && "$(jq -r '.status' <<< "$r")" == active ]]; then
+    echo "   ✅ medidor $m ($ev)"
+  else
+    echo "❌ medidor $m: $(jq -r '.error.message // "evento \(.event_name) / \(.status)"' <<< "$r")" >&2; exit 1
+  fi
+done
 
 echo "→ Webhook: $URL_WEBHOOK"
 existentes=$(stripe GET "/v1/webhook_endpoints?limit=100" | jq -r --arg u "$URL_WEBHOOK" '.data[]? | select(.url == $u) | .id')
