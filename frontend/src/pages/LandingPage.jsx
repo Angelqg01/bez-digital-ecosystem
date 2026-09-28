@@ -314,13 +314,13 @@ const LandingPage = () => {
                         <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#22d3ee]">BeZhas Web3 Enterprise Grade</span>
                     </div>
                     
-                    <h1 className="font-display text-5xl md:text-8xl font-black leading-[0.9] tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-200 to-gray-500 uppercase italic">
-                        BeZhas: The Web3 <br/>
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0d33f2] to-[#a855f7] italic py-2">Global Engine</span>
+                    <h1 className="font-display text-3xl md:text-6xl font-black leading-[1.05] tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-200 to-gray-500 uppercase italic">
+                        Privacidad que protege tu capital, <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0d33f2] to-[#a855f7] italic py-2">libertad que acelera tu negocio</span>
                     </h1>
-                    
-                    <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed drop-shadow-md">
-                        Revolucionamos las cadenas de suministro globales con inteligencia descentralizada, Oráculos IA en tiempo real y tokenización industrial.
+
+                    <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto font-light leading-relaxed drop-shadow-md">
+                        El puente definitivo hacia la economía digital para empresarios e instituciones con visión de futuro.
                     </p>
                     
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
