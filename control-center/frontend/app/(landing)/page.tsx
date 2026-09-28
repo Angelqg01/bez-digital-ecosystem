@@ -297,8 +297,13 @@ export default function Home() {
               <span className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-200">Mainnet operativo · Chain 2708</span>
             </div>
 
-            <h1 className="max-w-5xl text-5xl font-black uppercase leading-[0.92] tracking-normal text-white md:text-7xl lg:text-8xl">
-              Comercia sin ceder tus datos. Cobra sin pedir permiso.
+            <h1 className="max-w-5xl font-black tracking-normal text-white">
+              <span className="block text-4xl uppercase leading-[0.95] md:text-6xl lg:text-7xl">
+                Privacidad que protege tu capital, libertad que acelera tu negocio:
+              </span>
+              <span className="mt-5 block text-xl font-bold leading-snug text-slate-200 md:text-2xl lg:text-3xl">
+                el puente definitivo hacia la economía digital para empresarios e instituciones con visión de futuro.
+              </span>
             </h1>
             <p className="mt-7 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
               <b className="text-white">BeZhas es una red B2B firmada</b> que conecta tu ERP con puertos, aduanas,
