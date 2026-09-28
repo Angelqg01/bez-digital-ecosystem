@@ -298,10 +298,10 @@ export default function Home() {
             </div>
 
             <h1 className="max-w-5xl font-black tracking-normal text-white">
-              <span className="block text-4xl uppercase leading-[0.95] md:text-6xl lg:text-7xl">
+              <span className="block text-3xl uppercase leading-[1.02] md:text-4xl xl:text-5xl">
                 Privacidad que protege tu capital, libertad que acelera tu negocio:
               </span>
-              <span className="mt-5 block text-xl font-bold leading-snug text-slate-200 md:text-2xl lg:text-3xl">
+              <span className="mt-4 block text-lg font-bold leading-snug text-slate-200 md:text-xl xl:text-2xl">
                 el puente definitivo hacia la economía digital para empresarios e instituciones con visión de futuro.
               </span>
             </h1>
