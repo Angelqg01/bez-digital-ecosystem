@@ -127,7 +127,7 @@ def make_pad(length):
         gate = f'eq(floor(mod(t,32)/8),{i})'
         terms.append(f'{gate}*(0.5*sin(2*PI*{f1}*t)+0.3*sin(2*PI*{f2}*t)+0.3*sin(2*PI*{f3}*t))')
     env = '(0.5-0.5*cos(2*PI*mod(t,8)/8))'
-    expr = f'0.18*{env}*(' + '+'.join(terms) + ')'
+    expr = (f'0.45*{env}*(' + '+'.join(terms) + ')').replace(',', r'\,')
     run('-f', 'lavfi', '-i', f'aevalsrc={expr}|{expr}:s=48000:d={length + 1:.2f}',
         '-af', 'lowpass=f=1200,aecho=0.8:0.7:120|240:0.35|0.2,afade=t=in:d=2', out)
     return out
