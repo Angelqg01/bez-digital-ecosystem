@@ -1,7 +1,7 @@
-# beZhas — Video de lanzamiento · Guion v1
+# beZhas — Video de lanzamiento · Guion v2
 
 **Formato:** YouTube 16:9, 3840×2160 (entrega 4K/1080p), 24 fps
-**Duración objetivo:** 4:20 (≈ 560 palabras de locución, ritmo 130 pal/min)
+**Duración objetivo:** 4:45 (≈ 600 palabras de locución, ritmo 130 pal/min)
 **Tono:** comercial, institucional, seguro. Sin jerga cripto en la locución; la tecnología se muestra, no se predica.
 **Idioma:** ES (locución) + versión EN posterior (Higgsfield `dubbing`).
 **Base:** *The Architecture of Certainty — De la Gestión Manual a la Operación Blindada* (13 diapositivas).
@@ -42,9 +42,9 @@
 
 ## ESCENA 6 — Logística naviera · 2:05–2:30
 **Visual (HF):** Grúas pórtico, buques y trucks con overlay de wireframe azul. Aduana: barrera que se abre sola al cruzar la geocerca.
-**Datos en pantalla (AD, contadores animados):** `32%` eficiencia portuaria · `$40M` ahorro OPEX · `0.0 s` retraso de auditoría · `70%` menos reclamaciones.
-**Locución:** "En logística naviera, beZhas automatiza el despacho aduanal y la liquidación transfronteriza sin bancos intermediarios. En el caso Rotterdam: un 32 % más de eficiencia portuaria y 40 millones de dólares ahorrados en operación."
-**⚠ Ver notas legales (N1).**
+**Datos en pantalla (AD, contadores animados):** `hasta 32%` eficiencia portuaria · `hasta $40M` ahorro OPEX · `hasta 70%` menos reclamaciones. Pie: "Resultados proyectados a partir de un escenario piloto en operaciones tipo Rotterdam. Los resultados varían según la operación."
+**Locución:** "En logística naviera, beZhas automatiza el despacho aduanal y la liquidación transfronteriza sin bancos intermediarios. En un escenario piloto tipo Rotterdam proyectamos hasta un 32 % más de eficiencia portuaria y hasta 40 millones de dólares de ahorro operativo."
+**Aplicado N1.**
 
 ## ESCENA 7 — Salud y biotecnología · 2:30–2:50
 **Visual (HF):** Cámara fría hospitalaria, vial con curva de temperatura (AD). Un lote sale de rango → se ilumina en ámbar y se aísla antes de llegar al paciente. Panel "Bio-Agent" con privacidad de datos.
@@ -53,25 +53,26 @@
 
 ## ESCENA 8 — Activos reales (RWA), inmobiliario y e-commerce · 2:50–3:15
 **Visual (MIX):** Skyline → un edificio se fracciona en teselas luminosas que vuelan a un móvil (marketplace RWA). Corte a almacén → estante: producto con etiqueta viva y garantía digital transferible.
-**Datos en pantalla (AD):** `+22 %` velocidad comercial · liquidez inmediata para promotores.
+**Datos en pantalla (AD):** `hasta +22 %` velocidad comercial (proyectado) · liquidez inmediata para promotores.
+**Pie legal (AD, fijo 4 s):** "La fraccionalización de activos está sujeta a la regulación de cada jurisdicción. No constituye oferta de inversión."
 **Locución:** "Un edificio se transforma en participaciones líquidas, comercializables globalmente, con alquileres cobrados y distribuidos automáticamente. En comercio electrónico y retail, el inventario avisa su propio movimiento y las garantías se transfieren sin un solo recibo de papel."
-**⚠ Ver N1 y N3.**
+**Aplicado N1, N3 y N5.**
 
-## ESCENA 9 — Agricultura y energía · 3:15–3:35  *(NO está en el documento — ver N2)*
+## ESCENA 9 — Agricultura y energía · 3:15–3:35  *(NO está en el documento — cualitativa, sin cifras; ver N2)*
 **Visual (HF):** Campo con drones y sensores de suelo → cosecha certificada por lote hasta el estante. Parque solar/eólico → cada kWh genera un certificado verificable.
 **Locución:** "La misma verdad verificable traza el origen de una cosecha, del campo al consumidor, y certifica cada kilovatio de energía renovable producido."
 
 ## ESCENA 10 — Instituciones y gobiernos · 3:35–3:55
 **Visual (HF + AD):** Sala institucional moderna; un documento legal se "auto-audita": checks verdes en cláusulas; depósito que se libera al certificarse la obra; bóveda de evidencia digital.
-**Datos en pantalla (AD):** `30 %` menos costos administrativos.
-**Locución:** "Para instituciones y gobiernos: contratos que auditan su propio cumplimiento, evidencia digital imposible de alterar y nóminas internacionales instantáneas. Un treinta por ciento menos de costos administrativos."
+**Datos en pantalla (AD):** `hasta 30 %` menos costos administrativos (proyectado).
+**Locución:** "Para instituciones y gobiernos: contratos que auditan su propio cumplimiento, evidencia digital imposible de alterar y nóminas internacionales instantáneas. Hasta un treinta por ciento menos de costos administrativos."
 
 ## ESCENA 11 — Efecto red · 3:55–4:10
 **Visual (AD):** Mapa mundial; nodos azules y ámbar se conectan; el aro central "Industrial Credit Score" se completa.
 **Locución:** "Cada operación cumplida construye un historial público e inalterable. Ese es su Score de Reputación Industrial: tarifas premium, seguros más bajos y, para la competencia, un estándar al que tendrá que adherirse."
 
 ## ESCENA 12 — Integración y seguridad · 4:10–4:30
-**Visual (AD):** Iconos SAP / Oracle / Shopify (ver N4) conectados por "API Bridge" luminoso. Después, panel de red: nodos activos, uptime, mapa de validadores.
+**Visual (AD):** Iconos genéricos ERP / CRM / WMS (sin logos de terceros, N4) conectados por "API Bridge" luminoso. Después, panel de red: nodos activos, uptime, mapa de validadores.
 **Texto en pantalla:** "No reemplace su software. Otórguele superpoderes." · "Sin punto único de fallo."
 **Locución:** "beZhas no reemplaza su software: se conecta a su ERP, CRM o sistema de almacenes en cuestión de días, mientras la validación opera en silencio. Y al estar distribuida en miles de validadores independientes, elimina el punto único de fallo."
 
@@ -82,13 +83,13 @@
 
 ---
 
-## Notas que necesitan decisión antes de producir
+## Decisiones aplicadas en v2 (revisables) y pendientes
 
-**N1 — Cifras del documento sin respaldo verificable.** Las diapositivas incluyen "Caso real Rotterdam" (32 %, $40M, 70 %), "0.0 s de retraso", "0.0 ms de latencia de brecha", "100 % de prevención" y "eliminación total del fraude". Como afirmaciones publicitarias públicas, las absolutas ("0.0", "100 %", "total") suelen ser insostenibles y pueden generar responsabilidad. Antes de publicar necesito: (a) confirmar que el caso Rotterdam existe y que el cliente autoriza citarlo, o presentarlo como "simulación/proyección"; (b) suavizar absolutos ("hasta", "reduce"). En el guion ya dejé la locución sin "0.0" ni "100 %".
+**N1 (aplicado: proyecciones con "hasta" y pie; sin "0.0"/"100 %"; pendiente confirmar que existe el caso Rotterdam y permiso del cliente) — Cifras del documento sin respaldo verificable.** Las diapositivas incluyen "Caso real Rotterdam" (32 %, $40M, 70 %), "0.0 s de retraso", "0.0 ms de latencia de brecha", "100 % de prevención" y "eliminación total del fraude". Como afirmaciones publicitarias públicas, las absolutas ("0.0", "100 %", "total") suelen ser insostenibles y pueden generar responsabilidad. Antes de publicar necesito: (a) confirmar que el caso Rotterdam existe y que el cliente autoriza citarlo, o presentarlo como "simulación/proyección"; (b) suavizar absolutos ("hasta", "reduce"). En el guion ya dejé la locución sin "0.0" ni "100 %".
 **N2 — Agricultura y energía no aparecen en el PDF.** Escena 9 es propuesta creativa sin datos. Si tienes casos o cifras, los incorporo; si no, se queda cualitativa.
-**N3 — Cifras ambiguas.** "1.6M" (liquidez) y "0.79 % eliminación total del fraude" en la diapositiva inmobiliaria se contradicen internamente; las omití de la locución. Necesito el dato correcto.
-**N4 — Marcas (SAP, Oracle, Shopify).** Mostrar sus logos exige permiso de marca o uso nominativo prudente; alternativa: iconos genéricos "ERP / CRM / WMS".
-**N5 — Tokenización / RWA.** Fraccionar inmuebles como participaciones vendibles puede ser valor mobiliario según jurisdicción (MiCA, SEC…). Propongo añadir un pie legal ("sujeto a regulación local") en la escena 8.
+**N3 (omitidas hasta recibir el dato) — Cifras ambiguas.** "1.6M" (liquidez) y "0.79 % eliminación total del fraude" en la diapositiva inmobiliaria se contradicen internamente; las omití de la locución. Necesito el dato correcto.
+**N4 (aplicado: iconos genéricos) — Marcas (SAP, Oracle, Shopify).** Mostrar sus logos exige permiso de marca o uso nominativo prudente; alternativa: iconos genéricos "ERP / CRM / WMS".
+**N5 (aplicado: pie legal en escena 8) — Tokenización / RWA.** Fraccionar inmuebles como participaciones vendibles puede ser valor mobiliario según jurisdicción (MiCA, SEC…). Propongo añadir un pie legal ("sujeto a regulación local") en la escena 8.
 
 ## Plan de producción (cuando aprobemos guion)
 1. **Voz (HF):** locución ES masculina/femenina profesional; revisión de ritmo.
