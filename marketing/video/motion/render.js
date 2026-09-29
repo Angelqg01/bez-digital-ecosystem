@@ -9,7 +9,7 @@ const FF=process.env.FFMPEG,FPS=30,OUT=path.resolve(__dirname,'out');fs.mkdirSyn
  for(const id of only){
   const dur=await pg.evaluate(i=>window.setup(i),id);const fr=path.join(OUT,'f_'+id);fs.rmSync(fr,{recursive:true,force:true});fs.mkdirSync(fr);
   const n=Math.round(dur*FPS);
-  for(let i=0;i<n;i++){await pg.evaluate(t=>window.renderAt(t),i/FPS);await pg.screenshot({path:`${fr}/${String(i).padStart(5,'0')}.jpg`,type:'jpeg',quality:92})}
+  for(let i=0;i<n;i++){await pg.evaluate(t=>window.renderAt(t),i/FPS);await pg.screenshot({path:`${fr}/${String(i).padStart(5,'0')}.jpg`,type:'jpeg',quality:92});}
   execFileSync(FF,['-y','-loglevel','error','-framerate',String(FPS),'-i',`${fr}/%05d.jpg`,'-c:v','libx264','-pix_fmt','yuv420p','-crf','16',path.join(OUT,`escena_${id}.mp4`)]);
   fs.rmSync(fr,{recursive:true,force:true});console.log('done',id,dur+'s');
  }
