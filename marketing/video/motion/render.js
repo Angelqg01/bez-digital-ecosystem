@@ -1,11 +1,12 @@
-const {chromium}=require('/opt/node22/lib/node_modules/playwright');
+const {chromium}=(()=>{try{return require('playwright');}catch(e){return require('/opt/node22/lib/node_modules/playwright');}})();
 const {execFileSync}=require('child_process');const fs=require('fs'),path=require('path');
-const FF=process.env.FFMPEG,FPS=30,OUT=path.resolve(__dirname,'out');fs.mkdirSync(OUT,{recursive:true});
+const FF=process.env.FFMPEG||'ffmpeg',FPS=30,OUT=path.resolve(__dirname,'out');fs.mkdirSync(OUT,{recursive:true});
 (async()=>{
- const only=process.argv[2]?process.argv[2].split(''):['A','B','C','D','E','F','G','H','I','J'];
- const br=await chromium.launch({executablePath:process.env.CHROME});const pg=await br.newPage({viewport:{width:1920,height:1080}});
+ const only=process.argv[2]?process.argv[2].split(''):['A','B','C','D','E','F','G','H','I','J','K'];
+ const br=await chromium.launch(process.env.CHROME?{executablePath:process.env.CHROME}:{});const pg=await br.newPage({viewport:{width:1920,height:1080}});
  pg.on('pageerror',e=>{console.error('PAGEERR',e.message);process.exit(1)});
  await pg.goto('file://'+path.resolve(__dirname,'scenes.html'));
+ await pg.evaluate(()=>window.ready);
  for(const id of only){
   const dur=await pg.evaluate(i=>window.setup(i),id);const fr=path.join(OUT,'f_'+id);fs.rmSync(fr,{recursive:true,force:true});fs.mkdirSync(fr);
   const n=Math.round(dur*FPS);

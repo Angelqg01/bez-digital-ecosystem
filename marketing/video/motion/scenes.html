@@ -12,12 +12,15 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:var(--navy);font
 .lbl{color:var(--mut)}
 svg{position:absolute;left:0;top:0;overflow:visible}
 </style></head><body>
-<div id="stage"><div id="grid"></div><canvas id="cv" class="abs" width="1920" height="1080" style="left:0;top:0"></canvas><div id="dom"></div></div>
+<div id="stage"><div id="grid"></div><canvas id="cv" class="abs" width="1920" height="1080" style="left:0;top:0"></canvas><div id="dom"></div><div id="wm" class="abs" style="left:1560px;top:40px;display:flex;align-items:center;gap:14px;opacity:.9"><img src="brand/bezhas-symbol.png" style="width:56px;height:56px"><span style="font-size:34px;font-weight:800;letter-spacing:.01em">BeZhas</span></div></div>
 <script>
 const W=1920,H=1080,cv=document.getElementById('cv'),cx=cv.getContext('2d'),dom=document.getElementById('dom'),grid=document.getElementById('grid');
 const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
 const seg=(t,a,b)=>clamp((t-a)/(b-a));
 const eo=x=>1-Math.pow(1-x,3), eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const IMG={};window.ready=Promise.all([['sym','brand/bezhas-symbol.png'],['coin','brand/bez-coin.png']].map(([k,u])=>new Promise(res=>{const i=new Image();i.onload=res;i.onerror=res;i.src=u;IMG[k]=i;})));
+const BRAND='linear-gradient(90deg,#19D3C5,#E6399B)';
+function coinEl(size){return `<img src="brand/bez-coin.png" style="width:${size}px;height:${size}px;filter:drop-shadow(0 0 30px rgba(245,179,66,.45))">`}
 function rng(seed){let s=seed;return()=>((s=(s*16807)%2147483647)-1)/2147483646}
 function el(html){const d=document.createElement('div');d.className='abs';d.innerHTML=html;dom.appendChild(d);return d}
 function put(d,x,y,o=1,extra=''){d.style.transform=`translate(${x}px,${y}px) ${extra}`;d.style.opacity=o}
@@ -29,10 +32,11 @@ const scenes={};
 /* A · Nace beZhas (14 s) */
 scenes.A={dur:14,init(){
   const off=document.createElement('canvas');off.width=W;off.height=300;const o=off.getContext('2d');
-  o.fillStyle='#fff';o.font='bold 220px "Helvetica Neue",Arial,"DejaVu Sans",sans-serif';o.textAlign='center';o.textBaseline='middle';o.fillText('BEZHAS',W/2,150);
+  o.fillStyle='#fff';o.font='bold 220px "Helvetica Neue",Arial,"DejaVu Sans",sans-serif';o.textAlign='center';o.textBaseline='middle';o.fillText('BeZhas',W/2+120,150);
   const d=o.getImageData(0,0,W,300).data,pts=[];
   for(let y=0;y<300;y+=6)for(let x=0;x<W;x+=6)if(d[(y*W+x)*4+3]>128)pts.push([x,y+250]);
   const r=rng(7);this.p=pts.map(p=>({tx:p[0],ty:p[1],sx:r()*W,sy:r()*H,j:r()}));
+  this.sym=el('<img src="brand/bezhas-symbol.png" style="width:230px;height:230px">');
   this.l=el(glowText('Creer en los papeles',44,'#9AA8B8',700));
   this.ls=el('<div style="font-size:26px;color:#7C8A99;width:640px;line-height:1.35">Gestión manual y fe ciega en terceros.<br>Retrasos, errores humanos y fraude.</div>');
   this.r=el(glowText('La verdad integrada',44,'#1FB6FF',700));
@@ -50,7 +54,8 @@ draw(t){
     cx.fillStyle=`rgba(${31+ (1-k)*120},${182},255,${.35+.65*k})`;
     cx.fillRect(x,y,4,4);
   }
-  if(hold>0){cx.shadowColor='#1FB6FF';cx.shadowBlur=30*hold;cx.globalAlpha=.25*hold*(1-move*.3);cx.fillStyle='#1FB6FF';cx.font='bold 220px "Helvetica Neue",Arial,"DejaVu Sans",sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('BEZHAS',W/2,400-move*170);cx.globalAlpha=1;cx.shadowBlur=0;}
+  if(hold>0){cx.shadowColor='#1FB6FF';cx.shadowBlur=30*hold;cx.globalAlpha=.25*hold*(1-move*.3);cx.fillStyle='#1FB6FF';cx.font='bold 220px "Helvetica Neue",Arial,"DejaVu Sans",sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('BeZhas',W/2+120,400-move*170);cx.globalAlpha=1;cx.shadowBlur=0;}
+  const sa=eo(seg(t,1.8,3.2));put(this.sym,470,285-move*170,sa,`scale(${.6+.4*sa}) rotate(${(1-sa)*-40}deg)`);
   const a=eo(seg(t,4.6,5.6)),dim=seg(t,8.5,9.5),lift=eo(seg(t,9.2,10.2));
   const cardL=this.l,cardR=this.r;
   put(cardL,220,540+ (1-a)*30,a*(1-dim*.85));put(this.ls,220,610+(1-a)*30,a*(1-dim*.85));
@@ -66,7 +71,7 @@ scenes.B={dur:22,init(){
    {x:610,t:'Sensor IoT',s:'Temperatura, humedad y ubicación en tiempo real',ic:'chip'},
    {x:1070,t:'Validador automático',s:'Cruza los datos con el acuerdo firmado',ic:'srv'}];
   this.cards=this.nodes.map(n=>el(`<div style="width:380px;height:340px;border-radius:22px;border:2px solid rgba(31,182,255,.5);background:linear-gradient(160deg,rgba(20,38,66,.9),rgba(11,18,32,.9));padding:34px"><div style="height:110px;display:flex;align-items:center">${icon(n.ic)}</div><div class="h1" style="font-size:34px;margin-top:8px">${n.t}</div><div style="font-size:21px;color:#8CA3BA;margin-top:10px;line-height:1.3">${n.s}</div></div>`));
-  this.ok=el(`<div style="width:360px;height:130px;border-radius:20px;border:2px solid #2ED573;background:rgba(46,213,115,.08);padding:22px 28px"><div class="h1" style="font-size:34px;color:#2ED573">Ejecución</div><div style="font-size:21px;color:#B6F2CE;margin-top:6px">Pago liberado al instante</div></div>`);
+  this.ok=el(`<div style="width:360px;height:130px;border-radius:20px;border:2px solid #2ED573;background:rgba(46,213,115,.08);padding:22px 28px"><div class="h1" style="font-size:34px;color:#2ED573">Ejecución</div><div style="font-size:21px;color:#B6F2CE;margin-top:6px">Liquidación con BEZ-Coin</div></div>`);
   this.ko=el(`<div style="width:360px;height:130px;border-radius:20px;border:2px solid #F5B342;background:rgba(245,179,66,.08);padding:22px 28px"><div class="h1" style="font-size:34px;color:#F5B342">Cuarentena</div><div style="font-size:21px;color:#FFE3AD;margin-top:6px">Anomalía: operación bloqueada</div></div>`);
   this.t=el(glowText('Usted ya no paga por confianza ciega:<br><span style="color:#F5B342">paga por certeza matemática.</span>',54,'#EAF4FF',1700));
   this.h=el(glowText('El motor de la verdad',60,'#EAF4FF',1200));
@@ -100,6 +105,7 @@ draw(t){
   const g=seg(t,12,13);
   if(g>0){pk(1620+ (Math.min(1,seg(t,12,13.5))*80),fy-110,'#2ED573');}
   if(seg(t,14,15)>0){pk(1620+ (Math.min(1,seg(t,14,15.5))*80),fy+110,'#F5B342');}
+  const ck=seg(t,12,15);if(ck>0&&IMG.coin.complete){const sz=90,sc=Math.max(.08,Math.abs(Math.cos(t*4)));cx.save();cx.translate(1570+ck*230,fy-10-Math.sin(ck*Math.PI)*25);cx.scale(sc,1);cx.globalAlpha=Math.min(1,ck*4);cx.drawImage(IMG.coin,-sz/2,-sz/2,sz,sz);cx.restore();}
   put(this.t,110,760,eo(seg(t,16,17.5)));
 }};
 
@@ -148,7 +154,7 @@ draw(t){cx.clearRect(0,0,W,H);
 scenes.E={dur:16,init(){
   this.h=el(glowText('No reemplace su software.<br><span style="color:#1FB6FF">Otórguele superpoderes.</span>',72,'#EAF4FF',1500));
   this.b=['ERP','CRM','WMS'].map(x=>el(`<div style="width:260px;height:130px;border-radius:18px;border:2px solid rgba(140,163,186,.6);background:rgba(20,38,66,.7);display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:700;letter-spacing:.08em">${x}</div>`));
-  this.z=el(`<div style="width:340px;height:200px;border-radius:24px;border:3px solid #1FB6FF;background:rgba(31,182,255,.1);display:flex;align-items:center;justify-content:center;font-size:60px;font-weight:800;box-shadow:0 0 60px rgba(31,182,255,.4)">BEZHAS</div>`);
+  this.z=el(`<div style="width:340px;height:200px;border-radius:24px;border:3px solid #1FB6FF;background:rgba(31,182,255,.1);display:flex;align-items:center;justify-content:center;font-size:50px;font-weight:800;box-shadow:0 0 60px rgba(31,182,255,.4);gap:14px"><img src="brand/bezhas-symbol.png" style="width:76px;height:76px">BeZhas</div>`);
   this.br=el('<div style="font-size:30px;color:#1FB6FF;letter-spacing:.2em">API BRIDGE</div>');
   this.s=el(glowText('Sin punto único de fallo.',64,'#EAF4FF',1500));
   this.s2=el('<div style="font-size:28px;color:#8CA3BA;width:1200px">Validación distribuida en miles de nodos independientes.</div>');
@@ -174,12 +180,14 @@ scenes.F={dur:10,init(){
   this.t=el(glowText('El liderazgo pertenece a quienes eliminan el riesgo<br>mediante infraestructura inalterable.',62,'#EAF4FF',1700));
   this.b=el('<div style="padding:26px 48px;background:#1FB6FF;color:#0B1220;font-size:40px;font-weight:700;border-radius:8px;letter-spacing:.02em">Diseñe su arquitectura operativa</div>');
   this.c=el('<div style="font-size:30px;color:#8CA3BA;letter-spacing:.06em">enterprise@bezhas.com &nbsp;|&nbsp; www.bezhas.com</div>');
-  this.l=el('<div style="font-size:64px;font-weight:800;letter-spacing:.06em;color:#EAF4FF">BEZHAS</div>');
+  this.l=el('<div style="display:flex;align-items:center;gap:22px"><img src="brand/bezhas-symbol.png" style="width:110px;height:110px"><span style="font-size:80px;font-weight:800;color:#EAF4FF">BeZhas</span></div>');
+  this.coin=el(coinEl(360));this.cl=el('<div style="font-size:30px;font-weight:700;color:#F5B342;letter-spacing:.08em;width:360px;text-align:center">BEZ-Coin</div>');
 },
 draw(t){cx.clearRect(0,0,W,H);
   put(this.t,130,250,eo(seg(t,.3,1.8)),`translateY(${(1-eo(seg(t,.3,1.8)))*30}px)`);
   const a=eo(seg(t,2.6,3.6));put(this.b,130,560+(1-a)*20,a,`scale(${1+Math.sin(t*3)*.012*seg(t,4,10)})`);
-  put(this.c,130,700,seg(t,4,5));put(this.l,130,880,seg(t,5,6));
+  put(this.c,130,700,seg(t,4,5));put(this.l,130,840,seg(t,5,6));
+  const ca=eo(seg(t,1,2.5));put(this.coin,1440,420+(1-ca)*60,ca,`scaleX(${Math.max(.1,Math.abs(Math.cos(t*1.6)))})`);put(this.cl,1440,800,seg(t,2,3));
 }};
 
 /* G · Salud y cadena de frío (12 s) */
@@ -290,6 +298,25 @@ draw(t){cx.clearRect(0,0,W,H);
   put(this.n,1250,420,seg(t,7,8));
 }};
 
+/* K · BEZ-Coin (12 s) */
+scenes.K={dur:12,init(){
+  this.h=el(glowText('BEZ-Coin: el token del ecosistema <span style="background:'+BRAND+';-webkit-background-clip:text;color:transparent">BeZhas</span>',58,'#EAF4FF',1700));
+  this.c=el(coinEl(420));
+  this.sec=['Logística naviera','Salud y biotecnología','Real estate / RWA','E-commerce y retail','Agricultura','Energía','Instituciones'].map(x=>el(`<div style="padding:14px 24px;border-radius:40px;border:2px solid rgba(25,211,197,.6);background:rgba(11,18,32,.85);font-size:24px;font-weight:700;white-space:nowrap">${x}</div>`));
+  this.s=el('<div style="font-size:30px;color:#BFE9FF;width:1400px;text-align:center">Liquidación, trazabilidad y reputación verificadas en una sola red.</div>');
+},
+draw(t){cx.clearRect(0,0,W,H);
+  put(this.h,110,70,eo(seg(t,0,1)));
+  const ca=eo(seg(t,.5,2));put(this.c,750,330+(1-ca)*80,ca,`scaleX(${Math.max(.08,Math.abs(Math.cos(t*1.3)))})`);
+  const cxn=960,cyn=540,R=[430,330];
+  this.sec.forEach((b,i)=>{const ang=-Math.PI/2+i*2*Math.PI/7+t*.12,a=eo(seg(t,2+i*.35,3+i*.35));
+    const x=cxn+Math.cos(ang)*R[0]*a,y=cyn+Math.sin(ang)*R[1]*a;
+    cx.strokeStyle=`rgba(230,57,155,${.35*a})`;cx.lineWidth=2;cx.beginPath();cx.moveTo(cxn,cyn);cx.lineTo(x,y);cx.stroke();
+    const k=((t*.6+i/7)%1);cx.fillStyle='#19D3C5';cx.globalAlpha=a;cx.beginPath();cx.arc(cxn+(x-cxn)*k,cyn+(y-cyn)*k,6,0,7);cx.fill();cx.globalAlpha=1;
+    put(b,x-110,y-26,a);});
+  put(this.s,260,975,seg(t,6,7.5));
+}};
+
 function icon(k){
   const s='stroke="#1FB6FF" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"';
   if(k==='truck')return `<svg width="130" height="100" viewBox="0 0 130 100" style="position:static"><path ${s} d="M6 24h68v46H6zM74 40h32l18 20v10H74z"/><circle ${s} cx="30" cy="76" r="9"/><circle ${s} cx="100" cy="76" r="9"/></svg>`;
@@ -297,6 +324,6 @@ function icon(k){
   return `<svg width="130" height="100" viewBox="0 0 130 100" style="position:static"><rect ${s} x="34" y="6" width="62" height="88" rx="6"/><path ${s} d="M34 30h62M34 54h62M46 18h6M46 42h6M46 66h6M46 80h6"/></svg>`;
 }
 let cur=null;
-window.setup=id=>{dom.innerHTML='';cur=scenes[id];cur.init();return cur.dur};
+window.setup=id=>{dom.innerHTML='';document.getElementById('wm').style.display=('AFK'.includes(id))?'none':'flex';cur=scenes[id];cur.init();return cur.dur};
 window.renderAt=t=>{grid.style.transform=`translate(${(t*8)%80}px,${(t*5)%80}px)`;cur.draw(t)};
 </script></body></html>
