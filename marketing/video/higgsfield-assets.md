@@ -17,6 +17,8 @@ Los enlaces son de la CDN de Higgsfield; descargar desde un entorno con acceso a
 | 8 | E9 Agricultura: dron y sensores | 77e2ad7a | https://d8j0ntlcm91z4.cloudfront.net/user_3HtUP0YpTmymb1YjGwjP4umSPoB/hf_20260929_094843_77e2ad7a-7770-4f86-9e6a-e83393359f14.mp4 |
 | 9 | E9 Energía: solar y eólica | 781a59bb | https://d8j0ntlcm91z4.cloudfront.net/user_3HtUP0YpTmymb1YjGwjP4umSPoB/hf_20260929_094912_781a59bb-110c-49ce-ba0a-e7f5e9151539.mp4 |
 | 10 | E10 Instituciones: contrato holográfico | 5fc148fd | https://d8j0ntlcm91z4.cloudfront.net/user_3HtUP0YpTmymb1YjGwjP4umSPoB/hf_20260929_094913_5fc148fd-4fe4-4e1d-b462-b2aff0984312.mp4 |
+| 11 | E4 BEZ-Coin real sobre el puerto (imagen inicial: bez_token.png) | 9c606fe8 | https://d8j0ntlcm91z4.cloudfront.net/user_3HtUP0YpTmymb1YjGwjP4umSPoB/hf_20260929_103023_9c606fe8-6047-43c0-9a6a-3e0618255130.mp4 |
+| 12 | E13 Holograma del logo BeZhas (imagen inicial: pwa-512x512.png) | 451d7e94 | https://d8j0ntlcm91z4.cloudfront.net/user_3HtUP0YpTmymb1YjGwjP4umSPoB/hf_20260929_103023_451d7e94-854b-47ee-b8ee-6dc370cdda99.mp4 |
 
 ## Voz en off (por bloque)
 | Bloque | Escenas | Job | URL |

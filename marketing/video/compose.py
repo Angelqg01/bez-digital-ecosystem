@@ -116,13 +116,60 @@ def build_block(block, items, counter):
     return out
 
 
+PAD_CHORDS = [(110.0, 261.63, 329.63), (87.31, 220.0, 261.63), (130.81, 329.63, 392.0), (98.0, 246.94, 293.66)]
+
+
+def make_pad(length):
+    """Original ambient pad (Am-F-C-G, 8 s per chord) synthesised with ffmpeg: royalty-free by construction."""
+    out = os.path.join(WORK, 'pad.wav')
+    terms = []
+    for i, (f1, f2, f3) in enumerate(PAD_CHORDS):
+        gate = f'eq(floor(mod(t,32)/8),{i})'
+        terms.append(f'{gate}*(0.5*sin(2*PI*{f1}*t)+0.3*sin(2*PI*{f2}*t)+0.3*sin(2*PI*{f3}*t))')
+    env = '(0.5-0.5*cos(2*PI*mod(t,8)/8))'
+    expr = f'0.18*{env}*(' + '+'.join(terms) + ')'
+    run('-f', 'lavfi', '-i', f'aevalsrc={expr}|{expr}:s=48000:d={length + 1:.2f}',
+        '-af', 'lowpass=f=1200,aecho=0.8:0.7:120|240:0.35|0.2,afade=t=in:d=2', out)
+    return out
+
+
+MOTION_ORDER = ['A', 'K', 'B', 'C', 'G', 'H', 'I', 'J', 'D', 'E', 'F']
+
+
+def motion_cut(xf=0.6):
+    """Brand motion-graphics cut: every scene chained with crossfades, ambient pad underneath."""
+    ins, durs = [], []
+    for sc in MOTION_ORDER:
+        p = os.path.join(MOTION, f'escena_{sc}.mp4')
+        ins += ['-i', p]
+        durs.append(duration(p))
+    chain, prev, off = [], '[0:v]', 0.0
+    for i in range(1, len(durs)):
+        off += durs[i - 1] - xf
+        lab = f'[x{i}]'
+        chain.append(f'{prev}[{i}:v]xfade=transition=fade:duration={xf}:offset={off:.2f}{lab}')
+        prev = lab
+    total = sum(durs) - xf * (len(durs) - 1)
+    silent = os.path.join(WORK, 'motion_silent.mp4')
+    run(*ins, '-filter_complex', ';'.join(chain) + f';{prev}format=yuv420p[v]', '-map', '[v]',
+        '-c:v', 'libx264', '-crf', '17', '-r', str(FPS), silent)
+    pad = make_pad(total)
+    out = os.path.join(HERE, 'bezhas-launch-motion.mp4')
+    run('-i', silent, '-i', pad, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
+        '-af', f'afade=t=out:st={total - 2.5:.2f}:d=2.5', '-shortest', '-movflags', '+faststart', out)
+    print('OK', out, f'{duration(out):.1f}s')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--music', help='licensed music track to mix under the voice')
-    ap.add_argument('--pad', action='store_true', help='mix a synthesized ambient pad (sox) under the voice when no --music is given')
+    ap.add_argument('--pad', action='store_true', help='mix a synthesized ambient pad under the voice when no --music is given')
+    ap.add_argument('--motion-only', action='store_true', help='build the brand motion-graphics cut only (no downloads)')
     ap.add_argument('--placeholders', action='store_true', help='test the pipeline with synthetic clips/voices')
     a = ap.parse_args()
     os.makedirs(WORK, exist_ok=True)
+    if a.motion_only:
+        return motion_cut()
     clips, voices = manifest_urls()
     fetch(clips, voices, a.placeholders)
     counter = iter(range(1000))
@@ -131,16 +178,7 @@ def main():
     concat(blocks, joined)
     final = os.path.join(HERE, 'bezhas-launch.mp4' if not a.placeholders else 'build/bezhas-launch-TEST.mp4')
     if not a.music and a.pad:
-        a.music = os.path.join(WORK, 'pad.wav')
-        # Original ambient pad: slow Am-F-C-G chord cycle, low-passed, royalty-free by construction.
-        chords = [('A2', 'C4', 'E4'), ('F2', 'A3', 'C4'), ('C3', 'E4', 'G4'), ('G2', 'B3', 'D4')]
-        parts = []
-        for i, (a1, a2, a3) in enumerate(chords):
-            p = os.path.join(WORK, f'pad{i}.wav')
-            subprocess.run(['sox', '-n', '-r', '48000', '-c', '2', p, 'synth', '8', 'sine', a1, 'sine', a2, 'sine', a3,
-                            'fade', 'q', '2', '8', '2', 'lowpass', '900', 'reverb', '60', 'gain', '-14'], check=True)
-            parts.append(p)
-        subprocess.run(['sox', *parts, a.music], check=True)
+        a.music = make_pad(duration(joined))
     if a.music:
         run('-i', joined, '-stream_loop', '-1', '-i', a.music, '-filter_complex',
             '[1:a]volume=0.18,afade=t=in:d=2[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=0[a]',
