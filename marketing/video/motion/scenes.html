@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>beZhas motion scenes</title>
+<style>
+:root{--navy:#0B1220;--blue:#1FB6FF;--amber:#F5B342;--green:#2ED573;--red:#FF6B4A;--ink:#EAF4FF;--mut:#8CA3BA}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--navy);font-family:"Helvetica Neue",Arial,"Liberation Sans","DejaVu Sans",sans-serif;color:var(--ink)}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:radial-gradient(1200px 700px at 50% 40%,#12203a 0%,#0B1220 65%)}
+#grid{position:absolute;inset:-80px;background-image:linear-gradient(rgba(31,182,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(31,182,255,.07) 1px,transparent 1px);background-size:80px 80px}
+.abs{position:absolute}
+.card{position:absolute;border-radius:22px;border:2px solid rgba(31,182,255,.45);background:linear-gradient(160deg,rgba(20,38,66,.85),rgba(11,18,32,.85));box-shadow:0 0 40px rgba(31,182,255,.15)}
+.h1{font-weight:700;letter-spacing:-.02em}
+.lbl{color:var(--mut)}
+svg{position:absolute;left:0;top:0;overflow:visible}
+</style></head><body>
+<div id="stage"><div id="grid"></div><canvas id="cv" class="abs" width="1920" height="1080" style="left:0;top:0"></canvas><div id="dom"></div></div>
+<script>
+const W=1920,H=1080,cv=document.getElementById('cv'),cx=cv.getContext('2d'),dom=document.getElementById('dom'),grid=document.getElementById('grid');
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const eo=x=>1-Math.pow(1-x,3), eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+function rng(seed){let s=seed;return()=>((s=(s*16807)%2147483647)-1)/2147483646}
+function el(html){const d=document.createElement('div');d.className='abs';d.innerHTML=html;dom.appendChild(d);return d}
+function put(d,x,y,o=1,extra=''){d.style.transform=`translate(${x}px,${y}px) ${extra}`;d.style.opacity=o}
+function glowText(txt,size,color,w=1200){return `<div class="h1" style="font-size:${size}px;color:${color};width:${w}px;line-height:1.1">${txt}</div>`}
+
+/* ===== SCENES ===== */
+const scenes={};
+
+/* A · Nace beZhas (14 s) */
+scenes.A={dur:14,init(){
+  const off=document.createElement('canvas');off.width=W;off.height=300;const o=off.getContext('2d');
+  o.fillStyle='#fff';o.font='bold 220px "Helvetica Neue",Arial,"DejaVu Sans",sans-serif';o.textAlign='center';o.textBaseline='middle';o.fillText('BEZHAS',W/2,150);
+  const d=o.getImageData(0,0,W,300).data,pts=[];
+  for(let y=0;y<300;y+=6)for(let x=0;x<W;x+=6)if(d[(y*W+x)*4+3]>128)pts.push([x,y+250]);
+  const r=rng(7);this.p=pts.map(p=>({tx:p[0],ty:p[1],sx:r()*W,sy:r()*H,j:r()}));
+  this.l=el(glowText('Creer en los papeles',44,'#9AA8B8',700));
+  this.ls=el('<div style="font-size:26px;color:#7C8A99;width:640px;line-height:1.35">Gestión manual y fe ciega en terceros.<br>Retrasos, errores humanos y fraude.</div>');
+  this.r=el(glowText('La verdad integrada',44,'#1FB6FF',700));
+  this.rs=el('<div style="font-size:26px;color:#BFE9FF;width:640px;line-height:1.35">Cada movimiento físico y financiero certificado,<br>de forma automática e imborrable.</div>');
+  this.f=el(glowText('De <span style="color:#F5B342">asumir</span> a <span style="color:#1FB6FF">verificar matemáticamente</span>',64,'#EAF4FF',1600));
+},
+draw(t){
+  const form=eo(seg(t,0.2,2.6)),hold=seg(t,2.6,3.6);
+  const move=eio(seg(t,3.8,4.8)); // logo moves up
+  cx.clearRect(0,0,W,H);
+  for(const p of this.p){
+    const k=clamp(form*1.2-p.j*.2);
+    const x=p.sx+(p.tx-p.sx)*eo(k),y0=p.sy+(p.ty-p.sy)*eo(k);
+    const y=y0-move*(y0>0?170:0)+ (1-k)*Math.sin(t*3+p.j*9)*8;
+    cx.fillStyle=`rgba(${31+ (1-k)*120},${182},255,${.35+.65*k})`;
+    cx.fillRect(x,y,4,4);
+  }
+  if(hold>0){cx.shadowColor='#1FB6FF';cx.shadowBlur=30*hold;cx.globalAlpha=.25*hold*(1-move*.3);cx.fillStyle='#1FB6FF';cx.font='bold 220px "Helvetica Neue",Arial,"DejaVu Sans",sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('BEZHAS',W/2,400-move*170);cx.globalAlpha=1;cx.shadowBlur=0}
+  const a=eo(seg(t,4.6,5.6)),dim=seg(t,8.5,9.5),lift=eo(seg(t,9.2,10.2));
+  const cardL=this.l,cardR=this.r;
+  put(cardL,220,540+ (1-a)*30,a*(1-dim*.85));put(this.ls,220,610+(1-a)*30,a*(1-dim*.85));
+  put(cardR,1000,540+(1-a)*30,seg(t,5.4,6.4)*(1));put(this.rs,1000,610+(1-a)*30,seg(t,5.6,6.6));
+  put(this.f,160,880-lift*60,seg(t,9.6,10.8));
+  if(seg(t,5.4,6.4)>0){cx.strokeStyle=`rgba(31,182,255,${.5*seg(t,5.4,6.4)})`;cx.lineWidth=2;cx.strokeRect(970,510,720,220)}
+}};
+
+/* B · Motor de la verdad (22 s) */
+scenes.B={dur:22,init(){
+  this.nodes=[
+   {x:150,t:'Evento físico',s:'Camión refrigerado cruza una geocerca GPS',ic:'truck'},
+   {x:610,t:'Sensor IoT',s:'Temperatura, humedad y ubicación en tiempo real',ic:'chip'},
+   {x:1070,t:'Validador automático',s:'Cruza los datos con el acuerdo firmado',ic:'srv'}];
+  this.cards=this.nodes.map(n=>el(`<div style="width:380px;height:340px;border-radius:22px;border:2px solid rgba(31,182,255,.5);background:linear-gradient(160deg,rgba(20,38,66,.9),rgba(11,18,32,.9));padding:34px"><div style="height:110px;display:flex;align-items:center">${icon(n.ic)}</div><div class="h1" style="font-size:34px;margin-top:8px">${n.t}</div><div style="font-size:21px;color:#8CA3BA;margin-top:10px;line-height:1.3">${n.s}</div></div>`));
+  this.ok=el(`<div style="width:360px;height:130px;border-radius:20px;border:2px solid #2ED573;background:rgba(46,213,115,.08);padding:22px 28px"><div class="h1" style="font-size:34px;color:#2ED573">Ejecución</div><div style="font-size:21px;color:#B6F2CE;margin-top:6px">Pago liberado al instante</div></div>`);
+  this.ko=el(`<div style="width:360px;height:130px;border-radius:20px;border:2px solid #F5B342;background:rgba(245,179,66,.08);padding:22px 28px"><div class="h1" style="font-size:34px;color:#F5B342">Cuarentena</div><div style="font-size:21px;color:#FFE3AD;margin-top:6px">Anomalía: operación bloqueada</div></div>`);
+  this.t=el(glowText('Usted ya no paga por confianza ciega:<br><span style="color:#F5B342">paga por certeza matemática.</span>',54,'#EAF4FF',1700));
+  this.h=el(glowText('El motor de la verdad',60,'#EAF4FF',1200));
+},
+draw(t){
+  cx.clearRect(0,0,W,H);
+  put(this.h,110,90,eo(seg(t,0,1)));
+  const ys=300;
+  this.cards.forEach((c,i)=>{const a=eo(seg(t,.8+i*.8,1.8+i*.8));put(c,this.nodes[i].x,ys+(1-a)*40,a);
+    const act=seg(t,3+i*3,4+i*3)*(1-seg(t,6.5+i*3,7.5+i*3));
+    c.firstChild.style.boxShadow=`0 0 ${20+50*act}px rgba(31,182,255,${.15+.55*act})`;c.firstChild.style.borderColor=`rgba(31,182,255,${.5+.5*act})`});
+  // arrows + packet
+  const px=(a,b,k)=>a+(b-a)*k;
+  const lines=[[540,ys+150,610],[1000,ys+150,1070]];
+  cx.lineWidth=4;
+  lines.forEach((l,i)=>{const p=seg(t,2.6+i*3,3.6+i*3);cx.strokeStyle='rgba(31,182,255,.85)';cx.beginPath();cx.moveTo(l[0],l[1]);cx.lineTo(px(l[0],l[2],eo(p)),l[1]);cx.stroke()});
+  // fork
+  const fk=eo(seg(t,9.5,11.5));
+  const fx=1450,fy=ys+150;
+  if(fk>0){
+    cx.lineWidth=6;
+    cx.strokeStyle='rgba(31,182,255,.9)';cx.beginPath();cx.moveTo(1450,fy);cx.lineTo(1450+80*fk,fy);cx.stroke();
+    cx.strokeStyle='#2ED573';cx.beginPath();cx.moveTo(1530,fy);cx.bezierCurveTo(1580,fy,1560,fy-110*fk,1620,fy-110*fk);cx.stroke();
+    cx.strokeStyle='#F5B342';cx.beginPath();cx.moveTo(1530,fy);cx.bezierCurveTo(1580,fy,1560,fy+110*fk,1620,fy+110*fk);cx.stroke();
+  }
+  put(this.ok,1540,fy-240,seg(t,10.5,11.5));put(this.ko,1540,fy+90,seg(t,11,12));
+  // packets travelling
+  const pk=(x,y,c)=>{cx.fillStyle=c;cx.shadowColor=c;cx.shadowBlur=24;cx.beginPath();cx.arc(x,y,11,0,7);cx.fill();cx.shadowBlur=0};
+  const trav=eio(seg(t,3,9.5));const xx=170+ (1470-170)*trav;if(t>3&&t<12)pk(xx,ys+150,'#1FB6FF');
+  // outcome pulses
+  const g=seg(t,12,13),k2=Math.sin(t*6)*.5+.5;
+  if(g>0){pk(1620+ (Math.min(1,seg(t,12,13.5))*80),fy-110,'#2ED573');}
+  if(seg(t,14,15)>0){pk(1620+ (Math.min(1,seg(t,14,15.5))*80),fy+110,'#F5B342');}
+  put(this.t,110,760,eo(seg(t,16,17.5)));
+}};
+
+/* C · Contadores logística (12 s) */
+scenes.C={dur:12,init(){
+  const data=[['32','%','eficiencia portuaria'],['40','M$','ahorro operativo'],['70','%','menos reclamaciones']];
+  this.d=data;
+  this.h=el(glowText('Operaciones marítimas y logística global',56,'#EAF4FF',1500));
+  this.c=data.map(d=>el(`<div style="width:520px;height:340px;border-radius:24px;border:2px solid rgba(245,179,66,.6);background:linear-gradient(160deg,rgba(60,44,16,.55),rgba(11,18,32,.9));padding:38px;box-shadow:0 0 50px rgba(245,179,66,.15)"><div style="font-size:26px;color:#FFE3AD">hasta</div><div class="h1 num" style="font-size:150px;color:#F5B342;line-height:1"></div><div style="font-size:28px;color:#CFE3F5;margin-top:10px">${d[2]}</div></div>`));
+  this.f=el('<div style="font-size:22px;color:#7C8A99;width:1500px;line-height:1.4">Resultados proyectados a partir de un escenario piloto en operaciones tipo Rotterdam. Los resultados varían según la operación.</div>');
+},
+draw(t){cx.clearRect(0,0,W,H);
+  put(this.h,120,110,eo(seg(t,0,1)));
+  this.c.forEach((c,i)=>{const a=eo(seg(t,1+i*.5,2+i*.5));put(c,120+i*580,320+(1-a)*50,a);
+    const v=Math.round(+this.d[i][0]*eo(seg(t,2+i*.5,5+i*.5)));c.querySelector('.num').innerHTML=v+'<span style="font-size:70px">'+this.d[i][1]+'</span>'});
+  put(this.f,120,800,seg(t,5,6.5));
+}};
+
+/* D · Score de reputación / efecto red (14 s) */
+const CITIES=[[300,330],[380,300],[470,420],[540,560],[520,620],[930,290],[960,340],[1000,470],[1010,560],[1180,300],[1330,320],[1450,380],[1500,470],[1620,640],[1560,300],[1250,420]];
+scenes.D={dur:14,init(){
+  this.h=el(glowText('El efecto red: Score de Reputación Industrial',56,'#EAF4FF',1700));
+  this.s=el(`<div style="width:520px;text-align:center"><div style="font-size:22px;color:#BFE9FF;margin-bottom:6px">Score de Reputación</div><div class="h1 sc" style="font-size:120px;color:#1FB6FF"></div><div style="font-size:22px;color:#8CA3BA">Validado por la red</div></div>`);
+  this.b=['Poder de fijación de precios','Reducción de seguros','El estándar de la red'].map((x,i)=>el(`<div style="width:520px;padding:26px 30px;border-radius:18px;border:2px solid ${['rgba(31,182,255,.6)','rgba(245,179,66,.6)','rgba(31,182,255,.6)'][i]};background:rgba(11,18,32,.85);font-size:30px;font-weight:700">${x}</div>`));
+},
+draw(t){cx.clearRect(0,0,W,H);
+  put(this.h,80,60,eo(seg(t,0,1)));
+  // rough continents
+  cx.fillStyle='rgba(31,182,255,.08)';cx.strokeStyle='rgba(31,182,255,.25)';cx.lineWidth=2;
+  const polys=[[[220,260],[560,240],[600,420],[500,470],[380,430],[260,380]],[[440,500],[560,520],[600,700],[520,800],[460,650]],[[880,260],[1080,250],[1100,420],[1050,640],[960,650],[900,480]],[[1100,240],[1700,260],[1760,440],[1600,520],[1400,470],[1150,420]],[[1520,650],[1700,650],[1720,760],[1560,780]]];
+  const pa=eo(seg(t,.5,2));
+  cx.globalAlpha=pa;polys.forEach(p=>{cx.beginPath();p.forEach((q,i)=>i?cx.lineTo(q[0],q[1]):cx.moveTo(q[0],q[1]));cx.closePath();cx.fill();cx.stroke()});cx.globalAlpha=1;
+  // links & nodes
+  const n=Math.floor(seg(t,2,8)*CITIES.length);
+  for(let i=1;i<=n&&i<CITIES.length;i++){const a=CITIES[i-1],b=CITIES[i];cx.strokeStyle=i%2?'rgba(31,182,255,.55)':'rgba(245,179,66,.55)';cx.lineWidth=2;cx.beginPath();cx.moveTo(a[0],a[1]);cx.quadraticCurveTo((a[0]+b[0])/2,(a[1]+b[1])/2-70,b[0],b[1]);cx.stroke()}
+  for(let i=0;i<Math.min(n+1,CITIES.length);i++){const c=CITIES[i],pl=Math.sin(t*4+i)*.5+.5;cx.fillStyle=i%2?'#1FB6FF':'#F5B342';cx.shadowColor=cx.fillStyle;cx.shadowBlur=18;cx.beginPath();cx.arc(c[0],c[1],6+pl*3,0,7);cx.fill();cx.shadowBlur=0}
+  // ring
+  const cxr=960,cyr=520,rr=150,pr=eo(seg(t,3,8));
+  cx.lineWidth=16;cx.strokeStyle='rgba(31,182,255,.15)';cx.beginPath();cx.arc(cxr,cyr,rr,0,7);cx.stroke();
+  const g=cx.createLinearGradient(cxr-rr,0,cxr+rr,0);g.addColorStop(0,'#1FB6FF');g.addColorStop(1,'#F5B342');cx.strokeStyle=g;cx.lineCap='round';cx.beginPath();cx.arc(cxr,cyr,rr,-Math.PI/2,-Math.PI/2+Math.PI*2*.94*pr);cx.stroke();cx.lineCap='butt';
+  put(this.s,cxr-260,cyr-95,seg(t,3,4));this.s.querySelector('.sc').textContent='A+';
+  this.b.forEach((b,i)=>put(b,90+i*600,880+(1-eo(seg(t,8.5+i*.6,9.6+i*.6)))*30,seg(t,8.5+i*.6,9.6+i*.6)));
+}};
+
+/* E · Integración y seguridad (16 s) */
+scenes.E={dur:16,init(){
+  this.h=el(glowText('No reemplace su software.<br><span style="color:#1FB6FF">Otórguele superpoderes.</span>',72,'#EAF4FF',1500));
+  this.b=['ERP','CRM','WMS'].map(x=>el(`<div style="width:260px;height:130px;border-radius:18px;border:2px solid rgba(140,163,186,.6);background:rgba(20,38,66,.7);display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:700;letter-spacing:.08em">${x}</div>`));
+  this.z=el(`<div style="width:340px;height:200px;border-radius:24px;border:3px solid #1FB6FF;background:rgba(31,182,255,.1);display:flex;align-items:center;justify-content:center;font-size:60px;font-weight:800;box-shadow:0 0 60px rgba(31,182,255,.4)">BEZHAS</div>`);
+  this.br=el('<div style="font-size:30px;color:#1FB6FF;letter-spacing:.2em">API BRIDGE</div>');
+  this.s=el(glowText('Sin punto único de fallo.',64,'#EAF4FF',1500));
+  this.s2=el('<div style="font-size:28px;color:#8CA3BA;width:1200px">Validación distribuida en miles de nodos independientes.</div>');
+  const r=rng(11);this.nd=Array.from({length:150},()=>[r()*W,470+r()*360,r()]);
+},
+draw(t){cx.clearRect(0,0,W,H);
+  const s1=1-seg(t,9,10);
+  put(this.h,120,90,eo(seg(t,0,1))*s1);
+  const ys=[320,500,680];
+  this.b.forEach((b,i)=>{const a=eo(seg(t,1.5+i*.4,2.5+i*.4));put(b,140,ys[i]+ (1-a)*30-60+130,a*s1)});
+  put(this.z,1400,ys[1]-40+130-25,eo(seg(t,3.5,4.5))*s1);
+  put(this.br,780,ys[1]+90-20,seg(t,4,5)*s1);
+  if(s1>0){cx.globalAlpha=s1;ys.forEach((y,i)=>{const yy=y+65-60+130;const p=seg(t,4+i*.3,5+i*.3);cx.strokeStyle='rgba(31,182,255,.6)';cx.lineWidth=3;cx.beginPath();cx.moveTo(400,yy);cx.lineTo(400+(1400-400)*eo(p),665);cx.stroke();
+    if(t>5){const k=((t*.5+i*.3)%1);const a=[400,yy],b=[1400,665];cx.fillStyle='#1FB6FF';cx.shadowColor='#1FB6FF';cx.shadowBlur=16;cx.beginPath();cx.arc(a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,8,0,7);cx.fill();cx.shadowBlur=0}});cx.globalAlpha=1}
+  const v=seg(t,9.5,11);
+  if(v>0){this.nd.forEach((n,i)=>{const p=Math.sin(t*3+n[2]*20)*.5+.5;cx.fillStyle=n[2]>.5?'#1FB6FF':'#F5B342';cx.globalAlpha=v*(.35+.65*p);cx.beginPath();cx.arc(n[0],n[1],4+p*4,0,7);cx.fill()});cx.globalAlpha=1;
+    for(let i=0;i<60;i++){const a=this.nd[i],b=this.nd[(i*7+3)%150];cx.strokeStyle=`rgba(31,182,255,${.12*v})`;cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke()}}
+  put(this.s,120,190,eo(seg(t,9.8,11)));put(this.s2,124,290,seg(t,10.6,12));
+}};
+
+/* F · Cierre CTA (10 s) */
+scenes.F={dur:10,init(){
+  this.t=el(glowText('El liderazgo pertenece a quienes eliminan el riesgo<br>mediante infraestructura inalterable.',62,'#EAF4FF',1700));
+  this.b=el('<div style="padding:26px 48px;background:#1FB6FF;color:#0B1220;font-size:40px;font-weight:700;border-radius:8px;letter-spacing:.02em">Diseñe su arquitectura operativa</div>');
+  this.c=el('<div style="font-size:30px;color:#8CA3BA;letter-spacing:.06em">enterprise@bezhas.com &nbsp;|&nbsp; www.bezhas.com</div>');
+  this.l=el('<div style="font-size:64px;font-weight:800;letter-spacing:.06em;color:#EAF4FF">BEZHAS</div>');
+},
+draw(t){cx.clearRect(0,0,W,H);
+  put(this.t,130,250,eo(seg(t,.3,1.8)),`translateY(${(1-eo(seg(t,.3,1.8)))*30}px)`);
+  const a=eo(seg(t,2.6,3.6));put(this.b,130,560+(1-a)*20,a,`scale(${1+Math.sin(t*3)*.012*seg(t,4,10)})`);
+  put(this.c,130,700,seg(t,4,5));put(this.l,130,880,seg(t,5,6));
+}};
+
+function icon(k){
+  const s='stroke="#1FB6FF" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"';
+  if(k==='truck')return `<svg width="130" height="100" viewBox="0 0 130 100" style="position:static"><path ${s} d="M6 24h68v46H6zM74 40h32l18 20v10H74z"/><circle ${s} cx="30" cy="76" r="9"/><circle ${s} cx="100" cy="76" r="9"/></svg>`;
+  if(k==='chip')return `<svg width="130" height="100" viewBox="0 0 130 100" style="position:static"><rect ${s} x="38" y="22" width="54" height="54" rx="6"/><path ${s} d="M52 22v-12M78 22v-12M52 76v12M78 76v12M38 40h-12M38 58h-12M92 40h12M92 58h12"/><path ${s} d="M104 10a26 26 0 0 1 18 18"/></svg>`;
+  return `<svg width="130" height="100" viewBox="0 0 130 100" style="position:static"><rect ${s} x="34" y="6" width="62" height="88" rx="6"/><path ${s} d="M34 30h62M34 54h62M46 18h6M46 42h6M46 66h6M46 80h6"/></svg>`;
+}
+let cur=null;
+window.setup=id=>{dom.innerHTML='';cur=scenes[id];cur.init();return cur.dur};
+window.renderAt=t=>{grid.style.transform=`translate(${(t*8)%80}px,${(t*5)%80}px)`;cur.draw(t)};
+</script></body></html>
