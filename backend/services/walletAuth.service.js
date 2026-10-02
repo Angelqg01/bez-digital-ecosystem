@@ -74,9 +74,10 @@ function signToken(userId) {
 }
 
 /**
- * Login si la wallet existe; si no, registro. `deps` permite inyectar el modelo en tests.
+ * mode: 'login' (la wallet debe existir), 'register' (no debe existir) o 'either'.
+ * `deps` permite inyectar el modelo en tests.
  */
-async function loginOrRegisterWithWallet({ message, signature }, deps = {}) {
+async function loginOrRegisterWithWallet({ message, signature, mode = 'either', profile = {} }, deps = {}) {
     const address = await verifySignedMessage({ message, signature });
 
     // Los modelos se cargan tras validar la firma: entradas inválidas no tocan la BD.
@@ -85,11 +86,22 @@ async function loginOrRegisterWithWallet({ message, signature }, deps = {}) {
 
     let user = await User.findByWallet(address);
     const isNewUser = !user;
-    if (!user) {
+    if (mode === 'login' && isNewUser) throw fail(404, 'Usuario no encontrado. Regístrate primero.');
+    if (mode === 'register' && !isNewUser) throw fail(409, 'La wallet ya está registrada');
+
+    if (isNewUser) {
+        const username = typeof profile.username === 'string' && /^[\w .-]{1,50}$/.test(profile.username.trim())
+            ? profile.username.trim() : `User_${address.slice(2, 8)}`;
+        let email = null;
+        if (profile.email) {
+            if (typeof profile.email !== 'string' || profile.email.length > 254 || !/^[^\s@]{1,64}@[^\s@]{1,255}$/.test(profile.email)) throw fail(400, 'Email inválido');
+            email = profile.email.toLowerCase();
+            if (await User.findByEmail(email)) throw fail(409, 'Email ya registrado');
+        }
         user = await User.create({
             walletAddress: address,
-            username: `User_${address.slice(2, 8)}`,
-            email: null,
+            username,
+            email,
             roles: ['USER'],
             accountType: 'individual',
             affiliate: { referralCode: `BZH${crypto.randomBytes(4).toString('hex').toUpperCase()}` },

@@ -2,10 +2,9 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
+/** Nonce SIWE de un solo uso emitido por el servidor (ligado a la dirección). */
 export async function getNonce(walletAddress) {
-    const res = await axios.get(`${API_URL}/auth/nonce`, {
-        params: { address: walletAddress }
-    });
+    const res = await axios.post(`${API_URL}/wallet-auth/nonce`, { address: walletAddress });
     return res.data.nonce;
 }
 
@@ -19,12 +18,14 @@ export async function verifyLogin2FA(userId, token) {
     return res.data;
 }
 
-export async function loginWithWallet(walletAddress, signature, message) {
-    const res = await axios.post(`${API_URL}/auth/login-wallet`, {
-        walletAddress,
-        signature,
-        message
-    });
+// Los tres flujos de wallet envían un mensaje SIWE firmado; la dirección la verifica el servidor.
+export async function loginWithWallet(message, signature) {
+    const res = await axios.post(`${API_URL}/auth/login-wallet`, { message, signature });
+    return res.data;
+}
+
+export async function loginOrRegisterWithWallet(message, signature, referralCode) {
+    const res = await axios.post(`${API_URL}/auth/login-or-register`, { message, signature, referralCode });
     return res.data;
 }
 
@@ -33,13 +34,8 @@ export async function register(userData) {
     return res.data;
 }
 
-export async function registerWithWallet(walletAddress, signature, message, additionalData) {
-    const res = await axios.post(`${API_URL}/auth/register-wallet`, {
-        walletAddress,
-        signature,
-        message,
-        ...additionalData
-    });
+export async function registerWithWallet(message, signature, additionalData) {
+    const res = await axios.post(`${API_URL}/auth/register-wallet`, { message, signature, ...additionalData });
     return res.data;
 }
 

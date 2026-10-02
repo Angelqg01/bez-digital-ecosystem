@@ -4,22 +4,16 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowUp, ChevronDown, FileText, Loader2, LogOut, Plus, Sparkles, Wallet } from "lucide-react";
-import { useAccount, useChainId, useDisconnect, useSignMessage } from "wagmi";
-import { useWeb3Modal } from "@web3modal/wagmi/react";
-import { SiweMessage } from "siwe";
 import api from "../../lib/api";
+import { apiError } from "../../lib/apiError";
+import { useWalletLogin } from "../../hooks/useWalletLogin";
 import { useUserStore } from "../../stores/userStore";
 
 type Source = { ref: number; title: string; section: string | null; version: number };
 type Msg = { role: "user" | "assistant"; content: string; sources?: Source[]; error?: boolean };
 
-const MOCK_TOKEN = "siwe-session-mock-token"; // sesión SIWE sin JWT: no sirve para el chat
+const MOCK_TOKEN = "siwe-session-mock-token"; // token simulado de sesiones antiguas (login SIWE previo): no es un JWT, hay que volver a iniciar sesión
 const SUGGESTIONS = ["¿Cómo hago staking de BEZ?", "¿Qué métodos de pago acepta BeZhas?", "¿Cómo funciona la tokenización de activos?"];
-
-function apiError(e: unknown, fallback: string): string {
-    const d = (e as { response?: { data?: { error?: string; message?: string; errors?: { msg: string }[] } } })?.response?.data;
-    return d?.error || d?.message || d?.errors?.[0]?.msg || fallback;
-}
 
 export default function AIWorkspaceBar() {
     const { token, setUser, setToken, logout } = useUserStore();
@@ -183,41 +177,13 @@ function AuthCard({ onAuthed }: { onAuthed: (user: unknown, token: string) => vo
     const [password, setPassword] = useState("");
     const [username, setUsername] = useState("");
     const [busy, setBusy] = useState(false);
-    const [walletBusy, setWalletBusy] = useState(false);
     const [error, setError] = useState("");
+    const wallet = useWalletLogin();
 
-    const { address, isConnected } = useAccount();
-    const chainId = useChainId();
-    const { signMessageAsync } = useSignMessage();
-    const { disconnect } = useDisconnect();
-    const { open } = useWeb3Modal();
-
-    // Wallet (SIWE): nonce del servidor → firma → JWT. Login y registro son el mismo paso.
     const walletLogin = async () => {
         setError("");
-        if (!isConnected || !address) { open(); return; }
-        setWalletBusy(true);
-        try {
-            const { data: n } = await api.post("/api/wallet-auth/nonce", { address });
-            const siwe = new SiweMessage({
-                domain: window.location.host,
-                address,
-                statement: "Iniciar sesión en BeZhas AI. Esta firma no mueve fondos ni cuesta gas.",
-                uri: window.location.origin,
-                version: "1",
-                chainId: chainId || 137,
-                nonce: n.nonce,
-                issuedAt: new Date().toISOString(),
-                expirationTime: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-            });
-            const message = siwe.prepareMessage();
-            const signature = await signMessageAsync({ message });
-            const res = await api.post("/api/wallet-auth/verify", { message, signature });
-            onAuthed(res.data.user, res.data.token);
-        } catch (err) {
-            const rejected = /reject|denied|cancel/i.test((err as Error)?.message || "");
-            setError(rejected ? "Firma cancelada." : apiError(err, "No se pudo iniciar sesión con la wallet"));
-        } finally { setWalletBusy(false); }
+        const session = await wallet.loginWithWallet();
+        if (session) onAuthed(session.user, session.token);
     };
 
     const submit = async (e: React.FormEvent) => {
@@ -235,17 +201,16 @@ function AuthCard({ onAuthed }: { onAuthed: (user: unknown, token: string) => vo
     };
 
     const field = "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-400 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
-    const short = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "";
     return (
         <div className="mx-auto w-full max-w-sm space-y-3 rounded-2xl border border-gray-200 p-4 dark:border-gray-700">
             <p className="text-center text-sm font-semibold text-gray-800 dark:text-gray-100">Inicia sesión o crea tu cuenta para chatear</p>
 
-            <button type="button" onClick={walletLogin} disabled={walletBusy} className="flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-300">
-                {walletBusy ? <Loader2 size={14} className="animate-spin" /> : <Wallet size={14} />}
-                {isConnected ? `Firmar con ${short}` : "Conectar wallet"}
+            <button type="button" onClick={walletLogin} disabled={wallet.busy} className="flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-300">
+                {wallet.busy ? <Loader2 size={14} className="animate-spin" /> : <Wallet size={14} />}
+                {wallet.isConnected ? `Firmar con ${wallet.short}` : "Conectar wallet"}
             </button>
-            {isConnected && (
-                <button type="button" onClick={() => disconnect()} className="block w-full text-center text-[11px] text-gray-400 hover:text-gray-600">Usar otra wallet</button>
+            {wallet.isConnected && (
+                <button type="button" onClick={() => wallet.disconnect()} className="block w-full text-center text-[11px] text-gray-400 hover:text-gray-600">Usar otra wallet</button>
             )}
 
             <div className="flex items-center gap-2 text-[11px] text-gray-400"><span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />o con email<span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" /></div>
@@ -263,7 +228,7 @@ function AuthCard({ onAuthed }: { onAuthed: (user: unknown, token: string) => vo
                     {busy && <Loader2 size={14} className="animate-spin" />} {mode === "login" ? "Entrar" : "Registrarme"}
                 </button>
             </form>
-            {error && <p role="alert" className="text-center text-xs text-red-600">{error}</p>}
+            {(error || wallet.error) && <p role="alert" className="text-center text-xs text-red-600">{error || wallet.error}</p>}
         </div>
     );
 }
