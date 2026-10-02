@@ -12,6 +12,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { config } from '../config.js';
+import { urlAuditable } from '../security/targetUrl.js';
 
 export interface PlaywrightResult {
     action: string;
@@ -44,11 +45,13 @@ export function registerPlaywrightMcp(server: McpServer): void {
         async ({ action, targetUrl, viewport, waitTimeout }) => {
             try {
                 let result: PlaywrightResult;
+                // El host sale de la lista de BeZhas, no de la entrada (SSRF).
+                const destino = urlAuditable(targetUrl);
 
                 switch (action) {
                     case 'test_page_load': {
                         const startTime = Date.now();
-                        const res = await fetch(targetUrl, {
+                        const res = await fetch(destino, {
                             headers: { 'User-Agent': 'BeZhas-MCP-Playwright/1.0' },
                             signal: AbortSignal.timeout(waitTimeout || 10000),
                         });
@@ -84,7 +87,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
 
                     case 'test_wallet_flow': {
                         // Simulated wallet flow test — in production uses Playwright browser
-                        const res = await fetch(targetUrl, {
+                        const res = await fetch(destino, {
                             signal: AbortSignal.timeout(waitTimeout || 10000),
                         });
                         const html = await res.text();
@@ -124,7 +127,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
                                 viewport: viewport || { width: 1920, height: 1080 },
                                 screenshotPath: `/tmp/bezhas-screenshot-${Date.now()}.png`,
                                 note: 'Screenshot capture requires Playwright browser instance. Use Playwright service for full capture.',
-                                alternativeEndpoint: `${targetUrl}?screenshot=true`,
+                                alternativeEndpoint: `${destino}?screenshot=true`,
                             },
                             reasoning: 'Screenshot request registered. Requires Playwright browser service for execution.',
                         };
@@ -133,7 +136,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
 
                     case 'audit_performance': {
                         const startTime = Date.now();
-                        const res = await fetch(targetUrl, {
+                        const res = await fetch(destino, {
                             signal: AbortSignal.timeout(waitTimeout || 10000),
                         });
                         const loadTime = Date.now() - startTime;
@@ -177,7 +180,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
                     }
 
                     case 'audit_accessibility': {
-                        const res = await fetch(targetUrl, {
+                        const res = await fetch(destino, {
                             signal: AbortSignal.timeout(waitTimeout || 10000),
                         });
                         const html = await res.text();

@@ -110,5 +110,15 @@ describe('playwright_automation', () => {
 
             expect(result).toHaveProperty('status', 'FAILED');
         });
+
+        it('no pide páginas fuera de BeZhas (SSRF)', async () => {
+            const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+            const response = await handler({ action: 'test_page_load', targetUrl: 'http://169.254.169.254/latest/meta-data/' });
+            const result = parseToolResult(response);
+
+            expect(result).toHaveProperty('status', 'FAILED');
+            expect(mockFetch).not.toHaveBeenCalled();
+        });
     });
 });
