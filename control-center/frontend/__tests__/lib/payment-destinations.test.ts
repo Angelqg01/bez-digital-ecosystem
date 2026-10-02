@@ -87,6 +87,6 @@ describe('datos de transferencia bancaria', () => {
     });
 
     it('el alias del beneficiario es el dominio de la empresa', () => {
-        expect(beneficiaryAlias).toBe('bez.digital');
+        expect(beneficiaryAlias).toBe('bezhas.com');
     });
 });

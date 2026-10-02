@@ -29,7 +29,7 @@
  * api-key se revela una vez desde su propio endpoint autenticado. Esta página
  * los enmarca; no los transporta.
  *
- * Montada en /o (onb.bez.digital/o/<token>).
+ * Montada en /o (onb.bezhas.com/o/<token>).
  */
 
 const { Router } = require('express');

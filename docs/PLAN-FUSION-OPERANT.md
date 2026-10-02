@@ -507,7 +507,7 @@ Compliance y Tokenomics existen **por triplicado**. Aquí se queda una sola copi
   coste sin dato nuevo.
 
 - **Correo propio (Stalwart)** · ⏳ el servidor ya está configurado y sirviendo
-  (`220 mail.bez.digital`, DKIM generado). Faltan el buzón emisor y el DNS de `bez.digital`
+  (`220 mail.bezhas.com`, DKIM generado). Faltan el buzón emisor y el DNS de `bezhas.com`
   —MX/SPF/DKIM/DMARC—, ambos tareas del operador. Ver `docs/CORREO-PROPIO-RUNBOOK.md`.
 
 ---

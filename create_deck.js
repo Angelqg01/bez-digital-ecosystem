@@ -964,7 +964,7 @@ function addSlideNum(slide, num) {
   });
 
   // Contact
-  addText(s, "investors@bez.digital  |  +34 956 000 000  |  bez.digital", 0.3, 5.15, 9.4, 0.38, {
+  addText(s, "investors@bezhas.com  |  +34 956 000 000  |  bezhas.com", 0.3, 5.15, 9.4, 0.38, {
     fontSize: 11, color: C.light, fontFace: "Calibri",
     align: "center", valign: "middle", margin: 0,
   });

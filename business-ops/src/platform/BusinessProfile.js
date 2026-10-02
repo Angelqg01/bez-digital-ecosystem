@@ -160,7 +160,7 @@ class BusinessProfile {
    * remitente global (MAIL_FROM), nunca inventarse una dirección.
    *
    * @param {string} department  clave del departamento (sales, support…)
-   * @returns {string|null} `BeZhas · Ventas <ventas@bez.digital>` o null
+   * @returns {string|null} `BeZhas · Ventas <ventas@bezhas.com>` o null
    */
   senderFor(department) {
     const cfg = this.data.email;

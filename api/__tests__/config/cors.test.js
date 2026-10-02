@@ -12,24 +12,24 @@ const PROD = { isProduction: true };
 const DEV = { isProduction: false };
 
 describe('isAllowedOrigin — producción', () => {
-    it('acepta el dominio raíz y cualquier subdominio de bez.digital', () => {
+    it('acepta el dominio raíz y cualquier subdominio de bezhas.com', () => {
         // Las 13 SubApps se despliegan en subdominios; enumerarlas a mano era
         // justo lo que hacía que una app nueva naciese sin poder autenticar.
-        for (const host of ['bez.digital', 'app.bez.digital', 'sphere.bez.digital',
-            'purescan.bez.digital', 'energy.bez.digital', 'cargolink.bez.digital',
-            'edge-node.bez.digital', 'a.b.bez.digital']) {
+        for (const host of ['bezhas.com', 'app.bezhas.com', 'sphere.bezhas.com',
+            'purescan.bezhas.com', 'energy.bezhas.com', 'cargolink.bezhas.com',
+            'edge-node.bezhas.com', 'a.b.bezhas.com']) {
             expect(isAllowedOrigin(`https://${host}`, PROD)).toBe(true);
         }
     });
 
     it('rechaza dominios que sólo se parecen', () => {
         for (const origin of [
-            'https://bez.digital.evil.com',   // sufijo falso
-            'https://notbez.digital',         // prefijo pegado
+            'https://bezhas.com.evil.com',   // sufijo falso
+            'https://notbezhas.com',         // prefijo pegado
             'https://bez-digital.com',
-            'https://bez.digital.co',
-            'http://bez.digital',             // sin TLS
-            'https://BEZ.DIGITAL',            // el patrón es en minúsculas
+            'https://bezhas.com.co',
+            'http://bezhas.com',             // sin TLS
+            'https://BEZHAS.COM',            // el patrón es en minúsculas
         ]) {
             expect(isAllowedOrigin(origin, PROD)).toBe(false);
         }
@@ -58,7 +58,7 @@ describe('isAllowedOrigin — desarrollo', () => {
     });
 
     it('sigue aceptando los dominios de producción', () => {
-        expect(isAllowedOrigin('https://sphere.bez.digital', DEV)).toBe(true);
+        expect(isAllowedOrigin('https://sphere.bezhas.com', DEV)).toBe(true);
     });
 });
 
@@ -99,7 +99,7 @@ describe('makeCorsOriginFn', () => {
 
     it('deja pasar un origen permitido', () => {
         const cb = jest.fn();
-        makeCorsOriginFn(PROD)('https://pay.bez.digital', cb);
+        makeCorsOriginFn(PROD)('https://pay.bezhas.com', cb);
         expect(cb).toHaveBeenCalledWith(null, true);
     });
 

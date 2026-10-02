@@ -139,7 +139,7 @@ const nativeApps = [
   },
 ];
 
-// Apps secundarias del ecosistema con enlace directo a su propia App Nativa (subdominios bez.digital).
+// Apps secundarias del ecosistema con enlace directo a su propia App Nativa (subdominios bezhas.com).
 // Para cambiar un destino, edita solo el campo `href` de la tarjeta correspondiente.
 const secondaryApps = [
   {

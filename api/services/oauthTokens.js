@@ -48,7 +48,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-const ISSUER = process.env.OAUTH_ISSUER || 'https://mcp.bez.digital';
+const ISSUER = process.env.OAUTH_ISSUER || 'https://mcp.bezhas.com';
 const AUDIENCE = process.env.OAUTH_AUDIENCE || ISSUER;
 const ACCESS_TOKEN_TTL = process.env.OAUTH_ACCESS_TOKEN_TTL || '10m';
 

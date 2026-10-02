@@ -29,7 +29,7 @@ import urllib.parse
 import urllib.request
 from typing import Any, Mapping, Optional
 
-DEFAULT_BASE_URL = "https://api.bez.digital"
+DEFAULT_BASE_URL = "https://api.bezhas.com"
 PAYMENT_METHODS = ("card", "crypto", "qr", "bank")
 RECEIVE_METHODS = ("card", "bank", "crypto")
 

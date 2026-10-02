@@ -102,11 +102,11 @@ GCP_PROJECT_ID="tu-id-de-proyecto-gcp" GCP_REGION="us-central1" ./scripts/gcp-de
 
 Variables útiles:
 ```bash
-PUBLIC_SITE_URL="https://bez.digital"
-APP_SITE_URL="https://app.bez.digital"
+PUBLIC_SITE_URL="https://bezhas.com"
+APP_SITE_URL="https://app.bezhas.com"
 GCS_BUCKET="bezhas-assets-prod"
 RUN_DB_MIGRATIONS="true"
-MCP_DOMAIN="mcp.bez.digital"          # por defecto si PUBLIC_SITE_URL es bez.digital; vacío = URL de Cloud Run
+MCP_DOMAIN="mcp.bezhas.com"          # por defecto si PUBLIC_SITE_URL es bezhas.com; vacío = URL de Cloud Run
 CREATE_MCP_DOMAIN_MAPPING="true"      # crea el mapeo MCP_DOMAIN → bezhas-api (dominio verificado en Google)
 ```
 

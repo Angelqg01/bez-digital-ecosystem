@@ -11,7 +11,7 @@ import { BezhasConfig } from './bezhas-config.js';
 class BeZhasSDK {
   constructor(config = {}) {
     this.config = {
-      apiUrl: config.apiUrl || 'https://api.bez.digital',
+      apiUrl: config.apiUrl || 'https://api.bezhas.com',
       network: config.network || 'mainnet',
       provider: config.provider || null,
       contracts: config.contracts || {},

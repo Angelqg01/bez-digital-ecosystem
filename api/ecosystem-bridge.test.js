@@ -15,21 +15,21 @@ describe('Ecosystem Bridge API', () => {
         it('should reject without API key', async () => {
             const res = await request(app)
                 .post('/api/ecosystem-bridge/users/sync')
-                .send({ username: 'test', email: 'test@bez.digital', walletAddress: '0xabc' });
+                .send({ username: 'test', email: 'test@bezhas.com', walletAddress: '0xabc' });
             expect(res.statusCode).toBe(401);
         });
         it('should reject with invalid API key', async () => {
             const res = await request(app)
                 .post('/api/ecosystem-bridge/users/sync')
                 .set('x-api-key', 'INVALID_KEY')
-                .send({ username: 'test', email: 'test@bez.digital', walletAddress: '0xabc' });
+                .send({ username: 'test', email: 'test@bezhas.com', walletAddress: '0xabc' });
             expect(res.statusCode).toBe(401);
         });
         it('should reject if walletAddress is missing', async () => {
             const res = await request(app)
                 .post('/api/ecosystem-bridge/users/sync')
                 .set('x-api-key', process.env.BRIDGE_API_KEY || 'CAMBIA_ESTE_VALOR')
-                .send({ username: 'test', email: 'test@bez.digital' });
+                .send({ username: 'test', email: 'test@bezhas.com' });
             expect(res.statusCode).toBe(400);
         });
         // Add more tests for success and db errors as needed

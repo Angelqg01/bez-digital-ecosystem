@@ -114,12 +114,12 @@ la carpeta `INBOX.Sent` del buzón.
    `SMTP_PORT=465`, `SMTP_SECURE=true`, `SMTP_USER`, `SMTP_PASS` y, si se quiere otro
    remitente, `SMTP_FROM` (siempre el buzón o un alias). Este camino no guarda copia en
    Enviados: los mensajes quedan registrados en la tabla `messages` de la base de datos.
-3. **Deck de inversores:** `create_deck.js` (línea 967) imprime `investors@bez.digital` y
-   un teléfono de relleno. `investors@` no existe y `bez.digital` está caído: los correos de
+3. **Deck de inversores:** `create_deck.js` (línea 967) imprime `investors@bezhas.com` y
+   un teléfono de relleno. `investors@` no existe y `bezhas.com` está caído: los correos de
    un inversor rebotarían. Hay que poner una dirección real (por ejemplo `yoelceo@bezhas.com`)
    y regenerar el deck.
 4. **Recepción por webhook** (`/webhooks/email-inbound`): sin configurar. Depende de que
-   la API esté en pie; `api.bez.digital` sigue caído.
+   la API esté en pie; `api.bezhas.com` sigue caído.
 5. **Prácticas para llegar a la bandeja de entrada:** empezar con volumen bajo y
    personalizado (el buzón tiene 2 días), mantener el mismo nombre y remitente, incluir
    una salida clara ("responde «no» y no vuelvo a escribir") y no usar acortadores de

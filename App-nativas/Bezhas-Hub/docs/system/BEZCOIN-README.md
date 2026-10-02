@@ -480,7 +480,7 @@ MIT License - BeZhas Platform 2024
 - 📖 [Documentación completa](./docs/BEZCOIN-MASTER-INDEX.md)
 - 🐛 [Reportar bug](https://github.com/tu-usuario/bezhas-web3/issues)
 - 💬 [Discord](https://discord.gg/tu-server)
-- 📧 Email: support@bez.digital
+- 📧 Email: support@bezhas.com
 
 ---
 

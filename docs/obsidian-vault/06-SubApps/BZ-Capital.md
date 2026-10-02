@@ -4,7 +4,7 @@ layer: 2
 priority: "P1"
 cluster: "finanzas-pagos"
 repo_path: "App-nativas/BZ Capital/"
-domain: "capital.bez.digital (ruta /defi)"
+domain: "capital.bezhas.com (ruta /defi)"
 tags: ["platform-map", "finanzas-pagos", "p1"]
 ---
 
@@ -14,7 +14,7 @@ tags: ["platform-map", "finanzas-pagos", "p1"]
 
 DeFi: pool interno BEZ/USDC (BeZhasDEX, reemplaza QuickSwap; oracle lee BEZHAS_DEX_ADDRESS), staking y farming (LP-token mismatch abierto).
 
-**Ubicación:** `App-nativas/BZ Capital/` · capital.bez.digital (ruta /defi)
+**Ubicación:** `App-nativas/BZ Capital/` · capital.bezhas.com (ruta /defi)
 
 ## Conexiones
 

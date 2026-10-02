@@ -25,7 +25,7 @@ Miles de corporaciones conectarán MetaMask o la Extensión Wallet de forma cons
 ### Estructura Nginx Inverso "Nodos Réplica"
 1. Servidor Principal: Corre el Secuenciador (Cobra y emite Bloques). Puerto `8545` bloqueado de todo acceso TCP externo. Sólo el "Balanceador" lo alcanza.
 2. Servidores "Read-Replica": 3 u 8 Servidores menores (`$20 / $40 mensual c/u`) que **solo** sincronizan la DB y levantan `op-geth` en modo `--syncmode full` + el parámetro `--rpc.gascap 0` apagando la posibilidad de inyectar transacciones o minar por ellos.
-3. Servidor de Balanceo Carga/Proxy (Nginx o HAProxy): `rpc.bez.digital`. Toda petición externa (como Metamask, Web3.js en el frontend) golpea este servidor que inspecciona el cuerpo del POST JSON-RPC.
+3. Servidor de Balanceo Carga/Proxy (Nginx o HAProxy): `rpc.bezhas.com`. Toda petición externa (como Metamask, Web3.js en el frontend) golpea este servidor que inspecciona el cuerpo del POST JSON-RPC.
 
 ```nginx
 # Extracto Ejemplo: nginx_rpc.conf a incorporar en el 'Control Center' B2B
@@ -41,7 +41,7 @@ upstream bezhas_sequencer {
 
 server {
     listen 80;
-    server_name rpc.bez.digital;
+    server_name rpc.bezhas.com;
     
     # 1. Rutear operaciones de Consulta (Lectura pura)
     location / {

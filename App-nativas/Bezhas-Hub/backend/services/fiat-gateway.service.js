@@ -236,7 +236,7 @@ function getBankDetails() {
         bankName: "BeZhas Platform",
         iban: "ES77 1465 0100 91 1766376210",
         bic: "INGDESMMXXX",
-        beneficiary: "bez.digital",
+        beneficiary: "bezhas.com",
         instructions: "Include your wallet address in the transfer concept/reference"
     };
 }

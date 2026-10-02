@@ -5,7 +5,7 @@ Operational Trust Layer for Maritime, Ports and Intermodal Logistics
 Date: 2026-06-02  
 Prepared for: HITL review before any investor outreach  
 Contact: Yoel A. Hernandez, CEO & Founder  
-Website: https://bez.digital
+Website: https://bezhas.com
 
 ## 1. Executive Summary
 

@@ -169,7 +169,7 @@ contract EdgeNodeRewards is AccessControl, ReentrancyGuard {
 
 Como el token viejo está en Polygon y el nuevo estará en Ethereum (L1) y tu propia red L2, no puedes usar un Smart Contract directo para leer entre cadenas sin un intermediario. El flujo que programaremos en tu Backend será el siguiente:
 
-1.  **La DApp de Migración:** El usuario entra a `migrate.bez.digital`.
+1.  **La DApp de Migración:** El usuario entra a `migrate.bezhas.com`.
 2.  **Quemado (Burn) en Polygon:** El usuario hace clic y envía sus viejos BEZ al contrato `0x000...000` (Burn address) en Polygon.
 3.  **El Oráculo Validador (Tu Backend Node.js):** Tienes un script escuchando la blockchain de Polygon. Cuando detecta que el usuario quemó 500 BEZ, el script usa tu Clave Privada de Administrador para llamar a la función `mint(usuario, 500)` en el nuevo contrato `BEZCoinV2.sol` de Ethereum/L2.
 4.  **Liquidación:** El usuario recibe instantáneamente su nuevo token, listo para pagar gas en tu nueva red.

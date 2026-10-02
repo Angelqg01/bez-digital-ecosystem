@@ -130,7 +130,7 @@ At the start of each commercial run:
 When discussing technical integration, reference real SDK methods:
 ```javascript
 const { BeZhas } = require('@bezhas/sdk');
-const sdk = new BeZhas({ apiKey: 'CLIENT_KEY', endpoint: 'https://api.bez.digital/v1' });
+const sdk = new BeZhas({ apiKey: 'CLIENT_KEY', endpoint: 'https://api.bezhas.com/v1' });
 
 // Sector-specific operations
 const result = await sdk.healthcare.createRecord({ ... });

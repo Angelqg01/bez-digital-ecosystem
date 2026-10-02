@@ -4,7 +4,7 @@ layer: 2
 priority: "P2"
 cluster: "identidad-comunidad"
 repo_path: "App-nativas/BZ Genesis/"
-domain: "genesis.bez.digital"
+domain: "genesis.bezhas.com"
 tags: ["platform-map", "identidad-comunidad", "p2"]
 ---
 
@@ -14,7 +14,7 @@ tags: ["platform-map", "identidad-comunidad", "p2"]
 
 Onboarding de nuevos socios al ecosistema (génesis de identidad y cuenta).
 
-**Ubicación:** `App-nativas/BZ Genesis/` · genesis.bez.digital
+**Ubicación:** `App-nativas/BZ Genesis/` · genesis.bezhas.com
 
 ## Conexiones
 

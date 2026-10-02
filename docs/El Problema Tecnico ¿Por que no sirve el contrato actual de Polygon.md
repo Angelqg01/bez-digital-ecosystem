@@ -23,7 +23,7 @@ Cuando las empresas Web3 evolucionan y lanzan su propia blockchain (como pasó c
 #### RUTA 1: La Migración (Token Swap) - **[ALTAMENTE RECOMENDADA]**
 Esta es la ruta más limpia, profesional y la que usan los grandes proyectos institucionales.
 1. **Nuevo Contrato:** Despliegas un nuevo contrato inteligente `BEZCoin_v2.sol` en **Ethereum Mainnet**. Este nuevo contrato estará diseñado específicamente para ser el token de Gas de tu L2 (con los permisos correctos).
-2. **El Portal de Migración:** Creas una sencilla DApp en tu web (ej. `migrate.bez.digital`). 
+2. **El Portal de Migración:** Creas una sencilla DApp en tu web (ej. `migrate.bezhas.com`). 
 3. **El Flujo para el Usuario:** Los inversores/empresas que tienen el BEZ viejo en Polygon, conectan su wallet a tu web, hacen clic en "Migrar", y un Smart Contract "quema" (destruye) sus BEZ viejos en Polygon y les envía automáticamente la misma cantidad de BEZ v2 en tu nueva red (o en Ethereum).
 * *Ventaja:* Limpias el ecosistema, actualizas la seguridad del token y tienes control total sobre la nueva economía.
 

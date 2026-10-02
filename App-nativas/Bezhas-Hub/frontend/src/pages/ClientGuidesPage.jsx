@@ -67,7 +67,7 @@ function QuickStartTab({ onNavigate }) {
       time: '5 minutos',
       audience: 'Dueños de tiendas online',
       steps: [
-        'Descargar plugin de hub.bez.digital/downloads',
+        'Descargar plugin de hub.bezhas.com/downloads',
         'Instalar en WordPress Admin',
         'Pegar API Key en ajustes',
         '¡Listo! Ya aceptas pagos con BeZhas',
@@ -103,7 +103,7 @@ function QuickStartTab({ onNavigate }) {
       time: '2 — 4 horas',
       audience: 'Backend: Node, Python, Java, Go, PHP...',
       steps: [
-        'Obtener API Key en hub.bez.digital/developers',
+        'Obtener API Key en hub.bezhas.com/developers',
         'Primera llamada: GET /health',
         'Implementar endpoints (pay, cargolink, etc.)',
         'Registrar webhooks y testing sandbox',
@@ -138,7 +138,7 @@ function QuickStartTab({ onNavigate }) {
       title: 'API Key',
       desc: 'Tu credencial para acceder a BeZhas desde el backend.',
       details: [
-        'Generar en: hub.bez.digital/developers',
+        'Generar en: hub.bezhas.com/developers',
         'Header: x-api-key: bez_key_xxx',
         'Nunca incluir en commits de código',
       ],
@@ -462,15 +462,15 @@ function QuickStartTab({ onNavigate }) {
         <h3 className="text-white font-semibold mb-3">¿Necesitas ayuda?</h3>
         <div className="flex flex-wrap justify-center gap-4 text-sm">
           <span className="text-gray-300">
-            <span className="text-teal-400 font-medium">Email:</span> support@bez.digital (&lt;2h)
+            <span className="text-teal-400 font-medium">Email:</span> support@bezhas.com (&lt;2h)
           </span>
           <span className="text-gray-600">|</span>
           <span className="text-gray-300">
-            <span className="text-teal-400 font-medium">Chat:</span> hub.bez.digital/chat (&lt;30min)
+            <span className="text-teal-400 font-medium">Chat:</span> hub.bezhas.com/chat (&lt;30min)
           </span>
           <span className="text-gray-600">|</span>
           <span className="text-gray-300">
-            <span className="text-teal-400 font-medium">Docs:</span> hub.bez.digital/docs (24/7)
+            <span className="text-teal-400 font-medium">Docs:</span> hub.bezhas.com/docs (24/7)
           </span>
         </div>
         <p className="text-gray-500 text-xs mt-3">
@@ -575,23 +575,23 @@ function ApiTab() {
     <div className="space-y-6">
       <div className="bg-blue-900/20 border border-blue-800/40 rounded-xl p-4 mb-6">
         <p className="text-blue-300 text-sm">
-          <strong>Base URL:</strong> <code className="bg-gray-800 px-2 py-0.5 rounded">https://api.bez.digital:3001</code> &nbsp;|&nbsp;
+          <strong>Base URL:</strong> <code className="bg-gray-800 px-2 py-0.5 rounded">https://api.bezhas.com:3001</code> &nbsp;|&nbsp;
           <strong>Auth:</strong> <code className="bg-gray-800 px-2 py-0.5 rounded">x-api-key: bez_key_xxx</code>
         </p>
       </div>
 
       <StepCard number={1} title="Obtener API Key">
         <p>Ve al panel de desarrolladores y genera tu clave.</p>
-        <CopyBlock code={`# Guardar en .env (nunca en código)\nBEZHAS_API_KEY=bez_key_xxxxxxxxxxxxxxxx\nBEZHAS_API_URL=https://api.bez.digital:3001\nBEZHAS_WEBHOOK_SECRET=wh_secret_yyyyyyyyyyy`} />
+        <CopyBlock code={`# Guardar en .env (nunca en código)\nBEZHAS_API_KEY=bez_key_xxxxxxxxxxxxxxxx\nBEZHAS_API_URL=https://api.bezhas.com:3001\nBEZHAS_WEBHOOK_SECRET=wh_secret_yyyyyyyyyyy`} />
       </StepCard>
 
       <StepCard number={2} title="Primera Llamada">
         <p>Verifica la conexión con el endpoint de salud.</p>
-        <CopyBlock code={`curl -H "x-api-key: $BEZHAS_API_KEY" \\\n  https://api.bez.digital:3001/health\n\n# Response: { "status": "ok", "uptime": 12345, ... }`} />
+        <CopyBlock code={`curl -H "x-api-key: $BEZHAS_API_KEY" \\\n  https://api.bezhas.com:3001/health\n\n# Response: { "status": "ok", "uptime": 12345, ... }`} />
       </StepCard>
 
       <StepCard number={3} title="Usar Endpoints de Apps Nativas">
-        <CopyBlock code={`# Crear pago\ncurl -X POST \\\n  -H "x-api-key: $BEZHAS_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"amountUSD":100,"paymentMethod":"card","email":"client@example.com"}' \\\n  https://api.bez.digital:3001/api/gateway/v1/pay\n\n# Crear transacción logística\ncurl -X POST \\\n  -H "x-api-key: $BEZHAS_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"posRef":"ORD-1001","origin":"Algeciras","destination":"Tánger"}' \\\n  https://api.bez.digital:3001/api/cargolink/transactions`} />
+        <CopyBlock code={`# Crear pago\ncurl -X POST \\\n  -H "x-api-key: $BEZHAS_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"amountUSD":100,"paymentMethod":"card","email":"client@example.com"}' \\\n  https://api.bezhas.com:3001/api/gateway/v1/pay\n\n# Crear transacción logística\ncurl -X POST \\\n  -H "x-api-key: $BEZHAS_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"posRef":"ORD-1001","origin":"Algeciras","destination":"Tánger"}' \\\n  https://api.bezhas.com:3001/api/cargolink/transactions`} />
       </StepCard>
 
       <StepCard number={4} title="Configurar Webhooks">
@@ -602,7 +602,7 @@ function ApiTab() {
       <StepCard number={5} title="¡Producción!">
         <div className="bg-teal-900/20 border border-teal-700/40 rounded-lg p-4">
           <p className="text-teal-300 text-sm">
-            ✅ Rate limit: 1000 req/min &nbsp;|&nbsp; ✅ Monitoring en <code>/admin/logs</code> &nbsp;|&nbsp; ✅ Soporte: support@bez.digital
+            ✅ Rate limit: 1000 req/min &nbsp;|&nbsp; ✅ Monitoring en <code>/admin/logs</code> &nbsp;|&nbsp; ✅ Soporte: support@bezhas.com
           </p>
         </div>
       </StepCard>
@@ -656,7 +656,7 @@ function WordPressTab() {
       <StepCard number={1} title="Descargar e Instalar">
         <p>Descarga el plugin desde el Hub y súbelo a WordPress.</p>
         <div className="bg-gray-900/70 border border-gray-700 rounded-lg p-4 space-y-2 text-sm text-gray-300">
-          <p>1. Ir a: <code className="text-yellow-300">hub.bez.digital/downloads</code></p>
+          <p>1. Ir a: <code className="text-yellow-300">hub.bezhas.com/downloads</code></p>
           <p>2. Click <strong>"WordPress Plugin v2.0.0"</strong></p>
           <p>3. WordPress Admin → <strong>Plugins</strong> → <strong>Add New</strong> → <strong>Upload Plugin</strong></p>
           <p>4. Seleccionar <code className="text-yellow-300">bezhas-hub-v2.0.0.zip</code> → <strong>Install Now</strong></p>
@@ -667,7 +667,7 @@ function WordPressTab() {
       <StepCard number={2} title="Configurar API Key">
         <div className="bg-gray-900/70 border border-gray-700 rounded-lg p-4 space-y-2 text-sm text-gray-300">
           <p>1. WordPress → <strong>Settings</strong> → <strong>BeZhas Configuration</strong></p>
-          <p>2. Pegar tu <strong>API Key</strong> (obtenida en <code className="text-yellow-300">hub.bez.digital/developers</code>)</p>
+          <p>2. Pegar tu <strong>API Key</strong> (obtenida en <code className="text-yellow-300">hub.bezhas.com/developers</code>)</p>
           <p>3. Pegar <strong>Webhook Secret</strong> (opcional)</p>
           <p>4. Click <strong>Save Changes</strong></p>
         </div>
@@ -695,7 +695,7 @@ function WordPressTab() {
 
 const FAQ_ITEMS = [
   { q: '¿Puedo usar varios métodos a la vez?', a: 'Sí. Por ejemplo: Plugin WordPress para pagos + API REST para datos de logística.' },
-  { q: '¿Qué pasa si pierdo mi API Key?', a: 'Genera una nueva en hub.bez.digital/developers. La anterior se anula automáticamente.' },
+  { q: '¿Qué pasa si pierdo mi API Key?', a: 'Genera una nueva en hub.bezhas.com/developers. La anterior se anula automáticamente.' },
   { q: '¿Cuál es el costo?', a: 'API: pay-per-call (tarifas en el portal). SDK: incluido. Plugin WordPress: gratuito.' },
   { q: '¿Qué blockchains soporta?', a: 'Polygon (mainnet), BNB Chain (mainnet), Amoy (testnet de Polygon).' },
   { q: '¿Puedo testear antes de producción?', a: 'Sí. Usa credenciales de sandbox generadas en el Developer Console.' },
@@ -735,7 +735,7 @@ function FaqTab() {
       <div className="mt-8 bg-yellow-900/20 border border-yellow-800/40 rounded-xl p-5">
         <h3 className="text-yellow-300 font-semibold mb-2">¿No encuentras tu respuesta?</h3>
         <p className="text-gray-400 text-sm">
-          Contacta soporte: <code className="text-yellow-300">support@bez.digital</code> · Respuesta en &lt;2 horas.
+          Contacta soporte: <code className="text-yellow-300">support@bezhas.com</code> · Respuesta en &lt;2 horas.
           También puedes usar el chatbot de la esquina inferior derecha (Ctrl+K).
         </p>
       </div>
@@ -763,7 +763,7 @@ const VIDEO_SCRIPTS = [
     duration: '5 min',
     thumbnail: '⌨️',
     sections: [
-      '00:00 — Generar API Key en hub.bez.digital/developers',
+      '00:00 — Generar API Key en hub.bezhas.com/developers',
       '00:45 — Guardar credenciales en .env',
       '01:30 — Primera llamada: GET /health',
       '02:15 — Crear pago: POST /api/gateway/v1/pay',

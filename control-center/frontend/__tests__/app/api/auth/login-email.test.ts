@@ -27,7 +27,7 @@ function setCookie(res: Response, name: string) {
 describe('validación de entrada', () => {
     it.each([
         ['sin email', { password: 'demo1234' }],
-        ['sin password', { email: 'demo@bez.digital' }],
+        ['sin password', { email: 'demo@bezhas.com' }],
         ['vacío', {}],
     ])('rechaza la petición %s con 400', async (_caso, body) => {
         const res = await post(body);
@@ -52,36 +52,36 @@ describe('validación de entrada', () => {
 
 describe('credenciales incorrectas', () => {
     it('devuelve 401 para un usuario que no existe', async () => {
-        const res = await post({ email: 'nadie@bez.digital', password: 'demo1234' });
+        const res = await post({ email: 'nadie@bezhas.com', password: 'demo1234' });
 
         expect(res.status).toBe(401);
         await expect(res.json()).resolves.toEqual({ error: 'Credenciales inválidas.' });
     });
 
     it('devuelve 401 con la contraseña equivocada', async () => {
-        const res = await post({ email: 'demo@bez.digital', password: 'incorrecta' });
+        const res = await post({ email: 'demo@bezhas.com', password: 'incorrecta' });
 
         expect(res.status).toBe(401);
     });
 
     it('no distingue entre usuario inexistente y contraseña mala', async () => {
         // Mensajes distintos permitirían enumerar qué emails tienen cuenta.
-        const desconocido = await post({ email: 'nadie@bez.digital', password: 'x' });
-        const claveMala = await post({ email: 'demo@bez.digital', password: 'x' });
+        const desconocido = await post({ email: 'nadie@bezhas.com', password: 'x' });
+        const claveMala = await post({ email: 'demo@bezhas.com', password: 'x' });
 
         expect(await desconocido.json()).toEqual(await claveMala.json());
         expect(desconocido.status).toBe(claveMala.status);
     });
 
     it('no emite cookies en un intento fallido', async () => {
-        const res = await post({ email: 'demo@bez.digital', password: 'incorrecta' });
+        const res = await post({ email: 'demo@bezhas.com', password: 'incorrecta' });
 
         expect(res.headers.getSetCookie()).toHaveLength(0);
     });
 });
 
 describe('login correcto', () => {
-    const credenciales = { email: 'demo@bez.digital', password: 'demo1234' };
+    const credenciales = { email: 'demo@bezhas.com', password: 'demo1234' };
 
     it('devuelve el usuario sin exponer el hash de la contraseña', async () => {
         const res = await post(credenciales);
@@ -93,7 +93,7 @@ describe('login correcto', () => {
             id: 1,
             wallet_address: null,
             username: 'Demo Investor',
-            email: 'demo@bez.digital',
+            email: 'demo@bezhas.com',
             role: 'INVESTOR',
             avatar_url: null,
         });
@@ -107,7 +107,7 @@ describe('login correcto', () => {
 
         expect(payload).toMatchObject({
             userId: 1,
-            email: 'demo@bez.digital',
+            email: 'demo@bezhas.com',
             role: 'INVESTOR',
             iss: 'bezhas-control-center',
         });
@@ -129,7 +129,7 @@ describe('login correcto', () => {
     });
 
     it('acepta el email con mayúsculas y espacios', async () => {
-        const res = await post({ email: '  DEMO@BEZ.DIGITAL  ', password: 'demo1234' });
+        const res = await post({ email: '  DEMO@BEZHAS.COM  ', password: 'demo1234' });
 
         expect(res.status).toBe(200);
     });

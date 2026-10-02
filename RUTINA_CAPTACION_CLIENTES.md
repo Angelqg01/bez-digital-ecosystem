@@ -30,7 +30,7 @@ Verificado con `npm test` en `business-ops/`: 747 tests, 732 pasan, 0 fallos —
 nada de lo anterior se rompió.
 
 **Lo que esto NO hace:** no activa nada en producción. `sales:hunt` sigue
-necesitando que Helix/OPERANT corran sobre `api.bez.digital`, que sigue caído
+necesitando que Helix/OPERANT corran sobre `api.bezhas.com`, que sigue caído
 por la suspensión de facturación de GCP (ver más abajo).
 
 ---
@@ -80,7 +80,7 @@ mañana, la máquina genera candidatos y no avanza ninguno.
 Ordenado por lo que bloquea todo lo demás primero.
 
 1. **Reactivar la facturación de GCP.** Bloquea literalmente todo lo automático
-   — sin `api.bez.digital` en pie, `sales:hunt`/`sales:outreach` no corren en
+   — sin `api.bezhas.com` en pie, `sales:hunt`/`sales:outreach` no corren en
    producción, solo se pueden ejecutar a mano.
 2. **Alguien fijo en la cola de HITL cada mañana.** Puedes ser tú o delegarlo,
    pero sin esa persona la máquina genera candidatos y ninguno sale a la calle.
@@ -90,8 +90,8 @@ Ordenado por lo que bloquea todo lo demás primero.
 4. **Asiento de LinkedIn Sales Navigator** activo para el filtro guardado de
    EAU del Paso 3 — sin datos reales de Jebel Ali/DMCC, `sales:hunt` trabaja
    sobre el ICP en teoría, no sobre prospectos reales.
-5. **SPF/DKIM/DMARC confirmados en `bez.digital`.** Si el dominio no está bien
-   configurado, cada envío de `ventas@bez.digital` rebota o cae en spam y toda
+5. **SPF/DKIM/DMARC confirmados en `bezhas.com`.** Si el dominio no está bien
+   configurado, cada envío de `ventas@bezhas.com` rebota o cae en spam y toda
    la automatización es inútil aunque todo lo demás funcione.
 6. **Alguien para Telegram/X** que ejecute el calendario LatAm — sin persona
    asignada, ese documento se queda en papel.

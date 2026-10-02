@@ -16,7 +16,7 @@ Los webhooks avisan a tu sistema cuando un pago de BeZhas Pay cambia de estado, 
 ## Registrar un webhook
 
 ```bash
-curl -X POST https://api.bez.digital/api/gateway/v1/webhooks/register \
+curl -X POST https://api.bezhas.com/api/gateway/v1/webhooks/register \
   -H "X-API-Key: $BEZHAS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"url":"https://tu-empresa.com/webhooks/bezhas","events":["payment.settled","payment.refunded"]}'
@@ -61,11 +61,11 @@ Si una entrega falla, se reintenta con espera exponencial: 1 minuto, luego 2, 4,
 
 ```bash
 # Entregas recientes (filtra con ?status=pending|delivered|dead)
-curl https://api.bez.digital/api/gateway/v1/webhooks/deliveries?status=dead \
+curl https://api.bezhas.com/api/gateway/v1/webhooks/deliveries?status=dead \
   -H "X-API-Key: $BEZHAS_API_KEY"
 
 # Reenviar una entrega fallida
-curl -X POST https://api.bez.digital/api/gateway/v1/webhooks/deliveries/123/retry \
+curl -X POST https://api.bezhas.com/api/gateway/v1/webhooks/deliveries/123/retry \
   -H "X-API-Key: $BEZHAS_API_KEY"
 ```
 

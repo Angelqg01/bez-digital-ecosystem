@@ -67,7 +67,7 @@ test('Calendar real: scheduleMeeting hace booking vía Cal.com v2', async () => 
 // ── Email ───────────────────────────────────────────────────────
 test('Email real vía Resend: POST a la API con el remitente configurado', async () => {
   const fetchFn = fakeFetch([['api.resend.com', { id: 'email_1' }]]);
-  const e = new EmailConnector({ tenantId: 't', config: { resendKey: 're_x', from: 'ventas@bez.digital', fetch: fetchFn } });
+  const e = new EmailConnector({ tenantId: 't', config: { resendKey: 're_x', from: 'ventas@bezhas.com', fetch: fetchFn } });
   assert.equal(e.mode, 'resend');
   const r = await e.send({ to: 'lead@puerto.es', subject: 'Propuesta', body: 'Hola' });
   assert.equal(r.sent, true);
@@ -78,7 +78,7 @@ test('Email real vía Resend: POST a la API con el remitente configurado', async
   const comprobacion = fetchFn.calls.find((c) => c.url.includes('/domains'));
   assert.ok(comprobacion, 'se verifica el canal antes de enviar');
   const envio = fetchFn.calls.find((c) => c.url.includes('/emails'));
-  assert.match(envio.body, /"from":"ventas@bez.digital"/);
+  assert.match(envio.body, /"from":"ventas@bezhas.com"/);
 });
 
 test('Email exige destinatario y cae a simulado sin credenciales', async () => {
@@ -142,7 +142,7 @@ test('Email: la comprobación se cachea y el canal se recupera solo', async () =
   const fetchFn = async () => { intentos++; return { ok: intentos > 1, status: intentos > 1 ? 200 : 401, json: async () => ({}) }; };
   const e = new EmailConnector({
     tenantId: 't',
-    config: { resendKey: 're_x', from: 'ventas@bez.digital', fetch: fetchFn, verifyTtlMs: 0 },
+    config: { resendKey: 're_x', from: 'ventas@bezhas.com', fetch: fetchFn, verifyTtlMs: 0 },
   });
 
   const primera = await e.verify();

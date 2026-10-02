@@ -7,7 +7,7 @@ La API Core es la puerta de entrada para integrar BeZhas sin escribir Solidity. 
 ## Base y autenticación
 
 ```text
-Producción : https://api.bez.digital/api
+Producción : https://api.bezhas.com/api
 Local      : http://localhost:3001/api
 ```
 
@@ -102,7 +102,7 @@ Los endpoints de datos personales o clínicos exigen permisos específicos y con
 ```bash
 curl -H "Authorization: Bearer $JWT" \
      -H "X-API-Key: $BEZHAS_API_KEY" \
-     https://api.bez.digital/api/gateway/v1/wallet/balances
+     https://api.bezhas.com/api/gateway/v1/wallet/balances
 ```
 
 ```js

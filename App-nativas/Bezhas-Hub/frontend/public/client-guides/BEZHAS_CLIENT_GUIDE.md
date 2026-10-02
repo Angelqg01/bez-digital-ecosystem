@@ -1,7 +1,7 @@
 # 📘 Guía Completa de Integración BeZhas
 ## Para Clientes B2B — 3 Métodos de Acceso
 
-**Versión:** 2.0.0 | **Fecha:** Junio 2026 | **Soporte:** support@bez.digital
+**Versión:** 2.0.0 | **Fecha:** Junio 2026 | **Soporte:** support@bezhas.com
 
 ---
 
@@ -42,7 +42,7 @@ BeZhas es un ecosistema blockchain empresarial B2B con 13 SubApps especializadas
 ### 1️⃣ API REST
 **Para:** Backends, servidores, automatizaciones  
 **Stack:** HTTP, JSON, cualquier lenguaje  
-**URL Base:** `https://api.bez.digital:3001`
+**URL Base:** `https://api.bezhas.com:3001`
 
 #### Ventajas
 - ✅ Control total
@@ -105,7 +105,7 @@ npm install @bezhas/connect
 
 ### 📦 CargoLink — Trazabilidad Logística
 **Casos de Uso:** Envíos, aduanas, tracking  
-**URL:** `cargolink.bez.digital`  
+**URL:** `cargolink.bezhas.com`  
 **Rol:** Shipper, customs broker, carrier
 
 **Características:**
@@ -134,7 +134,7 @@ await cargolink.createTx({
 
 ### 💳 BeZhas Pay — Pagos Globales
 **Casos de Uso:** Checkout, pagos B2B, cobros  
-**URL:** `pay.bez.digital`  
+**URL:** `pay.bezhas.com`  
 **Métodos:** Card, Bank, Crypto, Fiat on-ramp
 
 **Características:**
@@ -163,7 +163,7 @@ const order = await bezhas.pay.buy({
 
 ### 💎 BZ Capital — DeFi & Staking
 **Casos de Uso:** Inversión, staking, gobernanza  
-**URL:** `capital.bez.digital/defi`  
+**URL:** `capital.bezhas.com/defi`  
 **Redes:** Polygon, BNB Chain
 
 **Características:**
@@ -176,7 +176,7 @@ const order = await bezhas.pay.buy({
 **Acceso:**
 ```bash
 # URL con wallet conectada (MetaMask)
-https://capital.bez.digital/defi/staking
+https://capital.bezhas.com/defi/staking
 
 # API
 GET /api/capital/defi/price
@@ -187,7 +187,7 @@ POST /api/capital/defi/stake
 
 ### 🔐 BEZ Wallet — Gestión de Activos
 **Casos de Uso:** Gestión de fondos, bridge, validadores  
-**URL:** `wallet.bez.digital`  
+**URL:** `wallet.bezhas.com`  
 **Blockchains:** Polygon, BNB, Amoy (testnet)
 
 **Características:**
@@ -200,7 +200,7 @@ POST /api/capital/defi/stake
 **Acceso:**
 ```bash
 # Solo URL (wallet-based)
-https://wallet.bez.digital
+https://wallet.bezhas.com
 # Conectar MetaMask → auto-login SIWE
 ```
 
@@ -208,7 +208,7 @@ https://wallet.bez.digital
 
 ### ⚡ BZ Energy — Virtual Power Plant
 **Casos de Uso:** Trading energía, OMIE, arbitrage  
-**URL:** `energy.bez.digital`  
+**URL:** `energy.bezhas.com`  
 **Datos:** OMIE (mercado ibérico)
 
 **Características:**
@@ -232,7 +232,7 @@ await bezhas.energy.trade({ amount, price });
 
 ### 🧬 BZ Genesis — Identidad Bio Digital
 **Casos de Uso:** SSO, agentes IA, reputación  
-**URL:** `genesis.bez.digital`  
+**URL:** `genesis.bezhas.com`  
 **Auth:** SIWE + Email
 
 **Características:**
@@ -245,7 +245,7 @@ await bezhas.energy.trade({ amount, price });
 **Acceso:**
 ```bash
 # Login
-https://genesis.bez.digital
+https://genesis.bezhas.com
 # Auto-SIWE o Email + 2FA
 
 # API
@@ -260,7 +260,7 @@ Cada una con funcionalidades especializadas.
 
 **Acceso universal:**
 ```
-URL: {subapp}.bez.digital
+URL: {subapp}.bezhas.com
 ```
 
 ---
@@ -269,12 +269,12 @@ URL: {subapp}.bez.digital
 
 ### Obtener API Key
 
-1. **Ir a:** `hub.bez.digital/developers`
+1. **Ir a:** `hub.bezhas.com/developers`
 2. **Click:** "Generate API Key"
 3. **Copiar** y guardar en `.env`:
 ```bash
 BEZHAS_API_KEY=bez_key_xxxxxxxxxxxxxxxx
-BEZHAS_API_URL=https://api.bez.digital:3001
+BEZHAS_API_URL=https://api.bezhas.com:3001
 BEZHAS_WEBHOOK_SECRET=wh_secret_yyyyyyyyyyy
 ```
 
@@ -285,7 +285,7 @@ BEZHAS_WEBHOOK_SECRET=wh_secret_yyyyyyyyyyy
 ```bash
 # Test conexión
 curl -H "x-api-key: $BEZHAS_API_KEY" \
-  https://api.bez.digital:3001/health
+  https://api.bezhas.com:3001/health
 
 # Response:
 # { "status": "ok", "timestamp": "...", ... }
@@ -296,7 +296,7 @@ curl -H "x-api-key: $BEZHAS_API_KEY" \
 ```bash
 # Obtener perfil
 curl -H "x-api-key: $BEZHAS_API_KEY" \
-  https://api.bez.digital:3001/api/users/me
+  https://api.bezhas.com:3001/api/users/me
 
 # Response:
 # { "id": "u_abc123", "org": "org_xyz", "email": "..." }
@@ -361,7 +361,7 @@ GET /api/capital/defi/balance
 
 ```bash
 # Verificar límite
-curl -i -H "x-api-key: $KEY" https://api.bez.digital/health
+curl -i -H "x-api-key: $KEY" https://api.bezhas.com/health
 # x-ratelimit-remaining: 987
 # x-ratelimit-reset: 1719763200
 ```
@@ -402,7 +402,7 @@ import { BeZhasConnect } from '@bezhas/connect';
 
 const bezhas = new BeZhasConnect({
   apiKey: process.env.BEZHAS_API_KEY,
-  apiUrl: 'https://api.bez.digital:3001' // opcional
+  apiUrl: 'https://api.bezhas.com:3001' // opcional
 });
 ```
 
@@ -419,7 +419,7 @@ const order = await bezhas.pay.buy({
 console.log(order);
 // {
 //   paymentId: 'pay_abc123',
-//   checkoutUrl: 'https://checkout.bez.digital/pay_abc123',
+//   checkoutUrl: 'https://checkout.bezhas.com/pay_abc123',
 //   nextAction: 'redirect_to_checkout',
 //   currency: 'USD',
 //   amount: 100
@@ -535,7 +535,7 @@ app.listen(3000);
 
 ### Paso 1: Descargar e Instalar
 
-1. Ir a: `hub.bez.digital/downloads`
+1. Ir a: `hub.bezhas.com/downloads`
 2. Descargar: `bezhas-hub-v2.0.0.zip`
 3. WordPress Admin → **Plugins** → **Add New**
 4. **Upload Plugin** → seleccionar `.zip`
@@ -543,7 +543,7 @@ app.listen(3000);
 
 ### Paso 2: Obtener Credenciales
 
-1. Ir a: `hub.bez.digital/developers`
+1. Ir a: `hub.bezhas.com/developers`
 2. **Generate API Key**
 3. Copiar `API Key` (única oportunidad)
 4. Copiar `Webhook Secret` (opcional pero recomendado)
@@ -585,7 +585,7 @@ Después de instalar, verás en WordPress Admin:
 - **BeZhas Stats:** Pagos hoy, semana, mes
 - **Últimas transacciones**
 - **Rate de aprobación**
-- **Links a hub.bez.digital**
+- **Links a hub.bezhas.com**
 
 ### Soporte
 
@@ -593,7 +593,7 @@ Si no aparece el widget o hay error:
 1. Verificar que API Key es válida
 2. Ir a **Plugins** → **Deactivate** → **Activate**
 3. Limpiar caché (WP Super Cache, etc.)
-4. Contactar: `support@bez.digital`
+4. Contactar: `support@bezhas.com`
 
 ---
 
@@ -777,19 +777,19 @@ BeZhas reininta automáticamente:
 
 | Recurso | URL |
 |---------|-----|
-| **API Docs** | `hub.bez.digital/api-docs` |
+| **API Docs** | `hub.bezhas.com/api-docs` |
 | **SDK Docs** | `www.npmjs.com/@bezhas/connect` |
-| **Guides** | `hub.bez.digital/docs` |
-| **Status** | `status.bez.digital` |
+| **Guides** | `hub.bezhas.com/docs` |
+| **Status** | `status.bezhas.com` |
 
 ### Contacto
 
 | Canal | Contacto | Respuesta |
 |-------|----------|-----------|
-| **Email Support** | `support@bez.digital` | <2h |
+| **Email Support** | `support@bezhas.com` | <2h |
 | **Slack Channel** | `#bezhas-support` | <30 min |
 | **Phone (ES)** | `+34 956 XX XXXX` | Oficina 9-18h CET |
-| **Chat (live)** | `hub.bez.digital/chat` | 9-18h CET |
+| **Chat (live)** | `hub.bezhas.com/chat` | 9-18h CET |
 
 ### Comunidad
 
@@ -880,9 +880,9 @@ R: Sí. Todos son independientes.
 **Privacidad:**
 - GDPR compliant
 - No vendemos datos
-- Política: `bez.digital/privacy`
+- Política: `bezhas.com/privacy`
 
 ---
 
-**¿Preguntas? Contacta a `support@bez.digital`**  
+**¿Preguntas? Contacta a `support@bezhas.com`**  
 **Última actualización: Junio 2026**

@@ -352,7 +352,7 @@ header["X-BeZhas-Signature"] = hex(signature)
 Una vez notarizada, puedes verificar la transacción en:
 
 ```
-https://explorer.bez.digital/tx/<txHash>
+https://explorer.bezhas.com/tx/<txHash>
 ```
 
 O via API:

@@ -206,8 +206,8 @@ export const REGISTRY = {
   // Registered so `service('<name>')` resolves and discovery lists the full
   // ecosystem; callable actions land here when the gateway proxies them (their
   // APIs currently run on the SubApp's own subdomain).
-  vision: { baseUrl: '/api/vision', auth: 'apiKey', label: 'BeZhas Vision', external: 'https://vision.bez.digital', actions: {} },
-  purescan: { baseUrl: '/api/purescan', auth: 'apiKey', label: 'BZ PureScan', external: 'https://purescan.bez.digital', actions: {} },
+  vision: { baseUrl: '/api/vision', auth: 'apiKey', label: 'BeZhas Vision', external: 'https://vision.bezhas.com', actions: {} },
+  purescan: { baseUrl: '/api/purescan', auth: 'apiKey', label: 'BZ PureScan', external: 'https://purescan.bezhas.com', actions: {} },
   // ── OPERANT — gestión empresarial autónoma (api/routes/operant.js) ──────────
   // Los agentes corren en el runtime de OPERANT, pero el contrato es el del
   // Gateway: api-key de la app, entitlements del plan y consumo facturado.
@@ -233,9 +233,9 @@ export const REGISTRY = {
     },
   },
 
-  sphere: { baseUrl: '/api/sphere', auth: 'apiKey', label: 'BZ Sphere', external: 'https://sphere.bez.digital', actions: {} },
-  prestige: { baseUrl: '/api/prestige', auth: 'apiKey', label: 'BZ Prestige', external: 'https://prestige.bez.digital', actions: {} },
-  edge: { baseUrl: '/api/edge', auth: 'apiKey', label: 'BeZhas Edge', external: 'https://edge.bez.digital', actions: {} },
+  sphere: { baseUrl: '/api/sphere', auth: 'apiKey', label: 'BZ Sphere', external: 'https://sphere.bezhas.com', actions: {} },
+  prestige: { baseUrl: '/api/prestige', auth: 'apiKey', label: 'BZ Prestige', external: 'https://prestige.bezhas.com', actions: {} },
+  edge: { baseUrl: '/api/edge', auth: 'apiKey', label: 'BeZhas Edge', external: 'https://edge.bezhas.com', actions: {} },
 };
 
 /**

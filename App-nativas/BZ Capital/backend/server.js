@@ -12,7 +12,7 @@ const CORE_API_KEY = process.env.CORE_API_KEY || 'defi-dev-key';
 app.use(helmet());
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
-        ? ['https://defi.bez.digital']
+        ? ['https://defi.bezhas.com']
         : ['http://localhost:5174', 'http://localhost:3000'],
     credentials: true,
 }));

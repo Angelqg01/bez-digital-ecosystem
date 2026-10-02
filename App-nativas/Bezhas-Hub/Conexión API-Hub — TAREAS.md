@@ -37,7 +37,7 @@
 - [ ] (follow-up) Unificar build-args VITE_*/URLs entre `deploy-gcp.yml` y `cloudbuild.yaml` (fuente única) antes de re-activar auto-deploy
 
 ### 1.3 OpenAPI único (D6) — ✅ HECHO (2026-06-12)
-- [x] `swagger.config.js` consolidado: dev server → `:3001`, prod → `api.bez.digital/api`; quitado `bezcoin.routes.js` (no montado, delegado a SubApp wallet); añadido `clothingRental.routes.js`; lista `apis` curada con política comentada (solo rutas público-seguras; `globalSettings` admin excluida)
+- [x] `swagger.config.js` consolidado: dev server → `:3001`, prod → `api.bezhas.com/api`; quitado `bezcoin.routes.js` (no montado, delegado a SubApp wallet); añadido `clothingRental.routes.js`; lista `apis` curada con política comentada (solo rutas público-seguras; `globalSettings` admin excluida)
 - [x] Anotado `health.routes.js` (`/health`, `/health/live`, `/health/ready`) — antes el tag Health existía sin endpoints
 - [x] Reparadas 13 anotaciones de `clothingRental.routes.js` (sin `responses` obligatorio + prefijo `/api/` duplicado)
 - [x] **`backend/scripts/export-openapi.cjs`**: valida (swagger-parser + invariantes) y exporta `backend/openapi.json` — **25 paths / 25 operaciones**. Script pnpm: `openapi:export`. Sale ≠0 si el contrato es inválido → apto para CI

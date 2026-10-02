@@ -163,7 +163,7 @@ export async function getSessionPqcStatus(session) {
  * Fetch de la clave pública PQC del servidor API.
  * Útil para verificar firmas sin depender del pub embebido en la respuesta de login.
  *
- * @param {string} apiBase — e.g. 'https://api.bez.digital:3001'
+ * @param {string} apiBase — e.g. 'https://api.bezhas.com:3001'
  * @returns {Promise<{ publicKey: string, algorithm: string, standard: string, transport: string } | null>}
  */
 export async function fetchPqcPublicKey(apiBase) {
@@ -194,7 +194,7 @@ export function makeAuthHeaders(token, pqcSig, pqcPub) {
 /**
  * Construye la URL de un WebSocket con parámetros PQC en el query string.
  *
- * @param {string} baseUrl  — e.g. 'wss://api.bez.digital:3001/agent-runtime'
+ * @param {string} baseUrl  — e.g. 'wss://api.bezhas.com:3001/agent-runtime'
  * @param {string} token    — JWT
  * @param {string} pqcSig   — Firma PQC (base64url), opcional
  * @param {string} pqcPub   — Clave pública (hex), opcional

@@ -134,7 +134,7 @@ services:
       # producción, donde el contenedor SÍ se reinicia (deploys, crashes).
       OAUTH_JWT_PRIVATE_KEY: ${OAUTH_JWT_PRIVATE_KEY:-}
       OAUTH_JWT_PUBLIC_KEY:  ${OAUTH_JWT_PUBLIC_KEY:-}
-      OAUTH_ISSUER:          ${OAUTH_ISSUER:-https://mcp.bez.digital}
+      OAUTH_ISSUER:          ${OAUTH_ISSUER:-https://mcp.bezhas.com}
       # config/secrets.js aborta el arranque en producción sin esta variable, y
       # el compose solo pasaba BEZHAS_API_KEY, que es OTRA cosa. Resultado: la
       # API no llegaba a levantar nunca desde este compose —moría en bucle con
@@ -199,7 +199,7 @@ services:
       # que reinicia solo, eso significa perder lo cifrado en cada reinicio.
       VAULT_KEY:           ${VAULT_KEY:-}
       # Dominio de la cookie de sesión admin. Vacío mientras API y panel
-      # comparten host; en producción, .bez.digital.
+      # comparten host; en producción, .bezhas.com.
       COOKIE_DOMAIN:       ${COOKIE_DOMAIN:-}
       # NODE_ENV aquí es production por defecto, y en producción /api/monitor
       # responde 503 sin este token. Sin pasarlo, el War Room queda muerto.

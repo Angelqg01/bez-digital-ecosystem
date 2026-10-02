@@ -16,7 +16,7 @@ Integración nativa para WordPress + WooCommerce.
 # En tu servidor
 cd wp-content/plugins/
 git clone https://github.com/bezhas/wp-bezhas-hub.git
-# O descargar ZIP desde https://bez.digital/plugin/wp
+# O descargar ZIP desde https://bezhas.com/plugin/wp
 
 # En admin WordPress:
 # Plugins > Activate "BeZhas Hub"
@@ -32,7 +32,7 @@ composer require bezhas/wp-plugin
 
 1. **BeZhas Hub > Configuración**
 2. Ingresar:
-   - **API Key** (de https://bez.digital/developers)
+   - **API Key** (de https://bezhas.com/developers)
    - **Webhook Secret** (auto-generado)
    - **Red**: Polygon (recomendado) o BSC
    - **Staking**: Activar/desactivar (automático)
@@ -91,9 +91,9 @@ add_action('bezhas_payment_completed', function($payment_data) {
 
 ## Soporte
 
-- Docs: https://bez.digital/docs/wordpress
-- Forum: https://bez.digital/community
-- Email: support@bez.digital
+- Docs: https://bezhas.com/docs/wordpress
+- Forum: https://bezhas.com/community
+- Email: support@bezhas.com
 
 ## Requisitos
 
@@ -105,7 +105,7 @@ add_action('bezhas_payment_completed', function($payment_data) {
 ## Troubleshooting
 
 **Error: "API Key inválida"**
-→ Verificar en https://bez.digital/developers/keys
+→ Verificar en https://bezhas.com/developers/keys
 
 **Webhook no recibe eventos**
 → Verificar que `wp_remote_post()` funciona

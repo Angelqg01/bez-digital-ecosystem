@@ -342,7 +342,7 @@ export function useGeminiVision() {
 ```bash
 docker run -d --name bezhas-edge \
   -e API_KEY="${apiKey}" \
-  -e BEZHAS_L2_RPC_URL="https://rpc.bez.digital" \
+  -e BEZHAS_L2_RPC_URL="https://rpc.bezhas.com" \
   -e REWARDS_CONTRACT_ADDRESS="${edgeNodeRewardsAddress}" \
   -e ENTERPRISE_DID="${userDid}" \
   -p 4000:4000 \
@@ -724,9 +724,9 @@ D:\BeZhas-Blockchain\App-nativas\
 # Copiar como .env.local en cada app y completar valores
 
 # ─── BeZhas L2 Network ───────────────────────────────────
-NEXT_PUBLIC_BEZHAS_L2_RPC=https://rpc.bez.digital
+NEXT_PUBLIC_BEZHAS_L2_RPC=https://rpc.bezhas.com
 NEXT_PUBLIC_BEZHAS_CHAIN_ID=2708
-NEXT_PUBLIC_BEZHAS_EXPLORER_URL=https://explorer.bez.digital
+NEXT_PUBLIC_BEZHAS_EXPLORER_URL=https://explorer.bezhas.com
 
 # ─── Contratos Principales ───────────────────────────────
 NEXT_PUBLIC_BEZCOIN_ADDRESS=0x...

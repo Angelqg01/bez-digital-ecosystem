@@ -262,7 +262,7 @@ steps:
         source deploy/gcp/cloudrun-lib.sh
         # TRUST_PROXY_HOPS=2: detrás del balanceador X-Forwarded-For llega como
         # «<cliente>, <balanceador>»; así el limitador ve la IP del visitante.
-        # CORS_EXTRA_ORIGINS: la api solo admite *.bez.digital por defecto.
+        # CORS_EXTRA_ORIGINS: la api solo admite *.bezhas.com por defecto.
         # OAUTH_ISSUER / MCP_ALLOWED_HOSTS: el MCP se publica en mcp.bezhas.com.
         # GCP_ENABLED sin fijar: los secretos llegan montados por Cloud Run.
         gcloud run deploy bezhas-api \

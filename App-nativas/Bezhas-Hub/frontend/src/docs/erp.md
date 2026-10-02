@@ -146,5 +146,5 @@ const auditLog = await bez.audit.getTransactions({
 
 ## Contacto
 
-Email: enterprise@bez.digital
-Slack: https://bez.digital/community
+Email: enterprise@bezhas.com
+Slack: https://bezhas.com/community

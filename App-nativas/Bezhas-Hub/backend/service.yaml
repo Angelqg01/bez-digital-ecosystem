@@ -75,9 +75,9 @@ spec:
             - name: DISABLE_BLOCKCHAIN_LISTENER
               value: "true"
             - name: FRONTEND_URL
-              value: "https://bez.digital"
+              value: "https://bezhas.com"
             - name: ALLOWED_ORIGINS
-              value: "https://bez.digital,https://www.bez.digital,https://bezhas-frontend-371791663100.us-central1.run.app"
+              value: "https://bezhas.com,https://www.bezhas.com,https://bezhas-frontend-371791663100.us-central1.run.app"
 
             # ── Secrets desde GCP Secret Manager ─────────────
             - name: MONGODB_URI

@@ -91,7 +91,7 @@ export const processStripePaymentTool = {
                 `${BACKEND_URL}/api/stripe/create-token-purchase-session`,
                 {
                     tokenAmount,
-                    email: email || `${userId}@bez.digital`
+                    email: email || `${userId}@bezhas.com`
                 },
                 {
                     headers: {

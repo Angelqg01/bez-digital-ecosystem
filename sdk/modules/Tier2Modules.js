@@ -7,7 +7,7 @@
 class EducationModule {
     constructor(config) {
         this.config = config;
-        this.baseURL = config.baseURL || 'https://api.bez.digital';
+        this.baseURL = config.baseURL || 'https://api.bezhas.com';
         this.apiKey = config.apiKey;
     }
 
@@ -63,7 +63,7 @@ class EducationModule {
 class InsuranceModule {
     constructor(config) {
         this.config = config;
-        this.baseURL = config.baseURL || 'https://api.bez.digital';
+        this.baseURL = config.baseURL || 'https://api.bezhas.com';
         this.apiKey = config.apiKey;
     }
 
@@ -126,7 +126,7 @@ class InsuranceModule {
 class EntertainmentModule {
     constructor(config) {
         this.config = config;
-        this.baseURL = config.baseURL || 'https://api.bez.digital';
+        this.baseURL = config.baseURL || 'https://api.bezhas.com';
         this.apiKey = config.apiKey;
     }
 
@@ -191,7 +191,7 @@ class EntertainmentModule {
 class LegalModule {
     constructor(config) {
         this.config = config;
-        this.baseURL = config.baseURL || 'https://api.bez.digital';
+        this.baseURL = config.baseURL || 'https://api.bezhas.com';
         this.apiKey = config.apiKey;
     }
 
