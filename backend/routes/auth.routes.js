@@ -1057,43 +1057,15 @@ router.post('/verify-code', [
 
 /**
  * @route   GET /api/auth/me
- * @desc    Get current user info by wallet address (auto-creates user if not exists)
- * @access  Public (requires wallet address in header)
+ * @desc    Get current user info (authenticated user)
+ * @access  Private (Bearer JWT)
  */
-router.get('/me', async (req, res) => {
+router.get('/me', protect, async (req, res) => {
   try {
-    const walletAddress = req.headers['x-wallet-address'];
+    // La identidad sale del JWT (protect). Antes se leía de `x-wallet-address`, lo que permitía
+    // consultar el perfil de cualquier wallet y crear usuarios sin autenticarse.
+    const user = req.user;
 
-    if (!walletAddress) {
-      return res.status(401).json({
-        success: false,
-        error: 'Wallet address not provided'
-      });
-    }
-
-    // Find or create user by wallet address
-    let user = await User.findOne({
-      walletAddress: walletAddress.toLowerCase()
-    });
-
-    // If user doesn't exist, create a new one
-    if (!user) {
-      console.log(`📝 Creating new user for wallet: ${walletAddress}`);
-      user = new User({
-        walletAddress: walletAddress.toLowerCase(),
-        username: `User_${walletAddress.slice(2, 8)}`,
-        role: 'USER',
-        subscription: 'FREE',
-        isVerified: false,
-        isBanned: false
-      });
-      await user.save();
-    }
-
-    // Check if wallet is a Super Admin and upgrade if necessary
-    user = await ensureSuperAdminRole(user);
-
-    // Return user data
     res.json({
       success: true,
       user: {
@@ -1111,11 +1083,10 @@ router.get('/me', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in /me endpoint:', error);
+    console.error('❌ Error in /me endpoint:', error.message);
     res.status(500).json({
       success: false,
-      error: 'Server error',
-      details: error.message
+      error: 'Server error'
     });
   }
 });

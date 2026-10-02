@@ -27,7 +27,7 @@ const { SUBSCRIPTION_TIERS, getTierConfig, calculatePotentialROI } = require('..
  */
 router.get('/status', protect, async (req, res) => {
     try {
-        const walletAddress = req.user?.walletAddress || req.headers['x-wallet-address'];
+        const walletAddress = req.user?.walletAddress;
 
         if (!walletAddress) {
             return res.status(400).json({
@@ -96,7 +96,7 @@ router.get('/tiers', (req, res) => {
 router.post('/checkout', protect, async (req, res) => {
     try {
         const { tier, billingCycle = 'monthly' } = req.body;
-        const walletAddress = req.user?.walletAddress || req.headers['x-wallet-address'];
+        const walletAddress = req.user?.walletAddress;
 
         if (!tier || !['CREATOR', 'BUSINESS'].includes(tier.toUpperCase())) {
             return res.status(400).json({
@@ -206,7 +206,7 @@ router.post('/cancel', protect, async (req, res) => {
 router.post('/token-lock', protect, async (req, res) => {
     try {
         const { tier, txHash } = req.body;
-        const walletAddress = req.user?.walletAddress || req.headers['x-wallet-address'];
+        const walletAddress = req.user?.walletAddress;
 
         if (!tier || !['CREATOR', 'BUSINESS'].includes(tier.toUpperCase())) {
             return res.status(400).json({
@@ -252,7 +252,7 @@ router.post('/token-lock', protect, async (req, res) => {
  */
 router.get('/token-lock/status', protect, async (req, res) => {
     try {
-        const walletAddress = req.user?.walletAddress || req.headers['x-wallet-address'];
+        const walletAddress = req.user?.walletAddress;
 
         const lockStatus = await subscriptionService.getTokenLockStatus(walletAddress);
 
@@ -281,7 +281,7 @@ router.get('/token-lock/status', protect, async (req, res) => {
  */
 router.get('/staking-signature', protect, async (req, res) => {
     try {
-        const walletAddress = req.user?.walletAddress || req.headers['x-wallet-address'];
+        const walletAddress = req.user?.walletAddress;
 
         if (!walletAddress) {
             return res.status(400).json({

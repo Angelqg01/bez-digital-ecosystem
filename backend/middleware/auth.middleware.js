@@ -127,50 +127,24 @@ const protect = async (req, res, next) => {
 };
 
 /**
- * Alternative auth using wallet address (for Web3)
+ * Autenticación obligatoria por JWT (Bearer). Antes identificaba al usuario por la cabecera
+ * `x-wallet-address` o por `body.walletAddress`: cualquiera podía hacerse pasar por otra
+ * persona (incluido un admin) enviando su dirección. Ahora la identidad sale del token.
  */
 async function requireAuth(req, res, next) {
-  try {
-    const walletAddress = req.headers['x-wallet-address'] || req.body.walletAddress;
-
-    if (!walletAddress) {
-      return res.status(401).json({
-        success: false,
-        error: 'Unauthorized: Wallet address required'
-      });
-    }
-
-    // Find user by wallet address
-    let user = await User.findByWallet(walletAddress.toLowerCase());
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Unauthorized: User not found'
-      });
-    }
-
-    // Ensure Super Admin role if wallet is in whitelist
-    user = await ensureSuperAdminRole(user);
+  await protect(req, res, () => {
+    const user = req.user;
 
     // Check if user is banned (Super Admins cannot be banned)
-    if (user.isBanned && !isSuperAdmin(user.walletAddress)) {
+    if (user && user.isBanned && !isSuperAdmin(user.walletAddress)) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden: Account has been banned'
       });
     }
 
-    // Attach user to request
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal authentication error'
-    });
-  }
+    return next();
+  });
 }
 
 /**

@@ -1,4 +1,5 @@
 const express = require('express');
+const { authenticatedWallet } = require('../middleware/walletIdentity');
 const { getJwtSecret } = require('../config/jwtSecret');
 const router = express.Router();
 const User = require('../models/pg/User');
@@ -763,7 +764,7 @@ router.post('/auth/quick-super-admin/2fa/disable', verifyAdminSession, [
  */
 router.get('/verify-permissions', verifyAdminSession, async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'] || req.admin.walletAddress || req.admin.wallet_address;
+        const walletAddress = authenticatedWallet(req);
 
         if (!walletAddress) {
             return res.json({
@@ -839,7 +840,7 @@ router.get('/verify-permissions', verifyAdminSession, async (req, res) => {
  */
 router.get('/check-super-admin', verifyAdminSession, async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'] || req.admin.walletAddress || req.admin.wallet_address;
+        const walletAddress = authenticatedWallet(req);
 
         if (!walletAddress) {
             return res.json({ isSuperAdmin: String(req.admin.role || '').toUpperCase() === 'SUPER_ADMIN' });
@@ -862,7 +863,7 @@ router.get('/check-super-admin', verifyAdminSession, async (req, res) => {
  */
 router.get('/me', verifyAdminSession, async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'] || req.admin.walletAddress || req.admin.wallet_address;
+        const walletAddress = authenticatedWallet(req);
 
         if (!walletAddress) {
             return res.json({
