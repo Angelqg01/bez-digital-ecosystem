@@ -1,12 +1,6 @@
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/jwtSecret');
 const db = require('../database/inMemoryDB');
-
-function getJwtSecret() {
-    if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
-        throw new Error('JWT_SECRET is required in production');
-    }
-    return process.env.JWT_SECRET || 'bezhas-local-dev-only-secret';
-}
 
 const CORE_ADMIN_ROLES = new Set([
     'admin',

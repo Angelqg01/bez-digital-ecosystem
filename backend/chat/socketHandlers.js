@@ -30,6 +30,7 @@
  */
 
 const { checkAndChargeCredit, getUserStats } = require('./chatGatekeeper');
+const { getJwtSecret } = require('../config/jwtSecret');
 const logger = require('pino')({ level: process.env.LOG_LEVEL || 'info' });
 const validator = require('validator');
 const MessageRateLimiter = require('../middleware/messageRateLimiter');
@@ -90,7 +91,6 @@ const messageRateLimits = new Map();
  * @param {Function} next - Callback para continuar o rechazar
  */
 /** Secreto de desarrollo; jamás debe usarse fuera de local. */
-const CHAT_JWT_DEV_SECRET = 'bezhas_super_secret_key_change_in_production';
 
 /**
  * Devuelve el secreto con el que verificar los tokens de chat.
@@ -99,9 +99,7 @@ const CHAT_JWT_DEV_SECRET = 'bezhas_super_secret_key_change_in_production';
  * conexión se rechaza, en vez de caer a un valor por defecto conocido.
  */
 function resolveChatJwtSecret() {
-    if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
-    if (process.env.NODE_ENV === 'production') return null;
-    return CHAT_JWT_DEV_SECRET;
+    try { return getJwtSecret(); } catch (_) { return null; }
 }
 
 function authenticationMiddleware(socket, next) {

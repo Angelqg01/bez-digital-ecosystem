@@ -10,7 +10,7 @@ const EnvSchema = z.object({
     ADMIN_TOKEN: z.string().optional().default('change-me-dev-admin-token'),
     GEMINI_API_KEY: z.string().optional(),
     LOG_LEVEL: z.string().optional().default('info'),
-    JWT_SECRET: z.string().optional().default('change-me-dev-jwt-secret'),
+    JWT_SECRET: z.string().optional(), // sin valor por defecto: ver config/jwtSecret.js
     CONTACT_ENCRYPTION_KEY: z.string().optional().default('dev-contact-encryption-key-32-characters-long-string'),
     AUTH_BYPASS_ENABLED: z.string().optional().default('true'),
     FRONTEND_URL: z.string().optional().default('http://localhost:5173'),
@@ -45,7 +45,6 @@ if (!parsed.success) {
         ALLOWED_ORIGINS: 'http://localhost:5173,http://127.0.0.1:5173',
         ADMIN_TOKEN: 'change-me-dev-admin-token',
         LOG_LEVEL: 'info',
-        JWT_SECRET: 'change-me-dev-jwt-secret',
         CONTACT_ENCRYPTION_KEY: 'dev-contact-encryption-key-32-characters-long-string',
         AUTH_BYPASS_ENABLED: 'true',
         FRONTEND_URL: 'http://localhost:5173',

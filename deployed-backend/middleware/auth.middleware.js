@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/jwtSecret');
 const User = require('../models/user.model');
 const { UserRole } = require('../models/mockModels');
 const mongoose = require('mongoose');
@@ -65,7 +66,7 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
 
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, getJwtSecret());
 
       // Get user from the token
       req.user = await User.findById(decoded.id).select('-password');

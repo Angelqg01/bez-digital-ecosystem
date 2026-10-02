@@ -13,7 +13,7 @@ const envSchema = z.object({
 
     // Security & Web3
     ADMIN_WALLET_ADDRESS: z.string().startsWith('0x'),
-    JWT_SECRET: z.string().min(10).default('supersecret_fallback_change_in_prod'),
+    JWT_SECRET: z.string().min(10).optional(), // sin valor por defecto: ver config/jwtSecret.js
 
     // AI Services
     GEMINI_API_KEY: z.string().optional(),

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/jwtSecret');
 const { ethers } = require('ethers');
 const crypto = require('crypto');
 const User = require('../models/pg/User');
@@ -21,7 +22,7 @@ const verificationCodes = new Map();
 
 // Helper to generate JWT
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'default-secret-key', {
+  return jwt.sign({ id }, getJwtSecret(), {
     expiresIn: '30d', // Token expires in 30 days
   });
 };
@@ -1600,7 +1601,7 @@ router.post('/link-wallet', [
 
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret-key');
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const { walletAddress, signature, message } = req.body;
 
@@ -1666,7 +1667,7 @@ router.get('/wallet-reminder', async (req, res) => {
 
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret-key');
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const user = await User.findById(decoded.id).select('email walletAddress walletLinkedAt createdAt');
     if (!user) {

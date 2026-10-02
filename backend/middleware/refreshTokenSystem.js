@@ -12,6 +12,7 @@
  */
 
 const jwt = require('jsonwebtoken');
+const { getJwtSecret, getRefreshSecret } = require('../config/jwtSecret');
 const crypto = require('crypto');
 const { audit } = require('./auditLogger');
 const { notifyMaxDevices, notifyTokenReuse } = require('./discordNotifier');
@@ -26,8 +27,8 @@ const CONFIG = {
     REFRESH_TOKEN_EXPIRY: '7d',      // 7 días
     REFRESH_TOKEN_FAMILY: true,      // Detectar reuso
     MAX_DEVICES: 5,                  // Máximo dispositivos simultáneos
-    ACCESS_SECRET: process.env.JWT_SECRET || 'default-secret-change-me',
-    REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'refresh-secret-change-me'
+    get ACCESS_SECRET() { return getJwtSecret(); },
+    get REFRESH_SECRET() { return getRefreshSecret(); }
 };
 
 /**

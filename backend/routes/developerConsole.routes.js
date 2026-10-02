@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/jwtSecret');
 const mongoose = require('mongoose');
 const {
     createApiKey,
@@ -32,7 +33,7 @@ const requireWalletOrJwt = async (req, res, next) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
+            const decoded = jwt.verify(token, getJwtSecret());
 
             // Try to load user from DB if available
             if (mongoose.connection.readyState === 1) {

@@ -30,6 +30,7 @@
  */
 
 const { checkAndChargeCredit, getUserStats } = require('./chatGatekeeper');
+const { getJwtSecret } = require('../config/jwtSecret');
 const logger = require('pino')({ level: process.env.LOG_LEVEL || 'info' });
 const validator = require('validator');
 const MessageRateLimiter = require('../middleware/messageRateLimiter');
@@ -101,7 +102,8 @@ function authenticationMiddleware(socket, next) {
 
         // ✅ PRODUCCIÓN: Verificar token JWT
         const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET || 'bezhas_super_secret_key_change_in_production';
+        let JWT_SECRET;
+        try { JWT_SECRET = getJwtSecret(); } catch (_) { return next(new Error('Authentication unavailable')); }
 
         try {
             const decoded = jwt.verify(token, JWT_SECRET);

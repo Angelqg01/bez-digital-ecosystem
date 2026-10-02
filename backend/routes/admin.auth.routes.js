@@ -1,4 +1,5 @@
 const express = require('express');
+const { getJwtSecret } = require('../config/jwtSecret');
 const router = express.Router();
 const User = require('../models/pg/User');
 const { UserRole } = require('../models/mockModels');
@@ -11,13 +12,6 @@ const fs = require('fs');
 const path = require('path');
 const adminNonces = new Map();
 const ADMIN_SESSION_ROLES = ['SUPER_ADMIN', 'ADMIN', 'DEVELOPER', 'DEVOPS', 'SECURITY', 'HUMAN_RESOURCES'];
-
-function getJwtSecret() {
-    if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
-        throw new Error('JWT_SECRET is required in production');
-    }
-    return process.env.JWT_SECRET || 'bezhas-local-dev-only-secret';
-}
 
 function verifyAdminJwt(req, res, next) {
     const authHeader = req.headers.authorization || '';
