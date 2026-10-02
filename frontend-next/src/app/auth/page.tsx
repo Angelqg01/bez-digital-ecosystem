@@ -1,95 +1,33 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Wallet, ShieldCheck, Mail, Lock } from 'lucide-react';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { useAccount, useSignMessage, useDisconnect } from 'wagmi';
-import { SiweMessage } from 'siwe';
-import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useUserStore } from '../../stores/userStore';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { useWalletLogin } from '../../hooks/useWalletLogin';
 
 export default function AuthPage() {
-    const { address, isConnected } = useAccount();
-    const { signMessageAsync } = useSignMessage();
-    const { disconnect } = useDisconnect();
-    const { open } = useWeb3Modal();
+    const wallet = useWalletLogin();
     const { setUser, setToken } = useUserStore();
 
     const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
     const [loading, setLoading] = useState(false);
-    const [siweLoading, setSiweLoading] = useState(false);
 
     // Form states
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    // === SIWE AUTH FLOW (Sign-In With Ethereum) ===
+    useEffect(() => { if (wallet.error) toast.error(wallet.error); }, [wallet.error]);
+
+    // === WALLET AUTH (SIWE → JWT real; el mismo token que email/contraseña) ===
     const handleWalletAuth = async () => {
-        if (!isConnected || !address) {
-            open();
-            return;
-        }
-
-        try {
-            setSiweLoading(true);
-            
-            // 1. Obtener Nonce del backend
-            const nonceRes = await axios.get(`${API_BASE}/api/auth/siwe/nonce`);
-            const nonce = nonceRes.data.nonce;
-            
-            // 2. Crear mensaje SIWE
-            const message = new SiweMessage({
-                domain: window.location.host,
-                address: address as `0x${string}`,
-                statement: 'Sign in with Ethereum to BeZhas Ecosystem.',
-                uri: window.location.origin,
-                version: '1',
-                chainId: 137, // Polygon by default or extract from wagmi
-                nonce: nonce,
-            });
-
-            // 3. Firmar mensaje con Wagmi
-            const signature = await signMessageAsync({
-                message: message.prepareMessage(),
-            });
-
-            // 4. Verificar firma y nonce en el backend
-            const verifyRes = await axios.post(`${API_BASE}/api/auth/siwe/verify`, {
-                message: message,
-                signature,
-            }, { withCredentials: true });
-
-            // 5. Autenticado con éxito
-            if (verifyRes.data.ok) {
-                toast.success('Wallet verificada correctamente');
-                // Simular user y token por compatibilidad con Zustand temporalmente
-                setUser({ walletAddress: address, isVerified: true, role: 'user' });
-                setToken('siwe-session-mock-token');
-                
-                // Redirigir al Console
-                window.location.href = '/developer-console';
-            }
-        } catch (error: Error | unknown) {
-            console.error('SIWE Error:', error);
-            const errMsg = (error && typeof error === 'object' && 'response' in error
-              ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
-              : undefined) ?? 'Falló la autenticación con Wallet';
-            toast.error(errMsg);
-            disconnect();
-        } finally {
-            setSiweLoading(false);
-        }
+        const session = await wallet.loginWithWallet();
+        if (!session) return; // el error (si lo hay) se muestra vía el efecto de abajo
+        toast.success('Wallet verificada correctamente');
+        setUser(session.user);
+        setToken(session.token);
+        window.location.href = '/developer-console';
     };
-
-    // Auto trigger once connected if intended
-    // useEffect(() => {
-    //     if (isConnected && address && !user && !siweLoading) {
-    //         // handleWalletAuth(); 
-    //     }
-    // }, [isConnected, address, user, siweLoading]);
 
     // === TRADITIONAL EMAIL AUTH BLOCK ===
     const handleEmailAuth = async (e: React.FormEvent) => {
@@ -131,13 +69,13 @@ export default function AuthPage() {
                         <div className="mb-6">
                             <button
                                 onClick={handleWalletAuth}
-                                disabled={siweLoading}
+                                disabled={wallet.busy}
                                 className="w-full relative group"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-primary-400 to-indigo-500 rounded-xl blur-sm opacity-50 group-hover:opacity-100 transition-opacity duration-300"></div>
                                 <div className="relative flex items-center justify-center gap-3 bg-gradient-to-r from-primary-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-button group-hover:-translate-y-1 transition-all">
                                     <Wallet size={20} />
-                                    {siweLoading ? 'Firmando Mensaje...' : (isConnected ? 'Continuar como ' + address?.slice(0,6) + '...' : 'Conectar Wallet (SIWE)')}
+                                    {wallet.busy ? 'Firmando Mensaje...' : (wallet.isConnected ? 'Continuar como ' + wallet.short : 'Conectar Wallet (SIWE)')}
                                 </div>
                             </button>
                             <p className="text-xs text-center text-gray-400 mt-3 flex items-center justify-center gap-1">

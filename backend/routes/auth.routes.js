@@ -14,12 +14,10 @@ const emailService = require('../services/email.service');
 const totpService = require('../services/totp.service');
 const keyManagementService = require('../services/key-management.service');
 const accountAbstractionService = require('../services/account-abstraction.service');
+const walletAuth = require('../services/walletAuth.service');
 
 // In-memory storage for verification codes (en producción usa Redis)
 const verificationCodes = new Map();
-
-// In-memory storage for nonces (en producción usa Redis con TTL)
-const nonces = new Map();
 
 // Helper to generate JWT
 const generateToken = (id) => {
@@ -39,45 +37,26 @@ const generateVerificationCode = () => {
  * @access  Public
  * @query   address - Ethereum wallet address (optional, for logging purposes)
  */
-router.get('/nonce', async (req, res) => {
+router.get('/nonce', (req, res) => {
   try {
-    const { address } = req.query;
-
-    // Generate a cryptographically secure random nonce
-    const nonce = crypto.randomBytes(32).toString('hex');
-
-    // Store nonce with 5-minute expiration (in production use Redis with TTL)
-    const timestamp = Date.now();
-    nonces.set(nonce, { timestamp, address: address || 'anonymous' });
-
-    // Clean up old nonces (older than 5 minutes)
-    const fiveMinutesAgo = timestamp - (5 * 60 * 1000);
-    for (const [key, value] of nonces.entries()) {
-      if (value.timestamp < fiveMinutesAgo) {
-        nonces.delete(key);
-      }
-    }
-
-    console.log(`🔐 Nonce generated for address: ${address || 'anonymous'}`);
-
+    // Nonce SIWE del servidor: ligado a la dirección, un solo uso, caduca a los 5 min.
+    const { nonce, expiresIn, domains } = walletAuth.issueNonce(req.query.address);
     res.status(200).json({
       success: true,
       nonce,
-      message: 'Sign this nonce with your wallet to authenticate',
-      expiresIn: 300 // seconds
+      domains,
+      message: 'Firma un mensaje SIWE (EIP-4361) con este nonce para autenticarte',
+      expiresIn
     });
   } catch (error) {
-    console.error('Error generating nonce:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to generate nonce'
-    });
+    res.status(error.status || 500).json({ success: false, error: error.status ? error.message : 'Failed to generate nonce' });
   }
 });
 
 const loginOrRegisterRules = () => {
   return [
-    body('walletAddress', 'A valid wallet address is required').isEthereumAddress(),
+    body('message', 'Mensaje SIWE firmado requerido').isString().notEmpty(),
+    body('signature', 'Firma requerida').isString().notEmpty(),
     body('referralCode').optional().isString().trim().escape(),
   ];
 };
@@ -94,15 +73,19 @@ router.post('/login-or-register', loginOrRegisterRules(), async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { walletAddress, referralCode } = req.body;
+  const { message, signature, referralCode } = req.body;
 
   try {
-    let user = await User.findByWallet(walletAddress.toLowerCase());
+    // SEGURIDAD: la dirección sale de una firma SIWE verificada, nunca del body.
+    // Antes este endpoint emitía un JWT para cualquier dirección sin pedir firma.
+    const walletAddress = await walletAuth.verifySignedMessage({ message, signature });
+
+    let user = await User.findByWallet(walletAddress);
     let isNewUser = false;
 
     if (!user) {
       isNewUser = true;
-      const newUserPayload = { walletAddress: walletAddress.toLowerCase() };
+      const newUserPayload = { walletAddress };
 
       // If a referral code is provided for a new user, process it
       let referrer = null;
@@ -120,8 +103,7 @@ router.post('/login-or-register', loginOrRegisterRules(), async (req, res) => {
         }
       }
 
-      user = new User(newUserPayload);
-      await user.save();
+      user = await User.create(newUserPayload);
 
       // Trigger Ecosystem Sync for new users
       try {
@@ -180,6 +162,7 @@ router.post('/login-or-register', loginOrRegisterRules(), async (req, res) => {
     });
 
   } catch (error) {
+    if (error.status) return res.status(error.status).json({ error: error.message });
     req.log.error({ err: error }, 'Error in login-or-register endpoint');
     res.status(500).json({ error: 'Server error' });
   }
@@ -191,56 +174,22 @@ router.post('/login-or-register', loginOrRegisterRules(), async (req, res) => {
  * @access  Public
  */
 router.post('/login-wallet', [
-  body('walletAddress').isEthereumAddress().withMessage('Invalid wallet address'),
-  body('signature').isString().notEmpty().withMessage('Signature is required'),
-  body('message').isString().notEmpty().withMessage('Message is required')
+  body('message').isString().notEmpty().withMessage('Mensaje SIWE requerido'),
+  body('signature').isString().notEmpty().withMessage('Signature is required')
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { walletAddress, signature, message } = req.body;
-
   try {
-    // Verify signature
-    const recoveredAddress = ethers.verifyMessage(message, signature);
-
-    if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-      return res.status(401).json({ error: 'Invalid signature' });
-    }
-
-    // Find user by wallet address
-    let user = await User.findByWallet(walletAddress.toLowerCase());
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found. Please register first.' });
-    }
-
-    // Auto-Upgrade VIP/Admin for whitelisted accounts
-    user = await ensureSuperAdminRole(user);
-
-    // Generate JWT
-    const token = generateToken(user._id);
-
-    res.json({
-      message: 'Login successful',
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        walletAddress: user.walletAddress,
-        roles: user.roles,
-        referralCode: user.affiliate?.referralCode,
-        isVIP: user.isVIP,
-        subscription: user.subscription,
-        vipTier: user.vipTier
-      },
-      token
+    const { token, user } = await walletAuth.loginOrRegisterWithWallet({
+      message: req.body.message, signature: req.body.signature, mode: 'login'
     });
-
+    res.json({ message: 'Login successful', user, token });
   } catch (error) {
-    console.error('Error in login-wallet:', error);
+    if (error.status) return res.status(error.status).json({ error: error.message });
+    console.error('Error in login-wallet:', error.message);
     res.status(500).json({ error: 'Server error during wallet login' });
   }
 });
@@ -984,76 +933,27 @@ router.post('/github', [
  * @access  Public
  */
 router.post('/register-wallet', [
-  body('walletAddress').isEthereumAddress().withMessage('Invalid wallet address'),
+  body('message').isString().notEmpty().withMessage('Mensaje SIWE requerido'),
   body('signature').isString().notEmpty().withMessage('Signature is required'),
-  body('message').isString().notEmpty().withMessage('Message is required'),
   body('username').optional().isString().trim(),
-  body('email').optional().isEmail().withMessage('Invalid email'),
-  body('phone').optional().isString().trim()
+  body('email').optional().isEmail().withMessage('Invalid email')
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { walletAddress, signature, message, username, email, phone } = req.body;
-
   try {
-    // Verify signature
-    const recoveredAddress = ethers.verifyMessage(message, signature);
-
-    if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-      return res.status(401).json({ error: 'Invalid signature' });
-    }
-
-    // Check if user already exists
-    let existingUser = await User.findByWallet(walletAddress.toLowerCase());
-
-    if (existingUser) {
-      return res.status(400).json({ error: 'Wallet address already registered' });
-    }
-
-    // Check if email is already used
-    if (email) {
-      const emailUser = await User.findByEmail(email.toLowerCase());
-      if (emailUser) {
-        return res.status(400).json({ error: 'Email already registered' });
-      }
-    }
-
-    // Create new user
-    const newUserData = {
-      walletAddress: walletAddress.toLowerCase(),
-      username: username || `User_${walletAddress.slice(2, 8)}`,
-      email: email ? email.toLowerCase() : null,
-      phone: phone || null,
-      roles: ['user'],
-      affiliate: {
-        referralCode: `BZH${Math.random().toString(36).substr(2, 6).toUpperCase()}`
-      }
-    };
-
-    const user = new User(newUserData);
-    await user.save();
-
-    // Generate JWT
-    const token = generateToken(user._id);
-
-    res.status(201).json({
-      message: 'Registration successful',
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        walletAddress: user.walletAddress,
-        roles: user.roles,
-        referralCode: user.affiliate.referralCode
-      },
-      token
+    const { token, user } = await walletAuth.loginOrRegisterWithWallet({
+      message: req.body.message,
+      signature: req.body.signature,
+      mode: 'register',
+      profile: { username: req.body.username, email: req.body.email }
     });
-
+    res.status(201).json({ message: 'Registration successful', user, token });
   } catch (error) {
-    console.error('Error in register-wallet:', error);
+    if (error.status) return res.status(error.status).json({ error: error.message });
+    console.error('Error in register-wallet:', error.message);
     res.status(500).json({ error: 'Server error during wallet registration' });
   }
 });

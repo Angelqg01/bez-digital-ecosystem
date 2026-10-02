@@ -11,7 +11,7 @@ import SocialAuthButtons from '../components/common/SocialAuthButtons';
 const AuthPage = ({ mode = 'login' }) => {
     const navigate = useNavigate();
     const { connectors, connectAsync } = useConnect();
-    const { login } = useAuth();
+    const { login, loginOrRegisterWithWallet } = useAuth();
 
     const [authMode, setAuthMode] = useState(mode); // 'login' | 'register'
     const [showPassword, setShowPassword] = useState(false);
@@ -67,19 +67,14 @@ const AuthPage = ({ mode = 'login' }) => {
         try {
             setLoading(true);
             const connector = connectors[0]; // MetaMask por defecto
-            const { account } = await connectAsync({ connector });
+            const { accounts } = await connectAsync({ connector });
 
-            // Aquí integrar con el backend /api/auth/login-or-register
-            const response = await axios.post('/api/auth/login-or-register', {
-                walletAddress: account,
-                referralCode: formData.referralCode || undefined
-            });
-
-            toast.success(response.data.message);
-            login(response.data.user, response.data.token);
-            navigate('/');
+            // SIWE: nonce del servidor + firma; el servidor verifica y emite el JWT.
+            await loginOrRegisterWithWallet(accounts[0], { referralCode: formData.referralCode || undefined });
+            toast.success('Wallet verificada correctamente');
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Error conectando wallet');
+            const rejected = /reject|denied|cancel/i.test(error?.message || '');
+            toast.error(rejected ? 'Firma cancelada' : (error.response?.data?.error || 'Error conectando wallet'));
         } finally {
             setLoading(false);
         }
