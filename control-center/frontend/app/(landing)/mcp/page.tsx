@@ -71,14 +71,38 @@ const CAPABILITIES: { icon: string; title: string; text: string; tools: string[]
         plan: 'Starter',
         prompt: 'Dime mi plan y qué herramientas de BeZhas tengo disponibles.',
     },
+    {
+        icon: 'point_of_sale',
+        title: 'Cobros con BEZ-Pay',
+        text: 'Abre una orden de cobro con tarjeta, transferencia SEPA o BEZ y obtén el enlace de pago para tu cliente. La IA no cobra: paga el cliente.',
+        tools: ['bezhas_checkout_prepare', 'bezhas_checkout_status'],
+        plan: 'Creator Pro',
+        prompt: 'Prepara un cobro de 120 USD con tarjeta para el pedido 2026-341 y dame el enlace de pago.',
+    },
+    {
+        icon: 'apartment',
+        title: 'Tokenización de activos',
+        text: 'Prepara la tokenización en fracciones de un inmueble, vehículo u objeto en Polygon, y de plantas o maquinaria con Factory industrial. Tu wallet firma; la IA nunca.',
+        tools: ['bezhas_tokenize_prepare'],
+        plan: 'Creator Pro',
+        prompt: 'Prepara la tokenización del local de la calle Real en 1.000 fracciones de 100 BEZ, con la documentación que subí a IPFS.',
+    },
+    {
+        icon: 'inventory_2',
+        title: 'Tu ERP (SAP, Odoo)',
+        text: 'Consulta facturas, pedidos, albaranes y asientos de tu ERP conectado, sin exportar nada. Solo lectura.',
+        tools: ['bezhas_erp_connections', 'bezhas_erp_documents', 'bezhas_erp_document'],
+        plan: 'Business',
+        prompt: 'Lista las facturas pendientes de este mes en nuestro SAP y dime cuáles superan 5.000 €.',
+    },
 ];
 
+// Staking y Bridges esperan a que haya contrato en Polygon: hoy no hay
+// StakingPool ni puente desplegados, y una herramienta que los ofreciera
+// prepararía operaciones que no existen en la cadena.
 const ROADMAP = [
-    { icon: 'point_of_sale', label: 'Cobros con BEZ-Pay' },
     { icon: 'savings', label: 'Staking' },
     { icon: 'alt_route', label: 'Bridges' },
-    { icon: 'apartment', label: 'Tokenización de activos' },
-    { icon: 'inventory_2', label: 'Tu ERP (SAP, Odoo) · Business+' },
 ];
 
 type ClientId = 'claude' | 'chatgpt' | 'claude-code' | 'codex' | 'gemini' | 'ide' | 'api';
@@ -233,7 +257,7 @@ const PLANS: {
         yearly: '990 € / año',
         cta: { label: 'Contratar Creator Pro', href: '/register' },
         features: [
-            'Las 11 herramientas, incluido preparar operaciones',
+            '14 herramientas: preparar operaciones, cobros con BEZ-Pay y tokenización',
             '120 llamadas MCP por minuto',
             '1.500 acciones de IA al mes',
             'Mercado en tiempo real',
@@ -251,6 +275,7 @@ const PLANS: {
         cta: { label: 'Contratar Business', href: '/register' },
         features: [
             'Todo lo de Creator Pro',
+            'Las 17 herramientas, con lectura de tu ERP',
             '600 llamadas MCP por minuto',
             '15.000 acciones de IA al mes',
             'Zero-retention: no guardamos tus conversaciones',
