@@ -24,7 +24,7 @@ import {
 export const BEZ_POLYGON_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 export const BEZ_POLYGONSCAN_URL = `https://polygonscan.com/token/${BEZ_POLYGON_ADDRESS}`;
 export const DEFI_TOKENOMICS_URL = import.meta.env.VITE_BEZHAS_DEFI_URL || '/defi';
-const BEZHAS_BASE_URL = 'https://bez.digital';
+const BEZHAS_BASE_URL = 'https://bezhas.com';
 
 const prodUrl = (path: string) => `${BEZHAS_BASE_URL}${path}`;
 

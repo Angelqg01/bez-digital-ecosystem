@@ -13,7 +13,7 @@
  *  • BEZ Token (BNB):     0x8a1e3930fde1f151471c368fdbb39f3f63a65b55
  *  • QualityEscrow:       0x3EfC42095E8503d41Ad8001328FC23388E00e8a3
  *
- * Backend: api.bez.digital / WebSocket: ws.bez.digital:3002
+ * Backend: api.bezhas.com / WebSocket: ws.bezhas.com:3002
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -361,7 +361,7 @@ export default function BezPayModal() {
                   {typeInfo.title}
                 </div>
                 <div style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>
-                  BeZhas Pay v2 · api.bez.digital · {isConnected ? '🟢 Wallet Conectada' : '⚪ Sin wallet'}
+                  BeZhas Pay v2 · api.bezhas.com · {isConnected ? '🟢 Wallet Conectada' : '⚪ Sin wallet'}
                 </div>
               </div>
               <button

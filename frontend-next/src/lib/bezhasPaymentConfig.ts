@@ -10,8 +10,8 @@ export const STRIPE_PAYMENT_LINKS = {
 } as const;
 
 export const BANK_TRANSFER_DETAILS = {
-  beneficiaryAlias: 'bez.digital',
-  accountHolder: 'bez.digital',
+  beneficiaryAlias: 'bezhas.com',
+  accountHolder: 'bezhas.com',
   iban: 'ES77 1465 0100 91 1766376210',
   bic: 'INGDESMMXXX',
   bank: 'ING',

@@ -89,8 +89,8 @@ class WalletService {
         qrcodeModal: WalletConnectModal,
         clientMeta: {
           description: 'BeZhas Web3 Mobile App',
-          url: 'https://bez.digital',
-          icons: ['https://bez.digital/logo.png'],
+          url: 'https://bezhas.com',
+          icons: ['https://bezhas.com/logo.png'],
           name: 'BeZhas Mobile',
         },
       });
@@ -169,7 +169,7 @@ class WalletService {
       const { Linking } = require('react-native');
       
       // Create a connection request URL
-      const dappUrl = encodeURIComponent('https://bez.digital');
+      const dappUrl = encodeURIComponent('https://bezhas.com');
       const deepLinkUrl = wallet.deepLink + dappUrl;
       const universalLinkUrl = wallet.universalLink + dappUrl;
 

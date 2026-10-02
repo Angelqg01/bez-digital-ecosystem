@@ -56,7 +56,7 @@
   Webhook Secret: whsec_3p_9aa8a3c46f480ba3d5df83df4ec3fbf69cc30acc4b8f22e2409620a3018d325b
   Client ID:      bzh_cid_8d2e5bfe9ef4ed4b74e2c0e55c26e6e3
   Base URL:       https://bezhas-backend-<PROJECT_ID>.run.app/api/openclaw
-  AEGIS Endpoint: http://localhost:8000/api/aegis (producción: https://aegis.bez.digital/api/aegis)
+  AEGIS Endpoint: http://localhost:8000/api/aegis (producción: https://aegis.bezhas.com/api/aegis)
 
 ▸ AEGIS Bridge (Puente IA ↔ Plataforma)
   API Key:        bzh_3p_aegis_bridge_c13dac70d2b5017f27ce15261dce4ea664df1d1bf2f80995
@@ -658,8 +658,8 @@ Body:
 //     🔑 Shopify API Key: bzh_cli_shopify_<generated>
 //     🔑 Amazon API Key: bzh_cli_amazon_<generated>
 //     
-//     📖 Documentación: https://docs.bez.digital/bridge
-//     🔗 Dashboard: https://bez.digital/developer-console
+//     📖 Documentación: https://docs.bezhas.com/bridge
+//     🔗 Dashboard: https://bezhas.com/developer-console
 //     
 //     ¿Necesitas ayuda para configurar alguna integración?"
 
@@ -710,7 +710,7 @@ app.listen(4000, () => console.log('Sub-App escuchando webhooks en puerto 4000')
 ═══════════════════════════════════════════════════════════════════════════════════════
 
 Base URL AEGIS: http://localhost:8000/api/aegis (dev)
-                https://aegis.bez.digital/api/aegis (prod)
+                https://aegis.bezhas.com/api/aegis (prod)
 
 Control:
   PUT    /api/aegis/control/set_mode               → autonomous | suggest

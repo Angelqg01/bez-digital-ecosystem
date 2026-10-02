@@ -408,13 +408,13 @@ Este proyecto está bajo licencia MIT. Ver [LICENSE](./LICENSE) para detalles.
 - **Production**: [PRODUCTION_GUIDE.md](./PRODUCTION_GUIDE.md)
 
 ### Contact
-- **Email**: dev@bez.digital
+- **Email**: dev@bezhas.com
 - **Discord**: https://discord.gg/bezhas
 - **Twitter**: https://twitter.com/bezhas_io
 - **GitHub Issues**: https://github.com/bezhas/bezhas-web3/issues
 
 ### Emergency
-- **Security**: security@bez.digital
+- **Security**: security@bezhas.com
 - **On-call**: +1-XXX-XXX-XXXX (24/7)
 
 ---
@@ -469,7 +469,7 @@ Production Ready: ✅ Yes
 
 **Made with ❤️ by BeZhas Team**
 
-[Website](https://bez.digital) • [Discord](https://discord.gg/bezhas) • [Twitter](https://twitter.com/bezhas_io)
+[Website](https://bezhas.com) • [Discord](https://discord.gg/bezhas) • [Twitter](https://twitter.com/bezhas_io)
 
 *Enabling Web3 commerce for everyone* 🌐
 

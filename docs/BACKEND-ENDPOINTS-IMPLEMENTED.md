@@ -275,7 +275,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const sendVerificationEmail = async (email, code) => {
   const msg = {
     to: email,
-    from: 'noreply@bez.digital',
+    from: 'noreply@bezhas.com',
     subject: 'Código de Verificación BeZhas',
     text: `Tu código de verificación es: ${code}`,
     html: `

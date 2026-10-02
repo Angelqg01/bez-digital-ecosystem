@@ -1,7 +1,7 @@
 /**
  * BeZhas-Hub — useTokenomics
  * Hook React unificado para todo el ecosistema tokenómico BEZ.
- * Conecta con: api.bez.digital:3001 (REST) + ws.bez.digital:3002 (WS)
+ * Conecta con: api.bezhas.com:3001 (REST) + ws.bezhas.com:3002 (WS)
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';

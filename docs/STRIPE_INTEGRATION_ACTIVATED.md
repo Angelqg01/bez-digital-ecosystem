@@ -213,7 +213,7 @@ fetch('http://localhost:3001/api/vip/create-subscription-session', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     tier: 'bronze',
-    email: 'test@bez.digital',
+    email: 'test@bezhas.com',
     walletAddress: '0x...'
   })
 })

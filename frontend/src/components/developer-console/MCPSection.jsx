@@ -1168,7 +1168,7 @@ app.post('/hooks/bezhas',
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-500 mt-4">
                     ¿Necesitas un acuerdo a medida, marca blanca o un nodo MCP en tu propia infraestructura? Escríbenos a{' '}
-                    <a href="mailto:dev@bez.digital" className="text-purple-300 hover:text-purple-200">dev@bez.digital</a>.
+                    <a href="mailto:dev@bezhas.com" className="text-purple-300 hover:text-purple-200">dev@bezhas.com</a>.
                 </p>
             </div>
 
@@ -1269,7 +1269,7 @@ app.post('/hooks/bezhas',
                         { icon: WalletIcon, label: 'Token BEZ en Polygonscan', desc: '0xEcBa…11A8', href: 'https://polygonscan.com/token/0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
                         { icon: BoxesIcon, label: `npm · ${MCP_PACKAGE}`, desc: 'Servidor MCP', href: `https://www.npmjs.com/package/${MCP_PACKAGE}` },
                         { icon: BoxesIcon, label: 'npm · @bezhas/sdk', desc: 'SDK base', href: 'https://www.npmjs.com/package/@bezhas/sdk' },
-                        { icon: LifeBuoyIcon, label: 'Soporte para desarrolladores', desc: 'dev@bez.digital', href: 'mailto:dev@bez.digital' },
+                        { icon: LifeBuoyIcon, label: 'Soporte para desarrolladores', desc: 'dev@bezhas.com', href: 'mailto:dev@bezhas.com' },
                     ].map((link) => {
                         const inner = (
                             <>

@@ -37,7 +37,7 @@ import SocialShareSystem from '@/components/social/SocialShareSystem';
 function MyPost() {
   return (
     <SocialShareSystem
-      url="https://bez.digital/post/123"
+      url="https://bezhas.com/post/123"
       title="Título del Post"
       description="Descripción del contenido"
       hashtags={['BeZhas', 'Web3', 'NFT']}
@@ -56,7 +56,7 @@ import { CompactShareButtons } from '@/components/social/SocialShareSystem';
 function QuickShare() {
   return (
     <CompactShareButtons
-      url="https://bez.digital"
+      url="https://bezhas.com"
       title="BeZhas Platform"
       onShare={(data) => console.log(data)}
       showLabel={true}
@@ -126,7 +126,7 @@ Authorization: Bearer {token}
 {
   "postId": "post-123",
   "platform": "twitter",
-  "url": "https://bez.digital/post/123",
+  "url": "https://bezhas.com/post/123",
   "comment": "Check this out!"
 }
 

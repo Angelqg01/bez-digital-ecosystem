@@ -158,7 +158,7 @@ async function executeEmail(params) {
         });
 
         const info = await transporter.sendMail({
-            from: from || process.env.SMTP_USER || 'noreply@bez.digital',
+            from: from || process.env.SMTP_USER || 'noreply@bezhas.com',
             to,
             subject,
             html: body || '',

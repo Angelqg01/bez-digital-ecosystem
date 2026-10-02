@@ -364,7 +364,7 @@ describe('🔗 Full System Integration Tests', () => {
                     .send({
                         amountBez: 1000,
                         userWallet: TEST_WALLET,
-                        userEmail: 'test@bez.digital'
+                        userEmail: 'test@bezhas.com'
                     })
                     .expect(201);
 
@@ -650,7 +650,7 @@ describe('🔗 Full System Integration Tests', () => {
         describe('SDK Configuration', () => {
             const SDKConfig = {
                 apiKey: 'test-api-key',
-                endpoint: 'https://api.bez.digital/v1/bridge',
+                endpoint: 'https://api.bezhas.com/v1/bridge',
                 bezContract: BEZ_CONTRACT
             };
 
@@ -659,7 +659,7 @@ describe('🔗 Full System Integration Tests', () => {
             });
 
             it('should have valid API endpoint', () => {
-                expect(SDKConfig.endpoint).toContain('api.bez.digital');
+                expect(SDKConfig.endpoint).toContain('api.bezhas.com');
             });
         });
 

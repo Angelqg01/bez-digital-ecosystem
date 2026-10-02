@@ -650,7 +650,7 @@ async function auditSmartContractHandler({ contractAddress = BEZ_TOKEN, checks =
  * Obliq SRE Monitor — system health checks
  */
 async function obliqSreHandler({ action = 'health_check', endpoint } = {}) {
-    const targetUrl = endpoint || process.env.VITE_API_URL || 'https://bez.digital';
+    const targetUrl = endpoint || process.env.VITE_API_URL || 'https://bezhas.com';
     const startTime = Date.now();
     try {
         const { status } = await axios.get(`${targetUrl}/health`, { timeout: 5000 });

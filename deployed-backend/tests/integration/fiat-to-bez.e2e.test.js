@@ -124,7 +124,7 @@ jest.mock('../../services/fiat-gateway.service', () => ({
         bankName: 'BeZhas Platform',
         iban: 'ES77 1465 0100 91 1766376210',
         bic: 'INGDESMMXXX',
-        beneficiary: 'bez.digital'
+        beneficiary: 'bezhas.com'
     }),
     dispenseTokens: jest.fn().mockResolvedValue({
         success: true,
@@ -226,7 +226,7 @@ describe('Fiat to BEZ E2E Integration', () => {
             test('should create token purchase session with correct amount', async () => {
                 const userInfo = {
                     userId: TEST_USER_ID,
-                    email: 'e2e@bez.digital',
+                    email: 'e2e@bezhas.com',
                     walletAddress: TEST_WALLET
                 };
 

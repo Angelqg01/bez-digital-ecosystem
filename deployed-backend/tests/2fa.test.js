@@ -35,7 +35,7 @@ const generateTestToken = (userId = 'test_user_123') => {
 describe('TOTP Service', () => {
     describe('generate2FASecret', () => {
         it('should generate a valid TOTP secret with QR code', async () => {
-            const result = await totpService.generate2FASecret('test@bez.digital');
+            const result = await totpService.generate2FASecret('test@bezhas.com');
 
             expect(result).toBeDefined();
             expect(result.secret).toBeDefined();
@@ -54,11 +54,11 @@ describe('TOTP Service', () => {
         });
 
         it('should include the app name in the otpauth URL', async () => {
-            const result = await totpService.generate2FASecret('test@bez.digital');
+            const result = await totpService.generate2FASecret('test@bezhas.com');
 
             expect(result.otpauthUrl).toContain('Bezhas');
             // The email may be URL-encoded (@ becomes %40)
-            expect(result.otpauthUrl.includes('test@bez.digital') || result.otpauthUrl.includes('test%40bez.digital')).toBe(true);
+            expect(result.otpauthUrl.includes('test@bezhas.com') || result.otpauthUrl.includes('test%40bezhas.com')).toBe(true);
         });
     });
 
@@ -66,7 +66,7 @@ describe('TOTP Service', () => {
         let testSecret;
 
         beforeAll(async () => {
-            const result = await totpService.generate2FASecret('verify-test@bez.digital');
+            const result = await totpService.generate2FASecret('verify-test@bezhas.com');
             testSecret = result.secret;
         });
 
@@ -222,7 +222,7 @@ describe('WebAuthn Service', () => {
         it('should generate valid registration options', async () => {
             const mockUser = {
                 _id: 'user123',
-                email: 'test@bez.digital',
+                email: 'test@bezhas.com',
                 firstName: 'Test',
                 lastName: 'User',
             };
@@ -235,7 +235,7 @@ describe('WebAuthn Service', () => {
             expect(options.rp.name).toBe('Bezhas Network');
             expect(options.rp.id).toBe('localhost');
             expect(options.user).toBeDefined();
-            expect(options.user.name).toBe('test@bez.digital');
+            expect(options.user.name).toBe('test@bezhas.com');
             expect(options.pubKeyCredParams).toBeDefined();
             expect(options.pubKeyCredParams.length).toBeGreaterThan(0);
         });
@@ -243,7 +243,7 @@ describe('WebAuthn Service', () => {
         it('should exclude existing credentials', async () => {
             const mockUser = {
                 _id: 'user456',
-                email: 'existing@bez.digital',
+                email: 'existing@bezhas.com',
             };
 
             const existingCredentials = [
@@ -417,7 +417,7 @@ describe('2FA API Routes', () => {
 
             User.findById = jest.fn().mockResolvedValue({
                 _id: testUserId,
-                email: 'test@bez.digital',
+                email: 'test@bezhas.com',
                 twoFactorAuth: {
                     totp: { enabled: false },
                     webauthn: { enabled: false, credentials: [] },
@@ -453,7 +453,7 @@ describe('2FA API Routes', () => {
             const User = require('../models/user.model');
             const mockUser = {
                 _id: testUserId,
-                email: 'totp-test@bez.digital',
+                email: 'totp-test@bezhas.com',
                 twoFactorAuth: null,
                 save: jest.fn().mockResolvedValue(true),
             };
@@ -498,7 +498,7 @@ describe('2FA API Routes', () => {
             const User = require('../models/user.model');
             const mockUser = {
                 _id: testUserId,
-                email: 'webauthn-test@bez.digital',
+                email: 'webauthn-test@bezhas.com',
                 twoFactorAuth: {
                     webauthn: { credentials: [] },
                 },

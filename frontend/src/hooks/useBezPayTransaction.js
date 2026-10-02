@@ -18,7 +18,7 @@
  *   QualityEscrow:   0x3EfC42095E8503d41Ad8001328FC23388E00e8a3
  *   Treasury:        0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4
  *
- * Backend: https://api.bez.digital / wss://ws.bez.digital:3002
+ * Backend: https://api.bezhas.com / wss://ws.bezhas.com:3002
  */
 
 import { useState, useCallback } from 'react';
@@ -284,7 +284,7 @@ export function useBezPayTransaction() {
     setTxState(TX_STATE.NOTIFYING);
     try {
       const token = localStorage.getItem('token');
-      const resp = await fetch('https://api.bez.digital/api/payment/webhook', {
+      const resp = await fetch('https://api.bezhas.com/api/payment/webhook', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -339,7 +339,7 @@ export function useBezPayTransaction() {
     return { txHash: hash, blockNumber: receipt.blockNumber };
   };
 
-  // ── FLUJO HOT WALLET (api.bez.digital/api/payment) ─────────────────────────
+  // ── FLUJO HOT WALLET (api.bezhas.com/api/payment) ─────────────────────────
   // El usuario primero transfiere fondos al treasury, luego el backend dispensa BEZ.
   // Es la forma más segura y más usada para comprar BEZ con cualquier token.
   const sendHotWalletPayment = async ({
@@ -356,7 +356,7 @@ export function useBezPayTransaction() {
     log(`Iniciando Hot Wallet payment: ${amountUSD} USD en ${payToken}...`);
     setTxState(TX_STATE.NOTIFYING);
 
-    const resp = await fetch('https://api.bez.digital/api/payment/create', {
+    const resp = await fetch('https://api.bezhas.com/api/payment/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
