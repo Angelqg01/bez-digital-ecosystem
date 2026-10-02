@@ -82,7 +82,7 @@ const CAPABILITIES: { icon: string; title: string; text: string; tools: string[]
     {
         icon: 'apartment',
         title: 'Tokenización de activos',
-        text: 'Prepara la tokenización en fracciones de un inmueble, vehículo u objeto en Polygon. Tu wallet firma; la IA nunca.',
+        text: 'Prepara la tokenización en fracciones de un inmueble, vehículo u objeto en Polygon, y de plantas o maquinaria con Factory industrial. Tu wallet firma; la IA nunca.',
         tools: ['bezhas_tokenize_prepare'],
         plan: 'Creator Pro',
         prompt: 'Prepara la tokenización del local de la calle Real en 1.000 fracciones de 100 BEZ, con la documentación que subí a IPFS.',

@@ -195,6 +195,29 @@ describe('herramientas operativas del MCP', () => {
             expect(JSON.stringify(d)).not.toMatch(/signature|txHash|nonce/);
         });
 
+        it('con fábrica «industrial» usa el RWAFactory de Factory industrial en las dos transacciones', async () => {
+            const leidas = [];
+            rwa._setLectorComision(async (direccion) => { leidas.push(direccion); return FEE; });
+            const d = datos(await llamar(['contracts'], 'creator_pro', 'bezhas_tokenize_prepare', { ...ARGS, fabrica: 'industrial' }));
+            const INDUSTRIAL = '0x5F999157aF1DEfBf4E7e1b8021850b49e458CCc0';
+            expect(d.fabrica.id).toBe('industrial');
+            expect(d.contrato).toBe(INDUSTRIAL);
+            expect(leidas).toEqual([INDUSTRIAL]); // la comisión se lee de SU contrato
+            const erc20 = new ethers.Interface(['function approve(address,uint256)']);
+            expect(erc20.decodeFunctionData('approve', d.transacciones[0].data)[0]).toBe(INDUSTRIAL);
+            expect(d.transacciones[1].to).toBe(INDUSTRIAL);
+        });
+
+        it('sin fábrica, va a la de activos de la web', async () => {
+            const d = datos(await llamar(['contracts'], 'creator_pro', 'bezhas_tokenize_prepare', ARGS));
+            expect(d.fabrica.id).toBe('activos');
+        });
+
+        it('rechaza una fábrica fuera de la lista', async () => {
+            const r = cuerpo(await llamar(['contracts'], 'creator_pro', 'bezhas_tokenize_prepare', { ...ARGS, fabrica: '0xdeadbeef' }));
+            expect(r?.result?.isError === true || Boolean(r?.error)).toBe(true);
+        });
+
         it('sin CID de documentación válido, explica qué falta', async () => {
             const d = datos(await llamar(['contracts'], 'creator_pro', 'bezhas_tokenize_prepare', { ...ARGS, cid_documentacion: `ipfs://${CID}` }));
             expect(d).toMatchObject({ code: 'INVALID_LEGAL_CID' });

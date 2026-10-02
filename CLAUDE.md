@@ -114,6 +114,8 @@ BeZhas es un ecosistema blockchain empresarial B2B con:
 | Treasury DAO | BSC+Polygon | `0x89c23890c742d710265dD61be789C71dC8999b12` |
 | QualityEscrow/Safe | BSC+Polygon | `0x3EfC42095E8503d41Ad8001328FC23388E00e8a3` |
 | Hot Wallet | BSC+Polygon | `0x52Df82920CBAE522880dD7657e43d1A754eD044E` |
+| RWAFactory · activos | Polygon | `0xa7e6656eFA45EB59ca247aa15F883330692C0d9A` — la que usa la web `/rwa` y el MCP por defecto. Comisión 100 BEZ, owner la Hot Wallet. |
+| RWAFactory · industrial | Polygon | `0x5F999157aF1DEfBf4E7e1b8021850b49e458CCc0` — mismo bytecode, owner y comisión (comprobado el 2026-10-03); la de `deployments/137.json`, para clientes de Factory industrial. |
 
 ### Contratos Solidity registrados
 

@@ -9,9 +9,15 @@
  * nada: las firma la wallet del dueño del activo. Por eso el MCP puede
  * ofrecerla sin aprobación por llamada.
  *
- * El contrato es el que usa hoy la web (0xa7e6…0d9A, confirmado por Yoel el
- * 2026-10-02). `smart-contracts/deployments/137.json` registra otro RWAFactory
- * (0x5F99…CCc0) con el mismo código; no se toca hasta decidir cuál queda.
+ * Hay dos fábricas, con el MISMO bytecode, owner (la Hot Wallet), comisión y
+ * token BEZ (comprobado on-chain el 2026-10-03):
+ *   · activos    0xa7e6…0d9A — la que usa la web de /rwa (confirmada por Yoel
+ *                el 2026-10-02).
+ *   · industrial 0x5F99…CCc0 — la de smart-contracts/deployments/137.json,
+ *                activada por Yoel el 2026-10-03 para los clientes de Factory
+ *                industrial (plantas, maquinaria, lotes de materia prima).
+ * Separarlas no cambia lo que hace el contrato: separa los registros, para que
+ * los activos industriales no se mezclen con los inmobiliarios de la web.
  *
  * La comisión se lee del contrato en cada preparación (con caché corta): si
  * el owner la cambia, la aprobación que se prepara cambia con ella. Mostrar
@@ -22,7 +28,17 @@ const { ethers } = require('ethers');
 const { urlsParaCadena } = require('./rpcQuorum');
 
 const CHAIN_ID = 137;
-const FACTORY = process.env.RWA_FACTORY_ADDRESS || '0xa7e6656eFA45EB59ca247aa15F883330692C0d9A';
+const FABRICAS = Object.freeze({
+    activos: {
+        direccion: process.env.RWA_FACTORY_ADDRESS || '0xa7e6656eFA45EB59ca247aa15F883330692C0d9A',
+        nombre: 'Activos reales (inmuebles, vehículos, objetos)',
+    },
+    industrial: {
+        direccion: process.env.RWA_FACTORY_INDUSTRIAL_ADDRESS || '0x5F999157aF1DEfBf4E7e1b8021850b49e458CCc0',
+        nombre: 'Factory industrial (plantas, maquinaria, materia prima)',
+    },
+});
+const FACTORY = FABRICAS.activos.direccion;
 const BEZ = process.env.BEZCOIN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 
 const FACTORY_ABI = [
@@ -38,7 +54,8 @@ const CATEGORIAS = Object.freeze(['inmueble', 'hotel', 'local', 'ropa', 'coche',
 const CID_RE = /^(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58,100})$/;
 
 const CACHE_MS = 10 * 60_000;
-let cacheComision = null;
+/** Una entrada por fábrica: cada contrato tiene su propia comisión. */
+const cacheComision = new Map();
 
 class TokenizationError extends Error {
     constructor(message, code, status = 400) {
@@ -49,10 +66,10 @@ class TokenizationError extends Error {
     }
 }
 
-async function leerComisionDeCadena() {
+async function leerComisionDeCadena(direccion) {
     const url = urlsParaCadena(CHAIN_ID)[0] || 'https://polygon-rpc.com';
     const provider = new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true });
-    const factory = new ethers.Contract(FACTORY, FACTORY_ABI, provider);
+    const factory = new ethers.Contract(direccion, FACTORY_ABI, provider);
     let t;
     try {
         return await Promise.race([
@@ -67,22 +84,26 @@ async function leerComisionDeCadena() {
 /** Inyectable en las pruebas: no se depende de la red para probar la forma. */
 let lectorComision = leerComisionDeCadena;
 
-async function comision() {
-    if (cacheComision && Date.now() - cacheComision.t < CACHE_MS) return cacheComision.valor;
+async function comision(direccion) {
+    const enCache = cacheComision.get(direccion);
+    if (enCache && Date.now() - enCache.t < CACHE_MS) return enCache.valor;
     let valor;
     try {
-        valor = await lectorComision();
+        valor = await lectorComision(direccion);
     } catch (_) {
         throw new TokenizationError(
             'No se pudo leer la comisión del contrato de tokenización en Polygon. Inténtalo en unos minutos.',
             'FEE_UNAVAILABLE', 503,
         );
     }
-    cacheComision = { valor, t: Date.now() };
+    cacheComision.set(direccion, { valor, t: Date.now() });
     return valor;
 }
 
 function validar(e) {
+    if (!Object.prototype.hasOwnProperty.call(FABRICAS, e.fabrica)) {
+        throw new TokenizationError(`Fábrica no válida. Admitidas: ${Object.keys(FABRICAS).join(', ')}.`, 'INVALID_FACTORY');
+    }
     if (!CATEGORIAS.includes(e.categoria)) {
         throw new TokenizationError(`Categoría no válida. Admitidas: ${CATEGORIAS.join(', ')}.`, 'INVALID_CATEGORY');
     }
@@ -101,9 +122,11 @@ function validar(e) {
  * Prepara la tokenización. Devuelve las transacciones en el orden en que
  * hay que firmarlas.
  */
-async function prepararTokenizacion(e) {
+async function prepararTokenizacion(entrada) {
+    const e = { fabrica: 'activos', ...entrada };
     validar(e);
-    const fee = await comision();
+    const { direccion: contrato, nombre: nombreFabrica } = FABRICAS[e.fabrica];
+    const fee = await comision(contrato);
     const factory = new ethers.Interface(FACTORY_ABI);
     const erc20 = new ethers.Interface(ERC20_ABI);
     const precio = ethers.parseEther(e.precioFraccionBez);
@@ -112,7 +135,8 @@ async function prepararTokenizacion(e) {
 
     return {
         red: { chainId: CHAIN_ID, nombre: 'Polygon' },
-        contrato: FACTORY,
+        fabrica: { id: e.fabrica, nombre: nombreFabrica },
+        contrato,
         comisionBez: ethers.formatEther(fee),
         activo: {
             nombre: e.nombre, categoria: e.categoria, ubicacion: e.ubicacion,
@@ -126,12 +150,12 @@ async function prepararTokenizacion(e) {
                 paso: 1,
                 descripcion: `Autorizar al contrato de tokenización a cobrar la comisión de ${ethers.formatEther(fee)} BEZ.`,
                 to: BEZ, value: '0', chainId: CHAIN_ID,
-                data: erc20.encodeFunctionData('approve', [FACTORY, fee]),
+                data: erc20.encodeFunctionData('approve', [contrato, fee]),
             },
             {
                 paso: 2,
                 descripcion: 'Crear el activo tokenizado (emite el evento AssetTokenized con su assetId).',
-                to: FACTORY, value: '0', chainId: CHAIN_ID,
+                to: contrato, value: '0', chainId: CHAIN_ID,
                 data: factory.encodeFunctionData('tokenizeAsset', [
                     e.nombre, CATEGORIAS.indexOf(e.categoria), e.cidDocumentacion, e.cidImagenes || '',
                     BigInt(e.fracciones), BigInt(e.valoracionUsd), precio, BigInt(rendimientoBps), e.ubicacion,
@@ -145,6 +169,6 @@ async function prepararTokenizacion(e) {
 }
 
 module.exports = {
-    prepararTokenizacion, TokenizationError, CATEGORIAS, FACTORY, CHAIN_ID,
-    _setLectorComision: (fn) => { lectorComision = fn || leerComisionDeCadena; cacheComision = null; },
+    prepararTokenizacion, TokenizationError, CATEGORIAS, FABRICAS, FACTORY, CHAIN_ID,
+    _setLectorComision: (fn) => { lectorComision = fn || leerComisionDeCadena; cacheComision.clear(); },
 };

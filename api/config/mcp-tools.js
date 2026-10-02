@@ -430,10 +430,13 @@ const TOOLS = [
         nivelRiesgo: 0,
         title: 'Preparar la tokenización de un activo',
         description: 'Prepara la tokenización de un activo real (inmueble, hotel, local, vehículo, barco, aeronave, objeto) '
-            + 'en fracciones, con el contrato RWAFactory de BeZhas en Polygon. Lee la comisión vigente del contrato y '
+            + 'en fracciones, con un contrato RWAFactory de BeZhas en Polygon: «activos» para el registro general y '
+            + '«industrial» para clientes de Factory industrial (plantas, maquinaria, lotes). Lee la comisión vigente del contrato y '
             + 'devuelve las dos transacciones sin firmar que el titular firma con su wallet. NO firma ni envía nada. '
             + 'Necesita el CID de IPFS de la documentación legal: si el usuario no lo tiene, que la suba antes en www.bezhas.com/rwa.',
         inputSchema: {
+            fabrica: z.enum(Object.keys(rwaTokenization.FABRICAS)).optional()
+                .describe('activos (por defecto) o industrial (clientes de Factory industrial)'),
             nombre: z.string().min(3).max(120).describe('Nombre del activo'),
             categoria: z.enum(rwaTokenization.CATEGORIAS).describe('inmueble, hotel, local, ropa, coche, barco, helicoptero u objeto'),
             ubicacion: z.string().min(2).max(200).describe('Dirección, puerto base, hangar u origen, según la categoría'),
@@ -445,7 +448,7 @@ const TOOLS = [
             cid_imagenes: z.string().min(46).max(120).optional().describe('CID de IPFS de las imágenes, si las hay'),
         },
         handler: async ({ args }) => rwaTokenization.prepararTokenizacion({
-            nombre: args.nombre, categoria: args.categoria, ubicacion: args.ubicacion,
+            fabrica: args.fabrica || 'activos', nombre: args.nombre, categoria: args.categoria, ubicacion: args.ubicacion,
             fracciones: args.fracciones, valoracionUsd: args.valoracion_usd,
             precioFraccionBez: args.precio_fraccion_bez, rendimientoAnualPct: args.rendimiento_anual_pct,
             cidDocumentacion: args.cid_documentacion, cidImagenes: args.cid_imagenes,

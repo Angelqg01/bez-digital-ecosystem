@@ -173,7 +173,7 @@ Cinco decisiones que se toman **una vez** y ahorran todos los sustos:
 | `bezhas_tx_status` | estado de una operación preparada por tu propia clave | `wallet` |
 | `bezhas_checkout_prepare` | **cobro con BEZ-Pay**: abre una orden (tarjeta, SEPA o BEZ) y devuelve el enlace de pago. No cobra: paga el cliente. Creator Pro+ | `wallet` |
 | `bezhas_checkout_status` | estado de un cobro abierto por tu propia clave | `wallet` |
-| `bezhas_tokenize_prepare` | **tokenización de un activo real** en Polygon: devuelve aprobar + `tokenizeAsset` sin firmar. Lo firma tu wallet. Creator Pro+ | `contracts` |
+| `bezhas_tokenize_prepare` | **tokenización de un activo real** en Polygon: devuelve aprobar + `tokenizeAsset` sin firmar. Lo firma tu wallet. `fabrica`: `activos` (por defecto) o `industrial` (clientes de Factory industrial). Creator Pro+ | `contracts` |
 | `bezhas_erp_connections` · `bezhas_erp_documents` · `bezhas_erp_document` | **lectura de tu ERP** (SAP, Odoo, Dynamics, NetSuite): conexiones, búsqueda y lectura de documentos. Business+ | `contracts` |
 
 **Previstas en v2 (escritura, siempre con aprobación humana):**
