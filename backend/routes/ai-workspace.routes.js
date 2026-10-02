@@ -30,6 +30,8 @@ const limiter = rateLimit({
     message: { error: 'Demasiadas solicitudes, espera un momento.' },
 });
 
+// Todas las rutas llevan `protect` (sesión) y `limiter` (límite por usuario).
+
 if (process.env.KNOWLEDGE_AUTOSEED !== 'false') {
     seedPublicKnowledge(knowledge).catch((e) => console.warn('⚠️ Seed de conocimiento falló:', e.message));
 }
@@ -99,7 +101,7 @@ router.post('/chat', protect, limiter, async (req, res) => {
 });
 
 // GET /api/ai-workspace/conversations/:id
-router.get('/conversations/:id', protect, (req, res) => {
+router.get('/conversations/:id', protect, limiter, (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
     const conv = conversations.get(`${principal.userId}:${req.params.id}`);
@@ -108,12 +110,12 @@ router.get('/conversations/:id', protect, (req, res) => {
 });
 
 // ─── Gestión de conocimiento (tenant propio) ──────────────────────────────────
-router.get('/knowledge', protect, (req, res) => {
+router.get('/knowledge', protect, limiter, (req, res) => {
     const principal = principalOr401(req, res);
     if (principal) res.json({ documents: knowledge.listDocuments(principal) });
 });
 
-router.post('/knowledge', protect, async (req, res) => {
+router.post('/knowledge', protect, limiter, async (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
     try {
@@ -125,7 +127,7 @@ router.post('/knowledge', protect, async (req, res) => {
     }
 });
 
-router.delete('/knowledge/:id', protect, (req, res) => {
+router.delete('/knowledge/:id', protect, limiter, (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
     try {

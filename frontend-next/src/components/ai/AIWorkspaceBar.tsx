@@ -19,7 +19,7 @@ function apiError(e: unknown, fallback: string): string {
 }
 
 export default function AIWorkspaceBar() {
-    const { user, token, setUser, setToken, logout } = useUserStore();
+    const { token, setUser, setToken, logout } = useUserStore();
     const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
     const [messages, setMessages] = useState<Msg[]>([]);
