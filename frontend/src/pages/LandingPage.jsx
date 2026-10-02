@@ -793,7 +793,6 @@ const LandingPage = () => {
                         ✉️ Marketing · marketing@bezhas.com
                     </a>
                 </div>
-                {/* TODO: Telegram por necesidad — pendiente de enlaces de grupos (Ventas / Soporte / Marketing) */}
             </section>
 
             {/* Footer */}
