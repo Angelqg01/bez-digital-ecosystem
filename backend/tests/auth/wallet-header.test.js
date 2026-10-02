@@ -29,13 +29,13 @@ jest.mock('../../bridge', () => ({ bridgeCore: { getAdapter: () => null } }));
 ['rewards.service', 'email.service', 'totp.service', 'key-management.service', 'account-abstraction.service'].forEach((m) =>
     jest.doMock(`../../services/${m}`, () => ({ grantReferralReward: async () => ({}) })));
 
-const workflows = new Map();
+const mockWorkflows = new Map();
 jest.mock('../../models/pg/Workflow', () => {
     const wrap = (w) => w && { ...w, lean: () => w, select() { return this; }, save: async () => {}, runHistory: w.runHistory || [] };
-    function Workflow(d) { Object.assign(this, d); this._id = `wf${workflows.size + 1}`; this.save = async () => { workflows.set(this._id, this); }; }
-    Workflow.findById = (id) => { const w = workflows.get(id); const r = Promise.resolve(w || null); r.lean = () => w || null; r.select = () => r; return r; };
-    Workflow.find = () => ({ select() { return this; }, sort() { return this; }, lean: async () => [...workflows.values()] });
-    Workflow.findByIdAndDelete = async (id) => workflows.delete(id);
+    function Workflow(d) { Object.assign(this, d); this._id = `wf${mockWorkflows.size + 1}`; this.save = async () => { mockWorkflows.set(this._id, this); }; }
+    Workflow.findById = (id) => { const w = mockWorkflows.get(id); const r = Promise.resolve(w || null); r.lean = () => w || null; r.select = () => r; return r; };
+    Workflow.find = () => ({ select() { return this; }, sort() { return this; }, lean: async () => [...mockWorkflows.values()] });
+    Workflow.findByIdAndDelete = async (id) => mockWorkflows.delete(id);
     return Workflow;
 });
 jest.mock('../../services/automationEngine', () => ({ executeWorkflow: async () => ({}), TOOL_ENDPOINTS: {} }));
@@ -50,7 +50,7 @@ const mallory = { _id: 'mallory', id: 'mallory', walletAddress: ATTACKER_WALLET,
 const banned = { _id: 'banned', id: 'banned', walletAddress: '0x' + 'c'.repeat(40), role: 'USER', isBanned: true };
 
 beforeEach(() => {
-    mockUsers.clear(); workflows.clear(); mockCreate.mockReset();
+    mockUsers.clear(); mockWorkflows.clear(); mockCreate.mockReset();
     [admin, mallory, banned].forEach((u) => mockUsers.set(u.id, u));
 });
 
@@ -152,7 +152,7 @@ describe('automation workflows', () => {
         await request(app).post(`/api/automation/workflows/${id}/run`).set(bearer('mallory')).expect(404);
         await request(app).get(`/api/automation/workflows/${id}/logs`).set(bearer('mallory')).expect(404);
         await request(app).delete(`/api/automation/workflows/${id}`).set(bearer('mallory')).set('x-wallet-address', VICTIM).expect(403);
-        expect(workflows.has(id)).toBe(true);
+        expect(mockWorkflows.has(id)).toBe(true);
 
         await request(app).get(`/api/automation/workflows/${id}`).set(bearer('admin1')).expect(200);
         await request(app).delete(`/api/automation/workflows/${id}`).set(bearer('admin1')).expect(200);
