@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+require('../config/jwtSecret').ensureJwtSecret(); // deja el secreto resuelto en process.env.JWT_SECRET
 const User = require('../models/user.model');
 const { UserRole } = require('../models/mockModels');
 const mongoose = require('mongoose');

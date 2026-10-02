@@ -2,9 +2,9 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/jwtSecret');
 const User = require('../models/pg/User');
 const verifyAdminJWT = require('../middleware/verifyAdminJWT');
-const JWT_SECRET = process.env.JWT_SECRET || 'bezhas_super_secret_key';
 
 // Endpoint para login de admin
 // POST /api/admin-register/login
@@ -23,7 +23,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Contraseña incorrecta.' });
         }
         // Generar token JWT
-        const token = jwt.sign({ email: user.email, role: user.role, username: user.username }, JWT_SECRET, { expiresIn: '2h' });
+        const token = jwt.sign({ email: user.email, role: user.role, username: user.username }, getJwtSecret(), { expiresIn: '2h' });
         res.json({ message: 'Login admin exitoso.', token, user: { email: user.email, role: user.role, username: user.username } });
     } catch (err) {
         res.status(500).json({ error: 'Error al autenticar admin.' });

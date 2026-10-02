@@ -10,6 +10,7 @@
 
 // Use preset-default for CommonJS compatibility
 const { authenticator } = require('@otplib/preset-default');
+const { getJwtSecret } = require('../config/jwtSecret');
 const qrcode = require('qrcode');
 const crypto = require('crypto');
 
@@ -132,7 +133,7 @@ const is2FAEnabled = () => {
  */
 const encryptSecret = (secret) => {
     const algorithm = 'aes-256-gcm';
-    const key = crypto.scryptSync(process.env.JWT_SECRET || 'default-key', 'salt', 32);
+    const key = crypto.scryptSync(getJwtSecret(), 'salt', 32);
     const iv = crypto.randomBytes(16);
 
     const cipher = crypto.createCipheriv(algorithm, key, iv);
@@ -154,7 +155,7 @@ const decryptSecret = (encryptedSecret) => {
         const [ivHex, authTagHex, encrypted] = encryptedSecret.split(':');
 
         const algorithm = 'aes-256-gcm';
-        const key = crypto.scryptSync(process.env.JWT_SECRET || 'default-key', 'salt', 32);
+        const key = crypto.scryptSync(getJwtSecret(), 'salt', 32);
         const iv = Buffer.from(ivHex, 'hex');
         const authTag = Buffer.from(authTagHex, 'hex');
 

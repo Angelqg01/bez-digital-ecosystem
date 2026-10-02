@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'bezhas_super_secret_key';
+const { getJwtSecret } = require('../config/jwtSecret');
 const db = require('../database/inMemoryDB');
 
 // Load authorized admin wallets from environment (same source as admin.auth.routes)
@@ -62,7 +62,7 @@ function verifyAdminJWT(req, res, next) {
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, getJwtSecret());
 
         // If the token explicitly carries a role, honor it
         if (decoded.role === 'admin' || decoded.role === 'dev') {

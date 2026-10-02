@@ -6,11 +6,12 @@
  *  - Nonce generado en servidor, ligado a la dirección, de un solo uso y con caducidad.
  *  - Dominio del mensaje firmado en una lista de permitidos (anti-phishing).
  *  - El mensaje debe tener caducidad (expirationTime) acotada.
- *  - Sin JWT_SECRET configurado NO se emite token (nunca se usa un secreto por defecto).
+ *  - Sin JWT_SECRET en producción NO se emite token (ver config/jwtSecret.js; nunca hay secreto por defecto).
  */
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { SiweMessage, generateNonce } = require('siwe');
+const { getJwtSecret } = require('../config/jwtSecret');
 
 const NONCE_TTL_MS = 5 * 60 * 1000;
 const MAX_NONCES = 10_000;
@@ -69,8 +70,9 @@ async function verifySignedMessage({ message, signature }) {
 }
 
 function signToken(userId) {
-    if (!process.env.JWT_SECRET) throw fail(503, 'Autenticación no configurada');
-    return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: JWT_TTL });
+    let secret;
+    try { secret = getJwtSecret(); } catch (_) { throw fail(503, 'Autenticación no configurada'); }
+    return jwt.sign({ id: userId }, secret, { expiresIn: JWT_TTL });
 }
 
 /**

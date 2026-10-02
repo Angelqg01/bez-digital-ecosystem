@@ -10,7 +10,7 @@ const EnvSchema = z.object({
     ADMIN_TOKEN: z.string().optional().default('dev-admin-token-12345-very-secure-token'),
     GEMINI_API_KEY: z.string().optional(),
     LOG_LEVEL: z.string().optional().default('info'),
-    JWT_SECRET: z.string().optional().default('dev-jwt-secret-key-for-bezhas-platform-2024-very-long-and-secure'),
+    JWT_SECRET: z.string().optional(), // sin valor por defecto: ver config/jwtSecret.js
     CONTACT_ENCRYPTION_KEY: z.string().optional().default('dev-contact-encryption-key-32-characters-long-string'),
     AUTH_BYPASS_ENABLED: z.string().optional().default('true'),
     FRONTEND_URL: z.string().optional().default('http://localhost:5173'),
@@ -45,7 +45,6 @@ if (!parsed.success) {
         ALLOWED_ORIGINS: 'http://localhost:5173,http://127.0.0.1:5173',
         ADMIN_TOKEN: 'dev-admin-token-12345-very-secure-token',
         LOG_LEVEL: 'info',
-        JWT_SECRET: 'dev-jwt-secret-key-for-bezhas-platform-2024-very-long-and-secure',
         CONTACT_ENCRYPTION_KEY: 'dev-contact-encryption-key-32-characters-long-string',
         AUTH_BYPASS_ENABLED: 'true',
         FRONTEND_URL: 'http://localhost:5173',

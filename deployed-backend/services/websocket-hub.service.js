@@ -7,6 +7,7 @@
  */
 
 const WebSocket = require('ws');
+const { getJwtSecret } = require('../config/jwtSecret');
 const jwt = require('jsonwebtoken');
 const { ethers } = require('ethers');
 const pino = require('pino');
@@ -264,7 +265,7 @@ class WebSocketHub {
         const { token } = payload;
 
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const decoded = jwt.verify(token, getJwtSecret());
 
             ws.userId = decoded.userId || decoded.id;
             ws.userRole = decoded.role;

@@ -610,44 +610,6 @@ app.use('/health', healthRoutes);
 // SECURITY IMPLEMENTATION (Nonce & JWT)
 // ============================================================================
 
-// In-memory storage for nonces (simulated DB)
-const usersDB = {};
-
-// Middleware to verify wallet signature using Nonce
-const verifyWalletSignature = async (req, res, next) => {
-    const { walletAddress, signature } = req.body;
-
-    if (!walletAddress || !signature) {
-        return res.status(400).json({ error: 'Wallet address and signature required' });
-    }
-
-    try {
-        // Retrieve the nonce associated with the address
-        const nonce = usersDB[walletAddress.toLowerCase()];
-
-        if (!nonce) {
-            return res.status(401).json({ error: 'Nonce not found. Please request a new nonce.' });
-        }
-
-        // Verify the signature
-        // The message signed by the user must be the nonce
-        const message = `Sign this message to verify your identity: ${nonce}`;
-        const recoveredAddress = ethers.verifyMessage(message, signature);
-
-        if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-            return res.status(401).json({ error: 'Invalid signature' });
-        }
-
-        // Remove the nonce to prevent replay attacks
-        delete usersDB[walletAddress.toLowerCase()];
-
-        next();
-    } catch (error) {
-        console.error('Signature verification error:', error);
-        res.status(500).json({ error: 'Verification failed' });
-    }
-};
-
 // Middleware to authenticate JWT token
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -655,12 +617,14 @@ const authenticateToken = (req, res, next) => {
 
     if (!token) return res.sendStatus(401);
 
-    if (!process.env.JWT_SECRET) {
+    let jwtSecret;
+    try { jwtSecret = require('./config/jwtSecret').getJwtSecret(); } catch (_) { jwtSecret = null; }
+    if (!jwtSecret) {
         console.error('FATAL: JWT_SECRET is not defined');
         return res.sendStatus(500);
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    jwt.verify(token, jwtSecret, (err, user) => {
         if (err) return res.sendStatus(403);
         req.user = user;
         next();
@@ -741,47 +705,7 @@ app.get('/api/token/price', async (req, res) => {
     }
 });
 
-// Endpoint to get a nonce for a wallet address
-app.get('/api/auth/nonce/:address', (req, res) => {
-    const { address } = req.params;
-    const nonce = Math.floor(Math.random() * 1000000).toString();
-    usersDB[address.toLowerCase()] = nonce;
-    res.json({ nonce });
-});
-
-// Secure Login Endpoint (Overrides authRoutes if placed before)
-app.post('/api/auth/login-wallet', verifyWalletSignature, async (req, res) => {
-    // If we reach here, the signature is valid
-    const { walletAddress } = req.body;
-
-    try {
-        // Find user by wallet address
-        let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
-
-        if (!user) {
-            return res.status(404).json({ error: 'User not found. Please register first.' });
-        }
-
-        // Generate JWT
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'default_secret', { expiresIn: '30d' });
-
-        res.json({
-            message: 'Login successful',
-            user: {
-                id: user._id,
-                username: user.username || `User_${walletAddress.slice(0, 6)}`,
-                email: user.email,
-                walletAddress: user.walletAddress,
-                roles: user.roles,
-                referralCode: user.affiliate?.referralCode
-            },
-            token
-        });
-    } catch (error) {
-        console.error('Error in secure login-wallet:', error);
-        res.status(500).json({ error: 'Server error during wallet login' });
-    }
-});
+// Login/registro con wallet: deshabilitado en esta copia (ver routes/auth.routes.js); usar /backend (SIWE).
 
 // Secure Email Endpoint
 app.post('/api/email/send', authenticateToken, (req, res) => {

@@ -735,12 +735,14 @@ const authenticateToken = (req, res, next) => {
 
     if (!token) return res.sendStatus(401);
 
-    if (!process.env.JWT_SECRET) {
+    let jwtSecret;
+    try { jwtSecret = require('./config/jwtSecret').getJwtSecret(); } catch (_) { jwtSecret = null; }
+    if (!jwtSecret) {
         console.error('FATAL: JWT_SECRET is not defined');
         return res.sendStatus(500);
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    jwt.verify(token, jwtSecret, (err, user) => {
         if (err) return res.sendStatus(403);
         req.user = user;
         next();

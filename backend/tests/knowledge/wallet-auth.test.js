@@ -89,12 +89,13 @@ describe('walletAuth (SIWE → JWT)', () => {
         }
     });
 
-    test('sin JWT_SECRET no se emite token', async () => {
-        const saved = process.env.JWT_SECRET; delete process.env.JWT_SECRET;
+    test('sin JWT_SECRET en producción no se emite token', async () => {
+        const saved = process.env.JWT_SECRET; const env = process.env.NODE_ENV;
+        delete process.env.JWT_SECRET; process.env.NODE_ENV = 'production';
         try {
             const { nonce } = svc.issueNonce(wallet.address);
             await expect(svc.loginOrRegisterWithWallet(await signedMessage(wallet, nonce), deps())).rejects.toMatchObject({ status: 503 });
-        } finally { process.env.JWT_SECRET = saved; }
+        } finally { process.env.JWT_SECRET = saved; process.env.NODE_ENV = env; }
     });
 
     test('entradas inválidas: dirección y mensaje basura', async () => {

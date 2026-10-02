@@ -1,4 +1,5 @@
 const express = require('express');
+const { getJwtSecret } = require('../config/jwtSecret');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
@@ -16,9 +17,16 @@ const verificationCodes = new Map();
 // In-memory storage for nonces (en producción usa Redis con TTL)
 const nonces = new Map();
 
+// SEGURIDAD: estos endpoints emitían JWT sin firma verificable (login-or-register) o aceptaban
+// cualquier mensaje firmado sin nonce (login-wallet, register-wallet) y usaban un nonce débil.
+// Esta copia no incluye la verificación SIWE de /backend, así que se deshabilitan (fail closed).
+router.all(['/login-or-register', '/login-wallet', '/register-wallet', '/nonce'], (_req, res) => {
+  res.status(410).json({ error: 'Autenticación con wallet deshabilitada en esta versión. Usa el backend actualizado (SIWE).' });
+});
+
 // Helper to generate JWT
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'default-secret-key', {
+  return jwt.sign({ id }, getJwtSecret(), {
     expiresIn: '30d', // Token expires in 30 days
   });
 };
