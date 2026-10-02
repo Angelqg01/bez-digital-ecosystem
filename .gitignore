@@ -107,3 +107,6 @@ eslint-security.json
 
 # Copias de la zona DNS (04-hostinger-dns.sh): contienen la configuración real del dominio
 deploy/gcp/dns-backups/
+
+# Knowledge Plane local store
+backend/data/knowledge-store.json*

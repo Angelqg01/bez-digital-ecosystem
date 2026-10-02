@@ -1002,6 +1002,7 @@ function optionalRuntimeRoutes(modulePath, label) {
 const webhookRoutes = optionalRuntimeRoutes('./routes/webhook.routes', 'webhook routes');
 const automationRoutes = optionalRuntimeRoutes('./routes/automation.routes', 'automation routes');
 const aiChatRoutes = optionalRuntimeRoutes('./routes/ai-chat.routes', 'ai chat routes');
+const aiWorkspaceRoutes = optionalRuntimeRoutes('./routes/ai-workspace.routes', 'ai workspace routes');
 
 // Initialize rate limiters for admin routes
 initializeRateLimiters(advancedRateLimiter, messageRateLimiter);
@@ -1032,6 +1033,7 @@ app.use('/api/logistics', deprecatedSubappRoute('logistics_operations', SUBAPP_U
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/automation', automationRoutes);
 app.use('/api/ai', aiChatRoutes);
+app.use('/api/ai-workspace', aiWorkspaceRoutes); // chat RAG seguro (requiere login)
 app.use('/api/admin/sdk', require('./routes/sdkAdmin.routes')); // SDK & AI Admin Management
 // app.use('/api/plugins', require('./routes/pluginRoutes')); // Removed due to Prisma dependency missing in Prod
 app.use('/api/mcp', require('./routes/mcp.routes')); // MCP Tools Integration
