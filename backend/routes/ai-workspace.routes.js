@@ -30,7 +30,9 @@ const limiter = rateLimit({
     message: { error: 'Demasiadas solicitudes, espera un momento.' },
 });
 
-// Todas las rutas llevan `protect` (sesión) y `limiter` (límite por usuario).
+// Todas las rutas: sesión obligatoria y, después, límite de peticiones por usuario.
+router.use(protect);
+router.use(limiter);
 
 if (process.env.KNOWLEDGE_AUTOSEED !== 'false') {
     seedPublicKnowledge(knowledge).catch((e) => console.warn('⚠️ Seed de conocimiento falló:', e.message));
@@ -57,7 +59,7 @@ const principalOr401 = (req, res) => {
 };
 
 // POST /api/ai-workspace/chat
-router.post('/chat', protect, limiter, async (req, res) => {
+router.post('/chat', async (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
 
@@ -101,7 +103,7 @@ router.post('/chat', protect, limiter, async (req, res) => {
 });
 
 // GET /api/ai-workspace/conversations/:id
-router.get('/conversations/:id', protect, limiter, (req, res) => {
+router.get('/conversations/:id', (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
     const conv = conversations.get(`${principal.userId}:${req.params.id}`);
@@ -110,12 +112,12 @@ router.get('/conversations/:id', protect, limiter, (req, res) => {
 });
 
 // ─── Gestión de conocimiento (tenant propio) ──────────────────────────────────
-router.get('/knowledge', protect, limiter, (req, res) => {
+router.get('/knowledge', (req, res) => {
     const principal = principalOr401(req, res);
     if (principal) res.json({ documents: knowledge.listDocuments(principal) });
 });
 
-router.post('/knowledge', protect, limiter, async (req, res) => {
+router.post('/knowledge', async (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
     try {
@@ -127,7 +129,7 @@ router.post('/knowledge', protect, limiter, async (req, res) => {
     }
 });
 
-router.delete('/knowledge/:id', protect, limiter, (req, res) => {
+router.delete('/knowledge/:id', (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
     try {
