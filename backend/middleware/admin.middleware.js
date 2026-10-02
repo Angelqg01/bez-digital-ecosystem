@@ -1,5 +1,4 @@
 const pino = require('pino');
-const { getJwtSecret } = require('../config/jwtSecret');
 const jwt = require('jsonwebtoken');
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
@@ -18,16 +17,13 @@ const verifyAdminToken = (req, res, next) => {
         return next();
     }
 
-    let jwtSecret;
-    try {
-        jwtSecret = getJwtSecret();
-    } catch (e) {
+    if (!process.env.JWT_SECRET) {
         logger.error('CRITICAL: JWT_SECRET is not set for admin JWT verification.');
         return res.status(500).json({ error: 'Server configuration error: JWT secret not set.' });
     }
 
     try {
-        const decoded = jwt.verify(providedToken, jwtSecret);
+        const decoded = jwt.verify(providedToken, process.env.JWT_SECRET);
         const role = String(decoded.role || '').toUpperCase();
         const roles = Array.isArray(decoded.roles) ? decoded.roles.map((item) => String(item).toUpperCase()) : [];
         const isAdmin = ADMIN_ROLES.has(role) || roles.some((item) => ADMIN_ROLES.has(item));
