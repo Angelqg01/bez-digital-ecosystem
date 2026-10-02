@@ -202,7 +202,7 @@ function AuthCard({ onAuthed }: { onAuthed: (user: unknown, token: string) => vo
             const siwe = new SiweMessage({
                 domain: window.location.host,
                 address,
-                statement: "Iniciar sesión en BeZhas AI. Esta firma no mueve fondos ni cuesta gas.",
+                statement: "Iniciar sesion en BeZhas AI. Esta firma no mueve fondos ni cuesta gas.",
                 uri: window.location.origin,
                 version: "1",
                 chainId: chainId || 137,
