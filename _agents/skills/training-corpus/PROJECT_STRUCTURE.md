@@ -177,10 +177,10 @@ BeZhas-Hub/
 
 | Servicio | Desarrollo | Producción |
 |---|---|---|
-| Backend API | `localhost:3001` | `api.bez.digital` |
-| Frontend | `localhost:5173` | `bez.digital` |
-| WebSocket | `localhost:3002` | `ws.bez.digital:3002` |
-| AEGIS | `localhost:8000` | `aegis.bez.digital` |
+| Backend API | `localhost:3001` | `api.bezhas.com` |
+| Frontend | `localhost:5173` | `bezhas.com` |
+| WebSocket | `localhost:3002` | `ws.bezhas.com:3002` |
+| AEGIS | `localhost:8000` | `aegis.bezhas.com` |
 
 ## 📊 Métricas del Proyecto
 

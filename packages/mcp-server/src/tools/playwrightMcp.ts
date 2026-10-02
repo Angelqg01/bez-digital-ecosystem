@@ -2,7 +2,7 @@
  * SKILL: playwright_automation
  * 
  * Browser automation and UI testing for BeZhas platform:
- * - Automated UI testing of bez.digital flows
+ * - Automated UI testing of bezhas.com flows
  * - Screenshot capture for QA verification
  * - Form submission testing (login, wallet connect, etc.)
  * - Performance and accessibility audits
@@ -12,6 +12,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { config } from '../config.js';
+import { urlAuditable } from '../security/targetUrl.js';
 
 export interface PlaywrightResult {
     action: string;
@@ -34,7 +35,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
                 'audit_accessibility',
                 'test_api_endpoints',
             ]),
-            targetUrl: z.string().url().default('https://bez.digital'),
+            targetUrl: z.string().url().default('https://bezhas.com'),
             viewport: z.object({
                 width: z.number().optional().default(1920),
                 height: z.number().optional().default(1080),
@@ -44,11 +45,13 @@ export function registerPlaywrightMcp(server: McpServer): void {
         async ({ action, targetUrl, viewport, waitTimeout }) => {
             try {
                 let result: PlaywrightResult;
+                // El host sale de la lista de BeZhas, no de la entrada (SSRF).
+                const destino = urlAuditable(targetUrl);
 
                 switch (action) {
                     case 'test_page_load': {
                         const startTime = Date.now();
-                        const res = await fetch(targetUrl, {
+                        const res = await fetch(destino, {
                             headers: { 'User-Agent': 'BeZhas-MCP-Playwright/1.0' },
                             signal: AbortSignal.timeout(waitTimeout || 10000),
                         });
@@ -84,7 +87,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
 
                     case 'test_wallet_flow': {
                         // Simulated wallet flow test — in production uses Playwright browser
-                        const res = await fetch(targetUrl, {
+                        const res = await fetch(destino, {
                             signal: AbortSignal.timeout(waitTimeout || 10000),
                         });
                         const html = await res.text();
@@ -124,7 +127,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
                                 viewport: viewport || { width: 1920, height: 1080 },
                                 screenshotPath: `/tmp/bezhas-screenshot-${Date.now()}.png`,
                                 note: 'Screenshot capture requires Playwright browser instance. Use Playwright service for full capture.',
-                                alternativeEndpoint: `${targetUrl}?screenshot=true`,
+                                alternativeEndpoint: `${destino}?screenshot=true`,
                             },
                             reasoning: 'Screenshot request registered. Requires Playwright browser service for execution.',
                         };
@@ -133,7 +136,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
 
                     case 'audit_performance': {
                         const startTime = Date.now();
-                        const res = await fetch(targetUrl, {
+                        const res = await fetch(destino, {
                             signal: AbortSignal.timeout(waitTimeout || 10000),
                         });
                         const loadTime = Date.now() - startTime;
@@ -177,7 +180,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
                     }
 
                     case 'audit_accessibility': {
-                        const res = await fetch(targetUrl, {
+                        const res = await fetch(destino, {
                             signal: AbortSignal.timeout(waitTimeout || 10000),
                         });
                         const html = await res.text();
@@ -221,7 +224,7 @@ export function registerPlaywrightMcp(server: McpServer): void {
 
                     case 'test_api_endpoints': {
                         const apiBase = config.network.mode === 'mainnet'
-                            ? 'https://api.bez.digital'
+                            ? 'https://api.bezhas.com'
                             : 'http://localhost:3001';
 
                         const endpoints = [

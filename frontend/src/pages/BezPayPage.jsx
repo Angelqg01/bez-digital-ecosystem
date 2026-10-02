@@ -283,7 +283,7 @@ export default function BezPayPage() {
       {/* Footer */}
       <div style={{ borderTop:`1px solid ${C.border}`, padding:'10px 28px', display:'flex', justifyContent:'space-between',
         color:C.muted, fontSize:9, fontFamily:C.mono, background:C.surf, flexWrap:'wrap', gap:6 }}>
-        <span>bez.digital · BEZ Payment System v2.0 · Polygon Amoy → Mainnet · BNB Chain</span>
+        <span>bezhas.com · BEZ Payment System v2.0 · Polygon Amoy → Mainnet · BNB Chain</span>
         <span>LiquidityFarming.sol · QualityEscrow.sol · Node.js+Express+MongoDB+WebSocket</span>
       </div>
     </div>
@@ -809,7 +809,7 @@ function AnalyticsTab({ M, C }) {
         <Activity size={20} style={{ color:C.primary, marginBottom:8, display:'block', margin:'0 auto 8px' }} />
         <div style={{ color:C.text, fontWeight:700, fontSize:13, marginBottom:4 }}>Analytics en tiempo real</div>
         <div style={{ color:C.muted, fontSize:10 }}>
-          Conecta a ws.bez.digital:3002 para recibir eventos de pago en tiempo real via WebSocket.
+          Conecta a ws.bezhas.com:3002 para recibir eventos de pago en tiempo real via WebSocket.
           <br/>Disponible en el SDK: <code style={{color:C.primary}}>bezPay.onEvent((event) {'=> '}...)</code>
         </div>
       </div>

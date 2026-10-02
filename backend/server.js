@@ -297,8 +297,8 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s
 
 // Always allow production and standard dev origins
 const ORIGENES_PRODUCCION = [
-    'https://bez.digital',
-    'https://www.bez.digital',
+    'https://bezhas.com',
+    'https://www.bezhas.com',
     'https://bezhas.com',
     'https://www.bezhas.com',
 ];
@@ -329,7 +329,7 @@ const corsOptions = {
         const isAllowed = allowedOrigins.some(ao =>
             normalizedOrigin === ao ||
             (ao.includes('*') && normalizedOrigin.endsWith(ao.replace('*', '')))
-        ) || normalizedOrigin === 'https://bez.digital' || normalizedOrigin === 'https://www.bez.digital';
+        ) || normalizedOrigin === 'https://bezhas.com' || normalizedOrigin === 'https://www.bezhas.com';
 
         if (isAllowed) {
             callback(null, true);

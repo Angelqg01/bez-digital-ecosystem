@@ -9,7 +9,7 @@ description: Configuration and management of the AEGIS AI monitoring system and 
 
 ### AEGIS (Monitoring + Validation)
 - **Ubicación**: `aegis/` (Python/FastAPI)
-- **Puerto**: 8000 (dev), aegis.bez.digital (prod)
+- **Puerto**: 8000 (dev), aegis.bezhas.com (prod)
 - **Función**: Monitoreo de anomalías, validación de transacciones, ML re-training
 
 ### OpenCLaw Agent (Customer-Facing)

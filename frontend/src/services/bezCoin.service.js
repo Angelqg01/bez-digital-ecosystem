@@ -371,7 +371,7 @@ export const addBEZToWallet = async () => {
                     address: BEZ_COIN_ADDRESS,
                     symbol: 'BEZ',
                     decimals: 18,
-                    image: 'https://bez.digital/logo-bez.png', // Cambia por tu logo
+                    image: 'https://bezhas.com/logo-bez.png', // Cambia por tu logo
                 },
             },
         });

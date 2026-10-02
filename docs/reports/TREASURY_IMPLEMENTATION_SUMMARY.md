@@ -661,7 +661,7 @@ https://etherscan.io/tx/{txHash}
 - [Guía Rápida](./docs/TREASURY_QUICK_START.md)
 
 **Contacto:**
-- Email: treasury@bez.digital
+- Email: treasury@bezhas.com
 - Discord: BeZhas Dev Server
 - GitHub: bezhas/bezhas-web3
 

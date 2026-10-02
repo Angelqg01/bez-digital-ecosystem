@@ -18,7 +18,7 @@ vi.mock('wagmi', () => ({
 }));
 
 vi.mock('../context/AuthContext', () => ({
-    useAuth: () => ({ user: { _id: '123', email: 'test@bez.digital', roles: ['ADMIN'], vipTier: 'platinum' }, token: 'fake-token' })
+    useAuth: () => ({ user: { _id: '123', email: 'test@bezhas.com', roles: ['ADMIN'], vipTier: 'platinum' }, token: 'fake-token' })
 }));
 
 vi.mock('../context/ThemeContext', () => ({

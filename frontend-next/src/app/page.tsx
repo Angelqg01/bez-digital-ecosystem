@@ -359,10 +359,10 @@ export default function HomePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                        { title: 'BEZ Wallet', desc: 'Gestión on-chain de activos, NFTs y staking.', href: 'https://bez.digital/dashboard/wallet', color: '#00C896', icon: <Wallet size={24} /> },
-                        { title: 'Gas Tank', desc: 'Recarga de gas con Stripe y predicción Aegis.', href: 'https://bez.digital/dashboard/gas', color: '#FFB800', icon: <Zap size={24} /> },
-                        { title: 'Edge Nodes', desc: 'Gestión de nodos DePIN y recompensas.', href: 'https://bez.digital/dashboard/validators', color: '#06B6D4', icon: <Cpu size={24} /> },
-                        { title: 'Vision Scan', desc: 'Verificación mediante AI Vision + Blockchain.', href: 'https://bez.digital/dashboard/qr', color: '#F97316', icon: <ShieldCheck size={24} /> },
+                        { title: 'BEZ Wallet', desc: 'Gestión on-chain de activos, NFTs y staking.', href: 'https://bezhas.com/dashboard/wallet', color: '#00C896', icon: <Wallet size={24} /> },
+                        { title: 'Gas Tank', desc: 'Recarga de gas con Stripe y predicción Aegis.', href: 'https://bezhas.com/dashboard/gas', color: '#FFB800', icon: <Zap size={24} /> },
+                        { title: 'Edge Nodes', desc: 'Gestión de nodos DePIN y recompensas.', href: 'https://bezhas.com/dashboard/validators', color: '#06B6D4', icon: <Cpu size={24} /> },
+                        { title: 'Vision Scan', desc: 'Verificación mediante AI Vision + Blockchain.', href: 'https://bezhas.com/dashboard/qr', color: '#F97316', icon: <ShieldCheck size={24} /> },
                     ].map((app) => (
                         <a
                             key={app.title}
@@ -429,28 +429,28 @@ export default function HomePage() {
                         { 
                             title: 'Bezhas-Hub', 
                             desc: 'Consola central de mando. Supervisa la red L2, gestiona la gobernanza DAO y visualiza métricas globales en tiempo real.', 
-                            href: 'https://bez.digital/dashboard', 
+                            href: 'https://bezhas.com/dashboard', 
                             color: '#00C896', 
                             icon: <Globe size={24} /> 
                         },
                         { 
                             title: 'BZ CargoLink', 
                             desc: 'Logística inteligente. Conecta la cadena de suministro física con blockchain para rastreo inmutable y liquidación automática.', 
-                            href: 'https://bez.digital/dashboard/sectors', 
+                            href: 'https://bezhas.com/dashboard/sectors', 
                             color: '#FFB800', 
                             icon: <TrendingUp size={24} /> 
                         },
                         { 
                             title: 'BZ Prestige', 
                             desc: 'Mercado de lujo y RWA. Verificación de autenticidad para activos de alto valor mediante certificados NFT de propiedad.', 
-                            href: 'https://bez.digital/dashboard/nfts', 
+                            href: 'https://bezhas.com/dashboard/nfts', 
                             color: '#7C3AED', 
                             icon: <ShoppingBag size={24} /> 
                         },
                         { 
                             title: 'BZ Sphere', 
                             desc: 'Nexo social y comunidad. Espacio descentralizado para colaboración entre nodos, votaciones e intercambio de conocimientos.', 
-                            href: 'https://bez.digital/solutions', 
+                            href: 'https://bezhas.com/solutions', 
                             color: '#06B6D4', 
                             icon: <Cpu size={24} /> 
                         },
@@ -504,7 +504,7 @@ export default function HomePage() {
             <footer style={{ background: '#03060E', borderTop: '1px solid #0D2040', padding: '24px 28px' }}>
                 <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
                     <span style={{ color: '#3D5E80', fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                        bez.digital Â· Next.js v3 Migration Â· Polygon Core Â· BEZ Token: 0xEcBa87â€¦
+                        bezhas.com Â· Next.js v3 Migration Â· Polygon Core Â· BEZ Token: 0xEcBa87â€¦
                     </span>
                     <div className="flex gap-6">
                         {['/auth', '/wallet', '/bezpay', '/rwa', '/marketplace', '/developer-console'].map((href) => (

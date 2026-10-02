@@ -351,7 +351,7 @@ jobs:
         working-directory: ./frontend-next
         run: pnpm run build
         env:
-          VITE_API_URL: https://api.bez.digital
+          VITE_API_URL: https://api.bezhas.com
           VITE_CHAIN_ID: "137"
           VITE_NETWORK: polygon
 

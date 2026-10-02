@@ -83,7 +83,7 @@ services:
       - RPC_URL=${RPC_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
-      - FRONTEND_URL=${FRONTEND_URL:-https://bez.digital}
+      - FRONTEND_URL=${FRONTEND_URL:-https://bezhas.com}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
       mongo:
@@ -120,8 +120,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.optimized
       args:
-        - VITE_API_URL=${VITE_API_URL:-https://api.bez.digital}
-        - VITE_WS_URL=${VITE_WS_URL:-wss://api.bez.digital}
+        - VITE_API_URL=${VITE_API_URL:-https://api.bezhas.com}
+        - VITE_WS_URL=${VITE_WS_URL:-wss://api.bezhas.com}
         - VITE_CHAIN_ID=${VITE_CHAIN_ID:-137}
         - VITE_NETWORK=${VITE_NETWORK:-polygon}
     restart: always

@@ -35,7 +35,7 @@ router.get('/register', (req, res) => {
     res.json({
         message: 'BeZhas Developer Portal - API Key Registration',
         steps: [
-            '1. Crea una cuenta en https://bez.digital',
+            '1. Crea una cuenta en https://bezhas.com',
             '2. Ve a Settings > Developer',
             '3. Genera tu API Key',
             '4. Lee la documentación en /api-docs',
@@ -63,7 +63,7 @@ router.get('/register', (req, res) => {
             }
         },
         documentation: 'http://localhost:3000/api-docs',
-        support: 'dev@bez.digital'
+        support: 'dev@bezhas.com'
     });
 });
 
@@ -211,7 +211,7 @@ router.get('/playground', (req, res) => {
         ],
         tools: [
             'Swagger UI: http://localhost:3000/api-docs',
-            'Postman Collection: https://bez.digital/postman',
+            'Postman Collection: https://bezhas.com/postman',
             'SDK JavaScript: npm install @bezhas/sdk'
         ]
     });

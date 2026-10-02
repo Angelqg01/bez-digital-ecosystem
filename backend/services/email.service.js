@@ -2,7 +2,7 @@
  * Email Service
  * 
  * Handles transactional emails via SMTP (SendGrid, Mailgun, AWS SES, or custom SMTP).
- * Required for production deployment on GCP (bez.digital).
+ * Required for production deployment on GCP (bezhas.com).
  */
 
 const nodemailer = require('nodemailer');
@@ -19,7 +19,7 @@ class EmailService {
             }
         });
 
-        this.senderEmail = process.env.EMAIL_FROM || 'info.bezcoin@bez.digital';
+        this.senderEmail = process.env.EMAIL_FROM || 'info.bezcoin@bezhas.com';
     }
 
     /**

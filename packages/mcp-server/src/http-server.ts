@@ -40,6 +40,7 @@ import {
     watchdogLimiter,
 } from './security/index.js';
 import { config } from './config.js';
+import { urlAuditable, UrlNoPermitida } from './security/targetUrl.js';
 import { getUsdPerUnit, unidadesPorUsdVivo, getRates } from './rates.js';
 
 const app: ReturnType<typeof express> = express();
@@ -317,7 +318,7 @@ app.get('/api/mcp/tools', (_req, res) => {
                 category: 'testing',
                 params: {
                     action: 'test_page_load | test_wallet_flow | capture_screenshot | audit_performance | audit_accessibility | test_api_endpoints',
-                    targetUrl: 'string (URL, default: https://bez.digital)',
+                    targetUrl: 'string (URL, default: https://bezhas.com)',
                 },
             },
             {
@@ -672,13 +673,23 @@ app.post('/api/mcp/firecrawl', async (req, res) => {
 // POST /api/mcp/playwright
 app.post('/api/mcp/playwright', async (req, res) => {
     try {
-        const { action, targetUrl = 'https://bez.digital' } = req.body;
+        const { action, targetUrl = 'https://bezhas.com' } = req.body;
         if (!action) {
             return res.status(400).json({ error: 'Missing required field: action' });
         }
 
+        // El host sale de la lista de BeZhas, no del cuerpo: si no, esta ruta
+        // hace peticiones por cuenta de quien la llame (SSRF).
+        let destino: string;
+        try {
+            destino = urlAuditable(targetUrl);
+        } catch (err) {
+            if (err instanceof UrlNoPermitida) return res.status(400).json({ error: err.message, status: 'FAILED' });
+            throw err;
+        }
+
         const startTime = Date.now();
-        const pageRes = await fetch(targetUrl, { signal: AbortSignal.timeout(10000) });
+        const pageRes = await fetch(destino, { signal: AbortSignal.timeout(10000) });
         const loadTime = Date.now() - startTime;
         const html = await pageRes.text();
 
@@ -773,7 +784,7 @@ app.post('/api/mcp/obliq-sre', async (req, res) => {
 
         if (action === 'health_check') {
             const checks = await Promise.all(
-                ['https://bez.digital', 'https://api.bez.digital/api/health'].map(async (url) => {
+                ['https://bezhas.com', 'https://api.bezhas.com/api/health'].map(async (url) => {
                     try {
                         const start = Date.now();
                         const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
