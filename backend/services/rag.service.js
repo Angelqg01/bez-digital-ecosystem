@@ -19,7 +19,6 @@
  */
 
 const { ChromaClient } = require('chromadb');
-const crypto = require('crypto');
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const CHROMA_URL = process.env.CHROMA_URL || 'http://localhost:8000';
@@ -80,22 +79,6 @@ class RAGService {
 
     // ─── EMBEDDING GENERATION ──────────────────────────────────────────────────
     /**
-     * Generate a lightweight embedding vector using a simple hash-based approach.
-     * In production with Gemini/OpenAI, replace with proper embedding API calls.
-     * For ChromaDB default embedding function, we can also pass raw documents.
-     */
-    _generateSimpleEmbedding(text) {
-        // Deterministic pseudo-embedding based on text hash
-        // ChromaDB can also use its built-in sentence-transformers
-        const hash = crypto.createHash('sha256').update(text).digest();
-        const embedding = [];
-        for (let i = 0; i < EMBEDDING_DIM; i++) {
-            embedding.push((hash[i % hash.length] / 255.0) * 2 - 1);
-        }
-        return embedding;
-    }
-
-    /**
      * Generate embedding using Google Generative AI (Gemini) if available.
      * Falls back to simple hash-based embedding.
      */
@@ -149,7 +132,7 @@ class RAGService {
 
         try {
             const collection = this.collections[COLLECTION_PAYMENTS];
-            await collection.add({
+            await collection.upsert({
                 ids: [payment.id || `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`],
                 documents: [doc],
                 metadatas: [metadata],
@@ -189,7 +172,7 @@ class RAGService {
 
         try {
             const collection = this.collections[COLLECTION_BLOCKCHAIN];
-            await collection.add({
+            await collection.upsert({
                 ids: [event.id || `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`],
                 documents: [doc],
                 metadatas: [metadata],
@@ -221,7 +204,7 @@ class RAGService {
 
         try {
             const collection = this.collections[COLLECTION_PLATFORM];
-            await collection.add({
+            await collection.upsert({
                 ids: [doc.id || `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`],
                 documents: [text],
                 metadatas: [metadata],
@@ -244,11 +227,10 @@ class RAGService {
      */
     async retrieveContext(query, opts = {}) {
         const nResults = opts.nResults || MAX_RESULTS;
-        const targetCollections = opts.collections || [
-            COLLECTION_PAYMENTS,
-            COLLECTION_BLOCKCHAIN,
-            COLLECTION_PLATFORM,
-        ];
+        // SEGURIDAD: las colecciones de pagos/blockchain contienen wallets y TX sin ACL por
+        // usuario. Por defecto solo se consulta conocimiento público; para el resto hay que
+        // pedirlo explícitamente con `opts.collections` desde código de servidor de confianza.
+        const targetCollections = opts.collections || [COLLECTION_PLATFORM];
 
         if (!this.initialized) {
             return { context: '', sources: [], error: 'RAG not initialized' };
@@ -330,7 +312,7 @@ class RAGService {
         if (!collection) return;
 
         try {
-            await collection.add({
+            await collection.upsert({
                 ids: documents.map(d => d.id),
                 documents: documents.map(d => d.text),
                 metadatas: documents.map(d => d.metadata || {}),
