@@ -135,10 +135,33 @@ describe('Autenticación del socket de chat', () => {
             expect(resolveChatJwtSecret()).toBe('secreto-de-produccion');
         });
 
-        it('fuera de producción admite el secreto de desarrollo', () => {
+        it('fuera de producción sin JWT_SECRET usa un secreto aleatorio, nunca el literal publicado', () => {
             process.env.NODE_ENV = 'development';
             delete process.env.JWT_SECRET;
-            expect(resolveChatJwtSecret()).toBe('bezhas_super_secret_key_change_in_production');
+
+            const secreto = resolveChatJwtSecret();
+            expect(secreto).toEqual(expect.any(String));
+            expect(secreto).not.toBe('bezhas_super_secret_key_change_in_production');
+            expect(secreto.length).toBeGreaterThanOrEqual(64);
+            // Estable durante el proceso: los tokens emitidos siguen valiendo hasta reiniciar.
+            expect(resolveChatJwtSecret()).toBe(secreto);
+        });
+
+        it('fuera de producción un token firmado con el literal publicado se rechaza', async () => {
+            process.env.NODE_ENV = 'development';
+            delete process.env.JWT_SECRET;
+
+            const conElSecretoFiltrado = jwt.sign(
+                { id: 'atacante' },
+                'bezhas_super_secret_key_change_in_production',
+                { expiresIn: '1h' }
+            );
+
+            const error = await ejecutar(
+                authenticationMiddleware,
+                socketFalso({ token: conElSecretoFiltrado })
+            );
+            expect(error).toBeInstanceOf(Error);
         });
     });
 });
