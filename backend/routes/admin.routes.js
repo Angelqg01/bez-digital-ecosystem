@@ -1,4 +1,5 @@
 const express = require('express');
+const { authenticatedWallet } = require('../middleware/walletIdentity');
 const router = express.Router();
 const { verifyAdminToken } = require('../middleware/admin.middleware');
 const User = require('../models/pg/User');
@@ -261,7 +262,7 @@ router.post('/users/:id/view', verifyAdminToken, async (req, res) => {
  */
 router.post('/users/create', async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'];
+        const walletAddress = authenticatedWallet(req); // del token de admin, no de una cabecera
         const { username, email, walletAddress: newUserWallet, role, subscription, isVendor } = req.body;
 
         if (!walletAddress) {
@@ -385,7 +386,7 @@ router.post('/users/create', async (req, res) => {
  */
 router.get('/users/all', async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'];
+        const walletAddress = authenticatedWallet(req); // del token de admin, no de una cabecera
 
         if (!walletAddress) {
             return res.status(401).json({
@@ -456,7 +457,7 @@ router.get('/users/all', async (req, res) => {
  */
 router.put('/users/:userId/role', async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'];
+        const walletAddress = authenticatedWallet(req); // del token de admin, no de una cabecera
         const { userId } = req.params;
         const { role } = req.body;
 
@@ -551,7 +552,7 @@ router.put('/users/:userId/role', async (req, res) => {
  */
 router.put('/users/:userId/ban', async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'];
+        const walletAddress = authenticatedWallet(req); // del token de admin, no de una cabecera
         const { userId } = req.params;
         const { banned } = req.body;
 
@@ -645,7 +646,7 @@ router.put('/users/:userId/ban', async (req, res) => {
  */
 router.put('/users/:userId/subscription', async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'];
+        const walletAddress = authenticatedWallet(req); // del token de admin, no de una cabecera
         const { userId } = req.params;
         const { subscription } = req.body;
 

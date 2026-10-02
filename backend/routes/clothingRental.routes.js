@@ -10,12 +10,10 @@ const { body, validationResult } = require('express-validator');
 // Servicio de ClothingRental
 const clothingRentalService = require('../services/clothing-rental.service');
 
-// Middleware de autenticación (opcional en desarrollo)
-const optionalAuth = (req, res, next) => {
-    // En producción, implementar verificación JWT
-    req.user = req.user || { walletAddress: req.headers['x-wallet-address'] };
-    next();
-};
+// Autenticación obligatoria (JWT). La wallet del cliente sale de la sesión, no de cabeceras ni del body.
+const { protect } = require('../middleware/auth.middleware');
+const { requireWallet } = require('../middleware/walletIdentity');
+const authed = [protect, requireWallet];
 
 /**
  * @swagger
@@ -25,7 +23,7 @@ const optionalAuth = (req, res, next) => {
  *     tags: [ClothingRental]
  */
 router.post('/',
-    optionalAuth,
+    ...authed,
     [
         body('transactionType').isIn(['RENTAL', 'PURCHASE', 'RENT_TO_OWN']),
         body('merchantId').notEmpty(),
@@ -42,7 +40,7 @@ router.post('/',
 
             const rental = await clothingRentalService.createRental({
                 ...req.body,
-                customerWallet: req.user.walletAddress || req.body.customerWallet
+                customerWallet: req.walletAddress
             });
 
             res.status(201).json({
@@ -181,7 +179,7 @@ router.get('/:rentalId/aegis/status', async (req, res) => {
  *     tags: [ClothingRental]
  */
 router.post('/:rentalId/merchant-decision',
-    optionalAuth,
+    ...authed,
     [
         body('decision').isIn(['APPROVED', 'REJECTED', 'COUNTER_OFFER']),
         body('notes').optional().isString()

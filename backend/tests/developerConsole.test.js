@@ -307,12 +307,13 @@ describe('Auth Middleware Integration', () => {
         expect(res.status).not.toBe(401);
     });
 
-    it('should accept valid wallet address header', async () => {
+    it('should NOT authenticate with a wallet address header alone (the client declares it)', async () => {
+        // Antes la cabecera bastaba: cualquiera podía actuar como cualquier wallet. Los usuarios
+        // Web3 inician sesión con una firma SIWE (/api/wallet-auth) y envían el JWT resultante.
         const res = await request(app)
             .get('/api/developer/keys')
             .set('x-wallet-address', '0x52Df82920CBAE522880dD7657e43d1A754eD044E');
-        // Should NOT be 401
-        expect(res.status).not.toBe(401);
+        expect(res.status).toBe(401);
     });
 
     it('should reject invalid wallet address format', async () => {
@@ -329,14 +330,13 @@ describe('Auth Middleware Integration', () => {
         expect(res.status).toBe(401);
     });
 
-    it('should accept expired JWT but fallback to wallet header', async () => {
+    it('should reject an expired JWT even if a wallet header is sent', async () => {
         const token = jwt.sign({ id: 'test-user' }, 'test-secret-key-for-jwt', { expiresIn: '-1s' });
         const res = await request(app)
             .get('/api/developer/keys')
             .set('Authorization', `Bearer ${token}`)
             .set('x-wallet-address', '0x52Df82920CBAE522880dD7657e43d1A754eD044E');
-        // JWT is expired but wallet address should work as fallback
-        expect(res.status).not.toBe(401);
+        expect(res.status).toBe(401);
     });
 
     it('should allow public access to usage-stats/:address', async () => {

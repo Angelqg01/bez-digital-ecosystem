@@ -22,7 +22,7 @@ const {
  * Flexible auth middleware for Developer Console.
  * Supports both:
  *   1. JWT Bearer token (traditional login)
- *   2. Wallet address via x-wallet-address header (Web3 native)
+ *   2. Wallet sign-in (SIWE): produces the same JWT
  * 
  * This allows Web3 users to use the developer console without
  * needing to go through the full JWT login flow.
@@ -59,37 +59,11 @@ const requireWalletOrJwt = async (req, res, next) => {
         }
     }
 
-    // 2. Try wallet address header (Web3 auth)
-    const walletAddress = req.headers['x-wallet-address'];
-    if (walletAddress && /^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
-        // If DB is available, try to find the user
-        if (mongoose.connection.readyState === 1) {
-            try {
-                const User = require('../models/pg/User');
-                const user = await User.findByWallet(walletAddress.toLowerCase());
-                if (user) {
-                    req.user = user;
-                    return next();
-                }
-            } catch (err) {
-                // DB lookup failed, use wallet-only context
-            }
-        }
-
-        // Fallback: create minimal user context from wallet address
-        req.user = {
-            _id: walletAddress.toLowerCase(),
-            id: walletAddress.toLowerCase(),
-            walletAddress: walletAddress.toLowerCase(),
-            role: 'USER'
-        };
-        return next();
-    }
-
-    // 3. No auth provided
+    // 2. No auth provided. Los usuarios Web3 inician sesión con su wallet (SIWE, /api/wallet-auth)
+    //    y reciben el mismo JWT; la cabecera `x-wallet-address` NO autentica (la declara el cliente).
     return res.status(401).json({
         success: false,
-        error: 'Authentication required. Connect your wallet or provide a Bearer token.'
+        error: 'Authentication required. Sign in (email or wallet signature) and send the Bearer token.'
     });
 };
 

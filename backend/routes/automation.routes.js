@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const Workflow = require('../models/pg/Workflow');
+const { protect } = require('../middleware/auth.middleware');
+const { requireWallet } = require('../middleware/walletIdentity');
+
+// La wallet sale de la sesión autenticada (JWT), nunca de la cabecera x-wallet-address.
+const authed = [protect, requireWallet];
 const { executeWorkflow, TOOL_ENDPOINTS } = require('../services/automationEngine');
 const { findLeads, enrichLead } = require('../services/leadFinder');
 
@@ -217,10 +222,9 @@ router.get('/tools', (req, res) => {
     res.json({ success: true, data: tools });
 });
 
-router.post('/workflows', async (req, res) => {
+router.post('/workflows', ...authed, async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'];
-        if (!walletAddress) return res.status(401).json({ error: 'Wallet address required' });
+        const walletAddress = req.walletAddress;
 
         const { name, description, steps, trigger, tags } = req.body;
         const workflow = new Workflow({
@@ -228,7 +232,7 @@ router.post('/workflows', async (req, res) => {
             description,
             steps: (steps || []).map((s, i) => ({ ...s, order: i })),
             trigger: trigger || { type: 'manual' },
-            createdBy: walletAddress.toLowerCase(),
+            createdBy: walletAddress,
             tags: tags || [],
             status: 'draft',
         });
@@ -241,12 +245,9 @@ router.post('/workflows', async (req, res) => {
     }
 });
 
-router.get('/workflows', async (req, res) => {
+router.get('/workflows', ...authed, async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'];
-        if (!walletAddress) return res.status(401).json({ error: 'Wallet address required' });
-
-        const workflows = await Workflow.find({ createdBy: walletAddress.toLowerCase() })
+        const workflows = await Workflow.find({ createdBy: req.walletAddress })
             .select('-runHistory')
             .sort({ updatedAt: -1 })
             .lean();
@@ -258,22 +259,21 @@ router.get('/workflows', async (req, res) => {
     }
 });
 
-router.get('/workflows/:id', async (req, res) => {
+router.get('/workflows/:id', ...authed, async (req, res) => {
     try {
         const workflow = await Workflow.findById(req.params.id).lean();
-        if (!workflow) return res.status(404).json({ error: 'Workflow not found' });
+        if (!workflow || workflow.createdBy !== req.walletAddress) return res.status(404).json({ error: 'Workflow not found' });
         res.json({ success: true, data: workflow });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-router.delete('/workflows/:id', async (req, res) => {
+router.delete('/workflows/:id', ...authed, async (req, res) => {
     try {
-        const walletAddress = req.headers['x-wallet-address'];
         const workflow = await Workflow.findById(req.params.id);
         if (!workflow) return res.status(404).json({ error: 'Workflow not found' });
-        if (workflow.createdBy !== walletAddress?.toLowerCase()) {
+        if (workflow.createdBy !== req.walletAddress) {
             return res.status(403).json({ error: 'No tienes permiso para eliminar este workflow' });
         }
         await Workflow.findByIdAndDelete(req.params.id);
@@ -283,10 +283,10 @@ router.delete('/workflows/:id', async (req, res) => {
     }
 });
 
-router.post('/workflows/:id/run', async (req, res) => {
+router.post('/workflows/:id/run', ...authed, async (req, res) => {
     try {
         const workflow = await Workflow.findById(req.params.id);
-        if (!workflow) return res.status(404).json({ error: 'Workflow not found' });
+        if (!workflow || workflow.createdBy !== req.walletAddress) return res.status(404).json({ error: 'Workflow not found' });
 
         const runLog = await executeWorkflow(workflow);
         workflow.runHistory.push(runLog);
@@ -304,7 +304,7 @@ router.post('/workflows/:id/run', async (req, res) => {
     }
 });
 
-router.post('/run-inline', async (req, res) => {
+router.post('/run-inline', protect, async (req, res) => {
     try {
         const { steps } = req.body;
         if (!steps || !Array.isArray(steps)) {
@@ -319,10 +319,10 @@ router.post('/run-inline', async (req, res) => {
     }
 });
 
-router.get('/workflows/:id/logs', async (req, res) => {
+router.get('/workflows/:id/logs', ...authed, async (req, res) => {
     try {
-        const workflow = await Workflow.findById(req.params.id).select('runHistory name').lean();
-        if (!workflow) return res.status(404).json({ error: 'Workflow not found' });
+        const workflow = await Workflow.findById(req.params.id).select('runHistory name createdBy').lean();
+        if (!workflow || workflow.createdBy !== req.walletAddress) return res.status(404).json({ error: 'Workflow not found' });
         const limit = parseInt(req.query.limit) || 10;
         const logs = (workflow.runHistory || []).slice(-limit).reverse();
         res.json({ success: true, data: logs, total: workflow.runHistory?.length || 0 });

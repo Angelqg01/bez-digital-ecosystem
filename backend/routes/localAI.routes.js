@@ -1,4 +1,7 @@
 const { Router } = require('express');
+const { protect } = require('../middleware/auth.middleware');
+const { requireWallet } = require('../middleware/walletIdentity');
+const authed = [protect, requireWallet];
 const UnifiedAI = require('../services/unified-ai.service');
 const mlService = require('../services/ml.service');
 const dataOracleService = require('../services/data-oracle.service');
@@ -264,10 +267,10 @@ router.get('/oracle/token-price/:symbol', async (req, res) => {
  * Solo el usuario conectado puede ver su propio balance
  * Otros usuarios reciben un mensaje de privacidad
  */
-router.get('/oracle/balance/:address', async (req, res) => {
+router.get('/oracle/balance/:address', ...authed, async (req, res) => {
     try {
         const { address } = req.params;
-        const requestingWallet = req.headers['x-wallet-address']?.toLowerCase();
+        const requestingWallet = req.walletAddress; // de la sesión autenticada, no de una cabecera
 
         // PRIVACIDAD: Solo el propietario puede ver su balance
         if (!requestingWallet || requestingWallet !== address.toLowerCase()) {

@@ -1,4 +1,7 @@
 const express = require('express');
+const { protect } = require('../middleware/auth.middleware');
+const { requireWallet } = require('../middleware/walletIdentity');
+const authed = [protect, requireWallet];
 const router = express.Router();
 const { db } = require('../database/inMemoryDB');
 
@@ -6,10 +9,10 @@ const { db } = require('../database/inMemoryDB');
  * Get wallet balance - PROTEGIDO POR PRIVACIDAD
  * Solo el propietario de la wallet puede ver su balance
  */
-router.get('/:address/balance', async (req, res) => {
+router.get('/:address/balance', ...authed, async (req, res) => {
     try {
         const { address } = req.params;
-        const requestingWallet = req.headers['x-wallet-address']?.toLowerCase();
+        const requestingWallet = req.walletAddress; // de la sesión autenticada, no de una cabecera
 
         if (!address) {
             return res.status(400).json({ error: 'Address is required' });
@@ -54,10 +57,10 @@ router.get('/:address/balance', async (req, res) => {
  * Get transaction history - PROTEGIDO POR PRIVACIDAD
  * Solo el propietario de la wallet puede ver sus transacciones
  */
-router.get('/:address/transactions', async (req, res) => {
+router.get('/:address/transactions', ...authed, async (req, res) => {
     try {
         const { address } = req.params;
-        const requestingWallet = req.headers['x-wallet-address']?.toLowerCase();
+        const requestingWallet = req.walletAddress; // de la sesión autenticada, no de una cabecera
 
         if (!address) {
             return res.status(400).json({ error: 'Address is required' });
