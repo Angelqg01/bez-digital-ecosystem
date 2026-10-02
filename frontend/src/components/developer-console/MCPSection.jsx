@@ -308,6 +308,40 @@ const audit = await mcp.auditContract({ contractAddress: '0xEcBa873B534C54DE2B62
     },
 ];
 
+// Logo oficial de cada cliente/IA para el selector del paso "Configura tu cliente de IA".
+// Se referencia la marca oficial desde el CDN de Simple Icons (uso nominativo, no se
+// recrea el logotipo). Si una marca no está disponible, se cae a un icono neutro para
+// que la pestaña nunca quede sin icono. HTTP/Backend y SDK no son IAs: icono genérico.
+const CLIENT_ICONS = {
+    'claude-desktop': { brand: { slug: 'claude', color: 'D97757' }, Fallback: BotIcon },
+    'claude-code':    { brand: { slug: 'claude', color: 'D97757' }, Fallback: TerminalIcon },
+    'cursor':         { brand: { slug: 'cursor', color: 'E5E7EB' }, Fallback: CpuIcon },
+    'vscode':         { brand: { slug: 'visualstudiocode', color: '007ACC' }, Fallback: CpuIcon },
+    'http':           { brand: null, Fallback: ServerIcon },
+    'sdk':            { brand: null, Fallback: BoxesIcon },
+};
+
+const ClientIcon = ({ id, size = 16 }) => {
+    const cfg = CLIENT_ICONS[id] || {};
+    const Fallback = cfg.Fallback || PlugIcon;
+    const [failed, setFailed] = useState(false);
+    if (cfg.brand && !failed) {
+        return (
+            <img
+                src={`https://cdn.simpleicons.org/${cfg.brand.slug}/${cfg.brand.color}`}
+                alt=""
+                aria-hidden="true"
+                width={size}
+                height={size}
+                loading="lazy"
+                className="inline-block shrink-0"
+                onError={() => setFailed(true)}
+            />
+        );
+    }
+    return <Fallback size={size} />;
+};
+
 const REQUIREMENTS = [
     { icon: WalletIcon, title: 'Cuenta BeZhas + wallet', desc: 'Regístrate y conecta tu wallet Polygon. Es la identidad que firma tus operaciones on-chain.', link: '/auth', linkLabel: 'Crear cuenta' },
     { icon: KeyIcon, title: 'API Key con scopes', desc: 'Genera la clave en la consola y activa solo los módulos que tu agente necesita (marketplace, pagos, identidad, legal, IA…).', tab: 'keys', linkLabel: 'Generar API Key' },
@@ -719,12 +753,13 @@ pnpm add ${MCP_PACKAGE} @bezhas/sdk`}
                                     key={c.id}
                                     type="button"
                                     onClick={() => setActiveClient(c.id)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                                         activeClient === c.id
                                             ? 'bg-purple-600 text-white'
                                             : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
                                     }`}
                                 >
+                                    <ClientIcon id={c.id} />
                                     {c.label}
                                 </button>
                             ))}
