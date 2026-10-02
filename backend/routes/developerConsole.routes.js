@@ -28,13 +28,19 @@ const {
  * needing to go through the full JWT login flow.
  */
 const requireWalletOrJwt = async (req, res, next) => {
-    // 1. Try JWT first
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        try {
-            const token = authHeader.split(' ')[1];
-            const decoded = jwt.verify(token, getJwtSecret());
+    // 1. Try JWT first. La verificación se ejecuta siempre: un token ausente o inválido
+    //    simplemente no autentica y se pasa a la autenticación por wallet.
+    const authHeader = req.headers.authorization || '';
+    const bearer = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : '';
+    let decoded = null;
+    try {
+        decoded = jwt.verify(bearer, getJwtSecret());
+    } catch (err) {
+        decoded = null;
+    }
 
+    if (decoded) {
+        try {
             // Try to load user from DB if available
             if (mongoose.connection.readyState === 1) {
                 const User = require('../models/pg/User');
@@ -49,7 +55,7 @@ const requireWalletOrJwt = async (req, res, next) => {
             req.user = { _id: decoded.id, id: decoded.id };
             return next();
         } catch (err) {
-            // JWT failed, try wallet auth below
+            // user lookup failed, try wallet auth below
         }
     }
 
