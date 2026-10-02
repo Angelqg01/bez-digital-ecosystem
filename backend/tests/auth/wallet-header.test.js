@@ -31,7 +31,6 @@ jest.mock('../../bridge', () => ({ bridgeCore: { getAdapter: () => null } }));
 
 const mockWorkflows = new Map();
 jest.mock('../../models/pg/Workflow', () => {
-    const wrap = (w) => w && { ...w, lean: () => w, select() { return this; }, save: async () => {}, runHistory: w.runHistory || [] };
     function Workflow(d) { Object.assign(this, d); this._id = `wf${mockWorkflows.size + 1}`; this.save = async () => { mockWorkflows.set(this._id, this); }; }
     Workflow.findById = (id) => { const w = mockWorkflows.get(id); const r = Promise.resolve(w || null); r.lean = () => w || null; r.select = () => r; return r; };
     Workflow.find = () => ({ select() { return this; }, sort() { return this; }, lean: async () => [...mockWorkflows.values()] });
