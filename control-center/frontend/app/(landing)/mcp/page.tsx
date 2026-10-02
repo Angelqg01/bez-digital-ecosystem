@@ -6,10 +6,10 @@ import styles from './mcp.module.css';
 
 // Endpoints públicos del MCP. Si cambia el dominio al desplegar (GCP), se
 // cambia SOLO aquí: todas las instrucciones y botones de copiar los leen.
-const MCP_URL = 'https://mcp.bez.digital/mcp';
-const MCP_ONBOARDING_URL = 'https://mcp.bez.digital/mcp/onboarding';
-const MCP_ORIGIN = 'https://mcp.bez.digital';
-const SALES_EMAIL = 'info.bezcoin@bez.digital';
+const MCP_URL = 'https://mcp.bezhas.com/mcp';
+const MCP_ONBOARDING_URL = 'https://mcp.bezhas.com/mcp/onboarding';
+const MCP_ORIGIN = 'https://mcp.bezhas.com';
+const SALES_EMAIL = 'info.bezcoin@bezhas.com';
 
 type Plan = 'Starter' | 'Creator Pro' | 'Business' | 'Enterprise VIP';
 

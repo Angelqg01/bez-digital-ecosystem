@@ -10,7 +10,7 @@ const { ethers } = require('ethers');
 
 // Initialize the SDK
 const bezhas = new BeZhasAPIClient({
-    apiUrl: process.env.BEZHAS_API_URL || 'https://api.bez.digital',
+    apiUrl: process.env.BEZHAS_API_URL || 'https://api.bezhas.com',
     rpcUrl: process.env.POLYGON_RPC_URL || 'https://polygon-bor.publicnode.com',
     network: 'polygon'
 });

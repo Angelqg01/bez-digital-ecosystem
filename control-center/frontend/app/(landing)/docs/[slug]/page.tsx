@@ -8,7 +8,7 @@ import {
     loadDoc,
 } from '@/lib/docs-library';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bez.digital';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bezhas.com';
 
 export function generateStaticParams() {
     return DOC_LIBRARY.map((doc) => ({ slug: doc.slug }));

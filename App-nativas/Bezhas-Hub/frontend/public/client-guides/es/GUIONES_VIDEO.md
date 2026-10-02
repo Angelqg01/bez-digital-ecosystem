@@ -51,7 +51,7 @@ el SDK o directamente por URL."
 Mostrar en pantalla: grid de 13 SubApps con iconos
 
 [02:40 - 03:00] CIERRE
-"Para empezar, ve a hub.bez.digital/client-guides. Ahi tienes
+"Para empezar, ve a hub.bezhas.com/client-guides. Ahi tienes
 guias paso a paso para cada metodo. Y si tienes dudas, nuestro
 soporte responde en menos de 2 horas. Gracias por ver el video."
 
@@ -69,12 +69,12 @@ Mostrar en pantalla: URL de las guias
 
 [00:00 - 00:45] OBTENER API KEY
 "Vamos a integrar BeZhas usando la API REST. Lo primero: necesitas una
-API Key. Ve a hub.bez.digital/developers, haz click en 'Generar API Key'
+API Key. Ve a hub.bezhas.com/developers, haz click en 'Generar API Key'
 y copiala. Esta clave es como tu contrasena de acceso a la API, asi que
 guardala en un archivo .env y nunca la subas a git."
 
 Demo en pantalla:
-- Abrir hub.bez.digital/developers
+- Abrir hub.bezhas.com/developers
 - Click generar
 - Copiar key
 - Crear archivo .env
@@ -86,7 +86,7 @@ webhook secret que vas a necesitar despues."
 Mostrar codigo:
 ```
 BEZHAS_API_KEY=bez_key_xxxxxxxxxxxxxxxx
-BEZHAS_API_URL=https://api.bez.digital:3001
+BEZHAS_API_URL=https://api.bezhas.com:3001
 BEZHAS_WEBHOOK_SECRET=wh_secret_yyyyyyyyyyy
 ```
 
@@ -98,7 +98,7 @@ un curl al endpoint /health con tu API Key en el header. Si ves
 Demo en terminal:
 ```bash
 curl -H "x-api-key: $BEZHAS_API_KEY" \
-  https://api.bez.digital:3001/health
+  https://api.bezhas.com:3001/health
 ```
 
 [02:15 - 03:00] CREAR UN PAGO
@@ -113,7 +113,7 @@ curl -X POST \
   -H "x-api-key: $BEZHAS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"amountUSD":100,"paymentMethod":"card","email":"demo@ejemplo.com"}' \
-  https://api.bez.digital:3001/api/gateway/v1/pay
+  https://api.bezhas.com:3001/api/gateway/v1/pay
 ```
 
 [03:00 - 03:45] CREAR TRANSACCION LOGISTICA
@@ -204,7 +204,7 @@ Mostrar componente React PaymentButton
 
 [00:00 - 00:30] DESCARGAR
 "Si tienes una tienda en WordPress, integrar BeZhas es super facil.
-Ve a hub.bez.digital/downloads y descarga el plugin. Es un archivo
+Ve a hub.bezhas.com/downloads y descarga el plugin. Es un archivo
 ZIP que pesa unos pocos kilobytes."
 
 Demo: abrir hub, click descargar
@@ -218,7 +218,7 @@ Demo: WordPress admin, upload, activar
 
 [01:00 - 01:30] CONFIGURAR API KEY
 "Ahora ve a Ajustes, 'Configuracion BeZhas'. Aqui necesitas pegar
-tu API Key. Si no tienes una, ve a hub.bez.digital/developers y
+tu API Key. Si no tienes una, ve a hub.bezhas.com/developers y
 genera una. Copia, pega, y guarda."
 
 Demo: settings panel, pegar key
@@ -240,7 +240,7 @@ Demo: compra de prueba completa
 [02:30 - 03:00] CIERRE
 "Y ya esta. Tu tienda acepta pagos con BeZhas. En el dashboard
 puedes ver estadisticas de pagos, ultimas transacciones y el estado
-de cada pedido. Si tienes dudas: support@bez.digital."
+de cada pedido. Si tienes dudas: support@bezhas.com."
 
 ---
 
@@ -315,7 +315,7 @@ Todos los videos deben tener subtitulos en espanol e ingles.
 
 **Donde publicar:**
 1. YouTube (canal BeZhas)
-2. hub.bez.digital/learn
+2. hub.bezhas.com/learn
 3. Embeber en la pagina /client-guides del Hub
 
 **Proximos videos (fase 2):**

@@ -23,7 +23,7 @@ BEZ es el token nativo y de gas en la L2 y existe como ERC-20 en Polygon. BNB Ch
 ## Iniciar un bridge por API
 
 ```bash
-curl -X POST https://api.bez.digital/api/gateway/v1/bridge/initiate \
+curl -X POST https://api.bezhas.com/api/gateway/v1/bridge/initiate \
   -H "Authorization: Bearer $JWT" \
   -H "X-API-Key: $BEZHAS_API_KEY" \
   -H "Content-Type: application/json" \

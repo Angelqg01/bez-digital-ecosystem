@@ -202,7 +202,7 @@ export default function TabWatchdog() {
         <div>
           <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Watchdog · Apps Nativas</h2>
           <p className="text-gray-400 text-sm max-w-3xl">
-            Ping en vivo a las 13 Apps Nativas (*.bez.digital / Cloud Run). Marca DOWN tras 2 fallos consecutivos para evitar falsas alarmas,
+            Ping en vivo a las 13 Apps Nativas (*.bezhas.com / Cloud Run). Marca DOWN tras 2 fallos consecutivos para evitar falsas alarmas,
             y alerta por Discord/Telegram si hay webhook configurado. Encender/Apagar controla el servicio Cloud Run real.
           </p>
         </div>

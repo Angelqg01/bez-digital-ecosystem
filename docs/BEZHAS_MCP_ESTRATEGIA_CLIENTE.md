@@ -35,7 +35,7 @@ del ERP del cliente. Cambian cuatro cosas de raíz:
 
 De ahí las cuatro decisiones que estructuran este documento:
 
-1. **Una sola superficie de cliente**: `mcp.bez.digital`, sobre el Gateway y su
+1. **Una sola superficie de cliente**: `mcp.bezhas.com`, sobre el Gateway y su
    autenticación, nunca un servicio paralelo.
 2. **El ERP se conecta por el lado del cliente por defecto**, y sólo
    opcionalmente por el nuestro (conector gestionado, plan Business+).
@@ -158,7 +158,7 @@ justo lo que la auditoría MiCA/DAC8 va a pedir cuando ese agente mueva un pago.
 
 **Alta prevista (paridad con Higgsfield):**
 1. Ajustes → Conectores → conector personalizado.
-2. URL: `https://mcp.bez.digital`.
+2. URL: `https://mcp.bezhas.com`.
 3. OAuth contra la cuenta BeZhas de la empresa; se elige **organización** y
    **entorno** (sandbox / producción) en la propia pantalla de consentimiento.
 4. El catálogo que ve el agente ya viene recortado por plan y por scopes.

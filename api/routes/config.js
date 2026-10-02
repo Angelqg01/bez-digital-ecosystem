@@ -72,7 +72,7 @@ router.get('/platform', async (req, res) => {
             rate_limit_per_15min: rateLimit,
             auth_method: 'JWT (Bearer)',
             cors_origins: process.env.NODE_ENV === 'production'
-                ? ['https://bez.digital', 'https://app.bez.digital']
+                ? ['https://bezhas.com', 'https://app.bezhas.com']
                 : ['http://localhost:3000', 'http://localhost:5173'],
         },
         services: {

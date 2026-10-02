@@ -19,7 +19,7 @@ import { BezhasClient } from '@bezhas/sdk';
 
 const bez = new BezhasClient({
   apiKey: process.env.BEZHAS_API_KEY,        // De panel de desarrollador
-  baseURL: 'https://api.bez.digital',
+  baseURL: 'https://api.bezhas.com',
   webhookSecret: process.env.BEZHAS_WEBHOOK_SECRET,
   network: 'polygon',                        // polygon | bsc
 });

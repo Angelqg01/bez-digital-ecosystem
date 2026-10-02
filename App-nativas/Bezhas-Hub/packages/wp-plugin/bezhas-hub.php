@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: BeZhas Hub — Embedded Gateway
- * Plugin URI: https://bez.digital/plugin/wp
+ * Plugin URI: https://bezhas.com/plugin/wp
  * Description: Trae TODO el ecosistema BeZhas dentro de tu plataforma: suscríbete a los planes, activa las SubApps (CargoLink, Energy, Pay, Capital...) y cobra con BeZhas-Pay sin salir de tu wp-admin. Gateway WooCommerce incluido.
  * Version: 2.0.0
  * Author: BeZhas
- * Author URI: https://bez.digital
+ * Author URI: https://bezhas.com
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: bezhas-hub
@@ -20,7 +20,7 @@ defined('ABSPATH') || exit;
 define('BEZHAS_HUB_VERSION', '2.0.0');
 define('BEZHAS_HUB_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BEZHAS_HUB_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('BEZHAS_HUB_API_BASE', 'https://api.bez.digital');
+define('BEZHAS_HUB_API_BASE', 'https://api.bezhas.com');
 
 require_once BEZHAS_HUB_PLUGIN_DIR . 'includes/class-bezhas-client.php';
 require_once BEZHAS_HUB_PLUGIN_DIR . 'includes/class-bezhas-rest.php';

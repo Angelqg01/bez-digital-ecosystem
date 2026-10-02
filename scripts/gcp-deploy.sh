@@ -35,8 +35,8 @@ VPC_NAME="${VPC_NAME:-bezhas-vpc}"
 VPC_CONNECTOR="${VPC_CONNECTOR:-bezhas-run-connector}"
 VPC_CONNECTOR_RANGE="${VPC_CONNECTOR_RANGE:-10.8.0.0/28}"
 GCS_BUCKET="${GCS_BUCKET:-bezhas-assets-prod}"
-PUBLIC_SITE_URL="${PUBLIC_SITE_URL:-https://bez.digital}"
-APP_SITE_URL="${APP_SITE_URL:-https://bez.digital}"
+PUBLIC_SITE_URL="${PUBLIC_SITE_URL:-https://bezhas.com}"
+APP_SITE_URL="${APP_SITE_URL:-https://bezhas.com}"
 GCP_BLOCKCHAIN_RPC_URL="${GCP_BLOCKCHAIN_RPC_URL:-}"
 
 # Cloud SQL
@@ -381,8 +381,8 @@ fi
 # clientes (Claude, ChatGPT, Codex…) llegan al servidor: la metadata de
 # /.well-known/* se construye a partir de él, y si apunta a un dominio que no
 # resuelve a este servicio, el conector no puede completar el login.
-if [ -z "${MCP_DOMAIN+x}" ] && [[ "${PUBLIC_SITE_URL}" == *"bez.digital"* ]]; then
-  MCP_DOMAIN="mcp.bez.digital"
+if [ -z "${MCP_DOMAIN+x}" ] && [[ "${PUBLIC_SITE_URL}" == *"bezhas.com"* ]]; then
+  MCP_DOMAIN="mcp.bezhas.com"
 fi
 API_ENV_VARS="${COMMON_ENV_VARS}"
 [ -n "${MCP_DOMAIN:-}" ] && API_ENV_VARS="${API_ENV_VARS}~OAUTH_ISSUER=https://${MCP_DOMAIN}"
@@ -420,10 +420,10 @@ else
   ok "MCP: ${API_URL}/mcp (issuer OAuth ${API_URL})"
 fi
 
-# Configure final API URL for frontend (use custom subdomain if bez.digital is configured)
+# Configure final API URL for frontend (use custom subdomain if bezhas.com is configured)
 FINAL_API_URL="${API_URL}"
-if [[ "${PUBLIC_SITE_URL}" == *"bez.digital"* ]]; then
-  FINAL_API_URL="https://api.bez.digital"
+if [[ "${PUBLIC_SITE_URL}" == *"bezhas.com"* ]]; then
+  FINAL_API_URL="https://api.bezhas.com"
 fi
 
 # Aegis (FastAPI ML engine)

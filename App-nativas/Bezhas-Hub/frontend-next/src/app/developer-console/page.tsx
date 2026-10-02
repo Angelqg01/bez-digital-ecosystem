@@ -182,8 +182,8 @@ function KeyRevealModal({ keyData, onClose }: { keyData: { key: string; name: st
 function SdkSnippetsPanel() {
     const snippets = [
         { lang: 'JavaScript', code: `import { BeZhasSDK } from '@bezhas/sdk';\n\nconst sdk = new BeZhasSDK({\n  apiKey: 'bzh_sk_...your_key',\n  network: 'polygon'\n});\n\n// List marketplace items\nconst items = await sdk.marketplace.list({ limit: 20 });\nconsole.log(items);` },
-        { lang: 'cURL', code: `curl -X GET "https://api.bez.digital/v1/marketplace/items" \\\n  -H "Authorization: Bearer bzh_sk_...your_key" \\\n  -H "Content-Type: application/json"` },
-        { lang: 'Python', code: `import requests\n\nheaders = {\n    "Authorization": "Bearer bzh_sk_...your_key",\n    "Content-Type": "application/json"\n}\n\nresponse = requests.get(\n    "https://api.bez.digital/v1/marketplace/items",\n    headers=headers\n)\nprint(response.json())` },
+        { lang: 'cURL', code: `curl -X GET "https://api.bezhas.com/v1/marketplace/items" \\\n  -H "Authorization: Bearer bzh_sk_...your_key" \\\n  -H "Content-Type: application/json"` },
+        { lang: 'Python', code: `import requests\n\nheaders = {\n    "Authorization": "Bearer bzh_sk_...your_key",\n    "Content-Type": "application/json"\n}\n\nresponse = requests.get(\n    "https://api.bezhas.com/v1/marketplace/items",\n    headers=headers\n)\nprint(response.json())` },
     ];
     const [active, setActive] = useState(0);
     return (

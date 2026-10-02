@@ -5,7 +5,7 @@ export interface BeZhasConnectOptions {
   apiKey?: string;
   /** Optional cross-app SSO JWT for user context (sent as Authorization). */
   userToken?: string;
-  /** API host override. Default: https://api.bez.digital */
+  /** API host override. Default: https://api.bezhas.com */
   baseUrl?: string;
   /** Per-request timeout in ms. Default 15000. */
   timeoutMs?: number;

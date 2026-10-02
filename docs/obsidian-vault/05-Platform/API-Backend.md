@@ -12,7 +12,7 @@ tags: ["platform-map", "finanzas-pagos", "p0"]
 
 > Capa 2 · Prioridad **P0** · [[Cluster-finanzas-pagos]]
 
-Express :3001 — 35 rutas (auth, wallet, blockchain, energy, gateway), 19 servicios, PostgreSQL + Redis. Tests de integración con Anvil :8546 (ANVIL_BIN=anvil.exe). Gateway BEZ-Pay: /payments/buy con gates KYC MiCA, refunds, hosted checkout pay.bez.digital.
+Express :3001 — 35 rutas (auth, wallet, blockchain, energy, gateway), 19 servicios, PostgreSQL + Redis. Tests de integración con Anvil :8546 (ANVIL_BIN=anvil.exe). Gateway BEZ-Pay: /payments/buy con gates KYC MiCA, refunds, hosted checkout pay.bezhas.com.
 
 **Ubicación:** `api/` · puerto :3001
 

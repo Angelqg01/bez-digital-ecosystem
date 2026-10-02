@@ -331,8 +331,8 @@ DATABASE_URL=postgresql://bezhas:bezhas_secure_2026@localhost:5432/bezhas
 POSTGRES_PASSWORD=bezhas_secure_2026
 
 # ── BEZHAS API ──
-BEZHAS_API_URL=https://api.bez.digital/v1
-BEZHAS_PUBLIC_URL=https://mcp.bez.digital
+BEZHAS_API_URL=https://api.bezhas.com/v1
+BEZHAS_PUBLIC_URL=https://mcp.bezhas.com
 BEZHAS_API_KEY=
 JWT_SECRET=
 

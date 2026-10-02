@@ -107,7 +107,7 @@ app.post('/api/billing/buy-credits', async (req, res) => {
     
     // Aquí se integraría Stripe Payment Links desde el SDK (@bezhas/sdk/stripe-payment-links)
     // Para el entorno de Vision Scan devolvemos un link simulado del ecosistema
-    const mockPaymentUrl = `https://pay.bez.digital/checkout?amount=${amount}&type=${type}`;
+    const mockPaymentUrl = `https://pay.bezhas.com/checkout?amount=${amount}&type=${type}`;
     
     res.json({
         success: true,

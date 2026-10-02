@@ -198,14 +198,14 @@ reg('makeAuthHeaders con PQC incluye headers X-PQC-*', () => {
 });
 
 reg('makeWsUrl sin PQC solo incluye token', () => {
-  const url = makeWsUrl('wss://api.bez.digital/agent-runtime', 'tok', null, null);
+  const url = makeWsUrl('wss://api.bezhas.com/agent-runtime', 'tok', null, null);
   assert.ok(url.includes('token=tok'));
   assert.ok(!url.includes('pqcSig'));
   assert.ok(!url.includes('pqcPub'));
 });
 
 reg('makeWsUrl con PQC incluye los tres params', () => {
-  const url = makeWsUrl('wss://api.bez.digital/agent-runtime', 'tok', 'sig1', 'pub1');
+  const url = makeWsUrl('wss://api.bezhas.com/agent-runtime', 'tok', 'sig1', 'pub1');
   assert.ok(url.includes('token=tok'));
   assert.ok(url.includes('pqcSig=sig1'));
   assert.ok(url.includes('pqcPub=pub1'));

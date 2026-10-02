@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { DOC_LIBRARY } from '@/lib/docs-library';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bez.digital';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bezhas.com';
 
 // All public landing pages
 const landingRoutes = [

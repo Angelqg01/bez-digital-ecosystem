@@ -72,7 +72,7 @@ https://calendar.app.google/eeLJBBT27St45XnD7
 
 Yoel A. Hernandez
 CEO & Founder | BeZhas
-Web: https://bez.digital/
+Web: https://bezhas.com/
 Deck: https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view?usp=drive_link
 Agenda: https://calendar.app.google/eeLJBBT27St45XnD7
 
@@ -93,7 +93,7 @@ https://calendar.app.google/eeLJBBT27St45XnD7
 
 Yoel A. Hernandez
 CEO & Founder | BeZhas
-Web: https://bez.digital/
+Web: https://bezhas.com/
 Deck: https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view?usp=drive_link
 Agenda: https://calendar.app.google/eeLJBBT27St45XnD7
 
@@ -116,7 +116,7 @@ https://calendar.app.google/eeLJBBT27St45XnD7
 
 Yoel A. Hernandez
 CEO & Founder | BeZhas
-Web: https://bez.digital/
+Web: https://bezhas.com/
 Deck: https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view?usp=drive_link
 Agenda: https://calendar.app.google/eeLJBBT27St45XnD7
 
@@ -137,7 +137,7 @@ https://calendar.app.google/eeLJBBT27St45XnD7
 
 Yoel A. Hernandez
 CEO & Founder | BeZhas
-Web: https://bez.digital/
+Web: https://bezhas.com/
 Deck: https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view?usp=drive_link
 Agenda: https://calendar.app.google/eeLJBBT27St45XnD7
 

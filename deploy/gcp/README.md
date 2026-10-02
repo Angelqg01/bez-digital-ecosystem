@@ -132,7 +132,7 @@ en dos servicios, claves donde van direcciones o la clave del deployer.
   degradan) en vez de quedarse esperando.
 - **Cabeceras** del panel: `nosniff`, `X-Frame-Options`, `Referrer-Policy`, HSTS.
 - **CORS**: la api solo admite `https://www.bezhas.com` y `https://bezhas.com`
-  (más `*.bez.digital`, de fábrica).
+  (más `*.bezhas.com`, de fábrica).
 - **Subida mínima** a Cloud Build: `.gcloudignore` es una lista blanca de los 6
   servicios (~22 MB en vez de ~330 MB con documentos internos).
 

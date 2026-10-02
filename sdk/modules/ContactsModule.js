@@ -11,7 +11,7 @@ class ContactsModule {
      */
     constructor(sdkInstance) {
         this.sdk = sdkInstance;
-        this.baseUrl = this.sdk.config.apiUrl || 'https://api.bez.digital/api';
+        this.baseUrl = this.sdk.config.apiUrl || 'https://api.bezhas.com/api';
     }
 
     /**

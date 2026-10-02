@@ -5,7 +5,7 @@
 // dedicada. Estas son las URLs canónicas.
 //
 // Override por entorno con Vite env vars `VITE_NATIVE_APP_<NAME>_URL` (p.ej. cuando
-// los dominios *.bez.digital entren en producción). Los defaults son las URLs
+// los dominios *.bezhas.com entren en producción). Los defaults son las URLs
 // de Cloud Run (run.app) actualmente en producción — misma lista que el
 // control-center (`secondaryApps`), para evitar drift entre superficies.
 //

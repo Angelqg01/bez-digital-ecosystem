@@ -35,7 +35,7 @@ const PHASES = [
           { item: "VPS cloud primario (AWS EC2 c6i.4xlarge)", spec: "16 vCPU, 32GB RAM, SSD", min: 600, max: 900, note: "×3 meses = base" },
           { item: "CDN + DDoS protection (Cloudflare Pro)", spec: "Plan Pro + WAF", min: 60, max: 60, note: "×3 = €180" },
           { item: "Backup cloud (S3 / Wasabi)", spec: "2TB encrypted backups", min: 30, max: 60, note: "×3 = €90" },
-          { item: "Dominio + SSL wildcard", spec: "bez.digital + *.bez.digital", min: 150, max: 150, note: "Anual" },
+          { item: "Dominio + SSL wildcard", spec: "bezhas.com + *.bezhas.com", min: 150, max: 150, note: "Anual" },
           { item: "VPN empresarial (WireGuard VPS)", spec: "Acceso seguro al servidor", min: 20, max: 40, note: "×3 meses" },
         ]
       },
@@ -618,7 +618,7 @@ export default function BeZhasBudget() {
             <div style={{ marginTop: 20, padding: 16, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 3 }}>
               <div style={{ fontSize: 10, color: "#00C8FF", fontFamily: "monospace", letterSpacing: 2, marginBottom: 12 }}>ORDEN DE EJECUCIÓN RECOMENDADO</div>
               {[
-                { order: "1º", action: "Constituir SL, dominar bez.digital, desplegar contratos en testnet", cost: "€500–1K", timing: "Semana 1" },
+                { order: "1º", action: "Constituir SL, dominar bezhas.com, desplegar contratos en testnet", cost: "€500–1K", timing: "Semana 1" },
                 { order: "2º", action: "Solicitar ENISA Jóvenes Emprendedores (€75K, 0% garantía)", cost: "Gratuito", timing: "Mes 1" },
                 { order: "3º", action: "Solicitar CDTI Neotec o Fondo Tecnológico", cost: "Gratuito", timing: "Mes 1–2" },
                 { order: "4º", action: "MVP funcionando → buscar primer piloto naviera (sin cobrar)", cost: "Tiempo", timing: "Mes 2–3" },

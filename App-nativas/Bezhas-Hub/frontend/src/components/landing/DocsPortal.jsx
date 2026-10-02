@@ -170,7 +170,7 @@ export default function DocsPortal() {
               💬 Chat de soporte
             </a>
             <a href="#" className="px-4 py-2 text-sm text-cyan-300 hover:text-white transition-colors">
-              📧 support@bez.digital
+              📧 support@bezhas.com
             </a>
           </div>
         </div>

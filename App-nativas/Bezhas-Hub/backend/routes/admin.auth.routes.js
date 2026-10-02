@@ -996,7 +996,7 @@ router.post('/oauth/google', [
         } else {
             console.warn('⚠️ Admin Google Auth: SIMULATION MODE');
             payload = {
-                email: `admin_${Date.now()}@bez.digital`,
+                email: `admin_${Date.now()}@bezhas.com`,
                 name: 'Simulated Admin',
                 sub: `google_admin_${Date.now()}`
             };

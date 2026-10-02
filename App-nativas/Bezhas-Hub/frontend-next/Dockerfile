@@ -29,7 +29,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Set environment variables for build-time
-ARG VITE_API_URL=https://api.bez.digital
+ARG VITE_API_URL=https://api.bezhas.com
 ARG VITE_CHAIN_ID=137
 ARG VITE_NETWORK=polygon
 

@@ -80,7 +80,7 @@ class SDKConfigPG {
             webhooks: [],
             globalRateLimit: { requestsPerMinute: 1000, requestsPerDay: 100000, burstLimit: 50 },
             logging: { level: 'info', retentionDays: 30, enableRequestLogs: true, enableAILogs: true },
-            security: { requireApiKey: true, allowedOrigins: ['https://bez.digital', 'http://localhost:5173'], ipWhitelist: [], maxApiKeysPerUser: 5 },
+            security: { requireApiKey: true, allowedOrigins: ['https://bezhas.com', 'http://localhost:5173'], ipWhitelist: [], maxApiKeysPerUser: 5 },
             mcpServer: { url: 'http://bezhas-intelligence:8080', isConnected: false }
         };
     }

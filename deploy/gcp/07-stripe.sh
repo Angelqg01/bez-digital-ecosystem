@@ -135,7 +135,7 @@ fi
 
 echo "→ Payment Links: a dónde vuelve el cliente tras pagar"
 # Solo se corrigen los que REDIRIGEN a otro dominio (p. ej. el antiguo
-# hub.bez.digital): se cambia el origen por https://www.bezhas.com y se
+# hub.bezhas.com): se cambia el origen por https://www.bezhas.com y se
 # conservan ruta y parámetros ({CHECKOUT_SESSION_ID}, plan). Los que muestran
 # la página de confirmación de Stripe (con o sin mensaje propio) no se tocan.
 LINKS=$(stripe GET "/v1/payment_links?limit=100")

@@ -27,7 +27,7 @@ npm install @bezhas/sdk
 const { BeZhas, MCPClient, IntegrationAssistant } = require('@bezhas/sdk');
 const sdk = new BeZhas({
     apiKey: 'YOUR_KEY',
-    endpoint: 'https://api.bez.digital/v1',
+    endpoint: 'https://api.bezhas.com/v1',
     chainId: 80002
 });
 

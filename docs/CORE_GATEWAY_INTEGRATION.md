@@ -5,7 +5,7 @@ Todas las apps del ecosistema deben usar el Core Gateway como punto unico para p
 ## URL base
 
 - Desarrollo: `http://localhost:3001/api/gateway/v1`
-- Produccion: `https://api.bez.digital/api/gateway/v1`
+- Produccion: `https://api.bezhas.com/api/gateway/v1`
 
 ## SDK recomendado
 

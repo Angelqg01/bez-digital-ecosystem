@@ -7,7 +7,7 @@
 class SupplyChainModule {
     constructor(config) {
         this.config = config;
-        this.baseURL = config.baseURL || 'https://api.bez.digital';
+        this.baseURL = config.baseURL || 'https://api.bezhas.com';
         this.apiKey = config.apiKey;
     }
 
@@ -84,7 +84,7 @@ class SupplyChainModule {
 class GovernmentModule {
     constructor(config) {
         this.config = config;
-        this.baseURL = config.baseURL || 'https://api.bez.digital';
+        this.baseURL = config.baseURL || 'https://api.bezhas.com';
         this.apiKey = config.apiKey;
     }
 
@@ -165,7 +165,7 @@ class GovernmentModule {
 class CarbonModule {
     constructor(config) {
         this.config = config;
-        this.baseURL = config.baseURL || 'https://api.bez.digital';
+        this.baseURL = config.baseURL || 'https://api.bezhas.com';
         this.apiKey = config.apiKey;
     }
 

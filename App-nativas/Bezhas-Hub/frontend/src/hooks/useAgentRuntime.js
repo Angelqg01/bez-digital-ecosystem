@@ -1,7 +1,7 @@
 /**
  * BeZhas-Hub — useAgentRuntime
  * Hook React para consumir el Agent Runtime desde el frontend.
- * Conecta con: api.bez.digital:3001 (REST) + ws.bez.digital:3002 (WebSocket)
+ * Conecta con: api.bezhas.com:3001 (REST) + ws.bezhas.com:3002 (WebSocket)
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';

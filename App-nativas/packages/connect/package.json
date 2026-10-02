@@ -6,7 +6,7 @@
     "url": "https://github.com/Angelqg01/BeZhas-Blockchain.git",
     "directory": "App-nativas/packages/connect"
   },
-  "homepage": "https://bez.digital/developers",
+  "homepage": "https://bezhas.com/developers",
   "sideEffects": false,
   "description": "Outward-facing BeZhas integration SDK — embed Pay & CargoLink into any 3rd-party platform (WooCommerce, Shopify, SAP, custom Node). Zero dependencies, framework-agnostic.",
   "type": "module",

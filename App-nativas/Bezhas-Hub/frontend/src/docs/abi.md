@@ -62,9 +62,9 @@ function balanceOf(address account)
 
 Descarga desde:
 ```
-https://bez.digital/contracts/abi/BeZhasPayment.json
-https://bez.digital/contracts/abi/BeZhasSettlement.json
-https://bez.digital/contracts/abi/BezhasToken.json
+https://bezhas.com/contracts/abi/BeZhasPayment.json
+https://bezhas.com/contracts/abi/BeZhasSettlement.json
+https://bezhas.com/contracts/abi/BezhasToken.json
 ```
 
 ## Uso con ethers.js
@@ -148,7 +148,7 @@ Auditoría de seguridad:
 - Fecha: 2026-05-15
 - Resultado: ✅ PASS
 
-Reporte: https://bez.digital/contracts/audit-report.pdf
+Reporte: https://bezhas.com/contracts/audit-report.pdf
 
 ## Testnet
 
@@ -159,4 +159,4 @@ Reporte: https://bez.digital/contracts/audit-report.pdf
 **BSC Testnet**:
 - BeZhasPayment: `0x...`
 
-Faucet de test BEZ: https://bez.digital/faucet
+Faucet de test BEZ: https://bezhas.com/faucet

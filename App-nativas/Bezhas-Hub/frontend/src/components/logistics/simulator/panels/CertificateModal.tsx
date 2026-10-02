@@ -12,7 +12,7 @@ interface CertificateModalProps {
 // Certificado RWA final + QR Track & Trace
 export const CertificateModal: React.FC<CertificateModalProps> = ({ onClose, bUid, isBreached, containerRef }) => {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
-  const trackUrl = `https://hub.bez.digital/track/${bUid}`;
+  const trackUrl = `https://hub.bezhas.com/track/${bUid}`;
 
   useEffect(() => {
     QRCode.toDataURL(trackUrl, {

@@ -73,7 +73,7 @@ Al completar el formulario en la web de [Google for Startups Cloud Program](http
 2.  **Activar la Facturación**:
     *   Vincula una tarjeta de crédito o cuenta bancaria corporativa válida al proyecto de GCP en la consola de facturación (*Billing*).
 3.  **Configurar Correo y Dominio Corporativo**:
-    *   La solicitud debe realizarse con un correo del dominio oficial (ej. `founder@bez.digital`). No utilices correos personales (`@gmail.com`).
+    *   La solicitud debe realizarse con un correo del dominio oficial (ej. `founder@bezhas.com`). No utilices correos personales (`@gmail.com`).
 4.  **Tener a Mano Evidencia de Financiación o Grant**:
     *   Si aplicas al nivel Scale, ten listo el documento de la ronda de inversión o la carta oficial de adjudicación del grant (por ejemplo, el contrato/comunicación del grant de Polygon o BNB Chain).
 5.  **Completar la Solicitud**:

@@ -35,7 +35,7 @@ $network   = BeZhas_Client::network();
             printf(
                 /* translators: %s: link a la Developer Console */
                 esc_html__('Pega tu API Key de la %s para activar planes, SubApps y pagos.', 'bezhas-hub'),
-                '<a href="https://bez.digital/developer-console" target="_blank" rel="noopener">Developer Console</a>'
+                '<a href="https://bezhas.com/developer-console" target="_blank" rel="noopener">Developer Console</a>'
             );
         ?></p>
         <div class="bezhas-field">

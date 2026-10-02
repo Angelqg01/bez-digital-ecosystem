@@ -93,7 +93,7 @@ function buildLogisticsMetadata(containerId, telemetry, extra = {}) {
     return {
         name: `BeZhas Logistics — ${containerId}`,
         description: `Verified shipment NFT for container ${containerId}. Telemetry validated by Aegis AI.`,
-        external_url: `https://bez.digital/shipment/${containerId}`,
+        external_url: `https://bezhas.com/shipment/${containerId}`,
         attributes: [
             { trait_type: 'Container ID', value: containerId },
             { trait_type: 'Temperature (°C)', value: telemetry.temperature, display_type: 'number' },

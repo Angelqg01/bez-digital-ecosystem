@@ -8,13 +8,13 @@ const SECTIONS = [
         body: (
             <>
                 <p>
-                    BeZhas (<a className="text-primary" href="https://bez.digital/">bez.digital</a>) es el responsable del tratamiento de los datos
+                    BeZhas (<a className="text-primary" href="https://bezhas.com/">bezhas.com</a>) es el responsable del tratamiento de los datos
                     personales recogidos a través de la Plataforma (dashboard principal, API y las Apps Nativas sectoriales: BZ CargoLink, BZ PureScan,
                     BZ Genesis, BZ Sphere, bez-energy, entre otras).
                 </p>
                 <p className="mt-3">
                     Para cualquier consulta sobre privacidad o para ejercer tus derechos, escribe a{' '}
-                    <a className="text-primary" href="mailto:privacy@bez.digital">privacy@bez.digital</a>.
+                    <a className="text-primary" href="mailto:privacy@bezhas.com">privacy@bezhas.com</a>.
                 </p>
             </>
         ),
@@ -124,7 +124,7 @@ const SECTIONS = [
         icon: 'balance',
         body: (
             <>
-                <p>Puedes ejercer en cualquier momento, escribiendo a <a className="text-primary" href="mailto:privacy@bez.digital">privacy@bez.digital</a>:</p>
+                <p>Puedes ejercer en cualquier momento, escribiendo a <a className="text-primary" href="mailto:privacy@bezhas.com">privacy@bezhas.com</a>:</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
                     {['Acceso', 'Rectificación', 'Supresión', 'Portabilidad', 'Oposición', 'Limitación'].map((r) => (
                         <div key={r} className="glass-panel border border-white/5 rounded-lg px-4 py-3 text-sm font-bold text-white">{r}</div>

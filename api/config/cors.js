@@ -11,8 +11,8 @@
  * Vive en su propio módulo para poder testearlo sin arrancar la app entera.
  */
 
-/** Cualquier subdominio de bez.digital, y el dominio raíz. Sólo https. */
-const PROD_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)*bez\.digital$/;
+/** Cualquier subdominio de bezhas.com, y el dominio raíz. Sólo https. */
+const PROD_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)*bezhas\.com$/;
 
 /**
  * En desarrollo cada SubApp levanta su propio puerto de Vite (3004, 3010-3020…);

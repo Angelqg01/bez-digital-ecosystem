@@ -12,8 +12,8 @@ const WIDGET_EVENTS = Object.freeze({
   ERROR: 'ERROR',
 });
 
-const WIDGET_ORIGIN = 'https://app.bez.digital';
-const WIDGET_URL = 'https://app.bez.digital/purescan/widget';
+const WIDGET_ORIGIN = 'https://app.bezhas.com';
+const WIDGET_URL = 'https://app.bezhas.com/purescan/widget';
 const DEFAULT_TIMEOUT_MS = 15_000; // 15 segundos
 
 // ─── Helper: fetch con timeout ────────────────────────────────────────────────
@@ -44,7 +44,7 @@ class PureScanSDK {
     this.merchantId = options.merchantId ?? null;
     this.containerId = options.containerId ?? 'purescan-container';
     this.theme = ['dark', 'light'].includes(options.theme) ? options.theme : 'dark';
-    this.apiUrl = options.apiUrl ?? 'https://api.bez.digital/purescan/v1';
+    this.apiUrl = options.apiUrl ?? 'https://api.bezhas.com/purescan/v1';
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
     // ─── FIX #5: Añadir callback onError ────────────────────────────────

@@ -383,7 +383,7 @@ export default function BeZhasAgents() {
 
         {/* Footer */}
         <div style={{ textAlign: "center", color: "#1e293b", fontSize: 11, letterSpacing: 2 }}>
-          bez.digital · BEZ-COIN · BNB CHAIN + POLYGON · AI AGENT INFRASTRUCTURE ◆
+          bezhas.com · BEZ-COIN · BNB CHAIN + POLYGON · AI AGENT INFRASTRUCTURE ◆
         </div>
       </div>
     </div>

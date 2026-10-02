@@ -152,14 +152,14 @@ class AegisService {
             let metadataUri;
             try {
                 const metadata = buildLogisticsMetadata(containerId, telemetryData, {
-                    image: `https://bez.digital/nft/logistics/${containerId}.png`,
+                    image: `https://bezhas.com/nft/logistics/${containerId}.png`,
                 });
                 const pinResult = await pinJSON(metadata, `logistics-${containerId}`);
                 metadataUri = pinResult.ipfsUri;
                 console.log(`📌 [IPFS] Metadata pinned: ${metadataUri}`);
             } catch (ipfsErr) {
                 // Fallback: on-chain reference URI when Pinata is unreachable or unconfigured
-                metadataUri = `https://api.bez.digital/nft/metadata/${containerId}`;
+                metadataUri = `https://api.bezhas.com/nft/metadata/${containerId}`;
                 console.warn(`[IPFS] Pin failed, using fallback URI: ${ipfsErr.message}`);
             }
 

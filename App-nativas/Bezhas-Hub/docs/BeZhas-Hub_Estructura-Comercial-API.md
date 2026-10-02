@@ -197,10 +197,10 @@ BeZhas Hub se conecta con la infraestructura que ya tiene su empresa:
 
 | | |
 |--|--|
-| **Web** | [bez.digital](https://bez.digital) |
-| **Developer Console** | [bez.digital/developer-console](https://bez.digital/developer-console) |
-| **Email** | contacto@bez.digital |
-| **Documentacion tecnica** | [bez.digital/docs](https://bez.digital/docs) |
+| **Web** | [bezhas.com](https://bezhas.com) |
+| **Developer Console** | [bezhas.com/developer-console](https://bezhas.com/developer-console) |
+| **Email** | contacto@bezhas.com |
+| **Documentacion tecnica** | [bezhas.com/docs](https://bezhas.com/docs) |
 
 ---
 

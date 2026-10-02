@@ -66,7 +66,7 @@ public final class BeZhasConnect {
 
     public static final class Builder {
         private String apiKey, userToken;
-        private String baseUrl = "https://api.bez.digital";
+        private String baseUrl = "https://api.bezhas.com";
         private long timeoutMs = 15000;
         private HttpClient httpClient;
         public Builder apiKey(String v) { this.apiKey = v; return this; }

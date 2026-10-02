@@ -63,7 +63,7 @@ npm install @bezhas/sdk ethers dotenv
 
 ```bash
 # API Configuration
-BEZHAS_API_URL=https://api.bez.digital
+BEZHAS_API_URL=https://api.bezhas.com
 POLYGON_RPC_URL=https://polygon-bor.publicnode.com
 MCP_SERVER_URL=http://localhost:3002
 

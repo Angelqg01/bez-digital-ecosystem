@@ -42,7 +42,7 @@ borrar después.
                           ▼                    ▼
                   ┌────────────────────────────────┐
                   │  Pantalla alojada por BeZhas   │
-                  │  onb.bez.digital/o/<token>     │
+                  │  onb.bezhas.com/o/<token>     │
                   │  Aquí —y sólo aquí— la persona │
                   │  escribe lo sensible           │
                   └────────────────────────────────┘
@@ -227,7 +227,7 @@ bezhas_sdk_install_plan({ entorno, gestor, lenguaje })
       integridad: "sha512-…",          ← se compara antes de confiar
       config_ejemplo: {...},
       verificacion: "node -e \"…\"",
-      credenciales_url: "https://onb.bez.digital/o/<token>" }
+      credenciales_url: "https://onb.bezhas.com/o/<token>" }
 ```
 
 **La credencial nunca viaja en la respuesta de la herramienta.** El agente

@@ -94,9 +94,9 @@ VPS_activateFirewallV1(...)
 > `VPS_updateFirewallRuleV1` en cuanto la tengas — de fábrica queda abierto a
 > `any` porque no había una IP conocida en el momento de crear la regla.
 
-DNS: apunta los subdominios que sirvan desde este VPS (`api.bez.digital`,
-`app.bez.digital`, el apex si aplica) a la IP de la VM con
-`DNS_updateDNSRecordsV1` sobre la zona `bez.digital`. El resto de subdominios
+DNS: apunta los subdominios que sirvan desde este VPS (`api.bezhas.com`,
+`app.bezhas.com`, el apex si aplica) a la IP de la VM con
+`DNS_updateDNSRecordsV1` sobre la zona `bezhas.com`. El resto de subdominios
 de `secondaryApps` (`wallet`, `gas`, `edge`, ... — ver el TODO de
 `app/(landing)/page.tsx`) siguen sin resolver hasta que cada SubApp tenga su
 propio despliegue; no son parte de este VPS.

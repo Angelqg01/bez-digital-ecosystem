@@ -1,6 +1,6 @@
-# REST API — api.bez.digital
+# REST API — api.bezhas.com
 
-Endpoints HTTP para integración sin SDK. Base URL: `https://api.bez.digital`
+Endpoints HTTP para integración sin SDK. Base URL: `https://api.bezhas.com`
 
 ## Autenticación
 
@@ -8,7 +8,7 @@ Endpoints HTTP para integración sin SDK. Base URL: `https://api.bez.digital`
 Authorization: Bearer YOUR_API_KEY
 ```
 
-Obtén tu clave en: https://bez.digital/developers/keys
+Obtén tu clave en: https://bezhas.com/developers/keys
 
 ## Endpoints principales
 
@@ -92,7 +92,7 @@ Obtén tu clave en: https://bez.digital/developers/keys
 ## Ejemplo con curl
 
 ```bash
-curl -X POST https://api.bez.digital/api/v1/payments/create \
+curl -X POST https://api.bezhas.com/api/v1/payments/create \
   -H "Authorization: Bearer pk_live_xyz" \
   -H "Content-Type: application/json" \
   -d '{
@@ -105,8 +105,8 @@ curl -X POST https://api.bez.digital/api/v1/payments/create \
 
 ## Postman Collection
 
-Descargar: https://bez.digital/developers/postman-collection.json
+Descargar: https://bezhas.com/developers/postman-collection.json
 
 ## Documentación OpenAPI/Swagger
 
-Interactiva: https://api.bez.digital/docs
+Interactiva: https://api.bezhas.com/docs
