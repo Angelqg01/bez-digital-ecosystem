@@ -30,7 +30,17 @@ const limiter = rateLimit({
     message: { error: 'Demasiadas solicitudes, espera un momento.' },
 });
 
-// Todas las rutas: sesión obligatoria y, después, límite de peticiones por usuario.
+// Límite por IP ANTES de autenticar (frena fuerza bruta/abuso sin sesión; clave por defecto de la librería).
+const ipLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: Number(process.env.AI_WORKSPACE_IP_RATE_LIMIT || 120),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiadas solicitudes, espera un momento.' },
+});
+
+// Orden: límite por IP → sesión obligatoria → límite por usuario (protege el coste de IA).
+router.use(ipLimiter);
 router.use(protect);
 router.use(limiter);
 
