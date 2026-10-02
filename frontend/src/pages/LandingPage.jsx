@@ -9,7 +9,7 @@ import OAuthButtons from '../components/common/OAuthButtons';
 import {
     ShieldCheck, Coins, Globe2, BrainCircuit, ArrowRight,
     CheckCircle2, Code2, Terminal, ChevronRight,
-    Layers, Vote, Percent, Twitter, Github, Disc,
+    Layers, Vote, Percent, Twitter, Github, Disc, Linkedin,
     Zap, Lock, TrendingUp, Activity, X, Briefcase, User, Building2, Wallet,
     Ship, Anchor, Box, Cpu, Database, Crown, Building, Droplets, LineChart
 } from 'lucide-react';
@@ -773,7 +773,7 @@ const LandingPage = () => {
                         📅 Agendar Cita
                     </a>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4 reveal">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center mt-4 reveal">
                     <a
                         href="https://t.me/+34661175645"
                         target="_blank"
@@ -784,10 +784,22 @@ const LandingPage = () => {
                         Telegram
                     </a>
                     <a
-                        href="mailto:info.bezcoin@bez.digital"
+                        href="mailto:ventas@bezhas.com"
                         className="px-8 py-3 bg-transparent border border-gray-400 dark:border-white/20 text-gray-900 dark:text-white hover:bg-white/5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
                     >
-                        ✉️ info.bezcoin@bez.digital
+                        ✉️ Ventas · ventas@bezhas.com
+                    </a>
+                    <a
+                        href="mailto:support@bezhas.com"
+                        className="px-8 py-3 bg-transparent border border-gray-400 dark:border-white/20 text-gray-900 dark:text-white hover:bg-white/5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                    >
+                        ✉️ Soporte · support@bezhas.com
+                    </a>
+                    <a
+                        href="mailto:marketing@bezhas.com"
+                        className="px-8 py-3 bg-transparent border border-gray-400 dark:border-white/20 text-gray-900 dark:text-white hover:bg-white/5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                    >
+                        ✉️ Marketing · marketing@bezhas.com
                     </a>
                 </div>
             </section>
@@ -815,6 +827,9 @@ const LandingPage = () => {
                                 </a>
                                 <a href="https://discord.gg/bezhas" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-white transition-colors">
                                     <Disc className="w-5 h-5" />
+                                </a>
+                                <a href="https://www.linkedin.com/company/bezhas/" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-white transition-colors">
+                                    <Linkedin className="w-5 h-5" />
                                 </a>
                             </div>
                         </div>
