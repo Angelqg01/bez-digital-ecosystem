@@ -34,8 +34,9 @@ describe('sanitizeModelOutput', () => {
 
     describe('enlaces', () => {
         test('conserva enlaces a rutas internas del catálogo y a dominios propios', () => {
-            expect(s('[Staking](/staking)')).toBe('[Staking](/staking)');
-            expect(s('[Planes](/settings#plan)')).toBe('[Planes](/settings#plan)');
+            expect(s('[Tokenizar](/rwa)')).toBe('[Tokenizar](/rwa)');
+            expect(s('[Planes](/vip)')).toBe('[Planes](/vip)');
+            expect(s('[Staking](/dashboard/farming)')).toBe('[Staking](/dashboard/farming)');
             expect(s('[Web](https://www.bezhas.com/rwa)')).toBe('[Web](https://www.bezhas.com/rwa)');
         });
 
@@ -64,7 +65,7 @@ describe('sanitizeModelOutput', () => {
         test('enlace con título y definiciones de referencia', () => {
             expect(s('[x](https://evil.com "t")')).toContain(BLOCKED_LINK);
             expect(s('[x][1]\n\n[1]: https://evil.com')).toContain(BLOCKED_LINK);
-            expect(s('[x][1]\n\n[1]: /staking')).toContain('[1]: /staking');
+            expect(s('[x][1]\n\n[1]: /vip')).toContain('[1]: /vip');
         });
 
         test('autoenlaces y URLs sueltas', () => {
@@ -109,7 +110,7 @@ describe('sanitizeModelOutput', () => {
     });
 
     test('es idempotente (aplicarlo dos veces no cambia el resultado)', () => {
-        const dirty = '![x](https://evil.com) [a](https://evil.com) <script>1</script> [ok](/staking) https://evil.com 0x' + 'c'.repeat(64);
+        const dirty = '![x](https://evil.com) [a](https://evil.com) <script>1</script> [ok](/vip) https://evil.com 0x' + 'c'.repeat(64);
         const once = s(dirty);
         expect(s(once)).toBe(once);
     });

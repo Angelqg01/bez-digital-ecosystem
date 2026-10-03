@@ -27,7 +27,7 @@ describe('catálogo', () => {
 
     test('cubre las funciones pedidas: tokenizar, RWA, apps, planes, documentos exclusivos', () => {
         const ids = CATALOG.map((a) => a.id);
-        for (const needed of ['tokenize_asset', 'rwa_explore', 'subscribe_plans', 'exclusive_docs', 'developer_console', 'staking', 'bridge', 'dao', 'marketplace', 'buy_bez', 'wallet']) {
+        for (const needed of ['tokenize_asset', 'rwa_explore', 'subscribe_plans', 'exclusive_docs', 'developer_console', 'staking', 'bridge', 'dao', 'buy_bez', 'wallet', 'edge_nodes', 'prestige']) {
             expect(ids).toContain(needed);
         }
     });
@@ -39,12 +39,12 @@ describe('catálogo', () => {
     });
 
     test('hay un único destino por ruta permitida (lista derivada del catálogo)', () => {
-        expect(ALLOWED_PATHS).toEqual(expect.arrayContaining(['/rwa', '/staking', '/settings', '/developer-console']));
+        expect(ALLOWED_PATHS).toEqual(expect.arrayContaining(['/rwa', '/vip', '/docs', '/buy-tokens', '/dashboard/farming', '/dashboard/wallet', '/developer-console']));
     });
 });
 
 describe('isSafePath', () => {
-    test.each(['/rwa', '/staking', '/settings#plan', '/rwa?tab=tokenize', '/marketplace/item-1'])('acepta %s', (p) => {
+    test.each(['/rwa', '/vip', '/docs/guia-1', '/rwa?tab=tokenize', '/dashboard/farming', '/dashboard/wallet#gov'])('acepta %s', (p) => {
         expect(isSafePath(p)).toBe(true);
     });
 
@@ -164,8 +164,8 @@ describe('suggestActions', () => {
 
 describe('resolveAction', () => {
     test('devuelve id, tipo, destino y marca de sensibilidad', () => {
-        expect(resolveAction(free, 'tokenize_asset')).toEqual({ id: 'tokenize_asset', kind: 'navigate', href: '/rwa', sensitive: true });
-        expect(resolveAction(free, 'subscribe_plans')).toMatchObject({ kind: 'plans', href: '/settings#plan' });
+        expect(resolveAction(free, 'tokenize_asset')).toEqual({ id: 'tokenize_asset', kind: 'navigate', href: '/rwa', sensitive: true, external: false });
+        expect(resolveAction(free, 'subscribe_plans')).toMatchObject({ kind: 'plans', href: '/vip', external: false });
     });
 
     test('sin sesión → 401', () => {
@@ -184,5 +184,34 @@ describe('resolveAction', () => {
 
     test('no se puede abrir un id de una acción bloqueada manipulando el plan en el principal', () => {
         expect(() => resolveAction({ ...free, plan: 'CREATOR; admin' }, 'exclusive_docs')).toThrow(expect.objectContaining({ status: 403 }));
+    });
+});
+
+describe('destinos reales del frontend oficial (Vite) y apps secundarias', () => {
+    const by = Object.fromEntries(CATALOG.map((a) => [a.id, a]));
+
+    test('apps secundarias: marcadas como externas (navegación completa) y bajo /dashboard o rutas del ecosistema', () => {
+        for (const id of ['staking', 'farming', 'wallet', 'bridge', 'dao', 'gas_tank', 'edge_nodes', 'vision_scan', 'prestige', 'cargo_link', 'hub']) {
+            expect(by[id].external).toBe(true);
+            expect(by[id].href).toMatch(/^\/dashboard(\/[a-z]+)?$/);
+        }
+        expect(by.energy.external && by.sphere.external).toBe(true);
+    });
+
+    test('rutas de la SPA: no externas y existentes en el router (lista de rutas conocidas del frontend)', () => {
+        const SPA_ROUTES = ['/rwa', '/real-estate', '/buy-tokens', '/pay', '/developer-console', '/business-dashboard', '/logistics',
+            '/ad-center', '/oracle', '/magazine', '/home', '/vip', '/settings', '/profile', '/docs'];
+        for (const a of CATALOG.filter((x) => !x.external)) expect(SPA_ROUTES).toContain(a.href);
+    });
+
+    test('no quedan rutas que solo existían en el frontend descartado (Next)', () => {
+        for (const old of ['/staking', '/farming', '/bridge', '/dao', '/marketplace', '/tokenomics', '/edge-node', '/feed', '/wallet']) {
+            expect(CATALOG.map((a) => a.href)).not.toContain(old);
+        }
+    });
+
+    test('planes y documentos exclusivos apuntan a sus páginas reales (/vip y /docs)', () => {
+        expect(by.subscribe_plans.href).toBe('/vip');
+        expect(by.exclusive_docs.href).toBe('/docs');
     });
 });

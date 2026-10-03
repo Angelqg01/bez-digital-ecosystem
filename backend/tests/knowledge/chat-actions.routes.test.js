@@ -68,11 +68,14 @@ describe('POST /actions/:id/open', () => {
     });
 
     test.each([
-        ['tokenize_asset', '/rwa'], ['rwa_explore', '/rwa'], ['staking', '/staking'], ['bridge', '/bridge'],
-        ['subscribe_plans', '/settings#plan'], ['developer_console', '/developer-console'], ['marketplace', '/marketplace'],
-    ])('%s abre %s', async (id, href) => {
+        ['tokenize_asset', '/rwa', false], ['rwa_explore', '/rwa', false], ['buy_bez', '/buy-tokens', false], ['bezpay', '/pay', false],
+        ['subscribe_plans', '/vip', false], ['developer_console', '/developer-console', false], ['magazine', '/magazine', false],
+        ['staking', '/dashboard/farming', true], ['wallet', '/dashboard/wallet', true], ['bridge', '/dashboard/wallet', true],
+        ['edge_nodes', '/dashboard/validators', true], ['energy', '/enterprise', true], ['hub', '/dashboard', true],
+    ])('%s abre %s (app secundaria: %s)', async (id, href, external) => {
         const res = await post(`/actions/${id}/open`, free).expect(200);
         expect(res.body.href).toBe(href);
+        expect(res.body.external).toBe(external);
     });
 
     test('documentos exclusivos: 403 con enlace de mejora para plan gratuito; 200 para plan de pago', async () => {
@@ -84,7 +87,7 @@ describe('POST /actions/:id/open', () => {
 
     test('un cliente no puede elegir el destino: el body se ignora', async () => {
         const res = await post('/actions/staking/open', free, { href: 'https://evil.com', id: 'wallet' }).expect(200);
-        expect(res.body.href).toBe('/staking');
+        expect(res.body.href).toBe('/dashboard/farming');
     });
 
     test('ids desconocidos o maliciosos → 404', async () => {
@@ -133,10 +136,10 @@ describe('POST /chat con acciones', () => {
     });
 
     test('saneado de salida: el modelo no puede colar imágenes ni enlaces externos', async () => {
-        jest.spyOn(gateway, 'complete').mockResolvedValue({ provider: 'mock', text: 'Hola ![x](https://evil.com/?d=1) [pulsa](https://evil.com) [ok](/staking)' });
+        jest.spyOn(gateway, 'complete').mockResolvedValue({ provider: 'mock', text: 'Hola ![x](https://evil.com/?d=1) [pulsa](https://evil.com) [ok](/vip)' });
         const res = await post('/chat', free, { message: 'hola' }).expect(200);
         expect(res.body.reply).not.toMatch(/evil/);
-        expect(res.body.reply).toContain('[ok](/staking)');
+        expect(res.body.reply).toContain('[ok](/vip)');
     });
 
     test('la conversación guardada contiene el texto saneado, no el original', async () => {
@@ -187,7 +190,7 @@ describe('POST /chat/stream con acciones', () => {
     test('texto limpio: no hay replace', async () => {
         jest.spyOn(gateway, 'stream').mockImplementation(async function* () {
             yield { type: 'start', provider: 'mock' };
-            yield { type: 'delta', text: 'Todo bien [Staking](/staking)' };
+            yield { type: 'delta', text: 'Todo bien [Staking](/dashboard/farming)' };
         });
         const events = parseSse((await sse(free, { message: 'hola' })).body);
         expect(events.map((e) => e.event)).not.toContain('replace');
