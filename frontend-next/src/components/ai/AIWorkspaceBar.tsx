@@ -82,9 +82,9 @@ export default function AIWorkspaceBar() {
             }
 
             const parse = createSseParser(({ event, data }) => {
-                if (event === "meta") { setConversationId(data.conversationId); patchLast((m) => ({ ...m, sources: data.sources })); }
-                else if (event === "delta") patchLast((m) => ({ ...m, content: m.content + data.text }));
-                else if (event === "error") patchLast((m) => ({ ...m, error: true, content: m.content || data.error }));
+                if (event === "meta") { setConversationId(String(data.conversationId)); patchLast((m) => ({ ...m, sources: data.sources as Source[] })); }
+                else if (event === "delta") patchLast((m) => ({ ...m, content: m.content + String(data.text) }));
+                else if (event === "error") patchLast((m) => ({ ...m, error: true, content: m.content || String(data.error) }));
             });
             const reader = res.body.getReader();
             const decoder = new TextDecoder();

@@ -2,7 +2,7 @@
  * Parser incremental de Server-Sent Events (formato `event:` / `data:` separado por línea en blanco).
  * Tolera trozos que cortan un evento por la mitad y saltos de línea \r\n.
  */
-export type SseEvent = { event: string; data: any };
+export type SseEvent = { event: string; data: Record<string, unknown> };
 
 export function createSseParser(onEvent: (e: SseEvent) => void) {
     let buffer = "";
@@ -21,7 +21,9 @@ export function createSseParser(onEvent: (e: SseEvent) => void) {
                 else if (line.startsWith("data:")) data.push(line.slice(5).replace(/^ /, ""));
             }
             if (!data.length) continue;
-            try { onEvent({ event, data: JSON.parse(data.join("\n")) }); } catch { /* evento mal formado: se ignora */ }
+            let parsed: unknown;
+            try { parsed = JSON.parse(data.join("\n")); } catch { continue; } // evento mal formado: se ignora
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) onEvent({ event, data: parsed as Record<string, unknown> });
         }
     };
 }
