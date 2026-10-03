@@ -247,3 +247,40 @@ describe('hooks por defecto', () => {
         await expect(reg.run('afterModel', { principal, text: 'x' })).rejects.toThrow();
     });
 });
+
+describe('stripHtml (sin recomposición de etiquetas)', () => {
+    const { stripHtml } = require('../../services/ai-workspace/outputSanitizer');
+    const noRawTag = (out) => !/<\s*\/?\s*[a-zA-Z!?]/.test(out.replace(/<https?:\/\/[^\s<>]+>/g, ''));
+
+    test.each([
+        '<scr<b>ipt>alert(1)</script>', '<<script>script>alert(1)<</script>/script>', '<scr<script></script>ipt>x',
+        '<img src=x onerror=alert(1)', '< script>x', '<\u0000script>', '<!--<script>-->x', '<?php x ?>', '</script><script>x</script>',
+        '<a<b>href="javascript:x">y', '<<<<<<script>script>',
+    ])('no deja etiquetas tras sanear %j', (dirty) => {
+        expect(noRawTag(stripHtml(dirty))).toBe(true);
+        expect(noRawTag(sanitizeModelOutput(dirty))).toBe(true);
+    });
+
+    test('elimina el contenido de elementos peligrosos y conserva texto vecino', () => {
+        expect(stripHtml('a<script>alert(1)</script>b')).toBe('ab');
+        expect(stripHtml('a<STYLE>x{}</STYLE>b<p>c</p>')).toBe('abc');
+    });
+
+    test('no altera comparaciones y código con "<" (1 < 2, a<=b, x <3)', () => {
+        expect(stripHtml('if (1 < 2 && a<=b && x <3) {}')).toBe('if (1 < 2 && a<=b && x <3) {}');
+    });
+
+    test('mantiene autoenlaces <https://...> (se tratan después) y es idempotente', () => {
+        const once = sanitizeModelOutput('<scr<b>ipt>x <https://www.bezhas.com/rwa> y');
+        expect(once).toContain('<https://www.bezhas.com/rwa>');
+        expect(sanitizeModelOutput(once)).toBe(once);
+    });
+
+    test('entrada patológica sin cierre no cuelga', () => {
+        const t = Date.now();
+        stripHtml('<a'.repeat(100000));
+        stripHtml('<script>x</script>'.repeat(20000));
+        stripHtml('<script>' + 'a'.repeat(100000));
+        expect(Date.now() - t).toBeLessThan(2000);
+    });
+});

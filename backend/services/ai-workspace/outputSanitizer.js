@@ -69,6 +69,52 @@ function mapMarkdownLinks(text, replace) {
     return out;
 }
 
+const DANGEROUS_ELEMENTS = ['script', 'style', 'iframe', 'object', 'embed', 'svg', 'math', 'form'];
+const TRUSTED_AUTOLINK = /^<https?:\/\/[^\s<>]+>$/i;
+
+/**
+ * Elimina el HTML con un recorrido lineal (no con `replace`: una sustitución única puede dejar un fragmento que
+ * vuelve a formar una etiqueta, p. ej. `<scr<b>ipt>`). Garantía: en la salida NO queda ningún '<' sin escapar,
+ * salvo los autoenlaces `<https://...>` que se tratan después. Etiquetas de hasta 500 caracteres; contenido
+ * de elementos peligrosos hasta 20000.
+ */
+function stripHtml(text) {
+    let out = '';
+    let lower = null; // minúsculas del texto, calculado una sola vez y solo si hace falta
+    let i = 0;
+    while (i < text.length) {
+        const ch = text[i];
+        if (ch !== '<') { out += ch; i++; continue; }
+        const next = text[i + 1] || '';
+        const startsTag = /[A-Za-z/!?]/.test(next) || (next === ' ' && /[A-Za-z/]/.test(text[i + 2] || ''));
+        // Búsqueda acotada a 500 caracteres: tiempo lineal incluso con miles de '<' sin cierre.
+        const rel = startsTag ? text.slice(i + 1, i + 502).indexOf('>') : -1;
+        const end = rel === -1 ? -1 : i + 1 + rel;
+        if (!startsTag || end === -1) {
+            // '<' seguido de espacio, dígito o '=' (p. ej. `1 < 2` en código) no puede formar etiqueta: se deja tal cual.
+            // Cualquier otro '<' se escapa, para que al quitar una etiqueta vecina nunca se recomponga una nueva.
+            out += /[\s\d=]/.test(next) && next !== '' && !(next === ' ' && /[A-Za-z/]/.test(text[i + 2] || '')) ? '<' : '&lt;';
+            i++;
+            continue;
+        }
+        const tag = text.slice(i, end + 1);
+        if (TRUSTED_AUTOLINK.test(tag)) { out += tag; i = end + 1; continue; }
+        const name = /^<\s*([A-Za-z][A-Za-z0-9]*)/.exec(tag);
+        const isOpening = !!name && !/^<\s*\//.test(tag);
+        i = end + 1;
+        if (isOpening && DANGEROUS_ELEMENTS.includes(name[1].toLowerCase())) {
+            // Salta también el contenido hasta el cierre correspondiente (si no hay, hasta el límite).
+            if (lower === null) lower = text.toLowerCase();
+            const close = lower.indexOf(`</${name[1].toLowerCase()}`, i);
+            if (close !== -1 && close - i <= 20000) {
+                const closeEnd = text.indexOf('>', close);
+                i = closeEnd === -1 ? text.length : closeEnd + 1;
+            }
+        }
+    }
+    return out;
+}
+
 function sanitizeModelOutput(input) {
     if (typeof input !== 'string' || !input) return '';
     let text = input;
@@ -80,9 +126,8 @@ function sanitizeModelOutput(input) {
     text = text.replace(/!\[[^\]]{0,300}\]\([^)]{0,2000}\)/g, BLOCKED_IMAGE);
     text = text.replace(/!\[[^\]]{0,300}\]\[[^\]]{0,100}\]/g, BLOCKED_IMAGE);
 
-    // HTML: bloques peligrosos completos y cualquier otra etiqueta.
-    text = text.replace(/<\s*(script|style|iframe|object|embed|svg|math|form)\b[\s\S]{0,20000}?<\s*\/\s*\1\s*>/gi, '');
-    text = text.replace(/<\/?\s*[a-zA-Z][^>]{0,500}>/g, (tag) => (/^<https?:\/\/[^\s>]+>$/i.test(tag) ? tag : ''));
+    // HTML: se eliminan las etiquetas (y el contenido de las peligrosas); todo '<' restante se escapa.
+    text = stripHtml(text);
 
     // Enlaces Markdown [texto](destino "título"): se conserva solo si el destino es de confianza.
     text = mapMarkdownLinks(text, (label, target) =>
@@ -102,4 +147,4 @@ function sanitizeModelOutput(input) {
     return text;
 }
 
-module.exports = { sanitizeModelOutput, stripHiddenChars, trustedUrl, BLOCKED_LINK, BLOCKED_IMAGE };
+module.exports = { sanitizeModelOutput, stripHiddenChars, stripHtml, trustedUrl, BLOCKED_LINK, BLOCKED_IMAGE };
