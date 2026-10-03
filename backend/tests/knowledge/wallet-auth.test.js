@@ -35,7 +35,7 @@ describe('walletAuth (SIWE → JWT)', () => {
 
     test('registro con firma válida emite un JWT que protect aceptaría', async () => {
         const d = deps();
-        const { nonce } = svc.issueNonce(wallet.address);
+        const { nonce } = await svc.issueNonce(wallet.address);
         const out = await svc.loginOrRegisterWithWallet(await signedMessage(wallet, nonce), d);
         expect(out.isNewUser).toBe(true);
         expect(out.user.walletAddress).toBe(wallet.address.toLowerCase());
@@ -44,8 +44,8 @@ describe('walletAuth (SIWE → JWT)', () => {
 
     test('segundo login reutiliza el usuario existente', async () => {
         const d = deps();
-        const a = await svc.loginOrRegisterWithWallet(await signedMessage(wallet, svc.issueNonce(wallet.address).nonce), d);
-        const b = await svc.loginOrRegisterWithWallet(await signedMessage(wallet, svc.issueNonce(wallet.address).nonce), d);
+        const a = await svc.loginOrRegisterWithWallet(await signedMessage(wallet, (await svc.issueNonce(wallet.address)).nonce), d);
+        const b = await svc.loginOrRegisterWithWallet(await signedMessage(wallet, (await svc.issueNonce(wallet.address)).nonce), d);
         expect(a.isNewUser).toBe(true);
         expect(b.isNewUser).toBe(false);
         expect(b.user.id).toBe(a.user.id);
@@ -53,7 +53,7 @@ describe('walletAuth (SIWE → JWT)', () => {
 
     test('replay: el nonce es de un solo uso', async () => {
         const d = deps();
-        const signed = await signedMessage(wallet, svc.issueNonce(wallet.address).nonce);
+        const signed = await signedMessage(wallet, (await svc.issueNonce(wallet.address)).nonce);
         await svc.loginOrRegisterWithWallet(signed, d);
         await expect(svc.loginOrRegisterWithWallet(signed, d)).rejects.toMatchObject({ status: 401 });
     });
@@ -65,26 +65,26 @@ describe('walletAuth (SIWE → JWT)', () => {
 
     test('nonce ligado a la dirección: otra wallet no puede usarlo', async () => {
         const attacker = Wallet.createRandom();
-        const { nonce } = svc.issueNonce(wallet.address);
+        const { nonce } = await svc.issueNonce(wallet.address);
         await expect(svc.loginOrRegisterWithWallet(await signedMessage(attacker, nonce), deps())).rejects.toMatchObject({ status: 401 });
     });
 
     test('suplantación: firmar con otra clave un mensaje que declara la dirección de la víctima', async () => {
         const attacker = Wallet.createRandom();
-        const { nonce } = svc.issueNonce(wallet.address);
+        const { nonce } = await svc.issueNonce(wallet.address);
         const signed = await signedMessage(wallet, nonce); // mensaje de la víctima
         signed.signature = await attacker.signMessage(signed.message); // firma del atacante
         await expect(svc.loginOrRegisterWithWallet(signed, deps())).rejects.toMatchObject({ status: 401 });
     });
 
     test('dominio no permitido (phishing) es rechazado', async () => {
-        const { nonce } = svc.issueNonce(wallet.address);
+        const { nonce } = await svc.issueNonce(wallet.address);
         await expect(svc.loginOrRegisterWithWallet(await signedMessage(wallet, nonce, { domain: 'evil.example', uri: 'https://evil.example' }), deps())).rejects.toMatchObject({ status: 401 });
     });
 
     test('sin expirationTime, caducado o demasiado largo es rechazado', async () => {
         for (const over of [{ expirationTime: undefined }, { expirationTime: new Date(Date.now() - 1000).toISOString(), issuedAt: new Date(Date.now() - 5000).toISOString() }, { expirationTime: new Date(Date.now() + 24 * 3600e3).toISOString() }]) {
-            const { nonce } = svc.issueNonce(wallet.address);
+            const { nonce } = await svc.issueNonce(wallet.address);
             await expect(svc.loginOrRegisterWithWallet(await signedMessage(wallet, nonce, over), deps())).rejects.toMatchObject({ status: 401 });
         }
     });
@@ -93,13 +93,13 @@ describe('walletAuth (SIWE → JWT)', () => {
         const saved = process.env.JWT_SECRET; const env = process.env.NODE_ENV;
         delete process.env.JWT_SECRET; process.env.NODE_ENV = 'production';
         try {
-            const { nonce } = svc.issueNonce(wallet.address);
+            const { nonce } = await svc.issueNonce(wallet.address);
             await expect(svc.loginOrRegisterWithWallet(await signedMessage(wallet, nonce), deps())).rejects.toMatchObject({ status: 503 });
         } finally { process.env.JWT_SECRET = saved; process.env.NODE_ENV = env; }
     });
 
     test('entradas inválidas: dirección y mensaje basura', async () => {
-        expect(() => svc.issueNonce('0x123')).toThrow('inválida');
+        await expect(svc.issueNonce('0x123')).rejects.toThrow('inválida');
         await expect(svc.loginOrRegisterWithWallet({ message: 'basura', signature: '0x00' }, deps())).rejects.toMatchObject({ status: 400 });
     });
 });

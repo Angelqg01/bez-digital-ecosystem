@@ -53,6 +53,8 @@ desarrollo. No arranca con `NODE_ENV=production`.
 | `AI_STREAM_PACE_MS` | Pausa por palabra en modo local (simula un modelo) |
 | `AI_WORKSPACE_RATE_LIMIT` / `_IP_RATE_LIMIT` | Peticiones por minuto por usuario / IP |
 | `AI_CONVERSATIONS_PERSIST`, `KNOWLEDGE_PERSIST` | `false` = solo memoria (el servidor de desarrollo lo fija) |
+| `REDIS_URL` (o `REDIS_HOST`/`REDIS_PORT`) | Nonces SIWE en Redis (multi-instancia). Sin Redis se usan en memoria (una sola instancia); con Redis configurado pero caído el login con wallet responde 503 |
+| `WALLET_AUTH_REQUIRE_REDIS=true` | Exige Redis para los nonces SIWE aunque no esté configurado |
 | `DEV_ALLOWED_ORIGINS` | Orígenes CORS permitidos (por defecto localhost:3000 y 5173) |
 
 ## Pruebas
