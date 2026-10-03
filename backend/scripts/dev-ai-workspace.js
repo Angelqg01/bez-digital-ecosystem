@@ -53,7 +53,7 @@ const MemoryUser = {
             walletAddress: d.walletAddress ? String(d.walletAddress).toLowerCase() : null,
             roles: d.roles || ['USER'],
             role: 'USER',
-            subscription: 'FREE',
+            subscription: d.subscription || 'FREE',
             createdAt: new Date().toISOString(),
             async save() { return this; },
         };
@@ -113,6 +113,8 @@ app.use((req, _res, next) => { req.log = { info() {}, warn: console.warn, error:
 const sign = (id) => jwt.sign({ id }, getJwtSecret(), { expiresIn: '7d' });
 const publicUser = (u) => ({ id: u.id, username: u.username, email: u.email, walletAddress: u.walletAddress, roles: u.roles });
 
+const DEV_PLANS = ['starter', 'creator', 'business', 'enterprise'];
+
 // ─── Registro / login por email (versión de desarrollo) ───────────────────────
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,255}$/;
 app.post('/api/auth/register-email', async (req, res) => {
@@ -120,7 +122,10 @@ app.post('/api/auth/register-email', async (req, res) => {
     if (typeof email !== 'string' || !EMAIL.test(email)) return res.status(400).json({ error: 'Email válido requerido' });
     if (typeof password !== 'string' || password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     if (byEmail.has(email.toLowerCase())) return res.status(409).json({ error: 'Email ya registrado' });
+    // Solo en este servidor de desarrollo: `plan` permite probar las funciones de pago (documentos exclusivos, etc.).
+    const plan = typeof req.body.plan === 'string' && DEV_PLANS.includes(req.body.plan.toLowerCase()) ? req.body.plan.toLowerCase() : undefined;
     const user = await MemoryUser.create({
+        subscription: plan,
         email: email.toLowerCase(), password: hashPassword(password),
         username: typeof username === 'string' && /^[\w .-]{1,50}$/.test(username) ? username : undefined,
     });
@@ -141,6 +146,19 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, mode: 'dev-ai-workspa
 // ─── Rutas reales ─────────────────────────────────────────────────────────────
 app.use('/api/wallet-auth', require('../routes/wallet-auth.routes'));
 app.use('/api/ai-workspace', require('../routes/ai-workspace.routes'));
+
+// Documentos exclusivos de plan (datos de DESARROLLO): solo los planes de pago los recuperan; el plan gratuito, no.
+const { knowledge } = require('../services/knowledge');
+const devAdmin = { userId: 'dev-seed', tenantId: 'dev-seed', roles: ['ADMIN', 'USER'], plan: 'enterprise' };
+setTimeout(() => {
+    for (const [id, title, content] of [
+        ['excl_001', 'Guía exclusiva: estrategia de staking para clientes Creator', 'Guía exclusiva para clientes de pago. La estrategia de staking recomendada para planes Creator, Business y Enterprise combina un bloqueo de 90 días con reinversión mensual de recompensas, y reserva un 20% para el pool de liquidez de BZ Capital.'],
+        ['excl_002', 'Manual exclusivo: tokenización de activos con soporte prioritario', 'Manual exclusivo para clientes de pago. La tokenización de inmuebles incluye simulación previa, valoración independiente, aprobación de cumplimiento y firma segura; los planes Business y Enterprise tienen un gestor dedicado.'],
+    ]) {
+        knowledge.ingest(devAdmin, { id, title, content, classification: 'PUBLIC', global: true, allowed_plans: ['creator', 'business', 'enterprise'], source: 'dev_exclusive' })
+            .catch((e) => console.warn('⚠️ seed exclusivo:', e.message));
+    }
+}, 200);
 
 app.use((req, res) => res.status(404).json({ error: 'No encontrado' }));
 
