@@ -40,11 +40,13 @@ export function AuthProvider({ children }) {
         return { message, signature: await signer.signMessage(message) };
     };
 
-    const startSession = (data) => {
+    // `redirect: false` mantiene al usuario en la página actual (p. ej. al iniciar sesión desde el chat flotante).
+    const startSession = (data, { redirect = true } = {}) => {
         setUser(data.user);
         setToken(data.token);
         localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
-        navigate('/');
+        if (redirect) navigate('/');
+        return data;
     };
 
     useEffect(() => {
@@ -56,17 +58,14 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
-    const login = async (email, password) => {
+    const login = async (email, password, { redirect = true } = {}) => {
         setLoading(true);
         try {
             const data = await authService.login(email, password);
             if (data.requires2FA) {
                 return data; // Devolvemos el estado 2FA para que el LoginPage muestre el input
             }
-            setUser(data.user);
-            setToken(data.token);
-            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
-            navigate('/');
+            return startSession(data, { redirect });
         } catch (err) {
             setUser(null);
             setToken(null);
@@ -76,14 +75,11 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const verifyLogin2FA = async (userId, tokenStr) => {
+    const verifyLogin2FA = async (twoFactorToken, tokenStr, { redirect = true } = {}) => {
         setLoading(true);
         try {
-            const data = await authService.verifyLogin2FA(userId, tokenStr);
-            setUser(data.user);
-            setToken(data.token);
-            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
-            navigate('/');
+            const data = await authService.verifyLogin2FA(twoFactorToken, tokenStr);
+            return startSession(data, { redirect });
         } catch (err) {
             setUser(null);
             setToken(null);
@@ -109,11 +105,11 @@ export function AuthProvider({ children }) {
     };
 
     // Login si la wallet existe; si no, registro (misma firma SIWE).
-    const loginOrRegisterWithWallet = async (walletAddress, { referralCode } = {}) => {
+    const loginOrRegisterWithWallet = async (walletAddress, { referralCode, redirect = true } = {}) => {
         setLoading(true);
         try {
             const { message, signature } = await signSiwe(walletAddress);
-            startSession(await authService.loginOrRegisterWithWallet(message, signature, referralCode));
+            return startSession(await authService.loginOrRegisterWithWallet(message, signature, referralCode), { redirect });
         } catch (err) {
             setUser(null);
             setToken(null);
@@ -123,14 +119,10 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const register = async (userData) => {
+    const register = async (userData, { redirect = true } = {}) => {
         setLoading(true);
         try {
-            const data = await authService.register(userData);
-            setUser(data.user);
-            setToken(data.token);
-            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
-            navigate('/');
+            return startSession(await authService.register(userData), { redirect });
         } catch (err) {
             setUser(null);
             setToken(null);
@@ -224,11 +216,11 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const logout = () => {
+    const logout = ({ redirect = true } = {}) => {
         setUser(null);
         setToken(null);
         localStorage.removeItem('auth');
-        navigate('/login');
+        if (redirect) navigate('/login');
     };
 
     return (

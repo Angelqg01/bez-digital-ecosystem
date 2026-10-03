@@ -72,4 +72,17 @@ describe('dev-ai-workspace', () => {
         expect(bad.headers['access-control-allow-origin']).toBeUndefined();
         expect(bad.headers['access-control-allow-credentials']).toBeUndefined();
     });
+
+    test('plan de desarrollo: los documentos exclusivos solo los ven los planes de pago', async () => {
+        await new Promise((r) => setTimeout(r, 400)); // deja terminar el seed de documentos exclusivos
+        const docsFor = async (email, plan) => {
+            const { token } = (await request(app).post('/api/auth/register-email').send({ email, password: 'secreto1', plan }).expect(201)).body;
+            const res = await request(app).get('/api/ai-workspace/knowledge').set('Authorization', `Bearer ${token}`).expect(200);
+            return res.body.documents.map((d) => d.title);
+        };
+        expect((await docsFor('pago@t.dev', 'creator')).filter((t) => /exclusiv/i.test(t))).toHaveLength(2);
+        expect((await docsFor('gratis@t.dev')).filter((t) => /exclusiv/i.test(t))).toHaveLength(0);
+        // un plan inventado no concede nada
+        expect((await docsFor('falso@t.dev', 'platino')).filter((t) => /exclusiv/i.test(t))).toHaveLength(0);
+    });
 });
