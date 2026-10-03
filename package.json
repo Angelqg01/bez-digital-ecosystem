@@ -65,20 +65,20 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
     "@playwright/test": "^1.41.0",
-    "concurrently": "^9.2.1",
-    "ethers": "6.16.0",
-    "hardhat": "^2.22.19",
+    "concurrently": "^10.0.5",
+    "ethers": "6.17.0",
+    "hardhat": "^3.18.0",
     "supertest": "^7.2.2"
   },
   "dependencies": {
     "@adraffy/ens-normalize": "^1.11.1",
     "@chainlink/contracts": "^1.5.0",
-    "@chainlink/contracts-ccip": "^1.6.4",
+    "@chainlink/contracts-ccip": "^2.0.0",
     "@openzeppelin/contracts": "^5.4.0",
     "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
+    "dotenv": "^18.0.5",
     "express": "^5.2.1"
   },
   "packageManager": "pnpm@11.0.0",
