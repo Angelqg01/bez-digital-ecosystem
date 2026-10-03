@@ -129,16 +129,13 @@ Si fallan a partir de ahí, el fallo es real y debe mirarse.
 | `docker-compose.gcp.yml` | `./backend/Dockerfile.optimized` |
 | `package.json` → `build:backend:docker` | `backend/Dockerfile.optimized` |
 
-Lo mismo en el frontend: la CI compila `frontend/` y el workflow despliega
-`frontend-next/`.
+**Frontend: decisión tomada.** El frontend oficial y único de www.bezhas.com es
+`frontend/` (Vite): es lo que construyen `cloudbuild.yaml` (`frontend/Dockerfile.gcp`)
+y los `docker-compose`. `frontend-next/` (Next.js) se eliminó y la CI
+(`ci.yml`, `deploy-gcp.yml`, `security-audit.yml`) ahora compila y prueba `frontend/`,
+de modo que lo que se prueba es lo que se despliega. Su historial sigue en git.
 
-No parece un descuido: el commit `f0fa33e` («realign CI/CD workflows and
-dockerize Next.js and API backend») apuntó el workflow a `api/` y
-`frontend-next/` a propósito, así que hay una migración en marcha. Pero
-mientras dure, **el despliegue publicaría código que ninguna prueba ha
-tocado**, y las 779 pruebas del backend no cubrirían lo que corre en
-producción.
-
-Hay que decidir cuál de las dos es la buena antes de activar el despliegue, y
-apuntar las pruebas a esa. Es una decisión de arquitectura, no de
-configuración, y por eso no se ha tomado aquí.
+Sigue abierta la decisión del backend (`api/` frente a `backend/`): mientras no se
+tome, **el despliegue publicaría código que ninguna prueba ha tocado**, y las 779
+pruebas del backend no cubrirían lo que corre en producción. Es una decisión de
+arquitectura, no de configuración, y por eso no se ha tomado aquí.
