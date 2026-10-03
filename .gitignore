@@ -110,3 +110,5 @@ deploy/gcp/dns-backups/
 
 # Knowledge Plane local store
 backend/data/knowledge-store.json*
+
+backend/data/ai-conversations.json*

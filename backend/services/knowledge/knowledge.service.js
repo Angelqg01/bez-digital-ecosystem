@@ -14,6 +14,7 @@ const { MemoryStore } = require('./store');
 
 const MAX_DOC_CHARS = 200_000;
 const MAX_TOP_K = 8;
+const MIN_RELATIVE_SCORE = 0.5;
 
 const sha256 = (s) => `sha256:${crypto.createHash('sha256').update(s).digest('hex')}`;
 const cosine = (a, b) => {
@@ -112,7 +113,11 @@ class KnowledgeService {
         if (!allowed.length) return [];
 
         // 2) BM25 (+ vector con Reciprocal Rank Fusion si hay embedder).
-        let ranked = bm25Rank(query, allowed).map((r) => r.chunk);
+        // Se descartan resultados claramente menos relevantes que el mejor (evita que una palabra
+        // común, p. ej. "BEZ", arrastre documentos que no tienen que ver con la pregunta).
+        const scored = bm25Rank(query, allowed);
+        const floor = scored.length ? scored[0].score * MIN_RELATIVE_SCORE : 0;
+        let ranked = scored.filter((r) => r.score >= floor).map((r) => r.chunk);
         if (this.embedder) {
             const qv = await this.embedder.embed(query);
             const vec = allowed
