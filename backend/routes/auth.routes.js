@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const { getJwtSecret } = require('../config/jwtSecret');
 const { ethers } = require('ethers');
 const crypto = require('crypto');
@@ -26,6 +27,28 @@ const generateToken = (id) => {
     expiresIn: '30d', // Token expires in 30 days
   });
 };
+
+// Token de corta vida que prueba que la contraseña ya fue verificada (paso 1 del login con 2FA).
+// El paso 2 (verify-login-2fa) deriva el usuario de este token, nunca de un userId enviado por el cliente.
+const TWO_FA_PURPOSE = '2fa-login';
+const generateTwoFactorToken = (id) => jwt.sign({ id: String(id), purpose: TWO_FA_PURPOSE }, getJwtSecret(), { expiresIn: '5m' });
+const readTwoFactorToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret());
+    return decoded && decoded.purpose === TWO_FA_PURPOSE ? decoded.id : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+// Límite de intentos del segundo factor (6 dígitos = fuerza bruta viable sin límite).
+const twoFactorLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.AUTH_2FA_RATE_LIMIT || 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos, espera unos minutos.' },
+});
 
 // Helper to generate random 6-digit code
 const generateVerificationCode = () => {
@@ -367,7 +390,7 @@ router.post('/login-email', [
   const { email, password } = req.body;
 
   try {
-    const user = await User.findByEmail(email.toLowerCase()).select('+password +twoFactorSecret +backupCodes');
+    let user = await User.findByEmail(email.toLowerCase()).select('+password +twoFactorSecret +backupCodes');
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
@@ -384,7 +407,7 @@ router.post('/login-email', [
       return res.json({
         message: '2FA verification required',
         requires2FA: true,
-        userId: user._id
+        twoFactorToken: generateTwoFactorToken(user._id)
       });
     }
 
@@ -425,35 +448,31 @@ router.post('/login-email', [
  * @desc    Verify TOTP token after initial login
  * @access  Public
  */
-router.post('/verify-login-2fa', [
-  body('userId').isString().notEmpty(),
+router.post('/verify-login-2fa', twoFactorLimiter, [
+  body('twoFactorToken').isString().notEmpty().withMessage('twoFactorToken requerido'),
   body('token').isString().notEmpty().withMessage('El código es requerido')
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  const { userId, token } = req.body;
+  const { twoFactorToken, token } = req.body;
+  const userId = readTwoFactorToken(twoFactorToken);
+  if (!userId) return res.status(401).json({ error: 'Sesión de verificación inválida o caducada. Inicia sesión de nuevo.' });
   try {
-    const user = await User.findById(userId).select('+twoFactorSecret +backupCodes');
+    let user = await User.findById(userId).select('+twoFactorSecret +backupCodes');
     if (!user || !user.is2FAEnabled) {
       return res.status(400).json({ error: '2FA no está habilitado para este usuario' });
     }
 
-    let isValid = false;
-    let usedBackupCode = false;
-
-    // Check if it's an 8-character backup code or 6-digit TOTP
-    if (token.length === 8) {
-      const backupResult = totpService.verifyBackupCode(token, user.backupCodes);
-      if (backupResult.valid) {
-        isValid = true;
-        usedBackupCode = true;
-        user.backupCodes = backupResult.remainingCodes;
-        await user.save();
-      }
-    } else {
-      const secret = totpService.decryptSecret(user.twoFactorSecret);
-      isValid = totpService.verify2FAToken(token, secret);
+    // Primero TOTP; si no coincide se prueba como código de respaldo. No se ramifica según
+    // el formato que declara el cliente: ambas verificaciones aceptan cualquier cadena.
+    const totpOk = totpService.verify2FAToken(token, totpService.decryptSecret(user.twoFactorSecret));
+    const backupResult = totpOk ? { valid: false } : totpService.verifyBackupCode(token, user.backupCodes || []);
+    const usedBackupCode = backupResult.valid;
+    const isValid = totpOk || usedBackupCode;
+    if (usedBackupCode) {
+      user.backupCodes = backupResult.remainingCodes;
+      await user.save();
     }
 
     if (!isValid) return res.status(401).json({ error: 'Código 2FA inválido' });
