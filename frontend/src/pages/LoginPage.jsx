@@ -35,7 +35,7 @@ export default function LoginPage() {
             const result = await login(email, password);
             if (result && result.requires2FA) {
                 setRequires2FA(true);
-                setTempUserId(result.userId);
+                setTempUserId(result.twoFactorToken);
             }
         } catch (err) {
             console.error(err);

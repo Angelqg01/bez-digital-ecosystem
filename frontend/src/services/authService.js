@@ -13,8 +13,8 @@ export async function login(email, password) {
     return res.data;
 }
 
-export async function verifyLogin2FA(userId, token) {
-    const res = await axios.post(`${API_URL}/auth/verify-login-2fa`, { userId, token });
+export async function verifyLogin2FA(twoFactorToken, token) {
+    const res = await axios.post(`${API_URL}/auth/verify-login-2fa`, { twoFactorToken, token });
     return res.data;
 }
 

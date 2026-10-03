@@ -19,6 +19,9 @@ export default function AuthPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
+    // Paso 2FA: el servidor devuelve un token de 5 min tras validar la contraseña.
+    const [twoFactorToken, setTwoFactorToken] = useState('');
+    const [code, setCode] = useState('');
 
     useEffect(() => { if (wallet.error) toast.error(wallet.error); }, [wallet.error]);
 
@@ -32,6 +35,17 @@ export default function AuthPage() {
         window.location.href = '/developer-console';
     };
 
+    const finishLogin = (data: { user?: unknown; token?: string }, message: string) => {
+        if (!data?.token || !data?.user) {
+            toast.error('Respuesta inesperada del servidor');
+            return;
+        }
+        setUser(data.user);
+        setToken(data.token);
+        toast.success(message);
+        window.location.href = '/developer-console';
+    };
+
     // === EMAIL + CONTRASEÑA (mismo JWT que SIWE) ===
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,24 +55,63 @@ export default function AuthPage() {
             const res = authMode === 'login'
                 ? await api.post('/api/auth/login-email', { email, password })
                 : await api.post('/api/auth/register-email', { email, password, username: username || undefined, accountType: 'individual' });
-            if (res.data?.requires2FA) {
-                toast.error('Esta cuenta tiene 2FA activado. Completa la verificación desde la app.');
+            if (res.data?.requires2FA && res.data?.twoFactorToken) {
+                setTwoFactorToken(res.data.twoFactorToken);
+                setCode('');
                 return;
             }
-            if (!res.data?.token || !res.data?.user) {
-                toast.error('Respuesta inesperada del servidor');
-                return;
-            }
-            setUser(res.data.user);
-            setToken(res.data.token);
-            toast.success(authMode === 'login' ? 'Sesión iniciada' : 'Cuenta creada');
-            window.location.href = '/developer-console';
+            finishLogin(res.data, authMode === 'login' ? 'Sesión iniciada' : 'Cuenta creada');
         } catch (err) {
             toast.error(apiError(err, authMode === 'login' ? 'Credenciales inválidas' : 'No se pudo crear la cuenta'));
         } finally {
             setLoading(false);
         }
     };
+
+    // === SEGUNDO FACTOR (TOTP de 6 dígitos o código de respaldo de 8) ===
+    const handleTwoFactor = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (loading) return;
+        setLoading(true);
+        try {
+            const res = await api.post('/api/auth/verify-login-2fa', { twoFactorToken, token: code.trim() });
+            finishLogin(res.data, 'Sesión iniciada');
+        } catch (err) {
+            const status = (err as { response?: { status?: number } })?.response?.status;
+            // 401 con sesión caducada obliga a repetir el paso 1; un código erróneo permite reintentar.
+            const msg = apiError(err, 'Código 2FA inválido');
+            toast.error(msg);
+            if (status === 401 && msg.startsWith('Sesión de verificación')) setTwoFactorToken('');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (twoFactorToken) {
+        return (
+            <div className="min-h-screen pt-24 pb-12 bg-light-bg flex justify-center px-4">
+                <form onSubmit={handleTwoFactor} className="w-full max-w-md bg-white rounded-3xl shadow-soft-lg border border-light-border p-8 space-y-4">
+                    <div className="text-center">
+                        <ShieldCheck size={40} className="mx-auto text-primary-600 mb-3" />
+                        <h1 className="text-2xl font-display font-bold text-gray-900">Verificación en dos pasos</h1>
+                        <p className="text-gray-500 text-sm mt-1">Introduce el código de tu app de autenticación o un código de respaldo.</p>
+                    </div>
+                    <input
+                        type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus required
+                        minLength={6} maxLength={8} value={code} onChange={e => setCode(e.target.value)}
+                        className="w-full text-center tracking-widest text-xl bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="123456"
+                    />
+                    <button type="submit" disabled={loading || code.trim().length < 6} className="w-full bg-primary-600 text-white font-bold py-3 rounded-xl disabled:opacity-50">
+                        {loading ? 'Verificando...' : 'Verificar'}
+                    </button>
+                    <button type="button" onClick={() => { setTwoFactorToken(''); setCode(''); }} className="w-full text-sm text-gray-500 hover:text-gray-700">
+                        Volver
+                    </button>
+                </form>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen pt-24 pb-12 bg-light-bg flex justify-center px-4">
