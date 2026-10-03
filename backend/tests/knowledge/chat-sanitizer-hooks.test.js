@@ -91,7 +91,8 @@ describe('sanitizeModelOutput', () => {
         });
 
         test('elimina caracteres de control y marcas bidireccionales, conserva saltos de línea y tabs', () => {
-            expect(s('a\u0000b\u0007c‮d⁦e\nf\tg')).toBe('abcde\nf\tg');
+            const bidi = String.fromCharCode(0x202e) + 'd' + String.fromCharCode(0x2066);
+            expect(s(`a${String.fromCharCode(0)}b${String.fromCharCode(7)}c${bidi}e\nf\tg`)).toBe('abcde\nf\tg');
         });
     });
 
