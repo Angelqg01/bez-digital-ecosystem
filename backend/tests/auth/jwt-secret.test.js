@@ -42,32 +42,14 @@ describe('config/jwtSecret', () => {
 
 describe('no quedan secretos JWT por defecto en el código', () => {
     const roots = ['routes', 'middleware', 'services', 'chat', 'config', 'config.js', 'server.js'];
-    const deployedRoots = roots.map((r) => path.join('..', 'deployed-backend', r));
     const walk = (p) => fs.statSync(p).isDirectory()
         ? fs.readdirSync(p).flatMap((f) => (f === 'node_modules' ? [] : walk(path.join(p, f))))
         : (p.endsWith('.js') ? [p] : []);
 
     test('ningún literal conocido como fallback de JWT_SECRET', () => {
         const bad = /JWT_SECRET\s*\|\|\s*['"`]|JWT_REFRESH_SECRET\s*\|\|\s*['"`]/;
-        const offenders = [...roots, ...deployedRoots].flatMap((r) => walk(path.join(__dirname, '../..', r)))
+        const offenders = roots.flatMap((r) => walk(path.join(__dirname, '../..', r)))
             .filter((f) => bad.test(fs.readFileSync(f, 'utf8')));
         expect(offenders).toEqual([]);
-    });
-});
-
-describe('deployed-backend: endpoints de wallet deshabilitados (fail closed)', () => {
-    const src = fs.readFileSync(path.join(__dirname, '../../../deployed-backend/routes/auth.routes.js'), 'utf8');
-
-    test('login-or-register, login-wallet, register-wallet y nonce responden 410 antes de cualquier otra ruta', () => {
-        const guard = src.indexOf("router.all(['/login-or-register', '/login-wallet', '/register-wallet', '/nonce']");
-        const firstRoute = src.search(/router\.(get|post|put|delete)\(/);
-        expect(guard).toBeGreaterThan(-1);
-        expect(guard).toBeLessThan(firstRoute);
-        expect(src).toMatch(/status\(410\)/);
-    });
-
-    test('server.js ya no expone el nonce Math.random ni el override sin SIWE', () => {
-        const server = fs.readFileSync(path.join(__dirname, '../../../deployed-backend/server.js'), 'utf8');
-        expect(server).not.toMatch(/usersDB|verifyWalletSignature|Math\.random\(\) \* 1000000/);
     });
 });

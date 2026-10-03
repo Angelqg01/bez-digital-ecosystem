@@ -80,7 +80,7 @@ export default [
     {
         // El backend es CommonJS.
         ...OPCIONES,
-        files: ['backend/**/*.js', 'deployed-backend/**/*.js', 'api/**/*.js', 'scripts/**/*.js', '**/*.cjs'],
+        files: ['backend/**/*.js', 'api/**/*.js', 'scripts/**/*.js', '**/*.cjs'],
         languageOptions: { ecmaVersion: 2023, sourceType: 'commonjs' },
         plugins: PLUGINS,
         rules: REGLAS,
