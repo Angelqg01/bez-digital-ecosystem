@@ -1,0 +1,53 @@
+import { describe, expect, test } from 'vitest';
+import { apiError, classifyLink, formatPrice, isSafeInternalPath, TRUSTED_HOSTS } from './chatActions';
+
+describe('isSafeInternalPath', () => {
+    test.each(['/rwa', '/vip', '/docs/guia-1', '/rwa?tab=tokenize', '/dashboard/farming', '/dashboard/wallet#gov'])('acepta %s', (p) => {
+        expect(isSafeInternalPath(p)).toBe(true);
+    });
+
+    test.each([
+        'https://evil.com', '//evil.com', '/\\evil.com', 'javascript:alert(1)', 'data:text/html,x', 'vbscript:x', '', null, undefined, 42, {},
+        '/rwa/../admin', '/%2fevil', '/%2Fevil.com', '/rwa%5cx', '/rwa%00', '/rwa%0d%0a', '/rwa\n', '/rwa x', `/${'a'.repeat(300)}`, 'rwa', '/<script>', '/rwa"onclick="x',
+    ])('rechaza %j', (p) => {
+        expect(isSafeInternalPath(p)).toBe(false);
+    });
+});
+
+describe('classifyLink', () => {
+    test('rutas internas', () => {
+        expect(classifyLink('/vip')).toEqual({ type: 'internal', href: '/vip' });
+    });
+
+    test('dominios propios por https → externo de confianza', () => {
+        for (const host of TRUSTED_HOSTS) expect(classifyLink(`https://${host}/rwa`).type).toBe('external');
+    });
+
+    test.each([
+        'http://bezhas.com', 'https://bezhas.com.evil.com', 'https://evil.com/bezhas.com', 'https://user:pass@bezhas.com', 'https://bezhas.com:8443',
+        'javascript:alert(1)', 'data:text/html,x', '//evil.com', 'ftp://bezhas.com', 'not a url', '', undefined, null, 5,
+    ])('bloquea %j', (href) => {
+        expect(classifyLink(href)).toEqual({ type: 'blocked' });
+    });
+});
+
+describe('formatPrice', () => {
+    test('gratis, de pago y sin precio', () => {
+        expect(formatPrice({ priceMonthly: 0 })).toBe('Gratis');
+        expect(formatPrice({ priceMonthly: 99, currency: 'EUR' })).toBe('99 EUR/mes');
+        expect(formatPrice({ priceMonthly: 5 })).toBe('5/mes');
+        expect(formatPrice({})).toBe('');
+        expect(formatPrice({ priceMonthly: null })).toBe('');
+    });
+});
+
+describe('apiError', () => {
+    test('prioriza error, message y errors[0].msg del backend; si no, el texto por defecto', () => {
+        expect(apiError({ response: { data: { error: 'a', message: 'b' } } }, 'x')).toBe('a');
+        expect(apiError({ response: { data: { message: 'b' } } }, 'x')).toBe('b');
+        expect(apiError({ response: { data: { errors: [{ msg: 'c' }] } } }, 'x')).toBe('c');
+        expect(apiError({ response: { data: {} } }, 'x')).toBe('x');
+        expect(apiError(new Error('boom'), 'x')).toBe('x');
+        expect(apiError(null, 'x')).toBe('x');
+    });
+});

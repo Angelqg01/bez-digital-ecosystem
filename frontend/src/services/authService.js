@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+import { API_BASE } from '../utils/apiBase';
+
+// VITE_API_URL llega con o sin sufijo `/api` (en producción, sin él): se normaliza para no pedir `/auth/...` a secas.
+const API_URL = `${API_BASE}/api`;
 
 /** Nonce SIWE de un solo uso emitido por el servidor (ligado a la dirección). */
 export async function getNonce(walletAddress) {
