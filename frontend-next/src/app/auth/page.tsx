@@ -5,6 +5,8 @@ import { Wallet, ShieldCheck, Mail, Lock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useUserStore } from '../../stores/userStore';
 import { useWalletLogin } from '../../hooks/useWalletLogin';
+import api from '../../lib/api';
+import { apiError } from '../../lib/apiError';
 
 export default function AuthPage() {
     const wallet = useWalletLogin();
@@ -16,6 +18,7 @@ export default function AuthPage() {
     // Form states
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [username, setUsername] = useState('');
 
     useEffect(() => { if (wallet.error) toast.error(wallet.error); }, [wallet.error]);
 
@@ -29,12 +32,32 @@ export default function AuthPage() {
         window.location.href = '/developer-console';
     };
 
-    // === TRADITIONAL EMAIL AUTH BLOCK ===
+    // === EMAIL + CONTRASEÑA (mismo JWT que SIWE) ===
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (loading) return;
         setLoading(true);
-        toast("En la Fase 3, se prioriza Sign-In With Ethereum. El servidor local usa Mock DB.");
-        setTimeout(() => setLoading(false), 1500);
+        try {
+            const res = authMode === 'login'
+                ? await api.post('/api/auth/login-email', { email, password })
+                : await api.post('/api/auth/register-email', { email, password, username: username || undefined, accountType: 'individual' });
+            if (res.data?.requires2FA) {
+                toast.error('Esta cuenta tiene 2FA activado. Completa la verificación desde la app.');
+                return;
+            }
+            if (!res.data?.token || !res.data?.user) {
+                toast.error('Respuesta inesperada del servidor');
+                return;
+            }
+            setUser(res.data.user);
+            setToken(res.data.token);
+            toast.success(authMode === 'login' ? 'Sesión iniciada' : 'Cuenta creada');
+            window.location.href = '/developer-console';
+        } catch (err) {
+            toast.error(apiError(err, authMode === 'login' ? 'Credenciales inválidas' : 'No se pudo crear la cuenta'));
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -90,11 +113,17 @@ export default function AuthPage() {
 
                         {/* Email Form */}
                         <form onSubmit={handleEmailAuth} className="space-y-4">
+                            {authMode === 'register' && (
+                                <div className="space-y-1">
+                                    <label className="text-sm font-semibold text-gray-600 ml-1">Nombre de usuario</label>
+                                    <input type="text" value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all shadow-inner" placeholder="tu_usuario" />
+                                </div>
+                            )}
                             <div className="space-y-1">
                                 <label className="text-sm font-semibold text-gray-600 ml-1">Correo Electrónico</label>
                                 <div className="relative">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-12 pr-4 text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all shadow-inner" placeholder="tu@mail.com" />
+                                    <input type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-12 pr-4 text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all shadow-inner" placeholder="tu@mail.com" />
                                 </div>
                             </div>
 
@@ -102,7 +131,7 @@ export default function AuthPage() {
                                 <label className="text-sm font-semibold text-gray-600 ml-1">Contraseña</label>
                                 <div className="relative">
                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-12 pr-4 text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all shadow-inner" placeholder="••••••••" />
+                                    <input type="password" minLength={authMode === 'register' ? 6 : undefined} autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-12 pr-4 text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all shadow-inner" placeholder="••••••••" />
                                 </div>
                             </div>
 
