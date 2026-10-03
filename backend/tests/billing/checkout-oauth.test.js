@@ -49,6 +49,8 @@ test('token de una cuenta inexistente o con firma ajena se rechaza', async () =>
     expect((await post('plan', tokenCon(['billing.checkout'], 'fantasma'), { planId: 'creator', cycle: 'monthly' })).status).toBe(401);
     const falso = jwt.sign({ scope: 'billing.checkout' }, 'secreto', { algorithm: 'HS256', subject: 'u1' });
     expect((await post('plan', falso, { planId: 'creator', cycle: 'monthly' })).status).toBe(401); // HS256 → vía de sesión
-    const tampered = tokenCon(['billing.checkout']).replace(/.$/, (c) => (c === 'A' ? 'B' : 'A'));
+    // Se altera un carácter del medio de la firma (el último solo lleva bits de relleno y no invalida nada).
+    const [h, p, sig] = tokenCon(['billing.checkout']).split('.');
+    const tampered = [h, p, `${sig.slice(0, 20)}${sig[20] === 'A' ? 'B' : 'A'}${sig.slice(21)}`].join('.');
     expect((await post('plan', tampered, { planId: 'creator', cycle: 'monthly' })).status).toBe(401);
 });
