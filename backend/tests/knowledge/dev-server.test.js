@@ -66,7 +66,10 @@ describe('dev-ai-workspace', () => {
     test('CORS solo para el frontend local', async () => {
         const ok = await request(app).options('/api/ai-workspace/chat').set('Origin', 'http://localhost:3000').expect(204);
         expect(ok.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+        // El frontend usa axios con withCredentials: sin esta cabecera el navegador bloquea la respuesta.
+        expect(ok.headers['access-control-allow-credentials']).toBe('true');
         const bad = await request(app).options('/api/ai-workspace/chat').set('Origin', 'https://evil.example').expect(204);
         expect(bad.headers['access-control-allow-origin']).toBeUndefined();
+        expect(bad.headers['access-control-allow-credentials']).toBeUndefined();
     });
 });
