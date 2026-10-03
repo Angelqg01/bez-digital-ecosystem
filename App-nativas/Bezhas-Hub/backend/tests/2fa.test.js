@@ -35,7 +35,7 @@ const generateTestToken = (userId = 'test_user_123') => {
 describe('TOTP Service', () => {
     describe('generate2FASecret', () => {
         it('should generate a valid TOTP secret with QR code', async () => {
-            const result = await totpService.generate2FASecret('test@bez.digital');
+            const result = await totpService.generate2FASecret('test@bezhas.com');
 
             expect(result).toBeDefined();
             expect(result.secret).toBeDefined();
@@ -54,11 +54,11 @@ describe('TOTP Service', () => {
         });
 
         it('should include the app name in the otpauth URL', async () => {
-            const result = await totpService.generate2FASecret('test@bez.digital');
+            const result = await totpService.generate2FASecret('test@bezhas.com');
 
             expect(result.otpauthUrl).toContain('Bezhas');
             // The email may be URL-encoded (@ becomes %40)
-            expect(result.otpauthUrl.includes('test@bez.digital') || result.otpauthUrl.includes('test%40bez.digital')).toBe(true);
+            expect(result.otpauthUrl.includes('test@bezhas.com') || result.otpauthUrl.includes('test%40bezhas.com')).toBe(true);
         });
     });
 
@@ -66,7 +66,7 @@ describe('TOTP Service', () => {
         let testSecret;
 
         beforeAll(async () => {
-            const result = await totpService.generate2FASecret('verify-test@bez.digital');
+            const result = await totpService.generate2FASecret('verify-test@bezhas.com');
             testSecret = result.secret;
         });
 
@@ -197,6 +197,36 @@ describe('TOTP Service', () => {
         });
     });
 
+    describe('cifrado v2 del secreto TOTP', () => {
+        const crypto = require('crypto');
+        it('los registros v1 (clave derivada de JWT_SECRET) se siguen leyendo y se marcan como heredados', () => {
+            const clave = crypto.scryptSync(process.env.JWT_SECRET || 'default-key', 'salt', 32);
+            const iv = crypto.randomBytes(16);
+            const c = crypto.createCipheriv('aes-256-gcm', clave, iv);
+            let enc = c.update('LEGACYSECRET', 'utf8', 'hex'); enc += c.final('hex');
+            const v1 = `${iv.toString('hex')}:${c.getAuthTag().toString('hex')}:${enc}`;
+            expect(totpService.decryptSecret(v1)).toBe('LEGACYSECRET');
+            expect(totpService.isLegacySecret(v1)).toBe(true);
+            expect(totpService.isLegacySecret(totpService.encryptSecret('X'))).toBe(false);
+        });
+
+        it('en producción no cifra sin TOTP_ENCRYPTION_KEY propia', () => {
+            const previo = { env: process.env.NODE_ENV, k: process.env.TOTP_ENCRYPTION_KEY, jwt: process.env.JWT_SECRET };
+            process.env.NODE_ENV = 'production';
+            delete process.env.TOTP_ENCRYPTION_KEY;
+            try {
+                expect(() => totpService.encryptSecret('X')).toThrow(/TOTP_ENCRYPTION_KEY/);
+                process.env.TOTP_ENCRYPTION_KEY = process.env.JWT_SECRET || 'j'.repeat(40);
+                process.env.JWT_SECRET = process.env.TOTP_ENCRYPTION_KEY;
+                expect(() => totpService.encryptSecret('X')).toThrow(/JWT_SECRET/);
+            } finally {
+                process.env.NODE_ENV = previo.env;
+                if (previo.k) process.env.TOTP_ENCRYPTION_KEY = previo.k; else delete process.env.TOTP_ENCRYPTION_KEY;
+                if (previo.jwt) process.env.JWT_SECRET = previo.jwt; else delete process.env.JWT_SECRET;
+            }
+        });
+    });
+
     describe('is2FAEnabled', () => {
         it('should return true when ENABLE_2FA is set', () => {
             process.env.ENABLE_2FA = 'true';
@@ -222,7 +252,7 @@ describe('WebAuthn Service', () => {
         it('should generate valid registration options', async () => {
             const mockUser = {
                 _id: 'user123',
-                email: 'test@bez.digital',
+                email: 'test@bezhas.com',
                 firstName: 'Test',
                 lastName: 'User',
             };
@@ -235,7 +265,7 @@ describe('WebAuthn Service', () => {
             expect(options.rp.name).toBe('Bezhas Network');
             expect(options.rp.id).toBe('localhost');
             expect(options.user).toBeDefined();
-            expect(options.user.name).toBe('test@bez.digital');
+            expect(options.user.name).toBe('test@bezhas.com');
             expect(options.pubKeyCredParams).toBeDefined();
             expect(options.pubKeyCredParams.length).toBeGreaterThan(0);
         });
@@ -243,7 +273,7 @@ describe('WebAuthn Service', () => {
         it('should exclude existing credentials', async () => {
             const mockUser = {
                 _id: 'user456',
-                email: 'existing@bez.digital',
+                email: 'existing@bezhas.com',
             };
 
             const existingCredentials = [
@@ -417,7 +447,7 @@ describe('2FA API Routes', () => {
 
             User.findById = jest.fn().mockResolvedValue({
                 _id: testUserId,
-                email: 'test@bez.digital',
+                email: 'test@bezhas.com',
                 twoFactorAuth: {
                     totp: { enabled: false },
                     webauthn: { enabled: false, credentials: [] },
@@ -453,7 +483,7 @@ describe('2FA API Routes', () => {
             const User = require('../models/pg/User');
             const mockUser = {
                 _id: testUserId,
-                email: 'totp-test@bez.digital',
+                email: 'totp-test@bezhas.com',
                 twoFactorAuth: null,
                 save: jest.fn().mockResolvedValue(true),
             };
@@ -498,7 +528,7 @@ describe('2FA API Routes', () => {
             const User = require('../models/pg/User');
             const mockUser = {
                 _id: testUserId,
-                email: 'webauthn-test@bez.digital',
+                email: 'webauthn-test@bezhas.com',
                 twoFactorAuth: {
                     webauthn: { credentials: [] },
                 },

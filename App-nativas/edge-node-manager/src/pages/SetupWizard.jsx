@@ -112,7 +112,7 @@ export default function SetupWizard() {
         <>
           <div style={{ background: '#0D1117', border: '1px solid var(--bezhas-border)', borderRadius: 'var(--radius-md)', padding: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', lineHeight: 1.8, overflowX: 'auto' }}>
             <div style={{ color: '#8B949E' }}># Install BeZhas Node</div>
-            <div style={{ color: '#C9D1D9' }}>curl -fsSL https://get.bez.digital/node | bash</div>
+            <div style={{ color: '#C9D1D9' }}>curl -fsSL https://get.bezhas.com/node | bash</div>
             <br />
             <div style={{ color: '#8B949E' }}># Configure and start</div>
             <div style={{ color: '#C9D1D9' }}>{registrationData.deployCommand.split(' && ')[0]} \</div>

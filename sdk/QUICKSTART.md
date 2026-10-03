@@ -25,8 +25,8 @@ npm install -g @bezhas/sdk
 npm install -g @bezhas/sdk
 
 # Option 2: apt (Debian/Ubuntu)
-curl -fsSL https://pkg.bez.digital/gpg | sudo gpg --dearmor -o /usr/share/keyrings/bezhas-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/bezhas-archive-keyring.gpg] https://pkg.bez.digital/apt stable main" | sudo tee /etc/apt/sources.list.d/bezhas.list
+curl -fsSL https://pkg.bezhas.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/bezhas-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/bezhas-archive-keyring.gpg] https://pkg.bezhas.com/apt stable main" | sudo tee /etc/apt/sources.list.d/bezhas.list
 sudo apt update
 sudo apt install bezhas-sdk
 ```
@@ -52,7 +52,7 @@ const { BeZhasAPIClient } = require('@bezhas/sdk');
 
 // Initialize client
 const bezhas = new BeZhasAPIClient({
-  apiUrl: 'https://api.bez.digital',
+  apiUrl: 'https://api.bezhas.com',
   network: 'polygon',
   apiKey: 'your-api-key' // Optional
 });
@@ -86,10 +86,10 @@ example();
 ### Browser (CDN)
 
 ```html
-<script src="https://cdn.bez.digital/sdk/v2/bezhas-sdk.min.js"></script>
+<script src="https://cdn.bezhas.com/sdk/v2/bezhas-sdk.min.js"></script>
 <script>
   const bezhas = new BeZhasSDK({
-    apiUrl: 'https://api.bez.digital',
+    apiUrl: 'https://api.bezhas.com',
     network: 'polygon'
   });
 
@@ -220,7 +220,7 @@ Create a `.env` file:
 
 ```bash
 # API Configuration
-REACT_APP_API_URL=https://api.bez.digital
+REACT_APP_API_URL=https://api.bezhas.com
 POLYGON_RPC_URL=https://polygon-bor.publicnode.com
 
 # Contract Addresses
@@ -253,7 +253,7 @@ if (result.success) {
 
 ## Next Steps
 
-- [Full API Documentation](https://docs.bez.digital/sdk)
+- [Full API Documentation](https://docs.bezhas.com/sdk)
 - [Examples Repository](https://github.com/bezhas/sdk-examples)
 - [Support](https://discord.gg/bezhas)
 

@@ -210,7 +210,7 @@ He revisado la operativa de [Empresa] y veo una oportunidad clara para reducir f
 
 BeZhas permite digitalizar procesos de confianza operativa con trazabilidad verificable, acuerdos que se ejecutan solos e integracion con sistemas existentes, con impacto esperado en tiempos de ejecucion y carga administrativa.
 
-Web: https://bez.digital/
+Web: https://bezhas.com/
 Compra directa: https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806
 Auditoria: https://polygon.blockscout.com/address/0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8?tab=contract
 LinkedIn: https://www.linkedin.com/company/80822195/admin/dashboard/
@@ -260,7 +260,7 @@ Queria compartir una hipotesis concreta para [Empresa]: convertir parte de su ba
 
 La propuesta no va de cambiar su producto, sino de anadir una capa operativa para monetizacion postventa, trazabilidad verificable y nuevos servicios durante la vida util del equipo.
 
-Web: https://bez.digital/
+Web: https://bezhas.com/
 Compra directa: https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806
 Auditoria: https://polygon.blockscout.com/address/0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8?tab=contract
 LinkedIn: https://www.linkedin.com/company/80822195/admin/dashboard/
@@ -308,7 +308,7 @@ Creo que puede haber encaje entre [Empresa] y BeZhas en trazabilidad, validacion
 
 La idea no es una colaboracion generica, sino explorar si vuestra capacidad de certificacion o validacion puede ampliarse con una capa digital de integracion y registro operativo.
 
-Web: https://bez.digital/
+Web: https://bezhas.com/
 Compra directa: https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806
 Auditoria: https://polygon.blockscout.com/address/0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8?tab=contract
 LinkedIn: https://www.linkedin.com/company/80822195/admin/dashboard/

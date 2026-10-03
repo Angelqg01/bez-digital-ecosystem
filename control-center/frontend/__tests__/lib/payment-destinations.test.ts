@@ -18,7 +18,6 @@ describe('enlaces de pago de Stripe', () => {
     it('cubre los planes y productos esperados', () => {
         expect(Object.keys(STRIPE_PAYMENT_LINKS).sort()).toEqual([
             'architect',
-            'beVip',
             'beVipPlus',
             'digitalPioneer',
             'enterprise',
@@ -87,6 +86,6 @@ describe('datos de transferencia bancaria', () => {
     });
 
     it('el alias del beneficiario es el dominio de la empresa', () => {
-        expect(beneficiaryAlias).toBe('bez.digital');
+        expect(beneficiaryAlias).toBe('bezhas.com');
     });
 });

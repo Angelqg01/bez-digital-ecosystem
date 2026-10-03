@@ -21,13 +21,13 @@ const login = (body: unknown) => call(loginEmail, '/api/auth/login-email', body)
 
 /** El almacén es en memoria y compartido por el fichero: cada test necesita su email. */
 let contador = 0;
-const emailNuevo = () => `alta${contador++}.${Date.now()}@bez.digital`;
+const emailNuevo = () => `alta${contador++}.${Date.now()}@bezhas.com`;
 
 describe('validación', () => {
     it.each([
-        ['sin username', { email: 'a@bez.digital', password: 'clave-buena' }],
+        ['sin username', { email: 'a@bezhas.com', password: 'clave-buena' }],
         ['sin email', { username: 'ana', password: 'clave-buena' }],
-        ['sin password', { username: 'ana', email: 'a@bez.digital' }],
+        ['sin password', { username: 'ana', email: 'a@bezhas.com' }],
     ])('rechaza el alta %s', async (_caso, body) => {
         const res = await alta(body);
 
@@ -52,7 +52,7 @@ describe('validación', () => {
         expect(res.status).toBe(200);
     });
 
-    it.each(['sin-arroba', 'sin@dominio', '@bez.digital', 'con espacio@bez.digital'])(
+    it.each(['sin-arroba', 'sin@dominio', '@bezhas.com', 'con espacio@bezhas.com'])(
         'rechaza el email inválido %p',
         async (email) => {
             const res = await alta({ username: 'ana', email, password: 'clave-buena' });

@@ -45,6 +45,26 @@ const { PLANS } = require('./plans');
 /** Orden de menor a mayor. Sirve para comparar «alcanza el mínimo». */
 const ORDEN = ['starter', 'creator_pro', 'business', 'enterprise_vip'];
 
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  EL SEXTO EJE: OPERACIONES CON FONDOS
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Qué carriles de dinero abre cada plan y con qué techo, en euros. Lo aplica
+ * services/txPolicyEngine.js y el límite efectivo es SIEMPRE el más restrictivo
+ * entre este y el del agente que opere.
+ *
+ *   porOperacionEur / diarioEur / mensualEur   techos duros: por encima, DENY.
+ *   aprobacionDesdeEur    desde aquí hace falta aprobación humana firmada,
+ *                         también cuando el cliente firma desde su wallet.
+ *   dobleAprobacionDesdeEur  desde aquí, dos aprobadores distintos.
+ *
+ * FIAT→FIAT sólo en Enterprise: es el carril que exige socio con licencia de
+ * pago y KYB completo, y el que más coste de cumplimiento arrastra.
+ */
+const RAIL = (porOperacionEur, diarioEur, mensualEur, aprobacionDesdeEur) =>
+    Object.freeze({ porOperacionEur, diarioEur, mensualEur, aprobacionDesdeEur });
+
 const ENTITLEMENTS = {
     starter: {
         // Sólo consulta de token y mercado: lo justo para probar la plataforma.
@@ -69,6 +89,11 @@ const ENTITLEMENTS = {
         },
         erpGestionado: false,
         nodos: [],
+        operaciones: {
+            // El plan gratuito consulta; no mueve dinero de nadie.
+            rails: {},
+            dobleAprobacionDesdeEur: 0,
+        },
     },
 
     creator_pro: {
@@ -88,6 +113,13 @@ const ENTITLEMENTS = {
         },
         erpGestionado: false,
         nodos: [],
+        operaciones: {
+            rails: {
+                crypto_transfer: RAIL(1000, 3000, 15000, 250),
+                fiat_to_crypto: RAIL(1000, 3000, 15000, 250),
+            },
+            dobleAprobacionDesdeEur: 1000,
+        },
     },
 
     business: {
@@ -109,6 +141,14 @@ const ENTITLEMENTS = {
         },
         erpGestionado: true,
         nodos: ['edge'],
+        operaciones: {
+            rails: {
+                crypto_transfer: RAIL(10000, 50000, 250000, 2500),
+                fiat_to_crypto: RAIL(10000, 50000, 250000, 2500),
+                crypto_to_fiat: RAIL(10000, 25000, 150000, 2500),
+            },
+            dobleAprobacionDesdeEur: 10000,
+        },
     },
 
     enterprise_vip: {
@@ -129,6 +169,15 @@ const ENTITLEMENTS = {
         },
         erpGestionado: true,
         nodos: ['edge', 'enterprise'],
+        operaciones: {
+            rails: {
+                crypto_transfer: RAIL(100000, 500000, 5000000, 10000),
+                fiat_to_crypto: RAIL(100000, 500000, 5000000, 10000),
+                crypto_to_fiat: RAIL(100000, 500000, 3000000, 10000),
+                fiat_to_fiat: RAIL(100000, 500000, 3000000, 10000),
+            },
+            dobleAprobacionDesdeEur: 25000,
+        },
     },
 };
 
@@ -174,6 +223,16 @@ function describirPlan(planId) {
         privacidad: { regimen: e.privacidad.regimen, optOut: e.privacidad.optOut, nota: e.privacidad.nota },
         erpGestionado: e.erpGestionado,
         nodosDisponibles: e.nodos,
+        operaciones: {
+            carriles: Object.fromEntries(Object.entries(e.operaciones?.rails || {}).map(([rail, l]) => [rail, {
+                porOperacionEur: l.porOperacionEur,
+                diarioEur: l.diarioEur,
+                mensualEur: l.mensualEur,
+                aprobacionDesdeEur: l.aprobacionDesdeEur,
+            }])),
+            dobleAprobacionDesdeEur: e.operaciones?.dobleAprobacionDesdeEur ?? null,
+            nota: 'Toda operación con fondos se prepara como intención, pasa política y riesgo, y se ejecuta con aprobación firmada.',
+        },
     };
 }
 

@@ -9,7 +9,7 @@ const { BeZhasAPIClient } = require('@bezhas/sdk');
 
 // Initialize the SDK
 const bezhas = new BeZhasAPIClient({
-    apiUrl: process.env.BEZHAS_API_URL || 'https://api.bez.digital',
+    apiUrl: process.env.BEZHAS_API_URL || 'https://api.bezhas.com',
     network: 'polygon',
     apiKey: process.env.BEZHAS_API_KEY
 });

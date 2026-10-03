@@ -139,6 +139,15 @@ export const DOC_LIBRARY: DocEntry[] = [
         icon: 'account_tree',
         level: 'Avanzado',
     },
+    {
+        slug: 'webhooks',
+        title: 'Webhooks de pagos',
+        description:
+            'Eventos de BeZhas Pay firmados con HMAC: registro, verificación, reintentos y reenvío.',
+        category: 'Integración',
+        icon: 'webhook',
+        level: 'Intermedio',
+    },
 
     // ─── Token y tokenización ──────────────────────────────────────────────
     {

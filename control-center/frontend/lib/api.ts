@@ -1,5 +1,12 @@
 // BeZhas API Client — typed fetch wrapper with auth support
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+/**
+ * Origen de la API sin el sufijo `/api`. NEXT_PUBLIC_API_URL incluye `/api`
+ * (así lo usa la mayoría del código); quien construye rutas que ya empiezan
+ * por `/api/...` debe usar esto, o acabaría pidiendo `/api/api/...`.
+ */
+export const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '');
 
 interface ApiOptions extends RequestInit {
     token?: string;

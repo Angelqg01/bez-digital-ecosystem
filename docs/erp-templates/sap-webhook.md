@@ -169,7 +169,7 @@ ENDMETHOD.
 
 1. Ir a **BeZhas Control Center** → Dashboard → Validators
 2. En la sección de webhooks, verificar que aparece el evento reciente
-3. El `txHash` devuelto se puede verificar en el explorador: `https://explorer.bez.digital/tx/<txHash>`
+3. El `txHash` devuelto se puede verificar en el explorador: `https://explorer.bezhas.com/tx/<txHash>`
 
 ## Payload de Webhook (Referencia)
 

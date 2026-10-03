@@ -174,7 +174,7 @@ if (!/^0x[a-f0-9]{40}$/i.test(hash)) {
 ### 3. CORS Handling
 ```javascript
 // Backend debe configurar CORS correctamente
-res.header('Access-Control-Allow-Origin', 'https://bez.digital')
+res.header('Access-Control-Allow-Origin', 'https://bezhas.com')
 res.header('Access-Control-Allow-Methods', 'GET,POST')
 res.header('Access-Control-Max-Age', '86400')
 ```

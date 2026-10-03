@@ -48,7 +48,21 @@ describe('gateway-metering', () => {
         await request(app).get('/ok').expect(200);
         // res.on('finish') es asíncrono — dar un tick para que corra.
         await new Promise((r) => setImmediate(r));
-        expect(mockRecordUsage).toHaveBeenCalledWith(42, { action: 'api_call', ref: undefined });
+        expect(mockRecordUsage).toHaveBeenCalledWith(42, { action: 'api_call', ref: expect.any(String) });
+    });
+
+    it('la referencia de facturación no la controla el cliente', async () => {
+        // Stripe deduplica por identifier: si saliera de X-Request-Id, repetir
+        // la cabecera dejaría sin facturar todas las llamadas menos la primera.
+        mockQuery.mockResolvedValue(mockPlanRow('starter'));
+        const app = buildApp();
+        await request(app).get('/ok').set('X-Request-Id', 'siempre-el-mismo').expect(200);
+        await request(app).get('/ok').set('X-Request-Id', 'siempre-el-mismo').expect(200);
+        await new Promise((r) => setImmediate(r));
+        const refs = mockRecordUsage.mock.calls.map((c) => c[1].ref);
+        expect(refs).toHaveLength(2);
+        expect(refs[0]).not.toBe(refs[1]);
+        expect(refs).not.toContain('siempre-el-mismo');
     });
 
     it('sin fila en gateway_subscriptions también se factura (Starter es el default)', async () => {

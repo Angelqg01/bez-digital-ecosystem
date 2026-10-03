@@ -132,7 +132,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=AIza...
 
 # ── MCP Server ──────────────────────────────────────
-MCP_SERVER_URL=mcp.bez.digital:4001
+MCP_SERVER_URL=mcp.bezhas.com:4001
 MCP_SERVER_PORT=4001
 
 # ── Blockchain ───────────────────────────────────────

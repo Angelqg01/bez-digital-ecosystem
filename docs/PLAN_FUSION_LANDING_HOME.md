@@ -90,8 +90,9 @@ Es la pieza técnica más valiosa del segundo archivo:
 - Tres estados visuales: `live` / `stale` / `down`, con punto de color y etiqueta.
 - **Aplica la misma regla fail-closed que la red**: fuera de la ventana de frescura la lectura se
   marca *obsoleta* y no se presenta como vigente. Coherencia narrativa perfecta con AEGIS.
-- Tarjeta por cadena (Polygon 137 / BNB 56) con dirección, **botón copiar**, precio, liquidez del par
-  y estado del pool, más enlace a Polygonscan / BscScan.
+- Tarjeta del contrato en Polygon (137) con dirección, **botón copiar**, precio, liquidez del par
+  y estado del pool, más enlace a Polygonscan. La tarjeta de BNB (56) se retiró: BEZ no está
+  desplegado en BNB Chain, que será un bridge.
 - Polling 30 s, timeout 7 s, `AbortController`, **backoff exponencial** hasta ×8 tras 3 fallos,
   pausa en `visibilitychange`, skeletons `shimmer` mientras carga.
 - Degrada con dignidad: sin pool → *"Oráculo pendiente · a la espera del primer par BEZ/USDC"*.
@@ -467,7 +468,7 @@ ancla. Cambiado a `overflow-x-clip`, que recorta igual sin crear contexto de scr
 
 - **`ERC-3643`** no se cita en la ficha del token: `grep` sobre `smart-contracts/`
   no devuelve nada. Es una afirmacion de cumplimiento sin contrato detras. La ficha
-  dice `ERC-20 · BEP-20`, que si es cierto.
+  dice `ERC-20 (Polygon)`; se retiró `BEP-20` porque BEZ no está desplegado en BNB Chain (será un bridge).
 - **`prefers-reduced-motion`** esta implementado en CSS y en los tres componentes
   con `matchMedia`, pero **no se pudo verificar en navegador**: el panel del
   entorno no permite emular esa preferencia.

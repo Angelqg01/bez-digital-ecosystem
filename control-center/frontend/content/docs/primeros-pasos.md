@@ -75,7 +75,7 @@ La API Core unifica wallet, billing, créditos, contratos e integraciones sector
 
 ```bash
 curl -H "Authorization: Bearer $BEZHAS_API_KEY" \
-  https://api.bez.digital/api/gateway/v1/token/info
+  https://api.bezhas.com/api/gateway/v1/token/info
 ```
 
 Detalle completo de endpoints en la [Referencia de API](/docs/api-reference).

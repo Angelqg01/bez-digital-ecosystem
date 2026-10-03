@@ -1,7 +1,7 @@
 # Guia Completa de Integracion BeZhas
 ## Para Clientes B2B — 3 Metodos de Acceso
 
-**Version:** 2.0.0 | **Fecha:** Junio 2026 | **Soporte:** support@bez.digital
+**Version:** 2.0.0 | **Fecha:** Junio 2026 | **Soporte:** support@bezhas.com
 
 ---
 
@@ -41,19 +41,19 @@ Todos los metodos ofrecen acceso a:
 ## Metodo 1: API REST
 
 **Ideal para:** Backends, servidores, automatizaciones
-**URL Base:** `https://api.bez.digital:3001`
+**URL Base:** `https://api.bezhas.com:3001`
 **Autenticacion:** Header `x-api-key`
 
 ### Paso 1 — Obtener API Key
 
-1. Ir a: `hub.bez.digital/developers`
+1. Ir a: `hub.bezhas.com/developers`
 2. Click "Generar API Key"
 3. Copiar y guardar en variable de entorno
 
 ```bash
 # Guardar en archivo .env (nunca en el codigo fuente)
 BEZHAS_API_KEY=bez_key_xxxxxxxxxxxxxxxx
-BEZHAS_API_URL=https://api.bez.digital:3001
+BEZHAS_API_URL=https://api.bezhas.com:3001
 BEZHAS_WEBHOOK_SECRET=wh_secret_yyyyyyyyyyy
 ```
 
@@ -64,7 +64,7 @@ IMPORTANTE: Nunca incluir la API Key en commits de git ni en logs.
 ```bash
 # Verificar conexion
 curl -H "x-api-key: $BEZHAS_API_KEY" \
-  https://api.bez.digital:3001/health
+  https://api.bezhas.com:3001/health
 
 # Respuesta esperada:
 # { "status": "ok", "timestamp": "...", "uptime": 12345 }
@@ -78,14 +78,14 @@ curl -X POST \
   -H "x-api-key: $BEZHAS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"amountUSD":100,"paymentMethod":"card","email":"cliente@ejemplo.com"}' \
-  https://api.bez.digital:3001/api/gateway/v1/pay
+  https://api.bezhas.com:3001/api/gateway/v1/pay
 
 # Crear transaccion logistica
 curl -X POST \
   -H "x-api-key: $BEZHAS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"posRef":"ORD-1001","origin":"Algeciras","destination":"Tanger"}' \
-  https://api.bez.digital:3001/api/cargolink/transactions
+  https://api.bezhas.com:3001/api/cargolink/transactions
 ```
 
 ### Paso 4 — Configurar Webhooks
@@ -112,8 +112,8 @@ app.post('/webhooks/bezhas', express.raw({type: 'application/json'}), (req, res)
 ### Paso 5 — Produccion
 
 - Limite de peticiones: 1000 por minuto
-- Monitorizar en: `hub.bez.digital/admin/logs`
-- Soporte: support@bez.digital
+- Monitorizar en: `hub.bezhas.com/admin/logs`
+- Soporte: support@bezhas.com
 
 ### Tabla de Endpoints Principales
 
@@ -215,7 +215,7 @@ app.post('/webhooks/bezhas', express.raw({type: 'application/json'}), (req, res)
 
 ### Paso 1 — Descargar e Instalar
 
-1. Ir a: `hub.bez.digital/downloads`
+1. Ir a: `hub.bezhas.com/downloads`
 2. Descargar `bezhas-hub-v2.0.0.zip`
 3. WordPress Admin -> Plugins -> Anadir Nuevo -> Subir Plugin
 4. Seleccionar el archivo .zip -> Instalar Ahora
@@ -224,7 +224,7 @@ app.post('/webhooks/bezhas', express.raw({type: 'application/json'}), (req, res)
 ### Paso 2 — Configurar API Key
 
 1. WordPress -> Ajustes -> Configuracion BeZhas
-2. Pegar la API Key (obtenida en `hub.bez.digital/developers`)
+2. Pegar la API Key (obtenida en `hub.bezhas.com/developers`)
 3. Pegar el Webhook Secret (opcional pero recomendado)
 4. Click Guardar Cambios
 
@@ -239,7 +239,7 @@ app.post('/webhooks/bezhas', express.raw({type: 'application/json'}), (req, res)
 
 1. Crear un pedido de prueba en tu tienda
 2. Seleccionar "BeZhas Pay" en el checkout
-3. Verificar que aparece en hub.bez.digital
+3. Verificar que aparece en hub.bezhas.com
 4. El widget del dashboard muestra las estadisticas
 
 ---
@@ -265,13 +265,13 @@ app.post('/webhooks/bezhas', express.raw({type: 'application/json'}), (req, res)
 - Farming de liquidez
 - Gobernanza DAO (votar propuestas)
 - Tesoreria
-- Acceso: capital.bez.digital/defi
+- Acceso: capital.bezhas.com/defi
 
 ### BEZ Wallet — Gestion de Activos
 - Multi-chain (Polygon, BNB Chain)
 - Bridge LayerZero
 - Validadores
-- Acceso: wallet.bez.digital (conectar MetaMask)
+- Acceso: wallet.bezhas.com (conectar MetaMask)
 
 ### BZ Energy — Virtual Power Plant
 - Trading de energia en tiempo real
@@ -285,7 +285,7 @@ app.post('/webhooks/bezhas', express.raw({type: 'application/json'}), (req, res)
 - Agentes IA autonomos
 - Reputacion on-chain
 - SSO integrado
-- Acceso: genesis.bez.digital
+- Acceso: genesis.bezhas.com
 
 ### Otras SubApps
 - BZ Prestige: Club B2B y networking
@@ -391,8 +391,8 @@ R: Polygon, BNB Chain, Amoy (testnet).
 R: Si. Usa credenciales de sandbox desde el Developer Console.
 
 **P: Como contacto soporte?**
-R: Email: support@bez.digital (respuesta <2 horas).
-   Chat en vivo: hub.bez.digital/chat (horario 9-18h CET).
+R: Email: support@bezhas.com (respuesta <2 horas).
+   Chat en vivo: hub.bezhas.com/chat (horario 9-18h CET).
 
 ---
 
@@ -400,11 +400,11 @@ R: Email: support@bez.digital (respuesta <2 horas).
 
 | Canal | Contacto | Tiempo de Respuesta |
 |-------|----------|---------------------|
-| Email | support@bez.digital | < 2 horas |
-| Chat | hub.bez.digital/chat | < 30 minutos |
-| Documentacion | hub.bez.digital/docs | 24/7 |
+| Email | support@bezhas.com | < 2 horas |
+| Chat | hub.bezhas.com/chat | < 30 minutos |
+| Documentacion | hub.bezhas.com/docs | 24/7 |
 
 ---
 
 **Ultima actualizacion: Junio 2026**
-**Soporte: support@bez.digital**
+**Soporte: support@bezhas.com**

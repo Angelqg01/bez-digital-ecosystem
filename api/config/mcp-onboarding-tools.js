@@ -334,7 +334,7 @@ const TOOLS = [
                 // nuestro servidor en ejecución remota en todos los clientes.
                 verificarIntegridad: `${args.gestor === 'npm' ? 'npm' : 'pnpm'} view ${SDK_PAQUETE}@${SDK_VERSION} dist.integrity`,
                 configEjemplo: {
-                    BEZHAS_API_URL: 'https://api.bez.digital',
+                    BEZHAS_API_URL: 'https://api.bezhas.com',
                     BEZHAS_API_KEY: '<pégala desde la pantalla, en tu gestor de secretos>',
                     BEZHAS_CHAIN: 'polygon',
                 },

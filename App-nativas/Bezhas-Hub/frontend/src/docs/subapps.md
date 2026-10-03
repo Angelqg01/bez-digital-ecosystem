@@ -6,7 +6,7 @@ Guía completa de cada aplicación en el ecosistema BeZhas.
 
 ## 1. BeZhas Hub — Panel central
 
-**URL**: https://hub.bez.digital
+**URL**: https://hub.bezhas.com
 **Para**: Gestión de cuenta, dashboard, documentos
 
 ### Inicio de sesión
@@ -34,7 +34,7 @@ Guía completa de cada aplicación en el ecosistema BeZhas.
 
 ## 2. BZ CargoLink — Gestión de logística
 
-**URL**: https://cargolink.bez.digital
+**URL**: https://cargolink.bezhas.com
 **Para**: Tracking de envíos, proveedores, documentos aduanales
 
 ### Registro de envío
@@ -72,7 +72,7 @@ Guía completa de cada aplicación en el ecosistema BeZhas.
 
 ## 3. BeZhas Wallet — Gestión de fondos
 
-**URL**: https://wallet.bez.digital
+**URL**: https://wallet.bezhas.com
 **Para**: Comprar, enviar, recibir BEZ
 
 ### Crear wallet
@@ -122,7 +122,7 @@ Guía completa de cada aplicación en el ecosistema BeZhas.
 
 ## 4. Capital (DeFi) — Tesorería inteligente
 
-**URL**: https://capital.bez.digital
+**URL**: https://capital.bezhas.com
 **Para**: Farming, LP, ahorros automáticos
 
 ### Farming (generar yield)
@@ -152,7 +152,7 @@ Guía completa de cada aplicación en el ecosistema BeZhas.
 
 ## 5. Energy (VPP) — Gestión de energía
 
-**URL**: https://energy.bez.digital
+**URL**: https://energy.bezhas.com
 **Para**: Agregadores VPP, plantas solares, prosumers
 
 ### Registrar activo de energía
@@ -185,7 +185,7 @@ Guía completa de cada aplicación en el ecosistema BeZhas.
 
 ## 6. Prestige (Membership) — Club B2B
 
-**URL**: https://prestige.bez.digital
+**URL**: https://prestige.bezhas.com
 **Para**: Networking, descuentos, eventos
 
 ### Afiliarse
@@ -215,7 +215,7 @@ Guía completa de cada aplicación en el ecosistema BeZhas.
 
 ## 7. PureScan (Auditoría) — Transparency
 
-**URL**: https://purescan.bez.digital
+**URL**: https://purescan.bezhas.com
 **Para**: Verificar empresas, auditorías, compliance
 
 ### Buscar empresa
@@ -244,7 +244,7 @@ Incluye:
 
 ## 8. Genesis (Enterprise) — Gestión integral
 
-**URL**: https://genesis.bez.digital
+**URL**: https://genesis.bezhas.com
 **Para**: CFO, CEO, Equipos de 50+ personas
 
 ### Integraciones
@@ -270,10 +270,10 @@ Incluye:
 
 ## Soporte
 
-- **Email**: support@bez.digital
+- **Email**: support@bezhas.com
 - **Chat en vivo**: En cada SubApp (esquina inferior derecha)
 - **Discord**: https://discord.gg/bezhas
-- **Documentación**: https://bez.digital/docs
+- **Documentación**: https://bezhas.com/docs
 
 ## Troubleshooting
 

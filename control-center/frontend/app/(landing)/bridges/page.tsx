@@ -2,6 +2,7 @@
 
 import { usePublicStats } from '@/lib/public-hooks';
 import { useBridgeStats, SUPPORTED_CHAINS } from '@/lib/bridge-hooks';
+import SectorContactFooter from '../_components/SectorContactFooter';
 
 export default function BridgesPage() {
     const { data } = usePublicStats();
@@ -324,6 +325,8 @@ export default function BridgesPage() {
                 </section>
             </div>
 
+        
+            <SectorContactFooter department="infraestructura" />
         </>
     );
 }

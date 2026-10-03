@@ -15,7 +15,7 @@ Estos MCPs son necesarios para que la IA pueda auditar y controlar el clúster d
     *   **Uso en BeZhas:** Indispensable para depurar la base de datos de **Blockscout** o tu base de datos de MongoDB/Postgres que vincula las wallets de las empresas (Web2 ↔ Web3).
 *   **Fetch / cURL / HTTP MCP Server:**
     *   **Propósito:** Proporciona capacidades genéricas para hacer solicitudes HTTP/REST.
-    *   **Uso en BeZhas:** Para hacer pings (Healthchecks) a los servidores RPC y a las APIs internas (ej. `http://api.bez.digital:3001`).
+    *   **Uso en BeZhas:** Para hacer pings (Healthchecks) a los servidores RPC y a las APIs internas (ej. `http://api.bezhas.com:3001`).
 
 ## 2. Desarrollo e Interacción Blockchain (Web3)
 Para auditar contratos, enviar transacciones de prueba y pre-calcular gas.

@@ -21,7 +21,7 @@
     "blockchain"
   ],
   "author": "BeZhas",
-  "license": "SEE LICENSE IN https://bez.digital/terms",
+  "license": "SEE LICENSE IN https://bezhas.com/terms",
   "engines": {
     "node": ">=18"
   },

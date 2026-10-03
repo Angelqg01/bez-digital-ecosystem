@@ -19,7 +19,8 @@
 | Red | Dirección |
 | --- | --- |
 | Polygon (ERC-20) | `0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8` |
-| BNB Chain (BEP-20) | `0x8a1e3930fde1f151471c368fdbb39f3f63a65b55` |
+
+BEZ está desplegado únicamente en Polygon. BNB Chain se conectará mediante un bridge (próximamente): no existe un contrato BEZ nativo en BNB Chain.
 
 Las direcciones de la L2 (`chainId 2708`) y del resto de contratos se obtienen siempre en tiempo de ejecución vía SDK o mediante `GET /api/gateway/v1/contracts/addresses`. **No las codifiques a mano**: cambian entre despliegues y entre redes.
 

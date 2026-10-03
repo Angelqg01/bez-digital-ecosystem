@@ -81,8 +81,8 @@ function buildManifest() {
             downloadUrl: '/api/downloads/bezhas-hub-wp.zip',
         },
         hub: {
-            apiBase: process.env.PUBLIC_API_BASE || 'https://api.bez.digital',
-            developerConsole: 'https://bez.digital/developer-console',
+            apiBase: process.env.PUBLIC_API_BASE || 'https://api.bezhas.com',
+            developerConsole: 'https://bezhas.com/developer-console',
         },
         pay: {
             settlementToken: 'BEZ',

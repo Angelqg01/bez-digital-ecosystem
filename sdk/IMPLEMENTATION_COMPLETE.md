@@ -150,7 +150,7 @@ const { BeZhas } = require('@bezhas/sdk');
 
 const bezhas = new BeZhas({
     apiKey: 'YOUR_API_KEY',
-    endpoint: 'https://api.bez.digital/v1/bridge'
+    endpoint: 'https://api.bezhas.com/v1/bridge'
 });
 
 // Sincronizar productos

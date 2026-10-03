@@ -5,7 +5,7 @@ priority: "P0"
 cluster: "finanzas-pagos"
 repo_path: "App-nativas/Bezhas-Hub/"
 port: 5173
-domain: "hub.bez.digital"
+domain: "hub.bezhas.com"
 tags: ["platform-map", "finanzas-pagos", "p0"]
 ---
 
@@ -15,7 +15,7 @@ tags: ["platform-map", "finanzas-pagos", "p0"]
 
 ERP B2B multi-tenant (org/site/membership), API keys con scope y metering, BeZhas_ID, 4 planes definitivos (config/plans.js única fuente), hot-wallet signing GCP KMS, simulador logístico 360°. Migraciones 012-014.
 
-**Ubicación:** `App-nativas/Bezhas-Hub/` · puerto :5173 · hub.bez.digital
+**Ubicación:** `App-nativas/Bezhas-Hub/` · puerto :5173 · hub.bezhas.com
 
 ## Conexiones
 

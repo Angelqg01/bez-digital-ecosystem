@@ -72,7 +72,7 @@ const ENDPOINTS = {
     'web3.queueStats': { method: 'GET', path: '/web3/queue/stats' },
 };
 
-const DEFAULT_BASE_URL = 'https://api.bez.digital/api';
+const DEFAULT_BASE_URL = 'https://api.bezhas.com/api';
 
 class BezhasHubError extends Error {
     constructor(message, { status, body, path } = {}) {

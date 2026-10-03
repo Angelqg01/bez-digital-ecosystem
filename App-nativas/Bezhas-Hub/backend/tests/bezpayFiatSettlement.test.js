@@ -120,7 +120,7 @@ describe('liberación al vencer el plazo', () => {
     const res = await fiat.releaseDueSettlements();
 
     expect(res.delivered).toBe(1);
-    expect(dispense).toHaveBeenCalledWith(PAYER, 79.435483);
+    expect(dispense).toHaveBeenCalledWith(PAYER, 79.435483, expect.objectContaining({ order: expect.any(Object) }));
     expect(PaymentPG.updateByPaymentIntent).toHaveBeenCalledWith(
       'BEZ-TEST-0001', expect.objectContaining({ status: 'completed' })
     );

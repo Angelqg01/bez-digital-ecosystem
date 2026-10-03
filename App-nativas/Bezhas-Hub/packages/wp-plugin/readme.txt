@@ -19,7 +19,7 @@ BeZhas Hub convierte tu WordPress en una puerta al ecosistema B2B de BeZhas. Una
 * **Activar las SubApps** del ecosistema (CargoLink, Energy/VPP, Capital, Wallet, Vision, Gas, Pay) como servicios remotos — activar una SubApp amplía el scope de tu API Key.
 * **Cobrar con BeZhas-Pay** en cualquier página mediante shortcode `[bezhas_pay]`, un bloque Gutenberg, o el gateway WooCommerce.
 
-Toda la operación pasa por la API de BeZhas (`https://api.bez.digital`); tu API Key nunca viaja al navegador — el plugin firma las peticiones en el servidor a través de un puente REST local (`/wp-json/bezhas/v1/*`).
+Toda la operación pasa por la API de BeZhas (`https://api.bezhas.com`); tu API Key nunca viaja al navegador — el plugin firma las peticiones en el servidor a través de un puente REST local (`/wp-json/bezhas/v1/*`).
 
 **Cómo funciona:**
 
@@ -31,17 +31,17 @@ Toda la operación pasa por la API de BeZhas (`https://api.bez.digital`); tu API
 
 == Third Party Services ==
 
-Este plugin se conecta a la **BeZhas API** (`https://api.bez.digital`) para: cargar planes y SubApps disponibles, validar tu cuenta, contratar suscripciones, activar SubApps y crear cobros. Los datos enviados son los necesarios para cada operación (API Key, plan elegido, importe, moneda, red, nombre de la tienda).
+Este plugin se conecta a la **BeZhas API** (`https://api.bezhas.com`) para: cargar planes y SubApps disponibles, validar tu cuenta, contratar suscripciones, activar SubApps y crear cobros. Los datos enviados son los necesarios para cada operación (API Key, plan elegido, importe, moneda, red, nombre de la tienda).
 
-* Service homepage: [https://bez.digital](https://bez.digital)
-* Terms of Service: [https://bez.digital/terms](https://bez.digital/terms)
-* Privacy Policy: [https://bez.digital/privacy](https://bez.digital/privacy)
+* Service homepage: [https://bezhas.com](https://bezhas.com)
+* Terms of Service: [https://bezhas.com/terms](https://bezhas.com/terms)
+* Privacy Policy: [https://bezhas.com/privacy](https://bezhas.com/privacy)
 
 == Installation ==
 
 1. Sube el ZIP en WordPress → Plugins → Añadir nuevo → Subir plugin.
 2. Actívalo.
-3. Ve a "BeZhas Hub" en el menú lateral y conecta tu API Key de [bez.digital/developer-console](https://bez.digital/developer-console).
+3. Ve a "BeZhas Hub" en el menú lateral y conecta tu API Key de [bezhas.com/developer-console](https://bezhas.com/developer-console).
 
 == Frequently Asked Questions ==
 
@@ -51,7 +51,7 @@ No. La consola, las suscripciones, las SubApps y BeZhas-Pay (shortcode/bloque) f
 
 = ¿Dónde consigo la API Key? =
 
-En la Developer Console del Hub: [bez.digital/developer-console](https://bez.digital/developer-console).
+En la Developer Console del Hub: [bezhas.com/developer-console](https://bezhas.com/developer-console).
 
 = ¿Mi API Key es segura? =
 

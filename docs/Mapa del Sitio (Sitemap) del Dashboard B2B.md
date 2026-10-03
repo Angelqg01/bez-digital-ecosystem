@@ -157,7 +157,7 @@ El objetivo de tu interfaz es que la empresa implemente la solución en 5 minuto
 # Este recuadro aparecerá en el Frontend con un botón de "Copiar"
 docker run -d --name bezhas-edge \
   -e API_KEY="<TU_API_KEY_AQUI>" \
-  -e RPC_URL="https://l2.bez.digital" \
+  -e RPC_URL="https://l2.bezhas.com" \
   -p 4000:4000 \
   bezhas/edge-node:latest
 ```

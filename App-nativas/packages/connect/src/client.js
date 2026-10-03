@@ -11,7 +11,7 @@ import { ServiceModule } from './service.js';
 import { listCapabilities } from './registry.js';
 import { SubscriptionModule, Entitlements } from './subscription.js';
 
-const DEFAULT_BASE_URL = 'https://api.bez.digital';
+const DEFAULT_BASE_URL = 'https://api.bezhas.com';
 
 /** Coerce an Entitlements | API payload | id[] into an Entitlements instance. */
 function toEntitlements(value) {

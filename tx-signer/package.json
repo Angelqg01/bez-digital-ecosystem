@@ -1,0 +1,20 @@
+{
+  "name": "bezhas-tx-signer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Firmante aislado de BeZhas: verifica por su cuenta intención, política y aprobaciones EIP-712 antes de firmar con KMS.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ethers": "^6.16.0"
+  },
+  "optionalDependencies": {
+    "@aws-sdk/client-kms": "^3.700.0"
+  }
+}

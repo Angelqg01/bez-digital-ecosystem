@@ -23,14 +23,14 @@ function envApiBase() {
         import.meta.env.VITE_AUTH_API ||
         import.meta.env.VITE_HUB_API ||
         import.meta.env.VITE_API_URL ||
-        'https://api.bez.digital'
+        'https://api.bezhas.com'
       );
     }
   } catch { /* not a module env */ }
   if (typeof process !== 'undefined' && process.env) {
-    return process.env.NEXT_PUBLIC_AUTH_API || process.env.NEXT_PUBLIC_API_URL || 'https://api.bez.digital';
+    return process.env.NEXT_PUBLIC_AUTH_API || process.env.NEXT_PUBLIC_API_URL || 'https://api.bezhas.com';
   }
-  return 'https://api.bez.digital';
+  return 'https://api.bezhas.com';
 }
 
 // Orden de menor a mayor — usado por hasTier() para comparaciones "al menos X".

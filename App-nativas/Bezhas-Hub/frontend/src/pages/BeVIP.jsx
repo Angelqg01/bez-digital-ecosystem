@@ -775,8 +775,8 @@ const BeVIP = () => {
                 } catch (e) {
                     // Usar fallback
                     setBankDetails({
-                        accountHolder: 'bez.digital',
-                        beneficiaryAlias: 'bez.digital',
+                        accountHolder: 'bezhas.com',
+                        beneficiaryAlias: 'bezhas.com',
                         iban: 'ES77 1465 0100 91 1766376210',
                         bic: 'INGDESMMXXX',
                         bank: 'ING',

@@ -466,12 +466,12 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 
 # Frontend
-FRONTEND_URL=https://bez.digital
+FRONTEND_URL=https://bezhas.com
 ```
 
 2. **Stripe Webhook:**
    - Configurar en: https://dashboard.stripe.com/webhooks
-   - URL: `https://bez.digital/api/stripe/webhook`
+   - URL: `https://bezhas.com/api/stripe/webhook`
    - Agregar signing secret a `.env`
 
 3. **Redis:**

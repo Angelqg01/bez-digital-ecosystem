@@ -222,4 +222,4 @@ Modelo por sector:
 
 **BeZhas PMO (Program Management Office)**  
 **BeZhas Architecture & Security Office**  
-**Contacto institucional:** info.bezcoin@bez.digital
+**Contacto institucional:** info.bezcoin@bezhas.com

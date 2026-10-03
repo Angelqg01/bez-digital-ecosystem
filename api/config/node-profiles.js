@@ -38,7 +38,7 @@ const PERFILES = [
             cpu: '2 vCPU',
             ram: '2 GB',
             disco: '20 GB SSD',
-            red: 'salida HTTPS a api.bez.digital; no requiere IP pública ni puerto abierto entrante',
+            red: 'salida HTTPS a api.bezhas.com; no requiere IP pública ni puerto abierto entrante',
             so: 'Linux con Docker 24+, o Windows con Docker Desktop',
         },
         puertos: [{ puerto: 4000, uso: 'API local del nodo', exposicion: 'solo red interna' }],

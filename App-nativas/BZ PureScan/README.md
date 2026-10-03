@@ -238,7 +238,7 @@ npm run build
 
 - **Issues**: GitHub Issues
 - **Docs**: `./doc/` folder
-- **Email**: dev@bez.digital
+- **Email**: dev@bezhas.com
 
 ## 📄 Licencia
 

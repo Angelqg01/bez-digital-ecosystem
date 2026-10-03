@@ -126,7 +126,7 @@ Analiza brevemente la oportunidad de trading:
 - Par: ${pair}
 - Acción: ${side}
 - Cantidad: ${amount}
-- Contexto: ecosistema BeZhas (BNB Chain + Polygon)
+- Contexto: ecosistema BeZhas (BEZ en Polygon; BNB Chain llegará mediante un bridge)
 
 Evalúa: nivel de riesgo (LOW/MEDIUM/HIGH), condiciones de mercado actuales,
 y si es un buen momento para este trade.
@@ -149,7 +149,7 @@ Sé breve (máx 3 frases). Responde en español.`;
 
     const prompt = `
 Analiza la oportunidad de trading para ${pair} en el timeframe ${timeframe}.
-Contexto: plataforma BeZhas DeFi en BNB Chain + Polygon.
+Contexto: plataforma BeZhas DeFi (BEZ en Polygon; BNB Chain llegará mediante un bridge).
 Considera: tendencia, soportes/resistencias, y volumen.
 Sé conciso. Responde en español.`;
 
@@ -253,7 +253,7 @@ Sé conciso. Responde en español.`;
 
   _systemPrompt() {
     return `Eres el Trading Agent de BeZhas — experto en trading algorítmico DeFi.
-Operas en BNB Chain y Polygon con el token BEZ-Coin y 5 pares de trading.
+Operas en Polygon con el token BEZ-Coin (BNB Chain llegará mediante un bridge) y 5 pares de trading.
 Siempre priorizas la seguridad del capital. NUNCA recomiendas trades sin análisis previo.
 Eres preciso, cuantitativo y conservador ante la incertidumbre.
 Responde siempre en español.`;

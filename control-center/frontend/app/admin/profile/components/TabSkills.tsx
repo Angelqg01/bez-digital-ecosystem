@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { BrainCircuit, RefreshCw, ChevronDown, ChevronUp, Sparkles, Cpu, MessageSquare, Tag, Clock } from 'lucide-react';
+import { API_ORIGIN } from '@/lib/api';
 
 interface SkillEntry {
     id: string;
@@ -76,7 +77,7 @@ function SkillRow({ skill }: { skill: SkillEntry }) {
         try {
             const token = localStorage.getItem('bezhas_token');
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/agent/skills/${skill.id}`,
+                `${API_ORIGIN}/api/agent/skills/${skill.id}`,
                 { headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
             if (res.ok) {
@@ -184,7 +185,7 @@ export default function TabSkills() {
         try {
             const token = localStorage.getItem('bezhas_token');
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/agent/skills?limit=100`,
+                `${API_ORIGIN}/api/agent/skills?limit=100`,
                 { headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
             if (res.ok) {

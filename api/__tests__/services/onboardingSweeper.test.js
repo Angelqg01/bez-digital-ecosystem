@@ -19,15 +19,32 @@ describe('onboardingSweeper', () => {
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });   // vales de nodo sin usar
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 7 });   // telemetría vencida
         mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 4 });   // episodios vencidos
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 3 });   // códigos OAuth caducados
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 6 });   // denylist vencida
+        mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 2 });   // refresh caducados/revocados
         const r = await sweeper.pasada();
         expect(r).toEqual({
             caducadas: 2, anonimizadas: 5, nodosCaducados: 1,
             // Purga por plazo (art. 5.1.e RGPD): va en el mismo barrido para que
             // no dependa de un segundo demonio que nadie vigila.
             telemetriaBorrada: 7, episodiosBorrados: 4,
+            oauthCodigos: 3, oauthDenylist: 6, oauthRefresh: 2,
         });
         expect(String(mockQuery.mock.calls[1][0])).toMatch(/source_ip = NULL/);
         expect(String(mockQuery.mock.calls[1][0])).toMatch(/user_agent = NULL/);
+    });
+
+    it('purga OAuth: conserva los refresh rotados hasta caducar (detección de replay)', async () => {
+        await sweeper.pasada();
+        const sql = mockQuery.mock.calls.map((c) => String(c[0]));
+        const refresh = sql.find((q) => /DELETE FROM oauth_refresh_tokens/.test(q));
+        expect(refresh).toMatch(/expires_at < NOW\(\)/);
+        expect(refresh).toMatch(/revoked_at IS NOT NULL/);
+        // Un token ya rotado es el que delata una copia robada si reaparece:
+        // no se puede borrar sólo por estar usado.
+        expect(refresh).not.toMatch(/used_at/);
+        expect(sql.some((q) => /DELETE FROM oauth_authorization_codes/.test(q))).toBe(true);
+        expect(sql.some((q) => /DELETE FROM oauth_token_denylist/.test(q))).toBe(true);
     });
 
     it('no se solapa consigo mismo', async () => {
@@ -53,10 +70,11 @@ describe('onboardingSweeper', () => {
         jest.spyOn(onboarding, 'barrer').mockRejectedValueOnce(new Error('la base no responde'));
         await expect(sweeper.pasada()).resolves.toBeNull();
 
-        for (let i = 0; i < 5; i++) mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+        for (let i = 0; i < 8; i++) mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
         await expect(sweeper.pasada()).resolves.toEqual({
             caducadas: 0, anonimizadas: 0, nodosCaducados: 0,
             telemetriaBorrada: 0, episodiosBorrados: 0,
+            oauthCodigos: 0, oauthDenylist: 0, oauthRefresh: 0,
         });
     });
 

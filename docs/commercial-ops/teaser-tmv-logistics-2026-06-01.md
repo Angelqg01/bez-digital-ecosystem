@@ -1,8 +1,8 @@
 # BeZhas — Institutional Investment Teaser
 **Operational Trust Layer for Global Maritime & Port Logistics**
 *Date: June 1, 2026*
-*Contact: Yoel A. Hernández, CEO & Founder (yoel@bez.digital)*
-*Website: [bez.digital](https://bez.digital) | Pitch & Deck Room: [Secure Drive Link](https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view)*
+*Contact: Yoel A. Hernández, CEO & Founder (yoel@bezhas.com)*
+*Website: [bezhas.com](https://bezhas.com) | Pitch & Deck Room: [Secure Drive Link](https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view)*
 
 ---
 

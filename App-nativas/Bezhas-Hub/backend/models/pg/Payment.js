@@ -236,6 +236,50 @@ class PaymentPG {
         return result.rows[0] || null;
     }
 
+    /**
+     * Importe que se pidió cobrar con tarjeta (base + recargo, en unidades
+     * mínimas). Se guarda al crear la sesión: la verificación compara lo cobrado
+     * con ESTO, no con lo que diga el evento.
+     */
+    static async setExpectedCharge(paymentIntentId, esperado) {
+        const result = await pool.query(
+            `UPDATE payments
+                SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('cobroEsperado', $2::jsonb),
+                    updated_at = CURRENT_TIMESTAMP
+              WHERE payment_intent_id = $1
+              RETURNING *;`,
+            [paymentIntentId, JSON.stringify(esperado)]
+        );
+        return result.rows[0] || null;
+    }
+
+    /** Estado de la entrega vía intención (pendiente_aprobacion, entregada, bloqueada…). */
+    static async setDeliveryState(paymentIntentId, entrega) {
+        const result = await pool.query(
+            `UPDATE payments
+                SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('entrega', $2::jsonb),
+                    updated_at = CURRENT_TIMESTAMP
+              WHERE payment_intent_id = $1
+              RETURNING *;`,
+            [paymentIntentId, JSON.stringify({ ...entrega, actualizadaEn: new Date().toISOString() })]
+        );
+        return result.rows[0] || null;
+    }
+
+    /** Órdenes reclamadas cuya entrega espera aprobación de tesorería. */
+    static async findPendingDeliveries(limit = 50) {
+        const result = await pool.query(
+            `SELECT * FROM payments
+              WHERE status = 'processing'
+                AND settled_at IS NOT NULL
+                AND metadata->'entrega'->>'estado' = 'pendiente_aprobacion'
+              ORDER BY updated_at ASC
+              LIMIT $1;`,
+            [limit]
+        );
+        return result.rows;
+    }
+
     static async findByProviderReference(providerReference) {
         const result = await pool.query(
             'SELECT * FROM payments WHERE provider_reference = $1', [providerReference]

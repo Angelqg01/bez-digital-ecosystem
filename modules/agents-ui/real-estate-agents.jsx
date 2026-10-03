@@ -3,7 +3,7 @@ import { useAgentBridge } from "./use-agent-bridge";
 import AgentDetailPanel from "./agent-detail-panel";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   bez.digital — REAL ESTATE AGENTS v1.0  (Fase 2 — Inmobiliaria)
+   bezhas.com — REAL ESTATE AGENTS v1.0  (Fase 2 — Inmobiliaria)
    PropToken · SmartMortgage · RentStream · DueDiligence
    ─────────────────────────────────────────────────────────────────────
    Contratos:
@@ -1114,7 +1114,7 @@ export default function RealEstateAgents() {
         justifyContent: "space-between", color: C.muted, fontSize: 9,
         fontFamily: C.mono, background: C.surf, flexWrap: "wrap", gap: 4
       }}>
-        <span>bez.digital · Real Estate Agents v1.0 · Fase 2 · PropToken · SmartMortgage · RentStream · DueDiligence</span>
+        <span>bezhas.com · Real Estate Agents v1.0 · Fase 2 · PropToken · SmartMortgage · RentStream · DueDiligence</span>
         <span>BeZhasRealEstate.sol · ERC-1155 · Euribor Chainlink · ING SEPA · Claude AI · Catastro España</span>
       </div>
     </div>

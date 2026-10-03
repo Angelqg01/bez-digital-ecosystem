@@ -213,7 +213,7 @@ export default function BuyTokenPage() {
               { n: '01', title: 'Elige tu pack y paga', desc: 'Tarjeta, SEPA o transferencia. Stripe procesa el pago de forma segura.' },
               { n: '02', title: 'Envíanos tu wallet Polygon', desc: 'Por email o Telegram tras el pago. Asegúrate de que la wallet soporta tokens ERC-20.' },
               { n: '03', title: 'Recibes tus BEZ-Coin', desc: 'Transferencia directa desde el Treasury DAO en 24–48h hábiles. Confirmación por Telegram.' },
-              { n: '04', title: 'Activa staking (opcional)', desc: 'Con tu wallet conectada en bez.digital accedes a staking, farming y gobernanza DAO desde el primer día.' },
+              { n: '04', title: 'Activa staking (opcional)', desc: 'Con tu wallet conectada en bezhas.com accedes a staking, farming y gobernanza DAO desde el primer día.' },
             ].map(step => (
               <li key={step.n} className="flex gap-4 items-start">
                 <span className="text-cyan-400 font-mono text-lg font-bold w-8 shrink-0">{step.n}</span>

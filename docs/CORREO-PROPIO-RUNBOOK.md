@@ -5,10 +5,10 @@ completado y, tras reiniciar el contenedor para que leyera la configuración, el
 servidor saluda de verdad:
 
 ```
-25:  220 mail.bez.digital Stalwart ESMTP at your service
-465: 220 mail.bez.digital Stalwart ESMTP at your service   (TLS)
+25:  220 mail.bezhas.com Stalwart ESMTP at your service
+465: 220 mail.bezhas.com Stalwart ESMTP at your service   (TLS)
 993: * OK [CAPABILITY IMAP4rev2 ...]
-DKIM signature created  id = "v1-ed25519-20260815" / "v1-rsa-20260815"  bez.digital
+DKIM signature created  id = "v1-ed25519-20260815" / "v1-rsa-20260815"  bezhas.com
 ```
 
 Queda **el buzón emisor** (paso 1) y **el DNS** (paso 3).
@@ -29,14 +29,14 @@ mientras el destino sea localhost.
 ## 1. Crear el buzón emisor  (tuyo)
 
 En **http://localhost:8080** → `Settings` → `Accounts`, un buzón para
-`hola@bez.digital`. **No sirven las credenciales del administrador**: el envío
+`hola@bezhas.com`. **No sirven las credenciales del administrador**: el envío
 se autentica con las del buzón.
 
 Está comprobado contra el servidor — una transacción cortada antes del `DATA`,
 sin llegar a enviar nada:
 
 ```
--> MAIL FROM:<hola@bez.digital>     <- 250 2.1.0 OK
+-> MAIL FROM:<hola@bezhas.com>     <- 250 2.1.0 OK
 -> RCPT TO:<destino@example.com>    <- 550 5.1.2 Relay not allowed.
 ```
 
@@ -57,7 +57,7 @@ SMTP_PORT=465
 SMTP_TLS_REJECT_UNAUTHORIZED=false
 SMTP_USER=<buzón>
 SMTP_PASS=<contraseña del buzón>
-SMTP_FROM=hola@bez.digital
+SMTP_FROM=hola@bezhas.com
 ```
 
 `SMTP_HOST` se dejó comentado **a propósito**. Con el host puesto y sin
@@ -79,7 +79,7 @@ curl -s localhost:4000/healthz | jq .email
   enviado lo que no salió
 - `mode: "simulado"` → sigue sin `SMTP_HOST`
 
-## 3. DNS de bez.digital  (tuyo — lo que de verdad decide)
+## 3. DNS de bezhas.com  (tuyo — lo que de verdad decide)
 
 Sin estos registros, un correo a un cliente real acaba en spam o rebotado por
 mucho que el SMTP funcione:
@@ -95,10 +95,10 @@ Orden recomendado: SPF y DKIM primero, DMARC en `p=none` para observar, y
 endurecerlo a `quarantine` cuando el informe salga limpio.
 
 **Las claves DKIM ya están generadas** (`v1-ed25519-20260815` y
-`v1-rsa-20260815`, ambas para `bez.digital`). Lo que hay que publicar es la
+`v1-rsa-20260815`, ambas para `bezhas.com`). Lo que hay que publicar es la
 parte *pública*, y Stalwart la da hecha en formato de registro DNS:
 
-> panel → `Settings` → `Domains` → `bez.digital` → **DNS records**
+> panel → `Settings` → `Domains` → `bezhas.com` → **DNS records**
 
 Ahí salen MX, SPF, DKIM y DMARC listos para copiar al proveedor de DNS. Hay que
 entrar autenticado; no se pueden sacar del store por fuera (RocksDB comprimido,

@@ -1,3 +1,5 @@
+import SectorContactFooter from '../_components/SectorContactFooter';
+
 export default function EnterprisePage() {
     return (
         <>
@@ -266,7 +268,7 @@ export default function EnterprisePage() {
                         <a href="/onboarding" className="bg-primary text-white px-12 py-5 font-bold uppercase tracking-widest text-sm hover:scale-105 transition-transform inline-flex items-center justify-center">
                             REQUEST A DEMO
                         </a>
-                        <a href="mailto:info.bezcoin@bez.digital" className="glass-panel border border-white/10 text-white px-12 py-5 font-bold uppercase tracking-widest text-sm hover:bg-white/10 transition-colors inline-flex items-center justify-center">
+                        <a href="mailto:info.bezcoin@bezhas.com" className="glass-panel border border-white/10 text-white px-12 py-5 font-bold uppercase tracking-widest text-sm hover:bg-white/10 transition-colors inline-flex items-center justify-center">
                             CONTACT SALES
                         </a>
                         <a href="https://t.me/BeZhasBot" target="_blank" rel="noopener noreferrer" className="glass-panel border border-white/10 text-white px-12 py-5 font-bold uppercase tracking-widest text-sm hover:bg-white/10 transition-colors inline-flex items-center justify-center gap-2">
@@ -292,6 +294,8 @@ export default function EnterprisePage() {
                 </div>
             </footer>
 
+        
+            <SectorContactFooter department="ventas" />
         </>
     );
 }

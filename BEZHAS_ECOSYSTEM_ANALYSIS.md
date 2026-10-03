@@ -137,9 +137,9 @@ La landing muestra "Oraculo pendiente" como precio de BEZ-Coin. Sin pool de liqu
 
 **Puedo hacer:** Script completo de deploy del pool + actualización del oracle endpoint
 
-### ❌ GAP 2: Subdominios bez.digital no configurados
+### ❌ GAP 2: Subdominios bezhas.com no configurados
 **Impacto: ALTO**  
-Las sub-apps usan URLs de GCP Cloud Run (`*.run.app`). El CLAUDE.md marca como TODO configurar los subdominios `*.bez.digital`. Esto afecta credibilidad con clientes B2B y con inversores.
+Las sub-apps usan URLs de GCP Cloud Run (`*.run.app`). El CLAUDE.md marca como TODO configurar los subdominios `*.bezhas.com`. Esto afecta credibilidad con clientes B2B y con inversores.
 
 **Lo que hace falta:** Cloudflare DNS CNAME + Cloud Run custom domain mapping (tienes Cloudflare en MCPs)
 
@@ -181,13 +181,13 @@ No existe un whitepaper en el repositorio. Es el documento #1 que piden CoinGeck
 3. Landing mostrará precio real → demuestra token vivo
 ```
 
-**Día 2-3: Subdominios bez.digital**
+**Día 2-3: Subdominios bezhas.com**
 ```
-4. Cloudflare: hub.bez.digital → bezhas-hub-o5xep6gbwq-ew.a.run.app
-5. Cloudflare: capital.bez.digital → bezhas-capital...
-6. Cloudflare: purescan.bez.digital → bezhas-purescan...
-7. Cloudflare: energy.bez.digital → bezhas-energy...
-8. Cloudflare: cargo.bez.digital → bezhas-cargolink...
+4. Cloudflare: hub.bezhas.com → bezhas-hub-o5xep6gbwq-ew.a.run.app
+5. Cloudflare: capital.bezhas.com → bezhas-capital...
+6. Cloudflare: purescan.bezhas.com → bezhas-purescan...
+7. Cloudflare: energy.bezhas.com → bezhas-energy...
+8. Cloudflare: cargo.bezhas.com → bezhas-cargolink...
 9. Actualizar control-center/frontend: secondaryApps hrefs → subdominios reales
 ```
 
@@ -212,7 +212,7 @@ No existe un whitepaper en el repositorio. Es el documento #1 que piden CoinGeck
 - Necesitas: whitepaper ✅ + pitch deck + métricas de uso
 
 **BNB Chain MVB Program** → Hasta $50K+
-- Contrato en BNB: `0x8a1e3930fde1f151471c368fdbb39f3f63a65b55` ✅
+- Contrato en BNB: no desplegado. BNB Chain será un bridge desde Polygon; aplicar cuando esté activo ⏳
 - Igual que Polygon, necesita documentación formal
 
 **Claude puede generar hoy:** Formularios de aplicación completos para ambos grants.

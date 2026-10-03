@@ -23,7 +23,7 @@ La L2 usa **BEZ como gas token personalizado** (`useCustomGasToken`), no ETH. Es
 | BeZhas L2 | `2708` | Red principal del protocolo |
 | Local / Anvil | `31337` | Desarrollo con Foundry |
 | Polygon | `137` | BEZ como ERC-20 + puente |
-| BNB Chain | `56` | BEZ como BEP-20 + puente |
+| BNB Chain | `56` | Bridge desde Polygon (próximamente); sin BEZ nativo |
 
 El tiempo de bloque de la L2 es de **2 segundos**.
 

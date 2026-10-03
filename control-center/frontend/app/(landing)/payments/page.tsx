@@ -1,5 +1,6 @@
 import CopyButton from '@/components/CopyButton';
 import { STRIPE_PAYMENT_LINKS } from '@/lib/stripe-payment-links';
+import SectorContactFooter from '../_components/SectorContactFooter';
 
 export default function PaymentsPage() {
   return (
@@ -251,6 +252,8 @@ export default function PaymentsPage() {
         </section>
       </div>
 
-    </>
+    
+            <SectorContactFooter department="facturacion" />
+        </>
   );
 }

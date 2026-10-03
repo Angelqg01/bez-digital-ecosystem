@@ -43,7 +43,7 @@ const ADMIN_WALLET = process.env.ADMIN_WALLET ? process.env.ADMIN_WALLET.toLower
 
 // Dominio de la cookie de sesión. En local, API (:3001) y panel (:3000)
 // comparten el host `localhost` y la cookie viaja sola. En producción viven en
-// subdominios distintos (api.bez.digital / app.bez.digital), y sin Domain la
+// subdominios distintos (api.bezhas.com / app.bezhas.com), y sin Domain la
 // cookie queda encerrada en el host de la API y el panel nunca la envía.
 const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
 

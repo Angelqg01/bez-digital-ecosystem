@@ -4,7 +4,7 @@ layer: 2
 priority: "P0"
 cluster: "finanzas-pagos"
 repo_path: "App-nativas/bez-wallet/"
-domain: "wallet.bez.digital"
+domain: "wallet.bezhas.com"
 tags: ["platform-map", "finanzas-pagos", "p0"]
 ---
 
@@ -14,7 +14,7 @@ tags: ["platform-map", "finanzas-pagos", "p0"]
 
 Wallet AA no-custodial (SmartWallet + Factory + Paymaster + WalletGuardian). Login/subscribe-with-wallet SIWE compartido (_shared/bezhas-wallet-auth.js).
 
-**Ubicación:** `App-nativas/bez-wallet/` · wallet.bez.digital
+**Ubicación:** `App-nativas/bez-wallet/` · wallet.bezhas.com
 
 ## Conexiones
 

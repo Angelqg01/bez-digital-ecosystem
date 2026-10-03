@@ -30,7 +30,7 @@ Elige según tu stack técnico.
 
 ### P: ¿Perdí mi API Key, qué hago?
 **R:**
-1. Ir a `hub.bez.digital/developers`
+1. Ir a `hub.bezhas.com/developers`
 2. Sección "API Keys"
 3. Click en "Revoke" junto a la vieja
 4. Click "Generate New Key"
@@ -95,7 +95,7 @@ res.json({ ack: true }); // ✅ Responde ya
 ```javascript
 // Si tienes refresh token guardado
 const newJWT = await fetch(
-  'https://api.bez.digital:3001/auth/refresh',
+  'https://api.bezhas.com:3001/auth/refresh',
   {
     method: 'POST',
     headers: { 
@@ -105,7 +105,7 @@ const newJWT = await fetch(
 );
 
 // Si no tienes: login nuevamente
-// Ir a: hub.bez.digital
+// Ir a: hub.bezhas.com
 // Sign In → nuevo JWT
 ```
 
@@ -126,7 +126,7 @@ const newJWT = await fetch(
 - Banco: €1.50 (SEPA) o 0.5% (SWIFT)
 - Crypto: 0.3% (network fees)
 
-Véase en panel: `hub.bez.digital/pricing`
+Véase en panel: `hub.bezhas.com/pricing`
 
 ### P: ¿Cuánto tiempo tarda en llegar el dinero?
 **R:**
@@ -143,7 +143,7 @@ Véase en panel: `hub.bez.digital/pricing`
 4. **Límite diario** → Contactar banco
 5. **Fraude flagged** → Llamar al banco
 
-Reintenta en <5 min. Si persiste: `support@bez.digital`
+Reintenta en <5 min. Si persiste: `support@bezhas.com`
 
 ### P: ¿Puedo reembolsar un pago?
 **R:** Sí, pero depende del método:
@@ -192,7 +192,7 @@ Luego: "in_transit" → "delivered"
 ### P: ¿Puedo rastrear por teléfono?
 **R:** Sí, con enlace público:
 ```
-https://track.bez.digital/B-abc123
+https://track.bezhas.com/B-abc123
 ```
 
 Compartible con cliente. Muestra:
@@ -218,7 +218,7 @@ Compartible con cliente. Muestra:
 - **LP farming:** 45% APY
 - **Treasury:** 15% APY
 
-Véase en vivo: `capital.bez.digital/defi`
+Véase en vivo: `capital.bezhas.com/defi`
 
 ⚠️ **Riesgo:** APY no garantizado. Puede cambiar.
 
@@ -236,7 +236,7 @@ Véase en vivo: `capital.bez.digital/defi`
 
 ### P: ¿Cómo retiro mis fondos?
 **R:**
-1. `capital.bez.digital/defi`
+1. `capital.bezhas.com/defi`
 2. Click en "Unstake"
 3. Confirmar en wallet (firma)
 4. 7 días de espera (security lock)
@@ -325,7 +325,7 @@ async function processWebhookAsync(data) {
 ```javascript
 // Problema: no incluiste credenciales
 const response = await fetch(
-  'https://api.bez.digital:3001/api/users/me',
+  'https://api.bezhas.com:3001/api/users/me',
   {
     headers: { 'x-api-key': key }
     // ❌ Falta: credentials: 'include'
@@ -336,7 +336,7 @@ const response = await fetch(
 // Frontend → Tu servidor → BeZhas
 app.get('/api/users/me', async (req, res) => {
   const response = await fetch(
-    'https://api.bez.digital:3001/api/users/me',
+    'https://api.bezhas.com:3001/api/users/me',
     {
       headers: { 'x-api-key': process.env.BEZHAS_API_KEY }
     }
@@ -356,7 +356,7 @@ GET /api/billing/invoices?month=2026-06&format=pdf
 # Devuelve PDF descargable
 ```
 
-O en panel: `hub.bez.digital/billing` → "Download Invoice"
+O en panel: `hub.bezhas.com/billing` → "Download Invoice"
 
 ### P: ¿Puedo ver todos mis pagos?
 **R:**
@@ -379,7 +379,7 @@ GET /api/gateway/v1/history?limit=100&offset=0
 
 ### P: ¿Cómo veo mis costos?
 **R:**
-1. `hub.bez.digital/admin/billing`
+1. `hub.bezhas.com/admin/billing`
 2. "Usage" → API calls, storage, transactions
 3. "Invoices" → Resumen mensual
 4. "Pricing" → Tarifas actuales
@@ -388,7 +388,7 @@ GET /api/gateway/v1/history?limit=100&offset=0
 
 ## 📞 Cuando Contactar Soporte
 
-**Email: `support@bez.digital`**
+**Email: `support@bezhas.com`**
 
 **Respuesta esperada:**
 - Nivel Starter: <4 horas
@@ -420,19 +420,19 @@ Descripción:
 ```
 
 **Links útiles:**
-- Docs: `hub.bez.digital/docs`
-- Status: `status.bez.digital`
-- Logs: `hub.bez.digital/admin/logs`
-- API Playground: `hub.bez.digital/api-playground`
+- Docs: `hub.bezhas.com/docs`
+- Status: `status.bezhas.com`
+- Logs: `hub.bezhas.com/admin/logs`
+- API Playground: `hub.bezhas.com/api-playground`
 
 ---
 
 ## 🎓 Recursos de Aprendizaje
 
 **Oficial:**
-- API Docs: `hub.bez.digital/api-docs`
+- API Docs: `hub.bezhas.com/api-docs`
 - SDK GitHub: `github.com/bezhas/connect`
-- Blog: `blog.bez.digital`
+- Blog: `blog.bezhas.com`
 
 **Comunidad:**
 - Discord: `discord.gg/bezhas`
@@ -440,9 +440,9 @@ Descripción:
 - Twitter: `@BeZhas_io`
 
 **Cursos:**
-- "API Basics" (30 min) → `hub.bez.digital/learn/api`
-- "SDK Deep Dive" (1h) → `hub.bez.digital/learn/sdk`
-- "WordPress Setup" (15 min) → `hub.bez.digital/learn/wp`
+- "API Basics" (30 min) → `hub.bezhas.com/learn/api`
+- "SDK Deep Dive" (1h) → `hub.bezhas.com/learn/sdk`
+- "WordPress Setup" (15 min) → `hub.bezhas.com/learn/wp`
 
 ---
 
@@ -463,6 +463,6 @@ Descripción:
 
 ---
 
-**¿Algo no funciona? Contacta a support@bez.digital**
+**¿Algo no funciona? Contacta a support@bezhas.com**
 
 **Última actualización: Junio 2026**

@@ -60,3 +60,6 @@ overrides:
   # deprecado y pinnea una version vieja), asi que no basta con la dep directa.
   form-data@2: '^2.5.6'
   'form-data@>=4.0.0 <4.0.6': '^4.0.6'
+
+  # browserslist <=4.28.6: crecimiento de memoria sin límite y escritura en prototipo (dev).
+  browserslist: '^4.28.7'

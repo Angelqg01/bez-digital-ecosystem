@@ -61,9 +61,9 @@ const PLANS = [
     tokenizationOverageEUR: 1.20, tokenizationAuto: true,
     stripe: {
       productId: 'prod_UOSDVEzpPuxHux',
-      monthlyPriceId: 'price_1TPfJUFomr6oeXVgMfB321Hf',
+      monthlyPriceId: 'price_1UKERjFomr6oeXVgZFYsQ98u',
       annualPriceId: 'price_1TtuE9Fomr6oeXVguKlDbScU',
-      monthlyLink: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+      monthlyLink: 'https://buy.stripe.com/00w3cv7UsggSfA22Ibew80f',
       annualLink: 'https://buy.stripe.com/8x228r8YwfcO87A4Qjew80b',
     },
   },

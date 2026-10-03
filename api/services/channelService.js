@@ -232,10 +232,15 @@ async function sendEmail(to, subject, body) {
             port: parseInt(process.env.SMTP_PORT, 10) || 587,
             secure: process.env.SMTP_SECURE === 'true',
             auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+            connectionTimeout: 15000,
+            greetingTimeout: 15000,
+            socketTimeout: 30000,
         });
 
+        // Hostinger (smtp.hostinger.com) solo deja enviar como el buzón o uno de sus
+        // alias; bez.digital caducó, así que el remitente por defecto es un alias real.
         const result = await transport.sendMail({
-            from: process.env.SMTP_FROM || 'noreply@bez.digital',
+            from: process.env.SMTP_FROM || 'BeZhas <support@bezhas.com>',
             to,
             subject,
             text: body,

@@ -3,7 +3,7 @@ import { useAgentBridge } from "./use-agent-bridge";
 import AgentDetailPanel from "./agent-detail-panel";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   bez.digital — COLD CHAIN AGENT v1.0  (Fase 1.6 — ÚLTIMO DE FASE 1)
+   bezhas.com — COLD CHAIN AGENT v1.0  (Fase 1.6 — ÚLTIMO DE FASE 1)
    Cadena de Frío · IoT Tiempo Real · Penalización Automática · BCM NFT
    ─────────────────────────────────────────────────────────────────────
    Blockchain:  Polygon Mainnet
@@ -969,7 +969,7 @@ export default function ColdChainAgent() {
         display: "flex", justifyContent: "space-between", color: C.muted, fontSize: 9,
         fontFamily: C.mono, background: C.surf, flexWrap: "wrap", gap: 4
       }}>
-        <span>bez.digital · Cold Chain Agent v1.0 · Fase 1.6 · FASE 1 COMPLETA ✅ · BEZ-Coin Native</span>
+        <span>bezhas.com · Cold Chain Agent v1.0 · Fase 1.6 · FASE 1 COMPLETA ✅ · BEZ-Coin Native</span>
         <span>QualityOracle.sol · LogisticsContainer.sol · BeZhasNFT.sol · Sensitech · EU GDP/FMD</span>
       </div>
     </div>

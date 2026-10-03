@@ -102,23 +102,23 @@ test('BusinessProfile: cada departamento tiene su remitente, con nombre visible'
   const p = new BusinessProfile({
     company: 'BeZhas',
     email: {
-      domain: 'bez.digital',
+      domain: 'bezhas.com',
       displayName: 'BeZhas',
-      default: 'hola@bez.digital',
-      byDepartment: { sales: 'ventas@bez.digital', support: 'soporte@bez.digital' },
+      default: 'hola@bezhas.com',
+      byDepartment: { sales: 'ventas@bezhas.com', support: 'soporte@bezhas.com' },
     },
   });
 
-  assert.equal(p.senderFor('sales'), 'BeZhas · Ventas <ventas@bez.digital>');
-  assert.equal(p.senderFor('support'), 'BeZhas · Soporte <soporte@bez.digital>');
+  assert.equal(p.senderFor('sales'), 'BeZhas · Ventas <ventas@bezhas.com>');
+  assert.equal(p.senderFor('support'), 'BeZhas · Soporte <soporte@bezhas.com>');
   // Un departamento sin buzón propio cae al general, no se queda sin remitente.
-  assert.equal(p.senderFor('legal'), 'BeZhas <hola@bez.digital>');
-  assert.equal(p.senderFor(undefined), 'BeZhas <hola@bez.digital>');
+  assert.equal(p.senderFor('legal'), 'BeZhas <hola@bezhas.com>');
+  assert.equal(p.senderFor(undefined), 'BeZhas <hola@bezhas.com>');
 });
 
 test('BusinessProfile: un remitente de otro dominio no se usa', () => {
   const p = new BusinessProfile({
-    email: { domain: 'bez.digital', default: 'hola@bez.digital', byDepartment: { sales: 'ventas@otrodominio.com' } },
+    email: { domain: 'bezhas.com', default: 'hola@bezhas.com', byDepartment: { sales: 'ventas@otrodominio.com' } },
   });
   // Enviar desde un dominio que SPF/DKIM no autorizan hace que DMARC lo
   // rechace: mejor caer al remitente global que generar correos que no llegan.
@@ -131,19 +131,32 @@ test('BusinessProfile: sin sección de correo no se inventa ninguna dirección',
   assert.deepEqual(p.mailboxes(), []);
 });
 
-test('BusinessProfile: el perfil real de BeZhas declara los 10 buzones bajo su dominio', () => {
+// Direcciones que existen de verdad en Hostinger (plan con UN buzón y 5 alias). Hostinger
+// rechaza con 553 cualquier remitente que no sea el buzón o uno de sus alias, así que un
+// perfil que apunte a otra dirección deja a ese departamento sin poder enviar. Si se crea
+// un alias nuevo, se añade aquí y en config/business/bezhas.json.
+const DIRECCIONES_REALES = [
+  'yoelceo@bezhas.com', // el buzón, y remitente general
+  'ventas@bezhas.com', 'facturacion@bezhas.com', 'support@bezhas.com', 'marketing@bezhas.com', 'infrastructure@bezhas.com',
+];
+
+test('BusinessProfile: el perfil real de BeZhas solo usa direcciones que existen en Hostinger', () => {
   const p = BusinessProfile.fromFile('bezhas');
   const buzones = p.mailboxes();
-  assert.equal(buzones.length, 11, '10 departamentos + el general');
-  assert.ok(buzones.every((b) => b.endsWith('@bez.digital')), 'todos bajo el dominio declarado');
+  assert.ok(buzones.every((b) => b.endsWith('@bezhas.com')), 'todos bajo el dominio declarado');
+  assert.deepEqual(buzones.filter((b) => !DIRECCIONES_REALES.includes(b)), [], 'ninguna dirección inventada: se rechazaría con 553');
 
-  const departamentos = ['sales', 'support', 'marketing', 'finance', 'hr', 'operations', 'blockchain', 'legal', 'treasury', 'fundraising'];
-  for (const d of departamentos) {
-    assert.match(p.senderFor(d), /<[^@]+@bez\.digital>$/, `${d} debe tener remitente propio`);
+  // Los cinco departamentos con alias propio, cada uno con el suyo y sin repetir: dos
+  // departamentos con el mismo buzón harían imposible saber quién escribe.
+  const conAlias = ['sales', 'support', 'marketing', 'finance', 'blockchain'];
+  for (const d of conAlias) assert.match(p.senderFor(d), /^BeZhas · [^<]+ <[^@]+@bezhas\.com>$/, `${d} habla con su alias y su etiqueta`);
+  assert.equal(new Set(conAlias.map((d) => p.senderFor(d))).size, conAlias.length);
+
+  // Los demás caen al general, SIN etiqueta de departamento: "BeZhas · Legal" delante del
+  // buzón general haría creer al destinatario que escribe a Legal.
+  for (const d of ['hr', 'operations', 'legal', 'treasury', 'fundraising']) {
+    assert.equal(p.senderFor(d), 'BeZhas <yoelceo@bezhas.com>', `${d} usa el remitente general`);
   }
-  // Y ninguno repetido: dos departamentos con el mismo buzón harían imposible
-  // saber quién escribe y dónde debe caer la respuesta.
-  assert.equal(new Set(departamentos.map((d) => p.senderFor(d))).size, departamentos.length);
 });
 
 test('El agente envía desde el buzón de SU departamento, sin tocar cada agente', async () => {
@@ -161,8 +174,8 @@ test('El agente envía desde el buzón de SU departamento, sin tocar cada agente
   await hazAgente('sales').act({ tool: 'email', method: 'send', args: { to: 'lead@puerto.es', subject: 'Hola' } });
   await hazAgente('finance').act({ tool: 'email', method: 'send', args: { to: 'cliente@x.es', subject: 'Factura' } });
 
-  assert.match(enviados[0].from, /ventas@bez\.digital/);
-  assert.match(enviados[1].from, /facturacion@bez\.digital/);
+  assert.match(enviados[0].from, /ventas@bezhas\.com/);
+  assert.match(enviados[1].from, /facturacion@bezhas\.com/);
 });
 
 test('Un remitente explícito en la acción manda sobre el del departamento', async () => {
@@ -175,8 +188,8 @@ test('Un remitente explícito en la acción manda sobre el del departamento', as
     tools: { email }, guardrails: { evaluate: () => ({ allowed: true }) },
   });
 
-  await agente.act({ tool: 'email', method: 'send', args: { to: 'a@b.c', from: 'ceo@bez.digital' } });
-  assert.equal(enviados[0].from, 'ceo@bez.digital');
+  await agente.act({ tool: 'email', method: 'send', args: { to: 'a@b.c', from: 'ceo@bezhas.com' } });
+  assert.equal(enviados[0].from, 'ceo@bezhas.com');
 });
 
 // ── Lo que se fundió del prompt de captación ────────────────────────────────
@@ -225,7 +238,7 @@ test('Las plantillas de prospección solo entran en el preámbulo en frío', () 
 
 test('La firma comercial incluye web, deck y agenda', () => {
   const p = BusinessProfile.fromFile('bezhas');
-  assert.match(p.signature, /bez\.digital/);
+  assert.match(p.signature, /bezhas\.com/);
   assert.match(p.signature, /drive\.google\.com/, 'el deck público que autoriza el prompt de captación');
   assert.match(p.signature, /calendar\.app\.google/);
 });
@@ -258,7 +271,7 @@ test('El remitente viaja en la acción que aprueba el humano, no se añade despu
   // remitente se inyectara al ejecutar, la bandeja no diría desde qué buzón se
   // envía, y una aprobación huérfana rehidratada tras un reinicio (que ejecuta
   // la acción guardada) saldría con el remitente global.
-  assert.match(aprobada.args.from, /ventas@bez\.digital/,
+  assert.match(aprobada.args.from, /ventas@bezhas\.com/,
     'la acción que se somete a aprobación ya lleva el buzón del departamento');
 });
 
