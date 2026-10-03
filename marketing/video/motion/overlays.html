@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>beZhas HUD overlays</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:transparent;font-family:"Helvetica Neue",Arial,"Liberation Sans","DejaVu Sans",sans-serif;color:#EAF4FF}
+.abs{position:absolute}
+.panel{border-radius:20px;border:2px solid rgba(25,211,197,.55);background:rgba(8,14,26,.72);backdrop-filter:blur(6px);box-shadow:0 0 40px rgba(25,211,197,.18)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:30px;padding:10px 0;border-top:1px solid rgba(140,163,186,.2)}
+.k{font-size:22px;color:#9FB4C8}.v{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
+</style></head><body>
+<canvas id="cv" class="abs" width="1920" height="1080" style="left:0;top:0"></canvas>
+<div id="brand" class="abs panel" style="left:48px;top:40px;display:flex;align-items:center;gap:14px;padding:12px 22px">
+  <img src="brand/bezhas-symbol.png" style="width:52px;height:52px"><span style="font-size:32px;font-weight:800">BeZhas</span>
+</div>
+<div id="card" class="abs panel" style="left:48px;top:640px;width:640px;padding:26px 30px"></div>
+<div id="status" class="abs" style="right:48px;top:48px;display:flex;align-items:center;gap:14px;padding:14px 26px;border-radius:40px;font-size:28px;font-weight:800"></div>
+<div class="abs" style="right:48px;bottom:34px;font-size:18px;color:rgba(234,244,255,.7)">Datos ilustrativos · simulación</div>
+<script>
+const W=1920,H=1080,cx=document.getElementById('cv').getContext('2d');
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),seg=(t,a,b)=>clamp((t-a)/(b-a)),eo=x=>1-Math.pow(1-x,3);
+const fmt=(v,d=0)=>v.toLocaleString('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d});
+const COIN='<img src="brand/bez-coin.png" style="width:40px;height:40px">';
+/* m: [label, from, to, decimals, suffix, warnAbove] ; st: [text, color, showCoin, switchAt, altText, altColor] */
+const O=[
+ {t:'Puerto · red de validación',m:[['Contenedores verificados',1100,1284,0,''],['Nodos validando',380,443,0,''],['Latencia de consenso',2.4,1.2,1,' ms']],st:['Sincronizado','#19D3C5']},
+ {t:'Hoy: gestión manual',m:[['Documentos en papel',12,37,0,''],['Días para cobrar',0,60,0,' días'],['Verificación automática',0,0,0,' %']],st:['Sin verificar','#F5B342'],bad:true},
+ {t:'Geocerca cruzada · carga refrigerada',m:[['Temperatura',4.6,3.8,1,' °C'],['Humedad',58,62,0,' %'],['Distancia a destino',1.8,0,1,' km']],st:['Validando…','#1FB6FF',false,2.8,'Pago liberado · BEZ-Coin','#2ED573']},
+ {t:'Despacho aduanal automático',m:[['Contenedores despachados',0,312,0,''],['Tiempo de despacho',40,4,0,' s'],['Documentos verificados',0,100,0,' %']],st:['Liquidado · BEZ-Coin','#2ED573',true]},
+ {t:'Cadena de frío · lote de vacunas',m:[['Temperatura',5.2,8.6,1,' °C',8],['Rango permitido',8,8,0,' °C máx.'],['Viales monitorizados',0,480,0,'']],st:['En rango','#2ED573',false,3,'Lote aislado','#F5B342']},
+ {t:'Tokenización inmobiliaria',m:[['Participaciones emitidas',0,10000,0,''],['Inversores verificados',0,826,0,''],['Alquiler distribuido',0,100,0,' %']],st:['Liquidez activa · BEZ-Coin','#E6399B',true]},
+ {t:'Inventario vivo · retail',m:[['Artículos trazados',7900,8412,0,''],['Garantías digitales',950,1093,0,''],['Devoluciones verificadas',0,100,0,' %']],st:['Trazado','#19D3C5']},
+ {t:'Origen certificado · agricultura',m:[['Lote',2291,2291,0,''],['Humedad del suelo',27,31,0,' %'],['Sensores activos',0,64,0,'']],st:['Origen verificado','#2ED573']},
+ {t:'Energía renovable certificada',m:[['kWh certificados',0,48250,0,''],['Certificados emitidos',0,1206,0,''],['Fuentes conectadas',0,38,0,'']],st:['Verificado · BEZ-Coin','#2ED573',true]},
+ {t:'Contrato auto-auditable',m:[['Cláusulas verificadas',0,4,0,' / 4'],['Depósito',0,100,0,' % liberado'],['Evidencias selladas',0,27,0,'']],st:['Auditando…','#1FB6FF',false,3.2,'Contrato cumplido','#2ED573']},
+];
+let cur=null;
+window.ready=Promise.all([...document.images].map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r;})));
+window.setup=i=>{cur=O[i];const c=document.getElementById('card');
+  c.innerHTML=`<div style="font-size:30px;font-weight:800;margin-bottom:12px">${cur.t}</div>`+cur.m.map((m,j)=>`<div class="row"><span class="k">${m[0]}</span><span class="v" id="v${j}"></span></div>`).join('');
+  return 5;};
+window.renderAt=t=>{
+  const a=eo(seg(t,.2,.9));
+  const card=document.getElementById('card'),brand=document.getElementById('brand'),st=document.getElementById('status');
+  card.style.opacity=a;card.style.transform=`translateX(${(1-a)*-40}px)`;brand.style.opacity=eo(seg(t,0,.6));
+  cur.m.forEach((m,j)=>{const p=eo(seg(t,.6,4.2)),v=m[1]+(m[2]-m[1])*p,e=document.getElementById('v'+j);
+    e.textContent=(j===0&&cur.t.startsWith('Origen')?'#A-':'')+fmt(v,m[3])+m[4];
+    e.style.color=(m[5]!==undefined&&v>m[5])||cur.bad?'#F5B342':'#EAF4FF';});
+  const sw=cur.st[3]!==undefined&&t>=cur.st[3];
+  const txt=sw?cur.st[4]:cur.st[0],col=sw?cur.st[5]:cur.st[1],coin=cur.st[2]||(sw&&/BEZ-Coin/.test(txt));
+  st.innerHTML=(coin?COIN:'')+`<span style="width:14px;height:14px;border-radius:50%;background:${col};box-shadow:0 0 14px ${col}"></span>${txt}`;
+  st.style.border=`2px solid ${col}`;st.style.background='rgba(8,14,26,.72)';st.style.color=col;st.style.opacity=eo(seg(t,.5,1.1));
+  st.style.transform=`scale(${sw?1+.08*Math.max(0,1-(t-cur.st[3])*3):1})`;
+  cx.clearRect(0,0,W,H);
+  const bw=560,bh=380,bx=W/2-bw/2+Math.sin(t*.8)*40,by=H/2-bh/2-40+Math.cos(t*.6)*20,L=50,k=eo(seg(t,.3,1));
+  cx.strokeStyle=`rgba(25,211,197,${.9*k})`;cx.lineWidth=4;
+  [[bx,by,1,1],[bx+bw,by,-1,1],[bx,by+bh,1,-1],[bx+bw,by+bh,-1,-1]].forEach(([x,y,dx,dy])=>{cx.beginPath();cx.moveTo(x+dx*L*k,y);cx.lineTo(x,y);cx.lineTo(x,y+dy*L*k);cx.stroke();});
+  const sy=by+((t*.45)%1)*bh;cx.fillStyle=`rgba(25,211,197,${.25*k})`;cx.fillRect(bx,sy,bw,3);
+  cx.font='bold 20px "Helvetica Neue",Arial,sans-serif';cx.fillStyle=`rgba(234,244,255,${.85*k})`;cx.fillText('ID '+(0x3f9a2+Math.floor(t*7)).toString(16).toUpperCase()+' · sellado',bx,by-14);
+};
+</script></body></html>
