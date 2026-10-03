@@ -13,7 +13,7 @@
  * Por aquí NO se publica el catálogo interno entero. Las 20 herramientas del
  * servidor incluyen GitHub, Playwright, Telegram o pagos con Stripe, pensadas
  * para el backend y el equipo. Al cliente sólo le llega una lista cerrada de
- * lectura y cotización, y dentro de ella sólo lo que cubren los scopes que la
+ * lectura, cotización y enlaces de pago, y dentro de ella sólo lo que cubren los scopes que la
  * persona concedió en la pantalla de consentimiento. Una herramienta nueva en
  * `registerTools` queda fuera por omisión.
  */
@@ -22,6 +22,7 @@ import rateLimit from 'express-rate-limit';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { registerTools } from './tools/index.js';
+import { runAsCaller } from './callerContext.js';
 import { hardenServer } from './security/index.js';
 import {
     verificarToken,
@@ -36,6 +37,8 @@ import {
 export const HERRAMIENTAS_POR_SCOPE: Record<string, readonly string[]> = {
     'chain.read': ['analyze_gas_strategy', 'blockscout_explorer', 'get_wallet_balance'],
     'payments.quote': ['get_payment_quote'],
+    // Solo genera enlaces de pago de Stripe: paga la persona, en la página de Stripe.
+    'billing.checkout': ['list_plans', 'create_plan_checkout', 'create_bez_checkout'],
 };
 
 export function herramientasPermitidas(scope: string | undefined): Set<string> {
@@ -73,7 +76,7 @@ function metadataRecurso() {
     };
 }
 
-type ReqAutenticada = Request & { oauth?: Claims };
+type ReqAutenticada = Request & { oauth?: Claims; oauthToken?: string };
 
 function noAutorizado(res: Response, error: 'invalid_request' | 'invalid_token', descripcion: string) {
     res.setHeader(
@@ -93,6 +96,7 @@ async function exigirBearer(req: ReqAutenticada, res: Response, next: NextFuncti
     if (!m) return noAutorizado(res, 'invalid_request', 'Falta el token de acceso.');
     try {
         req.oauth = await verificarToken(m[1]);
+        req.oauthToken = m[1];
         return next();
     } catch (err) {
         if (err instanceof TokenError) return noAutorizado(res, 'invalid_token', err.message);
@@ -153,7 +157,7 @@ export function crearRouterMcpPublico(): Router {
         });
         try {
             await server.connect(transport);
-            await transport.handleRequest(req, res, req.body);
+            await runAsCaller({ bearer: req.oauthToken! }, () => transport.handleRequest(req, res, req.body));
         } catch (err) {
             console.error('[mcp-public] petición:', (err as Error).message);
             if (!res.headersSent) {

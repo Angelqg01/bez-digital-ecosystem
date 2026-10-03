@@ -27,6 +27,7 @@ import { registerAlpacaMarketsMcp } from './alpacaMarketsMcp.js';
 
 // ─── Payment Tools (5 new) ──────────────────────────────────
 import { registerPaymentTools } from './payment-tools.js';
+import { registerBillingTools } from './billingTools.js';
 
 // ─── Communication Tools (Admin <-> AI) ──────────────────────
 import { registerTelegramMcp } from './telegramMcp.js';
@@ -52,6 +53,7 @@ export function registerTools(server: McpServer): void {
 
     // Payment Tools
     registerPaymentTools(server);
+    registerBillingTools(server);
 
     // Communication Tools
     registerTelegramMcp(server);

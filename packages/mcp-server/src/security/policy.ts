@@ -21,6 +21,9 @@ export const TOOL_RISK: Record<string, RiskTier> = {
     get_payment_quote: 'standard',
     check_payment_status: 'standard',
     get_wallet_balance: 'read_only',
+    list_plans: 'read_only',
+    create_plan_checkout: 'elevated',
+    create_bez_checkout: 'elevated',
 
     // Cadena y gobernanza
     analyze_gas_strategy: 'standard',
@@ -132,7 +135,7 @@ export const policy = {
 const AMOUNT_FIELDS = [
     'amount',
     'amountUSD',
-    'amountFiat',
+    'amountFiat', // también create_bez_checkout (EUR)
     'amountInUSD',
     'estimatedValueUSD',
     'valueUSD',

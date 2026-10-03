@@ -10,8 +10,14 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { protect } = require('../middleware/auth.middleware');
 const billing = require('../services/billing-checkout.service');
+const { isOAuthBearer, requireOAuthScope } = require('../middleware/oauthBearer');
 
 const router = express.Router();
+
+// Misma API para la web/apps nativas (JWT de sesión) y para el MCP (token OAuth ES256 con scope billing.checkout).
+const SCOPE = 'billing.checkout';
+const oauthAuth = requireOAuthScope(SCOPE);
+const auth = (req, res, next) => (isOAuthBearer(req) ? oauthAuth(req, res, next) : protect(req, res, next));
 
 const limiter = (max) => rateLimit({
     windowMs: 60 * 1000,
@@ -42,18 +48,18 @@ const wrap = (fn) => async (req, res) => {
 /** Catálogo público de planes (precios del servidor). */
 router.get('/plans', (req, res) => res.json({ success: true, plans: billing.listPlans() }));
 
-router.post('/plan', protect, writeLimiter, wrap(async (req) => {
+router.post('/plan', auth, writeLimiter, wrap(async (req) => {
     const { planId, cycle } = req.body || {};
     return billing.createPlanCheckout({ user: req.user, planId, cycle });
 }));
 
-router.post('/bez', protect, writeLimiter, wrap(async (req) => {
+router.post('/bez', auth, writeLimiter, wrap(async (req) => {
     return billing.createBezCheckout({ user: req.user, amountEur: (req.body || {}).amountEur });
 }));
 
-router.post('/portal', protect, writeLimiter, wrap(async (req) => billing.createPortalSession({ user: req.user })));
+router.post('/portal', auth, writeLimiter, wrap(async (req) => billing.createPortalSession({ user: req.user })));
 
-router.get('/session/:id', protect, readLimiter, wrap(async (req) =>
+router.get('/session/:id', auth, readLimiter, wrap(async (req) =>
     billing.getSessionForUser({ user: req.user, sessionId: req.params.id })));
 
 module.exports = router;
