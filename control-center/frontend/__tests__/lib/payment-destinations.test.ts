@@ -18,7 +18,6 @@ describe('enlaces de pago de Stripe', () => {
     it('cubre los planes y productos esperados', () => {
         expect(Object.keys(STRIPE_PAYMENT_LINKS).sort()).toEqual([
             'architect',
-            'beVip',
             'beVipPlus',
             'digitalPioneer',
             'enterprise',

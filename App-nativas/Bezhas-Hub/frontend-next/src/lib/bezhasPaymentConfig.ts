@@ -5,7 +5,8 @@ export const STRIPE_PAYMENT_LINKS = {
     enterprise: 'https://buy.stripe.com/aFa4gzb6E4ya1Jc4Qjew809',
   },
   tokenPurchase: 'https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806',
-  vip: 'https://buy.stripe.com/3cIdR9a2A3u673waaDew804',
+  // Be-VIP (…ew804) desactivado en Stripe: Be-VIP lleva a Be-VIP Plus.
+  vip: 'https://buy.stripe.com/bJe3cveiQ1lY3Rkgz1ew805',
   vipPlus: 'https://buy.stripe.com/bJe3cveiQ1lY3Rkgz1ew805',
 } as const;
 
