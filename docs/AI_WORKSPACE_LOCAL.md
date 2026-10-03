@@ -9,9 +9,9 @@ Chat con RAG seguro y login (email o wallet), sin Postgres, MongoDB ni Redis.
 cd backend
 node scripts/dev-ai-workspace.js
 
-# 2) Frontend (http://localhost:3000)
-cd ../frontend-next
-NEXT_PUBLIC_API_URL=http://localhost:5000 pnpm dev
+# 2) Frontend oficial (Vite, http://localhost:5173)
+cd ../frontend
+VITE_API_URL=http://localhost:5000 pnpm dev
 ```
 
 Sin `ANTHROPIC_API_KEY` ni `OPENAI_API_KEY` el chat responde en **modo local**: devuelve los
@@ -21,6 +21,8 @@ fragmentos de documentación encontrados, con citas. Con una clave usa el modelo
 ANTHROPIC_API_KEY=sk-ant-... node scripts/dev-ai-workspace.js
 # modelo: AI_MODEL_ANTHROPIC (por defecto claude-sonnet-5-5); OpenAI: AI_MODEL_OPENAI
 ```
+
+El frontend oficial es `frontend/` (Vite; `frontend-next/` se eliminó). Si abres Vite como `127.0.0.1`, añade el origen: `DEV_ALLOWED_ORIGINS=http://127.0.0.1:5173 node scripts/dev-ai-workspace.js`.
 
 El servidor monta las rutas **reales** (`/api/ai-workspace`, `/api/wallet-auth`) con su autenticación
 JWT y límites de peticiones; solo el modelo de usuarios (y el registro/login por email) es de

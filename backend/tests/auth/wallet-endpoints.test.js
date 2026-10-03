@@ -152,7 +152,7 @@ describe('statements SIWE de los frontends', () => {
     test('son ASCII y la librería los acepta (con tildes el parser falla y el login no funciona)', () => {
         const fs = require('fs');
         const path = require('path');
-        const files = ['frontend-next/src/hooks/useWalletLogin.ts', 'frontend/src/context/AuthContext.jsx'];
+        const files = ['frontend/src/context/AuthContext.jsx'];
         const w = Wallet.createRandom();
         for (const f of files) {
             const src = fs.readFileSync(path.join(__dirname, '../../..', f), 'utf8');
