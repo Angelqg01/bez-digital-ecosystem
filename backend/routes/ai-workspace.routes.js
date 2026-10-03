@@ -12,22 +12,38 @@ const { seedPublicKnowledge } = require('../services/knowledge/seed');
 const { scan } = require('../services/knowledge/injectionGuard');
 const gateway = require('../services/ai-gateway');
 const { ConversationStore, MAX_TURNS } = require('../services/ai-workspace/conversations');
+const actionsSvc = require('../services/ai-workspace/actions');
+const { HookRegistry, registerDefaultHooks } = require('../services/ai-workspace/hooks');
 const path = require('path');
 const crypto = require('crypto');
 
 const router = express.Router();
 
-const MAX_MESSAGE = 4000;
+// Hooks del pipeline (guardas de entrada/salida y auditoría). Exportados para extenderlos y para los tests.
+const hooks = registerDefaultHooks(new HookRegistry(), {
+    audit: ({ principal, action, outcome }) => console.info(`ai-workspace action user=${principal.userId} action=${action} outcome=${outcome}`),
+});
 // Persistencia local opcional; por defecto en backend/data (ignorado por git).
 const conversations = new ConversationStore({
     filePath: process.env.NODE_ENV === 'test' || process.env.AI_CONVERSATIONS_PERSIST === 'false' ? null
         : (process.env.AI_CONVERSATIONS_PATH || path.join(__dirname, '../data/ai-conversations.json')),
 });
 
-const limiter = rateLimit({
+// Límite por usuario para las llamadas que cuestan IA (chat y chat/stream). Corre tras `protect`: siempre hay usuario.
+const aiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: Number(process.env.AI_WORKSPACE_RATE_LIMIT || 20),
-    // Corre tras `protect`: siempre hay usuario, no se usa IP como clave.
+    keyGenerator: (req) => String(req.user?.id || req.user?._id || 'anon'),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiadas solicitudes, espera un momento.' },
+});
+
+// Límite más holgado para el resto (catálogo, abrir acciones, planes, historial, conocimiento): no consumen IA,
+// y abrir varias acciones seguidas no debe gastar el presupuesto del chat.
+const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: Number(process.env.AI_WORKSPACE_READ_RATE_LIMIT || 120),
     keyGenerator: (req) => String(req.user?.id || req.user?._id || 'anon'),
     standardHeaders: true,
     legacyHeaders: false,
@@ -43,7 +59,7 @@ const ipLimiter = rateLimit({
     message: { error: 'Demasiadas solicitudes, espera un momento.' },
 });
 
-// Orden: límite por IP → sesión obligatoria → límite por usuario (protege el coste de IA).
+// Orden: límite por IP → sesión obligatoria → límite general por usuario; el del chat (coste de IA) va en sus rutas.
 router.use(ipLimiter);
 router.use(protect);
 router.use(limiter);
@@ -69,11 +85,9 @@ const principalOr401 = (req, res) => {
 
 const validConversationId = (id) => (/^[\w-]{8,64}$/.test(id || '') ? id : null);
 
-/** Valida el mensaje y prepara el turno: conversación, contexto RAG y mensajes para el modelo. */
+/** Valida el mensaje (hook beforeChat) y prepara el turno: conversación, contexto RAG y mensajes para el modelo. */
 async function prepareTurn(principal, body) {
-    const message = typeof body?.message === 'string' ? body.message.trim() : '';
-    if (!message) throw Object.assign(new Error('message es obligatorio'), { status: 400 });
-    if (message.length > MAX_MESSAGE) throw Object.assign(new Error(`Máximo ${MAX_MESSAGE} caracteres`), { status: 413 });
+    const { message } = await hooks.run('beforeChat', { principal, message: typeof body?.message === 'string' ? body.message : '' });
 
     const convId = validConversationId(body.conversationId) || crypto.randomUUID();
     const conv = conversations.getOrCreate(principal.userId, convId); // el userId impide leer conversaciones ajenas
@@ -86,13 +100,15 @@ async function prepareTurn(principal, body) {
 
     return {
         message, convId, conv, sources, context,
+        // Acciones sugeridas SOLO a partir del mensaje del usuario (nunca del contexto recuperado ni del modelo).
+        actions: actionsSvc.suggestActions(principal, message),
         flagged: scan(message).suspicious,
         messages: [...history, { role: 'user', content: userContent }],
     };
 }
 
 // POST /api/ai-workspace/chat  (respuesta completa)
-router.post('/chat', async (req, res) => {
+router.post('/chat', aiLimiter, async (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
 
@@ -101,9 +117,10 @@ router.post('/chat', async (req, res) => {
         const { provider, text } = await gateway.complete({
             system: SYSTEM_PROMPT, messages: turn.messages, maxTokens: 800, sources: turn.sources, contextText: turn.context,
         });
-        // Se guarda el mensaje limpio (sin contexto) para no arrastrar documentos entre turnos.
-        conversations.append(turn.conv, turn.message, text);
-        res.json({ conversationId: turn.convId, reply: text, sources: turn.sources, provider, flagged: turn.flagged });
+        const { text: safeText } = await hooks.run('afterModel', { principal, text });
+        // Se guarda el mensaje limpio (sin contexto) y la respuesta saneada para no arrastrar documentos entre turnos.
+        conversations.append(turn.conv, turn.message, safeText);
+        res.json({ conversationId: turn.convId, reply: safeText, sources: turn.sources, actions: turn.actions, provider, flagged: turn.flagged });
     } catch (err) {
         if (err.status) return res.status(err.status).json({ error: err.message });
         console.error('ai-workspace chat error:', err.message);
@@ -112,7 +129,7 @@ router.post('/chat', async (req, res) => {
 });
 
 // POST /api/ai-workspace/chat/stream  (Server-Sent Events: meta → delta* → done)
-router.post('/chat/stream', async (req, res) => {
+router.post('/chat/stream', aiLimiter, async (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
 
@@ -141,6 +158,7 @@ router.post('/chat/stream', async (req, res) => {
     let text = '';
     try {
         send('meta', { conversationId: turn.convId, sources: turn.sources, flagged: turn.flagged });
+        if (turn.actions.length) send('actions', { actions: turn.actions });
         for await (const ev of gateway.stream({
             system: SYSTEM_PROMPT, messages: turn.messages, maxTokens: 800, sources: turn.sources,
             contextText: turn.context, signal: controller.signal, paceMs: Number(process.env.AI_STREAM_PACE_MS || 0),
@@ -153,9 +171,17 @@ router.post('/chat/stream', async (req, res) => {
         console.error('ai-workspace stream error:', err.message);
         send('error', { error: 'No se pudo completar la respuesta' });
     } finally {
-        // Se guarda lo generado (completo o parcial si el usuario paró la respuesta).
-        if (text) conversations.append(turn.conv, turn.message, text);
-        if (!res.writableEnded) { send('done', { conversationId: turn.convId, length: text.length }); res.end(); }
+        // Saneado final: si el modelo escribió enlaces/imágenes/HTML no permitidos, el cliente sustituye el texto mostrado.
+        let safeText = text;
+        if (text) {
+            try {
+                safeText = (await hooks.run('afterModel', { principal, text })).text;
+                if (safeText !== text && !res.writableEnded) send('replace', { text: safeText });
+            } catch (e) { safeText = ''; send('error', { error: 'Respuesta bloqueada por seguridad' }); }
+        }
+        // Se guarda lo generado ya saneado (completo o parcial si el usuario paró la respuesta).
+        if (safeText) conversations.append(turn.conv, turn.message, safeText);
+        if (!res.writableEnded) { send('done', { conversationId: turn.convId, length: safeText.length }); res.end(); }
     }
 });
 
@@ -180,6 +206,40 @@ router.delete('/conversations/:id', (req, res) => {
     if (!principal) return;
     if (!conversations.remove(principal.userId, req.params.id)) return res.status(404).json({ error: 'Conversación no encontrada' });
     res.json({ deleted: true });
+});
+
+// ─── Acciones del chat (enlaces directos a funciones de la plataforma) ────────
+// Catálogo según rol/plan de la sesión (las bloqueadas se devuelven marcadas para ofrecer la mejora de plan).
+router.get('/actions', (req, res) => {
+    const principal = principalOr401(req, res);
+    if (principal) res.json({ actions: actionsSvc.listActions(principal), categories: actionsSvc.CATEGORIES });
+});
+
+// Abre una acción: re-valida acceso en servidor y devuelve el destino (nunca viene del cliente ni del modelo).
+router.post('/actions/:id/open', async (req, res) => {
+    const principal = principalOr401(req, res);
+    if (!principal) return;
+    const id = req.params.id;
+    try {
+        const result = actionsSvc.resolveAction(principal, id);
+        await hooks.run('onAction', { principal, action: id, outcome: 'opened' });
+        res.json(result);
+    } catch (err) {
+        await hooks.run('onAction', { principal, action: String(id).slice(0, 40), outcome: `denied:${err.status || 500}` }).catch(() => {});
+        res.status(err.status || 500).json({ error: err.status ? err.message : 'Error interno', upgradeActionId: err.upgradeActionId });
+    }
+});
+
+// Planes de suscripción (solo campos públicos) para la ventana de planes del chat.
+router.get('/plans', (req, res) => {
+    const principal = principalOr401(req, res);
+    if (!principal) return;
+    const { SUBSCRIPTION_TIERS } = require('../config/tier.config');
+    const plans = Object.values(SUBSCRIPTION_TIERS).map((t) => ({
+        id: t.id, name: t.displayName || t.name, description: t.description,
+        priceMonthly: t.price && t.price.monthly, currency: t.price && t.price.currency,
+    }));
+    res.json({ plans, current: principal.plan });
 });
 
 // ─── Gestión de conocimiento (tenant propio) ──────────────────────────────────
@@ -212,3 +272,4 @@ router.delete('/knowledge/:id', (req, res) => {
 });
 
 module.exports = router;
+module.exports.hooks = hooks;
