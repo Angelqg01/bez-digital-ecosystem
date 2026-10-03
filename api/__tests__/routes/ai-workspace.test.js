@@ -18,6 +18,7 @@ const { sanitizeModelOutput } = require('../../services/ai-workspace/outputSanit
 
 function app() {
     const a = express();
+    a.use('/api/ai-workspace/public', rutas.publicRouter);
     a.use('/api/ai-workspace', rutas);
     return a;
 }
@@ -179,6 +180,11 @@ describe('saneado de la salida del modelo', () => {
         expect(out).not.toMatch(/evil\.io|<script|abababab/);
         expect(out).toContain('[ok](/token/buy)');
     });
+
+    it('conserva los enlaces a dominios propios, incluido el MCP', () => {
+        expect(sanitizeModelOutput('Conecta en https://mcp.bezhas.com/mcp')).toContain('https://mcp.bezhas.com/mcp');
+        expect(sanitizeModelOutput('https://mcp.bezhas.com.evil.io/x')).not.toContain('evil');
+    });
 });
 
 describe('knowledge con el store en memoria', () => {
@@ -186,5 +192,50 @@ describe('knowledge con el store en memoria', () => {
         const docs = await knowledge.listDocuments({ userId: 'x', tenantId: 'user:x', roles: ['USER'], plan: 'starter' });
         const ids = docs.map((d) => d.id);
         expect(ids).toEqual(expect.arrayContaining(['bz_planes', 'bz_token', 'bz_mcp', 'bz_seguridad']));
+    });
+});
+
+describe('pregunta gratis sin sesión', () => {
+    beforeEach(() => rutas.preguntasGratis.usadas.clear());
+    const gratis = (body, ip = '203.0.113.7') => request(app()).post('/api/ai-workspace/public/chat/stream')
+        .set('X-Forwarded-For', ip).send(body);
+
+    it('la primera pregunta se responde en streaming con conocimiento público; la segunda pide registro', async () => {
+        const primera = await gratis({ message: '¿Qué planes tiene BeZhas?' });
+        expect(primera.status).toBe(200);
+        expect(primera.text).toMatch(/event: meta/);
+        expect(primera.text).toMatch(/Creator Pro/);
+        expect(primera.text).toMatch(/"freeQuestionUsed":true/);
+
+        const segunda = await gratis({ message: '¿Y cómo compro BEZ?' });
+        expect(segunda.status).toBe(401);
+        expect(segunda.body.code).toBe('FREE_QUESTION_USED');
+    });
+
+    it('sin sesión solo se ve conocimiento PUBLIC, nunca el de una organización', async () => {
+        await request(app()).post('/api/ai-workspace/knowledge').set('Authorization', `Bearer ${tokenDe(1)}`)
+            .send({ title: 'Tarifa Kappa', content: 'La tarifa Kappa del cliente Beta es de 1234 euros.', classification: 'INTERNAL' });
+        const res = await gratis({ message: 'tarifa Kappa cliente Beta' });
+        expect(res.status).toBe(200);
+        expect(res.text).not.toMatch(/Kappa del cliente|1234/);
+    });
+
+    it('mensaje vacío o demasiado largo no gasta la pregunta', async () => {
+        expect((await gratis({ message: '  ' })).status).toBe(400);
+        expect((await gratis({ message: 'a'.repeat(1001) })).status).toBe(413);
+        expect((await gratis({ message: 'hola' })).status).toBe(200);
+    });
+
+    it('no guarda historial ni deja usar el resto del chat sin sesión', async () => {
+        await gratis({ message: 'hola' });
+        expect((await request(app()).get('/api/ai-workspace/conversations')).status).toBe(401);
+        expect((await request(app()).post('/api/ai-workspace/knowledge').send({ title: 't', content: 'c' })).status).toBe(401);
+    });
+
+    it('la clave no es la IP (HMAC con secreto del servidor)', () => {
+        const { claveDe } = require('../../services/ai-workspace/freeQuestion');
+        const k = claveDe('203.0.113.7');
+        expect(k).toMatch(/^[0-9a-f]{64}$/);
+        expect(k).not.toContain('203');
     });
 });

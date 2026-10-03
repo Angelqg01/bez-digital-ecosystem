@@ -11,7 +11,7 @@
 const { isSafePath } = require('./actions');
 
 const TRUSTED_HOSTS = () =>
-    (process.env.AI_TRUSTED_LINK_HOSTS || 'bezhas.com,www.bezhas.com').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
+    (process.env.AI_TRUSTED_LINK_HOSTS || 'bezhas.com,www.bezhas.com,mcp.bezhas.com').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
 
 const BLOCKED_LINK = '[enlace bloqueado]';
 const BLOCKED_IMAGE = '[imagen bloqueada]';

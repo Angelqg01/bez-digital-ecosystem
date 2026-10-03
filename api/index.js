@@ -358,6 +358,7 @@ app.use('/api/identity', identityRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/organizations', organizationTechRoutes);
 app.use('/api/organizations', organizationBillingRoutes);
+app.use('/api/ai-workspace/public', aiWorkspaceRoutes.publicRouter); // una pregunta gratis sin sesión
 app.use('/api/ai-workspace', aiWorkspaceRoutes);   // chat de la plataforma con RAG (sesión obligatoria)
 app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);

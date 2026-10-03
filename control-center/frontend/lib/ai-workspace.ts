@@ -10,13 +10,22 @@ import { API_BASE } from '@/lib/api';
 
 export const AI_BASE = `${API_BASE}/ai-workspace`;
 
+/** Marca local de "pregunta gratis usada". Solo para la interfaz: quien decide es el servidor. */
+export const FREE_KEY = 'bezhas_ai_free_used';
+export function freeQuestionUsed(): boolean {
+    try { return typeof window !== 'undefined' && window.localStorage.getItem(FREE_KEY) === '1'; } catch { return false; }
+}
+export function markFreeQuestionUsed(): void {
+    try { window.localStorage.setItem(FREE_KEY, '1'); } catch { /* almacenamiento bloqueado */ }
+}
+
 export interface ChatSource { ref: number; title: string; section?: string | null; version: number }
 export interface ChatAction {
     id: string; kind: 'navigate' | 'docs' | 'plans'; title: string; description: string;
     sensitive: boolean; locked: boolean; lockReason?: string; upgradeActionId?: string; categoryLabel?: string;
 }
 export interface ChatMessage {
-    role: 'user' | 'assistant' | 'notice';
+    role: 'user' | 'assistant' | 'notice' | 'cta';
     content: string;
     streaming?: boolean;
     error?: boolean;
@@ -49,7 +58,7 @@ export function createSseParser(onEvent: (ev: { event: string; data: any }) => v
     };
 }
 
-const TRUSTED_HOSTS = ['bezhas.com', 'www.bezhas.com'];
+const TRUSTED_HOSTS = ['bezhas.com', 'www.bezhas.com', 'mcp.bezhas.com'];
 
 /** Destino de un enlace del modelo: ruta interna, dominio propio o bloqueado. */
 export function classifyLink(href: string): { type: 'internal' | 'external' | 'blocked'; href?: string } {

@@ -3,8 +3,8 @@
 /**
  * BeZhas AI — barra de chat flotante de la plataforma.
  *
- * Login obligatorio (la sesión de la plataforma, el mismo JWT del resto de la
- * api). Respuesta en streaming, historial, documentos propios para el RAG y
+ * Visible para todos. Sin sesión: UNA pregunta gratis (la controla el servidor);
+ * después, registro o login. Con sesión: el mismo JWT del resto de la api. Respuesta en streaming, historial, documentos propios para el RAG y
  * acciones que abren secciones de la plataforma (el destino lo decide siempre
  * el servidor; el chat nunca ejecuta operaciones ni pide claves).
  */
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import {
-    AI_BASE, aiFetch, createSseParser, renderChatMarkdown,
+    AI_BASE, aiFetch, createSseParser, freeQuestionUsed, markFreeQuestionUsed, renderChatMarkdown,
     type ChatAction, type ChatMessage, type PlanInfo,
 } from '@/lib/ai-workspace';
 
@@ -47,13 +47,14 @@ export default function AIWorkspaceBar() {
     const [catalog, setCatalog] = useState<ChatAction[]>([]);
     const [dialog, setDialog] = useState<Dialog | null>(null);
     const [copied, setCopied] = useState<number | null>(null);
+    const [freeUsed, setFreeUsed] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const endRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
     const abortRef = useRef<AbortController | null>(null);
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => { setMounted(true); setFreeUsed(freeQuestionUsed()); }, []);
     useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, open, panel]);
     useEffect(() => {
         const el = textareaRef.current;
@@ -64,6 +65,12 @@ export default function AIWorkspaceBar() {
 
     const loggedIn = mounted && isAuthenticated && !!token;
     const notice = (content: string) => setMessages((m) => [...m, { role: 'notice', content }]);
+    const CTA = 'Has usado tu pregunta gratis. Regístrate o inicia sesión para seguir conversando con BeZhas AI.';
+    const pedirRegistro = useCallback(() => {
+        markFreeQuestionUsed();
+        setFreeUsed(true);
+        setMessages((m) => (m.some((x) => x.role === 'cta') ? m : [...m, { role: 'cta', content: CTA }]));
+    }, []);
     const patchLast = (fn: (m: ChatMessage) => ChatMessage) =>
         setMessages((all) => (all.length ? [...all.slice(0, -1), fn(all[all.length - 1])] : all));
 
@@ -72,7 +79,8 @@ export default function AIWorkspaceBar() {
         if (!message || loading) return;
         setOpen(true);
         setPanel('chat');
-        if (!loggedIn || !token) { setInput(message); openLoginModal(); return; }
+        const anonimo = !loggedIn || !token;
+        if (anonimo && freeUsed) { setInput(message); pedirRegistro(); openLoginModal(); return; }
 
         setInput('');
         setMessages((m) => [...m, { role: 'user', content: message }, { role: 'assistant', content: '', streaming: true }]);
@@ -80,21 +88,30 @@ export default function AIWorkspaceBar() {
         const controller = new AbortController();
         abortRef.current = controller;
         try {
-            const res = await fetch(`${AI_BASE}/chat/stream`, {
+            const res = await fetch(anonimo ? `${AI_BASE}/public/chat/stream` : `${AI_BASE}/chat/stream`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ message, conversationId }),
+                headers: anonimo ? { 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(anonimo ? { message } : { message, conversationId }),
                 signal: controller.signal,
             });
             if (!res.ok || !res.body) {
                 const body = await res.json().catch(() => ({}));
-                if (res.status === 401 || res.status === 403) { setInput(message); openLoginModal(); }
-                throw new Error(res.status === 401 || res.status === 403 ? 'Tu sesión ha caducado. Inicia sesión de nuevo.'
+                if (anonimo && (body.code === 'FREE_QUESTION_USED' || body.code === 'LOGIN_REQUIRED')) {
+                    setMessages((m) => m.slice(0, -1));
+                    setInput(message);
+                    pedirRegistro();
+                    openLoginModal();
+                    return;
+                }
+                if (!anonimo && (res.status === 401 || res.status === 403)) { setInput(message); openLoginModal(); }
+                throw new Error(!anonimo && (res.status === 401 || res.status === 403) ? 'Tu sesión ha caducado. Inicia sesión de nuevo.'
                     : res.status === 429 ? 'Demasiadas solicitudes, espera un momento.'
                         : body.error || 'No pude responder ahora mismo. Inténtalo de nuevo.');
             }
+            let gratisGastada = false;
             const parse = createSseParser(({ event, data }) => {
-                if (event === 'meta') { setConversationId(String(data.conversationId)); patchLast((m) => ({ ...m, sources: data.sources })); }
+                if (event === 'meta') { if (data.conversationId) setConversationId(String(data.conversationId)); patchLast((m) => ({ ...m, sources: data.sources })); }
+                else if (event === 'done' && data.freeQuestionUsed) gratisGastada = true;
                 else if (event === 'actions') patchLast((m) => ({ ...m, actions: Array.isArray(data.actions) ? data.actions : undefined }));
                 else if (event === 'delta') patchLast((m) => ({ ...m, content: m.content + String(data.text) }));
                 else if (event === 'replace') patchLast((m) => ({ ...m, content: String(data.text) }));
@@ -108,6 +125,7 @@ export default function AIWorkspaceBar() {
                 parse(decoder.decode(value, { stream: true }));
             }
             patchLast((m) => ({ ...m, streaming: false }));
+            if (gratisGastada) pedirRegistro();
         } catch (e: any) {
             const aborted = e?.name === 'AbortError';
             patchLast((m) => ({
@@ -118,7 +136,7 @@ export default function AIWorkspaceBar() {
             abortRef.current = null;
             setLoading(false);
         }
-    }, [loading, loggedIn, token, conversationId, openLoginModal]);
+    }, [loading, loggedIn, token, conversationId, openLoginModal, freeUsed, pedirRegistro]);
 
     const stop = () => abortRef.current?.abort();
     const newChat = () => { stop(); setMessages([]); setConversationId(undefined); setPanel('chat'); };
@@ -156,7 +174,7 @@ export default function AIWorkspaceBar() {
 
     /** Abre una acción: el servidor revalida el acceso y devuelve el destino. */
     const openAction = async (action: ChatAction) => {
-        if (!token) return;
+        if (!loggedIn || !token) { openLoginModal(); return; }
         try {
             const r = await aiFetch<{ kind: ChatAction['kind']; href: string; sensitive: boolean }>(`/actions/${action.id}/open`, token, { method: 'POST' });
             if (r.kind === 'plans') {
@@ -257,7 +275,9 @@ export default function AIWorkspaceBar() {
                                     {messages.length === 0 && (
                                         <div className="py-6 text-center">
                                             <p className="mb-4 text-sm text-slate-400">
-                                                {loggedIn ? 'Pregúntame sobre BeZhas, planes, pagos, BEZ, MCP o tu cuenta.' : 'Inicia sesión para chatear con BeZhas AI.'}
+                                                {loggedIn ? 'Pregúntame sobre BeZhas, planes, pagos, BEZ, MCP o tu cuenta.'
+                                                    : freeUsed ? 'Regístrate o inicia sesión para seguir conversando con BeZhas AI.'
+                                                        : 'Tienes una pregunta gratis. Después, regístrate o inicia sesión para seguir.'}
                                             </p>
                                             <div className="flex flex-wrap justify-center gap-2">
                                                 {SUGGESTIONS.map((q) => (
@@ -272,6 +292,13 @@ export default function AIWorkspaceBar() {
                                                 <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-white/10 px-4 py-2.5 text-sm">{m.content}</div>
                                             ) : m.role === 'notice' ? (
                                                 <p className="w-full text-center text-xs italic text-slate-400">{m.content}</p>
+                                            ) : m.role === 'cta' ? (
+                                                loggedIn ? null : (
+                                                    <div className="w-full rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-center">
+                                                        <p className="text-sm text-cyan-50">{m.content}</p>
+                                                        <button onClick={openLoginModal} className="mt-2 rounded-lg bg-cyan-500 px-3 py-1.5 text-sm font-semibold text-slate-950 hover:bg-cyan-400">Registrarme o iniciar sesión</button>
+                                                    </div>
+                                                )
                                             ) : (
                                                 <div className={`max-w-full text-sm leading-relaxed ${m.error ? 'text-red-300' : ''}`}>
                                                     {m.streaming && !m.content && <span className="flex items-center gap-2 text-slate-400"><Loader2 size={14} className="animate-spin" /> Pensando…</span>}
@@ -389,7 +416,7 @@ export default function AIWorkspaceBar() {
                     </button>
                     <textarea ref={textareaRef} value={input} rows={1} maxLength={4000}
                         onChange={(e) => setInput(e.target.value)} onFocus={() => setOpen(true)} onKeyDown={onKeyDown}
-                        placeholder={loggedIn ? 'Pregunta a BeZhas AI…' : 'Inicia sesión para chatear con BeZhas AI…'}
+                        placeholder={loggedIn ? 'Pregunta a BeZhas AI…' : freeUsed ? 'Regístrate o inicia sesión para seguir…' : 'Haz tu pregunta gratis a BeZhas AI…'}
                         aria-label="Mensaje para BeZhas AI"
                         className="max-h-40 min-h-[40px] flex-1 resize-none bg-transparent py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500" />
                     {loading ? (

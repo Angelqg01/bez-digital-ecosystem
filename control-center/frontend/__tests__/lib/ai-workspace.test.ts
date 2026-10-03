@@ -8,6 +8,7 @@ describe('classifyLink', () => {
         ['/token/buy', 'internal'],
         ['https://www.bezhas.com/mcp', 'external'],
         ['https://bezhas.com', 'external'],
+        ['https://mcp.bezhas.com/mcp', 'external'],
         ['https://evil.example/phish', 'blocked'],
         ['//evil.example', 'blocked'],
         ['javascript:alert(1)', 'blocked'],
