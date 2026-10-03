@@ -25,7 +25,7 @@ jest.mock('../../services/totp.service', () => ({
     is2FAEnabled: () => true,
     decryptSecret: () => 'secret',
     verify2FAToken: (code) => code === mockState.validCode,
-    verifyBackupCode: () => ({ valid: false }),
+    verifyBackupCode: (code, codes) => (codes.includes(code) ? { valid: true, remainingCodes: codes.filter((c) => c !== code) } : { valid: false, remainingCodes: codes }),
 }));
 ['rewards.service', 'email.service', 'key-management.service', 'account-abstraction.service'].forEach((m) =>
     jest.doMock(`../../services/${m}`, () => ({ grantReferralReward: async () => ({}), sendLoginAlert: async () => {} })));
@@ -73,6 +73,13 @@ describe('POST /api/auth/verify-login-2fa', () => {
         const res = await request(app).post('/api/auth/verify-login-2fa').send({ twoFactorToken: await step1(), token: '123456' });
         expect(res.status).toBe(200);
         expect(jwt.verify(res.body.token, process.env.JWT_SECRET).id).toBe('u1');
+    });
+
+    test('código de respaldo válido emite sesión y se consume', async () => {
+        const u = addUser({ is2FAEnabled: true, backupCodes: ['ABCD1234', 'ZZZZ9999'], save: async () => {} });
+        const res = await request(app).post('/api/auth/verify-login-2fa').send({ twoFactorToken: await step1(), token: 'ABCD1234' });
+        expect(res.status).toBe(200);
+        expect(u.backupCodes).toEqual(['ZZZZ9999']);
     });
 
     test('código erróneo → 401', async () => {

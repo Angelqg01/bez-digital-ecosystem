@@ -464,21 +464,15 @@ router.post('/verify-login-2fa', twoFactorLimiter, [
       return res.status(400).json({ error: '2FA no está habilitado para este usuario' });
     }
 
-    let isValid = false;
-    let usedBackupCode = false;
-
-    // Check if it's an 8-character backup code or 6-digit TOTP
-    if (token.length === 8) {
-      const backupResult = totpService.verifyBackupCode(token, user.backupCodes);
-      if (backupResult.valid) {
-        isValid = true;
-        usedBackupCode = true;
-        user.backupCodes = backupResult.remainingCodes;
-        await user.save();
-      }
-    } else {
-      const secret = totpService.decryptSecret(user.twoFactorSecret);
-      isValid = totpService.verify2FAToken(token, secret);
+    // Primero TOTP; si no coincide se prueba como código de respaldo. No se ramifica según
+    // el formato que declara el cliente: ambas verificaciones aceptan cualquier cadena.
+    const totpOk = totpService.verify2FAToken(token, totpService.decryptSecret(user.twoFactorSecret));
+    const backupResult = totpOk ? { valid: false } : totpService.verifyBackupCode(token, user.backupCodes || []);
+    const usedBackupCode = backupResult.valid;
+    const isValid = totpOk || usedBackupCode;
+    if (usedBackupCode) {
+      user.backupCodes = backupResult.remainingCodes;
+      await user.save();
     }
 
     if (!isValid) return res.status(401).json({ error: 'Código 2FA inválido' });
