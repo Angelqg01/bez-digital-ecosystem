@@ -23,7 +23,6 @@
  *    Es idempotente: un evento repetido no cambia nada.
  */
 
-const crypto = require('crypto');
 const { SUBSCRIPTION_TIERS } = require('../config/tier.config');
 
 const SOURCE_PLAN = 'bezhas_plan';
@@ -163,7 +162,7 @@ async function createPlanCheckout({ user, planId, cycle }) {
     else if (user.email) params.customer_email = user.email;
 
     // Mismo usuario, plan y ciclo en 5 minutos → misma sesión (un doble clic no crea dos).
-    const idempotencyKey = crypto.createHash('sha256').update(`plan|${userId}|${meta.bz_plan}|${billing}|${Math.floor(Date.now() / 300000)}`).digest('hex');
+    const idempotencyKey = `bz-plan-${userId}-${meta.bz_plan}-${billing}-${Math.floor(Date.now() / 300000)}`;
     const session = await getStripe().checkout.sessions.create(params, { idempotencyKey });
     const url = assertStripeUrl(session.url);
     auditEvent('CHECKOUT_PLAN_CREATED', 'info', { userId, plan: meta.bz_plan, cycle: billing, sessionId: session.id });
@@ -199,7 +198,7 @@ async function createBezCheckout({ user, amountEur }) {
     const cents = Math.round(eur * 100);
     const meta = { type: 'token_purchase', source: SOURCE_BEZ, userId, walletAddress: wallet.toLowerCase(), eurAmount: eur.toFixed(2) };
 
-    const idempotencyKey = crypto.createHash('sha256').update(`bez|${userId}|${cents}|${Math.floor(Date.now() / 300000)}`).digest('hex');
+    const idempotencyKey = `bz-bez-${userId}-${cents}-${Math.floor(Date.now() / 300000)}`;
     const session = await getStripe().checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card'],
