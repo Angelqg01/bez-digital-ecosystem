@@ -10,7 +10,7 @@
  * Los hooks `critical` (guardas de seguridad) fallan CERRADO: si lanzan, la operación se bloquea.
  * Los demás fallan ABIERTO: el error se registra y el pipeline continúa.
  */
-const { sanitizeModelOutput } = require('./outputSanitizer');
+const { sanitizeModelOutput, stripHiddenChars } = require('./outputSanitizer');
 
 const STAGES = Object.freeze(['beforeChat', 'afterModel', 'onAction']);
 
@@ -50,7 +50,7 @@ const MAX_MESSAGE = 4000;
 function registerDefaultHooks(registry, { audit = () => {} } = {}) {
     // Guarda de entrada: normaliza y rechaza mensajes con caracteres de control o bytes nulos.
     registry.register('beforeChat', ({ message }) => {
-        const clean = (typeof message === 'string' ? message : '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g, '').trim();
+        const clean = stripHiddenChars(typeof message === 'string' ? message : '').trim();
         if (!clean) throw Object.assign(new Error('message es obligatorio'), { status: 400 });
         if (clean.length > MAX_MESSAGE) throw Object.assign(new Error(`Máximo ${MAX_MESSAGE} caracteres`), { status: 413 });
         return { message: clean };
