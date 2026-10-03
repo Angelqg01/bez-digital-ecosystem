@@ -35,6 +35,20 @@ desarrollo. No arranca con `NODE_ENV=production`.
   tenant. Otros usuarios no pueden recuperarlo. Los documentos con instrucciones sospechosas
   (prompt injection) quedan en cuarentena y no se indexan.
 
+## Acciones dentro del chat
+
+Las respuestas pueden traer **tarjetas de acción** (tokenizar activos, RWA, staking, bridge, DAO, apps, planes,
+documentos exclusivos…) y el botón **Acciones** de la cabecera abre el catálogo completo. Cada una abre una
+**ventana emergente dentro del chat** que lleva al enlace directo; el chat nunca ejecuta operaciones ni pide claves.
+
+Seguridad:
+- Los destinos viven solo en `backend/services/ai-workspace/actions.js`; ni el modelo, ni los documentos, ni el cliente los eligen.
+- Las sugerencias se calculan solo con el mensaje del usuario (un documento envenenado no puede mostrar botones).
+- Acceso por plan/rol validado al listar y de nuevo al abrir; un plan desconocido no desbloquea nada.
+- La salida del modelo se sanea (`outputSanitizer.js`): sin imágenes, HTML, enlaces externos ni claves; el servidor envía un evento `replace` si cambia el texto.
+- Hooks (`hooks.js`): `beforeChat`, `afterModel` y `onAction`; los críticos fallan cerrado. Se extienden con `router.hooks.register(etapa, fn)`.
+- Dominios propios permitidos en enlaces: `AI_TRUSTED_LINK_HOSTS` (por defecto `bezhas.com,www.bezhas.com`).
+
 ## API
 
 | Método | Ruta | Descripción |
@@ -43,6 +57,9 @@ desarrollo. No arranca con `NODE_ENV=production`.
 | POST | `/api/ai-workspace/chat/stream` | SSE: `meta` → `provider` → `delta`* → `done` (o `error`) |
 | GET / DELETE | `/api/ai-workspace/conversations[/:id]` | Historial del usuario |
 | GET / POST / DELETE | `/api/ai-workspace/knowledge[/:id]` | Documentos del tenant |
+| GET | `/api/ai-workspace/actions` | Catálogo de acciones según rol/plan (las bloqueadas llevan `locked` y `upgradeActionId`) |
+| POST | `/api/ai-workspace/actions/:id/open` | Re-valida el acceso y devuelve el destino (`href`); 403 con `upgradeActionId` si el plan no basta |
+| GET | `/api/ai-workspace/plans` | Planes públicos (id, nombre, precio mensual) para la ventana de planes |
 | POST | `/api/wallet-auth/nonce` · `/verify` | Login con wallet (SIWE) → JWT |
 
 ## Variables

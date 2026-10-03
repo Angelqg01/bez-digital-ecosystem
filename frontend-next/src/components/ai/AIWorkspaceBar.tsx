@@ -3,21 +3,33 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowUp, Check, ChevronDown, Copy, FileText, History, Loader2, LogOut, Paperclip, Plus, Sparkles, Square, Trash2, Wallet } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, Copy, FileText, History, LayoutGrid, Loader2, LogOut, Paperclip, Plus, Sparkles, Square, Trash2, Wallet } from "lucide-react";
 import api from "../../lib/api";
 import { apiError } from "../../lib/apiError";
 import { createSseParser } from "../../lib/sse";
 import { useWalletLogin } from "../../hooks/useWalletLogin";
 import { useUserStore } from "../../stores/userStore";
+import { useChatActions } from "../../hooks/useChatActions";
+import { classifyLink, type ChatAction } from "../../lib/chatActions";
+import { ChatActionCards, ChatActionsMenu } from "./ChatActionCards";
+import { ChatActionDialog } from "./ChatActionDialog";
 
 type Source = { ref: number; title: string; section: string | null; version: number };
-type Msg = { role: "user" | "assistant" | "notice"; content: string; sources?: Source[]; error?: boolean; streaming?: boolean };
+type Msg = { role: "user" | "assistant" | "notice"; content: string; sources?: Source[]; actions?: ChatAction[]; error?: boolean; streaming?: boolean };
 type HistoryItem = { id: string; title: string; updatedAt: number; messages: number };
 
 const MOCK_TOKEN = "siwe-session-mock-token"; // token simulado de sesiones antiguas (login SIWE previo): no es un JWT, hay que volver a iniciar sesión
 const SUGGESTIONS = ["¿Cómo hago staking de BEZ?", "¿Qué métodos de pago acepta BeZhas?", "¿Cómo funciona la tokenización de activos?"];
 const MAX_UPLOAD_CHARS = 200_000;
 const ALLOWED_UPLOAD = /\.(txt|md|markdown|csv|json)$/i;
+
+/** Enlaces del modelo: solo rutas internas del catálogo y dominios propios; el resto se pinta como texto plano. */
+function SafeLink({ href, children }: { href?: string; children?: React.ReactNode }) {
+    const d = classifyLink(href);
+    if (d.type === "internal") return <a href={d.href}>{children}</a>;
+    if (d.type === "external") return <a href={d.href} target="_blank" rel="noopener noreferrer nofollow">{children}</a>;
+    return <span title="Enlace bloqueado por seguridad">{children}</span>;
+}
 
 export default function AIWorkspaceBar() {
     const { token, setUser, setToken, logout } = useUserStore();
@@ -31,6 +43,8 @@ export default function AIWorkspaceBar() {
     const [showHistory, setShowHistory] = useState(false);
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [copied, setCopied] = useState<number | null>(null);
+    const [showActions, setShowActions] = useState(false);
+    const chatActions = useChatActions();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const endRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
@@ -83,7 +97,10 @@ export default function AIWorkspaceBar() {
 
             const parse = createSseParser(({ event, data }) => {
                 if (event === "meta") { setConversationId(String(data.conversationId)); patchLast((m) => ({ ...m, sources: data.sources as Source[] })); }
+                else if (event === "actions") patchLast((m) => ({ ...m, actions: Array.isArray(data.actions) ? (data.actions as ChatAction[]) : undefined }));
                 else if (event === "delta") patchLast((m) => ({ ...m, content: m.content + String(data.text) }));
+                // El servidor sanea la salida del modelo y, si cambió algo, reemplaza el texto mostrado.
+                else if (event === "replace") patchLast((m) => ({ ...m, content: String(data.text) }));
                 else if (event === "error") patchLast((m) => ({ ...m, error: true, content: m.content || String(data.error) }));
             });
             const reader = res.body.getReader();
@@ -121,6 +138,7 @@ export default function AIWorkspaceBar() {
     const toggleHistory = () => {
         const next = !showHistory;
         setShowHistory(next);
+        setShowActions(false);
         if (next) void loadHistory();
     };
 
@@ -184,13 +202,16 @@ export default function AIWorkspaceBar() {
                 {open && (
                     <section
                         aria-label="Conversación con BeZhas AI"
-                        className="flex max-h-[min(60vh,560px)] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white/95 shadow-2xl backdrop-blur dark:border-gray-800 dark:bg-gray-900/95"
+                        className="relative flex max-h-[min(60vh,560px)] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white/95 shadow-2xl backdrop-blur dark:border-gray-800 dark:bg-gray-900/95"
                     >
                         <header className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 dark:border-gray-800">
                             <div className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
                                 <Sparkles size={16} className="text-indigo-500" /> BeZhas AI
                             </div>
                             <div className="flex items-center gap-1">
+                                {loggedIn && (
+                                    <button onClick={() => { setShowActions((v) => !v); setShowHistory(false); void chatActions.loadCatalog(); }} className={`${iconBtn} ${showActions ? "bg-gray-100 dark:bg-gray-800" : ""}`} aria-label="Acciones de la plataforma" title="Acciones"><LayoutGrid size={16} /></button>
+                                )}
                                 {loggedIn && (
                                     <button onClick={toggleHistory} className={`${iconBtn} ${showHistory ? "bg-gray-100 dark:bg-gray-800" : ""}`} aria-label="Historial de conversaciones" title="Historial"><History size={16} /></button>
                                 )}
@@ -205,7 +226,9 @@ export default function AIWorkspaceBar() {
                         </header>
 
                         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4" aria-live="polite">
-                            {showHistory && loggedIn ? (
+                            {showActions && loggedIn && !showHistory ? (
+                                <ChatActionsMenu actions={chatActions.catalog} onOpen={(a) => void chatActions.request(a)} />
+                            ) : showHistory && loggedIn ? (
                                 <div className="space-y-1">
                                     <p className="pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Conversaciones</p>
                                     {history.length === 0 && <p className="py-6 text-center text-sm text-gray-400">Todavía no hay conversaciones.</p>}
@@ -242,7 +265,7 @@ export default function AIWorkspaceBar() {
                                                 <div className={`max-w-full text-sm leading-relaxed ${m.error ? "text-red-600" : "text-gray-800 dark:text-gray-100"}`}>
                                                     {m.streaming && !m.content && <span className="flex items-center gap-2 text-gray-400"><Loader2 size={14} className="animate-spin" /> Pensando…</span>}
                                                     <div className="prose prose-sm max-w-none dark:prose-invert [&_pre]:overflow-x-auto">
-                                                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: (p) => <a {...p} target="_blank" rel="noopener noreferrer nofollow" />, img: () => null }}>{m.content}</ReactMarkdown>
+                                                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: SafeLink, img: () => null }}>{m.content}</ReactMarkdown>
                                                     </div>
                                                     {m.streaming && m.content && <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-gray-400 align-middle" aria-hidden />}
                                                     {m.sources && m.sources.length > 0 && (
@@ -253,6 +276,9 @@ export default function AIWorkspaceBar() {
                                                                 </span>
                                                             ))}
                                                         </div>
+                                                    )}
+                                                    {!m.streaming && m.actions && m.actions.length > 0 && (
+                                                        <ChatActionCards actions={m.actions} onOpen={(a) => void chatActions.request(a)} disabled={chatActions.busy} />
                                                     )}
                                                     {!m.streaming && m.content && !m.error && (
                                                         <button onClick={() => void copyMessage(i, m.content)} className="mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800" aria-label="Copiar respuesta">
@@ -269,6 +295,18 @@ export default function AIWorkspaceBar() {
                             )}
                             <div ref={endRef} />
                         </div>
+                        {chatActions.dialog && (
+                            <ChatActionDialog
+                                dialog={chatActions.dialog}
+                                plans={chatActions.plans}
+                                currentPlan={chatActions.currentPlan}
+                                docs={chatActions.docs}
+                                onGo={(href) => chatActions.go(href)}
+                                onClose={chatActions.close}
+                                onUpgrade={(id) => chatActions.requestById(id)}
+                                onAskDoc={(title) => { chatActions.close(); setShowActions(false); setInput(`Resume el documento «${title}» y dime lo más importante.`); textareaRef.current?.focus(); }}
+                            />
+                        )}
                     </section>
                 )}
 
