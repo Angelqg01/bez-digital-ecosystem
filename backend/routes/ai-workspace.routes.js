@@ -29,10 +29,21 @@ const conversations = new ConversationStore({
         : (process.env.AI_CONVERSATIONS_PATH || path.join(__dirname, '../data/ai-conversations.json')),
 });
 
-const limiter = rateLimit({
+// Límite por usuario para las llamadas que cuestan IA (chat y chat/stream). Corre tras `protect`: siempre hay usuario.
+const aiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: Number(process.env.AI_WORKSPACE_RATE_LIMIT || 20),
-    // Corre tras `protect`: siempre hay usuario, no se usa IP como clave.
+    keyGenerator: (req) => String(req.user?.id || req.user?._id || 'anon'),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiadas solicitudes, espera un momento.' },
+});
+
+// Límite más holgado para el resto (catálogo, abrir acciones, planes, historial, conocimiento): no consumen IA,
+// y abrir varias acciones seguidas no debe gastar el presupuesto del chat.
+const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: Number(process.env.AI_WORKSPACE_READ_RATE_LIMIT || 120),
     keyGenerator: (req) => String(req.user?.id || req.user?._id || 'anon'),
     standardHeaders: true,
     legacyHeaders: false,
@@ -48,7 +59,7 @@ const ipLimiter = rateLimit({
     message: { error: 'Demasiadas solicitudes, espera un momento.' },
 });
 
-// Orden: límite por IP → sesión obligatoria → límite por usuario (protege el coste de IA).
+// Orden: límite por IP → sesión obligatoria → límite general por usuario; el del chat (coste de IA) va en sus rutas.
 router.use(ipLimiter);
 router.use(protect);
 router.use(limiter);
@@ -97,7 +108,7 @@ async function prepareTurn(principal, body) {
 }
 
 // POST /api/ai-workspace/chat  (respuesta completa)
-router.post('/chat', async (req, res) => {
+router.post('/chat', aiLimiter, async (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
 
@@ -118,7 +129,7 @@ router.post('/chat', async (req, res) => {
 });
 
 // POST /api/ai-workspace/chat/stream  (Server-Sent Events: meta → delta* → done)
-router.post('/chat/stream', async (req, res) => {
+router.post('/chat/stream', aiLimiter, async (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
 
