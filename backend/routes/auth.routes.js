@@ -61,10 +61,10 @@ const generateVerificationCode = () => {
  * @access  Public
  * @query   address - Ethereum wallet address (optional, for logging purposes)
  */
-router.get('/nonce', (req, res) => {
+router.get('/nonce', async (req, res) => {
   try {
     // Nonce SIWE del servidor: ligado a la dirección, un solo uso, caduca a los 5 min.
-    const { nonce, expiresIn, domains } = walletAuth.issueNonce(req.query.address);
+    const { nonce, expiresIn, domains } = await walletAuth.issueNonce(req.query.address);
     res.status(200).json({
       success: true,
       nonce,

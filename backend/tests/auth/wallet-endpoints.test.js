@@ -3,6 +3,11 @@
  * firma SIWE verificada (nonce de un solo uso). Antes /login-or-register emitía
  * JWT solo con la dirección, y /login-wallet|/register-wallet aceptaban cualquier mensaje.
  */
+// tests/setup.js fija REDIS_URL globalmente; estos tests ejercitan los nonces en memoria (el almacén Redis se prueba en wallet-nonce-store.test.js).
+delete process.env.REDIS_URL;
+delete process.env.REDIS_HOST;
+delete process.env.REDIS_PORT;
+
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -41,7 +46,7 @@ app.use((req, _res, next) => { req.log = { info() {}, warn() {}, error() {} }; n
 app.use('/api/auth', require('../../routes/auth.routes'));
 
 async function signed(wallet, over = {}) {
-    const { nonce } = walletAuth.issueNonce(wallet.address);
+    const { nonce } = await walletAuth.issueNonce(wallet.address);
     const message = new SiweMessage({
         domain: 'localhost:3000', address: wallet.address, statement: 'Sign in', uri: 'http://localhost:3000', version: '1',
         chainId: 137, nonce, issuedAt: new Date().toISOString(), expirationTime: new Date(Date.now() + 600000).toISOString(), ...over,
@@ -132,7 +137,7 @@ describe('compatibilidad con el frontend antiguo (frontend/src/utils/siwe.js)', 
         const buildSiweMessage = new Function(`${src}; return buildSiweMessage;`)();
 
         const w = Wallet.createRandom();
-        const { nonce } = walletAuth.issueNonce(w.address);
+        const { nonce } = await walletAuth.issueNonce(w.address);
         const message = buildSiweMessage({
             domain: 'localhost:3000', address: w.address, statement: 'Iniciar sesion en BeZhas.', uri: 'http://localhost:3000',
             chainId: 137, nonce, issuedAt: new Date().toISOString(), expirationTime: new Date(Date.now() + 600000).toISOString(),

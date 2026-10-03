@@ -12,13 +12,11 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { SiweMessage, generateNonce } = require('siwe');
 const { getJwtSecret } = require('../config/jwtSecret');
+const nonceStore = require('./walletNonceStore');
 
 const NONCE_TTL_MS = 5 * 60 * 1000;
-const MAX_NONCES = 10_000;
 const MAX_MESSAGE_LIFETIME_MS = 15 * 60 * 1000;
 const JWT_TTL = process.env.WALLET_AUTH_JWT_TTL || '7d';
-
-const nonces = new Map(); // nonce -> { address, exp }
 
 const allowedDomains = () =>
     (process.env.WALLET_AUTH_ALLOWED_DOMAINS || 'localhost:3000,localhost:3001,localhost:5000,bezhas.com,www.bezhas.com')
@@ -27,17 +25,10 @@ const allowedDomains = () =>
 const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(String(a || ''));
 const fail = (status, message) => Object.assign(new Error(message), { status });
 
-function sweep(now = Date.now()) {
-    for (const [n, v] of nonces) if (v.exp < now) nonces.delete(n);
-    // Tope duro: si se llena, se descartan los más antiguos (Map conserva orden de inserción).
-    while (nonces.size > MAX_NONCES) nonces.delete(nonces.keys().next().value);
-}
-
-function issueNonce(address) {
+async function issueNonce(address) {
     if (!isAddress(address)) throw fail(400, 'Dirección de wallet inválida');
-    sweep();
     const nonce = generateNonce();
-    nonces.set(nonce, { address: address.toLowerCase(), exp: Date.now() + NONCE_TTL_MS });
+    await nonceStore.put(nonce, address.toLowerCase(), NONCE_TTL_MS);
     return { nonce, expiresIn: NONCE_TTL_MS / 1000, domains: allowedDomains() };
 }
 
@@ -58,10 +49,9 @@ async function verifySignedMessage({ message, signature }) {
     if (!Number.isFinite(exp) || exp - Date.now() > MAX_MESSAGE_LIFETIME_MS) throw fail(401, 'expirationTime fuera de rango');
 
     // Nonce: existente, no caducado y ligado a la dirección. Se consume SIEMPRE (un solo uso).
-    const entry = nonces.get(siwe.nonce);
-    nonces.delete(siwe.nonce);
+    const nonceAddress = await nonceStore.take(siwe.nonce);
     const address = String(siwe.address || '').toLowerCase();
-    if (!entry || entry.exp < Date.now() || entry.address !== address) throw fail(401, 'Nonce inválido o caducado');
+    if (!nonceAddress || nonceAddress !== address) throw fail(401, 'Nonce inválido o caducado');
 
     let result;
     try { result = await siwe.verify({ signature, domain: siwe.domain, nonce: siwe.nonce }); } catch (_) { result = { success: false }; }
@@ -125,4 +115,4 @@ async function loginOrRegisterWithWallet({ message, signature, mode = 'either', 
     };
 }
 
-module.exports = { issueNonce, verifySignedMessage, loginOrRegisterWithWallet, _nonces: nonces };
+module.exports = { issueNonce, verifySignedMessage, loginOrRegisterWithWallet };

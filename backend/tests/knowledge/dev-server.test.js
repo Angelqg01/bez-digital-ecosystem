@@ -3,6 +3,11 @@
  * pero con usuarios en memoria. Garantiza que no se reutilizan ids entre ejecuciones y que nada
  * se persiste (si no, el usuario "dev-1" de hoy heredaba las conversaciones del "dev-1" de ayer).
  */
+// tests/setup.js fija REDIS_URL globalmente; estos tests ejercitan los nonces en memoria (el almacén Redis se prueba en wallet-nonce-store.test.js).
+delete process.env.REDIS_URL;
+delete process.env.REDIS_HOST;
+delete process.env.REDIS_PORT;
+
 const request = require('supertest');
 
 process.env.JWT_SECRET = 'test_jwt_secret_key_for_testing_only';
