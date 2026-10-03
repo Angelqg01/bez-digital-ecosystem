@@ -1,3 +1,8 @@
+
+// tests/setup.js fija REDIS_URL globalmente; estos tests ejercitan los nonces en memoria (el almacén Redis se prueba en wallet-nonce-store.test.js).
+delete process.env.REDIS_URL;
+delete process.env.REDIS_HOST;
+delete process.env.REDIS_PORT;
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
