@@ -256,7 +256,7 @@ jobs:
         run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Check Frontend Dependencies
-        working-directory: ./frontend-next
+        working-directory: ./frontend
         continue-on-error: true
         run: |
           pnpm outdated --json > frontend-outdated.json 2>/dev/null || echo '{}' > frontend-outdated.json
@@ -280,7 +280,7 @@ jobs:
         with:
           name: outdated-dependencies
           path: |
-            ./frontend-next/frontend-outdated.json
+            ./frontend/frontend-outdated.json
             ./api/backend-outdated.json
           retention-days: 7
           if-no-files-found: ignore
@@ -424,7 +424,7 @@ jobs:
             --ignore-pattern '**/__tests__/**' \
             --ignore-pattern '**/*.test.*' \
             --ignore-pattern '**/scripts/**' \
-            backend frontend/src frontend-next/src packages/mcp-server/src api
+            backend frontend/src packages/mcp-server/src api
           salida=$?
 
           if [ ! -s eslint-security.json ] || ! jq empty eslint-security.json 2>/dev/null; then
@@ -448,7 +448,7 @@ jobs:
           # acumularse, el número sube y queda en el resumen de cada ejecución.
           supresiones=$(grep -rEl 'eslint-disable.*(security|no-unsanitized)/' \
             --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' \
-            backend frontend/src frontend-next/src packages/mcp-server/src api 2>/dev/null \
+            backend frontend/src packages/mcp-server/src api 2>/dev/null \
             | wc -l)
 
           {
@@ -503,7 +503,7 @@ jobs:
             paths-ignore:
               - node_modules
               - '**/node_modules'
-              - frontend-next/dist
+              - frontend/dist
               - api/dist
 
       - name: Autobuild

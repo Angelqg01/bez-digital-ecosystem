@@ -88,7 +88,7 @@ export default [
     {
         // Los frontales son módulos ES.
         ...OPCIONES,
-        files: ['frontend/**/*.{js,jsx}', 'frontend-next/**/*.{js,jsx}', 'sdk/**/*.js', '**/*.mjs'],
+        files: ['frontend/**/*.{js,jsx}', 'sdk/**/*.js', '**/*.mjs'],
         languageOptions: {
             ecmaVersion: 2023,
             sourceType: 'module',

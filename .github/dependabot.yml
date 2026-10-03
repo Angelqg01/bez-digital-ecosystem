@@ -2,7 +2,7 @@ version: 2
 updates:
   # =========================================================================
   # Unified Monorepo Workspace (pnpm)
-  # Tracks all workspaces natively: api, backend, frontend, frontend-next, sdk, packages/*
+  # Tracks all workspaces natively: api, backend, frontend, sdk, packages/*
   # =========================================================================
   - package-ecosystem: "npm"
     directory: "/"
