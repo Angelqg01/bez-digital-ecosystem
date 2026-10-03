@@ -38,6 +38,10 @@ import {
 import ROICalculator from '../components/vip/ROICalculator';
 import GlobalStatsBar from '../components/GlobalStatsBar';
 import toast from 'react-hot-toast';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../utils/apiBase';
+import { isStripeCheckoutUrl } from '../lib/chatActions';
 import vipService from '../services/vipService';
 import { STRIPE_PAYMENT_LINKS } from '../config/bezhasPaymentConfig';
 
@@ -737,6 +741,7 @@ const BeVIP = () => {
         }
     }, [isConnected]);
 
+    const { token: authToken } = useAuth();
     const handleSubscribe = async (tierId, paymentMethod) => {
         const requiresWallet = paymentMethod === 'bez';
         if (requiresWallet && !isConnected) {
@@ -748,6 +753,19 @@ const BeVIP = () => {
         try {
             if (paymentMethod === 'fiat') {
                 toast.loading('Redirigiendo a Stripe...', { id: 'subscribe' });
+                if (authToken) {
+                    // Pago real: el servidor fija precio, usuario y retorno; solo se sigue una URL de Stripe validada.
+                    try {
+                        const res = await axios.post(`${API_BASE}/api/checkout/plan`, { planId: String(tierId).toLowerCase(), cycle: 'monthly' },
+                            { headers: { Authorization: `Bearer ${authToken}` } });
+                        if (!isStripeCheckoutUrl(res.data?.url)) throw new Error('URL de pago no válida');
+                        window.location.assign(res.data.url);
+                        return;
+                    } catch (e) {
+                        if (e?.response?.status && e.response.status < 500 && e.response.status !== 404) throw e;
+                        // 404/5xx o red: se cae al enlace de pago clásico
+                    }
+                }
                 window.open(getVipStripeCheckoutLink(tierId), '_blank', 'noopener,noreferrer');
                 toast.success('Stripe abierto para completar tu suscripción Be-VIP', { id: 'subscribe' });
             } else if (paymentMethod === 'bez') {

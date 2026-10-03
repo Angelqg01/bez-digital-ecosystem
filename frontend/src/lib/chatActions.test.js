@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { apiError, classifyLink, formatPrice, isSafeInternalPath, TRUSTED_HOSTS } from './chatActions';
+import { apiError, classifyLink, formatPrice, isSafeInternalPath, isStripeCheckoutUrl, TRUSTED_HOSTS } from './chatActions';
 
 describe('isSafeInternalPath', () => {
     test.each(['/rwa', '/vip', '/docs/guia-1', '/rwa?tab=tokenize', '/dashboard/farming', '/dashboard/wallet#gov'])('acepta %s', (p) => {
@@ -49,5 +49,18 @@ describe('apiError', () => {
         expect(apiError({ response: { data: {} } }, 'x')).toBe('x');
         expect(apiError(new Error('boom'), 'x')).toBe('x');
         expect(apiError(null, 'x')).toBe('x');
+    });
+});
+
+describe('isStripeCheckoutUrl / formatPrice anual', () => {
+    test('solo hosts exactos de Stripe por https', () => {
+        expect(isStripeCheckoutUrl('https://checkout.stripe.com/c/pay/x')).toBe(true);
+        expect(isStripeCheckoutUrl('https://billing.stripe.com/p/session/x')).toBe(true);
+        expect(isStripeCheckoutUrl('https://stripe.com/x')).toBe(false);
+        expect(isStripeCheckoutUrl('https://checkout.stripe.com:444/x')).toBe(false);
+    });
+    test('precio anual', () => {
+        expect(formatPrice({ priceMonthly: 99, priceYearly: 990, currency: 'EUR' }, 'yearly')).toBe('990 EUR/año');
+        expect(formatPrice({ priceMonthly: 99, currency: 'EUR' }, 'yearly')).toBe('99 EUR/mes');
     });
 });

@@ -142,4 +142,49 @@ describe('useChatActions', () => {
         act(() => result.current.close());
         expect(result.current.dialog).toBeNull();
     });
+
+    describe('pagos con Stripe', () => {
+        const STRIPE = 'https://checkout.stripe.com/c/pay/cs_test_abc';
+
+        test('checkoutPlan envía solo plan y ciclo y redirige a la URL de Stripe', async () => {
+            const api = makeApi({ 'POST /api/checkout/plan': { success: true, url: STRIPE } });
+            const { result } = renderHook(() => useChatActions(api));
+            let ok;
+            await act(async () => { ok = await result.current.checkoutPlan('creator', 'yearly'); });
+            expect(api.post).toHaveBeenCalledWith('/api/checkout/plan', { planId: 'creator', cycle: 'yearly' });
+            expect(ok).toBe(true);
+            expect(assign).toHaveBeenCalledWith(STRIPE);
+        });
+
+        test.each([
+            ['otro dominio', 'https://evil.test/pay'],
+            ['http plano', 'http://checkout.stripe.com/x'],
+            ['subdominio engañoso', 'https://checkout.stripe.com.evil.test/x'],
+            ['credenciales', 'https://checkout.stripe.com@evil.test/x'],
+            ['javascript:', 'javascript:alert(1)'],
+            ['ausente', undefined],
+        ])('no redirige si la URL no es de Stripe (%s)', async (_n, url) => {
+            const api = makeApi({ 'POST /api/checkout/bez': { success: true, url } });
+            const { result } = renderHook(() => useChatActions(api));
+            await act(async () => { await result.current.buyBez('25'); });
+            expect(assign).not.toHaveBeenCalled();
+            expect(result.current.payError).toMatch(/no válida/);
+        });
+
+        test('muestra el error del servidor (p. ej. wallet sin vincular)', async () => {
+            const api = makeApi({ 'POST /api/checkout/bez': httpError(409, { message: 'Vincula una wallet' }) });
+            const { result } = renderHook(() => useChatActions(api));
+            await act(async () => { await result.current.buyBez('25'); });
+            expect(result.current.payError).toBe('Vincula una wallet');
+            expect(assign).not.toHaveBeenCalled();
+            expect(result.current.paying).toBe(false);
+        });
+
+        test('la acción buy_bez abre el diálogo de compra con tarjeta', async () => {
+            const api = makeApi({ 'POST /api/ai-workspace/actions/buy_bez/open': { id: 'buy_bez', kind: 'navigate', href: '/buy-tokens', sensitive: true } });
+            const { result } = renderHook(() => useChatActions(api));
+            await act(async () => { await result.current.request(act1({ id: 'buy_bez' })); });
+            expect(result.current.dialog.type).toBe('bez');
+        });
+    });
 });

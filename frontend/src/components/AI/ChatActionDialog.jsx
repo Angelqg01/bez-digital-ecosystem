@@ -1,9 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowUpRight, FileText, Lock, ShieldCheck, X } from "lucide-react";
 import { formatPrice } from "../../lib/chatActions";
 /** Ventana emergente dentro del chat: confirma y lleva al enlace directo; el chat nunca ejecuta operaciones. */
-export function ChatActionDialog({ dialog, plans, currentPlan, docs, onGo, onClose, onUpgrade, onAskDoc }) {
+export function ChatActionDialog({ dialog, plans, currentPlan, docs, onGo, onClose, onUpgrade, onAskDoc, paying, payError, onCheckoutPlan, onBuyBez }) {
     const ref = useRef(null);
+    const [cycle, setCycle] = useState("monthly");
+    const [amount, setAmount] = useState("25");
     useEffect(() => { ref.current?.focus(); }, [dialog]);
     const title = dialog.type === "error" ? "No se pudo abrir" : dialog.type === "locked" ? "Función bloqueada" : dialog.action.title;
     const primary = "inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700";
@@ -44,19 +46,36 @@ export function ChatActionDialog({ dialog, plans, currentPlan, docs, onGo, onClo
                     </>)}
 
                 {dialog.type === "plans" && (<>
-                        <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">Compara los planes y elige el tuyo. El pago se completa en Ajustes de cuenta.</p>
+                        <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">Elige tu plan. El pago se completa de forma segura en la página de Stripe; BeZhas no ve los datos de tu tarjeta.</p>
+                        <div className="mb-3 inline-flex rounded-lg border border-gray-200 p-0.5 text-xs dark:border-gray-700" role="group" aria-label="Periodo de facturación">
+                            {["monthly", "yearly"].map((c) => (<button key={c} type="button" onClick={() => setCycle(c)} aria-pressed={cycle === c} data-testid={`cycle-${c}`} className={`rounded-md px-3 py-1 ${cycle === c ? "bg-indigo-600 text-white" : "text-gray-600 dark:text-gray-300"}`}>{c === "monthly" ? "Mensual" : "Anual"}</button>))}
+                        </div>
                         <ul className="mb-4 space-y-2" data-testid="plans-list">
                             {plans.length === 0 && <li className="text-sm text-gray-400">No se pudieron cargar los planes.</li>}
                             {plans.map((p) => (<li key={p.id} className={`rounded-xl border p-3 ${p.id === currentPlan ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/40" : "border-gray-200 dark:border-gray-700"}`}>
-                                    <div className="flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                    <div className="flex items-center justify-between gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                                         <span>{p.name}{p.id === currentPlan && <span className="ml-2 text-xs font-normal text-indigo-600">tu plan</span>}</span>
-                                        <span className="text-xs font-normal text-gray-500">{formatPrice(p)}</span>
+                                        <span className="text-xs font-normal text-gray-500">{formatPrice(p, cycle)}</span>
                                     </div>
                                     {p.description && <p className="text-xs text-gray-500 dark:text-gray-400">{p.description}</p>}
+                                    {p.purchasable && p.id !== currentPlan && (<button type="button" disabled={paying} onClick={() => onCheckoutPlan(p.id, cycle)} data-testid={`subscribe-${p.id}`} className={`${primary} mt-2 w-full disabled:opacity-60`}>{paying ? "Redirigiendo…" : `Suscribirme a ${p.name}`}</button>)}
                                 </li>))}
                         </ul>
+                        {payError && <p role="alert" className="mb-3 text-xs text-red-600" data-testid="pay-error">{payError}</p>}
                         <div className="flex flex-wrap gap-2">
-                            <button onClick={() => onGo(dialog.result)} className={primary} data-testid="go-btn">Ir a suscribirme <ArrowUpRight size={14}/></button>
+                            <button onClick={() => onGo(dialog.result)} className={secondary} data-testid="go-btn">Ver todos los detalles</button>
+                            <button onClick={onClose} className={secondary}>Cerrar</button>
+                        </div>
+                    </>)}
+
+                {dialog.type === "bez" && (<>
+                        <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">Compra BEZ con tarjeta. Pagas en euros en la página segura de Stripe y el BEZ llega a la wallet vinculada a tu cuenta.</p>
+                        <label className="mb-1 block text-xs text-gray-500" htmlFor="bez-amount">Importe (EUR)</label>
+                        <input id="bez-amount" data-testid="bez-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, "").slice(0, 9))} className="mb-3 w-full rounded-xl border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-gray-700"/>
+                        {payError && <p role="alert" className="mb-3 text-xs text-red-600" data-testid="pay-error">{payError}</p>}
+                        <div className="flex flex-wrap gap-2">
+                            <button type="button" disabled={paying || !amount} onClick={() => onBuyBez(amount)} data-testid="buy-bez-btn" className={`${primary} disabled:opacity-60`}>{paying ? "Redirigiendo…" : "Pagar con tarjeta"}</button>
+                            <button onClick={() => onGo(dialog.result)} className={secondary} data-testid="go-btn">Otras formas de pago</button>
                             <button onClick={onClose} className={secondary}>Cerrar</button>
                         </div>
                     </>)}

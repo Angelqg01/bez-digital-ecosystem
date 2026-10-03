@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiError, isSafeInternalPath } from "../lib/chatActions";
+import { apiError, isSafeInternalPath, isStripeCheckoutUrl } from "../lib/chatActions";
 /**
  * Acciones del chat: catálogo, apertura (siempre validada en servidor) y ventanas emergentes.
  * El cliente nunca navega a un destino que no venga del servidor Y pase `isSafeInternalPath`.
@@ -13,6 +13,8 @@ export function useChatActions(api) {
     const [plans, setPlans] = useState([]);
     const [currentPlan, setCurrentPlan] = useState("");
     const [docs, setDocs] = useState([]);
+    const [paying, setPaying] = useState(false);
+    const [payError, setPayError] = useState("");
     const loadCatalog = useCallback(async () => {
         try {
             const res = await api.get("/api/ai-workspace/actions");
@@ -25,7 +27,7 @@ export function useChatActions(api) {
             return [];
         }
     }, [api]);
-    const close = useCallback(() => setDialog(null), []);
+    const close = useCallback(() => { setDialog(null); setPayError(""); }, []);
     /**
      * Navega al destino devuelto por el servidor, siempre validado. Rutas de la SPA → router;
      * apps secundarias (`external`, mismo dominio, fuera del router) → navegación completa.
@@ -60,6 +62,9 @@ export function useChatActions(api) {
                 setDocs(Array.isArray(d.data?.documents) ? d.data.documents : []);
                 setDialog({ type: "docs", action, result });
             }
+            else if (action.id === "buy_bez") {
+                setDialog({ type: "bez", action, result });
+            }
             else {
                 setDialog({ type: "confirm", action, result });
             }
@@ -86,5 +91,26 @@ export function useChatActions(api) {
         else
             setDialog({ type: "error", message: "La acción no está disponible." });
     }, [catalog, loadCatalog, request]);
-    return { catalog, dialog, busy, plans, currentPlan, docs, loadCatalog, request, requestById, go, close };
+    /** Pago real con Stripe: el servidor fija precio, identidad y retorno; aquí solo se redirige a una URL de Stripe validada. */
+    const pay = useCallback(async (path, body) => {
+        setPaying(true);
+        setPayError("");
+        try {
+            const res = await api.post(path, body);
+            const url = res.data?.url;
+            if (!isStripeCheckoutUrl(url)) { setPayError("El servidor devolvió una URL de pago no válida."); return false; }
+            window.location.assign(url);
+            return true;
+        }
+        catch (e) {
+            setPayError(apiError(e, "No se pudo iniciar el pago."));
+            return false;
+        }
+        finally {
+            setPaying(false);
+        }
+    }, [api]);
+    const checkoutPlan = useCallback((planId, cycle) => pay("/api/checkout/plan", { planId, cycle }), [pay]);
+    const buyBez = useCallback((amountEur) => pay("/api/checkout/bez", { amountEur }), [pay]);
+    return { paying, payError, checkoutPlan, buyBez, catalog, dialog, busy, plans, currentPlan, docs, loadCatalog, request, requestById, go, close };
 }
