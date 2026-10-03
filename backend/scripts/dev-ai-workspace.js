@@ -98,6 +98,8 @@ app.use((req, res, next) => {
     if (ORIGINS.includes(req.headers.origin)) {
         res.set({
             'Access-Control-Allow-Origin': req.headers.origin,
+            // El cliente usa axios con withCredentials: sin esto el navegador bloquea las respuestas.
+            'Access-Control-Allow-Credentials': 'true',
             'Access-Control-Allow-Headers': 'Content-Type, Authorization',
             'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
             Vary: 'Origin',
