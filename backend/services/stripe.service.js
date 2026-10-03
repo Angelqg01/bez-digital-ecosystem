@@ -574,12 +574,18 @@ async function handleCheckoutCompleted(session) {
                     throw new Error('Wallet address missing in metadata');
                 }
 
-                if (!metadata.tokenAmount) {
-                    throw new Error('Token amount missing in metadata');
+                // Solo se entrega con el pago confirmado y en EUR: fiat-gateway
+                // calcula el BEZ a partir de euros, así que otra divisa daría
+                // una cantidad errónea. `tokenAmount` ya no es obligatorio (la
+                // compra por API fija el importe, no la cantidad de tokens).
+                if (session.payment_status !== 'paid') {
+                    return { handled: true, success: false, skipped: 'not_paid' };
+                }
+                if (String(session.currency || '').toLowerCase() !== 'eur') {
+                    throw new Error(`Divisa no soportada para compra de BEZ: ${session.currency}`);
                 }
 
-                // Calcular cantidad en EUR (Stripe usa USD, convertir si es necesario)
-                const amountEur = amount_total / 100; // Asumiendo 1:1 por simplicidad
+                const amountEur = amount_total / 100;
 
                 // Ejecutar transferencia automática desde Hot Wallet
                 const transferResult = await fiatGatewayService.processFiatPayment(
@@ -592,7 +598,7 @@ async function handleCheckoutCompleted(session) {
                 // Notificar éxito a Discord
                 await notifyHigh(
                     'Token Purchase Completed',
-                    `User ${metadata.userId} received ${metadata.tokenAmount} BEZ tokens\nTx: ${transferResult.transactionHash}`
+                    `User ${metadata.userId} received BEZ for ${amountEur} EUR\nTx: ${transferResult.transactionHash}`
                 ).catch(err => console.error('Discord notification failed:', err));
 
                 // Notificar éxito a Telegram

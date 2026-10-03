@@ -278,7 +278,7 @@ export default function AIWorkspaceBar() {
                                 </>)}
                             <div ref={endRef}/>
                         </div>
-                        {chatActions.dialog && (<ChatActionDialog dialog={chatActions.dialog} plans={chatActions.plans} currentPlan={chatActions.currentPlan} docs={chatActions.docs} onGo={(result) => chatActions.go(result)} onClose={chatActions.close} onUpgrade={(id) => chatActions.requestById(id)} onAskDoc={(title) => { chatActions.close(); setShowActions(false); setInput(`Resume el documento «${title}» y dime lo más importante.`); textareaRef.current?.focus(); }}/>)}
+                        {chatActions.dialog && (<ChatActionDialog dialog={chatActions.dialog} plans={chatActions.plans} currentPlan={chatActions.currentPlan} docs={chatActions.docs} paying={chatActions.paying} payError={chatActions.payError} onCheckoutPlan={chatActions.checkoutPlan} onBuyBez={chatActions.buyBez} onGo={(result) => chatActions.go(result)} onClose={chatActions.close} onUpgrade={(id) => chatActions.requestById(id)} onAskDoc={(title) => { chatActions.close(); setShowActions(false); setInput(`Resume el documento «${title}» y dime lo más importante.`); textareaRef.current?.focus(); }}/>)}
                     </section>)}
 
                 <form onSubmit={(e) => { e.preventDefault(); void send(input); }} className="flex items-end gap-1 rounded-3xl border border-gray-200 bg-white p-2 pl-2 shadow-xl focus-within:border-indigo-400 dark:border-gray-700 dark:bg-gray-900">

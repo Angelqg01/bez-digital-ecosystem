@@ -33,8 +33,11 @@ const HASH_SENUELO = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), 10)
 const SCOPES = Object.freeze({
     'chain.read': 'Consultar la red: gas, contratos y saldos públicos en el explorador',
     'payments.quote': 'Cotizar pagos en BEZ-Coin (sin ejecutarlos)',
+    'billing.checkout': 'Generar enlaces de pago de Stripe (planes y compra de BEZ) para tu cuenta. Pagas tú en la página de Stripe: no se cobra nada sin tu confirmación allí',
 });
 const SCOPES_MAXIMOS = Object.keys(SCOPES);
+// Sin scope explícito solo se pide lo de lectura: el permiso de pagos hay que pedirlo a propósito.
+const SCOPES_POR_DEFECTO = ['chain.read', 'payments.quote'];
 
 class OAuthConsentError extends Error {
     constructor(message, code, status = 400) {
@@ -53,7 +56,7 @@ async function crearSolicitud({ client, redirectUri, codeChallenge, codeChalleng
         // Nunca se redirige a una URI no registrada: sería un open redirect.
         throw new OAuthConsentError('redirect_uri no registrada para este cliente.', 'invalid_request');
     }
-    const pedido = [...new Set(String(scope || SCOPES_MAXIMOS.join(' ')).split(/\s+/).filter(Boolean))];
+    const pedido = [...new Set(String(scope || SCOPES_POR_DEFECTO.join(' ')).split(/\s+/).filter(Boolean))];
     if (pedido.length === 0 || pedido.some((s) => !SCOPES_MAXIMOS.includes(s))) {
         throw new OAuthConsentError(`El scope debe ser un subconjunto de: ${SCOPES_MAXIMOS.join(', ')}.`, 'invalid_scope');
     }

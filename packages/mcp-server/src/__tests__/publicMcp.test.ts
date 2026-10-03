@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
+import http from 'node:http';
 
 const ISSUER = 'https://api.test.bezhas';
 const RECURSO = 'https://mcp.test.bezhas';
@@ -15,8 +16,28 @@ const par = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
 const otroPar = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
 
 let app: Express;
+// Backend simulado: registra la cabecera Authorization que reenvía el MCP y devuelve URLs de pago.
+const recibidas: Array<{ path: string; auth?: string; body: string }> = [];
+let urlPago = 'https://checkout.stripe.com/c/pay/cs_test_abcdefghij123';
+let backend: http.Server;
 
 beforeAll(async () => {
+    backend = http.createServer((req, res) => {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+            recibidas.push({ path: req.url || '', auth: req.headers.authorization, body });
+            res.setHeader('Content-Type', 'application/json');
+            if (req.url === '/api/checkout/plans') return res.end(JSON.stringify({ success: true, plans: [{ id: 'creator', priceMonthly: 99 }] }));
+            if (req.url === '/api/checkout/bez' && JSON.parse(body || '{}').amountEur < 10) {
+                res.statusCode = 400;
+                return res.end(JSON.stringify({ success: false, code: 'INVALID_AMOUNT', message: 'El importe debe estar entre 10 y 5000 EUR' }));
+            }
+            res.end(JSON.stringify({ success: true, url: urlPago, plan: 'creator', cycle: 'monthly', amount: 99, currency: 'EUR' }));
+        });
+    });
+    await new Promise<void>((r) => backend.listen(0, '127.0.0.1', r));
+    process.env.BACKEND_URL = `http://127.0.0.1:${(backend.address() as { port: number }).port}`;
     process.env.OAUTH_ISSUER = ISSUER;
     process.env.MCP_PUBLIC_URL = RECURSO;
     process.env.OAUTH_JWT_PUBLIC_KEY = par.publicKey.export({ type: 'spki', format: 'pem' }).toString();
@@ -50,7 +71,7 @@ describe('descubrimiento OAuth', () => {
         const r = await request(app).get('/.well-known/oauth-protected-resource').expect(200);
         expect(r.body.resource).toBe(RECURSO);
         expect(r.body.authorization_servers).toEqual([ISSUER]);
-        expect(r.body.scopes_supported).toEqual(['chain.read', 'payments.quote']);
+        expect(r.body.scopes_supported).toEqual(['chain.read', 'payments.quote', 'billing.checkout']);
 
         await request(app).get('/.well-known/oauth-protected-resource/mcp').expect(200);
     });
@@ -110,5 +131,64 @@ describe('transporte sin estado', () => {
     it.each(['get', 'delete'] as const)('%s /mcp responde 405', async (metodo) => {
         const r = await request(app)[metodo]('/mcp').expect(405);
         expect(r.headers.allow).toBe('POST');
+    });
+});
+
+describe('planes y pagos por MCP (scope billing.checkout)', () => {
+    const llamar = (token: string, name: string, args: unknown) => rpc(token, 'tools/call', { name, arguments: args });
+    const texto = (r: request.Response) => JSON.parse(r.body.result.content[0].text);
+
+    it('billing.checkout expone solo las tres herramientas de plan/pago', async () => {
+        const r = await rpc(firmar({ scope: 'billing.checkout' }), 'tools/list').expect(200);
+        expect(nombres(r)).toEqual(['create_bez_checkout', 'create_plan_checkout', 'list_plans']);
+    });
+
+    it('sin el scope no hay herramientas de pago y no se pueden invocar', async () => {
+        const token = firmar({ scope: 'chain.read payments.quote' });
+        const r = await rpc(token, 'tools/list').expect(200);
+        expect(nombres(r).some((n) => n.includes('checkout') || n === 'list_plans')).toBe(false);
+        recibidas.length = 0;
+        await llamar(token, 'create_plan_checkout', { planId: 'creator', cycle: 'monthly' }).expect(200);
+        expect(recibidas).toHaveLength(0);
+    });
+
+    it('reenvía el token DE LA PERSONA al backend y devuelve el enlace de Stripe', async () => {
+        recibidas.length = 0;
+        const token = firmar({ scope: 'billing.checkout' });
+        const r = await llamar(token, 'create_plan_checkout', { planId: 'creator', cycle: 'yearly' }).expect(200);
+        const out = texto(r);
+        expect(out.checkoutUrl).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+        expect(out.notice).toMatch(/Stripe/);
+        expect(recibidas[0].auth).toBe(`Bearer ${token}`);
+        expect(JSON.parse(recibidas[0].body)).toEqual({ planId: 'creator', cycle: 'yearly' });
+    });
+
+    it('rechaza planes no comprables antes de llamar al backend', async () => {
+        recibidas.length = 0;
+        const r = await llamar(firmar({ scope: 'billing.checkout' }), 'create_plan_checkout', { planId: 'starter', cycle: 'monthly' }).expect(200);
+        expect(r.body.error ?? r.body.result?.isError).toBeTruthy();
+        expect(recibidas).toHaveLength(0);
+    });
+
+    it('si el backend devolviera una URL que no es de Stripe, no se entrega', async () => {
+        urlPago = 'https://evil.example/pay';
+        try {
+            const r = await llamar(firmar({ scope: 'billing.checkout' }), 'create_bez_checkout', { amountFiat: 25, currency: 'EUR' }).expect(200);
+            expect(r.body.result.isError).toBe(true);
+            expect(JSON.stringify(r.body)).not.toContain('evil.example');
+        } finally {
+            urlPago = 'https://checkout.stripe.com/c/pay/cs_test_abcdefghij123';
+        }
+    });
+
+    it('transmite el error de validación del servidor (importe fuera de rango)', async () => {
+        const r = await llamar(firmar({ scope: 'billing.checkout' }), 'create_bez_checkout', { amountFiat: 5, currency: 'EUR' }).expect(200);
+        expect(r.body.result.isError).toBe(true);
+        expect(texto(r).code).toBe('INVALID_AMOUNT');
+    });
+
+    it('list_plans devuelve el catálogo del servidor', async () => {
+        const r = await llamar(firmar({ scope: 'billing.checkout' }), 'list_plans', {}).expect(200);
+        expect(texto(r).plans[0].priceMonthly).toBe(99);
     });
 });

@@ -234,11 +234,7 @@ router.post('/actions/:id/open', async (req, res) => {
 router.get('/plans', (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
-    const { SUBSCRIPTION_TIERS } = require('../config/tier.config');
-    const plans = Object.values(SUBSCRIPTION_TIERS).map((t) => ({
-        id: t.id, name: t.displayName || t.name, description: t.description,
-        priceMonthly: t.price && t.price.monthly, currency: t.price && t.price.currency,
-    }));
+    const plans = require('../services/billing-checkout.service').listPlans();
     res.json({ plans, current: principal.plan });
 });
 

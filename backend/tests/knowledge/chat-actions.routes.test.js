@@ -123,7 +123,7 @@ describe('GET /plans', () => {
         const res = await get('/plans', paid).expect(200);
         expect(res.body.current).toBe('creator');
         expect(res.body.plans.map((p) => p.id)).toEqual(expect.arrayContaining(['starter', 'creator', 'business', 'enterprise']));
-        for (const p of res.body.plans) expect(Object.keys(p).sort()).toEqual(['currency', 'description', 'id', 'name', 'priceMonthly']);
+        for (const p of res.body.plans) expect(Object.keys(p).sort()).toEqual(['currency', 'description', 'id', 'key', 'name', 'priceMonthly', 'priceYearly', 'purchasable']);
         expect(JSON.stringify(res.body)).not.toMatch(/stripe|price_/i);
     });
 });

@@ -26,7 +26,17 @@ export function classifyLink(href) {
     return { type: 'blocked' };
 }
 
-export function formatPrice(p) {
+/** Solo se redirige al pago alojado de Stripe: https, host exacto, sin credenciales ni puerto. */
+export function isStripeCheckoutUrl(href) {
+    if (typeof href !== 'string' || href.length > 2000) return false;
+    try {
+        const u = new URL(href);
+        return u.protocol === 'https:' && !u.username && !u.password && !u.port && ['checkout.stripe.com', 'billing.stripe.com'].includes(u.hostname.toLowerCase());
+    } catch { return false; }
+}
+
+export function formatPrice(p, cycle = 'monthly') {
+    if (cycle === 'yearly' && p.priceYearly) return `${p.priceYearly}${p.currency ? ` ${p.currency}` : ''}/año`;
     if (p.priceMonthly === undefined || p.priceMonthly === null) return '';
     if (p.priceMonthly === 0) return 'Gratis';
     return `${p.priceMonthly}${p.currency ? ` ${p.currency}` : ''}/mes`;
