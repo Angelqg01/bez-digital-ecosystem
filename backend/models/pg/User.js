@@ -75,12 +75,27 @@ class UserPG {
         return this.hydrate(result.rows[0]);
     }
 
+    // Búsquedas por identificadores de Stripe (webhooks de suscripción y facturas).
+    static async findByStripeSubscription(subscriptionId) {
+        if (typeof subscriptionId !== 'string' || !subscriptionId) return null;
+        const result = await pool.query('SELECT * FROM users WHERE stripe_subscription_id = $1', [subscriptionId]);
+        return this.hydrate(result.rows[0]);
+    }
+
+    static async findByStripeCustomer(customerId) {
+        if (typeof customerId !== 'string' || !customerId) return null;
+        const result = await pool.query('SELECT * FROM users WHERE stripe_customer_id = $1 ORDER BY updated_at DESC LIMIT 1', [customerId]);
+        return this.hydrate(result.rows[0]);
+    }
+
     static async findOne(filter = {}) {
         if (filter.email) return this.findByEmail(filter.email);
         if (filter.walletAddress || filter.wallet_address) {
             return this.findByWallet(filter.walletAddress || filter.wallet_address);
         }
         if (filter.id || filter._id) return this.findById(filter.id || filter._id);
+        if (filter.stripeSubscriptionId) return this.findByStripeSubscription(filter.stripeSubscriptionId);
+        if (filter.stripeCustomerId) return this.findByStripeCustomer(filter.stripeCustomerId);
         return null;
     }
 

@@ -1069,6 +1069,9 @@ app.use('/api/vip', vipRoutes);
 const subscriptionRoutes = require('./routes/subscription.routes');
 app.use('/api/subscription', subscriptionRoutes);
 
+// Pagos reales con Stripe: planes y compra de BEZ (web, apps nativas, chat y MCP)
+app.use('/api/checkout', require('./routes/checkout.routes'));
+
 // NEW: BEZ-Coin with MoonPay Integration
 app.use('/api/bezcoin', deprecatedSubappRoute('bezcoin_operations', SUBAPP_URLS.wallet));
 

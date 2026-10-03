@@ -308,7 +308,12 @@ async function dispatchEvent(event) {
         // ----- Checkout & Payment Events (stripe.service.js) -----
         case 'checkout.session.completed':
         case 'payment_intent.succeeded':
-        case 'payment_intent.payment_failed': {
+        case 'payment_intent.payment_failed':
+        case 'checkout.session.async_payment_succeeded': {
+            if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+                results.push(await handlePlans(event));
+            }
+            if (event.type === 'checkout.session.async_payment_succeeded') break;
             const stripeService = safeRequire('../services/stripe.service');
             if (stripeService?.handleStripeWebhook) {
                 // OJO: aquí había un fallo de precedencia de operadores.
@@ -353,6 +358,7 @@ async function dispatchEvent(event) {
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted': {
+            results.push(await handlePlans(event));
             // VIP subscription handler
             const vipService = safeRequire('../services/vip.service');
             if (vipService?.handleSubscriptionWebhook) {
@@ -379,6 +385,7 @@ async function dispatchEvent(event) {
         // ----- Invoice Events (subscription billing) -----
         case 'invoice.payment_succeeded':
         case 'invoice.payment_failed': {
+            results.push(await handlePlans(event));
             const subscriptionService = safeRequire('../services/subscription.service');
             if (subscriptionService?.handleStripeWebhook) {
                 const result = await subscriptionService.handleStripeWebhook(event);
@@ -393,6 +400,20 @@ async function dispatchEvent(event) {
     }
 
     return results;
+}
+
+// ============================================================================
+// HELPER: planes de BeZhas (billing-checkout.service)
+// ============================================================================
+
+async function handlePlans(event) {
+    try {
+        const result = await require('../services/billing-checkout.service').handleEvent(event);
+        return { handled: result?.handled === true, source: 'plans', result, ...(result?.error ? { error: result.error } : {}) };
+    } catch (error) {
+        console.error(`[STRIPE WEBHOOK] plans error for ${event.type}:`, error.message);
+        return { handled: false, source: 'plans', error: error.message, cause: error };
+    }
 }
 
 // ============================================================================

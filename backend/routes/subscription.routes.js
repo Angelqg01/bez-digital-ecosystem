@@ -112,26 +112,24 @@ router.post('/checkout', protect, async (req, res) => {
             });
         }
 
-        const session = await subscriptionService.createCheckoutSession({
-            userId: req.user._id.toString(),
-            email: req.user.email,
-            walletAddress,
-            tier: tier.toUpperCase(),
-            billingCycle
+        // Un único camino de pago: precios del servidor, redirecciones de FRONTEND_URL.
+        const session = await require('../services/billing-checkout.service').createPlanCheckout({
+            user: req.user,
+            planId: tier.toLowerCase(),
+            cycle: billingCycle
         });
 
         res.json({
             success: true,
             checkoutUrl: session.url,
-            sessionId: session.id
+            sessionId: session.sessionId || session.id
         });
 
     } catch (error) {
-        console.error('Create checkout error:', error);
-        res.status(500).json({
+        console.error('Create checkout error:', error.message);
+        res.status(Number.isInteger(error.status) ? error.status : 500).json({
             success: false,
-            message: 'Error creating checkout session',
-            error: error.message
+            message: error.status && error.status < 500 ? error.message : 'Error creating checkout session'
         });
     }
 });
