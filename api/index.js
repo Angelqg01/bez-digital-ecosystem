@@ -90,6 +90,7 @@ const identityRoutes = require('./routes/identity');
 const organizationsRoutes = require('./routes/organizations');
 const organizationTechRoutes = require('./routes/organization-tech');
 const organizationBillingRoutes = require('./routes/organization-billing');
+const aiWorkspaceRoutes = require('./routes/ai-workspace');
 const adminConfigRoutes = require('./routes/admin-config');
 const adminGovernanceRoutes = require('./routes/admin-governance');
 const mcpGatewayRoutes = require('./routes/mcp-gateway');
@@ -357,6 +358,7 @@ app.use('/api/identity', identityRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/organizations', organizationTechRoutes);
 app.use('/api/organizations', organizationBillingRoutes);
+app.use('/api/ai-workspace', aiWorkspaceRoutes);   // chat de la plataforma con RAG (sesión obligatoria)
 app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);
 app.use('/api/admin/governance', adminGovernanceRoutes);
