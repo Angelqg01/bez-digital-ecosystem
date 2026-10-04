@@ -20,6 +20,7 @@ const actionsSvc = require('../services/ai-workspace/actions');
 const { HookRegistry, registerDefaultHooks } = require('../services/ai-workspace/hooks');
 const { resolverPrincipal } = require('../services/ai-workspace/principal');
 const { crearPreguntasGratis } = require('../services/ai-workspace/freeQuestion');
+const { crearFacturacionChatPorDefecto } = require('../services/ai-workspace/billing');
 const { PLANS } = require('../config/plans');
 const { STRIPE_PAYMENT_LINKS } = require('../config/stripe-payment-links');
 const logger = require('../utils/logger');
@@ -32,6 +33,7 @@ const hooks = registerDefaultHooks(new HookRegistry(), {
 });
 const conversations = crearConversaciones();
 const preguntasGratis = crearPreguntasGratis();
+const facturacion = crearFacturacionChatPorDefecto();
 
 const porUsuario = (req) => String(req.user?.userId || req.user?.id || 'anon');
 
@@ -112,16 +114,21 @@ async function prepareTurn(principal, body) {
 router.post('/chat', aiLimiter, async (req, res) => {
     const principal = await principalDe(req, res);
     if (!principal) return;
+    let reserva = null;
     try {
         const turn = await prepareTurn(principal, req.body);
-        const { provider, text } = await gateway.complete({
+        // Lo paga el plan del cliente: sin plan o sin cuota → 402 antes de llamar al modelo.
+        reserva = await facturacion.reservar(principal);
+        const { provider, text, usage } = await gateway.complete({
             system: SYSTEM_PROMPT, messages: turn.messages, maxTokens: 800, sources: turn.sources, contextText: turn.context,
         });
         const { text: safeText } = await hooks.run('afterModel', { principal, text });
+        const consumo = await facturacion.liquidar(reserva, { ...usage, provider });
         await conversations.append(turn.conv, turn.message, safeText);
-        res.json({ conversationId: turn.convId, reply: safeText, sources: turn.sources, actions: turn.actions, provider, flagged: turn.flagged });
+        res.json({ conversationId: turn.convId, reply: safeText, sources: turn.sources, actions: turn.actions, provider, flagged: turn.flagged, usage: consumo });
     } catch (err) {
-        if (err.status) return res.status(err.status).json({ error: err.message });
+        if (reserva && !err.status) await facturacion.anular(reserva).catch(() => {});
+        if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, upgradeActionId: err.upgradeActionId, limit: err.limit });
         logger.error({ error: err.message }, 'ai-workspace chat');
         res.status(500).json({ error: 'No se pudo procesar el mensaje' });
     }
@@ -147,15 +154,19 @@ async function responderEnStream(req, res, principal, turn) {
 
     let text = '';
     let safeText = '';
+    let provider = null;
+    let usage = null;
     try {
         send('meta', { conversationId: turn.convId, sources: turn.sources, flagged: turn.flagged });
         if (turn.actions.length) send('actions', { actions: turn.actions });
         for await (const ev of gateway.stream({
             system: SYSTEM_PROMPT, messages: turn.messages, maxTokens: turn.maxTokens || 800, sources: turn.sources,
             contextText: turn.context, signal: controller.signal, paceMs: Number(process.env.AI_STREAM_PACE_MS || 0),
+            provider: turn.provider,
         })) {
             if (ev.type === 'delta') { text += ev.text; send('delta', { text: ev.text }); }
-            else if (ev.type === 'start') send('provider', { provider: ev.provider });
+            else if (ev.type === 'start') { provider = ev.provider; send('provider', { provider: ev.provider }); }
+            else if (ev.type === 'usage') usage = ev;
             else if (ev.type === 'error') send('error', { error: ev.message });
         }
     } catch (err) {
@@ -170,7 +181,19 @@ async function responderEnStream(req, res, principal, turn) {
                 if (safeText !== text && !res.writableEnded) send('replace', { text: safeText });
             } catch (e) { safeText = ''; if (!res.writableEnded) send('error', { error: 'Respuesta bloqueada por seguridad' }); }
         }
-        if (!res.writableEnded) { send('done', { conversationId: turn.convId, length: safeText.length, ...(turn.done || {}) }); res.end(); }
+        // Cobro al plan: con tokens reales; si el usuario paró la respuesta y no llegaron, se estiman
+        // por lo enviado y lo generado (nunca a la baja). Sin nada generado, el mensaje no cuenta.
+        let consumo = null;
+        if (text && turn.facturar) {
+            const estimado = !usage || (!usage.inputTokens && !usage.outputTokens && provider !== 'extractive');
+            const u = estimado
+                ? { provider, model: gateway.modeloDe(provider), inputTokens: Math.ceil(JSON.stringify(turn.messages).length / 3), outputTokens: Math.ceil(text.length / 3), estimado: true }
+                : { provider, model: usage.model, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens };
+            consumo = await turn.facturar(u).catch((e) => { logger.error({ error: e.message }, 'no se pudo liquidar el mensaje'); return null; });
+        } else if (!text && turn.anular) {
+            await turn.anular().catch(() => {});
+        }
+        if (!res.writableEnded) { send('done', { conversationId: turn.convId, length: safeText.length, ...(consumo ? { usage: consumo } : {}), ...(turn.done || {}) }); res.end(); }
     }
     return safeText;
 }
@@ -181,13 +204,18 @@ router.post('/chat/stream', aiLimiter, async (req, res) => {
     if (!principal) return;
 
     let turn;
+    let reserva;
     try {
         turn = await prepareTurn(principal, req.body);
+        // Lo paga el plan del cliente: sin plan o sin cuota → 402 antes de llamar al modelo.
+        reserva = await facturacion.reservar(principal);
     } catch (err) {
-        if (err.status) return res.status(err.status).json({ error: err.message });
+        if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, upgradeActionId: err.upgradeActionId, limit: err.limit });
         logger.error({ error: err.message }, 'ai-workspace stream');
         return res.status(500).json({ error: 'No se pudo procesar el mensaje' });
     }
+    turn.facturar = (u) => facturacion.liquidar(reserva, u);
+    turn.anular = () => facturacion.anular(reserva);
 
     const safeText = await responderEnStream(req, res, principal, turn);
     // Se guarda lo generado ya saneado (completo o parcial si el usuario paró la respuesta).
@@ -236,6 +264,12 @@ router.post('/actions/:id/open', async (req, res) => {
         await hooks.run('onAction', { principal, action: String(id).slice(0, 40), outcome: `denied:${err.status || 500}` }).catch(() => {});
         res.status(err.status || 500).json({ error: err.status ? err.message : 'Error interno', upgradeActionId: err.upgradeActionId });
     }
+});
+
+// Consumo de IA del mes del plan del usuario (para mostrarlo en el chat).
+router.get('/usage', async (req, res) => {
+    const principal = await principalDe(req, res);
+    if (principal) res.json(await facturacion.consumo(principal));
 });
 
 // Planes (solo campos públicos y enlaces de pago) para la ventana de planes del chat.
@@ -288,7 +322,8 @@ router.delete('/knowledge/:id', async (req, res) => {
 // ─── Pregunta gratis sin sesión ───────────────────────────────────────────────
 // Cualquiera ve la barra; sin sesión hay UNA pregunta gratis por visitante (cada 30 días,
 // controlada en servidor por HMAC de la IP). Solo conocimiento PUBLIC, sin historial, sin
-// subir documentos ni abrir acciones. Después: registro o login.
+// subir documentos ni abrir acciones, y sin modelo de IA (modo extractivo: coste cero, porque
+// todo uso de IA lo paga un plan). Después: registro o login.
 const publicRouter = express.Router();
 const MAX_MENSAJE_ANONIMO = 1000;
 
@@ -303,7 +338,7 @@ publicRouter.post('/chat/stream', async (req, res) => {
     if (raw.length > MAX_MENSAJE_ANONIMO) return res.status(413).json({ error: `Máximo ${MAX_MENSAJE_ANONIMO} caracteres sin iniciar sesión` });
 
     // Principal anónimo: tenant 'public' (nadie puede crear documentos ahí) → solo ve conocimiento global PUBLIC.
-    const anon = { userId: 'anon', tenantId: 'public', roles: ['ANON'], plan: 'starter' };
+    const anon = { userId: 'anon', tenantId: 'public', roles: ['ANON'], plan: 'none' };
     let message;
     try {
         ({ message } = await hooks.run('beforeChat', { principal: anon, message: raw }));
@@ -329,7 +364,9 @@ publicRouter.post('/chat/stream', async (req, res) => {
         const { context, sources } = await knowledge.buildContext(anon, message, { topK: 4 });
         const userContent = context ? `${message}\n\n<contexto_recuperado>\n${context}\n</contexto_recuperado>` : message;
         const turn = {
-            convId: null, sources, context, maxTokens: 500,
+            // Sin sesión no hay plan que pague un modelo: la pregunta gratis se responde en modo
+            // extractivo (los fragmentos de la documentación pública), con coste de IA cero.
+            convId: null, sources, context, maxTokens: 500, provider: 'extractive',
             actions: actionsSvc.suggestActions(anon, message),
             flagged: scan(message).suspicious,
             messages: [{ role: 'user', content: userContent }],
@@ -347,5 +384,6 @@ publicRouter.post('/chat/stream', async (req, res) => {
 module.exports = router;
 module.exports.publicRouter = publicRouter;
 module.exports.preguntasGratis = preguntasGratis;
+module.exports.facturacion = facturacion;
 module.exports.hooks = hooks;
 module.exports.conversations = conversations;

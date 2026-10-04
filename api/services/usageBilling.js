@@ -127,4 +127,31 @@ async function recordUsage(appId, usage = {}) {
     }
 }
 
-module.exports = { subscribeStarter, recordUsage, METER_EVENT_NAME };
+/**
+ * Reporta créditos ya calculados al Billing Meter de Stripe de una app Starter.
+ * Para quien lleva su propio ledger (el chat de la plataforma reserva y liquida
+ * su fila). Fail-open: si Stripe no responde, el ledger conserva el uso.
+ * @returns {Promise<{reported: boolean, reason?: string}>}
+ */
+async function reportarCreditos(appId, credits, ref) {
+    const { rows } = await query(
+        `SELECT stripe_customer_id FROM gateway_subscriptions
+         WHERE app_id = $1 AND plan_id = 'starter' AND status = 'active'`,
+        [appId]
+    ).catch(() => ({ rows: [] }));
+    const customerId = rows[0]?.stripe_customer_id;
+    if (!customerId) return { reported: false, reason: 'no_starter_subscription' };
+    try {
+        await getStripe().billing.meterEvents.create({
+            event_name: METER_EVENT_NAME,
+            payload: { stripe_customer_id: customerId, value: String(credits) },
+            ...(ref ? { identifier: `${appId}:${ref}` } : {}),
+        });
+        return { reported: true };
+    } catch (e) {
+        console.error('[usageBilling] meter event failed (queued in ledger):', e.message);
+        return { reported: false, reason: e.message };
+    }
+}
+
+module.exports = { subscribeStarter, recordUsage, reportarCreditos, METER_EVENT_NAME };

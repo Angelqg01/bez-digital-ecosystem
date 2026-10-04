@@ -24,12 +24,22 @@ export interface ChatAction {
     id: string; kind: 'navigate' | 'docs' | 'plans'; title: string; description: string;
     sensitive: boolean; locked: boolean; lockReason?: string; upgradeActionId?: string; categoryLabel?: string;
 }
+/** Lo que costó un mensaje al plan del cliente (lo calcula el servidor). */
+export interface ChatUsage { credits: number; billableEUR: number; payg: boolean; used: number; limit: number | null }
+
+/** Línea de consumo bajo una respuesta. */
+export function describeUsage(u: ChatUsage): string {
+    const acciones = u.limit === null ? `${u.used} acciones de IA este mes` : `${u.used} de ${u.limit} acciones de IA este mes`;
+    return u.payg ? `${acciones} · ${u.credits} créditos (${u.billableEUR.toLocaleString('es-ES', { maximumFractionDigits: 4 })} €)` : acciones;
+}
+
 export interface ChatMessage {
     role: 'user' | 'assistant' | 'notice' | 'cta';
     content: string;
     streaming?: boolean;
     error?: boolean;
     sources?: ChatSource[];
+    usage?: ChatUsage;
     actions?: ChatAction[];
 }
 export interface PlanInfo {

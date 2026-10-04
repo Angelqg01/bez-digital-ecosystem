@@ -70,7 +70,10 @@ const providers = {
         });
         if (!res.ok) throw await fallo(res, 'anthropic');
         const json = await res.json();
-        return (json.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n');
+        return {
+            text: (json.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n'),
+            usage: { model: json.model || MODELO_ANTHROPIC(), inputTokens: json.usage?.input_tokens || 0, outputTokens: json.usage?.output_tokens || 0 },
+        };
     },
     async gemini(args) {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELO_GEMINI()}:generateContent`, {
@@ -81,9 +84,12 @@ const providers = {
         });
         if (!res.ok) throw await fallo(res, 'gemini');
         const json = await res.json();
-        return (json.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
+        return {
+            text: (json.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join(''),
+            usage: { model: MODELO_GEMINI(), inputTokens: json.usageMetadata?.promptTokenCount || 0, outputTokens: json.usageMetadata?.candidatesTokenCount || 0 },
+        };
     },
-    async extractive(args) { return extractiveText(args); },
+    async extractive(args) { return { text: extractiveText(args), usage: { model: 'extractive', inputTokens: 0, outputTokens: 0 } }; },
 };
 
 const streamers = {
@@ -95,10 +101,17 @@ const streamers = {
             signal: senal(signal),
         });
         if (!res.ok) throw await fallo(res, 'anthropic');
+        const usage = { model: MODELO_ANTHROPIC(), inputTokens: 0, outputTokens: 0 };
         for await (const ev of eventosSSE(res.body)) {
             if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') yield ev.delta.text;
+            else if (ev.type === 'message_start') {
+                usage.model = ev.message?.model || usage.model;
+                usage.inputTokens = ev.message?.usage?.input_tokens || 0;
+                usage.outputTokens = ev.message?.usage?.output_tokens || 0;
+            } else if (ev.type === 'message_delta' && ev.usage) usage.outputTokens = ev.usage.output_tokens ?? usage.outputTokens;
             else if (ev.type === 'error') throw new Error(`anthropic: ${ev.error?.message || 'error'}`);
         }
+        yield { usage };
     },
     async *gemini(args) {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELO_GEMINI()}:streamGenerateContent?alt=sse`, {
@@ -108,10 +121,16 @@ const streamers = {
             signal: senal(args.signal),
         });
         if (!res.ok) throw await fallo(res, 'gemini');
+        const usage = { model: MODELO_GEMINI(), inputTokens: 0, outputTokens: 0 };
         for await (const ev of eventosSSE(res.body)) {
             const texto = (ev.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
             if (texto) yield texto;
+            if (ev.usageMetadata) {
+                usage.inputTokens = ev.usageMetadata.promptTokenCount || usage.inputTokens;
+                usage.outputTokens = ev.usageMetadata.candidatesTokenCount || usage.outputTokens;
+            }
         }
+        yield { usage };
     },
     async *extractive(args) {
         for (const pieza of extractiveText(args).match(/\S+\s*/g) || []) {
@@ -122,8 +141,8 @@ const streamers = {
     },
 };
 
-function pickProvider() {
-    const forced = process.env.AI_PROVIDER;
+function pickProvider(forzado) {
+    const forced = forzado || process.env.AI_PROVIDER;
     if (forced && providers[forced]) return forced;
     if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
     if (process.env.GEMINI_API_KEY) return 'gemini';
@@ -131,30 +150,37 @@ function pickProvider() {
 }
 
 async function complete(args) {
-    const name = pickProvider();
+    const name = pickProvider(args.provider);
     try {
-        return { provider: name, text: await providers[name](args) };
+        const r = await providers[name](args);
+        return { provider: name, text: r.text, usage: r.usage };
     } catch (err) {
         logger.warn({ provider: name, error: err.message }, 'proveedor de IA falló; modo extractivo');
-        return { provider: 'extractive', text: await providers.extractive(args) };
+        const r = await providers.extractive(args);
+        return { provider: 'extractive', text: r.text, usage: r.usage };
     }
 }
 
 /**
- * Respuesta en streaming: { type: 'start', provider }, { type: 'delta', text }, { type: 'done' }.
+ * Respuesta en streaming: { type: 'start', provider }, { type: 'delta', text }*,
+ * { type: 'usage', provider, model, inputTokens, outputTokens }, { type: 'done' }.
  * Si el proveedor falla antes del primer trozo, se degrada al modo extractivo; si falla a mitad,
  * termina con { type: 'error' } (no se mezclan respuestas de dos proveedores).
  */
 async function* stream(args) {
-    let name = pickProvider();
+    let name = pickProvider(args.provider);
     let started = false;
     for (let attempt = 0; attempt < 2; attempt++) {
         try {
             yield { type: 'start', provider: name };
-            for await (const text of streamers[name](args)) {
+            let usage = { model: name === 'extractive' ? 'extractive' : null, inputTokens: 0, outputTokens: 0 };
+            for await (const chunk of streamers[name](args)) {
+                if (typeof chunk === 'object') { usage = chunk.usage; continue; }
                 started = true;
-                yield { type: 'delta', text };
+                yield { type: 'delta', text: chunk };
             }
+            // Tokens reales de la respuesta: es lo que se cobra al plan del cliente.
+            yield { type: 'usage', provider: name, ...usage };
             yield { type: 'done' };
             return;
         } catch (err) {
@@ -169,4 +195,11 @@ async function* stream(args) {
     }
 }
 
-module.exports = { complete, stream, pickProvider, extractiveText, eventosSSE };
+/** Modelo que usa un proveedor (para estimar el coste si una respuesta se cortó). */
+function modeloDe(provider) {
+    if (provider === 'anthropic') return MODELO_ANTHROPIC();
+    if (provider === 'gemini') return MODELO_GEMINI();
+    return 'extractive';
+}
+
+module.exports = { complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };

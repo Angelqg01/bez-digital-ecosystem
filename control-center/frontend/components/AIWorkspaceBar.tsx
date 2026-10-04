@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import {
-    AI_BASE, aiFetch, createSseParser, freeQuestionUsed, markFreeQuestionUsed, renderChatMarkdown,
+    AI_BASE, aiFetch, createSseParser, describeUsage, freeQuestionUsed, markFreeQuestionUsed, renderChatMarkdown,
     type ChatAction, type ChatMessage, type PlanInfo,
 } from '@/lib/ai-workspace';
 
@@ -66,6 +66,15 @@ export default function AIWorkspaceBar() {
     const loggedIn = mounted && isAuthenticated && !!token;
     const notice = (content: string) => setMessages((m) => [...m, { role: 'notice', content }]);
     const CTA = 'Has usado tu pregunta gratis. Regístrate o inicia sesión para seguir conversando con BeZhas AI.';
+    /** Abre la ventana de planes (para contratar o mejorar el plan que paga el chat). */
+    const verPlanes = useCallback(async () => {
+        if (!token) return;
+        try {
+            const p = await aiFetch<{ plans: PlanInfo[]; current: string }>('/plans', token);
+            setDialog({ kind: 'plans', plans: p.plans, current: p.current });
+        } catch { /* sin conexión: queda el aviso */ }
+    }, [token]);
+
     const pedirRegistro = useCallback(() => {
         markFreeQuestionUsed();
         setFreeUsed(true);
@@ -103,6 +112,13 @@ export default function AIWorkspaceBar() {
                     openLoginModal();
                     return;
                 }
+                // El chat lo paga el plan: sin plan o con la cuota del mes agotada se ofrecen los planes.
+                if (!anonimo && res.status === 402) {
+                    setMessages((m) => [...m.slice(0, -1), { role: 'notice', content: body.error || 'Necesitas un plan para usar BeZhas AI.' }]);
+                    setInput(message);
+                    void verPlanes();
+                    return;
+                }
                 if (!anonimo && (res.status === 401 || res.status === 403)) { setInput(message); openLoginModal(); }
                 throw new Error(!anonimo && (res.status === 401 || res.status === 403) ? 'Tu sesión ha caducado. Inicia sesión de nuevo.'
                     : res.status === 429 ? 'Demasiadas solicitudes, espera un momento.'
@@ -111,7 +127,10 @@ export default function AIWorkspaceBar() {
             let gratisGastada = false;
             const parse = createSseParser(({ event, data }) => {
                 if (event === 'meta') { if (data.conversationId) setConversationId(String(data.conversationId)); patchLast((m) => ({ ...m, sources: data.sources })); }
-                else if (event === 'done' && data.freeQuestionUsed) gratisGastada = true;
+                else if (event === 'done') {
+                    if (data.freeQuestionUsed) gratisGastada = true;
+                    if (data.usage) patchLast((m) => ({ ...m, usage: data.usage }));
+                }
                 else if (event === 'actions') patchLast((m) => ({ ...m, actions: Array.isArray(data.actions) ? data.actions : undefined }));
                 else if (event === 'delta') patchLast((m) => ({ ...m, content: m.content + String(data.text) }));
                 else if (event === 'replace') patchLast((m) => ({ ...m, content: String(data.text) }));
@@ -136,7 +155,7 @@ export default function AIWorkspaceBar() {
             abortRef.current = null;
             setLoading(false);
         }
-    }, [loading, loggedIn, token, conversationId, openLoginModal, freeUsed, pedirRegistro]);
+    }, [loading, loggedIn, token, conversationId, openLoginModal, freeUsed, pedirRegistro, verPlanes]);
 
     const stop = () => abortRef.current?.abort();
     const newChat = () => { stop(); setMessages([]); setConversationId(undefined); setPanel('chat'); };
@@ -306,6 +325,7 @@ export default function AIWorkspaceBar() {
                                                         // HTML generado por renderChatMarkdown: todo escapado, enlaces solo internos o bezhas.com.
                                                         dangerouslySetInnerHTML={{ __html: renderChatMarkdown(m.content) }} />
                                                     {m.streaming && m.content && <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-slate-400 align-middle" aria-hidden />}
+                                                    {m.usage && <p className="mt-1 text-[11px] text-slate-500">{describeUsage(m.usage)}</p>}
                                                     {m.sources && m.sources.length > 0 && (
                                                         <div className="mt-2 flex flex-wrap gap-1.5">
                                                             {m.sources.map((s) => (
