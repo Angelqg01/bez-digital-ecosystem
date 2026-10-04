@@ -24,10 +24,16 @@ function app() {
 }
 
 // Organización de cada usuario según el mock de organization_members.
-const ORGS = { 1: { organization_id: 'org-a', role: 'owner', plan: 'business' }, 2: { organization_id: 'org-b', role: 'admin', plan: null } };
+// Organización de cada usuario y la app cuya suscripción paga el chat.
+const ORGS = {
+    1: { organization_id: 'org-a', role: 'owner', plan: 'business', app_id: 'app-a' },
+    2: { organization_id: 'org-b', role: 'admin', plan: 'starter', app_id: 'app-b' },
+    4: { organization_id: 'org-c', role: 'owner', plan: null, app_id: null },
+};
 
 beforeEach(() => {
     _cache.clear();
+    rutas.facturacion._filas.clear();
     mockQuery.mockReset();
     mockQuery.mockImplementation(async (sql, params) => {
         if (/FROM organization_members/.test(sql)) return { rows: ORGS[params[0]] ? [ORGS[params[0]]] : [] };
@@ -237,5 +243,65 @@ describe('pregunta gratis sin sesión', () => {
         const k = claveDe('203.0.113.7');
         expect(k).toMatch(/^[0-9a-f]{64}$/);
         expect(k).not.toContain('203');
+    });
+});
+
+describe('el chat lo paga el plan del cliente', () => {
+    const stream = (token, message) => request(app()).post('/api/ai-workspace/chat/stream')
+        .set('Authorization', `Bearer ${token}`).send({ message });
+
+    it('sin plan activo → 402 PLAN_REQUIRED, sin llamar al modelo ni guardar nada', async () => {
+        const res = await stream(tokenDe(4), '¿Qué planes hay?');
+        expect(res.status).toBe(402);
+        expect(res.body).toMatchObject({ code: 'PLAN_REQUIRED', upgradeActionId: 'subscribe_plans' });
+        expect(rutas.facturacion._filas.size).toBe(0);
+        expect((await ask(tokenDe(4), { message: 'hola' })).status).toBe(402);
+    });
+
+    it('cada mensaje consume una acción de la cuota del plan y se liquida con su coste', async () => {
+        const res = await stream(tokenDe(1), '¿Qué planes hay?');
+        expect(res.status).toBe(200);
+        const done = JSON.parse(res.text.split('event: done\ndata: ')[1].split('\n')[0]);
+        expect(done.usage).toMatchObject({ used: 1, limit: 15000, payg: false });
+        expect(done.usage.credits).toBeGreaterThanOrEqual(1);
+        const [fila] = [...rutas.facturacion._filas.values()];
+        expect(fila).toMatchObject({ appId: 'app-a', meta: expect.objectContaining({ estado: 'liquidada', userId: '1' }) });
+    });
+
+    it('Starter: pago por uso (se factura en créditos) con tope mensual de acciones', async () => {
+        const res = await ask(tokenDe(2), { message: '¿Cómo compro BEZ?' });
+        expect(res.status).toBe(200);
+        expect(res.body.usage).toMatchObject({ payg: true, used: 1, limit: 150 });
+        // Tope del mes alcanzado → 402 QUOTA_EXCEEDED.
+        for (let i = 0; i < 149; i++) rutas.facturacion._filas.set(`x${i}`, { appId: 'app-b', at: Date.now() });
+        const agotado = await ask(tokenDe(2), { message: 'otra' });
+        expect(agotado.status).toBe(402);
+        expect(agotado.body).toMatchObject({ code: 'QUOTA_EXCEEDED', limit: 150 });
+    });
+
+    it('un mensaje inválido no consume cuota', async () => {
+        expect((await stream(tokenDe(1), '   ')).status).toBe(400);
+        expect(rutas.facturacion._filas.size).toBe(0);
+    });
+
+    it('consumo del mes', async () => {
+        await ask(tokenDe(1), { message: 'hola' });
+        const res = await request(app()).get('/api/ai-workspace/usage').set('Authorization', `Bearer ${tokenDe(1)}`);
+        expect(res.body).toEqual({ plan: 'business', used: 1, limit: 15000 });
+    });
+
+    it('la pregunta gratis sin sesión no usa ningún modelo de IA (coste cero) aunque haya proveedor configurado', async () => {
+        rutas.preguntasGratis.usadas.clear();
+        process.env.AI_PROVIDER = 'anthropic';
+        global.fetch = jest.fn(async () => { throw new Error('no debe llamarse al proveedor'); });
+        try {
+            const res = await request(app()).post('/api/ai-workspace/public/chat/stream').send({ message: '¿Qué planes hay?' });
+            expect(res.status).toBe(200);
+            expect(res.text).toMatch(/"provider":"extractive"/);
+            expect(global.fetch).not.toHaveBeenCalled();
+        } finally {
+            process.env.AI_PROVIDER = 'extractive';
+            delete global.fetch;
+        }
     });
 });

@@ -13,7 +13,7 @@ const { PLANS } = require('../../config/plans');
 
 const eur = (n) => n.toLocaleString('es-ES', { maximumFractionDigits: 2 });
 const planes = PLANS.map((p) => (p.priceEUR === 0
-    ? `- ${p.name} (${p.profile}): sin cuota, pago por uso de créditos; ${p.aiActions} acciones de IA incluidas; ${p.trialDays || 0} días de prueba.`
+    ? `- ${p.name} (${p.profile}): sin cuota fija, pago por uso (coste real + 25 %), hasta ${p.aiActions} acciones de IA al mes; ${p.trialDays || 0} días de prueba.`
     : `- ${p.name} (${p.profile}): ${eur(p.priceEUR)} €/mes + IVA o ${eur(p.yearlyEUR)} €/año + IVA (2 meses gratis); ${p.aiActions ? `${eur(p.aiActions)} acciones de IA` : 'acciones de IA ilimitadas'}, ${p.gasSubsidy}% de subvención de gas.`)).join('\n');
 
 const DOCS = [
@@ -25,6 +25,12 @@ const DOCS = [
         `BeZhas ofrece cuatro planes. Los precios no incluyen IVA (21 % en España), que se suma en el pago:\n${planes}\n`
         + 'Pagando la suscripción con BEZ hay un 20 % de descuento. Los planes se contratan desde la web con tarjeta (Stripe) '
         + 'y se activan en la app del cliente. Para comparar planes, abre la sección de planes de la plataforma.'],
+    ['bz_ia_consumo', 'Uso del asistente BeZhas AI',
+        'Cada mensaje al asistente BeZhas AI con sesión iniciada consume una acción de IA del plan de tu organización. '
+        + 'En Creator Pro, Business y Enterprise VIP sale de las acciones incluidas en la cuota mensual; en Starter se factura '
+        + 'por su coste real (modelo de IA y cómputo) + 25 %, en créditos de 0,001 € al mes. Si se agotan las acciones del mes, '
+        + 'hay que mejorar el plan. Sin plan activo el asistente no está disponible. Sin sesión, cada visitante tiene una '
+        + 'pregunta gratis respondida con fragmentos de la documentación pública.'],
     ['bz_token', 'BEZ-Coin',
         'BEZ-Coin (BEZ) vive en Polygon (cadena 137). Contrato oficial: 0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8. '
         + 'En la fase semilla el precio es fijo: 0,0075 USD por BEZ. Comprueba siempre la dirección del contrato antes de operar.'],

@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { classifyLink, createSseParser, renderChatMarkdown } from '@/lib/ai-workspace';
+import { classifyLink, createSseParser, describeUsage, renderChatMarkdown } from '@/lib/ai-workspace';
 
 describe('classifyLink', () => {
     it.each([
@@ -55,5 +55,20 @@ describe('createSseParser', () => {
             { event: 'delta', data: { text: 'Hola' } },
             { event: 'done', data: {} },
         ]);
+    });
+});
+
+describe('describeUsage', () => {
+    it('plan con cuota: solo acciones usadas', () => {
+        expect(describeUsage({ credits: 15, billableEUR: 0.0148, payg: false, used: 3, limit: 1500 })).toBe('3 de 1500 acciones de IA este mes');
+    });
+    it('ilimitado', () => {
+        expect(describeUsage({ credits: 15, billableEUR: 0.0148, payg: false, used: 7, limit: null })).toBe('7 acciones de IA este mes');
+    });
+    it('Starter (pago por uso): muestra créditos e importe', () => {
+        const t = describeUsage({ credits: 15, billableEUR: 0.014823, payg: true, used: 2, limit: 150 });
+        expect(t).toContain('2 de 150 acciones de IA este mes');
+        expect(t).toContain('15 créditos');
+        expect(t).toMatch(/0,0148 €/);
     });
 });
