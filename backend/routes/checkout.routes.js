@@ -57,6 +57,12 @@ router.post('/bez', auth, writeLimiter, wrap(async (req) => {
     return billing.createBezCheckout({ user: req.user, amountEur: (req.body || {}).amountEur });
 }));
 
+router.post('/credits', auth, writeLimiter, wrap(async (req) => {
+    return billing.createCreditsCheckout({ user: req.user, packId: (req.body || {}).packId });
+}));
+
+router.get('/credit-packs', (req, res) => res.json({ success: true, packs: require('../config/credit-packs').publicPacks() }));
+
 router.post('/portal', auth, writeLimiter, wrap(async (req) => billing.createPortalSession({ user: req.user })));
 
 router.get('/session/:id', auth, readLimiter, wrap(async (req) =>

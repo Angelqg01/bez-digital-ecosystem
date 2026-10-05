@@ -146,6 +146,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, mode: 'dev-ai-workspa
 // ─── Rutas reales ─────────────────────────────────────────────────────────────
 app.use('/api/wallet-auth', require('../routes/wallet-auth.routes'));
 app.use('/api/ai-workspace', require('../routes/ai-workspace.routes'));
+app.use('/api/checkout', require('../routes/checkout.routes'));
 
 // Documentos exclusivos de plan (datos de DESARROLLO): solo los planes de pago los recuperan; el plan gratuito, no.
 const { knowledge } = require('../services/knowledge');

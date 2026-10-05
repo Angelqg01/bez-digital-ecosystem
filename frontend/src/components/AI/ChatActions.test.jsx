@@ -122,4 +122,43 @@ describe('ChatActionDialog', () => {
         fireEvent.click(screen.getByText('Cerrar'));
         expect(onClose).toHaveBeenCalled();
     });
+
+    describe('créditos agotados', () => {
+        const plans = [
+            { id: 'starter', name: 'Starter', priceMonthly: 0, purchasable: false },
+            { id: 'creator', name: 'Creator', priceMonthly: 99, priceYearly: 990, currency: 'EUR', purchasable: true },
+            { id: 'business', name: 'Business', priceMonthly: 499, priceYearly: 4990, currency: 'EUR', purchasable: true },
+        ];
+        const packs = [{ id: 'chat_100', credits: 100, priceEur: 5, currency: 'EUR' }];
+        const props = () => ({ ...base, plans, paying: false, payError: '', onCheckoutPlan: vi.fn(), onBuyCredits: vi.fn(), onBuyBez: vi.fn() });
+
+        test('sin plan: ofrece suscribirse (sin packs) y permite elegir ciclo anual', () => {
+            const p = props();
+            render(<ChatActionDialog {...p} currentPlan="starter" dialog={{ type: 'credits', kind: 'subscribe', plan: 'starter', packs }} />);
+            expect(screen.getByTestId('credits-message')).toHaveTextContent(/Suscríbete/);
+            expect(screen.queryByTestId('credits-packs')).toBeNull();
+            expect(screen.queryByTestId('subscribe-starter')).toBeNull();
+            fireEvent.click(screen.getByText('Anual'));
+            fireEvent.click(screen.getByTestId('subscribe-creator'));
+            expect(p.onCheckoutPlan).toHaveBeenCalledWith('creator', 'yearly');
+        });
+
+        test('con plan de pago: solo ofrece planes superiores y packs de créditos', () => {
+            const p = props();
+            render(<ChatActionDialog {...p} currentPlan="creator" dialog={{ type: 'credits', kind: 'upgrade', plan: 'creator', packs }} />);
+            expect(screen.getByTestId('credits-message')).toHaveTextContent(/Mejora de plan/);
+            expect(screen.queryByTestId('subscribe-creator')).toBeNull();
+            fireEvent.click(screen.getByTestId('subscribe-business'));
+            expect(p.onCheckoutPlan).toHaveBeenCalledWith('business', 'monthly');
+            fireEvent.click(screen.getByTestId('buy-pack-chat_100'));
+            expect(p.onBuyCredits).toHaveBeenCalledWith('chat_100');
+        });
+
+        test('muestra el error de pago y el aviso de plan mejorado', () => {
+            render(<ChatActionDialog {...props()} payError="Vincula una wallet" currentPlan="creator" dialog={{ type: 'credits', kind: 'upgrade', plan: 'creator', packs }} />);
+            expect(screen.getByTestId('pay-error')).toHaveTextContent('Vincula una wallet');
+            render(<ChatActionDialog {...props()} dialog={{ type: 'notice', title: 'Plan mejorado', message: 'Tu plan ahora es business.' }} />);
+            expect(screen.getByTestId('notice-text')).toHaveTextContent('business');
+        });
+    });
 });

@@ -38,7 +38,7 @@ export const HERRAMIENTAS_POR_SCOPE: Record<string, readonly string[]> = {
     'chain.read': ['analyze_gas_strategy', 'blockscout_explorer', 'get_wallet_balance'],
     'payments.quote': ['get_payment_quote'],
     // Solo genera enlaces de pago de Stripe: paga la persona, en la página de Stripe.
-    'billing.checkout': ['list_plans', 'create_plan_checkout', 'create_bez_checkout'],
+    'billing.checkout': ['list_plans', 'create_plan_checkout', 'create_bez_checkout', 'create_credits_checkout'],
 };
 
 export function herramientasPermitidas(scope: string | undefined): Set<string> {
