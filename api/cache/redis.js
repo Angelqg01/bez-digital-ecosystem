@@ -40,10 +40,50 @@ async function connectRedis() {
     return connectPromise;
 }
 
+
+// Plazo por operación. Con Redis inaccesible, `connect()` de node-redis NO
+// rechaza —reintenta para siempre según reconnectStrategy— y los comandos sobre
+// un cliente "abierto" pero desconectado se encolan sin límite. Sin un plazo,
+// cualquier `await` a Redis queda colgado, y con él la petición que lo espera:
+// POST /api/admin-auth/login (limitador de intentos) dejaba de contestar y el
+// panel de administración se quedaba cargando. Pasado el plazo se rechaza, y
+// cada llamante aplica su política (caché: ignorar; rate limit: dejar pasar).
+const REDIS_OP_TIMEOUT_MS = Number(process.env.REDIS_OP_TIMEOUT_MS) || 1500;
+
+function withDeadline(promise, label = 'op') {
+    let timer;
+    const deadline = new Promise((_, reject) => {
+        timer = setTimeout(
+            () => reject(new Error(`Redis no responde (${label}, ${REDIS_OP_TIMEOUT_MS} ms)`)),
+            REDIS_OP_TIMEOUT_MS
+        );
+        timer.unref?.();
+    });
+    return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
+// Tras un fallo por plazo, las llamadas siguientes fallan al instante durante
+// unos segundos en vez de esperar 1,5 s cada una: con Redis caído, cada login
+// sumaría ese retraso. Pasado el enfriamiento se vuelve a intentar.
+const REDIS_COOLDOWN_MS = 10_000;
+let redisDownUntil = 0;
+
+/** Ejecuta `fn(client)` con el cliente conectado, todo bajo un único plazo. */
+async function redisOp(label, fn) {
+    if (Date.now() < redisDownUntil) {
+        throw new Error(`Redis no disponible (${label}, en enfriamiento)`);
+    }
+    try {
+        return await withDeadline((async () => fn(await connectRedis()))(), label);
+    } catch (err) {
+        if (/no responde/.test(err.message)) redisDownUntil = Date.now() + REDIS_COOLDOWN_MS;
+        throw err;
+    }
+}
+
 async function cacheGet(key) {
     try {
-        const client = await connectRedis();
-        const value = await client.get(key);
+        const value = await redisOp('get', (client) => client.get(key));
         if (!value) return null;
         try {
             return JSON.parse(value);
@@ -58,13 +98,10 @@ async function cacheGet(key) {
 
 async function cacheSet(key, value, ttlSeconds) {
     try {
-        const client = await connectRedis();
         const strValue = typeof value === 'string' ? value : JSON.stringify(value);
-        if (ttlSeconds) {
-            await client.set(key, strValue, { EX: ttlSeconds });
-        } else {
-            await client.set(key, strValue);
-        }
+        await redisOp('set', (client) => ttlSeconds
+            ? client.set(key, strValue, { EX: ttlSeconds })
+            : client.set(key, strValue));
         return true;
     } catch (err) {
         console.warn(`[Redis] cacheSet error for key ${key}:`, err.message);
@@ -74,9 +111,8 @@ async function cacheSet(key, value, ttlSeconds) {
 
 async function publish(channel, message) {
     try {
-        const client = await connectRedis();
         const strMessage = typeof message === 'string' ? message : JSON.stringify(message);
-        await client.publish(channel, strMessage);
+        await redisOp('publish', (client) => client.publish(channel, strMessage));
         return true;
     } catch (err) {
         console.warn(`[Redis] publish error on channel ${channel}:`, err.message);
@@ -100,8 +136,7 @@ async function publish(channel, message) {
  */
 async function cacheDelete(key) {
     try {
-        const client = await connectRedis();
-        await client.del(key);
+        await redisOp('del', (client) => client.del(key));
         return true;
     } catch (err) {
         console.warn(`[Redis] cacheDelete error for key ${key}:`, err.message);
@@ -132,15 +167,17 @@ async function cacheDelete(key) {
  */
 async function checkRateLimit(key, limit, windowSec) {
     try {
-        const client = await connectRedis();
         const redisKey = `ratelimit:${key}`;
-        const count = await client.incr(redisKey);
-        // Sólo al crear la clave: renovar el TTL en cada intento convertiría la
-        // ventana en deslizante-por-actividad y quien insistiera sin parar
-        // nunca vería expirar su bloqueo.
-        if (count === 1) await client.expire(redisKey, windowSec);
-
-        const ttl = await client.ttl(redisKey);
+        // Todo el INCR + EXPIRE + TTL bajo un solo plazo: si Redis no contesta,
+        // se cae al catch y se deja pasar en vez de colgar la petición.
+        const { count, ttl } = await redisOp('ratelimit', async (client) => {
+            const count = await client.incr(redisKey);
+            // Sólo al crear la clave: renovar el TTL en cada intento convertiría la
+            // ventana en deslizante-por-actividad y quien insistiera sin parar
+            // nunca vería expirar su bloqueo.
+            if (count === 1) await client.expire(redisKey, windowSec);
+            return { count, ttl: await client.ttl(redisKey) };
+        });
         return {
             allowed: count <= limit,
             count,
