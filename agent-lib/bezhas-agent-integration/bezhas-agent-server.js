@@ -83,7 +83,7 @@ TOKEN & BLOCKCHAIN:
 - Listado DeFi: 1 Julio 2026
 - Compra: https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806
 - Fundador: Yoel A. Hernandez | LinkedIn: https://www.linkedin.com/company/80822195
-- Email: info.bezcoin@bez.digital
+- Email: info.bezcoin@bezhas.com
 
 PLANES SAAS:
 1. BeZhas Starter — €119,79/mes (IVA incl.)

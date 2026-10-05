@@ -21,7 +21,7 @@ class BeZhasIntegrationAssistant {
             return;
         }
         this.apiKey = config.apiKey;
-        this.apiUrl = config.apiUrl || 'https://api.bez.digital/v1';
+        this.apiUrl = config.apiUrl || 'https://api.bezhas.com/v1';
         this.containerId = config.containerId || null;
         this.consentGiven = false;
         this.features = [];

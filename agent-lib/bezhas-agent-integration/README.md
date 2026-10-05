@@ -170,4 +170,4 @@ No hay conflicto si usas puertos distintos. Ambos pueden correr simultáneamente
 
 - **Fundador:** Yoel A. Hernandez
 - **LinkedIn:** https://www.linkedin.com/company/80822195
-- **Email:** info.bezcoin@bez.digital
+- **Email:** info.bezcoin@bezhas.com

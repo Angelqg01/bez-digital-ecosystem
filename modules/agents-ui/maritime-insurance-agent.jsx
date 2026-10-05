@@ -3,7 +3,7 @@ import { useAgentBridge } from "./use-agent-bridge";
 import AgentDetailPanel from "./agent-detail-panel";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   bez.digital — MARITIME INSURANCE AGENT v1.0  (Fase 1.5)
+   bezhas.com — MARITIME INSURANCE AGENT v1.0  (Fase 1.5)
    Seguros Marítimos P&I On-Chain · Liquidación Automática IoT · Reservas en Staking
    ─────────────────────────────────────────────────────────────────────
    Blockchain:  Polygon Mainnet → BNB Chain (LayerZero)
@@ -13,7 +13,7 @@ import AgentDetailPanel from "./agent-detail-panel";
      • QualityOracle:  QualityOracle.sol (siniestros)
      • StakingPool:    StakingPoolV2.sol (reservas APY 8-15%)
      • NFT Policy:     BeZhasNFT.sol ERC-721 (póliza tokenizada)
-   Backend:  api.bez.digital:3001 | ws.bez.digital:3002
+   Backend:  api.bezhas.com:3001 | ws.bezhas.com:3002
    ─────────────────────────────────────────────────────────────────────
    MODELO BEZ:
      • Prima pagada en BEZ-Coin (o convertida automáticamente)
@@ -1082,7 +1082,7 @@ export default function MaritimeInsuranceAgent() {
         display: "flex", justifyContent: "space-between", color: C.muted, fontSize: 9,
         fontFamily: C.mono, background: C.surf, flexWrap: "wrap", gap: 4
       }}>
-        <span>bez.digital · Maritime Insurance Agent v1.0 · Fase 1.5 · BEZ-Coin Native · Polygon</span>
+        <span>bezhas.com · Maritime Insurance Agent v1.0 · Fase 1.5 · BEZ-Coin Native · Polygon</span>
         <span>QualityOracle.sol · StakingPoolV2.sol · BeZhasNFT.sol · Chainlink IoT · Lloyd's API</span>
       </div>
     </div>

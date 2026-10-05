@@ -13,7 +13,7 @@ async function completePlatformExample() {
 
     // Initialize SDK
     const bezhas = new BeZhasAPIClient({
-        apiUrl: process.env.BEZHAS_API_URL || 'https://api.bez.digital',
+        apiUrl: process.env.BEZHAS_API_URL || 'https://api.bezhas.com',
         rpcUrl: process.env.POLYGON_RPC_URL || 'https://polygon-bor.publicnode.com',
         mcpServerUrl: process.env.MCP_SERVER_URL || 'http://localhost:3002',
         network: 'polygon',

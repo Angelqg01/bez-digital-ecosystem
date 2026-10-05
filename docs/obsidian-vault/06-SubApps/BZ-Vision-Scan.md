@@ -4,7 +4,7 @@ layer: 2
 priority: "P1"
 cluster: "logistica-rwa"
 repo_path: "App-nativas/bez-vision-scan/"
-domain: "vision.bez.digital"
+domain: "vision.bezhas.com"
 tags: ["platform-map", "logistica-rwa", "p1"]
 ---
 
@@ -14,7 +14,7 @@ tags: ["platform-map", "logistica-rwa", "p1"]
 
 Verificación visual con IA (inspección de mercancía/documentos) conectada al flujo logístico.
 
-**Ubicación:** `App-nativas/bez-vision-scan/` · vision.bez.digital
+**Ubicación:** `App-nativas/bez-vision-scan/` · vision.bezhas.com
 
 ## Conexiones
 

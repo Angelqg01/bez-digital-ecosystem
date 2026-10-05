@@ -79,7 +79,7 @@ Las empresas que han confirmado su integración en las últimas dos semanas (dos
 
 Si tiene interés en evaluar la plataforma antes de ese cambio, hoy es el momento de agendar una demo.
 
-Reservar demo: [enlace Calendly o bez.digital/demo]
+Reservar demo: [enlace Calendly o bezhas.com/demo]
 
 Yoel
 BeZhas — Campo de Gibraltar
@@ -94,7 +94,7 @@ Hola {{nombre}},
 Le he escrito varias veces sin respuesta y lo entiendo — el día a día de una empresa de logística no deja mucho tiempo para evaluar propuestas nuevas.
 
 Solo quiero dejarle un enlace por si en algún momento lo necesita:
-→ bez.digital/enterprise — información completa para empresas
+→ bezhas.com/enterprise — información completa para empresas
 → Precio actual BEZ: $0.0075 (Pack Enterprise desde $2.000 con 266.667 BEZ + SDK + factura AEAT)
 
 Si en algún momento tiene un proyecto donde necesite trazabilidad, pagos automatizados o integración con plataformas de aduanas, escríbame directamente.
@@ -177,7 +177,7 @@ Esta semana hemos integrado a tres cooperativas del sector del aceite de oliva e
 El precio de entrada sube pronto. ¿Agendamos 20 minutos esta semana?
 
 Yoel | BeZhas
-[Reservar demo: bez.digital/demo]
+[Reservar demo: bezhas.com/demo]
 
 ---
 
@@ -188,7 +188,7 @@ Hola {{nombre}},
 
 Entiendo que no es el momento. Le dejo todo aquí para cuando lo sea:
 
-→ BZ PureScan: bez.digital/purescan — trazabilidad agroalimentaria
+→ BZ PureScan: bezhas.com/purescan — trazabilidad agroalimentaria
 → Precio BEZ actual: $0.0075
 → Pack Empresa desde $2.000 (factura AEAT incluida)
 → Contacto directo: info.angelqg@gmail.com
@@ -220,7 +220,7 @@ Resumen rápido:
 
 Sin pool de liquidez aún = precio más bajo que existirá. Compra directa vía Stripe (tarjeta/SEPA).
 
-Info completa: bez.digital/token/buy
+Info completa: bezhas.com/token/buy
 
 ¿Interesa hablar?
 
@@ -244,7 +244,7 @@ Lo que ya existe:
 Sprint 4 completado: 88% plataforma funcional.
 
 Precio actual: $0.0075. Pack desde $100.
-bez.digital/token/buy
+bezhas.com/token/buy
 
 ---
 
@@ -260,7 +260,7 @@ Cuando esté en QuickSwap/PancakeSwap y en CoinGecko (en proceso), el precio de 
 No es promesa de revalorización. Es aritmética: a más demanda, más precio. Y hay empresas B2B reales comprando para operar la red.
 
 Pack Starter desde $100 → 13.333 BEZ
-bez.digital/token/buy
+bezhas.com/token/buy
 
 ---
 
@@ -268,7 +268,7 @@ bez.digital/token/buy
 **Asunto:** Última vez que te contacto
 
 Sin presión. Si en algún momento quieres entrar en BEZ o ver la plataforma:
-→ bez.digital/token/buy (Stripe — tarjeta/SEPA)
+→ bezhas.com/token/buy (Stripe — tarjeta/SEPA)
 → t.me/BeZhasBot para preguntas
 
 El precio actual es $0.0075. Cada semana que pasa es un paso más cerca del listing en DEX.
@@ -304,7 +304,7 @@ En resumen: tenemos una red empresarial para [sector] con trazabilidad automatiz
 
 El activo de la red (BEZ-Coin) está a $0.0075 ahora mismo, precio semilla directo.
 
-Pack desde $100: bez.digital/token/buy
+Pack desde $100: bezhas.com/token/buy
 
 ¿Te cuento más?
 ```

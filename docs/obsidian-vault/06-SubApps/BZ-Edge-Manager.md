@@ -4,7 +4,7 @@ layer: 2
 priority: "P1"
 cluster: "infra-devops"
 repo_path: "App-nativas/edge-node-manager/"
-domain: "edge.bez.digital"
+domain: "edge.bezhas.com"
 tags: ["platform-map", "infra-devops", "p1"]
 ---
 
@@ -14,7 +14,7 @@ tags: ["platform-map", "infra-devops", "p1"]
 
 Gestión de edge nodes B2B: registro, salud, recompensas (EdgeNodeRewards).
 
-**Ubicación:** `App-nativas/edge-node-manager/` · edge.bez.digital
+**Ubicación:** `App-nativas/edge-node-manager/` · edge.bezhas.com
 
 ## Conexiones
 

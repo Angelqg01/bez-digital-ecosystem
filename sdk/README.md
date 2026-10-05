@@ -15,7 +15,7 @@ import { initBeZhasSDK } from 'bezhas-enterprise-sdk';
 
 // Inicializar SDK
 const sdk = initBeZhasSDK({
-  apiUrl: 'https://api.bez.digital',
+  apiUrl: 'https://api.bezhas.com',
   chainId: 80002, // Amoy Testnet
   contracts: {
     marketplace: '0x...',
@@ -103,7 +103,7 @@ const shipment = await sdk.tnt.createShipment({
     country: 'ES',
     postalCode: '28001',
     phone: '+34600000000',
-    email: 'store@bez.digital'
+    email: 'store@bezhas.com'
   },
   receiver: {
     name: 'John Doe',
@@ -258,7 +258,7 @@ const purchase = await sdk.bezcoin.buyWithMoonPay({
   amount: 100, // USD
   currency: 'USD',
   paymentMethod: 'credit_card',
-  returnUrl: 'https://bez.digital/success'
+  returnUrl: 'https://bezhas.com/success'
 });
 
 // Redirigir al usuario
@@ -327,7 +327,7 @@ console.log(`TX Hash: ${transfer.txHash}`);
 ```javascript
 const sdk = initBeZhasSDK({
   // API Base
-  apiUrl: 'https://api.bez.digital',
+  apiUrl: 'https://api.bezhas.com',
   apiKey: 'your-api-key',
   
   // Blockchain
@@ -491,8 +491,8 @@ MIT
 
 ## 🤝 Soporte
 
-- Documentación: https://docs.bez.digital
-- Email: info.bezcoin@bez.digital
+- Documentación: https://docs.bezhas.com
+- Email: info.bezcoin@bezhas.com
 - Discord: https://discord.gg/bezhas
 - GitHub: https://github.com/bezhas/bezhas-sdk
 

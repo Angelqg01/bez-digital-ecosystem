@@ -213,7 +213,7 @@ Variables nuevas. API: `BEZ_PRICE_USD`, `BEZPAY_TREASURY_APP_ID`, `BEZPAY_TREASU
 - **Arreglado:** notificador sin URL por defecto y apagado en tests; firma inválida ≠
   fallo de procesamiento; test con aserción real; URL retirada de la documentación.
 - **Encontrado de paso:**
-  - Los tres endpoints de Stripe apuntan a sitios sin manejador: `api.bez.digital/webhooks/stripe`
+  - Los tres endpoints de Stripe apuntan a sitios sin manejador: `api.bezhas.com/webhooks/stripe`
     acababa en el frontend (nginx corregido: ahora va a `/api/webhooks/stripe`), y
     `bezhas.com` y `bezhas.com/home` son páginas web.
   - El manejador de la API solo leía `metadata.walletAddress`. Los Payment Links piden

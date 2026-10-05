@@ -1,2 +1,2 @@
 <div class="oracle" id="oracle"
-     data-oracle-endpoint="https://api.bez.digital/v1/oracle/price/BEZ">
+     data-oracle-endpoint="https://api.bezhas.com/v1/oracle/price/BEZ">

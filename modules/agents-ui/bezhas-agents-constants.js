@@ -370,7 +370,7 @@ export const GROUPS = [
         id: "assistant", name: "BeZhas AI Assistant", icon: "💬", status: "ACTIVE", fee: "€9.99/mes Premium", color: "#EC4899",
         tools: ["executeNLCommand()", "queryBlockchain()", "executeStaking()", "showLogistics()"],
         contracts: ["Todos vía BeZhas SDK"],
-        apis: ["Claude Sonnet 4.6 API", "MCP Server mcp.bez.digital:4001", "WS ws.bez.digital:3002"],
+        apis: ["Claude Sonnet 4.6 API", "MCP Server mcp.bezhas.com:4001", "WS ws.bezhas.com:3002"],
         auto: ["NL→MCP tool call auto", "'Stakear 500 BEZ'→exec", "Logística RT"],
         file: "packages/ai/bezhas-assistant.ts"
       },

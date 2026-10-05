@@ -128,4 +128,4 @@ INSTRUCCIONES
 azul "Comprobación final"
 echo "  Cuando termines, verifica que la clave vieja ya no vale:"
 echo "    curl -o /dev/null -w '%{http_code}\\n' -H 'x-api-key: core-internal-key' \\"
-echo "      https://api.bez.digital/api/gateway/v1/token/price     # debe dar 401"
+echo "      https://api.bezhas.com/api/gateway/v1/token/price     # debe dar 401"

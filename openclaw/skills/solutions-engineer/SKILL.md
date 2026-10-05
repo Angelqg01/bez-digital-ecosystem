@@ -30,7 +30,7 @@ You are the Solutions Engineer (SE) for BeZhas Blockchain. You translate busines
 const { BeZhas, IntegrationAssistant, MCPClient } = require('@bezhas/sdk');
 
 // Initialize
-const sdk = new BeZhas({ apiUrl: 'https://api.bez.digital', chainId: 80002 });
+const sdk = new BeZhas({ apiUrl: 'https://api.bezhas.com', chainId: 80002 });
 
 // Wallet operations (15 methods)
 sdk.wallet.create(guardian, dailyLimit)

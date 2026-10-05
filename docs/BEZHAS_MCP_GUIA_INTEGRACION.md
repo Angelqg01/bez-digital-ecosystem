@@ -23,7 +23,7 @@ tokenización, trazabilidad— con los permisos exactos de tu suscripción.
                         │
                         │  MCP · un solo conector
                         ▼
-                  mcp.bez.digital
+                  mcp.bezhas.com
                         │
         ┌───────────────┼────────────────┐
         ▼               ▼                ▼
@@ -76,7 +76,7 @@ nombre de" sin firma es un agente que decide por su cuenta.
 #### Claude (web, escritorio) y ChatGPT — conector remoto
 
 1. Ajustes → **Conectores** → *Añadir conector personalizado*.
-2. Nombre: `BeZhas`. URL: `https://mcp.bez.digital/mcp`.
+2. Nombre: `BeZhas`. URL: `https://mcp.bezhas.com/mcp`.
 3. **Conectar** → autenticación OAuth 2.1 (con PKCE) contra tu cuenta BeZhas.
    El cliente descubre solo el login a partir de la URL: no hay que copiar
    client_id ni secretos.
@@ -92,21 +92,21 @@ nombre de" sin firma es un agente que decide por su cuenta.
 #### Claude Code, Codex, Cursor, Antigravity, VS Code — MCP remoto o CLI
 
 > Las configuraciones exactas de cada cliente, listas para copiar, están en
-> la página pública [bez.digital/mcp](https://bez.digital/mcp).
+> la página pública [bezhas.com/mcp](https://bezhas.com/mcp).
 
 ```bash
-claude mcp add --transport http bezhas https://mcp.bez.digital/mcp
+claude mcp add --transport http bezhas https://mcp.bezhas.com/mcp
 ```
 
 Para clientes que aún no soportan OAuth remoto, cabecera de api-key:
 
 ```bash
-claude mcp add --transport http bezhas https://mcp.bez.digital/mcp \
+claude mcp add --transport http bezhas https://mcp.bezhas.com/mcp \
   --header "x-api-key: $BEZHAS_API_KEY"
 ```
 
 En Cursor / VS Code / Antigravity, el equivalente en su fichero de configuración
-MCP: transporte `http`, URL `https://mcp.bez.digital/mcp`, cabecera `x-api-key`.
+MCP: transporte `http`, URL `https://mcp.bezhas.com/mcp`, cabecera `x-api-key`.
 
 > La api-key **nunca** va en un repositorio ni en un fichero de configuración
 > compartido. Variable de entorno o gestor de secretos.
@@ -117,7 +117,7 @@ Apunta al mismo endpoint MCP con tu api-key en `x-api-key`. No hay SDK que
 instalar: es MCP estándar sobre HTTP.
 
 ```
-POST https://mcp.bez.digital/mcp
+POST https://mcp.bezhas.com/mcp
 x-api-key: <tu clave>
 Content-Type: application/json
 ```

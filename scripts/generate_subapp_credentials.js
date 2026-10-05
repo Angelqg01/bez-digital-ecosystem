@@ -27,7 +27,7 @@ function generateApiKey(sector) {
 
 function getWebhookUrl(sector) {
     const slug = sector.toLowerCase().replace(/ /g, '-');
-    return `https://edge.bez.digital/webhook/${slug}`;
+    return `https://edge.bezhas.com/webhook/${slug}`;
 }
 
 function readAbiFromJson(filePath) {

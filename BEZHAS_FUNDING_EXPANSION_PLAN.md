@@ -9,7 +9,7 @@
 - L2 blockchain propia; BEZ desplegado en Polygon (BNB Chain será un bridge, pendiente)
 - Token BEZ-Coin en Polygon (`0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8`)
 - Smart contracts auditables: staking, DAO, marketplace, pagos, vesting
-- Dominio + marca: `bez.digital`
+- Dominio + marca: `bezhas.com`
 - Stack tecnológico completo (OpenClaw, AEGIS, control-center, 14 sub-apps)
 - Casos de uso reales: RWA, logística, aduanas, pagos internacionales
 
@@ -40,7 +40,7 @@ Un token listado en CG/CMC genera credibilidad gratuita y tráfico orgánico.
 
 **Requisitos CoinGecko:**
 - Pool activo con volumen > $1,000/24h
-- Website funcional (bez.digital)
+- Website funcional (bezhas.com)
 - Whitepaper público
 - Contrato verificado en Polygonscan/BSCScan
 
