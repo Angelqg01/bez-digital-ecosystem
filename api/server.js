@@ -3,8 +3,8 @@
  * Punto de entrada del servidor REST y WebSocket.
  *
  * Puertos:
- *   REST:      api.bez.digital:3001  (HTTP)
- *   WebSocket: ws.bez.digital:3002   (WS sobre el mismo servidor)
+ *   REST:      api.bezhas.com:3001  (HTTP)
+ *   WebSocket: ws.bezhas.com:3002   (WS sobre el mismo servidor)
  *
  * Depende de:
  *   AgentManager      (agent-lib)

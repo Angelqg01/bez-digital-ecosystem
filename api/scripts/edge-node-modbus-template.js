@@ -13,7 +13,7 @@
  * the gateway (e.g. Raspberry Pi / industrial PC next to the inverter):
  *
  *     npm i modbus-serial mqtt
- *     NODE_ID=n1 INVERTER_IP=192.168.1.50 MQTT_BROKER_URL=mqtt://hub.bez.digital:1883 \
+ *     NODE_ID=n1 INVERTER_IP=192.168.1.50 MQTT_BROKER_URL=mqtt://hub.bezhas.com:1883 \
  *       node edge-node-modbus-template.js
  *
  * Anti-spoofing (Aegis): sign each reading in a secure element (ATECC608A / TPM)

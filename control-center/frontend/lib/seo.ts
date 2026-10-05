@@ -6,7 +6,7 @@
 
 import type { Metadata } from 'next';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bez.digital';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bezhas.com';
 
 interface PageSEO {
     title: string;

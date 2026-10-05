@@ -41,12 +41,12 @@ const users = new Map<string, DemoUser>();
 let nextId = 100;
 
 // Pre-seed a demo account so investors can try immediately
-// Login: demo@bez.digital / demo1234
+// Login: demo@bezhas.com / demo1234
 const seedHash = hashPassword('demo1234');
-users.set('demo@bez.digital', {
+users.set('demo@bezhas.com', {
     id: 1,
     username: 'Demo Investor',
-    email: 'demo@bez.digital',
+    email: 'demo@bezhas.com',
     passwordHash: seedHash,
     role: 'INVESTOR',
     avatar_url: null,

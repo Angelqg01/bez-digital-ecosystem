@@ -16,17 +16,17 @@ tarea. Tres llamadas.
 
 ```bash
 # 1. Activar OPERANT en tu suscripción
-curl -X POST https://api.bez.digital/api/gateway/v1/subscription/activate \
+curl -X POST https://api.bezhas.com/api/gateway/v1/subscription/activate \
   -H "x-api-key: $BEZHAS_API_KEY" \
   -H "content-type: application/json" \
   -d '{"subapp":"operant"}'
 
 # 2. Aprovisionar tu espacio (los límites salen de tu plan)
-curl -X POST https://api.bez.digital/api/operant/tenants/provision \
+curl -X POST https://api.bezhas.com/api/operant/tenants/provision \
   -H "x-api-key: $BEZHAS_API_KEY"
 
 # 3. Lanzar una tarea
-curl -X POST https://api.bez.digital/api/operant/tasks \
+curl -X POST https://api.bezhas.com/api/operant/tasks \
   -H "x-api-key: $BEZHAS_API_KEY" \
   -H "content-type: application/json" \
   -d '{"department":"support","input":"El cliente ACME reclama la factura de marzo"}'
@@ -155,7 +155,7 @@ del Gateway, así que tu factura lleva una sola línea de consumo.
 Consulta tu consumo en cualquier momento:
 
 ```bash
-curl https://api.bez.digital/api/operant/usage -H "x-api-key: $BEZHAS_API_KEY"
+curl https://api.bezhas.com/api/operant/usage -H "x-api-key: $BEZHAS_API_KEY"
 ```
 
 ```json
@@ -202,15 +202,15 @@ depender de nosotros y pasa a tener fecha en una cadena pública.
 
 ```bash
 # Ancla el tramo pendiente
-curl -X POST https://api.bez.digital/api/operant/audit/anchor \
+curl -X POST https://api.bezhas.com/api/operant/audit/anchor \
   -H "x-api-key: $BEZHAS_API_KEY"
 
 # Comprueba la integridad de tu cadena y sus anclas
-curl https://api.bez.digital/api/operant/audit/verify \
+curl https://api.bezhas.com/api/operant/audit/verify \
   -H "x-api-key: $BEZHAS_API_KEY"
 
 # Demuestra un registro concreto contra su ancla
-curl https://api.bez.digital/api/operant/audit/proof/$AUDIT_HASH \
+curl https://api.bezhas.com/api/operant/audit/proof/$AUDIT_HASH \
   -H "x-api-key: $BEZHAS_API_KEY"
 ```
 

@@ -47,7 +47,7 @@ const sidebarSections = [
     title: 'Contacto',
     items: [
       { path: '/support', icon: 'contact_support', label: 'Centro de ayuda' },
-      { path: 'mailto:info.bezcoin@bez.digital', icon: 'mail', label: 'Email' },
+      { path: 'mailto:info.bezcoin@bezhas.com', icon: 'mail', label: 'Email' },
       { path: 'https://t.me/BeZhasBot', icon: 'send', label: 'Telegram' },
       { path: 'https://github.com/bezhas', icon: 'terminal', label: 'GitHub' },
     ],

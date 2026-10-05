@@ -44,7 +44,7 @@ describe('verifyPassword', () => {
 
 describe('almacén de usuarios', () => {
     it('trae la cuenta demo preconfigurada', () => {
-        const demo = findUserByEmail('demo@bez.digital');
+        const demo = findUserByEmail('demo@bezhas.com');
 
         expect(demo).toBeDefined();
         expect(demo?.role).toBe('INVESTOR');
@@ -52,41 +52,41 @@ describe('almacén de usuarios', () => {
     });
 
     it('normaliza mayúsculas y espacios al buscar', () => {
-        expect(findUserByEmail('  DEMO@BEZ.DIGITAL  ')).toBeDefined();
+        expect(findUserByEmail('  DEMO@BEZHAS.COM  ')).toBeDefined();
     });
 
     it('devuelve undefined para un email desconocido', () => {
-        expect(findUserByEmail('nadie@bez.digital')).toBeUndefined();
+        expect(findUserByEmail('nadie@bezhas.com')).toBeUndefined();
     });
 
     it('crea usuarios con rol RETAIL y email normalizado', () => {
-        const user = createUser('  Ana  ', '  ANA@bez.digital ', 'clave-seguraaa');
+        const user = createUser('  Ana  ', '  ANA@bezhas.com ', 'clave-seguraaa');
 
-        expect(user.email).toBe('ana@bez.digital');
+        expect(user.email).toBe('ana@bezhas.com');
         expect(user.username).toBe('Ana');
         expect(user.role).toBe('RETAIL');
         expect(verifyPassword('clave-seguraaa', user.passwordHash)).toBe(true);
     });
 
     it('no guarda la contraseña en claro', () => {
-        const user = createUser('Bruno', 'bruno@bez.digital', 'clave-en-claro');
+        const user = createUser('Bruno', 'bruno@bezhas.com', 'clave-en-claro');
 
         expect(JSON.stringify(user)).not.toContain('clave-en-claro');
     });
 
     it('asigna ids distintos a cada usuario', () => {
-        const uno = createUser('Uno', 'uno@bez.digital', 'clave-uno-larga');
-        const dos = createUser('Dos', 'dos@bez.digital', 'clave-dos-larga');
+        const uno = createUser('Uno', 'uno@bezhas.com', 'clave-uno-larga');
+        const dos = createUser('Dos', 'dos@bezhas.com', 'clave-dos-larga');
 
         expect(dos.id).not.toBe(uno.id);
     });
 
     it('userExists refleja el alta y normaliza igual que la búsqueda', () => {
-        expect(userExists('carla@bez.digital')).toBe(false);
+        expect(userExists('carla@bezhas.com')).toBe(false);
 
-        createUser('Carla', 'carla@bez.digital', 'clave-carla-x');
+        createUser('Carla', 'carla@bezhas.com', 'clave-carla-x');
 
-        expect(userExists('carla@bez.digital')).toBe(true);
-        expect(userExists('  CARLA@BEZ.DIGITAL  ')).toBe(true);
+        expect(userExists('carla@bezhas.com')).toBe(true);
+        expect(userExists('  CARLA@BEZHAS.COM  ')).toBe(true);
     });
 });

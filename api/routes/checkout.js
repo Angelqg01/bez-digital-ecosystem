@@ -1,5 +1,5 @@
 /**
- * routes/checkout.js — hosted checkout page (pay.bez.digital/c/<token>).
+ * routes/checkout.js — hosted checkout page (pay.bezhas.com/c/<token>).
  *
  * Server-rendered, self-contained HTML (no build step, no external assets):
  * the page bootstraps with the token and polls the PUBLIC status endpoint

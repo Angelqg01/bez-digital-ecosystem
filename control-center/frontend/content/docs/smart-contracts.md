@@ -15,8 +15,8 @@ const abi = getABI('BEZCoinV2');
 
 ```bash
 # Vía API
-curl https://api.bez.digital/api/gateway/v1/contracts/addresses
-curl https://api.bez.digital/api/contracts-abi/BEZCoinV2
+curl https://api.bezhas.com/api/gateway/v1/contracts/addresses
+curl https://api.bezhas.com/api/contracts-abi/BEZCoinV2
 ```
 
 Se publican los ABI de las **interfaces públicas**. El código de despliegue, los scripts de operación y los contratos internos no se exponen.

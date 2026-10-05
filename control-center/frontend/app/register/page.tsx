@@ -255,7 +255,7 @@ function RegisterPageContent() {
                         <span className="text-blue-400 shrink-0">💡</span>
                         <p className="text-[11px] text-blue-300/80 leading-relaxed">
                             <strong>Demo:</strong> También puedes iniciar sesión con{' '}
-                            <span className="font-mono text-blue-300">demo@bez.digital</span> / <span className="font-mono text-blue-300">demo1234</span>
+                            <span className="font-mono text-blue-300">demo@bezhas.com</span> / <span className="font-mono text-blue-300">demo1234</span>
                         </p>
                     </div>
                 </div>

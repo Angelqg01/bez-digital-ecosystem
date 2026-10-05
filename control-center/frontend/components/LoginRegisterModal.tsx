@@ -189,7 +189,7 @@ export default function LoginRegisterModal({ onClose }: LoginRegisterModalProps)
                             </label>
                             <input
                                 type="text"
-                                placeholder="demo@bez.digital"
+                                placeholder="demo@bezhas.com"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
                                 style={{

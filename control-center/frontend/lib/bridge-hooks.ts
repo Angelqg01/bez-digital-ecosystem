@@ -31,7 +31,7 @@ export interface ChainConfig {
 }
 
 export const SUPPORTED_CHAINS: ChainConfig[] = [
-    { chainId: 2708, name: 'BeZhas Mainnet', shortName: 'BEZ', color: 'bg-bezhas-cyan', explorer: 'https://explorer.bez.digital', nativeToken: 'BEZ', supported: true },
+    { chainId: 2708, name: 'BeZhas Mainnet', shortName: 'BEZ', color: 'bg-bezhas-cyan', explorer: 'https://explorer.bezhas.com', nativeToken: 'BEZ', supported: true },
     { chainId: 1, name: 'Ethereum Mainnet', shortName: 'ETH', color: 'bg-indigo-500', explorer: 'https://etherscan.io', nativeToken: 'ETH', supported: true },
     { chainId: 11155111, name: 'Ethereum Sepolia', shortName: 'SEP', color: 'bg-indigo-400', explorer: 'https://sepolia.etherscan.io', nativeToken: 'ETH', supported: true },
     { chainId: 137, name: 'Polygon PoS', shortName: 'MATIC', color: 'bg-purple-500', explorer: 'https://polygonscan.com', nativeToken: 'MATIC', supported: true },
