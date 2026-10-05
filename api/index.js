@@ -306,8 +306,15 @@ app.get('/api/metrics', metricsHandler);
  */
 app.get('/api/health', async (_req, res) => {
   const checks = await Promise.allSettled([
-    query('SELECT 1'),                                   // PostgreSQL
-    redisClient?.ping(),                                 // Redis
+  // Cada dependencia con su propio tope: con Redis caído, ioredis encola el
+  // comando hasta que reconecte y el health se quedaba colgado sin responder,
+  // justo cuando más falta hace saber QUÉ dependencia está caída.
+  const withTimeout = (p, ms = 2500) => Promise.race([
+    Promise.resolve(p),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ]);
+    withTimeout(query('SELECT 1')),                      // PostgreSQL
+    withTimeout(redisClient?.ping()),                    // Redis
     // En producción añadir:
     // fetch('https://api.esios.ree.es/indicators/1', { signal: AbortSignal.timeout(3000) }),
   ]);
