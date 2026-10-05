@@ -237,7 +237,7 @@ app.use('/api/webhooks', webhookRoutes);          // raw body — DEBE ir antes 
 // su propio parser acotado. Ver routes/mcp-public.js.
 app.use('/api/mcp/onboarding', mcpPublicRoutes);
 // Misma ruta sin el prefijo /api: es la URL pública que se anuncia a los clientes
-// (https://mcp.bez.digital/mcp/onboarding) cuando ese dominio apunta a este
+// (https://mcp.bezhas.com/mcp/onboarding) cuando ese dominio apunta a este
 // servicio. En Cloud Run no hay nginx que reescriba rutas, así que la API
 // tiene que atender la ruta publicada tal cual.
 app.use('/mcp/onboarding', mcpPublicRoutes);
@@ -283,7 +283,7 @@ app.get('/', (_req, res) => {
     status: 'OK',
     service: 'BeZhas API',
     version: '3.1.0',
-    docs: 'https://docs.bez.digital',
+    docs: 'https://docs.bezhas.com',
     endpoints: {
       health: '/api/health',
       metrics: '/api/metrics',
@@ -441,7 +441,7 @@ app.use('/api/gateway/v1', gatewayRoutes);
 // authenticateApp por delante atendería también '/api/mcp/onboarding' y
 // devolvería 401 justo a quien todavía no tiene clave.
 app.use('/api/mcp', mcpGatewayRoutes);
-app.use('/mcp', mcpGatewayRoutes);   // URL pública del conector: https://mcp.bez.digital/mcp
+app.use('/mcp', mcpGatewayRoutes);   // URL pública del conector: https://mcp.bezhas.com/mcp
 
 // Authorization Server OAuth 2.1 + PKCE del MCP — segunda vía de
 // autenticación junto a la api-key, para ChatGPT/Codex/Antigravity y
@@ -453,8 +453,8 @@ app.use('/', oauthRoutes.wellKnown); // /.well-known/oauth-authorization-server,
 app.use('/oauth', oauthRoutes.router);
 
 app.use('/api/erp', require('./routes/erp'));   // conexiones gestionadas con el ERP del cliente
-app.use('/c', require('./routes/checkout')); // hosted checkout (pay.bez.digital/c/<token>)
-app.use('/o', require('./routes/onboarding-pages')); // alta guiada (onb.bez.digital/o/<token>)
+app.use('/c', require('./routes/checkout')); // hosted checkout (pay.bezhas.com/c/<token>)
+app.use('/o', require('./routes/onboarding-pages')); // alta guiada (onb.bezhas.com/o/<token>)
 app.use('/api/cargolink', cargoLinkRoutes);
 
 // ── Enterprise lookup (interno — Edge Nodes / Nodos Empresariales) ────────────
