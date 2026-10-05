@@ -102,6 +102,16 @@ const operantRoutes = require('./routes/operant');   // ← OPERANT (gestión em
 // ─────────────────────────────────────────────────────────────────────────────
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3001;
+
+// Detrás del balanceador de Google, req.ip es la IP del propio balanceador, no
+// la del cliente: sin esto todos los visitantes comparten un único cubo en los
+// rate limiters (el global de 100/15 min y el de login de 5/15 min), y bastan
+// unas pocas peticiones para dejar fuera a todo el mundo, administrador
+// incluido. Cloud Run + ALB externo reenvían X-Forwarded-For como
+// "<valor del cliente>,<IP cliente>,<IP del balanceador>": con 2 saltos de
+// confianza se toma la IP real, y un X-Forwarded-For falsificado por el cliente
+// queda a la izquierda sin influir. Ajustable por entorno si cambia la topología.
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? (process.env.NODE_ENV === 'production' ? 2 : 0)));
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 // ═══════════════════════════════════════════════════════════════════════════════

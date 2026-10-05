@@ -23,13 +23,27 @@ const PASSWORD_HISTORY_LIMIT = 5;
 const BACKUP_CODE_COUNT = 10;
 const MIN_PASSWORD_LENGTH = 14;
 
-// Mismo esquema de cifrado que routes/identity.js: aes-256-gcm con VAULT_KEY.
-// La clave efímera de reserva sirve para desarrollo; en producción sin
-// VAULT_KEY el secreto TOTP no sobrevive a un reinicio, y eso se avisa.
-const VAULT_KEY = process.env.VAULT_KEY
-    ? Buffer.from(process.env.VAULT_KEY, 'hex')
-    : crypto.randomBytes(32);
-const HAS_PERSISTENT_VAULT_KEY = Boolean(process.env.VAULT_KEY);
+// Mismo esquema de cifrado que routes/identity.js: aes-256-gcm.
+//
+// La clave NUNCA es efímera. Antes, sin VAULT_KEY se generaba una al azar en
+// cada arranque: el secreto TOTP quedaba cifrado con una clave que desaparecía
+// al reiniciar (o que otra réplica de Cloud Run no tenía), `getTotpSecret`
+// devolvía null y el código del autenticador daba 401 con el 2FA "activado".
+// Ahora, sin VAULT_KEY válida, se deriva (HKDF) de JWT_SECRET, que ya es
+// obligatorio y estable en producción.
+function resolveVaultKey() {
+    const raw = process.env.VAULT_KEY;
+    if (raw && /^[0-9a-fA-F]{64}$/.test(raw)) {
+        return { key: Buffer.from(raw, 'hex'), persistent: true, source: 'VAULT_KEY' };
+    }
+    const { JWT_SECRET } = require('../config/secrets');
+    const key = Buffer.from(
+        crypto.hkdfSync('sha256', JWT_SECRET, 'bezhas-admin-totp', 'vault-key-v1', 32)
+    );
+    return { key, persistent: true, source: 'JWT_SECRET' };
+}
+
+const { key: VAULT_KEY, persistent: HAS_PERSISTENT_VAULT_KEY, source: VAULT_KEY_SOURCE } = resolveVaultKey();
 
 function encrypt(plaintext) {
     const iv = crypto.randomBytes(12);
@@ -236,6 +250,33 @@ async function getTotpSecret() {
     }
 }
 
+/**
+ * Estado del secreto TOTP: 'ok' | 'missing' | 'unreadable'.
+ * 'unreadable' = hay un secreto guardado pero no se puede descifrar (clave
+ * cambiada o dato corrupto): con el 2FA marcado como activo, sólo valen los
+ * códigos de respaldo hasta que se reinicie el alta.
+ */
+async function totpSecretState() {
+    const row = await load();
+    if (!row?.totp_secret_encrypted) return 'missing';
+    try {
+        decrypt(row.totp_secret_encrypted);
+        return 'ok';
+    } catch {
+        return 'unreadable';
+    }
+}
+
+/** Desactiva el 2FA y borra secreto y códigos de respaldo (para re-alta). */
+async function resetTotp() {
+    await query(
+        `UPDATE admin_credentials
+            SET totp_secret_encrypted = NULL, totp_enabled = FALSE,
+                backup_codes = '[]'::jsonb, updated_at = NOW()
+          WHERE id = 1`
+    );
+}
+
 async function enableTotp() {
     await query(
         `UPDATE admin_credentials
@@ -294,7 +335,7 @@ async function status() {
 module.exports = {
     ensureSchema, load, resolveForLogin, rotate, status,
     regenerateBackupCodes, consumeBackupCode,
-    setTotpSecret, getTotpSecret, enableTotp, markTotpVerified,
+    setTotpSecret, getTotpSecret, totpSecretState, resetTotp, enableTotp, markTotpVerified,
     completeBootstrap, validatePassword,
-    MIN_PASSWORD_LENGTH, HAS_PERSISTENT_VAULT_KEY,
+    MIN_PASSWORD_LENGTH, HAS_PERSISTENT_VAULT_KEY, VAULT_KEY_SOURCE,
 };
