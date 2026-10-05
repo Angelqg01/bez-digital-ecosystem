@@ -5,6 +5,13 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
+# NEXT_PUBLIC_* se incorpora al bundle en tiempo de BUILD, no de ejecución. El
+# .gcloudignore excluye .env.*, así que sin esto el build no recibe ninguna URL
+# y el front cae al valor por defecto del código (http://localhost:3001/api):
+# el panel cargaría pero el login iría a localhost. Sobrescribible con
+# --build-arg para otros entornos.
+ARG NEXT_PUBLIC_API_URL=https://api.bezhas.com/api
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm build
 
 # ── Stage 2: Production image ────────────────
