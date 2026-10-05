@@ -13,6 +13,11 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL=https://api.bezhas.com/api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm build
+# El vault de Obsidian vive fuera de este contexto (docs/obsidian-vault). Quien
+# construye lo copia a ./obsidian-vault antes (scripts/gcp-deploy.sh o el
+# comando de despliegue manual); si no está, se crea vacío y la pestaña
+# Obsidian muestra "no disponible" en vez de romper el build.
+RUN mkdir -p obsidian-vault
 
 # ── Stage 2: Production image ────────────────
 FROM node:22-alpine
@@ -24,6 +29,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/next.config.mjs ./next.config.mjs
+COPY --from=builder /app/obsidian-vault ./obsidian-vault
 
 RUN chown -R bezhas:bezhas /app
 USER bezhas
@@ -31,6 +37,7 @@ USER bezhas
 EXPOSE 3000
 
 ENV NODE_ENV=production
+ENV OBSIDIAN_VAULT_ROOT=/app/obsidian-vault
 ENV CI=true
 
 CMD ["node", "node_modules/next/dist/bin/next", "start"]

@@ -7,9 +7,26 @@ import { spawn } from 'node:child_process';
 
 export const dynamic = 'force-dynamic';
 
-const VAULT_ROOT = path.resolve(process.cwd(), '../../docs/obsidian-vault');
+// En local el vault es docs/obsidian-vault del monorepo. En Cloud Run el
+// contenedor sólo lleva control-center/frontend, así que `../../docs` no existe:
+// allí el vault se empaqueta dentro de la imagen y se apunta con
+// OBSIDIAN_VAULT_ROOT (ver Dockerfile y scripts/gcp-deploy.sh).
+const VAULT_ROOT = process.env.OBSIDIAN_VAULT_ROOT
+  ? path.resolve(process.env.OBSIDIAN_VAULT_ROOT)
+  : path.resolve(process.cwd(), '../../docs/obsidian-vault');
 const MAX_BYTES = 512_000;
-const CANVAS_BUILDER = path.resolve(process.cwd(), '../../obsidian-mcp/scripts/bezhasCanvasBuilder.cjs');
+const CANVAS_BUILDER = process.env.OBSIDIAN_CANVAS_BUILDER
+  ? path.resolve(process.env.OBSIDIAN_CANVAS_BUILDER)
+  : path.resolve(process.cwd(), '../../obsidian-mcp/scripts/bezhasCanvasBuilder.cjs');
+
+// Sólo lectura en producción. El vault de la imagen es una copia congelada en
+// el momento del build y el disco de Cloud Run es efímero: un episodio o un
+// cambio del auto-modelo escrito aquí "funcionaría" y desaparecería en el
+// siguiente reinicio, sin aviso. Mejor negarlo con un motivo claro. Se puede
+// forzar con OBSIDIAN_READONLY=false si el vault está en un volumen persistente.
+const READ_ONLY = process.env.OBSIDIAN_READONLY
+  ? process.env.OBSIDIAN_READONLY === 'true'
+  : process.env.NODE_ENV === 'production';
 
 type CanvasNode = {
   id: string;
@@ -90,8 +107,16 @@ function preview(content: string) {
   return content.replace(/^---[\s\S]*?---\s*/m, '').trim().slice(0, 280);
 }
 
+async function vaultExists() {
+  try {
+    return (await fs.stat(VAULT_ROOT)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 async function buildSummary() {
-  await fs.mkdir(VAULT_ROOT, { recursive: true });
+  if (!READ_ONLY) await fs.mkdir(VAULT_ROOT, { recursive: true });
   const files = await walk();
   const notes = await Promise.all(files.map(async (absolute) => {
     const relativePath = path.relative(VAULT_ROOT, absolute).replaceAll(path.sep, '/');
@@ -146,6 +171,12 @@ export async function GET(req: NextRequest) {
     if (denied) return denied;
 
   try {
+    if (!(await vaultExists())) {
+      return json({
+        status: 'unavailable',
+        error: 'El vault de Obsidian no está disponible en este despliegue (falta el directorio del vault).',
+      }, { status: 503 });
+    }
     const url = new URL(req.url);
     const notePath = url.searchParams.get('path');
     if (notePath) {
@@ -163,6 +194,13 @@ export async function POST(req: NextRequest) {
     // sin guarda, cualquiera podía leer la documentación interna del proyecto.
     const denied = await requireSuperAdmin();
     if (denied) return denied;
+
+  if (READ_ONLY) {
+    return json({
+      status: 'read_only',
+      error: 'El vault es de sólo lectura en producción: el disco del contenedor es efímero y lo escrito se perdería al reiniciar.',
+    }, { status: 403 });
+  }
 
   try {
     const body = await req.json();

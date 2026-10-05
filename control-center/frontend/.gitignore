@@ -43,3 +43,6 @@ next-env.d.ts
 # generated folders
 /sdk
 /modules
+
+# copia del vault de Obsidian para la imagen (se sincroniza al desplegar)
+/obsidian-vault

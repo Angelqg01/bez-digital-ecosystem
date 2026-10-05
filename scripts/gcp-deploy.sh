@@ -324,14 +324,15 @@ build_and_push "ai-engine"                 "bezhas-ai-gateway"
 build_and_push "agent-lib"             "bezhas-agent-runtime"
 build_and_push "bezhas-edge-node"          "bezhas-edge-node"
 log "Synchronizing shared modules for control-center build..."
-rm -rf "control-center/frontend/modules" "control-center/frontend/sdk"
+rm -rf "control-center/frontend/modules" "control-center/frontend/sdk" "control-center/frontend/obsidian-vault"
 mkdir -p "control-center/frontend/modules"
+cp -r "docs/obsidian-vault" "control-center/frontend/obsidian-vault"
 cp -r "modules/agents-ui" "control-center/frontend/modules/agents-ui"
 tar -cf - --exclude=node_modules --exclude=.git sdk | (cd control-center/frontend && tar -xf -)
 
 build_and_push "control-center/frontend"   "bezhas-control-center"
 
-rm -rf "control-center/frontend/modules" "control-center/frontend/sdk"
+rm -rf "control-center/frontend/modules" "control-center/frontend/sdk" "control-center/frontend/obsidian-vault"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
