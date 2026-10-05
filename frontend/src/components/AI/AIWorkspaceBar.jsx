@@ -89,6 +89,12 @@ export default function AIWorkspaceBar() {
                     setShowAuth(true);
                     setInput(message);
                 }
+                if (res.status === 402 && body.code === "CREDITS_EXHAUSTED") {
+                    // Sin créditos: se conserva el mensaje y se abre la ventana para suscribirse, mejorar o comprar créditos.
+                    setInput(message);
+                    void chatActions.showCreditsExhausted(body);
+                    throw Object.assign(new Error("Te has quedado sin créditos de chat."), { creditsExhausted: true });
+                }
                 throw new Error(res.status === 401 ? "Tu sesión ha caducado. Inicia sesión de nuevo."
                     : res.status === 429 ? "Demasiadas solicitudes, espera un momento."
                         : body.error || "No pude responder ahora mismo. Inténtalo de nuevo.");
@@ -122,7 +128,7 @@ export default function AIWorkspaceBar() {
             const aborted = e?.name === "AbortError";
             patchLast((m) => ({
                 ...m, streaming: false,
-                error: !aborted || undefined,
+                error: (!aborted && !e?.creditsExhausted) || undefined,
                 content: aborted ? (m.content || "_Respuesta detenida._") : (m.content || e.message),
             }));
         }
@@ -130,7 +136,7 @@ export default function AIWorkspaceBar() {
             abortRef.current = null;
             setLoading(false);
         }
-    }, [loading, loggedIn, token, conversationId, logout]);
+    }, [loading, loggedIn, token, conversationId, logout, chatActions.showCreditsExhausted]);
     const stop = () => abortRef.current?.abort();
     const newChat = () => { stop(); setMessages([]); setConversationId(undefined); setShowHistory(false); };
     const loadHistory = async () => {
@@ -278,7 +284,7 @@ export default function AIWorkspaceBar() {
                                 </>)}
                             <div ref={endRef}/>
                         </div>
-                        {chatActions.dialog && (<ChatActionDialog dialog={chatActions.dialog} plans={chatActions.plans} currentPlan={chatActions.currentPlan} docs={chatActions.docs} paying={chatActions.paying} payError={chatActions.payError} onCheckoutPlan={chatActions.checkoutPlan} onBuyBez={chatActions.buyBez} onGo={(result) => chatActions.go(result)} onClose={chatActions.close} onUpgrade={(id) => chatActions.requestById(id)} onAskDoc={(title) => { chatActions.close(); setShowActions(false); setInput(`Resume el documento «${title}» y dime lo más importante.`); textareaRef.current?.focus(); }}/>)}
+                        {chatActions.dialog && (<ChatActionDialog dialog={chatActions.dialog} plans={chatActions.plans} currentPlan={chatActions.currentPlan} docs={chatActions.docs} paying={chatActions.paying} payError={chatActions.payError} onCheckoutPlan={chatActions.checkoutPlan} onBuyBez={chatActions.buyBez} onBuyCredits={chatActions.buyCredits} onGo={(result) => chatActions.go(result)} onClose={chatActions.close} onUpgrade={(id) => chatActions.requestById(id)} onAskDoc={(title) => { chatActions.close(); setShowActions(false); setInput(`Resume el documento «${title}» y dime lo más importante.`); textareaRef.current?.focus(); }}/>)}
                     </section>)}
 
                 <form onSubmit={(e) => { e.preventDefault(); void send(input); }} className="flex items-end gap-1 rounded-3xl border border-gray-200 bg-white p-2 pl-2 shadow-xl focus-within:border-indigo-400 dark:border-gray-700 dark:bg-gray-900">

@@ -14,6 +14,7 @@ const gateway = require('../services/ai-gateway');
 const { ConversationStore, MAX_TURNS } = require('../services/ai-workspace/conversations');
 const actionsSvc = require('../services/ai-workspace/actions');
 const { HookRegistry, registerDefaultHooks } = require('../services/ai-workspace/hooks');
+const { getCreditService } = require('../services/ai-workspace/credits');
 const path = require('path');
 const crypto = require('crypto');
 
@@ -28,6 +29,11 @@ const conversations = new ConversationStore({
     filePath: process.env.NODE_ENV === 'test' || process.env.AI_CONVERSATIONS_PERSIST === 'false' ? null
         : (process.env.AI_CONVERSATIONS_PATH || path.join(__dirname, '../data/ai-conversations.json')),
 });
+
+const credits = getCreditService();
+
+// Responde un error con su estado y, si lo trae, el detalle pensado para el cliente (p. ej. 402 con las opciones de pago).
+const sendError = (res, err) => res.status(err.status).json({ error: err.message, ...(err.payload || {}) });
 
 // Límite por usuario para las llamadas que cuestan IA (chat y chat/stream). Corre tras `protect`: siempre hay usuario.
 const aiLimiter = rateLimit({
@@ -89,6 +95,9 @@ const validConversationId = (id) => (/^[\w-]{8,64}$/.test(id || '') ? id : null)
 async function prepareTurn(principal, body) {
     const { message } = await hooks.run('beforeChat', { principal, message: typeof body?.message === 'string' ? body.message : '' });
 
+    // Cuenta el mensaje (cuota del plan o créditos comprados); sin saldo lanza 402 con las opciones.
+    const receipt = await credits.consume(principal);
+
     const convId = validConversationId(body.conversationId) || crypto.randomUUID();
     const conv = conversations.getOrCreate(principal.userId, convId); // el userId impide leer conversaciones ajenas
 
@@ -99,7 +108,7 @@ async function prepareTurn(principal, body) {
         : message;
 
     return {
-        message, convId, conv, sources, context,
+        message, convId, conv, sources, context, receipt,
         // Acciones sugeridas SOLO a partir del mensaje del usuario (nunca del contexto recuperado ni del modelo).
         actions: actionsSvc.suggestActions(principal, message),
         flagged: scan(message).suspicious,
@@ -112,8 +121,9 @@ router.post('/chat', aiLimiter, async (req, res) => {
     const principal = principalOr401(req, res);
     if (!principal) return;
 
+    let turn;
     try {
-        const turn = await prepareTurn(principal, req.body);
+        turn = await prepareTurn(principal, req.body);
         const { provider, text } = await gateway.complete({
             system: SYSTEM_PROMPT, messages: turn.messages, maxTokens: 800, sources: turn.sources, contextText: turn.context,
         });
@@ -122,7 +132,8 @@ router.post('/chat', aiLimiter, async (req, res) => {
         conversations.append(turn.conv, turn.message, safeText);
         res.json({ conversationId: turn.convId, reply: safeText, sources: turn.sources, actions: turn.actions, provider, flagged: turn.flagged });
     } catch (err) {
-        if (err.status) return res.status(err.status).json({ error: err.message });
+        if (turn) await credits.refund(turn.receipt); // el modelo falló: no se cobra el mensaje
+        if (err.status) return sendError(res, err);
         console.error('ai-workspace chat error:', err.message);
         res.status(500).json({ error: 'No se pudo procesar el mensaje' });
     }
@@ -137,7 +148,7 @@ router.post('/chat/stream', aiLimiter, async (req, res) => {
     try {
         turn = await prepareTurn(principal, req.body);
     } catch (err) {
-        if (err.status) return res.status(err.status).json({ error: err.message });
+        if (err.status) return sendError(res, err);
         console.error('ai-workspace stream error:', err.message);
         return res.status(500).json({ error: 'No se pudo procesar el mensaje' });
     }
@@ -179,9 +190,22 @@ router.post('/chat/stream', aiLimiter, async (req, res) => {
                 if (safeText !== text && !res.writableEnded) send('replace', { text: safeText });
             } catch (e) { safeText = ''; send('error', { error: 'Respuesta bloqueada por seguridad' }); }
         }
+        if (!text) await credits.refund(turn.receipt); // sin respuesta (error o parada inmediata): no se cobra
         // Se guarda lo generado ya saneado (completo o parcial si el usuario paró la respuesta).
         if (safeText) conversations.append(turn.conv, turn.message, safeText);
         if (!res.writableEnded) { send('done', { conversationId: turn.convId, length: safeText.length }); res.end(); }
+    }
+});
+
+// GET /api/ai-workspace/credits  (saldo: cuota del plan y créditos comprados, más los packs disponibles)
+router.get('/credits', async (req, res) => {
+    const principal = principalOr401(req, res);
+    if (!principal) return;
+    try {
+        res.json({ ...(await credits.status(principal)), packs: require('../config/credit-packs').publicPacks() });
+    } catch (err) {
+        console.error('ai-workspace credits error:', err.message);
+        res.status(500).json({ error: 'No se pudo consultar el saldo' });
     }
 });
 

@@ -187,4 +187,37 @@ describe('useChatActions', () => {
             expect(result.current.dialog.type).toBe('bez');
         });
     });
+
+    describe('créditos agotados', () => {
+        test('showCreditsExhausted abre el diálogo con planes y packs del servidor', async () => {
+            const api = makeApi({ 'GET /api/ai-workspace/plans': { plans: [{ id: 'creator', name: 'Creator' }], current: 'creator' } });
+            const { result } = renderHook(() => useChatActions(api));
+            await act(async () => { await result.current.showCreditsExhausted({ kind: 'upgrade', plan: 'creator', packs: [{ id: 'chat_100' }], usage: { credits: 0 } }); });
+            expect(result.current.dialog).toMatchObject({ type: 'credits', kind: 'upgrade', plan: 'creator', packs: [{ id: 'chat_100' }] });
+            expect(result.current.plans).toHaveLength(1);
+        });
+
+        test('si los planes no cargan, el diálogo se abre igualmente', async () => {
+            const api = makeApi({ 'GET /api/ai-workspace/plans': httpError(500, {}) });
+            const { result } = renderHook(() => useChatActions(api));
+            await act(async () => { await result.current.showCreditsExhausted({ kind: 'subscribe', packs: [] }); });
+            expect(result.current.dialog.type).toBe('credits');
+        });
+
+        test('buyCredits envía solo el id del pack y redirige a Stripe', async () => {
+            const api = makeApi({ 'POST /api/checkout/credits': { success: true, url: 'https://checkout.stripe.com/c/pay/cs_test_abc' } });
+            const { result } = renderHook(() => useChatActions(api));
+            await act(async () => { await result.current.buyCredits('chat_500'); });
+            expect(api.post).toHaveBeenCalledWith('/api/checkout/credits', { packId: 'chat_500' });
+            expect(assign).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/cs_test_abc');
+        });
+
+        test('una mejora en sitio (sin URL) muestra el aviso y no redirige', async () => {
+            const api = makeApi({ 'POST /api/checkout/plan': { success: true, upgraded: true, plan: 'business' } });
+            const { result } = renderHook(() => useChatActions(api));
+            await act(async () => { await result.current.checkoutPlan('business', 'monthly'); });
+            expect(result.current.dialog).toMatchObject({ type: 'notice' });
+            expect(assign).not.toHaveBeenCalled();
+        });
+    });
 });

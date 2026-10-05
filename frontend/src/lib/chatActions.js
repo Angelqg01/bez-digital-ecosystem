@@ -26,6 +26,13 @@ export function classifyLink(href) {
     return { type: 'blocked' };
 }
 
+/** Plan con precio mayor que el actual y comprable: los que ofrecer al mejorar. */
+export function upgradeOptions(plans, currentPlan) {
+    const cur = (plans || []).find((p) => p.id === currentPlan);
+    const curPrice = cur && Number(cur.priceMonthly) > 0 ? Number(cur.priceMonthly) : 0;
+    return (plans || []).filter((p) => p.purchasable && Number(p.priceMonthly) > curPrice && p.id !== currentPlan);
+}
+
 /** Solo se redirige al pago alojado de Stripe: https, host exacto, sin credenciales ni puerto. */
 export function isStripeCheckoutUrl(href) {
     if (typeof href !== 'string' || href.length > 2000) return false;

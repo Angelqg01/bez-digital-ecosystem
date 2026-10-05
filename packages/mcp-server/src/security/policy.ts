@@ -24,6 +24,7 @@ export const TOOL_RISK: Record<string, RiskTier> = {
     list_plans: 'read_only',
     create_plan_checkout: 'elevated',
     create_bez_checkout: 'elevated',
+    create_credits_checkout: 'elevated',
 
     // Cadena y gobernanza
     analyze_gas_strategy: 'standard',

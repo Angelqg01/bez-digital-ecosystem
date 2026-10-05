@@ -90,4 +90,19 @@ export function registerBillingTools(server: any): void {
             } catch (e: any) { return ko(e.message, e.code); }
         },
     );
+
+    server.tool(
+        'create_credits_checkout',
+        'Genera el enlace de pago de Stripe para comprar un pack de créditos de chat (pago único en EUR). Los créditos se suman a la cuenta al confirmarse el pago.',
+        {
+            packId: z.enum(['chat_100', 'chat_500', 'chat_2000']).describe('Pack de créditos'),
+        },
+        async ({ packId }: { packId: string }) => {
+            try {
+                const { data } = await backend('post', '/credits', { packId });
+                if (!esUrlDeStripe(data.url)) return ko('El servicio de pagos devolvió una URL no válida.');
+                return ok({ success: true, checkoutUrl: data.url, pack: data.pack, credits: data.credits, amount: data.amount, currency: data.currency, notice: AVISO });
+            } catch (e: any) { return ko(e.message, e.code); }
+        },
+    );
 }
