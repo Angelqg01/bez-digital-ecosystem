@@ -9,9 +9,9 @@ import { ethers } from 'ethers';
 const BEZ_CONTRACT_ADDRESS = import.meta.env.VITE_BEZ_TOKEN_ADDRESS
   || '0x42000000000000000000000000000000000000BE';
 const PAYMASTER_ADDRESS = import.meta.env.VITE_PAYMASTER_ADDRESS || '';
-const PAYMASTER_API_URL = import.meta.env.VITE_PAYMASTER_API_URL || 'https://paymaster.bez.digital';
+const PAYMASTER_API_URL = import.meta.env.VITE_PAYMASTER_API_URL || 'https://paymaster.bezhas.com';
 const BEZHAS_CHAIN_ID = Number(import.meta.env.VITE_BEZHAS_CHAIN_ID) || 42169;
-const BEZHAS_EXPLORER_URL = import.meta.env.VITE_EXPLORER_URL || 'https://explorer.bez.digital';
+const BEZHAS_EXPLORER_URL = import.meta.env.VITE_EXPLORER_URL || 'https://explorer.bezhas.com';
 
 // ─── FIX #6: ABI completa con EIP-2612 (ERC20Permit) ────────────────────────
 const BEZ_ABI = [
@@ -55,7 +55,7 @@ async function ensureCorrectNetwork(provider) {
         chainId: `0x${BEZHAS_CHAIN_ID.toString(16)}`,
         chainName: 'BeZhas L2',
         nativeCurrency: { name: 'BEZ', symbol: 'BEZ', decimals: 18 },
-        rpcUrls: [import.meta.env.VITE_BEZHAS_RPC_URL || 'https://rpc.bez.digital'],
+        rpcUrls: [import.meta.env.VITE_BEZHAS_RPC_URL || 'https://rpc.bezhas.com'],
         blockExplorerUrls: [BEZHAS_EXPLORER_URL],
       }]);
     } else {

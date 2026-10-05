@@ -65,10 +65,10 @@ gcloud run logs read --service bezhas-backend --limit 50
 ## Puertos y URLs
 | Servicio | Dev | Prod |
 |---|---|---|
-| Backend API | localhost:3001 | api.bez.digital |
-| Frontend | localhost:5173 | bez.digital |
-| WebSocket | localhost:3002 | ws.bez.digital:3002 |
-| AEGIS | localhost:8000 | aegis.bez.digital |
+| Backend API | localhost:3001 | api.bezhas.com |
+| Frontend | localhost:5173 | bezhas.com |
+| WebSocket | localhost:3002 | ws.bezhas.com:3002 |
+| AEGIS | localhost:8000 | aegis.bezhas.com |
 
 ## Variables de Entorno Críticas
 - `HOT_WALLET_PRIVATE_KEY` — Wallet para dispensar BEZ tokens

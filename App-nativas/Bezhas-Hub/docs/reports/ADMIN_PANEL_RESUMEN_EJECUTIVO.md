@@ -407,9 +407,9 @@ El panel está **completamente funcional** y listo para ser usado en producción
 
 Para más información, soporte o feedback:
 
-- 📧 **Email**: admin@bez.digital
+- 📧 **Email**: admin@bezhas.com
 - 💬 **Discord**: [BeZhas Community](https://discord.gg/bezhas)
-- 📚 **Docs**: [docs.bez.digital](https://docs.bez.digital)
+- 📚 **Docs**: [docs.bezhas.com](https://docs.bezhas.com)
 - 🐛 **Issues**: [GitHub](https://github.com/bezhas/bezhas-web3/issues)
 
 ---

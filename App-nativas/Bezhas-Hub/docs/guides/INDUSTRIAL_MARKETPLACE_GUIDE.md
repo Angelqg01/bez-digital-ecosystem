@@ -900,7 +900,7 @@ const [filters, setFilters] = useState({
 **Contacto:**
 - GitHub Issues: Para bugs y feature requests
 - Discord: Canal #marketplace-dev
-- Email: dev@bez.digital
+- Email: dev@bezhas.com
 
 ---
 

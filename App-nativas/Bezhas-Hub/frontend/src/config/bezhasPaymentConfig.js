@@ -3,7 +3,7 @@
 // Sincronizado 2026-07-16 con el catálogo de Stripe y con
 // backend/config/plans.js (fuente canónica). Cada Payment Link de plan lleva
 // en Stripe metadata { plan_id, billing } y redirige tras el pago a
-// hub.bez.digital/onboarding. El webhook del gateway provisiona el plan
+// hub.bezhas.com/onboarding. El webhook del gateway provisiona el plan
 // usando client_reference_id como identificador de la app/organización:
 // SIEMPRE abrir los links de plan vía buildStripeCheckoutUrl() para
 // adjuntarlo — sin él, la compra requiere reconciliación manual.
@@ -30,8 +30,8 @@ export const STRIPE_PAYMENT_LINKS = {
 };
 
 export const BANK_TRANSFER_DETAILS = {
-  beneficiaryAlias: 'bez.digital',
-  accountHolder: 'bez.digital',
+  beneficiaryAlias: 'bezhas.com',
+  accountHolder: 'bezhas.com',
   iban: 'ES77 1465 0100 91 1766376210',
   bic: 'INGDESMMXXX',
   bank: 'ING',

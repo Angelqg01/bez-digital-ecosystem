@@ -12,7 +12,7 @@
  * Settings (Admin > Settings > General is replaced by the gateway form below):
  *   - api_key        registered-app key -> sent as `x-api-key`
  *   - webhook_secret shared secret to verify status callbacks (HMAC-SHA256)
- *   - base_url       https://api.bez.digital (default)
+ *   - base_url       https://api.bezhas.com (default)
  */
 
 if (!defined('ABSPATH')) exit;
@@ -38,7 +38,7 @@ add_action('plugins_loaded', function () {
             $this->title          = $this->get_option('title', 'Pay with BeZhas (card / bank)');
             $this->api_key        = $this->get_option('api_key');
             $this->webhook_secret = $this->get_option('webhook_secret');
-            $this->base_url       = rtrim($this->get_option('base_url', 'https://api.bez.digital'), '/');
+            $this->base_url       = rtrim($this->get_option('base_url', 'https://api.bezhas.com'), '/');
 
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, [$this, 'process_admin_options']);
         }
@@ -49,7 +49,7 @@ add_action('plugins_loaded', function () {
                 'title'          => ['title' => 'Title', 'type' => 'text', 'default' => 'Pay with BeZhas (card / bank)'],
                 'api_key'        => ['title' => 'API Key', 'type' => 'password', 'description' => 'Registered-app key (x-api-key).'],
                 'webhook_secret' => ['title' => 'Webhook Secret', 'type' => 'password', 'description' => 'Shared secret to verify status callbacks.'],
-                'base_url'       => ['title' => 'API Base URL', 'type' => 'text', 'default' => 'https://api.bez.digital'],
+                'base_url'       => ['title' => 'API Base URL', 'type' => 'text', 'default' => 'https://api.bezhas.com'],
             ];
         }
 

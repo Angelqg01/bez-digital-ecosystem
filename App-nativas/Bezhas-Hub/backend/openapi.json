@@ -3,15 +3,15 @@
   "info": {
     "title": "BeZhas API - Developer Documentation",
     "version": "2.0.0",
-    "description": "\n# BeZhas Public API\n\nAPI RESTful para integrar BeZhas Quality Oracle en tu aplicación.\n\n## 🔐 Autenticación\nTodas las peticiones requieren un API Key:\n```\nX-API-Key: YOUR_API_KEY\n```\n\n## 📊 Rate Limits\n- **Free Tier**: 100 req/hour\n- **Pro Tier**: 1000 req/hour  \n- **Enterprise**: Sin límite\n\n## 🌐 Endpoints Públicos\nSolo se documentan endpoints seguros para desarrolladores externos.\n\n## 📝 Cómo obtener tu API Key\n1. Visita https://bez.digital/developers\n2. Crea una cuenta o inicia sesión\n3. Ve a Settings > Developer\n4. Genera tu API Key\n            ",
+    "description": "\n# BeZhas Public API\n\nAPI RESTful para integrar BeZhas Quality Oracle en tu aplicación.\n\n## 🔐 Autenticación\nTodas las peticiones requieren un API Key:\n```\nX-API-Key: YOUR_API_KEY\n```\n\n## 📊 Rate Limits\n- **Free Tier**: 100 req/hour\n- **Pro Tier**: 1000 req/hour  \n- **Enterprise**: Sin límite\n\n## 🌐 Endpoints Públicos\nSolo se documentan endpoints seguros para desarrolladores externos.\n\n## 📝 Cómo obtener tu API Key\n1. Visita https://bezhas.com/developers\n2. Crea una cuenta o inicia sesión\n3. Ve a Settings > Developer\n4. Genera tu API Key\n            ",
     "contact": {
       "name": "BeZhas Developer Support",
-      "email": "dev@bez.digital",
-      "url": "https://bez.digital/developers"
+      "email": "dev@bezhas.com",
+      "url": "https://bezhas.com/developers"
     },
     "license": {
       "name": "Proprietary",
-      "url": "https://bez.digital/terms"
+      "url": "https://bezhas.com/terms"
     }
   },
   "servers": [
@@ -20,7 +20,7 @@
       "description": "Development Server"
     },
     {
-      "url": "https://api.bez.digital/api",
+      "url": "https://api.bezhas.com/api",
       "description": "Production Server"
     }
   ],
@@ -186,7 +186,7 @@
       "description": "Endpoints para gestionar servicios con garantía de calidad",
       "externalDocs": {
         "description": "Ver Whitepaper",
-        "url": "https://bez.digital/whitepaper"
+        "url": "https://bezhas.com/whitepaper"
       }
     },
     {

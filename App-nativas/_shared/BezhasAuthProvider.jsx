@@ -49,7 +49,7 @@ function envVar(name, fallback) {
 /** API core: login/registro fiat y wallet. */
 function coreApiBase() {
   return normalizeApiBase(
-    envVar('VITE_API_URL') || envVar('VITE_AUTH_API') || 'https://api.bez.digital',
+    envVar('VITE_API_URL') || envVar('VITE_AUTH_API') || 'https://api.bezhas.com',
   );
 }
 

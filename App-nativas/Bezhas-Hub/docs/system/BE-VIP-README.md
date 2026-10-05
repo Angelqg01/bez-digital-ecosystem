@@ -361,4 +361,4 @@ MIT License - Ver LICENSE file para detalles
 
 **Versión:** 1.0.0  
 **Última actualización:** Enero 2025  
-**Soporte:** support@bez.digital
+**Soporte:** support@bezhas.com

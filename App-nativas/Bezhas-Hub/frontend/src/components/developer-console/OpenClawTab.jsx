@@ -223,7 +223,7 @@ const OpenClawTab = ({ address }) => {
             {/* SDK Links / Docs */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <button 
-                    onClick={() => window.open('https://docs.bez.digital/ai/openclaw', '_blank')}
+                    onClick={() => window.open('https://docs.bezhas.com/ai/openclaw', '_blank')}
                     className="p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 flex items-center justify-between hover:border-purple-500 transition-all group shadow-xl shadow-purple-500/5"
                 >
                     <div className="flex items-center gap-4">

@@ -80,7 +80,7 @@ test('normalizeApiBase deja la base en la raíz del servicio', () => {
   assert.equal(normalizeApiBase('http://localhost:3001/api/'), 'http://localhost:3001');
   assert.equal(normalizeApiBase('http://localhost:3001/'), 'http://localhost:3001');
   assert.equal(normalizeApiBase('http://localhost:3001'), 'http://localhost:3001');
-  assert.equal(normalizeApiBase('https://api.bez.digital/api'), 'https://api.bez.digital');
+  assert.equal(normalizeApiBase('https://api.bezhas.com/api'), 'https://api.bezhas.com');
 });
 
 test('normalizeApiBase conserva la base vacía (rutas relativas por proxy)', () => {

@@ -49,7 +49,7 @@ $state = $online
         <?php endif; ?>
         <tr>
             <th>Developer Console</th>
-            <td><a href="https://bez.digital/developer-console" target="_blank" rel="noopener"><?php esc_html_e('Abrir en BeZhas Hub', 'bezhas-hub'); ?></a></td>
+            <td><a href="https://bezhas.com/developer-console" target="_blank" rel="noopener"><?php esc_html_e('Abrir en BeZhas Hub', 'bezhas-hub'); ?></a></td>
         </tr>
     </table>
 </div>

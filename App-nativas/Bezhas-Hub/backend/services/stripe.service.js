@@ -127,7 +127,7 @@ async function createSubscriptionCheckoutSession(plan, userInfo) {
                         product_data: {
                             name: `BeZhas Premium - ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
                             description: `Premium features with ${plan} access`,
-                            images: ['https://bez.digital/assets/premium-badge.png'],
+                            images: ['https://bezhas.com/assets/premium-badge.png'],
                             metadata: {
                                 type: 'subscription',
                                 plan: plan
@@ -298,7 +298,7 @@ async function createTokenPurchaseSession(tokenAmount, userInfo) {
                         product_data: {
                             name: `${tokenAmount} BZS Tokens`,
                             description: `Purchase ${tokenAmount} BeZhas (BZS) tokens`,
-                            images: ['https://bez.digital/assets/bzs-token.png'],
+                            images: ['https://bezhas.com/assets/bzs-token.png'],
                             metadata: {
                                 type: 'token_purchase',
                                 tokenAmount: tokenAmount.toString()
@@ -1032,7 +1032,7 @@ async function processNFTMint(metadata, session) {
         const nftContract = new ethers.Contract(nftContractAddress, NFT_ABI, wallet);
 
         // Prepare metadata URI (could be IPFS or centralized storage)
-        const tokenURI = metadata.tokenURI || `https://api.bez.digital/nft/metadata/${metadata.nftId}`;
+        const tokenURI = metadata.tokenURI || `https://api.bezhas.com/nft/metadata/${metadata.nftId}`;
 
         // Mint NFT to user's wallet
         const tx = await nftContract.safeMint(metadata.walletAddress, tokenURI);

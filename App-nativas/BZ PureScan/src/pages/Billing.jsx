@@ -270,7 +270,7 @@ const Billing = () => {
           </p>
           {/* ─── FIX #7: Botón de docs con aria-label descriptivo ─────── */}
           <button
-            onClick={() => window.open('https://docs.bez.digital/purescan-sdk', '_blank')}
+            onClick={() => window.open('https://docs.bezhas.com/purescan-sdk', '_blank')}
             className="text-bz-neon text-sm font-bold flex items-center gap-1 hover:underline focus:outline-none focus:ring-2 focus:ring-bz-neon/50 rounded"
             aria-label="View PureScan Enterprise SDK documentation"
           >

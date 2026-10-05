@@ -20,7 +20,7 @@ const apps = [
   {
     id: 'hub',
     name: 'BeZhas Hub',
-    url: 'https://bez.digital/dashboard',
+    url: 'https://bezhas.com/dashboard',
     icon: <LayoutGrid size={24} />,
     color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
     description: 'SSO y consola central'
@@ -28,7 +28,7 @@ const apps = [
   {
     id: 'wallet',
     name: 'BeZhas Wallet',
-    url: 'https://bez.digital/dashboard/wallet',
+    url: 'https://bezhas.com/dashboard/wallet',
     icon: <Wallet size={24} />,
     color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
     description: 'Pagos y gobernanza'
@@ -36,7 +36,7 @@ const apps = [
   {
     id: 'gas',
     name: 'Gas Tank',
-    url: 'https://bez.digital/dashboard/gas',
+    url: 'https://bezhas.com/dashboard/gas',
     icon: <Fuel size={24} />,
     color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
     description: 'Gestión de gas fee'
@@ -44,7 +44,7 @@ const apps = [
   {
     id: 'nodes',
     name: 'Edge Nodes',
-    url: 'https://bez.digital/dashboard/validators',
+    url: 'https://bezhas.com/dashboard/validators',
     icon: <Server size={24} />,
     color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
     description: 'DePIN y recursos'
@@ -52,7 +52,7 @@ const apps = [
   {
     id: 'vision',
     name: 'Vision Scan',
-    url: 'https://bez.digital/dashboard/qr',
+    url: 'https://bezhas.com/dashboard/qr',
     icon: <Eye size={24} />,
     color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400',
     description: 'IA y escaneo'
@@ -60,7 +60,7 @@ const apps = [
   {
     id: 'capital',
     name: 'BZ Capital',
-    url: 'https://bez.digital/dashboard/farming',
+    url: 'https://bezhas.com/dashboard/farming',
     icon: <LineChart size={24} />,
     color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
     description: 'DeFi y Staking'
@@ -68,7 +68,7 @@ const apps = [
   {
     id: 'prestige',
     name: 'BZ Prestige',
-    url: 'https://bez.digital/dashboard/nfts',
+    url: 'https://bezhas.com/dashboard/nfts',
     icon: <Crown size={24} />,
     color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
     description: 'Luxury DPP y royalties'
@@ -76,7 +76,7 @@ const apps = [
   {
     id: 'cargo',
     name: 'BZ CargoLink',
-    url: 'https://bez.digital/dashboard/sectors',
+    url: 'https://bezhas.com/dashboard/sectors',
     icon: <Ship size={24} />,
     color: 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
     description: 'Logística y manifiestos'
@@ -84,7 +84,7 @@ const apps = [
   {
     id: 'energy',
     name: 'BEZ Energy',
-    url: 'https://bez.digital/enterprise',
+    url: 'https://bezhas.com/enterprise',
     icon: <Droplets size={24} />,
     color: 'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
     description: 'Energía tokenizada'
@@ -92,7 +92,7 @@ const apps = [
   {
     id: 'purescan',
     name: 'BZ PureScan',
-    url: 'https://bez.digital/dashboard/qr',
+    url: 'https://bezhas.com/dashboard/qr',
     icon: <ShieldCheck size={24} />,
     color: 'bg-lime-100 text-lime-600 dark:bg-lime-900/30 dark:text-lime-400',
     description: 'Certificación y auditoría'
@@ -100,7 +100,7 @@ const apps = [
   {
     id: 'sphere',
     name: 'BZ Sphere',
-    url: 'https://bez.digital/solutions',
+    url: 'https://bezhas.com/solutions',
     icon: <Globe2 size={24} />,
     color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
     description: 'Mapa operativo global'
@@ -108,7 +108,7 @@ const apps = [
   {
     id: 'genesis',
     name: 'BZ Genesis',
-    url: 'https://bez.digital/dashboard',
+    url: 'https://bezhas.com/dashboard',
     icon: <Cpu size={24} />,
     color: 'bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-400',
     description: 'Onboarding de proyectos'
@@ -116,7 +116,7 @@ const apps = [
   {
     id: 'pay',
     name: 'Pay Manager',
-    url: 'https://bez.digital/payments',
+    url: 'https://bezhas.com/payments',
     icon: <Coins size={24} />,
     color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
     description: 'Cobros y monetización'
@@ -133,7 +133,7 @@ export default function AppSwitcher() {
     if (isLocal) {
       return app.url;
     }
-    // Mapeo de producción para bez.digital
+    // Mapeo de producción para bezhas.com
     const prodPaths = {
       'hub': '/dashboard',
       'wallet': '/dashboard/wallet',
@@ -203,7 +203,7 @@ export default function AppSwitcher() {
           </div>
           
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 text-center">
-            <a href="https://bez.digital" target="_blank" rel="noopener noreferrer" className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 font-medium flex items-center justify-center gap-1">
+            <a href="https://bezhas.com" target="_blank" rel="noopener noreferrer" className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 font-medium flex items-center justify-center gap-1">
               Ver ecosistema completo <ExternalLink size={14} />
             </a>
           </div>

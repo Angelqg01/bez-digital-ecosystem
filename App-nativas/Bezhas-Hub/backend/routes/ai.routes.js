@@ -109,17 +109,17 @@ Clasifica al lead en UNA de estas categorías:
 1. **DESARROLLADOR/EMPRESA** (Interés en API/SDK):
    - Palabras clave: developer, CTO, tech lead, API, integration, automation, Full Stack, DevOps.
    - Enfoque del mensaje: Ahorro del 85% en costes de desarrollo blockchain, SDK plug-and-play, Developer Console con API Keys, Time-to-Market reducido de 6 meses a 2 semanas.
-   - CTA: "Explora nuestra Developer Console en bez.digital/developer"
+   - CTA: "Explora nuestra Developer Console en bezhas.com/developer"
 
 2. **TOKENIZADOR** (RWA - Real World Assets):
    - Palabras clave: real estate, asset manager, tokenization, property, commodities, compliance, legal.
    - Enfoque del mensaje: Quality Oracle para validación off-chain, contratos BeZhasQualityEscrow para auditoría inmutable, tokenización fraccionada segura en Polygon.
-   - CTA: "Descubre nuestro proceso de tokenización en bez.digital/rwa"
+   - CTA: "Descubre nuestro proceso de tokenización en bezhas.com/rwa"
 
 3. **INVERSOR** (BEZ-Coin y Gobernanza):
    - Palabras clave: investor, VC, fund, capital, ROI, yield, governance, DeFi, portfolio.
    - Enfoque del mensaje: Real Yield por comisiones del protocolo, mecanismo deflacionario, poder de gobernanza DAO, 20% descuento pagando con BEZ-Coin.
-   - CTA: "Stakea BEZ-Coin y gobierna el protocolo en bez.digital/governance"
+   - CTA: "Stakea BEZ-Coin y gobierna el protocolo en bezhas.com/governance"
 
 FORMATO DE RESPUESTA OBLIGATORIO:
 Responde en formato JSON con esta estructura exacta:
@@ -135,7 +135,7 @@ Responde en formato JSON con esta estructura exacta:
 REGLAS:
 - Sé breve, profesional y humano. NUNCA suenes como un bot o vendedor agresivo.
 - El mensaje debe tener máximo 300 palabras.
-- Siempre incluye un CTA específico al área relevante de bez.digital.
+- Siempre incluye un CTA específico al área relevante de bezhas.com.
 - Si detectas que habla español, responde en español. Si habla inglés, responde en inglés.
 - El leadScore se calcula así: Relevancia del perfil (0-40) + Nivel de cargo (0-30) + Señales de compra (0-30).`,
         model: 'gemini-2.0-flash',
@@ -159,7 +159,7 @@ REGLAS:
 REGLAS:
 - Usa formato apto para LinkedIn (profesional, con emojis moderados) o X/Twitter (threads cortos y punzantes).
 - Incluye datos específicos: "El SDK de BeZhas reduce costos de integración blockchain en un 85%".
-- Siempre cierra con un CTA hacia bez.digital.
+- Siempre cierra con un CTA hacia bezhas.com.
 - Adapta el tono según la plataforma: LinkedIn = profesional/educativo, X = directo/impactante.
 - Usa hashtags relevantes: #Web3 #Blockchain #RWA #DeFi #BeZhas #Tokenization`,
         model: 'gemini-2.0-flash',
@@ -450,7 +450,7 @@ ${lang}
 Genera una respuesta técnica pero accesible que:
 1. Reconozca la preocupación legítimamente.
 2. Explique cómo BeZhas la resuelve con datos concretos (ahorro 85%, auditorías on-chain, Real Yield, etc.).
-3. Cierre con un CTA hacia la funcionalidad relevante en bez.digital.
+3. Cierre con un CTA hacia la funcionalidad relevante en bezhas.com.
 
 Máximo 200 palabras. Tono profesional y empático.`;
 

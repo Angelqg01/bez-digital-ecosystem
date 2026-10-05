@@ -42,7 +42,7 @@ add_action('woocommerce_payment_complete', function($order_id) {
     // Llamar API para crear transacción de cargo
     $curl = curl_init();
     curl_setopt_array($curl, [
-        CURLOPT_URL => 'https://api.bez.digital:3001/api/cargolink/transactions',
+        CURLOPT_URL => 'https://api.bezhas.com:3001/api/cargolink/transactions',
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
             'x-api-key: ' . get_option('bezhas_api_key'),
@@ -478,7 +478,7 @@ import axios from 'axios';
 class EnergyTrading {
   constructor(apiKey) {
     this.client = axios.create({
-      baseURL: 'https://api.bez.digital:3001',
+      baseURL: 'https://api.bezhas.com:3001',
       headers: { 'x-api-key': apiKey }
     });
   }
@@ -560,7 +560,7 @@ setInterval(async () => {
 // Verificar identidad de usuario
 async function verifyUserIdentity(userId) {
   const response = await fetch(
-    `https://api.bez.digital:3001/api/identity/profile/${userId}`,
+    `https://api.bezhas.com:3001/api/identity/profile/${userId}`,
     {
       headers: { 'x-api-key': process.env.BEZHAS_API_KEY }
     }
@@ -625,4 +625,4 @@ app.use(async (req, res, next) => {
 
 ---
 
-**¿Preguntas? support@bez.digital**
+**¿Preguntas? support@bezhas.com**
