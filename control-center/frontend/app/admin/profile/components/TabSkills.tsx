@@ -11,6 +11,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BrainCircuit, RefreshCw, ChevronDown, ChevronUp, Sparkles, Cpu, MessageSquare, Tag, Clock } from 'lucide-react';
 
+
+// NEXT_PUBLIC_API_URL ya incluye el prefijo /api (https://api.bezhas.com/api):
+// concatenarle otro /api/agent/... daba /api/api/agent/... y un 404. Se
+// normaliza aquí para que valga con o sin el sufijo, en local y en producción.
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
+    .replace(/\/+$/, '')
+    .replace(/\/api$/, '') + '/api';
+
 interface SkillEntry {
     id: string;
     created_at: string;
@@ -76,8 +84,8 @@ function SkillRow({ skill }: { skill: SkillEntry }) {
         try {
             const token = localStorage.getItem('bezhas_token');
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/agent/skills/${skill.id}`,
-                { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+                `${API_BASE}/agent/skills/${skill.id}`,
+                { credentials: 'include', headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
             if (res.ok) {
                 const data = await res.json();
@@ -184,8 +192,8 @@ export default function TabSkills() {
         try {
             const token = localStorage.getItem('bezhas_token');
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/agent/skills?limit=100`,
-                { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+                `${API_BASE}/agent/skills?limit=100`,
+                { credentials: 'include', headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
             if (res.ok) {
                 const data = await res.json();
