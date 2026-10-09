@@ -348,11 +348,14 @@ describe('acceso directo a las apps nativas', () => {
         const abrir = await request(app()).post('/api/ai-workspace/actions/app_cargolink/open').set('Authorization', `Bearer ${tokenDe(1)}`);
         expect(abrir.status).toBe(200);
         expect(abrir.body.kind).toBe('app');
-        expect(abrir.body.href).toMatch(/^https:\/\/bezhas-cargolink-/);
+        expect(abrir.body.href).toMatch(/^https:\/\/bezhas-cargolink-.*\.a\.run\.app$/);
     });
     it('sólo acepta destinos https de la lista cerrada', () => {
         const { isSafeAppUrl } = require('../../services/ai-workspace/actions');
         expect(isSafeAppUrl('https://app.bezhas.com/x')).toBe(true);
+        expect(isSafeAppUrl('https://bezhas-hub-afi7mfxzxa-uc.a.run.app')).toBe(true);
+        expect(isSafeAppUrl('https://bezhas-hub-969634612038.us-central1.run.app')).toBe(true);
+        expect(isSafeAppUrl('https://bezhas-hub-afi7mfxzxa-uc.a.run.app.evil.com')).toBe(false);
         expect(isSafeAppUrl('https://evil.com')).toBe(false);
         expect(isSafeAppUrl('https://bezhas.com.evil.com')).toBe(false);
         expect(isSafeAppUrl('http://app.bezhas.com')).toBe(false);
