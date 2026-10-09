@@ -1,0 +1,39 @@
+# 08 · La barra de chat del equipo (AIWorkspaceBar) en la landing local, con la sesión de la empresa
+# Ejecutado: 2026-10-09 · http://localhost:3000/support · navegador integrado
+# Sesión: JWT de la empresa de prueba inyectado en localStorage (bezhas_token) desde un endpoint local temporal.
+
+barra visible .................................. true
+placeholder (con sesión) ....................... "Pregunta a BeZhas AI…"
+
+[Pregunta] ¿Cómo se tokenizan activos reales como maquinaria o inmuebles?
+  Respuesta mostrada: «[1] BeZhas permite tokenizar un activo real en fracciones con un contrato RWAFactory en Polygon.
+  Hay dos fábricas: «activos» (inmuebles, hoteles, locales, vehículos, barcos, helicópteros y objetos) e «industrial»
+  (plantas, maquinaria, lotes y materia prima). Hace falta el CID de IPFS de la documentación legal…»
+  menciona el tema correcto ..................... true
+
+[Pregunta] ¿Puedo pagar las nóminas de mis empleados con USDC?
+  Respuesta mostrada: «[1] Los pagos de nómina se preparan como operaciones con propósito «payroll»: transferencia cripto
+  (BEZ, USDC o USDT en la red elegida) … BeZhas NO mueve fondos al preparar … por encima del umbral exige una o dos
+  aprobaciones humanas firmadas. Cada operación lleva una clave de idempotencia … El origen debe ser una wallet tuya,
+  nunca una dirección custodiada por BeZhas. Los asientos contables de la nómina se leen del ERP conectado.»
+  menciona el tema correcto ..................... true
+  línea de consumo bajo la respuesta ............ "14 de 15000 acciones de IA este mes"
+  fuentes (chips) ............................... [1] Pagar nóminas y pagos a empleados · v1
+  tarjetas de acción sugeridas .................. Pagos · Soluciones enterprise
+  aviso de modo ................................. "(Modo sin proveedor de IA configurado.)"  ← respuesta extractiva, coste 0
+
+Botones de la barra (aria-label):
+  Acciones de la plataforma · Historial de conversaciones · Nueva conversación · Minimizar chat · Copiar respuesta ·
+  Añadir un documento a mi conocimiento privado · Enviar mensaje
+
+Panel «Acciones» .............................. abre = true
+Panel «Historial» ............................. abre = true · lista las conversaciones de la empresa = true
+
+Ventana «Suscribirme a un plan»:
+  título «Planes de BeZhas» .................... true
+  planes ....................................... Starter · Creator Pro · Business · Enterprise VIP
+  IVA indicado aparte .......................... true
+  enlaces de pago de Stripe (buy.stripe.com) ... 4
+  plan actual marcado .......................... true
+
+Acción «Soluciones enterprise» ................ navega directamente a /enterprise (acción no sensible: sin ventana de confirmación)

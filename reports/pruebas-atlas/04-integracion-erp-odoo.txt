@@ -1,0 +1,32 @@
+# 04 · Integración con una plataforma de terceros: ERP Odoo ficticio
+# Ejecutado: 2026-10-09 12:53:32
+
+── A. Seguridad del conector (contenedor en modo producción) ──
+PASS   producción rechaza un ERP en localhost/http (protección SSRF) — 400 ERP_URL_NO_HTTPS
+PASS   producción rechaza el endpoint de metadatos de la nube (169.254.169.254) — 400 ERP_DESTINO_INTERNO
+PASS   el catálogo de ERPs responde (SAP S/4HANA, SAP B1, Odoo, Dynamics, NetSuite)
+
+── B. Conectar el software contable de terceros (Odoo ficticio) ──
+PASS   catálogo de ERPs en la instancia de desarrollo — sap_s4hana,sap_b1,odoo,dynamics,netsuite
+PASS   crear la conexión (nace desactivada) — 201  
+PASS   la respuesta NUNCA devuelve las credenciales del ERP
+PASS   probar la conexión (login real contra Odoo) — {"success":true,"prueba":{"ok":true,"error":null}}
+PASS   activar SIN DPA firmado → 412 — 412 ERP_SIN_DPA
+PASS   activar con DPA firmado — 200 
+
+── C. Leer la contabilidad: facturas, activos a tokenizar y asientos de nómina ──
+PASS   listar facturas de proveedor — 3 facturas · {"numero":"FAC/2026/0102","proveedor":"Maquinaria Gaditana S.L.","importe":96200,"moneda":"EUR","vencimiento":"2026-12-01","estado
+PASS   filtrar facturas contabilizadas desde el 02/10 — 1
+PASS   listar activos fijos (candidatos a tokenizar) — Grúa pórtico GP-01 420000€ · Nave industrial Algeciras 1850000€ · Carretilla elevadora CE-07 38500€
+PASS   leer un activo concreto: Nave industrial — {"referencia":"AST-0002","descripcion":"Nave industrial Algeciras","valoracion":1850000,"moneda":"EUR","fechaTasacion":"2021-06-30","estado":"open"}
+PASS   leer los asientos de la nómina de octubre — 640 Sueldos y salarios: D41250/H0 | 476 Org. Seguridad Social, acreedora: D0/H13120 | 572 Bancos: D0/H28130
+PASS   un filtro no admitido se rechaza (no se ignora) — 400 ERP_FILTRO_NO_ADMITIDO
+PASS   un tipo de documento desconocido se rechaza — 400 ERP_TIPO_DESCONOCIDO
+PASS   esquema canónico de «activo» — {"tipo":"activo","nombre":"Activo","camposCanonicos":["referencia","descripcion","valoracion","moneda","fechaT
+
+── D. Escritura en el ERP (controles) ──
+PASS   escribir sin Idempotency-Key → 400
+PASS   escribir sin autorización de escritura → 403 — 403 ERP_ESCRITURA_NO_AUTORIZADA
+PASS   el Odoo ficticio recibió llamadas reales de BeZhas — 103 llamadas JSON-RPC (login + execute_kw)
+
+20/20 pasan

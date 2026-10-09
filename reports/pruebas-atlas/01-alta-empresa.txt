@@ -1,0 +1,10 @@
+# 01 · Alta de la empresa de prueba (Atlas Contable Industrial S.L.) — datos ficticios
+# Ejecutado: 2026-10-09 · stack local
+
+OK    1. Alta del responsable financiero por email — status 201
+OK    2. Crea la organización — status 201
+OK    3. Completa datos fiscales de la empresa — status 200   (nota: sólo se aplicó `country`; el PATCH espera snake_case, ver 07)
+OK    4. Plan Business activo en la app de la empresa (simula la compra) — app f7fd3dd4…
+
+Nota: el plan se simuló en la base local (empresa → app con clave de API → suscripción Business activa), que es el efecto que
+tendría la compra con Stripe; el pago real no se ejecutó. Las credenciales de prueba no se guardan en estos informes.

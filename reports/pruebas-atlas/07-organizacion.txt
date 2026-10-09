@@ -1,0 +1,27 @@
+# 07 · Panel de organización: equipo, KYB, wallets, contratos, credenciales, facturación
+# Ejecutado: 2026-10-09 12:53:49
+
+PASS   mis organizaciones — {"success":true,"organizations":[{"id":"32800d01-da7b-446f-bc75-8bf2d2d16c55","name":"Atlas Contable Industrial S.L.","l
+PASS   completar datos legales y fiscales (snake_case) — {"success":true,"organization":{"id":"32800d01-da7b-446f-bc75-8bf2d2d16c55","name":"Atlas Contable Industrial S.L.","leg
+PASS   ficha de la organización con datos fiscales — {"success":true,"organization":{"id":"32800d01-da7b-446f-bc75-8bf2d2d16c55","name":"Atlas Contable Industrial S.L.","leg
+PASS   añadir al auditor al equipo — 201 {"success":true,"member":{"id":"2a4a2b4b-d808-424b-90a7-72d6a1494891","organization_id":"32800d01-da7b-446f-bc75-8bf2d2d
+PASS   listar miembros y roles — 8 miembros
+PASS   el AUDITOR no puede editar la organización — 403
+PASS   un usuario AJENO no ve la organización — 403
+PASS   subir documento KYB (escritura de constitución) — 201 {"success":true,"document":{"id":"178c2b01-eeb3-4108-9856-5d0be23fba55","doc_type":"incorporation_certificate","file_nam
+PASS   listar documentos KYB
+PASS   enviar la empresa a verificación KYB — 200 {"success":true,"organization":{"id":"32800d01-da7b-446f-bc75-8bf2d2d16c55","name":"Atlas Contable Industrial S.L.","leg
+PASS   la empresa NO puede aprobarse a sí misma el KYB — 403
+PASS   registrar la wallet de tesorería (Safe en Polygon; si ya existe, 409) — 409 {"error":"Esa dirección ya está registrada para esta organización en esa red"}
+PASS   listar wallets de la organización
+PASS   configurar el contrato del BEZ en la organización — 201 {"success":true,"contractConfig":{"id":"89e11817-b6db-4d18-bb9f-907bf1858226","organization_id":"32800d01-da7b-446f-bc75
+PASS   guardar una credencial de RPC (cifrada) — 201 (el secreto no vuelve en la respuesta)
+PASS   listar credenciales SIN devolver el secreto
+PASS   datos de facturación
+PASS   activar facturación electrónica (Facturae) — 200 {"success":true,"billingProfile":{"id":"288a1f01-3de1-4144-8dbd-66acd9be1b4f","organization_id":"32800d01-da7b-446f-bc75
+PASS   añadir contacto de facturación — 201 {"success":true,"contact":{"id":"34f16a51-ce0d-417a-a5b6-94cadb40912b","organization_id":"32800d01-da7b-446f-bc75-8bf2d2
+PASS   listar facturas
+PASS   reclamar un plan con una sesión de Stripe inexistente → rechazado — 409 {"error":"Compra no encontrada o ya asignada","code":"NO_RECLAMABLE"}
+PASS   un auditor no puede reclamar planes — 403
+
+22/22 pasan
