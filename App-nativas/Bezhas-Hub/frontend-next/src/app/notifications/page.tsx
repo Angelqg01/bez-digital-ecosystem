@@ -189,13 +189,10 @@ export default function NotificationsPage() {
                     filtered.map(n => {
                         const Icon = ICONS[n.type];
                         const colorClass = COLORS[n.type];
-                        const Wrapper = n.href ? Link : 'div';
-                        const wrapperProps = n.href ? { href: n.href } : {};
-
                         return (
-                            <Wrapper
+                            <NotificationWrapper
                                 key={n.id}
-                                {...wrapperProps}
+                                href={n.href}
                                 onClick={() => markRead(n.id)}
                                 className={`block bg-white dark:bg-gray-900 rounded-2xl border p-5 shadow-soft-lg transition-all hover:shadow-xl cursor-pointer ${!n.read ? 'border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/10' : 'border-light-border dark:border-gray-800'}`}
                             >
@@ -217,7 +214,7 @@ export default function NotificationsPage() {
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
-                            </Wrapper>
+                            </NotificationWrapper>
                         );
                     })
                 )}
@@ -226,3 +223,9 @@ export default function NotificationsPage() {
     );
 }
 
+
+
+/** Enlace si la notificación tiene destino; un div en caso contrario. */
+function NotificationWrapper({ href, children, ...rest }: { href?: string; children: React.ReactNode; onClick: () => void; className: string }) {
+    return href ? <Link href={href} {...rest}>{children}</Link> : <div {...rest}>{children}</div>;
+}

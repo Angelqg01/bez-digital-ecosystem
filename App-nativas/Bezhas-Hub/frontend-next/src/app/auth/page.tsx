@@ -77,7 +77,7 @@ export default function AuthPage() {
             const errMsg = error && typeof error === 'object' && 'response' in error 
               ? (error as { response?: { data?: { error?: string } } }).response?.data?.error 
               : 'Falló la autenticación con Wallet';
-            toast.error(errMsg);
+            toast.error(errMsg ?? "No se pudo completar la operación");
             disconnect();
         } finally {
             setSiweLoading(false);
@@ -95,7 +95,7 @@ export default function AuthPage() {
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        toast.info("En la Fase 3, se prioriza Sign-In With Ethereum. El servidor local usa Mock DB.");
+        toast("En la Fase 3, se prioriza Sign-In With Ethereum. El servidor local usa Mock DB.");
         setTimeout(() => setLoading(false), 1500);
     };
 

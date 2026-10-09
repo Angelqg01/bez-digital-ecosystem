@@ -1,0 +1,32 @@
+# Lo que sube deploy-subapps.sh: solo el código de las SubApps y lo que comparten.
+/*
+!/App-nativas/
+/App-nativas/*
+!/App-nativas/_shared/
+!/App-nativas/packages/
+!/App-nativas/Bezhas-Hub/
+/App-nativas/Bezhas-Hub/*
+!/App-nativas/Bezhas-Hub/frontend-next/
+!/App-nativas/bez-energy/
+!/App-nativas/BZ PureScan/
+!/App-nativas/BZ CargoLink/
+!/sdk/
+!/deploy/
+**/node_modules/
+**/.next/
+**/dist/
+**/.git/
+**/.env
+**/.env.*
+!**/.env.example
+**/*.zip
+**/*.docx
+**/*.pdf
+**/*.srt
+**/*.py
+**/doc/
+**/stitch_*/
+**/original_design/
+**/Sensores/
+**/*.log
+/sdk/**/*.tgz

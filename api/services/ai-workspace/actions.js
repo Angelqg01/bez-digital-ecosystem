@@ -132,7 +132,7 @@ const appUrl = (id, defecto) => (isSafeAppUrl(APP_OVERRIDES[id]) ? APP_OVERRIDES
 // Wallet, Gas, Pay, Prestige, Sphere y Genesis se añadirán aquí cuando estén desplegadas (ver docs de despliegue).
 const APPS = [
     ['hub', 'BeZhas Hub', 'Portal del ecosistema: perfil, comunidad y comercio.', RUN('hub'), ['hub', 'comunidad', 'portal', 'perfil publico', 'comercio']],
-    ['defi', 'BeZhas DeFi', 'Staking, farming, bridge, wallet y DAO.', `${RUN('defi')}`, ['defi', 'staking', 'farming', 'liquidez', 'dao', 'gobernanza']],
+    ['defi', 'BeZhas DeFi', 'Staking, farming, bridge, wallet y DAO.', `${RUN('defi')}/defi`, ['defi', 'staking', 'farming', 'liquidez', 'dao', 'gobernanza']],
     ['purescan', 'BZ PureScan', 'Visión artificial, trazabilidad e inspección de calidad.', RUN('purescan'), ['purescan', 'inspeccion', 'calidad', 'vision artificial', 'trazabilidad', 'gemelo digital', 'escanear']],
     ['energy', 'BEZ Energy', 'Certificados CAE, créditos de carbono y mercados de energía.', RUN('energy'), ['energia', 'cae', 'carbono', 'esg', 'certificado energetico']],
     ['cargolink', 'BZ CargoLink', 'Logística y aduanas: tracking de cargas y despacho verificable.', RUN('cargolink'), ['cargolink', 'logistica', 'aduana', 'aduanas', 'envio', 'carga', 'exportar', 'importar', 'expediente']],

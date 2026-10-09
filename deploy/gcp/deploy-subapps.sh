@@ -22,6 +22,9 @@ cd ../..
 declare -A DIR=(  [hub]="App-nativas/Bezhas-Hub/frontend-next" [defi]="App-nativas/BZ Capital/frontend"
                   [purescan]="App-nativas/BZ PureScan"          [energy]="App-nativas/bez-energy"
                   [cargolink]="App-nativas/BZ CargoLink" )
+# Tipo de build: «mono» = contexto raíz del repo con Dockerfile propio (deploy/gcp/subapps/), «dir» = su carpeta.
+declare -A BUILD=( [hub]="mono:Dockerfile.hub" [purescan]="mono:Dockerfile.vite" [energy]="mono:Dockerfile.vite"
+                   [cargolink]="mono:Dockerfile.vite" [defi]="dir" )
 declare -A PORT=( [hub]=8080 [defi]=5174 [purescan]=8080 [energy]=8080 [cargolink]=8080 )
 
 APPS=("$@"); ((${#APPS[@]})) || APPS=(hub defi purescan energy cargolink)
@@ -33,7 +36,14 @@ desplegar() {
   local app="$1" dir="${DIR[$1]}"
   local img="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/bezhas-${app}:${TAG}"
   echo "→ [$app] construyendo $dir"
-  gcloud builds submit "$dir" --project "$PROJECT_ID" --region "$REGION" --tag "$img" --quiet || return 1
+  if [[ "${BUILD[$app]}" == mono:* ]]; then
+    # Estas apps importan carpetas hermanas (_shared, packages, sdk): el contexto es la raíz del repo, filtrada.
+    gcloud builds submit . --project "$PROJECT_ID" --region "$REGION" --quiet \
+      --config deploy/gcp/subapps/cloudbuild-subapp.yaml --ignore-file deploy/gcp/subapps/.gcloudignore \
+      --substitutions "^~^_DOCKERFILE=${BUILD[$app]#mono:}~_APP_DIR=${dir}~_IMAGE=${img}" || return 1
+  else
+    gcloud builds submit "$dir" --project "$PROJECT_ID" --region "$REGION" --tag "$img" --quiet || return 1
+  fi
   echo "→ [$app] desplegando en Cloud Run (bezhas-${app})"
   gcloud run deploy "bezhas-${app}" --project "$PROJECT_ID" --region "$REGION" --image "$img" \
     --port "${PORT[$app]}" --allow-unauthenticated --min-instances 0 --max-instances 3 \

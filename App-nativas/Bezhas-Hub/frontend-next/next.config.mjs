@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // El lint (avisos de variables sin usar…) se ejecuta aparte (`pnpm lint`); no debe impedir publicar la app.
+    eslint: { ignoreDuringBuilds: true },
+
     // Transpile ESM-only packages (wagmi, viem, etc.)
     transpilePackages: ['@web3modal/wagmi', '@wagmi/connectors'],
 
