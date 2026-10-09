@@ -5,6 +5,7 @@
  */
 process.env.KNOWLEDGE_STORE = 'memory';
 process.env.AI_PROVIDER = 'extractive';
+process.env.NATIVE_APPS_PROBE = 'false'; // sin sondeo de red real en los tests
 
 const express = require('express');
 const request = require('supertest');
@@ -365,13 +366,13 @@ describe('disponibilidad de las apps nativas', () => {
         await a.sondearApps(async (url) => ({ status: /cargolink/.test(url) ? 503 : 200 }));
         const lista = await request(app()).get('/api/ai-workspace/actions').set('Authorization', `Bearer ${tokenDe(1)}`);
         expect(lista.body.actions.find((x) => x.id === 'app_cargolink').unavailable).toBe(true);
-        expect(lista.body.actions.find((x) => x.id === 'app_wallet').unavailable).toBe(false);
+        expect(lista.body.actions.find((x) => x.id === 'app_hub').unavailable).toBe(false);
         const abrir = await request(app()).post('/api/ai-workspace/actions/app_cargolink/open').set('Authorization', `Bearer ${tokenDe(1)}`);
         expect(abrir.status).toBe(503);
         a._estadoApps.clear();
     });
-    it('el catálogo incluye las 11 apps pedidas', () => {
-        const ids = require('../../services/ai-workspace/actions').CATALOG.filter((x) => x.external).map((x) => x.id);
-        expect(ids).toEqual(expect.arrayContaining(['app_wallet', 'app_gas', 'app_pay', 'app_prestige', 'app_sphere', 'app_genesis']));
+    it('sólo hay accesos de las 5 apps desplegadas', () => {
+        const ids = require('../../services/ai-workspace/actions').CATALOG.filter((x) => x.external).map((x) => x.id).sort();
+        expect(ids).toEqual(['app_cargolink', 'app_defi', 'app_energy', 'app_hub', 'app_purescan']);
     });
 });

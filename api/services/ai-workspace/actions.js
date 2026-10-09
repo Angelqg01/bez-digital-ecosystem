@@ -125,17 +125,12 @@ let APP_OVERRIDES = {};
 try { APP_OVERRIDES = JSON.parse(process.env.NATIVE_APP_URLS || '{}'); } catch (_) { APP_OVERRIDES = {}; }
 const appUrl = (id, defecto) => (isSafeAppUrl(APP_OVERRIDES[id]) ? APP_OVERRIDES[id] : defecto);
 
+// Wallet, Gas, Pay, Prestige, Sphere y Genesis se añadirán aquí cuando estén desplegadas (ver docs de despliegue).
 const APPS = [
     ['hub', 'BeZhas Hub', 'Portal del ecosistema: perfil, comunidad y comercio.', RUN('hub'), ['hub', 'comunidad', 'portal', 'perfil publico', 'comercio']],
     ['defi', 'BeZhas DeFi', 'Staking, farming, bridge, wallet y DAO.', `${RUN('capital')}/defi`, ['defi', 'staking', 'farming', 'liquidez', 'dao', 'gobernanza']],
     ['purescan', 'BZ PureScan', 'Visión artificial, trazabilidad e inspección de calidad.', RUN('purescan'), ['purescan', 'inspeccion', 'calidad', 'vision artificial', 'trazabilidad', 'gemelo digital', 'escanear']],
     ['energy', 'BEZ Energy', 'Certificados CAE, créditos de carbono y mercados de energía.', RUN('energy'), ['energia', 'cae', 'carbono', 'esg', 'certificado energetico']],
-    ['wallet', 'BEZ Wallet', 'Wallet del ecosistema: saldos, envíos y recepción de BEZ.', RUN('wallet'), ['bez wallet', 'billetera', 'enviar bez', 'recibir bez']],
-    ['gas', 'Gas Tank Manager', 'Depósito y gestión del gas de tus operaciones.', RUN('gas'), ['gas tank', 'combustible', 'subsidio de gas', 'gestionar gas']],
-    ['pay', 'BeZhas Pay', 'Cobros y pagos: tarjeta, SEPA y checkout de BeZhas.', RUN('pay'), ['bezhas pay', 'cobrar a clientes', 'pasarela', 'checkout']],
-    ['prestige', 'BZ Prestige', 'Experiencia VIP y membresías premium.', RUN('prestige'), ['prestige', 'vip', 'membresia', 'premium']],
-    ['sphere', 'BZ Sphere', 'Red de conexiones y colaboración entre empresas.', RUN('sphere'), ['sphere', 'red de empresas', 'colaboracion', 'socios', 'networking']],
-    ['genesis', 'BZ Genesis', 'Tokenización y emisión de activos del ecosistema.', RUN('genesis'), ['genesis', 'tokenizar', 'emitir activo', 'emision']],
     ['cargolink', 'BZ CargoLink', 'Logística y aduanas: tracking de cargas y despacho verificable.', RUN('cargolink'), ['cargolink', 'logistica', 'aduana', 'aduanas', 'envio', 'carga', 'exportar', 'importar', 'expediente']],
 ].map(([id, title, description, url, keywords]) => ({
     id: `app_${id}`, category: 'ecosystem', kind: 'app', external: true, sensitive: false, href: appUrl(id, url),
@@ -155,7 +150,7 @@ async function sondearApps(fetchFn = globalThis.fetch) {
 }
 const appDisponible = (id) => estadoApps.get(id) !== false;
 function iniciarSondeoApps() {
-    if (process.env.NODE_ENV === 'test' || process.env.NATIVE_APPS_PROBE === 'false') return;
+    if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID || process.env.NATIVE_APPS_PROBE === 'false') return;
     void sondearApps();
     setInterval(() => void sondearApps(), 5 * 60_000).unref();
 }

@@ -13,6 +13,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
     ArrowUp, Check, ChevronDown, Copy, FileText, History, LayoutGrid, Loader2, Lock, Paperclip, Plus, Sparkles, Square, Trash2, X,
 } from 'lucide-react';
+import ChatAppShortcuts, { esApp } from '@/components/ChatAppShortcuts';
 import { useAuth } from '@/lib/auth-context';
 import {
     AI_BASE, aiFetch, createSseParser, describeUsage, freeQuestionUsed, markFreeQuestionUsed, renderChatMarkdown,
@@ -167,6 +168,14 @@ export default function AIWorkspaceBar() {
         catch { setHistory([]); }
     };
 
+    // Las tarjetas de apps necesitan el catálogo (con la disponibilidad que mide el servidor) en cuanto hay sesión.
+    useEffect(() => {
+        if (!loggedIn || !token) return;
+        let vivo = true;
+        aiFetch<{ actions: ChatAction[] }>('/actions', token).then((r) => { if (vivo) setCatalog(r.actions || []); }).catch(() => {});
+        return () => { vivo = false; };
+    }, [loggedIn, token]);
+
     const showActions = async () => {
         if (panel === 'actions') { setPanel('chat'); return; }
         setPanel('actions');
@@ -301,6 +310,9 @@ export default function AIWorkspaceBar() {
                                                     : freeUsed ? 'Regístrate o inicia sesión para seguir conversando con BeZhas AI.'
                                                         : 'Tienes una pregunta gratis. Después, regístrate o inicia sesión para seguir.'}
                                             </p>
+                                            {loggedIn && catalog.some(esApp) && (
+                                                <div className="mb-4 text-left"><ChatAppShortcuts apps={catalog} onOpen={(a) => void openAction(a)} disabled={loading} /></div>
+                                            )}
                                             <div className="flex flex-wrap justify-center gap-2">
                                                 {SUGGESTIONS.map((q) => (
                                                     <button key={q} onClick={() => void send(q)} className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5">{q}</button>
@@ -340,7 +352,8 @@ export default function AIWorkspaceBar() {
                                                     )}
                                                     {!m.streaming && m.actions && m.actions.length > 0 && (
                                                         <div className="mt-2 flex flex-wrap gap-2">
-                                                            {m.actions.map((a) => (
+                                                            {m.actions.some(esApp) && <div className="w-full"><ChatAppShortcuts compact apps={m.actions} onOpen={(a) => void openAction(a)} disabled={loading} /></div>}
+                                                            {m.actions.filter((a) => !esApp(a)).map((a) => (
                                                                 <button key={a.id} onClick={() => void openAction(a)} disabled={loading}
                                                                     className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100 hover:bg-cyan-300/20 disabled:opacity-50">
                                                                     {a.locked && <Lock size={11} />}{a.title}

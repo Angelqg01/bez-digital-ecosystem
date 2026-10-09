@@ -22,7 +22,7 @@ export function markFreeQuestionUsed(): void {
 export interface ChatSource { ref: number; title: string; section?: string | null; version: number }
 export interface ChatAction {
     id: string; kind: 'navigate' | 'docs' | 'plans' | 'app'; title: string; description: string;
-    sensitive: boolean; locked: boolean; lockReason?: string; upgradeActionId?: string; categoryLabel?: string;
+    sensitive: boolean; locked: boolean; unavailable?: boolean; lockReason?: string; upgradeActionId?: string; categoryLabel?: string;
 }
 /** Lo que costó un mensaje al plan del cliente (lo calcula el servidor). */
 export interface ChatUsage { credits: number; billableEUR: number; payg: boolean; used: number; limit: number | null }
