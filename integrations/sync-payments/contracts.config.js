@@ -33,7 +33,7 @@ export const BEZHAS_CHAINS = {
     chainId:    137,
     name:       'Polygon',
     network:    'polygon',
-    rpc:        'https://polygon-rpc.com',
+    rpc:        'https://polygon-bor-rpc.publicnode.com',
     rpcAlt:     'https://rpc-mainnet.matic.network',
     explorer:   'https://polygonscan.com',
     symbol:     'MATIC',

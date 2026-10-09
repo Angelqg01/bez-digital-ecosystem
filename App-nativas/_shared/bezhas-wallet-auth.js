@@ -319,7 +319,7 @@ async function ensureChain(targetChainId) {
         params: [{
           chainId: '0x89',
           chainName: 'Polygon',
-          rpcUrls: ['https://polygon-rpc.com'],
+          rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
           nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
           blockExplorerUrls: ['https://polygonscan.com'],
         }],

@@ -139,7 +139,7 @@ BSC\_MAINNET:    { chainId: 56,    rpc: 'https://bsc-dataseed.binance.org' }
 
 BSC\_TESTNET:    { chainId: 97,    rpc: 'https://data-seed-prebsc-1-s1.binance.org:8545' }
 
-POLYGON:        { chainId: 137,   rpc: 'https://polygon-rpc.com' }
+POLYGON:        { chainId: 137,   rpc: 'https://polygon-bor-rpc.publicnode.com' }
 
 POLYGON\_MUMBAI: { chainId: 80001, rpc: 'https://rpc-mumbai.maticvigil.com' }
 

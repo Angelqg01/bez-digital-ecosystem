@@ -12,13 +12,13 @@ export const API_CONFIG = {
 
 // Blockchain Configuration
 export const BLOCKCHAIN_CONFIG = {
-    RPC_URL: import.meta.env.VITE_BLOCKCHAIN_RPC || 'https://polygon-rpc.com',
+    RPC_URL: import.meta.env.VITE_BLOCKCHAIN_RPC || 'https://polygon-bor-rpc.publicnode.com',
     NETWORK: import.meta.env.VITE_NETWORK || 'polygon',
     NETWORKS: {
         polygon: {
             id: 137,
             name: 'Polygon',
-            rpc: 'https://polygon-rpc.com',
+            rpc: 'https://polygon-bor-rpc.publicnode.com',
             explorer: 'https://polygonscan.com'
         },
         bsc: {

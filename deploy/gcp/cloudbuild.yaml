@@ -50,7 +50,7 @@ substitutions:
   # Precio medido del plan Starter (pago por uso). usageBilling.js lo lee de
   # la variable de entorno; es el mismo que api/config/plans.js (no es secreto).
   _STRIPE_STARTER_METERED_PRICE_ID: price_1TtuplFomr6oeXVgt8XVUQDW
-  _PUBLIC_RPC_URL: https://polygon-rpc.com
+  _PUBLIC_RPC_URL: https://polygon-bor-rpc.publicnode.com
   _BEZ_TOKEN: "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8"
   _ADMIN_WALLET: ""
   _GA_MEASUREMENT_ID: ""
