@@ -45,17 +45,27 @@ export function AuthProvider({ children }) {
         return () => { cancel = true; };
     }, [user, bezhasId]);
 
-    const login = async (email, password) => {
+    // `redirect: false` mantiene al usuario en la página actual (p. ej. al iniciar sesión desde el chat flotante).
+    const startSession = (data, { redirect = true } = {}) => {
+        // La API principal devuelve wallet_address; el resto de la UI lee walletAddress.
+        if (data?.user && !data.user.walletAddress && data.user.wallet_address) {
+            data = { ...data, user: { ...data.user, walletAddress: data.user.wallet_address } };
+        }
+        setUser(data.user);
+        setToken(data.token);
+        localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
+        if (redirect) navigate('/');
+        return data;
+    };
+
+    const login = async (email, password, { redirect = true } = {}) => {
         setLoading(true);
         try {
             const data = await authService.login(email, password);
             if (data.requires2FA) {
                 return data; // Devolvemos el estado 2FA para que el LoginPage muestre el input
             }
-            setUser(data.user);
-            setToken(data.token);
-            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
-            navigate('/');
+            return startSession(data, { redirect });
         } catch (err) {
             setUser(null);
             setToken(null);
@@ -65,14 +75,11 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const verifyLogin2FA = async (userId, tokenStr) => {
+    const verifyLogin2FA = async (userId, tokenStr, { redirect = true } = {}) => {
         setLoading(true);
         try {
             const data = await authService.verifyLogin2FA(userId, tokenStr);
-            setUser(data.user);
-            setToken(data.token);
-            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
-            navigate('/');
+            return startSession(data, { redirect });
         } catch (err) {
             setUser(null);
             setToken(null);
@@ -82,7 +89,7 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const loginWithWallet = async (walletAddress) => {
+    const loginWithWallet = async (walletAddress, { redirect = true } = {}) => {
         setLoading(true);
         try {
             let signer;
@@ -107,10 +114,7 @@ export function AuthProvider({ children }) {
 
             // 3. Send to backend for verification
             const data = await authService.loginWithWallet(walletAddress, signature, message);
-            setUser(data.user);
-            setToken(data.token);
-            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
-            navigate('/');
+            return startSession(data, { redirect });
         } catch (err) {
             console.error("Login failed:", err);
             setUser(null);
@@ -121,14 +125,11 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const register = async (userData) => {
+    const register = async (userData, { redirect = true } = {}) => {
         setLoading(true);
         try {
             const data = await authService.register(userData);
-            setUser(data.user);
-            setToken(data.token);
-            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
-            navigate('/');
+            return startSession(data, { redirect });
         } catch (err) {
             setUser(null);
             setToken(null);
@@ -138,7 +139,7 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const registerWithWallet = async (walletAddress, additionalData = {}) => {
+    const registerWithWallet = async (walletAddress, additionalData = {}, { redirect = true } = {}) => {
         setLoading(true);
         try {
             let signer;
@@ -159,10 +160,7 @@ export function AuthProvider({ children }) {
 
             // Send to backend
             const data = await authService.registerWithWallet(walletAddress, signature, message, additionalData);
-            setUser(data.user);
-            setToken(data.token);
-            localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }));
-            navigate('/');
+            return startSession(data, { redirect });
         } catch (err) {
             setUser(null);
             setToken(null);
@@ -242,12 +240,55 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const logout = () => {
+    // Login si la wallet existe; si no, registro. UNA sola firma: el backend de registro sólo
+    // comprueba que la firma corresponda a la dirección, así que se reutiliza la del login.
+    // `signMessage(message)` lo inyecta quien llama (el chat usa el firmante de wagmi, que funciona
+    // con cualquier conector, incluido WalletConnect); sin él se usa el proveedor del navegador.
+    const loginOrRegisterWithWallet = async (walletAddress, { redirect = true, signMessage } = {}) => {
+        setLoading(true);
+        try {
+            const sign = signMessage || (async (message) => {
+                let signer;
+                if (walletClient) signer = await new ethers.BrowserProvider(walletClient).getSigner();
+                else if (window.ethereum) signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
+                else throw new Error('No se detecta ninguna wallet para firmar. Vuelve a conectarla.');
+                return signer.signMessage(message);
+            });
+            const challenge = await authService.getWalletChallenge(walletAddress);
+            let data;
+            if (challenge?.message && challenge?.nonce && String(challenge.message).includes(challenge.nonce)) {
+                // API principal: se firma EXACTAMENTE el mensaje del servidor; el mismo endpoint crea la cuenta si no existe.
+                const signature = await sign(challenge.message);
+                data = await authService.loginWithWalletSigned(walletAddress, signature, challenge.message);
+                const u = data.user || {};
+                data = { ...data, user: { ...u, walletAddress: u.walletAddress || u.wallet_address, username: u.username || `User_${String(walletAddress).slice(2, 8)}` } };
+            } else {
+                // Backend del Hub: mensaje propio con el nonce; 404 = wallet sin cuenta y se registra con la misma firma.
+                const message = `Sign this message to verify your identity: ${challenge?.nonce}`;
+                const signature = await sign(message);
+                try {
+                    data = await authService.loginWithWallet(walletAddress, signature, message);
+                } catch (err) {
+                    if (err?.response?.status !== 404) throw err;
+                    data = await authService.registerWithWallet(walletAddress, signature, message, {});
+                }
+            }
+            return startSession(data, { redirect });
+        } catch (err) {
+            setUser(null);
+            setToken(null);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const logout = ({ redirect = true } = {}) => {
         setUser(null);
         setToken(null);
         setBezhasId(null);
         localStorage.removeItem('auth');
-        navigate('/login');
+        if (redirect) navigate('/login');
     };
 
     return (
@@ -258,6 +299,7 @@ export function AuthProvider({ children }) {
             loading,
             login,
             loginWithWallet,
+            loginOrRegisterWithWallet,
             loginWithGoogle,
             loginWithGitHub,
             loginWithLinkedIn,
