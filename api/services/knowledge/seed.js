@@ -167,6 +167,22 @@ const DOCS = [
     ['bz_soporte', 'Soporte y contacto',
         'Para ayuda escribe a info.bezcoin@bezhas.com, abre el centro de ayuda en www.bezhas.com/support o usa el bot de Telegram @BeZhasBot. La documentación '
         + 'técnica está en www.bezhas.com/developers y www.bezhas.com/docs.'],
+    ['bz_empezar', 'Cómo empezar paso a paso en BeZhas',
+        'Para empezar: 1) crea tu cuenta con wallet o con email y contraseña; 2) abre «Suscribirme a un plan» y elige el plan que encaje '
+        + '(Starter, de pago por uso con 15 días de prueba, es el punto de entrada); 3) si quieres BEZ, abre «Comprar BEZ» y paga con tarjeta o SEPA; '
+        + '4) para automatizar, crea una api-key en «Desarrolladores» y conecta tu IA al MCP o usa el SDK. Cada respuesta del chat indica el siguiente paso.'],
+    ['bz_que_plan', 'Qué plan elegir',
+        'Elige por lo que necesitas: Starter para probar y automatizar con la API y el MCP básico; Creator Pro para tokenizar activos, cobros y nóminas; '
+        + 'Business para conectar tu ERP (SAP, Odoo, Dynamics, NetSuite) y operar con aprobaciones; Enterprise VIP para gobernanza por DAO y máxima cuota. '
+        + 'Puedes subir de plan cuando una función lo requiera; el chat te dice cuál desbloquea cada cosa.'],
+    ['bz_automatizar', 'Automatizar tu plataforma con API, MCP y SDK',
+        'Tres caminos: API REST del Gateway (cabecera x-api-key, empieza por GET /api/gateway/v1/token/price), MCP (conecta Claude, ChatGPT, Gemini o Cursor a '
+        + 'https://mcp.bezhas.com/mcp) y SDK (pnpm add @bezhas/sdk). Pasos: crea una api-key con los permisos mínimos, guárdala en un gestor de secretos, '
+        + 'pruébala con una llamada de solo lectura y añade después las acciones que muevan dinero, que siempre piden tu firma o aprobación.'],
+    ['bz_seguridad_buenas_practicas', 'Seguridad: buenas prácticas con tus claves y tus operaciones',
+        'Nunca pegues claves privadas, frases semilla ni api-keys en el chat: se eliminan del mensaje y debes rotarlas. Usa una api-key por integración con el menor número '
+        + 'de permisos, rótala periódicamente, verifica la firma HMAC de los webhooks, usa un Safe multifirma para tesorería y nóminas, y activa la doble aprobación. '
+        + 'BeZhas no te pedirá nunca BEZ, claves ni «validar» tu wallet por mensaje directo. Vulnerabilidades: info.bezcoin@bezhas.com.'],
 ];
 
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
