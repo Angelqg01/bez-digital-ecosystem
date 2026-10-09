@@ -358,3 +358,20 @@ describe('acceso directo a las apps nativas', () => {
         expect(isSafeAppUrl('https://user:p@app.bezhas.com')).toBe(false);
     });
 });
+
+describe('disponibilidad de las apps nativas', () => {
+    it('una app que no responde se marca no disponible y no se abre', async () => {
+        const a = require('../../services/ai-workspace/actions');
+        await a.sondearApps(async (url) => ({ status: /cargolink/.test(url) ? 503 : 200 }));
+        const lista = await request(app()).get('/api/ai-workspace/actions').set('Authorization', `Bearer ${tokenDe(1)}`);
+        expect(lista.body.actions.find((x) => x.id === 'app_cargolink').unavailable).toBe(true);
+        expect(lista.body.actions.find((x) => x.id === 'app_wallet').unavailable).toBe(false);
+        const abrir = await request(app()).post('/api/ai-workspace/actions/app_cargolink/open').set('Authorization', `Bearer ${tokenDe(1)}`);
+        expect(abrir.status).toBe(503);
+        a._estadoApps.clear();
+    });
+    it('el catálogo incluye las 11 apps pedidas', () => {
+        const ids = require('../../services/ai-workspace/actions').CATALOG.filter((x) => x.external).map((x) => x.id);
+        expect(ids).toEqual(expect.arrayContaining(['app_wallet', 'app_gas', 'app_pay', 'app_prestige', 'app_sphere', 'app_genesis']));
+    });
+});

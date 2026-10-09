@@ -19,6 +19,7 @@ const { crearConversaciones, MAX_TURNS } = require('../services/ai-workspace/con
 const actionsSvc = require('../services/ai-workspace/actions');
 const shield = require('../services/ai-workspace/shield');
 const guide = require('../services/ai-workspace/guide');
+actionsSvc.iniciarSondeoApps();
 const { HookRegistry, registerDefaultHooks } = require('../services/ai-workspace/hooks');
 const { resolverPrincipal } = require('../services/ai-workspace/principal');
 const { crearPreguntasGratis } = require('../services/ai-workspace/freeQuestion');

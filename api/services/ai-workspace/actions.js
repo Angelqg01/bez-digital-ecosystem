@@ -130,11 +130,35 @@ const APPS = [
     ['defi', 'BeZhas DeFi', 'Staking, farming, bridge, wallet y DAO.', `${RUN('capital')}/defi`, ['defi', 'staking', 'farming', 'liquidez', 'dao', 'gobernanza']],
     ['purescan', 'BZ PureScan', 'Visión artificial, trazabilidad e inspección de calidad.', RUN('purescan'), ['purescan', 'inspeccion', 'calidad', 'vision artificial', 'trazabilidad', 'gemelo digital', 'escanear']],
     ['energy', 'BEZ Energy', 'Certificados CAE, créditos de carbono y mercados de energía.', RUN('energy'), ['energia', 'cae', 'carbono', 'esg', 'certificado energetico']],
+    ['wallet', 'BEZ Wallet', 'Wallet del ecosistema: saldos, envíos y recepción de BEZ.', RUN('wallet'), ['bez wallet', 'billetera', 'enviar bez', 'recibir bez']],
+    ['gas', 'Gas Tank Manager', 'Depósito y gestión del gas de tus operaciones.', RUN('gas'), ['gas tank', 'combustible', 'subsidio de gas', 'gestionar gas']],
+    ['pay', 'BeZhas Pay', 'Cobros y pagos: tarjeta, SEPA y checkout de BeZhas.', RUN('pay'), ['bezhas pay', 'cobrar a clientes', 'pasarela', 'checkout']],
+    ['prestige', 'BZ Prestige', 'Experiencia VIP y membresías premium.', RUN('prestige'), ['prestige', 'vip', 'membresia', 'premium']],
+    ['sphere', 'BZ Sphere', 'Red de conexiones y colaboración entre empresas.', RUN('sphere'), ['sphere', 'red de empresas', 'colaboracion', 'socios', 'networking']],
+    ['genesis', 'BZ Genesis', 'Tokenización y emisión de activos del ecosistema.', RUN('genesis'), ['genesis', 'tokenizar', 'emitir activo', 'emision']],
     ['cargolink', 'BZ CargoLink', 'Logística y aduanas: tracking de cargas y despacho verificable.', RUN('cargolink'), ['cargolink', 'logistica', 'aduana', 'aduanas', 'envio', 'carga', 'exportar', 'importar', 'expediente']],
 ].map(([id, title, description, url, keywords]) => ({
     id: `app_${id}`, category: 'ecosystem', kind: 'app', external: true, sensitive: false, href: appUrl(id, url),
     title, description, keywords,
 }));
+
+// Disponibilidad de las apps nativas: un sondeo periódico marca las que no responden para no enviar a nadie a una
+// página caída. Sin sondeo todavía (o en tests) se consideran disponibles.
+const estadoApps = new Map(); // id → true | false
+async function sondearApps(fetchFn = globalThis.fetch) {
+    await Promise.all(APPS.map(async (a) => {
+        try {
+            const r = await fetchFn(a.href, { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(5000) });
+            estadoApps.set(a.id, r.status < 500);
+        } catch (_) { estadoApps.set(a.id, false); }
+    }));
+}
+const appDisponible = (id) => estadoApps.get(id) !== false;
+function iniciarSondeoApps() {
+    if (process.env.NODE_ENV === 'test' || process.env.NATIVE_APPS_PROBE === 'false') return;
+    void sondearApps();
+    setInterval(() => void sondearApps(), 5 * 60_000).unref();
+}
 
 const CATALOG = Object.freeze([...BASE_CATALOG, ...APPS.filter((a) => isSafeAppUrl(a.href))]);
 
@@ -177,6 +201,7 @@ function view(principal, action) {
     return {
         id: action.id, category: action.category, categoryLabel: CATEGORIES[action.category],
         kind: action.kind, title: action.title, description: action.description, sensitive: !!action.sensitive, external: !!action.external,
+        unavailable: action.external ? !appDisponible(action.id) : undefined,
         locked: !allowed, lockReason: allowed ? undefined : reason,
         upgradeActionId: !allowed && reason === 'plan' ? 'subscribe_plans' : undefined,
     };
@@ -228,8 +253,9 @@ function resolveAction(principal, id) {
         if (reason === 'plan') err.upgradeActionId = 'subscribe_plans';
         throw err;
     }
+    if (action.external && !appDisponible(action.id)) throw Object.assign(new Error(`${action.title} no está disponible en este momento. Inténtalo más tarde o consulta con soporte.`), { status: 503 });
     if (action.external ? !isSafeAppUrl(action.href) : !isSafePath(action.href)) throw Object.assign(new Error('Destino no permitido'), { status: 500 }); // salvaguarda interna
     return { id: action.id, kind: action.kind, href: action.href, sensitive: !!action.sensitive, external: !!action.external };
 }
 
-module.exports = { isSafeAppUrl, CATALOG, CATEGORIES, PAID_PLANS, ALLOWED_PATHS, isPaidPlan, isSafePath, listActions, suggestActions, resolveAction };
+module.exports = { sondearApps, iniciarSondeoApps, _estadoApps: estadoApps, isSafeAppUrl, CATALOG, CATEGORIES, PAID_PLANS, ALLOWED_PATHS, isPaidPlan, isSafePath, listActions, suggestActions, resolveAction };
