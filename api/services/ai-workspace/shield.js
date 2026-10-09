@@ -74,7 +74,19 @@ function redactarSecretos(texto) {
 
 // ── Intención ofensiva y manipulación ────────────────────────────────────────
 
-const normalizar = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+// Homoglifos cirílicos/griegos más usados para disfrazar palabras latinas, por código de carácter.
+const HOMOGLIFOS = { 0x430: 'a', 0x435: 'e', 0x43e: 'o', 0x440: 'p', 0x441: 'c', 0x445: 'x', 0x443: 'y', 0x456: 'i', 0x3bf: 'o', 0x3b1: 'a', 0x3b5: 'e' };
+const esInvisible = (cp) => cp === 0xad || (cp >= 0x200b && cp <= 0x200f) || cp === 0x2060 || cp === 0xfeff;
+
+const normalizar = (t) => {
+    let limpio = '';
+    for (const ch of String(t || '').toLowerCase().normalize('NFKD')) {
+        const cp = ch.codePointAt(0);
+        if (esInvisible(cp)) continue;
+        limpio += HOMOGLIFOS[cp] || ch;
+    }
+    return limpio.replace(/[̀-ͯ]/g, '');
+};
 
 const OBJETIVO_BEZHAS = '(?:bezhas|la plataforma|la tesoreria|tesoreria|hot ?wallet|el bridge|el gateway|la api de bezhas|los contratos|el escrow|el kyc|la verificacion|las aprobaciones|la doble aprobacion|los limites|el kill ?switch|aegis|la firma|el webhook|la wallet de bezhas)';
 const VERBO_OFENSIVO = '(?:hackear|hackearl\\w*|explotar|vulnerar|atacar|romper|saltarm\\w*|saltar|eludir|evadir|burlar|falsificar|robar|drenar|vaciar|sabotear|colarm\\w*|bypassear|bypass)';
