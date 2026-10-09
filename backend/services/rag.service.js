@@ -19,6 +19,7 @@
  */
 
 const { ChromaClient } = require('chromadb');
+const { TtlCache, stableStringify } = require('./cost-policy.service');
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const CHROMA_URL = process.env.CHROMA_URL || 'http://localhost:8000';
@@ -34,6 +35,9 @@ class RAGService {
         this.collections = {};
         this.initialized = false;
         this._initPromise = null;
+        // Embeddings y consultas repetidas no vuelven a pagar red ni cuota de API.
+        this.embeddingCache = new TtlCache({ ttlMs: 24 * 60 * 60 * 1000, maxEntries: 2000 });
+        this.queryCache = new TtlCache({ ttlMs: 30_000, maxEntries: 500 });
     }
 
     // ─── INITIALIZATION ────────────────────────────────────────────────────────
@@ -83,6 +87,16 @@ class RAGService {
      * Falls back to simple hash-based embedding.
      */
     async generateEmbedding(text) {
+        const { value } = await this.embeddingCache.wrap(
+            `emb:${text}`,
+            () => this._embed(text),
+            // No se cachea «sin embedding»: puede ser un fallo transitorio.
+            { shouldCache: (v) => Array.isArray(v) },
+        );
+        return value;
+    }
+
+    async _embed(text) {
         try {
             const { GoogleGenerativeAI } = require('@google/generative-ai');
             const apiKey = process.env.GEMINI_API_KEY;
@@ -137,6 +151,7 @@ class RAGService {
                 documents: [doc],
                 metadatas: [metadata],
             });
+            this.queryCache.clear();
         } catch (error) {
             console.error('RAG indexing error (payment):', error.message);
         }
@@ -177,6 +192,7 @@ class RAGService {
                 documents: [doc],
                 metadatas: [metadata],
             });
+            this.queryCache.clear();
         } catch (error) {
             console.error('RAG indexing error (blockchain):', error.message);
         }
@@ -209,6 +225,7 @@ class RAGService {
                 documents: [text],
                 metadatas: [metadata],
             });
+            this.queryCache.clear();
         } catch (error) {
             console.error('RAG indexing error (platform):', error.message);
         }
@@ -226,6 +243,18 @@ class RAGService {
      * @returns {Promise<{context: string, sources: Array}>}
      */
     async retrieveContext(query, opts = {}) {
+        if (!this.initialized) {
+            return { context: '', sources: [], error: 'RAG not initialized' };
+        }
+        const { value } = await this.queryCache.wrap(
+            stableStringify({ query, nResults: opts.nResults, collections: opts.collections }),
+            () => this._retrieveContext(query, opts),
+            { shouldCache: (v) => !v.error },
+        );
+        return value;
+    }
+
+    async _retrieveContext(query, opts = {}) {
         const nResults = opts.nResults || MAX_RESULTS;
         // SEGURIDAD: las colecciones de pagos/blockchain contienen wallets y TX sin ACL por
         // usuario. Por defecto solo se consulta conocimiento público; para el resto hay que
@@ -317,6 +346,7 @@ class RAGService {
                 documents: documents.map(d => d.text),
                 metadatas: documents.map(d => d.metadata || {}),
             });
+            this.queryCache.clear();
             console.log(`✅ Bulk indexed ${documents.length} docs into ${collectionName}`);
         } catch (error) {
             console.error(`RAG bulk index error (${collectionName}):`, error.message);
