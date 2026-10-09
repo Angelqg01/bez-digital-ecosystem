@@ -602,6 +602,17 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
         break;
       }
 
+      // Plan comprado desde el chat: el plan es del USUARIO (user_subscriptions), no de una api-key.
+      if (session.metadata?.kind === 'chat_plan') {
+        try {
+          await require('../services/chatCheckout').provisionUserPlan(session, event.id);
+          log.info('Stripe', 'Plan de usuario provisionado desde el chat', { sessionId: session.id, planId: session.metadata.plan_id });
+        } catch (err) {
+          log.error('Stripe', 'No se pudo provisionar el plan del chat — conciliar a mano', { sessionId: session.id, error: err.message });
+        }
+        break;
+      }
+
       // Suscripción de plan (Payment Link con metadata.plan_id): provisionar
       // el plan, nunca mintear BEZ por el importe de la cuota.
       if (session.metadata?.plan_id) {
@@ -688,6 +699,16 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
         }
       } catch (err) {
         log.error('Stripe', 'No se pudo registrar la compra retenida — conciliar a mano', { sessionId: session.id, error: err.message });
+      }
+      break;
+    }
+
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted': {
+      try {
+        await require('../services/chatCheckout').handleSubscriptionEvent(event);
+      } catch (err) {
+        log.error('Stripe', 'No se pudo actualizar la suscripción del chat', { eventId: event.id, error: err.message });
       }
       break;
     }

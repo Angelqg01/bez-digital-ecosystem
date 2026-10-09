@@ -124,6 +124,13 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV:         ${NODE_ENV:-production}
+      # Stack de desarrollo local: un SPA (el Hub) hace decenas de llamadas por carga y con el límite por
+      # defecto de producción (100 / 15 min por IP) se quedaba sin cupo en dos recargas y todo daba 429.
+      RATE_LIMIT_MAX:   ${RATE_LIMIT_MAX:-2000}
+      # Pagos del chat (Stripe): a dónde vuelve el usuario. En desarrollo local es el Hub de Vite; en producción
+      # se usa FRONTEND_URL / https://bezhas.com y un http://localhost allí se rechaza.
+      CHAT_CHECKOUT_RETURN_BASE: ${CHAT_CHECKOUT_RETURN_BASE:-http://localhost:5173}
+      ALLOW_LOCAL_CHECKOUT_RETURN: ${ALLOW_LOCAL_CHECKOUT_RETURN:-true}
       DATABASE_URL:     postgresql://bezhas:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}@postgres:5432/bezhas
       REDIS_URL:        redis://redis:6379
       JWT_SECRET:       ${JWT_SECRET}

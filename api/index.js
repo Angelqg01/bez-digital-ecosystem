@@ -91,6 +91,7 @@ const organizationTechRoutes = require('./routes/organization-tech');
 const organizationBillingRoutes = require('./routes/organization-billing');
 const adminConfigRoutes = require('./routes/admin-config');
 const adminGovernanceRoutes = require('./routes/admin-governance');
+const adminConsoleRoutes = require('./routes/admin-console');   // ← API única del propietario + gas subvencionado
 const mcpGatewayRoutes = require('./routes/mcp-gateway');
 const mcpPublicRoutes = require('./routes/mcp-public');
 const { txRouter, securityRouter } = require('./routes/tx-security'); // ← operaciones con fondos + kill switch   // ← MCP de alta asistida (auth opcional)
@@ -101,7 +102,6 @@ const operantRoutes = require('./routes/operant');   // ← OPERANT (gestión em
 
 // ─────────────────────────────────────────────────────────────────────────────
 const app = express();
-const PORT = parseInt(process.env.PORT, 10) || 3001;
 
 // Detrás del balanceador de Google, req.ip es la IP del propio balanceador, no
 // la del cliente: sin esto todos los visitantes comparten un único cubo en los
@@ -112,6 +112,7 @@ const PORT = parseInt(process.env.PORT, 10) || 3001;
 // confianza se toma la IP real, y un X-Forwarded-For falsificado por el cliente
 // queda a la izquierda sin influir. Ajustable por entorno si cambia la topología.
 app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? (process.env.NODE_ENV === 'production' ? 2 : 0)));
+const PORT = parseInt(process.env.PORT, 10) || 3001;
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -153,6 +154,10 @@ app.use(helmet({
   // No exponer X-Powered-By
   hidePoweredBy: true,
 }));
+
+// Chat público de la web y las SubApps: lleva su propio CORS abierto y por eso va
+// ANTES del CORS global, que cortaría el preflight de los orígenes *.run.app.
+app.use('/api/public-chat', require('./routes/public-chat'));
 
 // ── CORS: quién puede llamar a esta API desde un navegador ──
 // La lógica vive en config/cors.js para poder testearla sin arrancar la app.
@@ -305,7 +310,6 @@ app.get('/api/metrics', metricsHandler);
  * El campo `services` indica el estado real de cada dependencia.
  */
 app.get('/api/health', async (_req, res) => {
-  const checks = await Promise.allSettled([
   // Cada dependencia con su propio tope: con Redis caído, ioredis encola el
   // comando hasta que reconecte y el health se quedaba colgado sin responder,
   // justo cuando más falta hace saber QUÉ dependencia está caída.
@@ -313,6 +317,7 @@ app.get('/api/health', async (_req, res) => {
     Promise.resolve(p),
     new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
   ]);
+  const checks = await Promise.allSettled([
     withTimeout(query('SELECT 1')),                      // PostgreSQL
     withTimeout(redisClient?.ping()),                    // Redis
     // En producción añadir:
@@ -374,6 +379,10 @@ app.get('/api/health', async (_req, res) => {
 
 // ── Autenticación y usuarios ──────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+// Chat con RAG seguro de la barra flotante (login obligatorio, BM25 local: coste cero sin clave de IA).
+const aiWorkspace = require('./routes/ai-workspace');
+app.use('/api/ai-workspace', aiWorkspace);
+app.use('/api/checkout', aiWorkspace.checkoutRouter);
 app.use('/api/user', userRoutes);
 app.use('/api/identity', identityRoutes);
 app.use('/api/organizations', organizationsRoutes);
@@ -382,6 +391,7 @@ app.use('/api/organizations', organizationBillingRoutes);
 app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);
 app.use('/api/admin/governance', adminGovernanceRoutes);
+app.use('/api/admin/console', adminConsoleRoutes);
 
 // ── Blockchain / Contratos / Tokens ──────────────────────────────────────────
 app.use('/api/contracts', contractsAbiRoutes);  // ABI/deploy/agent (específico primero)
