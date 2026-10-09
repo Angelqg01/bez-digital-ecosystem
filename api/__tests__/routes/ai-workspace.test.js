@@ -146,8 +146,8 @@ describe('streaming', () => {
 });
 
 describe('acciones', () => {
-    it('todas las acciones apuntan a rutas internas del control center', () => {
-        for (const a of actions.CATALOG) expect(actions.isSafePath(a.href)).toBe(true);
+    it('las acciones apuntan a rutas internas del control center o, si son apps nativas, a https de la lista cerrada', () => {
+        for (const a of actions.CATALOG) expect(a.external ? actions.isSafeAppUrl(a.href) : actions.isSafePath(a.href)).toBe(true);
     });
 
     it('sugiere a partir del mensaje del usuario y el destino lo decide el servidor', async () => {
@@ -337,5 +337,24 @@ describe('escudo y guía en el chat', () => {
     it('pregunta defensiva sobre seguridad no se bloquea', async () => {
         const res = await ask(tokenDe(1), { message: '¿cómo protejo mis claves de API?' });
         expect(res.body.blocked).toBeUndefined();
+    });
+});
+
+describe('acceso directo a las apps nativas', () => {
+    it('sugiere CargoLink para aduanas y la abre con una URL https fija del servidor', async () => {
+        const res = await ask(tokenDe(1), { message: 'tengo que gestionar una aduana y exportar mercancía' });
+        expect(res.body.actions.map((a) => a.id)).toContain('app_cargolink');
+        const abrir = await request(app()).post('/api/ai-workspace/actions/app_cargolink/open').set('Authorization', `Bearer ${tokenDe(1)}`);
+        expect(abrir.status).toBe(200);
+        expect(abrir.body.kind).toBe('app');
+        expect(abrir.body.href).toMatch(/^https:\/\/bezhas-cargolink-/);
+    });
+    it('sólo acepta destinos https de la lista cerrada', () => {
+        const { isSafeAppUrl } = require('../../services/ai-workspace/actions');
+        expect(isSafeAppUrl('https://app.bezhas.com/x')).toBe(true);
+        expect(isSafeAppUrl('https://evil.com')).toBe(false);
+        expect(isSafeAppUrl('https://bezhas.com.evil.com')).toBe(false);
+        expect(isSafeAppUrl('http://app.bezhas.com')).toBe(false);
+        expect(isSafeAppUrl('https://user:p@app.bezhas.com')).toBe(false);
     });
 });

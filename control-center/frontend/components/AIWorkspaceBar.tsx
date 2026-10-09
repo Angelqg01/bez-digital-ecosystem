@@ -202,6 +202,9 @@ export default function AIWorkspaceBar() {
             } else if (r.kind === 'docs') {
                 const d = await aiFetch<{ documents: { id: string; title: string; scope: string; status: string }[] }>('/knowledge', token);
                 setDialog({ kind: 'docs', docs: d.documents });
+            } else if (r.kind === 'app') {
+                // App nativa: pestaña nueva, sin opener ni referrer y sin datos de la conversación en la URL.
+                if (/^https:\/\//.test(r.href)) window.open(r.href, '_blank', 'noopener,noreferrer');
             } else if (r.sensitive) {
                 setDialog({ kind: 'confirm', action, href: r.href });
             } else {

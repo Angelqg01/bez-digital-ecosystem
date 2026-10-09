@@ -31,7 +31,7 @@ const CATEGORIES = Object.freeze({
  * requires: { plans?: [...] , roles?: [...] } — vacío = cualquier usuario con sesión.
  * keywords: términos (sin tildes, minúsculas) que activan la sugerencia a partir del mensaje del usuario.
  */
-const CATALOG = Object.freeze([
+const BASE_CATALOG = Object.freeze([
     // ── Pagos y compra de BEZ ──
     { id: 'buy_bez', category: 'finance', kind: 'navigate', href: '/token/buy', sensitive: true,
       title: 'Comprar BEZ', description: 'Compra BEZ con tarjeta o transferencia SEPA.',
@@ -109,10 +109,39 @@ const CATALOG = Object.freeze([
       keywords: ['documento', 'documentos', 'docs', 'exclusivo', 'exclusivos', 'manual', 'guia', 'informe', 'document', 'whitepaper', 'documentacion'] },
 ]);
 
+/**
+ * Apps nativas del ecosistema. Destino ABSOLUTO https, fijado en servidor y validado contra una lista cerrada de hosts
+ * (`isSafeAppUrl`). Se abren en pestaña nueva y sin contexto en la URL: la app destino comprueba por sí misma sesión,
+ * organización y plan. Se pueden sustituir con NATIVE_APP_URLS='{"hub":"https://…"}' cuando cambien los dominios.
+ */
+const APP_HOST_OK = (h) => /\.bezhas\.com$/.test(h) || h === 'bezhas.com' || /^bezhas-[a-z0-9-]+-o5xep6gbwq-ew\.a\.run\.app$/.test(h);
+function isSafeAppUrl(raw) {
+    let u;
+    try { u = new URL(raw); } catch (_) { return false; }
+    return u.protocol === 'https:' && !u.username && !u.password && !u.port && APP_HOST_OK(u.hostname.toLowerCase());
+}
+const RUN = (n) => `https://bezhas-${n}-o5xep6gbwq-ew.a.run.app`;
+let APP_OVERRIDES = {};
+try { APP_OVERRIDES = JSON.parse(process.env.NATIVE_APP_URLS || '{}'); } catch (_) { APP_OVERRIDES = {}; }
+const appUrl = (id, defecto) => (isSafeAppUrl(APP_OVERRIDES[id]) ? APP_OVERRIDES[id] : defecto);
+
+const APPS = [
+    ['hub', 'BeZhas Hub', 'Portal del ecosistema: perfil, comunidad y comercio.', RUN('hub'), ['hub', 'comunidad', 'portal', 'perfil publico', 'comercio']],
+    ['defi', 'BeZhas DeFi', 'Staking, farming, bridge, wallet y DAO.', `${RUN('capital')}/defi`, ['defi', 'staking', 'farming', 'liquidez', 'dao', 'gobernanza']],
+    ['purescan', 'BZ PureScan', 'Visión artificial, trazabilidad e inspección de calidad.', RUN('purescan'), ['purescan', 'inspeccion', 'calidad', 'vision artificial', 'trazabilidad', 'gemelo digital', 'escanear']],
+    ['energy', 'BEZ Energy', 'Certificados CAE, créditos de carbono y mercados de energía.', RUN('energy'), ['energia', 'cae', 'carbono', 'esg', 'certificado energetico']],
+    ['cargolink', 'BZ CargoLink', 'Logística y aduanas: tracking de cargas y despacho verificable.', RUN('cargolink'), ['cargolink', 'logistica', 'aduana', 'aduanas', 'envio', 'carga', 'exportar', 'importar', 'expediente']],
+].map(([id, title, description, url, keywords]) => ({
+    id: `app_${id}`, category: 'ecosystem', kind: 'app', external: true, sensitive: false, href: appUrl(id, url),
+    title, description, keywords,
+}));
+
+const CATALOG = Object.freeze([...BASE_CATALOG, ...APPS.filter((a) => isSafeAppUrl(a.href))]);
+
 const BY_ID = new Map(CATALOG.map((a) => [a.id, a]));
 
 // Prefijos de ruta permitidos = rutas del catálogo (la fuente de verdad de los destinos).
-const ALLOWED_PATHS = Object.freeze([...new Set(CATALOG.map((a) => a.href.split(/[?#]/)[0]))]);
+const ALLOWED_PATHS = Object.freeze([...new Set(CATALOG.filter((a) => !a.external).map((a) => a.href.split(/[?#]/)[0]))]);
 
 /**
  * ¿Es una ruta interna segura? Rechaza esquemas (javascript:, data:, https:), rutas relativas a protocolo
@@ -199,8 +228,8 @@ function resolveAction(principal, id) {
         if (reason === 'plan') err.upgradeActionId = 'subscribe_plans';
         throw err;
     }
-    if (!isSafePath(action.href)) throw Object.assign(new Error('Destino no permitido'), { status: 500 }); // salvaguarda interna
+    if (action.external ? !isSafeAppUrl(action.href) : !isSafePath(action.href)) throw Object.assign(new Error('Destino no permitido'), { status: 500 }); // salvaguarda interna
     return { id: action.id, kind: action.kind, href: action.href, sensitive: !!action.sensitive, external: !!action.external };
 }
 
-module.exports = { CATALOG, CATEGORIES, PAID_PLANS, ALLOWED_PATHS, isPaidPlan, isSafePath, listActions, suggestActions, resolveAction };
+module.exports = { isSafeAppUrl, CATALOG, CATEGORIES, PAID_PLANS, ALLOWED_PATHS, isPaidPlan, isSafePath, listActions, suggestActions, resolveAction };
