@@ -253,4 +253,12 @@ function resolveAction(principal, id) {
     return { id: action.id, kind: action.kind, href: action.href, sensitive: !!action.sensitive, external: !!action.external };
 }
 
-module.exports = { sondearApps, iniciarSondeoApps, _estadoApps: estadoApps, isSafeAppUrl, CATALOG, CATEGORIES, PAID_PLANS, ALLOWED_PATHS, isPaidPlan, isSafePath, listActions, suggestActions, resolveAction };
+/** Apps nativas para el visitante sin sesión: son destinos públicos (los mismos de la web), con su disponibilidad. */
+function listPublicApps() {
+    return CATALOG.filter((a) => a.external).map((a) => ({
+        id: a.id, kind: 'app', title: a.title, description: a.description, href: a.href,
+        sensitive: false, locked: false, unavailable: !appDisponible(a.id),
+    }));
+}
+
+module.exports = { listPublicApps, sondearApps, iniciarSondeoApps, _estadoApps: estadoApps, isSafeAppUrl, CATALOG, CATEGORIES, PAID_PLANS, ALLOWED_PATHS, isPaidPlan, isSafePath, listActions, suggestActions, resolveAction };

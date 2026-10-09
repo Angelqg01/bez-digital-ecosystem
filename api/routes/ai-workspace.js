@@ -380,6 +380,11 @@ publicRouter.use(rateLimit({
 }));
 publicRouter.use(express.json({ limit: '16kb' }));
 
+publicRouter.get('/apps', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({ apps: actionsSvc.listPublicApps() });
+});
+
 publicRouter.post('/chat/stream', async (req, res) => {
     const raw = typeof req.body?.message === 'string' ? req.body.message : '';
     if (raw.length > MAX_MENSAJE_ANONIMO) return res.status(413).json({ error: `Máximo ${MAX_MENSAJE_ANONIMO} caracteres sin iniciar sesión` });

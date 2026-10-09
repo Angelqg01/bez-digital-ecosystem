@@ -176,6 +176,19 @@ export default function AIWorkspaceBar() {
         return () => { vivo = false; };
     }, [loggedIn, token]);
 
+    // Visitante sin sesión: las apps son destinos públicos, así que también ve las tarjetas y las abre directamente.
+    const [appsPublicas, setAppsPublicas] = useState<ChatAction[]>([]);
+    useEffect(() => {
+        if (loggedIn) return;
+        let vivo = true;
+        fetch(`${AI_BASE}/public/apps`).then((r) => r.json()).then((r) => { if (vivo) setAppsPublicas(r.apps || []); }).catch(() => {});
+        return () => { vivo = false; };
+    }, [loggedIn]);
+    const abrirAppPublica = (a: ChatAction & { href?: string }) => {
+        if (a.unavailable || !a.href || !/^https:\/\//.test(a.href)) return;
+        window.open(a.href, '_blank', 'noopener,noreferrer');
+    };
+
     const showActions = async () => {
         if (panel === 'actions') { setPanel('chat'); return; }
         setPanel('actions');
@@ -310,6 +323,9 @@ export default function AIWorkspaceBar() {
                                                     : freeUsed ? 'Regístrate o inicia sesión para seguir conversando con BeZhas AI.'
                                                         : 'Tienes una pregunta gratis. Después, regístrate o inicia sesión para seguir.'}
                                             </p>
+                                            {!loggedIn && appsPublicas.length > 0 && (
+                                                <div className="mb-4 text-left"><ChatAppShortcuts apps={appsPublicas} onOpen={(a) => abrirAppPublica(a)} /></div>
+                                            )}
                                             {loggedIn && catalog.some(esApp) && (
                                                 <div className="mb-4 text-left"><ChatAppShortcuts apps={catalog} onOpen={(a) => void openAction(a)} disabled={loading} /></div>
                                             )}

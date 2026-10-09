@@ -50,3 +50,12 @@ describe('POST /api/public-chat', () => {
         expect(res.status).toBe(413);
     });
 });
+
+describe('GET /api/ai-workspace/public/apps', () => {
+    it('lista las apps nativas sin sesión, con destino https y disponibilidad', async () => {
+        const res = await request(app).get('/api/ai-workspace/public/apps');
+        expect(res.status).toBe(200);
+        expect(res.body.apps.map((a) => a.id).sort()).toEqual(['app_cargolink', 'app_defi', 'app_energy', 'app_hub', 'app_purescan']);
+        for (const a of res.body.apps) { expect(a.href).toMatch(/^https:\/\//); expect(typeof a.unavailable).toBe('boolean'); }
+    });
+});
