@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { query } = require('../db/pool');
 const { verifyWalletSignature, authenticateToken } = require('../middleware/security');
-const { JWT_SECRET, JWT_ACCESS_TTL } = require('../config/secrets');
+const { JWT_SECRET, JWT_ACCESS_TTL, JWT_ISSUER, JWT_AUDIENCE } = require('../config/secrets');
 const { issueNonce, NONCE_TTL_SECONDS } = require('../utils/walletNonce');
 const walletService = require('../services/walletService');
 const { generateBezhasId } = require('../lib/bezhasId');
@@ -81,7 +81,7 @@ router.post('/login', [
     const token  = jwt.sign(
         { address: user.wallet_address, userId: user.id, role: user.role, bezhas_id: user.bezhas_id },
         JWT_SECRET,
-        { expiresIn: JWT_ACCESS_TTL }
+        { expiresIn: JWT_ACCESS_TTL, issuer: JWT_ISSUER, audience: JWT_AUDIENCE }
     );
     const pqcSig = apiPQC.signToken(token);
 
@@ -135,7 +135,7 @@ router.post(['/fiat/register', '/register-email'], registerChecks, async (req, r
         const token  = jwt.sign(
             { address: user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
             JWT_SECRET,
-            { expiresIn: JWT_ACCESS_TTL }
+            { expiresIn: JWT_ACCESS_TTL, issuer: JWT_ISSUER, audience: JWT_AUDIENCE }
         );
         const pqcSig = apiPQC.signToken(token);
 
@@ -194,7 +194,7 @@ router.post(['/fiat/login', '/login-email'], loginChecks, async (req, res) => {
         const token  = jwt.sign(
             { address: safeWallet?.ownerAddress || user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
             JWT_SECRET,
-            { expiresIn: JWT_ACCESS_TTL }
+            { expiresIn: JWT_ACCESS_TTL, issuer: JWT_ISSUER, audience: JWT_AUDIENCE }
         );
         const pqcSig = apiPQC.signToken(token);
 
@@ -336,7 +336,7 @@ router.post('/refresh', authenticateToken, async (req, res) => {
                 bezhas_id: user.bezhas_id,
             },
             JWT_SECRET,
-            { expiresIn: JWT_ACCESS_TTL }
+            { expiresIn: JWT_ACCESS_TTL, issuer: JWT_ISSUER, audience: JWT_AUDIENCE }
         );
         const pqcSig = apiPQC.signToken(token);
         res.json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' } });

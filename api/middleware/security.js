@@ -5,7 +5,7 @@ const jwt    = require('jsonwebtoken');
 const { ethers } = require('ethers');
 const { query } = require('../db/pool');
 const { checkRateLimit } = require('../cache/redis');
-const { JWT_SECRET, AUTH_BYPASS } = require('../config/secrets');
+const { JWT_SECRET, AUTH_BYPASS, JWT_ISSUER, JWT_AUDIENCE, JWT_STRICT_CLAIMS } = require('../config/secrets');
 const { consumeNonce, extractNonce } = require('../utils/walletNonce');
 const apiPQC = require('../lib/apiPQC');
 
@@ -40,6 +40,12 @@ function authenticateToken(req, res, next) {
         if (pqcSig && pqcPub && !pqcResult.valid) {
             return res.status(401).json({ error: 'Firma post-cuántica inválida', code: 'PQC_INVALID', reason: pqcResult.reason });
         }
+
+        // Emisor y audiencia: si el token los trae deben ser los nuestros; si no los trae (token anterior a esta
+        // comprobación) sólo se acepta mientras JWT_STRICT_CLAIMS no esté activo.
+        const audOk = user.aud === undefined ? !JWT_STRICT_CLAIMS : [].concat(user.aud).includes(JWT_AUDIENCE);
+        const issOk = user.iss === undefined ? !JWT_STRICT_CLAIMS : user.iss === JWT_ISSUER;
+        if (!audOk || !issOk) return res.status(403).json({ error: 'Invalid or expired token' });
 
         req.user = user;
         req.pqcVerified = pqcResult.valid;

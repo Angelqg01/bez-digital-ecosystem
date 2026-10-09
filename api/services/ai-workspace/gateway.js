@@ -146,13 +146,33 @@ const streamers = {
     },
 };
 
+// Techo global de llamadas de pago al modelo por día UTC (AI_GLOBAL_DAILY_CALLS, 0 = sin techo). Pasado el techo el
+// chat sigue funcionando en modo extractivo (coste 0), así que ningún volumen de cuentas puede disparar el gasto.
+const presupuesto = { dia: '', n: 0 };
+const TECHO_DIARIO = () => Number(process.env.AI_GLOBAL_DAILY_CALLS ?? 20000);
+function hayPresupuesto() {
+    const techo = TECHO_DIARIO();
+    if (!techo) return true;
+    const dia = new Date().toISOString().slice(0, 10);
+    if (presupuesto.dia !== dia) { presupuesto.dia = dia; presupuesto.n = 0; }
+    return presupuesto.n < techo;
+}
+
 function pickProvider(forzado) {
     const forced = forzado || process.env.AI_PROVIDER;
-    if (forced && providers[forced]) return forced;
-    if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
-    if (process.env.GEMINI_API_KEY) return 'gemini';
-    return 'extractive';
+    const elegido = forced && providers[forced] ? forced
+        : process.env.ANTHROPIC_API_KEY ? 'anthropic'
+        : process.env.GEMINI_API_KEY ? 'gemini'
+        : 'extractive';
+    if (elegido === 'extractive') return elegido;
+    if (!hayPresupuesto()) {
+        logger.warn({ techo: TECHO_DIARIO() }, 'techo diario global de IA alcanzado; modo extractivo');
+        return 'extractive';
+    }
+    presupuesto.n += 1;
+    return elegido;
 }
+function _reiniciarPresupuesto() { presupuesto.dia = ''; presupuesto.n = 0; }
 
 async function complete(args) {
     const name = pickProvider(args.provider);
@@ -207,4 +227,4 @@ function modeloDe(provider) {
     return 'extractive';
 }
 
-module.exports = { complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };
+module.exports = { _reiniciarPresupuesto, complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };
