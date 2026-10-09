@@ -46,6 +46,9 @@ describe('acciones sugeridas para esas preguntas', () => {
     const ids = (q) => suggestActions(principal, q).map((a) => a.id);
     it('tokenización → soluciones enterprise', () => expect(ids('¿Cómo se tokenizan activos reales como maquinaria?')).toContain('enterprise'));
     it('nóminas → pagos', () => expect(ids('¿Puedo pagar las nóminas de mis empleados?')).toContain('payments'));
+    it('cobrar a clientes → pagos (singular y plural coinciden por raíz)', () => expect(ids('¿Cómo cobro a mis clientes con tarjeta?')).toContain('payments'));
+    it('comprar BEZ en primera persona → compra de BEZ', () => expect(ids('¿Cómo compro BEZ?')).toContain('buy_bez'));
+    it('alta y KYB → onboarding', () => expect(ids('¿Cómo doy de alta a mi empresa y hago el KYB?')).toContain('onboarding'));
     it('integrar el ERP → desarrolladores y MCP', () => {
         const r = ids('¿Cómo integro mi ERP con la API?');
         expect(r).toEqual(expect.arrayContaining(['developers']));

@@ -35,13 +35,13 @@ const CATALOG = Object.freeze([
     // ── Pagos y compra de BEZ ──
     { id: 'buy_bez', category: 'finance', kind: 'navigate', href: '/token/buy', sensitive: true,
       title: 'Comprar BEZ', description: 'Compra BEZ con tarjeta o transferencia SEPA.',
-      keywords: ['comprar bez', 'comprar tokens', 'buy bez', 'buy tokens', 'tarjeta', 'stripe', 'adquirir', 'transferencia'] },
+      keywords: ['comprar bez', 'comprar tokens', 'buy bez', 'buy tokens', 'tarjeta', 'stripe', 'adquirir', 'transferencia', 'compro bez', 'compra bez', 'quiero bez'] },
     { id: 'token_info', category: 'finance', kind: 'navigate', href: '/token', sensitive: false,
       title: 'BEZ-Coin', description: 'Precio, contrato y mercado del token BEZ.',
       keywords: ['bez', 'token', 'bez-coin', 'bezcoin', 'contrato', 'precio bez'] },
     { id: 'payments', category: 'finance', kind: 'navigate', href: '/payments', sensitive: true,
       title: 'Pagos', description: 'Métodos de pago y cobros de la plataforma.',
-      keywords: ['pagar', 'pago', 'pagos', 'bezpay', 'payment', 'cobrar', 'cobros', 'factura', 'nomina', 'nominas', 'salarios', 'pagar nominas', 'transferencia', 'sepa'] },
+      keywords: ['pagar', 'pago', 'pagos', 'bezpay', 'payment', 'cobrar', 'cobros', 'factura', 'nomina', 'nominas', 'salarios', 'pagar nominas', 'transferencia', 'sepa', 'cobro', 'clientes', 'tarjeta', 'cobrar a clientes', 'proveedores'] },
     // ── Apps del ecosistema ──
     { id: 'staking', category: 'ecosystem', kind: 'navigate', href: '/dashboard/farming', sensitive: true,
       title: 'Staking y farming', description: 'Deposita BEZ y acumula recompensas.',
@@ -82,7 +82,7 @@ const CATALOG = Object.freeze([
       keywords: ['mcp', 'claude', 'chatgpt', 'gemini', 'codex', 'antigravity', 'conectar ia', 'agente', 'erp', 'integrar', 'integracion'] },
     { id: 'onboarding', category: 'apps', kind: 'navigate', href: '/onboarding', sensitive: false,
       title: 'Alta y configuración', description: 'Wallet, Edge Node y conexión del ERP.',
-      keywords: ['alta', 'onboarding', 'empezar', 'configurar', 'registrar empresa', 'conectar erp'] },
+      keywords: ['alta', 'onboarding', 'empezar', 'configurar', 'registrar empresa', 'conectar erp', 'kyb', 'verificar empresa', 'verificacion empresa', 'alta empresa', 'dar de alta'] },
     { id: 'logistics', category: 'apps', kind: 'navigate', href: '/logistics', sensitive: false,
       title: 'Logística', description: 'Seguimiento y trazabilidad.',
       keywords: ['logistica', 'logistics', 'supply chain', 'cadena de suministro', 'trazabilidad'] },
@@ -162,15 +162,22 @@ function listActions(principal) {
  * Sugiere acciones a partir del mensaje del usuario. Puntúa por coincidencia de palabras clave
  * (frases > palabras sueltas) y devuelve las `limit` mejores. Texto de entrada acotado.
  */
+const { tokenize: tokenizar } = require('../knowledge/bm25');
+
 function suggestActions(principal, text, { limit = 3 } = {}) {
     if (!principal || typeof text !== 'string') return [];
     const haystack = ` ${normalize(text.slice(0, 2000)).replace(/[^a-z0-9+\- ]/g, ' ')} `;
+    // Además de la palabra literal se compara por RAÍZ (misma que usa la búsqueda): «cobro» ↔ «cobros», «tokenizo» ↔ «tokenizar».
+    const raices = new Set(tokenizar(text.slice(0, 2000)));
     const scored = [];
     for (const a of CATALOG) {
         let score = 0;
         for (const kw of a.keywords) {
             const k = normalize(kw);
-            if (haystack.includes(` ${k} `) || (k.length >= 5 && haystack.includes(` ${k}`))) score += k.includes(' ') ? 3 : 1;
+            const kr = tokenizar(kw);
+            const porPalabra = haystack.includes(` ${k} `) || (k.length >= 5 && haystack.includes(` ${k}`));
+            const porRaiz = kr.length > 0 && kr.every((t) => raices.has(t));
+            if (porPalabra || porRaiz) score += k.includes(' ') ? 3 : 1;
         }
         if (score > 0) scored.push({ a, score });
     }

@@ -1,5 +1,5 @@
 # 03 · Funciones del chat: pregunta gratis, plan, streaming, acciones, documentos, historial, defensas
-# Ejecutado: 2026-10-09 12:53:32
+# Ejecutado: 2026-10-09 13:29:26
 
 ── 1. Pregunta gratis sin sesión y registro ──
 PASS   visitante: la primera pregunta se responde en streaming
@@ -12,7 +12,7 @@ PASS   sin plan: los enlaces de pago son de buy.stripe.com
 
 ── 3. Empresa con plan Business: chat, streaming y consumo ──
 PASS   streaming: meta → provider → delta* → usage/done — meta,actions,provider,delta,done
-PASS   consumo: cada pregunta suma 1 acción de IA al plan — 33 → 34 de 15000
+PASS   consumo: cada pregunta suma 1 acción de IA al plan — 260 → 261 de 15000
 
 ── 4. Acciones: catálogo, abrir, bloqueos ──
 PASS   catálogo de acciones por rol/plan — 23 acciones, 0 bloqueadas
@@ -27,13 +27,13 @@ PASS   sin plan: una acción bloqueada da 403 al abrirla — exclusive_docs
 
 ── 5. Documentos propios de la empresa (RAG privado) ──
 PASS   subir la política contable de la empresa — status 201 published
-PASS   la empresa recupera SU documento en el chat — politica-contable-atlas.txt|politica-contable-atlas.txt
+PASS   la empresa recupera SU documento en el chat — politica-contable-atlas.txt|politica-contable-atlas.txt|politica-contable-atlas.txt|procedimiento-cierre-atlas.txt
 PASS   listar documentos del tenant
 PASS   documento con prompt injection → cuarentena — quarantined
 PASS   borrar un documento propio
 
 ── 6. Historial de conversaciones ──
-PASS   listar conversaciones (persistidas en Postgres) — 32 conversaciones
+PASS   listar conversaciones (persistidas en Postgres) — 50 conversaciones
 PASS   abrir una conversación
 PASS   otra empresa NO puede abrirla
 PASS   borrar una conversación

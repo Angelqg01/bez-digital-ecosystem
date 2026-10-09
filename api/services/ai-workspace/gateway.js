@@ -23,7 +23,12 @@ function extractiveText({ contextText }) {
         .split(/<untrusted_document[^>]*>/).slice(1)
         .map((p, i) => `**[${i + 1}]** ${p.replace(/<\/untrusted_document>/, '').trim()}`)
         .join('\n\n');
-    return `Esto es lo que encontré en la documentación:\n\n${body}\n\n_(Modo sin proveedor de IA configurado.)_`;
+    // Coincidencia débil: se dice, en vez de presentar como respuesta algo que sólo comparte una palabra con la pregunta.
+    const relevancia = Number((contextText.match(/<untrusted_document[^>]*relevance="([0-9.]+)"/) || [])[1]);
+    const intro = Number.isFinite(relevancia) && relevancia < 0.5
+        ? 'No estoy seguro de que esto responda a tu pregunta; es lo más cercano que he encontrado en la documentación:'
+        : 'Esto es lo que encontré en la documentación:';
+    return `${intro}\n\n${body}\n\n_(Modo sin proveedor de IA configurado.)_`;
 }
 
 /** Une la señal del cliente con un tiempo máximo. */

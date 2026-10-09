@@ -10,11 +10,20 @@
  */
 const crypto = require('crypto');
 const { PLANS } = require('../../config/plans');
+const { getEntitlements } = require('../../config/plan-entitlements');
 
 const eur = (n) => n.toLocaleString('es-ES', { maximumFractionDigits: 2 });
 const planes = PLANS.map((p) => (p.priceEUR === 0
     ? `- ${p.name} (${p.profile}): sin cuota fija, pago por uso (coste real + 25 %), hasta ${p.aiActions} acciones de IA al mes; ${p.trialDays || 0} días de prueba.`
     : `- ${p.name} (${p.profile}): ${eur(p.priceEUR)} €/mes + IVA o ${eur(p.yearlyEUR)} €/año + IVA (2 meses gratis); ${p.aiActions ? `${eur(p.aiActions)} acciones de IA` : 'acciones de IA ilimitadas'}, ${p.gasSubsidy}% de subvención de gas.`)).join('\n');
+
+const CARRILES = { crypto_transfer: 'transferencia cripto', fiat_to_crypto: 'euros → cripto', crypto_to_fiat: 'cripto → euros', fiat_to_fiat: 'euros → euros' };
+const limitesPorPlan = PLANS.filter((p) => p.id !== 'starter').map((p) => {
+    const ops = getEntitlements(p.id).operaciones || {};
+    const lineas = Object.entries(ops.rails || {}).map(([carril, l]) =>
+        `${CARRILES[carril] || carril}: hasta ${eur(l.porOperacionEur)} € por operación, ${eur(l.diarioEur)} €/día y ${eur(l.mensualEur)} €/mes, con aprobación humana desde ${eur(l.aprobacionDesdeEur)} €`);
+    return `- ${p.name}: ${lineas.join('; ')}${ops.dobleAprobacionDesdeEur ? `; doble aprobación desde ${eur(ops.dobleAprobacionDesdeEur)} €` : ''}.`;
+}).join('\n');
 
 const DOCS = [
     ['bz_que_es', 'Qué es BeZhas',
@@ -90,6 +99,74 @@ const DOCS = [
         + 'consulta de precio y token, pagos, estado KYC y más. 2) Servidor MCP en https://mcp.bezhas.com/mcp para conectar Claude, ChatGPT, Cursor o un '
         + 'agente propio, con herramientas de lectura y de preparación (nunca de firma). 3) Conexión gestionada con tu ERP. Todas se miden contra tu plan '
         + 'y tienen límites de tasa. La documentación está en www.bezhas.com/developers y www.bezhas.com/docs.'],
+    ['bz_alta', 'Alta de la empresa en BeZhas',
+        'El alta de una empresa son seis pasos. 1) Crear la cuenta del responsable: con una wallet (firmando un mensaje, sin contraseña) o con email y '
+        + 'contraseña (mínimo 8 caracteres). 2) Crear la organización con el nombre de la empresa. 3) Completar los datos legales y fiscales: razón social, '
+        + 'identificador fiscal, país, domicilio fiscal y representante legal. 4) Subir la documentación y enviar la empresa a verificación KYB. '
+        + '5) Contratar un plan. 6) Asignar el plan a una app de la organización y obtener su api-key para integrar BeZhas. '
+        + 'También hay un alta guiada con entorno de pruebas y sin coste, que puede abrir tu IA con las herramientas bezhas_signup_start y bezhas_connect_start '
+        + 'del servidor MCP público, o desde www.bezhas.com/onboarding.'],
+    ['bz_kyb', 'Verificación de la empresa (KYB)',
+        'Para verificar a la empresa hacen falta sus datos legales completos (razón social, identificador fiscal, domicilio fiscal y nombre e identificación del '
+        + 'representante legal) y documentación. Tipos admitidos: certificado de constitución, justificante del identificador fiscal, identificación del '
+        + 'representante legal, justificante de domicilio y otros. Cada documento se registra con su nombre de archivo, la URL donde está almacenado y su hash '
+        + 'SHA-256. Si faltan datos, el envío a verificación se rechaza y dice cuáles. La revisión la hace un administrador de BeZhas: la propia empresa no puede '
+        + 'aprobarse a sí misma.'],
+    ['bz_equipo', 'Equipo y roles de la organización',
+        'Cada organización tiene miembros con un rol propio dentro de ella: owner, admin, developer, auditor, financial y operator. Se añaden por email. '
+        + 'El owner y el admin pueden editar la organización, gestionar el equipo y la parte técnica; el auditor es de solo lectura (no puede editar la '
+        + 'organización ni reclamar planes). Los roles son por organización: la misma persona puede ser owner en una y auditor en otra. '
+        + 'Quien no es miembro no ve nada de la organización.'],
+    ['bz_facturacion_empresa', 'Facturación de la empresa',
+        'En el panel de la organización se configura la facturación: el email de facturación, la facturación electrónica (Facturae, SII u otro formato), '
+        + 'los contactos administrativo, técnico y de seguridad, y el método de pago con tarjeta mediante Stripe. Se puede consultar el listado de facturas. '
+        + 'Si el plan se contrató con un Payment Link, se asigna a una app de la organización reclamándolo con el identificador de la sesión de Stripe '
+        + '(cs_…) que llega en la URL de vuelta tras pagar; solo pueden hacerlo los roles con permiso de facturación.'],
+    ['bz_cobros', 'Cobrar a tus clientes (BEZ-Pay)',
+        'BEZ-Pay abre una orden de cobro con el importe neto en USD (mínimo 1) y devuelve un enlace de pago. El cliente paga con tarjeta (Stripe), transferencia '
+        + 'SEPA o BEZ on-chain, y los BEZ se entregan en la wallet de destino que indica el cliente. La comisión de plataforma es del 2,5 % y se suma aparte. '
+        + 'Preparar la orden no cobra: el cobro ocurre cuando el cliente paga. Cada orden lleva una clave de idempotencia única, de modo que repetir la llamada '
+        + 'devuelve la misma orden y nunca otra. Los cobros con tarjeta quedan retenidos hasta que el banco confirma los fondos. Desde una IA, la herramienta '
+        + 'MCP bezhas_checkout_prepare (plan Creator Pro o superior) prepara la orden.'],
+    ['bz_wallets_tesoreria', 'Wallets y tesorería de la empresa',
+        'La organización registra sus wallets con la dirección, la red, el tipo (EOA, multifirma o Safe) y una etiqueta. Para la tesorería se recomienda un Safe '
+        + 'multifirma. Las cuentas creadas con email reciben una wallet gestionada cuando está disponible; sin una wallet real no se puede comprar BEZ, porque '
+        + 'no habría a dónde entregarlo. BeZhas nunca firma por ti, y las direcciones custodiadas por BeZhas (tesorería y hot wallet) no pueden usarse como origen '
+        + 'de un pago de un cliente.'],
+    ['bz_limites', 'Límites y aprobaciones de pagos por plan',
+        `Cada plan fija cuánto se puede mover y cuándo hace falta una persona. Starter no incluye carriles de pago. En los demás planes, los límites vigentes son:\n${limitesPorPlan}\n`
+        + 'Por encima del umbral, la operación queda a la espera de una o dos aprobaciones humanas firmadas. Además se aplican la verificación KYC, el nivel de '
+        + 'riesgo y si el destino es nuevo, que puede denegar o frenar la operación aunque esté dentro del límite.'],
+    ['bz_cargolink', 'CargoLink: logística y aduanas on-chain',
+        'CargoLink sigue cada envío como una transacción con un identificador B-UID que recorre un único ciclo: CREATED, GATE_IN, CUSTOMS_CLEARED, STOWED, '
+        + 'GATE_OUT, DEPARTED, IN_TRANSIT y DELIVERED. Los actores (aduanas, naviera, logística industrial, última milla y el punto de venta del cliente) tienen '
+        + 'claves ligadas a su BeZhas_ID y cada uno solo puede hacer su propia transición. Cada cambio de estado dispara un webhook firmado con HMAC-SHA256 a '
+        + 'quien esté suscrito. El pago se asegura con un escrow en BEZ (sin bloquear, bloqueado o liberado) y se libera cuando la contraparte acepta. '
+        + 'Hay cadena de custodia entre actores y registros de carbono y de factura asociados al envío.'],
+    ['bz_operant', 'OPERANT: departamentos de gestión empresarial con IA',
+        'OPERANT automatiza departamentos de una empresa con agentes de IA: Ventas, Soporte, Marketing, Finanzas (facturación y cobros, previsión de tesorería, '
+        + 'categorización de gasto, conciliación bancaria y desembolso en BEZ), RRHH (cribado de CV con redacción de datos personales, agenda de entrevistas, '
+        + 'onboarding y asesoría laboral), Operaciones, Legal, Blockchain, Tesorería y Fundraising. Finanzas y RRHH llevan salvaguardas adicionales. '
+        + 'Por plan: Starter 2 departamentos (Ventas y Soporte) con respuestas en borrador y pago por uso; Creator Pro 4 departamentos, 300 tareas al mes y '
+        + 'autonomía asistida; Business 8 departamentos, 2.000 tareas al mes y autonomía total; Enterprise VIP los 10 departamentos, 9.000 tareas al mes y '
+        + 'autonomía gobernada. Pasada la cuota se factura por uso. Una tarea no es una llamada: la ejecutan un responsable y especialistas con memoria y registro de auditoría.'],
+    ['bz_staking', 'Staking y apps financieras (DeFi)',
+        'La app DeFi de BeZhas (BZ Capital) agrupa staking, farming, bridge, wallet, DAO y liquidez conectados al token BEZ. Para hacer staking se abre la '
+        + 'aplicación, se conecta la wallet, se aprueba BEZ para el contrato de staking y se deposita la cantidad deseada; las recompensas dependen de la '
+        + 'participación total y son variables. Cada operación la firma tu wallet: el asistente no ejecuta transacciones, solo abre la pantalla.'],
+    ['bz_apps', 'Apps del ecosistema BeZhas',
+        'El ecosistema son varias apps conectadas por SSO: Hub (centro social y marketplace), DeFi, Wallet (billetera de BEZ-Coin sobre la L2), Gas Tank Manager, '
+        + 'Edge Node Manager, CargoLink (logística), PureScan (trazabilidad alimentaria con IA de visión y pasaportes digitales de producto), Energy (gestión '
+        + 'energética e IoT) y Vision Scan. El Gas Tank (paymaster) abstrae el coste de gas de las transacciones corporativas: una empresa recarga con fiat '
+        + '(Stripe), el importe se convierte en gas y se consulta el historial de consumo.'],
+    ['bz_privacidad', 'Privacidad y datos',
+        'Los datos comerciales de la empresa no salen de ella: el Edge Node anonimiza los eventos del ERP y solo se publica su hash. Las credenciales del ERP '
+        + 'se guardan cifradas y nunca se devuelven. Para conectar un ERP hace falta un DPA firmado. Puedes consultar, exportar y borrar la telemetría de uso '
+        + 'asociada a tu api-key. Las conversaciones y los documentos que subes al asistente son privados de tu organización: otras empresas no pueden '
+        + 'recuperarlos, y un documento con instrucciones sospechosas queda en cuarentena y no se indexa.'],
+    ['bz_soporte', 'Soporte y contacto',
+        'Para ayuda escribe a info.bezcoin@bezhas.com, abre el centro de ayuda en www.bezhas.com/support o usa el bot de Telegram @BeZhasBot. La documentación '
+        + 'técnica está en www.bezhas.com/developers y www.bezhas.com/docs.'],
 ];
 
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');

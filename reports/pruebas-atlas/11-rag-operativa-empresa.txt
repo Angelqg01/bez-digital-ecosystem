@@ -1,0 +1,49 @@
+# 11 · RAG operativa de una empresa: conversación, documentos propios, streaming, seguridad, acciones, límites
+# Ejecutado: 2026-10-09 13:28:24
+
+── A. Conversación con contexto (misma conversación, varios turnos) ──
+PASS   tres turnos en la misma conversación mantienen el mismo id
+PASS   la conversación guarda los 6 mensajes (3 preguntas + 3 respuestas) — 6 mensajes
+PASS   la conversación aparece en el historial con su título
+
+── B. Streaming con preguntas de empresa ──
+PASS   stream «¿Cómo cobro a mis clientes con SEPA?» — meta,actions,provider,delta,done · 1881 caracteres · fuentes: Cobrar a tus clientes (BEZ-Pay) | Pagos y facturación
+PASS   stream «¿Qué roles hay en el equipo?» — meta,provider,delta,done · 557 caracteres · fuentes: Equipo y roles de la organización
+PASS   stream «¿Qué es OPERANT?» — meta,provider,delta,done · 1604 caracteres · fuentes: OPERANT: departamentos de gestión empresarial con IA | Contabilidad con BeZhas
+
+── C. Documentos propios: subir, preguntar, retirar ──
+PASS   subir calendario-nominas-atlas.txt — published
+PASS   subir politica-aprobaciones-atlas.txt — published
+PASS   subir procedimiento-cierre-atlas.txt — published
+PASS   recupera SU documento: CAL-NOM-ATLAS-4471 — calendario-nominas-atlas.txt | calendario-nominas-atlas.txt
+PASS   recupera SU documento: POL-APR-ATLAS-9902 — politica-aprobaciones-atlas.txt
+PASS   recupera SU documento: PROC-CIERRE-ATLAS-3380 — procedimiento-cierre-atlas.txt | procedimiento-cierre-atlas.txt | politica-contable-atlas.txt | politica-contable-atlas.txt
+PASS   mezcla documentación pública y documento propio en una misma respuesta — calendario-nominas-atlas.txt | calendario-nominas-atlas.txt | politica-contable-atlas.txt | politica-contable-atlas.txt
+PASS   borrar la política de aprobaciones
+PASS   tras borrarlo, el documento YA NO se recupera
+
+── D. Seguridad de los documentos propios ──
+PASS   documento con injection en español → cuarentena — quarantined
+PASS   documento con injection con rol falso → cuarentena — quarantined
+PASS   documento con exfiltración por Markdown → cuarentena — quarantined
+PASS   una empresa NO puede publicar conocimiento global para todos los clientes — status 403 {"error":"Solo un admin puede publicar conocimiento global"}
+PASS   el visitante anónimo NO puede ver los documentos de la empresa
+PASS   petición de secretos: nada se filtra
+
+── E. Acciones sugeridas según lo que pregunta la empresa ──
+PASS   «¿Cómo cobro a mis clientes con tarjeta?» sugiere la acción «payments» — sugeridas: payments, buy_bez
+PASS   «¿Cómo tokenizo maquinaria?» sugiere la acción «enterprise» — sugeridas: enterprise, nfts, token_info
+PASS   «¿Cómo integro mi ERP con la API?» sugiere la acción «developers» — sugeridas: developers, mcp, enterprise
+PASS   «¿Cómo conecto Claude a BeZhas?» sugiere la acción «mcp» — sugeridas: mcp
+PASS   «¿Cómo contacto con soporte?» sugiere la acción «support» — sugeridas: support
+PASS   «Quiero contratar un plan» sugiere la acción «subscribe_plans» — sugeridas: token_info, subscribe_plans, settings
+PASS   «¿Cómo hago staking de BEZ?» sugiere la acción «staking» — sugeridas: token_info, staking
+PASS   «¿Cómo doy de alta a mi empresa y hago el KYB?» sugiere la acción «onboarding» — sugeridas: onboarding, enterprise
+PASS   «¿Cómo compro BEZ?» sugiere la acción «buy_bez» — sugeridas: buy_bez, token_info
+
+── F. Límites, concurrencia y consumo ──
+PASS   5 preguntas concurrentes → todas 200 — 200,200,200,200,200
+PASS   el consumo suma exactamente 5 acciones de IA — 235 → 240
+PASS   el límite de 20 mensajes por minuto corta el exceso con 429 — 20×200, 4×429
+
+33/33 pasan

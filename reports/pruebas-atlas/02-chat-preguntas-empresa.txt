@@ -1,54 +1,54 @@
 # 02 · Exploración del chat: preguntas de una empresa (contabilidad, tokenización, nóminas)
-# Ejecutado: 2026-10-09 12:53:31
+# Ejecutado: 2026-10-09 13:28:24
 
-Consumo inicial del plan: {"plan":"business","used":25,"limit":15000}
+Consumo inicial del plan: {"plan":"business","used":260,"limit":15000}
 
 P: Somos una empresa que lleva toda su contabilidad y quiere tokenizar sus activos y las nóminas. ¿Qué puede hacer BeZhas por nosotros?
-   status 200 · proveedor extractive · fuentes 4: Tokenizar activos reales (RWA) | Contabilidad con BeZhas | Edge Node | Pagar nóminas y pagos a empleados
-   acciones: enterprise, payments, token_info
-   R: Esto es lo que encontré en la documentación: **[1]** BeZhas permite tokenizar un activo real en fracciones con un contrato RWAFactory en Polygon. Hay dos fábricas: «activos» (inmuebles, hoteles, locales, vehículos, barcos, helicóp
-   uso: {"credits":3,"billableEUR":0.0025,"payg":false,"facturado":false,"used":26,"limit":15000}
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
 
 P: ¿Cómo se tokenizan activos reales como maquinaria o inmuebles?
-   status 200 · proveedor extractive · fuentes 1: Tokenizar activos reales (RWA)
-   acciones: enterprise, token_info
-   R: Esto es lo que encontré en la documentación: **[1]** BeZhas permite tokenizar un activo real en fracciones con un contrato RWAFactory en Polygon. Hay dos fábricas: «activos» (inmuebles, hoteles, locales, vehículos, barcos, helicóp
-   uso: {"credits":3,"billableEUR":0.0025,"payg":false,"facturado":false,"used":27,"limit":15000}
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
 
 P: ¿Puedo pagar las nóminas de mis empleados con BEZ o con stablecoins?
-   status 200 · proveedor extractive · fuentes 1: Pagar nóminas y pagos a empleados
-   acciones: payments, enterprise, token_info
-   R: Esto es lo que encontré en la documentación: **[1]** Los pagos de nómina se preparan como operaciones con propósito «payroll»: transferencia cripto (BEZ, USDC o USDT en la red elegida) o conversión y salida a cuenta bancaria. BeZh
-   uso: {"credits":3,"billableEUR":0.0025,"payg":false,"facturado":false,"used":28,"limit":15000}
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
 
 P: ¿Qué métodos de pago acepta BeZhas?
-   status 200 · proveedor extractive · fuentes 1: Qué es BeZhas
-   acciones: payments
-   R: Esto es lo que encontré en la documentación: **[1]** BeZhas es una red B2B firmada que conecta el ERP de una empresa con puertos, aduanas, bancos y clientes de cualquier país. Cada operación se prueba con un hash: los datos comerc
-   uso: {"credits":3,"billableEUR":0.0025,"payg":false,"facturado":false,"used":29,"limit":15000}
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
 
 P: ¿Cumple MiCA y la normativa fiscal española (AEAT)?
-   status 200 · proveedor extractive · fuentes 1: Normativa y cumplimiento
+   status 429 · proveedor undefined · fuentes 0: —
    acciones: —
-   R: Esto es lo que encontré en la documentación: **[1]** BeZhas opera pensando en el marco español y europeo: AEAT, MiCA, SEPA y DAC8. Las operaciones con fondos exigen verificación (KYC) según su importe, límites por plan y aprobació
-   uso: {"credits":3,"billableEUR":0.0025,"payg":false,"facturado":false,"used":30,"limit":15000}
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
 
 P: ¿Cómo integro mi ERP o software contable con la API de BeZhas?
-   status 200 · proveedor extractive · fuentes 4: Conectar tu ERP o software contable | Contabilidad con BeZhas | Integrar BeZhas con otra plataforma por API | politica-contable-atlas.txt
-   acciones: developers, enterprise, mcp
-   R: Esto es lo que encontré en la documentación: **[1]** BeZhas se conecta al ERP del cliente: SAP S/4HANA, SAP Business One, Odoo, Microsoft Dynamics y NetSuite. Por defecto es de solo lectura: facturas, pedidos, albaranes, activos f
-   uso: {"credits":3,"billableEUR":0.0025,"payg":false,"facturado":false,"used":31,"limit":15000}
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
 
 P: ¿Qué planes hay y cuánto cuestan para una empresa como la nuestra?
-   status 200 · proveedor extractive · fuentes 4: Planes y precios | Contabilidad con BeZhas | Edge Node | Pagos y facturación
-   acciones: enterprise, subscribe_plans
-   R: Esto es lo que encontré en la documentación: **[1]** BeZhas ofrece cuatro planes. Los precios no incluyen IVA (21 % en España), que se suma en el pago: - Starter (Autónomos / Startups): sin cuota fija, pago por uso (coste real + 2
-   uso: {"credits":3,"billableEUR":0.0025,"payg":false,"facturado":false,"used":32,"limit":15000}
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
 
 P: ¿Cómo se aprueban y firman los pagos grandes de forma segura?
-   status 200 · proveedor extractive · fuentes 4: Pagar nóminas y pagos a empleados | Contabilidad con BeZhas | Cómo comprar BEZ | Integrar BeZhas con otra plataforma por API
-   acciones: payments
-   R: Esto es lo que encontré en la documentación: **[1]** Los pagos de nómina se preparan como operaciones con propósito «payroll»: transferencia cripto (BEZ, USDC o USDT en la red elegida) o conversión y salida a cuenta bancaria. BeZh
-   uso: {"credits":3,"billableEUR":0.0025,"payg":false,"facturado":false,"used":33,"limit":15000}
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
 
-Consumo tras las preguntas: {"plan":"business","used":33,"limit":15000}
+Consumo tras las preguntas: {"plan":"business","used":260,"limit":15000}

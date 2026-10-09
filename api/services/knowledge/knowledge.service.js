@@ -123,6 +123,7 @@ class KnowledgeService {
         //    resultados claramente menos relevantes que el mejor.
         const scored = bm25Rank(query, allowed);
         const floor = scored.length ? scored[0].score * MIN_RELATIVE_SCORE : 0;
+        const cobertura = new Map(scored.map((r) => [r.chunk.id, r.coverage]));
         let ranked = scored.filter((r) => r.score >= floor).map((r) => r.chunk);
         if (this.embedder) {
             const qv = await this.embedder.embed(query);
@@ -142,7 +143,8 @@ class KnowledgeService {
         for (const c of ranked) {
             const doc = await this.store.getDoc(c.document_id);
             if (!doc || doc.version !== c.version || !canAccess(principal, doc) || !canAccess(principal, c)) continue;
-            out.push(c);
+            // `cobertura` (0-1): cuánto de la pregunta explica este fragmento. Baja = coincidencia débil (ver bm25Rank).
+            out.push({ ...c, cobertura: cobertura.get(c.id) });
             if (out.length >= k) break;
         }
         return out;
@@ -160,7 +162,7 @@ class KnowledgeService {
             classification: c.classification,
         }));
         const context = chunks
-            .map((c, i) => `<untrusted_document ref="${i + 1}" title="${escapeAttr(c.title)}" version="${c.version}">\n${neutralize(c.content)}\n</untrusted_document>`)
+            .map((c, i) => `<untrusted_document ref="${i + 1}" title="${escapeAttr(c.title)}" version="${c.version}" relevance="${Number.isFinite(c.cobertura) ? c.cobertura.toFixed(2) : '1.00'}">\n${neutralize(c.content)}\n</untrusted_document>`)
             .join('\n');
         return { context, sources };
     }
