@@ -8,7 +8,7 @@
  */
 jest.mock('axios');
 const axios = require('axios');
-const { executeTool } = require('../services/orchestrator.service');
+const { executeTool, toolCache } = require('../services/orchestrator.service');
 
 const holders = (n) => ({
     data: {
@@ -20,7 +20,7 @@ const holders = (n) => ({
     },
 });
 
-beforeEach(() => jest.resetAllMocks());
+beforeEach(() => { jest.resetAllMocks(); toolCache.clear(); });
 
 describe('blockscout: holder_analysis', () => {
     test('no manda `limit` en la query — es lo que devolvía 422', async () => {

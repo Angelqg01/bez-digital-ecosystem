@@ -27,6 +27,10 @@
 
 const axios = require('axios');
 const aiProviderService = require('./ai-provider.service');
+const { TtlCache, isCacheableTool, cacheKey } = require('./cost-policy.service');
+
+// Caché de herramientas de solo lectura: una ráfaga idéntica paga una sola llamada externa.
+const toolCache = new TtlCache();
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 // Contrato del token BEZ en Polygon. El valor anterior por defecto era
@@ -847,30 +851,41 @@ Categorias permitidas: ${Array.isArray(categories) && categories.length ? catego
  * @param {Object} params   - Tool-specific parameters
  * @returns {Promise<Object>} Tool result
  */
-async function executeTool(toolName, params = {}) {
+async function executeTool(toolName, params = {}, costCtx = {}) {
     const tool = TOOL_REGISTRY[toolName];
     if (!tool) {
         throw new Error(`Unknown MCP tool: "${toolName}". Available: ${Object.keys(TOOL_REGISTRY).join(', ')}`);
     }
 
     const startTime = Date.now();
-    try {
-        const result = await tool.handler(params);
-        return {
-            toolName,
-            toolLabel: tool.name,
-            executionTimeMs: Date.now() - startTime,
-            ...result,
-        };
-    } catch (err) {
-        return {
-            toolName,
-            toolLabel: tool.name,
-            executionTimeMs: Date.now() - startTime,
-            status: 'FAILED',
-            reasoning: err.message,
-        };
+    // Admin => coste cero: no factura. El resto se factura solo si la llamada no salió de caché.
+    const billable = costCtx.billable !== false;
+    const run = async () => {
+        try {
+            return await tool.handler(params);
+        } catch (err) {
+            return { status: 'FAILED', reasoning: err.message };
+        }
+    };
+
+    let result;
+    let cached = false;
+    if (isCacheableTool(tool)) {
+        ({ value: result, cached } = await toolCache.wrap(cacheKey(toolName, params), run, {
+            shouldCache: (r) => r && (r.status === 'SUCCESS' || r.status === 'PARTIAL'),
+        }));
+    } else {
+        result = await run();
     }
+
+    return {
+        toolName,
+        toolLabel: tool.name,
+        ...result,
+        executionTimeMs: Date.now() - startTime,
+        cached,
+        billable: billable && !cached,
+    };
 }
 
 /**
@@ -878,13 +893,13 @@ async function executeTool(toolName, params = {}) {
  * @param {Array<{tool: string, params: Object}>} steps
  * @returns {Promise<Object>} Pipeline results
  */
-async function executePipeline(steps = []) {
+async function executePipeline(steps = [], costCtx = {}) {
     const results = [];
     let context = {};
 
     for (const step of steps) {
         const stepParams = { ...step.params, _context: context };
-        const result = await executeTool(step.tool, stepParams);
+        const result = await executeTool(step.tool, stepParams, costCtx);
         results.push(result);
         // Pass successful data forward as context
         if (result.status === 'SUCCESS' || result.status === 'PARTIAL') {
@@ -906,8 +921,8 @@ async function executePipeline(steps = []) {
  * @param {Array<{tool: string, params: Object}>} tools
  * @returns {Promise<Object>} Parallel results
  */
-async function executeParallel(tools = []) {
-    const promises = tools.map(t => executeTool(t.tool, t.params));
+async function executeParallel(tools = [], costCtx = {}) {
+    const promises = tools.map(t => executeTool(t.tool, t.params, costCtx));
     const results = await Promise.allSettled(promises);
 
     return {
@@ -940,6 +955,7 @@ module.exports = {
     executeParallel,
     getToolRegistry,
     TOOL_REGISTRY,
+    toolCache,
     // Expuestos para poder fijar por pruebas dónde está la frontera entre un
     // fallo nuestro y una indisponibilidad ajena. Esa frontera decide si el
     // humo tumba la build, así que no puede quedar sin cubrir.
