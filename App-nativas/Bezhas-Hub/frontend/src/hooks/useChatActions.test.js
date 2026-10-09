@@ -62,7 +62,8 @@ describe('useChatActions', () => {
         const { result } = renderHook(() => useChatActions(api));
         await act(async () => { await result.current.request(act1({ id: 'subscribe_plans', kind: 'plans' })); });
         expect(result.current.dialog.type).toBe('plans');
-        expect(result.current.plans).toEqual([{ id: 'starter', name: 'Starter' }]);
+        expect(result.current.plans).toHaveLength(1);
+        expect(result.current.plans[0]).toMatchObject({ id: 'starter', name: 'Starter', purchasable: false });
         expect(result.current.currentPlan).toBe('starter');
     });
 
@@ -146,14 +147,48 @@ describe('useChatActions', () => {
     describe('pagos con Stripe', () => {
         const STRIPE = 'https://checkout.stripe.com/c/pay/cs_test_abc';
 
-        test('checkoutPlan envía solo plan y ciclo y redirige a la URL de Stripe', async () => {
-            const api = makeApi({ 'POST /api/checkout/plan': { success: true, url: STRIPE } });
-            const { result } = renderHook(() => useChatActions(api));
+        const LINK_M = 'https://buy.stripe.com/aaa';
+        const LINK_A = 'https://buy.stripe.com/bbb';
+        const conPlanes = async (planes) => {
+            const api = makeApi({ 'POST /api/ai-workspace/actions/subscribe_plans/open': { kind: 'plans', href: '/vip', sensitive: true }, 'GET /api/ai-workspace/plans': { plans: planes, current: 'starter' } });
+            const hook = renderHook(() => useChatActions(api));
+            await act(async () => { await hook.result.current.request({ id: 'subscribe_plans', kind: 'plans', href: '/vip', sensitive: true }); });
+            return hook;
+        };
+        const PLAN = { id: 'business', name: 'Business', priceEUR: 499, yearlyEUR: 4990, monthlyUrl: LINK_M, annualUrl: LINK_A };
+
+        test('checkoutPlan abre el Payment Link del ciclo elegido (sin llamar a ningún endpoint de pago)', async () => {
+            const { result } = await conPlanes([PLAN]);
             let ok;
-            await act(async () => { ok = await result.current.checkoutPlan('creator', 'yearly'); });
-            expect(api.post).toHaveBeenCalledWith('/api/checkout/plan', { planId: 'creator', cycle: 'yearly' });
+            await act(async () => { ok = await result.current.checkoutPlan('business', 'yearly'); });
             expect(ok).toBe(true);
-            expect(assign).toHaveBeenCalledWith(STRIPE);
+            expect(assign).toHaveBeenCalledWith(LINK_A);
+            await act(async () => { await result.current.checkoutPlan('business', 'monthly'); });
+            expect(assign).toHaveBeenLastCalledWith(LINK_M);
+        });
+
+        test('los planes llegan normalizados para la ventana (precio en EUR y comprable si hay enlace)', async () => {
+            const { result } = await conPlanes([PLAN, { id: 'starter', name: 'Starter', priceEUR: 0, yearlyEUR: 0 }]);
+            expect(result.current.plans[0]).toMatchObject({ priceMonthly: 499, priceYearly: 4990, currency: 'EUR', purchasable: true });
+            expect(result.current.plans[1].purchasable).toBe(false);
+        });
+
+        test.each([
+            ['enlace de otro dominio', { ...PLAN, monthlyUrl: 'https://evil.test/pay' }],
+            ['http plano', { ...PLAN, monthlyUrl: 'http://buy.stripe.com/aaa' }],
+            ['subdominio engañoso', { ...PLAN, monthlyUrl: 'https://buy.stripe.com.evil.test/x' }],
+            ['javascript:', { ...PLAN, monthlyUrl: 'javascript:alert(1)' }],
+        ])('checkoutPlan no redirige con un enlace inseguro (%s)', async (_n, plan) => {
+            const { result } = await conPlanes([plan]);
+            await act(async () => { await result.current.checkoutPlan('business', 'monthly'); });
+            expect(assign).not.toHaveBeenCalled();
+            expect(result.current.payError).toMatch(/no se puede contratar/);
+        });
+
+        test('un plan inexistente no redirige', async () => {
+            const { result } = await conPlanes([PLAN]);
+            await act(async () => { await result.current.checkoutPlan('no_existe', 'monthly'); });
+            expect(assign).not.toHaveBeenCalled();
         });
 
         test.each([

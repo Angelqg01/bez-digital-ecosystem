@@ -1,9 +1,18 @@
-const path = require('path');
+'use strict';
+
+/**
+ * Instancia del Knowledge Plane. En producción guarda en Postgres (Cloud SQL):
+ * persiste entre reinicios y la comparten todas las instancias. En los tests,
+ * en memoria.
+ */
 const { KnowledgeService } = require('./knowledge.service');
-const { MemoryStore } = require('./store');
+const { MemoryStore, PgStore } = require('./store');
 
-// En Cloud Run el disco es efímero: persistir sólo si se pide expresamente con KNOWLEDGE_STORE_PATH.
-const defaultPath = process.env.NODE_ENV === 'test' || process.env.KNOWLEDGE_PERSIST === 'false' ? null : (process.env.KNOWLEDGE_STORE_PATH || null);
-const knowledge = new KnowledgeService({ store: new MemoryStore({ filePath: defaultPath }) });
+function crearStore() {
+    if (process.env.NODE_ENV === 'test' || process.env.KNOWLEDGE_STORE === 'memory') return new MemoryStore();
+    return new PgStore(require('../../db/pool'));
+}
 
-module.exports = { knowledge, KnowledgeService, MemoryStore };
+const knowledge = new KnowledgeService({ store: crearStore() });
+
+module.exports = { knowledge, KnowledgeService, MemoryStore, PgStore };

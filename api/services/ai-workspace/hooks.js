@@ -11,6 +11,7 @@
  * Los demás fallan ABIERTO: el error se registra y el pipeline continúa.
  */
 const { sanitizeModelOutput, stripHiddenChars } = require('./outputSanitizer');
+const logger = require('../../utils/logger');
 
 const STAGES = Object.freeze(['beforeChat', 'afterModel', 'onAction']);
 
@@ -37,7 +38,7 @@ class HookRegistry {
                 if (out && typeof out === 'object') current = { ...current, ...out, principal: ctx.principal }; // el principal no se puede sustituir
             } catch (err) {
                 if (h.critical || err.status) throw err; // bloqueo explícito ({status}) o guarda crítica
-                console.warn(`⚠️ hook ${stage}/${h.name} falló: ${err.message}`);
+                logger.warn({ stage, hook: h.name, error: err.message }, 'hook del chat falló');
             }
         }
         return current;

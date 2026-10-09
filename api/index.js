@@ -25,6 +25,7 @@
 const express = require('express');
 const cors = require('cors');
 const { makeCorsOriginFn, parseExtraOrigins } = require('./config/cors');
+const { globalLimiterOptions } = require('./config/rateLimit');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
@@ -89,6 +90,7 @@ const identityRoutes = require('./routes/identity');
 const organizationsRoutes = require('./routes/organizations');
 const organizationTechRoutes = require('./routes/organization-tech');
 const organizationBillingRoutes = require('./routes/organization-billing');
+const aiWorkspaceRoutes = require('./routes/ai-workspace');
 const adminConfigRoutes = require('./routes/admin-config');
 const adminGovernanceRoutes = require('./routes/admin-governance');
 const adminConsoleRoutes = require('./routes/admin-console');   // ← API única del propietario + gas subvencionado
@@ -113,6 +115,14 @@ const app = express();
 // queda a la izquierda sin influir. Ajustable por entorno si cambia la topología.
 app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? (process.env.NODE_ENV === 'production' ? 2 : 0)));
 const PORT = parseInt(process.env.PORT, 10) || 3001;
+
+// Detrás de un balanceador (GCP: balanceador externo + Cloud Run) req.ip sería
+// la del proxy: todos los visitantes compartirían el cubo del limitador y 100
+// peticiones cada 15 min bastarían para dejar la web entera en 429. Se confía
+// en un número FIJO de saltos, nunca en `true`: con `true` la IP la elegiría el
+// cliente escribiendo su propia cabecera X-Forwarded-For.
+const TRUST_PROXY_HOPS = Math.min(Math.max(parseInt(process.env.TRUST_PROXY_HOPS, 10) || 0, 0), 5);
+if (TRUST_PROXY_HOPS > 0) app.set('trust proxy', TRUST_PROXY_HOPS);
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -175,22 +185,8 @@ app.use(cors({
 //  SECCIÓN 3: RATE LIMITERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Rate limiter global */
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX, 10) || (IS_PROD ? 100 : 5000),
-  skip: req => (!IS_PROD && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.ip))
-    // El War Room sondea cada 8 s por diseño: son 112 peticiones cada 15
-    // minutos contra un límite de 100. A los trece minutos de encender el
-    // kiosko, la pantalla se quedaba en blanco con un 429 y ahí seguía hasta
-    // que expiraba la ventana. Tiene su propio limitador, más abajo, dimensionado
-    // para ese sondeo — y además su propio token.
-    || req.path.startsWith('/api/monitor'),
-  message: { error: 'Too many requests, please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: req => req.headers['x-api-key'] || req.ip,  // agrupar por API key si existe
-});
+/** Rate limiter global (opciones y motivos en config/rateLimit.js) */
+const globalLimiter = rateLimit(globalLimiterOptions({ isProduction: IS_PROD }));
 
 /**
  * Rate limiter estricto para endpoints SCADA y arbitraje.
@@ -319,7 +315,7 @@ app.get('/api/health', async (_req, res) => {
   ]);
   const checks = await Promise.allSettled([
     withTimeout(query('SELECT 1')),                      // PostgreSQL
-    withTimeout(redisClient?.ping()),                    // Redis
+    withTimeout(redisClient ? redisClient.ping() : Promise.reject(new Error('Redis no configurado'))), // Redis
     // En producción añadir:
     // fetch('https://api.esios.ree.es/indicators/1', { signal: AbortSignal.timeout(3000) }),
   ]);
@@ -379,15 +375,15 @@ app.get('/api/health', async (_req, res) => {
 
 // ── Autenticación y usuarios ──────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
-// Chat con RAG seguro de la barra flotante (login obligatorio, BM25 local: coste cero sin clave de IA).
-const aiWorkspace = require('./routes/ai-workspace');
-app.use('/api/ai-workspace', aiWorkspace);
-app.use('/api/checkout', aiWorkspace.checkoutRouter);
+// Compra de BEZ con tarjeta desde el chat: sesión de Stripe con la wallet de la cuenta (el webhook retiene y entrega).
+app.use('/api/checkout', require('./routes/chat-checkout'));
 app.use('/api/user', userRoutes);
 app.use('/api/identity', identityRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/organizations', organizationTechRoutes);
 app.use('/api/organizations', organizationBillingRoutes);
+app.use('/api/ai-workspace/public', aiWorkspaceRoutes.publicRouter); // una pregunta gratis sin sesión
+app.use('/api/ai-workspace', aiWorkspaceRoutes);   // chat de la plataforma con RAG (sesión obligatoria)
 app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);
 app.use('/api/admin/governance', adminGovernanceRoutes);

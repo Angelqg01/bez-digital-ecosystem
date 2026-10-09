@@ -1,7 +1,7 @@
 'use client';
 import useSWR from 'swr';
 import { useState, useEffect } from 'react';
-import { fetcher, ApiError } from './api';
+import { fetcher, ApiError, API_ORIGIN } from './api';
 import type {
     DashboardStats, ChartDataPoint, Transaction, GasBalance, GasStatus,
     NFT, DeployedContract, Sector, AILog, Notification,
@@ -404,14 +404,8 @@ export function useBlockchainSSE(eventType?: string) {
 
     useEffect(() => {
         const params = eventType ? `?type=${eventType}` : '';
-        // NEXT_PUBLIC_API_URL ya lleva el prefijo /api en producción; añadirle otro
-        // daba /api/api/blockchain/stream (404), y EventSource reintenta solo, así
-        // que cada página con este hook martilleaba la API y gastaba su límite de
-        // peticiones. Se normaliza para que valga con o sin el sufijo.
-        const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001')
-            .replace(/\/+$/, '')
-            .replace(/\/api$/, '');
-        const es = new EventSource(`${API_ROOT}/api/blockchain/stream${params}`);
+        const API_BASE = API_ORIGIN;
+        const es = new EventSource(`${API_BASE}/api/blockchain/stream${params}`);
 
         es.addEventListener('blockchain_event', (e) => {
             try {

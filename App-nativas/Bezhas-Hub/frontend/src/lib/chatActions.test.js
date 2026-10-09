@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { apiError, authErrorMessage, checkoutNotice, classifyLink, formatPrice, isSafeInternalPath, isStripeCheckoutUrl, TRUSTED_HOSTS } from './chatActions';
+import { apiError, authErrorMessage, checkoutNotice, classifyLink, formatPrice, isSafeInternalPath, isStripeCheckoutUrl, isStripePaymentLink, normalizePlan, TRUSTED_HOSTS } from './chatActions';
 
 describe('isSafeInternalPath', () => {
     test.each(['/rwa', '/vip', '/docs/guia-1', '/rwa?tab=tokenize', '/dashboard/farming', '/dashboard/wallet#gov'])('acepta %s', (p) => {
@@ -96,5 +96,22 @@ describe('authErrorMessage', () => {
     test('lo desconocido se deja tal cual y sin respuesta usa el texto de reserva', () => {
         expect(authErrorMessage(err('Código inválido o caducado'), 'x')).toBe('Código inválido o caducado');
         expect(authErrorMessage(new Error('Network Error'), 'No se pudo')).toBe('No se pudo');
+    });
+});
+
+describe('isStripePaymentLink / normalizePlan', () => {
+    test('sólo buy.stripe.com por https y sin credenciales ni puerto', () => {
+        expect(isStripePaymentLink('https://buy.stripe.com/00w3cv')).toBe(true);
+        expect(isStripePaymentLink('https://checkout.stripe.com/x')).toBe(false);
+        expect(isStripePaymentLink('http://buy.stripe.com/x')).toBe(false);
+        expect(isStripePaymentLink('https://buy.stripe.com:444/x')).toBe(false);
+        expect(isStripePaymentLink('https://buy.stripe.com@evil.test/x')).toBe(false);
+        expect(isStripePaymentLink(undefined)).toBe(false);
+    });
+    test('normalizePlan descarta enlaces inseguros y marca comprable sólo si queda alguno', () => {
+        expect(normalizePlan({ id: 'a', priceEUR: 99, yearlyEUR: 990, monthlyUrl: 'https://buy.stripe.com/x', annualUrl: 'https://evil.test/y' }))
+            .toMatchObject({ priceMonthly: 99, priceYearly: 990, currency: 'EUR', monthlyUrl: 'https://buy.stripe.com/x', annualUrl: null, purchasable: true });
+        expect(normalizePlan({ id: 'b', priceEUR: 0, monthlyUrl: 'https://evil.test/y' }).purchasable).toBe(false);
+        expect(normalizePlan(null)).toBeNull();
     });
 });

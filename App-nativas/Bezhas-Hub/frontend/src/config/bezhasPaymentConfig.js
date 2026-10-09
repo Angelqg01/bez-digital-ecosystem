@@ -15,7 +15,7 @@ export const STRIPE_PAYMENT_LINKS = {
       annual: 'https://buy.stripe.com/6oU9ATa2A6Gi0F83Mfew80a',
     },
     business: {
-      monthly: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+      monthly: 'https://buy.stripe.com/00w3cv7UsggSfA22Ibew80f',
       annual: 'https://buy.stripe.com/8x228r8YwfcO87A4Qjew80b',
     },
     enterprise_vip: {

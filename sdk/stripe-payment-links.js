@@ -15,7 +15,7 @@ const STRIPE_PAYMENT_LINKS = Object.freeze({
         pro: Object.freeze({
             id: 'pro',
             label: 'BeZhas Pro',
-            url: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+            url: 'https://buy.stripe.com/00w3cv7UsggSfA22Ibew80f',
         }),
         starter: Object.freeze({
             id: 'starter',
@@ -36,11 +36,8 @@ const STRIPE_PAYMENT_LINKS = Object.freeze({
             label: 'Be-VIP y niveles de suscriptor más',
             url: 'https://buy.stripe.com/bJe3cveiQ1lY3Rkgz1ew805',
         }),
-        beVip: Object.freeze({
-            id: 'be_vip',
-            label: 'Be-VIP',
-            url: 'https://buy.stripe.com/3cIdR9a2A3u673waaDew804',
-        }),
+        // be_vip (plink_1S1nB3…) desactivado en Stripe: redirigía al WordPress
+        // antiguo. Quien pide Be-VIP va a Be-VIP Plus (alias be_vip, abajo).
     }),
     investors: Object.freeze({
         foundingPartner: Object.freeze({
@@ -74,7 +71,7 @@ const STRIPE_LINK_ALIASES = Object.freeze({
     bez_coin_direct_purchase: STRIPE_PAYMENT_LINKS.bezCoin.directPurchase,
     direct_purchase: STRIPE_PAYMENT_LINKS.bezCoin.directPurchase,
     be_vip_plus: STRIPE_PAYMENT_LINKS.hubSubscriptions.beVipPlus,
-    be_vip: STRIPE_PAYMENT_LINKS.hubSubscriptions.beVip,
+    be_vip: STRIPE_PAYMENT_LINKS.hubSubscriptions.beVipPlus,
     founding_partner: STRIPE_PAYMENT_LINKS.investors.foundingPartner,
     architect: STRIPE_PAYMENT_LINKS.investors.architect,
     social_visionary: STRIPE_PAYMENT_LINKS.investors.socialVisionary,

@@ -46,7 +46,7 @@ const { ethers } = require('ethers');
 const crypto = require('crypto');
 const fxService = require('../services/fxService');
 const { query } = require('../db/pool');
-const { getPlan } = require('../config/plans');
+const planSubscriptions = require('../services/planSubscriptions');
 const { centimosUsdABezWei, precioUsd } = require('../config/bez-price');
 const retryQueue = require('../services/webhookRetryQueue');
 const ledger = require('../services/providerPaymentLedger');
@@ -105,6 +105,9 @@ const CONFIG = Object.freeze({
   // a silent 1:1. Replace with a live oracle feed when available.
   eurUsdRate: parseFloat(process.env.EUR_USD_RATE || '1.08'),
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+  // La plataforma cobra en dos cuentas de Stripe: la principal (planes) y la de
+  // BeZhas (BEZ-Coin, Be-VIP, inversores). Cada endpoint firma con su secreto.
+  stripeWebhookSecretBezhas: process.env.STRIPE_WEBHOOK_SECRET_BEZHAS ?? '',
   bankWebhookSecret: process.env.BANK_WEBHOOK_SECRET ?? '',
   mintGasLimit: parseMintGasLimit(),
   // Timeout for tx.wait() in ms — default 3 minutes [REL-1]
@@ -125,6 +128,9 @@ function validateConfig() {
       ? [['treasuryPk', CONFIG.treasuryPk, () => CONFIG.treasuryPk.startsWith('0x') && CONFIG.treasuryPk.length === 66]]
       : []),
     ['stripeWebhookSecret', CONFIG.stripeWebhookSecret, () => CONFIG.stripeWebhookSecret.startsWith('whsec_')],
+    ...(CONFIG.stripeWebhookSecretBezhas
+      ? [['stripeWebhookSecretBezhas', CONFIG.stripeWebhookSecretBezhas, () => CONFIG.stripeWebhookSecretBezhas.startsWith('whsec_')]]
+      : []),
   ];
 
   for (const [name, value, validate] of checks) {
@@ -500,36 +506,9 @@ async function mintBezTokens(walletAddress, amountUsdCents, eventId) {
 // el webhook sepa a qué app registrada pertenece la compra.
 // ═══════════════════════════════════════════════
 async function provisionPlanSubscription(session, eventId) {
-  const planId = session.metadata?.plan_id;
-  const billing = session.metadata?.billing === 'annual' ? 'annual' : 'monthly';
-  const appId = session.client_reference_id;
-
-  const plan = getPlan(planId);
-  if (!plan) {
-    log.error('Stripe', 'Unknown plan_id in session metadata', { sessionId: session.id, planId });
-    return;
-  }
-  if (!appId) {
-    // Sin app_id no podemos asociar la suscripción — queda para reconciliación
-    // manual vía customer email en el dashboard de Stripe.
-    log.warn('Stripe', 'Plan checkout without client_reference_id — manual reconciliation needed', {
-      sessionId: session.id, planId, customerEmail: session.customer_details?.email,
-    });
-    return;
-  }
-
-  const renewInterval = billing === 'annual' ? "INTERVAL '1 year'" : "INTERVAL '1 month'";
-  await query(
-    `INSERT INTO gateway_subscriptions (app_id, plan_id, status, renews_at)
-     VALUES ($1, $2, 'active', NOW() + ${renewInterval})
-     ON CONFLICT (app_id) DO UPDATE
-       SET plan_id = $2, status = 'active',
-           renews_at = NOW() + ${renewInterval}, updated_at = NOW()`,
-    [appId, planId]
-  );
-  log.info('Stripe', 'Plan subscription provisioned', {
-    eventId, appId, planId, billing, stripeCustomer: session.customer,
-  });
+  // Registro, asignación y activación: services/planSubscriptions. Una compra
+  // sin client_reference_id ya no se pierde: queda pendiente de reclamar.
+  return planSubscriptions.registrarCompra(session, { eventId });
 }
 
 // ═══════════════════════════════════════════════
@@ -573,6 +552,29 @@ async function importeEnCentimosUsd(session) {
   return cents;
 }
 
+/**
+ * Verifica la firma contra el secreto de cada cuenta configurada y devuelve el
+ * evento y la cuenta que lo firmó. La verificación es local (HMAC): no llama a
+ * Stripe. Un secreto que no es whsec_ no se prueba nunca.
+ */
+function verificarFirmaStripe(payload, sig) {
+  const cuentas = [
+    ['principal', CONFIG.stripeWebhookSecret],
+    ['bezhas', CONFIG.stripeWebhookSecretBezhas],
+  ].filter(([, secreto]) => typeof secreto === 'string' && secreto.startsWith('whsec_'));
+  if (!cuentas.length) throw new Error('No hay ningún STRIPE_WEBHOOK_SECRET configurado');
+
+  let ultimo;
+  for (const [cuenta, secreto] of cuentas) {
+    try {
+      return { event: getStripe().webhooks.constructEvent(payload, sig, secreto), cuenta };
+    } catch (err) {
+      ultimo = err;
+    }
+  }
+  throw ultimo;
+}
+
 // ═══════════════════════════════════════════════
 // ROUTE: POST /webhooks/stripe
 // ═══════════════════════════════════════════════
@@ -580,8 +582,9 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
   const sig = req.headers['stripe-signature'];
   let event;
 
+  let cuentaStripe;
   try {
-    event = getStripe().webhooks.constructEvent(req.body, sig, CONFIG.stripeWebhookSecret);
+    ({ event, cuenta: cuentaStripe } = verificarFirmaStripe(req.body, sig));
   } catch (err) {
     log.error('Stripe', 'Signature verification failed', { error: err.message });
     return res.status(400).json({ error: `Webhook signature error: ${err.message}` });
@@ -599,17 +602,6 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
           sessionId: session.id,
           payment_status: session.payment_status,
         });
-        break;
-      }
-
-      // Plan comprado desde el chat: el plan es del USUARIO (user_subscriptions), no de una api-key.
-      if (session.metadata?.kind === 'chat_plan') {
-        try {
-          await require('../services/chatCheckout').provisionUserPlan(session, event.id);
-          log.info('Stripe', 'Plan de usuario provisionado desde el chat', { sessionId: session.id, planId: session.metadata.plan_id });
-        } catch (err) {
-          log.error('Stripe', 'No se pudo provisionar el plan del chat — conciliar a mano', { sessionId: session.id, error: err.message });
-        }
         break;
       }
 
@@ -675,6 +667,8 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
             estado: 'retenida',
             referencia,
             sesion: session.id,
+            // El verificador consulta el cobro en la cuenta que lo recibió.
+            cuentaStripe,
             importeMinor: session.amount_total,
             moneda: String(session.currency || 'usd').toLowerCase(),
             bezWei: bezWei.toString(),
@@ -699,16 +693,6 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
         }
       } catch (err) {
         log.error('Stripe', 'No se pudo registrar la compra retenida — conciliar a mano', { sessionId: session.id, error: err.message });
-      }
-      break;
-    }
-
-    case 'customer.subscription.updated':
-    case 'customer.subscription.deleted': {
-      try {
-        await require('../services/chatCheckout').handleSubscriptionEvent(event);
-      } catch (err) {
-        log.error('Stripe', 'No se pudo actualizar la suscripción del chat', { eventId: event.id, error: err.message });
       }
       break;
     }
@@ -762,9 +746,30 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
       break;
     }
 
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted': {
+      try {
+        await planSubscriptions.alCambiarSuscripcion(event.data.object, { borrada: event.type === 'customer.subscription.deleted' });
+      } catch (err) {
+        log.error('Stripe', 'No se pudo actualizar el plan de la suscripción', { subscriptionId: event.data.object?.id, error: err.message });
+      }
+      break;
+    }
+
     case 'charge.refunded': {
       const charge = event.data.object;
       const paymentIntentId = charge.payment_intent || charge.id;
+
+      // ¿Era la factura de un plan? Entonces se corta el acceso y se cancela la
+      // suscripción en Stripe; no hay compra de BEZ que revertir.
+      try {
+        let clienteStripe = null;
+        try { clienteStripe = getStripe(); } catch { /* sin clave: no se puede comprobar */ }
+        const r = await planSubscriptions.alReembolsar(charge, clienteStripe);
+        if (r.accion === 'plan_cancelado') break;
+      } catch (err) {
+        log.error('Stripe', 'No se pudo comprobar si el reembolso era de un plan', { chargeId: charge.id, error: err.message });
+      }
 
       // El reembolso completo (estado, nota y webhook payment.refunded a la app
       // creadora) ya lo implementa refundPayment(); aquí sólo hay que resolver el

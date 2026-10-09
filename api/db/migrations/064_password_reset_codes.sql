@@ -1,4 +1,4 @@
--- Migration 061: códigos de recuperación de contraseña (un solo uso, caducan, intentos limitados).
+-- Migration 064: códigos de recuperación de contraseña (un solo uso, caducan, intentos limitados).
 -- Sólo se guarda el hash del código; el código en claro viaja únicamente por email.
 CREATE TABLE IF NOT EXISTS password_reset_codes (
     id          BIGSERIAL PRIMARY KEY,

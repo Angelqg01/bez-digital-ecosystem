@@ -171,6 +171,10 @@ Cinco decisiones que se toman **una vez** y ahorran todos los sustos:
 | `bezhas_cost_estimate` | **coste antes de actuar**: precio de lista y qué pagarías con tu plan (API, IA, oráculo, relay, webhooks, OPERANT, compra de BEZ). No consume créditos | `wallet` |
 | `bezhas_tx_prepare` | **prepara** un pago o transferencia: valida, simula, puntúa el riesgo y dice cuántas aprobaciones humanas necesita. No firma ni mueve fondos (desde Creator Pro) | `wallet` |
 | `bezhas_tx_status` | estado de una operación preparada por tu propia clave | `wallet` |
+| `bezhas_checkout_prepare` | **cobro con BEZ-Pay**: abre una orden (tarjeta, SEPA o BEZ) y devuelve el enlace de pago. No cobra: paga el cliente. Creator Pro+ | `wallet` |
+| `bezhas_checkout_status` | estado de un cobro abierto por tu propia clave | `wallet` |
+| `bezhas_tokenize_prepare` | **tokenización de un activo real** en Polygon: devuelve aprobar + `tokenizeAsset` sin firmar. Lo firma tu wallet. `fabrica`: `activos` (por defecto) o `industrial` (clientes de Factory industrial). Creator Pro+ | `contracts` |
+| `bezhas_erp_connections` · `bezhas_erp_documents` · `bezhas_erp_document` | **lectura de tu ERP** (SAP, Odoo, Dynamics, NetSuite): conexiones, búsqueda y lectura de documentos. Business+ | `contracts` |
 
 **Previstas en v2 (escritura, siempre con aprobación humana):**
 `bezhas_payment_prepare`, `bezhas_stake_prepare`, `bezhas_bridge_prepare`,

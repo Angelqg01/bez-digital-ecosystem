@@ -11,12 +11,11 @@
  *  - Ninguna acción ejecuta transacciones: solo abre la pantalla donde el usuario firma él mismo.
  */
 
-// Planes de pago reconocidos. Lista cerrada: un valor inesperado (p. ej. "[object Object]") NO cuenta como de pago.
-const PAID_PLANS = Object.freeze(['creator', 'business', 'enterprise', 'pro', 'vip']);
+// Planes de pago reconocidos (ids de config/plans.js). Lista cerrada: un valor inesperado NO cuenta como de pago.
+const PAID_PLANS = Object.freeze(['creator_pro', 'business', 'enterprise_vip']);
 const isPaidPlan = (plan) => PAID_PLANS.includes(String(plan || '').toLowerCase());
 
 const CATEGORIES = Object.freeze({
-    assets: 'Activos y tokenización',
     finance: 'Pagos y compra de BEZ',
     ecosystem: 'Apps del ecosistema',
     apps: 'Herramientas',
@@ -25,9 +24,7 @@ const CATEGORIES = Object.freeze({
 });
 
 /**
- * Destinos = rutas REALES del frontend oficial (www.bezhas.com, `frontend/`, Vite). Las apps secundarias
- * (BZ Capital, BeZhas Wallet, Edge Nodes…) cuelgan de `/dashboard/*` en el mismo dominio y son los mismos
- * enlaces que ofrece el selector de apps (AppSwitcher): `external: true` = navegación completa, fuera del router de la SPA.
+ * Destinos = rutas REALES del control center (www.bezhas.com, `control-center/frontend`, Next.js).
  *
  * kind: 'navigate' (abre una ruta) | 'docs' (panel con los documentos del cliente) | 'plans' (panel de planes).
  * sensitive: la ventana pide confirmación y recuerda que el chat no ejecuta operaciones ni pide claves.
@@ -35,97 +32,78 @@ const CATEGORIES = Object.freeze({
  * keywords: términos (sin tildes, minúsculas) que activan la sugerencia a partir del mensaje del usuario.
  */
 const CATALOG = Object.freeze([
-    // ── Activos y tokenización (SPA) ──
-    { id: 'tokenize_asset', category: 'assets', kind: 'navigate', href: '/rwa', sensitive: true,
-      title: 'Tokenizar un activo', description: 'Convierte un inmueble o bien real en un activo tokenizado (simulación, aprobación y firma segura).',
-      keywords: ['tokenizar', 'tokenizacion', 'tokenize', 'tokenization', 'activo real', 'inmueble', 'real asset'] },
-    { id: 'rwa_explore', category: 'assets', kind: 'navigate', href: '/rwa', sensitive: false,
-      title: 'Explorar activos RWA', description: 'Consulta y gestiona activos del mundo real tokenizados.',
-      keywords: ['rwa', 'activos reales', 'real world', 'invertir', 'inversion'] },
-    { id: 'real_estate', category: 'assets', kind: 'navigate', href: '/real-estate', sensitive: false,
-      title: 'Inmobiliario tokenizado', description: 'Explora el simulador inmobiliario.',
-      keywords: ['inmobiliario', 'real estate', 'propiedad', 'vivienda'] },
-    // ── Pagos y compra de BEZ (SPA) ──
-    { id: 'buy_bez', category: 'finance', kind: 'navigate', href: '/buy-tokens', sensitive: true,
-      title: 'Comprar BEZ', description: 'Compra BEZ con tarjeta, cripto o MoonPay.',
-      keywords: ['comprar bez', 'comprar tokens', 'buy bez', 'buy tokens', 'moonpay', 'tarjeta', 'stripe', 'adquirir'] },
-    { id: 'bezpay', category: 'finance', kind: 'navigate', href: '/pay', sensitive: true,
-      title: 'BeZhas Pay', description: 'Pagos y cobros con BezPay.',
-      keywords: ['pagar', 'pago', 'pagos', 'bezpay', 'payment', 'cobrar', 'cobros'] },
-    // ── Apps del ecosistema (secundarias, mismo dominio) ──
-    { id: 'staking', category: 'ecosystem', kind: 'navigate', href: '/dashboard/farming', external: true, sensitive: true,
-      title: 'Staking de BEZ (BZ Capital)', description: 'Deposita BEZ en staking y acumula recompensas en BZ Capital.',
-      keywords: ['staking', 'stake', 'recompensas', 'apy', 'rewards', 'bz capital'] },
-    { id: 'farming', category: 'ecosystem', kind: 'navigate', href: '/dashboard/farming', external: true, sensitive: true,
-      title: 'Yield farming (BZ Capital)', description: 'Aporta liquidez y obtén rendimiento.',
-      keywords: ['farming', 'yield', 'liquidez', 'liquidity', 'defi'] },
-    { id: 'wallet', category: 'ecosystem', kind: 'navigate', href: '/dashboard/wallet', external: true, sensitive: false,
-      title: 'BeZhas Wallet', description: 'Saldos, pagos y gobernanza.',
+    // ── Pagos y compra de BEZ ──
+    { id: 'buy_bez', category: 'finance', kind: 'navigate', href: '/token/buy', sensitive: true,
+      title: 'Comprar BEZ', description: 'Compra BEZ con tarjeta o transferencia SEPA.',
+      keywords: ['comprar bez', 'comprar tokens', 'buy bez', 'buy tokens', 'tarjeta', 'stripe', 'adquirir', 'transferencia'] },
+    { id: 'token_info', category: 'finance', kind: 'navigate', href: '/token', sensitive: false,
+      title: 'BEZ-Coin', description: 'Precio, contrato y mercado del token BEZ.',
+      keywords: ['bez', 'token', 'bez-coin', 'bezcoin', 'contrato', 'precio bez'] },
+    { id: 'payments', category: 'finance', kind: 'navigate', href: '/payments', sensitive: true,
+      title: 'Pagos', description: 'Métodos de pago y cobros de la plataforma.',
+      keywords: ['pagar', 'pago', 'pagos', 'bezpay', 'payment', 'cobrar', 'cobros', 'factura'] },
+    // ── Apps del ecosistema ──
+    { id: 'staking', category: 'ecosystem', kind: 'navigate', href: '/dashboard/farming', sensitive: true,
+      title: 'Staking y farming', description: 'Deposita BEZ y acumula recompensas.',
+      keywords: ['staking', 'stake', 'recompensas', 'apy', 'rewards', 'farming', 'yield', 'liquidez', 'defi'] },
+    { id: 'wallet', category: 'ecosystem', kind: 'navigate', href: '/dashboard/wallet', sensitive: false,
+      title: 'Wallet', description: 'Saldos y movimientos.',
       keywords: ['wallet', 'cartera', 'saldo', 'balance', 'billetera'] },
-    { id: 'bridge', category: 'ecosystem', kind: 'navigate', href: '/dashboard/wallet', external: true, sensitive: true,
-      title: 'Bridge cross-chain (Wallet)', description: 'Mueve BEZ entre Polygon, Arbitrum y zkSync desde BeZhas Wallet.',
-      keywords: ['bridge', 'puente', 'cross-chain', 'crosschain', 'arbitrum', 'zksync', 'cadena'] },
-    { id: 'dao', category: 'ecosystem', kind: 'navigate', href: '/dashboard/wallet', external: true, sensitive: false,
-      title: 'Gobernanza DAO (Wallet)', description: 'Vota propuestas desde BeZhas Wallet.',
-      keywords: ['dao', 'gobernanza', 'governance', 'votar', 'propuesta', 'vote'] },
-    { id: 'gas_tank', category: 'ecosystem', kind: 'navigate', href: '/dashboard/gas', external: true, sensitive: false,
-      title: 'Gas Tank', description: 'Gestión de gas fee.',
+    { id: 'bridge', category: 'ecosystem', kind: 'navigate', href: '/dashboard/bridge', sensitive: true,
+      title: 'Bridge', description: 'Mueve activos entre redes.',
+      keywords: ['bridge', 'puente', 'cross-chain', 'crosschain', 'cadena'] },
+    { id: 'gas_tank', category: 'ecosystem', kind: 'navigate', href: '/dashboard/gas', sensitive: false,
+      title: 'Gas', description: 'Gestión del gas de las operaciones.',
       keywords: ['gas', 'gas fee', 'comision de red', 'gas tank'] },
-    { id: 'edge_nodes', category: 'ecosystem', kind: 'navigate', href: '/dashboard/validators', external: true, sensitive: false,
-      title: 'Edge Nodes', description: 'DePIN, nodos y recursos.',
-      keywords: ['edge', 'nodo', 'nodos', 'node', 'depin', 'validador', 'validators'] },
-    { id: 'vision_scan', category: 'ecosystem', kind: 'navigate', href: '/dashboard/qr', external: true, sensitive: false,
-      title: 'Vision Scan / PureScan', description: 'IA, escaneo, certificación y auditoría.',
+    { id: 'edge_nodes', category: 'ecosystem', kind: 'navigate', href: '/dashboard/validators', sensitive: false,
+      title: 'Edge Nodes y validadores', description: 'Nodos, validadores y su estado.',
+      keywords: ['edge', 'nodo', 'nodos', 'node', 'depin', 'validador', 'validadores', 'validators'] },
+    { id: 'vision_scan', category: 'ecosystem', kind: 'navigate', href: '/dashboard/qr', sensitive: false,
+      title: 'Escaneo y certificación', description: 'QR, escaneo y certificación.',
       keywords: ['escaneo', 'scan', 'qr', 'certificacion', 'auditoria', 'purescan'] },
-    { id: 'prestige', category: 'ecosystem', kind: 'navigate', href: '/dashboard/nfts', external: true, sensitive: false,
-      title: 'BZ Prestige (NFTs)', description: 'Lujo DPP, NFTs y royalties.',
-      keywords: ['nft', 'nfts', 'prestige', 'royalties', 'lujo', 'luxury'] },
-    { id: 'cargo_link', category: 'ecosystem', kind: 'navigate', href: '/dashboard/sectors', external: true, sensitive: false,
-      title: 'BZ CargoLink', description: 'Logística y manifiestos.',
-      keywords: ['cargo', 'carga', 'manifiesto', 'envio', 'envios', 'shipment'] },
-    { id: 'energy', category: 'ecosystem', kind: 'navigate', href: '/enterprise', external: true, sensitive: false,
-      title: 'BEZ Energy', description: 'Energía tokenizada y soluciones enterprise.',
-      keywords: ['energia', 'energy', 'enterprise', 'empresa'] },
-    { id: 'sphere', category: 'ecosystem', kind: 'navigate', href: '/solutions', external: true, sensitive: false,
-      title: 'BZ Sphere', description: 'Mapa operativo global y soluciones.',
-      keywords: ['sphere', 'mapa', 'soluciones', 'solutions'] },
-    { id: 'hub', category: 'ecosystem', kind: 'navigate', href: '/dashboard', external: true, sensitive: false,
-      title: 'BeZhas Hub', description: 'SSO y consola central de todas las apps.',
-      keywords: ['hub', 'consola central', 'dashboard', 'panel', 'sso'] },
-    // ── Herramientas (SPA) ──
-    { id: 'developer_console', category: 'apps', kind: 'navigate', href: '/developer-console', sensitive: false,
-      title: 'Consola de desarrollador', description: 'API keys, SDK y automatizaciones.',
+    { id: 'nfts', category: 'ecosystem', kind: 'navigate', href: '/dashboard/nfts', sensitive: false,
+      title: 'NFTs', description: 'NFTs, pasaportes de producto y royalties.',
+      keywords: ['nft', 'nfts', 'prestige', 'royalties', 'lujo', 'luxury', 'tokenizar', 'tokenizacion', 'activo real', 'rwa'] },
+    { id: 'sectors', category: 'ecosystem', kind: 'navigate', href: '/dashboard/sectors', sensitive: false,
+      title: 'Sectores y logística', description: 'Logística, manifiestos y sectores.',
+      keywords: ['cargo', 'carga', 'manifiesto', 'envio', 'envios', 'shipment', 'sector', 'sectores'] },
+    { id: 'enterprise', category: 'ecosystem', kind: 'navigate', href: '/enterprise', sensitive: false,
+      title: 'Soluciones enterprise', description: 'BeZhas para empresas e instituciones.',
+      keywords: ['energia', 'energy', 'enterprise', 'empresa', 'institucion', 'erp', 'sap'] },
+    { id: 'dashboard', category: 'ecosystem', kind: 'navigate', href: '/dashboard', sensitive: false,
+      title: 'Panel', description: 'Consola central de la plataforma.',
+      keywords: ['hub', 'consola central', 'dashboard', 'panel'] },
+    // ── Herramientas ──
+    { id: 'developers', category: 'apps', kind: 'navigate', href: '/developers', sensitive: false,
+      title: 'Desarrolladores', description: 'API keys, SDK y webhooks.',
       keywords: ['api', 'sdk', 'desarrollador', 'developer', 'api key', 'webhook', 'automatizacion', 'integracion'] },
-    { id: 'business_dashboard', category: 'apps', kind: 'navigate', href: '/business-dashboard', sensitive: false,
-      title: 'Panel de empresa', description: 'Métricas y gestión para negocios.',
-      keywords: ['negocio', 'business', 'empresa', 'analitica', 'metricas'] },
+    { id: 'mcp', category: 'apps', kind: 'navigate', href: '/mcp', sensitive: false,
+      title: 'Conectar una IA (MCP)', description: 'Conecta Claude, ChatGPT, Gemini u otros a BeZhas.',
+      keywords: ['mcp', 'claude', 'chatgpt', 'gemini', 'codex', 'antigravity', 'conectar ia', 'agente'] },
+    { id: 'onboarding', category: 'apps', kind: 'navigate', href: '/onboarding', sensitive: false,
+      title: 'Alta y configuración', description: 'Wallet, Edge Node y conexión del ERP.',
+      keywords: ['alta', 'onboarding', 'empezar', 'configurar', 'registrar empresa', 'conectar erp'] },
     { id: 'logistics', category: 'apps', kind: 'navigate', href: '/logistics', sensitive: false,
-      title: 'Logística', description: 'Demo de logística y seguimiento.',
-      keywords: ['logistica', 'logistics', 'supply chain', 'cadena de suministro'] },
-    { id: 'ad_center', category: 'apps', kind: 'navigate', href: '/ad-center', sensitive: false,
-      title: 'Ad Center', description: 'Crea y gestiona campañas publicitarias.',
-      keywords: ['anuncio', 'anuncios', 'publicidad', 'campana', 'campanas', 'ads', 'advertising'] },
-    { id: 'oracle', category: 'apps', kind: 'navigate', href: '/oracle', sensitive: false,
-      title: 'Data Oracle', description: 'Datos verificados para contratos y apps.',
-      keywords: ['oraculo', 'oracle', 'datos verificados'] },
-    { id: 'magazine', category: 'apps', kind: 'navigate', href: '/magazine', sensitive: false,
-      title: 'Magazine', description: 'Artículos y novedades.',
-      keywords: ['magazine', 'revista', 'articulos', 'noticias', 'news'] },
-    { id: 'feed', category: 'apps', kind: 'navigate', href: '/home', sensitive: false,
-      title: 'Feed social', description: 'Publicaciones y comunidad.',
-      keywords: ['feed', 'social', 'comunidad', 'community', 'publicar'] },
-    // ── Cuenta y planes (SPA) ──
-    { id: 'subscribe_plans', category: 'account', kind: 'plans', href: '/vip', sensitive: true,
-      title: 'Suscribirme a un plan', description: 'Compara Starter, Creator, Business y Enterprise.',
+      title: 'Logística', description: 'Seguimiento y trazabilidad.',
+      keywords: ['logistica', 'logistics', 'supply chain', 'cadena de suministro', 'trazabilidad'] },
+    { id: 'agents', category: 'apps', kind: 'navigate', href: '/dashboard/agents', sensitive: false,
+      title: 'Agentes de IA', description: 'Agentes y automatizaciones.',
+      keywords: ['agente', 'agentes', 'automatizar', 'bot'] },
+    // ── Cuenta y planes ──
+    { id: 'subscribe_plans', category: 'account', kind: 'plans', href: '/payments', sensitive: true,
+      title: 'Suscribirme a un plan', description: 'Compara Starter, Creator Pro, Business y Enterprise VIP.',
       keywords: ['plan', 'planes', 'suscripcion', 'suscribirme', 'suscribir', 'subscription', 'subscribe', 'upgrade', 'precio', 'precios', 'pricing', 'vip'] },
-    { id: 'settings', category: 'account', kind: 'navigate', href: '/settings', sensitive: false,
+    { id: 'settings', category: 'account', kind: 'navigate', href: '/dashboard/settings', sensitive: false,
       title: 'Ajustes de cuenta', description: 'Seguridad, 2FA y preferencias.',
       keywords: ['ajustes', 'configuracion', 'settings', '2fa', 'seguridad', 'contrasena', 'password'] },
-    { id: 'profile', category: 'account', kind: 'navigate', href: '/profile', sensitive: false,
-      title: 'Mi perfil', description: 'Perfil, balance y estadísticas.',
+    { id: 'profile', category: 'account', kind: 'navigate', href: '/dashboard/profile', sensitive: false,
+      title: 'Mi perfil', description: 'Perfil y estadísticas.',
       keywords: ['perfil', 'profile', 'mi cuenta'] },
-    // ── Documentos (SPA) ──
-    { id: 'exclusive_docs', category: 'docs', kind: 'docs', href: '/docs', sensitive: false,
+    { id: 'support', category: 'account', kind: 'navigate', href: '/support', sensitive: false,
+      title: 'Soporte', description: 'Contacta con el equipo de BeZhas.',
+      keywords: ['soporte', 'ayuda', 'support', 'contacto', 'incidencia'] },
+    // ── Documentos ──
+    { id: 'exclusive_docs', category: 'docs', kind: 'docs', href: '/dashboard/documents', sensitive: false,
       title: 'Documentos exclusivos', description: 'Consulta y pregunta sobre los documentos de tu plan y de tu organización.',
       requires: { plans: PAID_PLANS },
       keywords: ['documento', 'documentos', 'docs', 'exclusivo', 'exclusivos', 'manual', 'guia', 'informe', 'document', 'whitepaper', 'documentacion'] },

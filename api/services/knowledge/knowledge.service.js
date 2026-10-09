@@ -1,9 +1,16 @@
+'use strict';
+
 /**
  * BeZhas Knowledge Plane — RAG con aislamiento por tenant.
  *
- * Flujo de recuperación (ver BEZHAS-AI-RAG-CHAT-AGENT-PLATFORM-PLAN §6.4):
+ * Flujo de recuperación:
  *   principal → filtro ACL (ANTES de rankear) → BM25 [+ vector con RRF]
- *   → segunda comprobación ACL → neutralización → contexto con citas.
+ *   → segunda comprobación ACL contra el documento vigente → neutralización
+ *   → contexto con citas.
+ *
+ * El texto de los documentos es SIEMPRE dato no confiable: se envuelve en
+ * <untrusted_document> y se neutralizan sus delimitadores. Un documento con
+ * instrucciones sospechosas queda en cuarentena y no se recupera.
  */
 const crypto = require('crypto');
 const { CLASSIFICATIONS, canAccess, isAdmin } = require('./acl');
@@ -24,7 +31,7 @@ const cosine = (a, b) => {
 };
 
 class KnowledgeService {
-    /** @param {{store?: MemoryStore, embedder?: {embed(text:string):Promise<number[]>}}} opts */
+    /** @param {{store?: object, embedder?: {embed(text:string):Promise<number[]>}}} opts */
     constructor({ store = new MemoryStore(), embedder = null } = {}) {
         this.store = store;
         this.embedder = embedder;
@@ -39,7 +46,7 @@ class KnowledgeService {
         const global = input && input.global === true;
 
         if (!principal) throw httpError(401, 'No autenticado');
-        if (!title || typeof content !== 'string' || !content.trim()) throw httpError(400, 'title y content son obligatorios');
+        if (!title || typeof title !== 'string' || typeof content !== 'string' || !content.trim()) throw httpError(400, 'title y content son obligatorios');
         if (content.length > MAX_DOC_CHARS) throw httpError(413, 'Documento demasiado grande');
         if (!Object.values(CLASSIFICATIONS).includes(classification)) throw httpError(400, 'classification inválida');
         if (classification === CLASSIFICATIONS.SECRET) throw httpError(422, 'Los documentos SECRET no se indexan en RAG');
@@ -53,23 +60,23 @@ class KnowledgeService {
         const scanResult = scan(`${title}\n${content}`);
         const id = input.id && /^[\w.-]{1,80}$/.test(input.id) ? input.id : `doc_${crypto.randomUUID()}`;
 
-        const existing = this.store.getDoc(id);
+        const existing = await this.store.getDoc(id);
         if (existing && existing.tenant_id !== tenantId) throw httpError(403, 'El documento pertenece a otro tenant');
 
+        const lista = (v) => (Array.isArray(v) ? v.map((x) => String(x).slice(0, 40)).slice(0, 20) : []);
         const doc = {
             id,
             tenant_id: tenantId,
             title: String(title).slice(0, 200),
-            source,
-            category,
+            source: String(source).slice(0, 60),
+            category: String(category).slice(0, 60),
             classification,
-            allowed_roles: input.allowed_roles || [],
-            allowed_plans: input.allowed_plans || [],
+            allowed_roles: lista(input.allowed_roles),
+            allowed_plans: lista(input.allowed_plans),
             valid_from: input.valid_from || null,
             valid_to: input.valid_to || null,
             version: existing ? existing.version + 1 : 1,
             checksum: sha256(content),
-            // Documentos con instrucciones sospechosas quedan en cuarentena (no recuperables).
             status: scanResult.suspicious ? 'quarantined' : 'published',
             quarantine_reason: scanResult.suspicious ? scanResult.hits : undefined,
             created_by: principal.userId,
@@ -99,7 +106,7 @@ class KnowledgeService {
             chunks.push(chunk);
         }
 
-        this.store.putDocument(doc, chunks);
+        await this.store.putDocument(doc, chunks);
         return { id, version: doc.version, status: doc.status, chunks: chunks.length, quarantine_reason: doc.quarantine_reason };
     }
 
@@ -108,13 +115,12 @@ class KnowledgeService {
         if (!principal || !query) return [];
         const k = Math.min(Math.max(1, topK), MAX_TOP_K);
 
-        // 1) ACL ANTES de rankear.
-        const allowed = this.store.allChunks().filter((c) => canAccess(principal, c));
+        // 1) ACL ANTES de rankear (el store ya recorta a global + tenant propio).
+        const allowed = (await this.store.chunksVisibles(principal.tenantId)).filter((c) => canAccess(principal, c));
         if (!allowed.length) return [];
 
-        // 2) BM25 (+ vector con Reciprocal Rank Fusion si hay embedder).
-        // Se descartan resultados claramente menos relevantes que el mejor (evita que una palabra
-        // común, p. ej. "BEZ", arrastre documentos que no tienen que ver con la pregunta).
+        // 2) BM25 (+ vector con Reciprocal Rank Fusion si hay embedder). Se descartan
+        //    resultados claramente menos relevantes que el mejor.
         const scored = bm25Rank(query, allowed);
         const floor = scored.length ? scored[0].score * MIN_RELATIVE_SCORE : 0;
         let ranked = scored.filter((r) => r.score >= floor).map((r) => r.chunk);
@@ -134,7 +140,7 @@ class KnowledgeService {
         // 3) Segunda comprobación contra el documento vigente (versión/estado/ACL).
         const out = [];
         for (const c of ranked) {
-            const doc = this.store.getDoc(c.document_id);
+            const doc = await this.store.getDoc(c.document_id);
             if (!doc || doc.version !== c.version || !canAccess(principal, doc) || !canAccess(principal, c)) continue;
             out.push(c);
             if (out.length >= k) break;
@@ -142,9 +148,7 @@ class KnowledgeService {
         return out;
     }
 
-    /**
-     * Construye el bloque de contexto para el LLM (datos NO confiables) y las citas.
-     */
+    /** Bloque de contexto para el LLM (datos NO confiables) y las citas. */
     async buildContext(principal, query, opts) {
         const chunks = await this.search(principal, query, opts);
         const sources = chunks.map((c, i) => ({
@@ -161,16 +165,17 @@ class KnowledgeService {
         return { context, sources };
     }
 
-    listDocuments(principal) {
-        return this.store.listDocs()
-            .filter((d) => d.status === 'published' ? canAccess(principal, d) : d.tenant_id === principal.tenantId)
+    async listDocuments(principal) {
+        const docs = await this.store.listDocs(principal.tenantId);
+        return docs
+            .filter((d) => (d.status === 'published' ? canAccess(principal, d) : d.tenant_id === principal.tenantId))
             .map(({ id, title, classification, version, status, updated_at, tenant_id }) => ({
                 id, title, classification, version, status, updated_at, scope: tenant_id ? 'tenant' : 'global',
             }));
     }
 
-    deleteDocument(principal, id) {
-        const doc = this.store.getDoc(id);
+    async deleteDocument(principal, id) {
+        const doc = await this.store.getDoc(id);
         if (!doc) throw httpError(404, 'Documento no encontrado');
         const owns = doc.tenant_id ? doc.tenant_id === principal.tenantId : isAdmin(principal);
         if (!owns) throw httpError(403, 'Sin permiso');

@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/lib/theme-context';
 import { Toaster } from 'sonner';
 import { useEffect } from 'react';
 import LoginRegisterModal from '@/components/LoginRegisterModal';
+import AIWorkspaceBar from '@/components/AIWorkspaceBar';
 
 function ModalContainer() {
     const { isLoginModalOpen, closeLoginModal } = useAuth() as any;
@@ -30,6 +31,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <ThemeProvider>
             <AuthProvider>
                 {children}
+                <AIWorkspaceBar />
                 <ModalContainer />
                 <Toaster position="top-right" richColors closeButton />
             </AuthProvider>

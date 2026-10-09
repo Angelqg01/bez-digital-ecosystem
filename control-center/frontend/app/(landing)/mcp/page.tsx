@@ -71,22 +71,61 @@ const CAPABILITIES: { icon: string; title: string; text: string; tools: string[]
         plan: 'Starter',
         prompt: 'Dime mi plan y qué herramientas de BeZhas tengo disponibles.',
     },
+    {
+        icon: 'point_of_sale',
+        title: 'Cobros con BEZ-Pay',
+        text: 'Abre una orden de cobro con tarjeta, transferencia SEPA o BEZ y obtén el enlace de pago para tu cliente. La IA no cobra: paga el cliente.',
+        tools: ['bezhas_checkout_prepare', 'bezhas_checkout_status'],
+        plan: 'Creator Pro',
+        prompt: 'Prepara un cobro de 120 USD con tarjeta para el pedido 2026-341 y dame el enlace de pago.',
+    },
+    {
+        icon: 'apartment',
+        title: 'Tokenización de activos',
+        text: 'Prepara la tokenización en fracciones de un inmueble, vehículo u objeto en Polygon, y de plantas o maquinaria con Factory industrial. Tu wallet firma; la IA nunca.',
+        tools: ['bezhas_tokenize_prepare'],
+        plan: 'Creator Pro',
+        prompt: 'Prepara la tokenización del local de la calle Real en 1.000 fracciones de 100 BEZ, con la documentación que subí a IPFS.',
+    },
+    {
+        icon: 'inventory_2',
+        title: 'Tu ERP (SAP, Odoo)',
+        text: 'Consulta facturas, pedidos, albaranes y asientos de tu ERP conectado, sin exportar nada. Solo lectura.',
+        tools: ['bezhas_erp_connections', 'bezhas_erp_documents', 'bezhas_erp_document'],
+        plan: 'Business',
+        prompt: 'Lista las facturas pendientes de este mes en nuestro SAP y dime cuáles superan 5.000 €.',
+    },
 ];
 
+// Staking y Bridges esperan a que haya contrato en Polygon: hoy no hay
+// StakingPool ni puente desplegados, y una herramienta que los ofreciera
+// prepararía operaciones que no existen en la cadena.
 const ROADMAP = [
-    { icon: 'point_of_sale', label: 'Cobros con BEZ-Pay' },
     { icon: 'savings', label: 'Staking' },
     { icon: 'alt_route', label: 'Bridges' },
-    { icon: 'apartment', label: 'Tokenización de activos' },
-    { icon: 'inventory_2', label: 'Tu ERP (SAP, Odoo) · Business+' },
 ];
 
 type ClientId = 'claude' | 'chatgpt' | 'claude-code' | 'codex' | 'gemini' | 'ide' | 'api';
+
+// Logos oficiales de cada producto, copiados a public/brands desde sus propias
+// webs (claude.ai, cdn.oaistatic.com, gemini, antigravity.google, cursor.com,
+// code.visualstudio.com). Se sirven desde aquí para no depender de un CDN
+// ajeno ni abrir img-src a terceros. Uso nominativo: indican compatibilidad.
+type Logo = { src: string; alt: string };
+const LOGO = {
+    claude: { src: '/brands/claude.svg', alt: 'Claude' },
+    openai: { src: '/brands/openai.svg', alt: 'OpenAI' },
+    gemini: { src: '/brands/gemini.svg', alt: 'Gemini' },
+    antigravity: { src: '/brands/antigravity.svg', alt: 'Antigravity' },
+    cursor: { src: '/brands/cursor.svg', alt: 'Cursor' },
+    vscode: { src: '/brands/vscode.png', alt: 'VS Code' },
+} satisfies Record<string, Logo>;
 
 const CLIENTS: {
     id: ClientId;
     name: string;
     icon: string;
+    logos?: Logo[];
     auth: string;
     steps?: string[];
     code?: { label: string; lang: string; value: string }[];
@@ -96,6 +135,7 @@ const CLIENTS: {
         id: 'claude',
         name: 'Claude',
         icon: 'forum',
+        logos: [LOGO.claude],
         auth: 'OAuth · sin api-key',
         steps: [
             'En Claude (web o escritorio) abre Ajustes → Conectores.',
@@ -110,6 +150,7 @@ const CLIENTS: {
         id: 'chatgpt',
         name: 'ChatGPT',
         icon: 'chat',
+        logos: [LOGO.openai],
         auth: 'OAuth · sin api-key',
         steps: [
             'En ChatGPT abre Ajustes → Aplicaciones y conectores → Avanzado y activa el modo desarrollador.',
@@ -124,6 +165,7 @@ const CLIENTS: {
         id: 'claude-code',
         name: 'Claude Code',
         icon: 'terminal',
+        logos: [LOGO.claude],
         auth: 'OAuth o api-key',
         code: [
             { label: 'Con OAuth (recomendado)', lang: 'bash', value: `claude mcp add --transport http bezhas ${MCP_URL}` },
@@ -135,6 +177,7 @@ const CLIENTS: {
         id: 'codex',
         name: 'Codex',
         icon: 'code_blocks',
+        logos: [LOGO.openai],
         auth: 'OAuth o api-key',
         code: [
             { label: '~/.codex/config.toml — con OAuth', lang: 'toml', value: `[mcp_servers.bezhas]\nurl = "${MCP_URL}"` },
@@ -146,6 +189,7 @@ const CLIENTS: {
         id: 'gemini',
         name: 'Gemini · Antigravity',
         icon: 'auto_awesome',
+        logos: [LOGO.gemini, LOGO.antigravity],
         auth: 'OAuth o api-key',
         code: [
             { label: 'Gemini CLI — ~/.gemini/settings.json', lang: 'json', value: `{\n  "mcpServers": {\n    "bezhas": { "httpUrl": "${MCP_URL}" }\n  }\n}` },
@@ -157,6 +201,7 @@ const CLIENTS: {
         id: 'ide',
         name: 'Cursor · VS Code',
         icon: 'integration_instructions',
+        logos: [LOGO.cursor, LOGO.vscode],
         auth: 'OAuth o api-key',
         code: [
             { label: 'Cursor — ~/.cursor/mcp.json', lang: 'json', value: `{\n  "mcpServers": {\n    "bezhas": { "url": "${MCP_URL}" }\n  }\n}` },
@@ -212,7 +257,7 @@ const PLANS: {
         yearly: '990 € / año',
         cta: { label: 'Contratar Creator Pro', href: '/register' },
         features: [
-            'Las 11 herramientas, incluido preparar operaciones',
+            '14 herramientas: preparar operaciones, cobros con BEZ-Pay y tokenización',
             '120 llamadas MCP por minuto',
             '1.500 acciones de IA al mes',
             'Mercado en tiempo real',
@@ -230,6 +275,7 @@ const PLANS: {
         cta: { label: 'Contratar Business', href: '/register' },
         features: [
             'Todo lo de Creator Pro',
+            'Las 17 herramientas, con lectura de tu ERP',
             '600 llamadas MCP por minuto',
             '15.000 acciones de IA al mes',
             'Zero-retention: no guardamos tus conversaciones',
@@ -389,6 +435,24 @@ function CodeBlock({ label, value }: { label: string; value: string }) {
             </div>
             <pre className={`px-4 py-3 text-xs font-mono overflow-x-auto whitespace-pre ${styles.code}`}><code>{value}</code></pre>
         </div>
+    );
+}
+
+/** Logos del cliente sobre una pastilla blanca: varios son negros y desaparecerían sobre el fondo oscuro. */
+function ClientLogos({ logos, icon, size = 'sm' }: { logos?: Logo[]; icon: string; size?: 'sm' | 'lg' }) {
+    const caja = size === 'lg' ? 'h-9 w-9 p-1.5 rounded-lg' : 'h-5 w-5 p-0.5 rounded';
+    if (!logos?.length) {
+        return <span className={`material-symbols-outlined ${size === 'lg' ? 'text-3xl text-[var(--mcp-accent)]' : 'text-base'}`} aria-hidden="true">{icon}</span>;
+    }
+    return (
+        <span className="inline-flex items-center gap-1" aria-hidden="true">
+            {logos.map((l) => (
+                <span key={l.src} className={`inline-flex shrink-0 items-center justify-center bg-white ${caja}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- SVG local diminuto: next/image no aporta nada aquí */}
+                    <img src={l.src} alt="" width={size === 'lg' ? 24 : 16} height={size === 'lg' ? 24 : 16} className="h-full w-full object-contain" />
+                </span>
+            ))}
+        </span>
     );
 }
 
@@ -600,13 +664,14 @@ export default function McpPage() {
                                     active === c.id ? 'bg-primary text-[#ffffff]' : 'text-[var(--mcp-dim)] hover:text-[var(--mcp-text)] hover:bg-[var(--mcp-card)]'
                                 }`}
                             >
-                                <span className="material-symbols-outlined text-base">{c.icon}</span>
+                                <ClientLogos logos={c.logos} icon={c.icon} />
                                 {c.name}
                             </button>
                         ))}
                     </div>
                     <div role="tabpanel" id={`panel-${client.id}`} aria-labelledby={`tab-${client.id}`} className="p-6 md:p-8">
                         <div className="flex flex-wrap items-center gap-3 mb-6">
+                            <ClientLogos logos={client.logos} icon={client.icon} size="lg" />
                             <h3 className="text-2xl font-black italic uppercase tracking-tight">{client.name}</h3>
                             <span className="text-[10px] font-bold uppercase tracking-widest border border-tertiary/30 text-[var(--mcp-accent)] rounded-full px-2.5 py-1">{client.auth}</span>
                         </div>
@@ -822,12 +887,15 @@ export default function McpPage() {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <a href="#conectar" onClick={() => goConnect('claude')} className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-primary text-[#ffffff] text-xs font-bold uppercase tracking-widest rounded-xl hover:brightness-110">
+                            <ClientLogos logos={[LOGO.claude]} icon="forum" />
                             Conectar a Claude
                         </a>
                         <a href="#conectar" onClick={() => goConnect('chatgpt')} className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-primary text-[#ffffff] text-xs font-bold uppercase tracking-widest rounded-xl hover:brightness-110">
+                            <ClientLogos logos={[LOGO.openai]} icon="chat" />
                             Conectar a ChatGPT
                         </a>
                         <a href="#conectar" onClick={() => goConnect('codex')} className="inline-flex items-center justify-center gap-2 px-6 py-4 border border-[var(--mcp-line)] text-[var(--mcp-text)] text-xs font-bold uppercase tracking-widest rounded-xl hover:border-tertiary/50">
+                            <ClientLogos logos={[LOGO.openai, LOGO.gemini, LOGO.cursor]} icon="code_blocks" />
                             Codex · Gemini · Cursor
                         </a>
                     </div>

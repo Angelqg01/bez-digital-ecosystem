@@ -5,13 +5,25 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
-# NEXT_PUBLIC_* se incorpora al bundle en tiempo de BUILD, no de ejecución. El
-# .gcloudignore excluye .env.*, así que sin esto el build no recibe ninguna URL
-# y el front cae al valor por defecto del código (http://localhost:3001/api):
-# el panel cargaría pero el login iría a localhost. Sobrescribible con
-# --build-arg para otros entornos.
+# Next.js incrusta NEXT_PUBLIC_* en el JavaScript del navegador AL COMPILAR.
+# Pasarlas solo al arrancar el contenedor (como hacía el despliegue) no sirve:
+# el código del cliente caía a 'http://localhost:3001/api' y el login, el
+# panel de admin y los streams apuntaban al ordenador del visitante.
+# Valor por defecto: el .gcloudignore excluye .env.*, y sin build-arg el front caía a http://localhost:3001/api.
 ARG NEXT_PUBLIC_API_URL=https://api.bezhas.com/api
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SITE_URL
+ARG NEXT_PUBLIC_RPC_URL
+ARG NEXT_PUBLIC_CHAIN_ID
+ARG NEXT_PUBLIC_BEZ_TOKEN
+ARG NEXT_PUBLIC_ADMIN_WALLET
+ARG NEXT_PUBLIC_GA_MEASUREMENT_ID
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    NEXT_PUBLIC_RPC_URL=$NEXT_PUBLIC_RPC_URL \
+    NEXT_PUBLIC_CHAIN_ID=$NEXT_PUBLIC_CHAIN_ID \
+    NEXT_PUBLIC_BEZ_TOKEN=$NEXT_PUBLIC_BEZ_TOKEN \
+    NEXT_PUBLIC_ADMIN_WALLET=$NEXT_PUBLIC_ADMIN_WALLET \
+    NEXT_PUBLIC_GA_MEASUREMENT_ID=$NEXT_PUBLIC_GA_MEASUREMENT_ID
 RUN pnpm build
 # El vault de Obsidian vive fuera de este contexto (docs/obsidian-vault). Quien
 # construye lo copia a ./obsidian-vault antes (scripts/gcp-deploy.sh o el

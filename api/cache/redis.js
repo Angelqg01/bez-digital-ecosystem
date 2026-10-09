@@ -4,12 +4,27 @@ const { createClient } = require('redis');
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
+/**
+ * En producción, sin REDIS_URL no hay Redis: no se intenta conectar a
+ * localhost, que en Cloud Run no existe y solo producía un reintento cada
+ * pocos segundos en el log. connectRedis() rechaza y cada llamador aplica su
+ * plan B (caché en memoria, dejar pasar, 'down'). En desarrollo se mantiene
+ * el localhost de siempre.
+ */
+const REDIS_CONFIGURADO = Boolean(process.env.REDIS_URL) || process.env.NODE_ENV !== 'production';
+
 let redisClient = null;
 let connectPromise = null;
 
 function buildClient() {
     const client = createClient({
         url: REDIS_URL,
+        // Sin esto, mientras Redis no está disponible cada comando se encola a
+        // la espera de una conexión que puede no llegar nunca: cacheGet, el
+        // limitador del login y /api/health se quedaban colgados en vez de
+        // degradar como está previsto. Así fallan al momento y cada llamador
+        // aplica su plan B (null, dejar pasar, 'down').
+        disableOfflineQueue: true,
         socket: {
             reconnectStrategy: (retries) => Math.min(retries * 100, 3000),
         },
@@ -27,6 +42,7 @@ function buildClient() {
 }
 
 async function connectRedis() {
+    if (!REDIS_CONFIGURADO) throw new Error('Redis no configurado (REDIS_URL vacío)');
     if (redisClient?.isOpen) return redisClient;
     if (connectPromise) return connectPromise;
 
@@ -82,6 +98,7 @@ async function redisOp(label, fn) {
 }
 
 async function cacheGet(key) {
+    if (!REDIS_CONFIGURADO) return null;
     try {
         const value = await redisOp('get', (client) => client.get(key));
         if (!value) return null;
@@ -97,6 +114,7 @@ async function cacheGet(key) {
 }
 
 async function cacheSet(key, value, ttlSeconds) {
+    if (!REDIS_CONFIGURADO) return false;
     try {
         const strValue = typeof value === 'string' ? value : JSON.stringify(value);
         await redisOp('set', (client) => ttlSeconds
@@ -110,6 +128,7 @@ async function cacheSet(key, value, ttlSeconds) {
 }
 
 async function publish(channel, message) {
+    if (!REDIS_CONFIGURADO) return false;
     try {
         const strMessage = typeof message === 'string' ? message : JSON.stringify(message);
         await redisOp('publish', (client) => client.publish(channel, strMessage));
@@ -135,6 +154,7 @@ async function publish(channel, message) {
  * una operación ya confirmada.
  */
 async function cacheDelete(key) {
+    if (!REDIS_CONFIGURADO) return false;
     try {
         await redisOp('del', (client) => client.del(key));
         return true;
@@ -166,6 +186,9 @@ async function cacheDelete(key) {
  * bruta. Se avisa por consola para que no pase inadvertido.
  */
 async function checkRateLimit(key, limit, windowSec) {
+    // Sin Redis, el mismo «deja pasar» que cuando Redis no responde (ver
+    // arriba), pero sin un aviso por petición: ya se avisó al arrancar.
+    if (!REDIS_CONFIGURADO) return { allowed: true, count: 0, limit, remaining: limit, resetInSec: windowSec, degraded: true };
     try {
         const redisKey = `ratelimit:${key}`;
         // Todo el INCR + EXPIRE + TTL bajo un solo plazo: si Redis no contesta,
@@ -199,7 +222,9 @@ module.exports = {
     checkRateLimit,
     publish,
     get redisClient() {
+        if (!REDIS_CONFIGURADO) return null;
         redisClient = redisClient || buildClient();
         return redisClient;
     },
+    REDIS_CONFIGURADO,
 };

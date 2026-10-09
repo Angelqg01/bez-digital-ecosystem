@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiError, isSafeInternalPath, isStripeCheckoutUrl } from "../lib/chatActions";
+import { apiError, isSafeInternalPath, isStripeCheckoutUrl, isStripePaymentLink, normalizePlan } from "../lib/chatActions";
 /**
  * Acciones del chat: catálogo, apertura (siempre validada en servidor) y ventanas emergentes.
  * El cliente nunca navega a un destino que no venga del servidor Y pase `isSafeInternalPath`.
@@ -53,7 +53,7 @@ export function useChatActions(api) {
             }
             if (action.kind === "plans") {
                 const p = await api.get("/api/ai-workspace/plans");
-                setPlans(Array.isArray(p.data?.plans) ? p.data.plans : []);
+                setPlans(Array.isArray(p.data?.plans) ? p.data.plans.map(normalizePlan).filter(Boolean) : []);
                 setCurrentPlan(String(p.data?.current || ""));
                 setDialog({ type: "plans", action, result });
             }
@@ -110,7 +110,18 @@ export function useChatActions(api) {
             setPaying(false);
         }
     }, [api]);
-    const checkoutPlan = useCallback((planId, cycle) => pay("/api/checkout/plan", { planId, cycle }), [pay]);
+    /**
+     * Los planes se contratan con los Payment Links del catálogo del servidor (el webhook registra la compra y el plan
+     * sigue a Stripe). Sólo se abre un enlace que venga de ese catálogo y sea de buy.stripe.com.
+     */
+    const checkoutPlan = useCallback(async (planId, cycle) => {
+        const plan = plans.find((p) => p.id === planId);
+        const url = plan ? (cycle === "yearly" ? plan.annualUrl : plan.monthlyUrl) : null;
+        if (!isStripePaymentLink(url)) { setPayError("Ese plan no se puede contratar desde el chat todavía."); return false; }
+        setPayError("");
+        window.location.assign(url);
+        return true;
+    }, [plans]);
     const buyBez = useCallback((amountEur) => pay("/api/checkout/bez", { amountEur }), [pay]);
     return { paying, payError, checkoutPlan, buyBez, catalog, dialog, busy, plans, currentPlan, docs, loadCatalog, request, requestById, go, close };
 }

@@ -277,7 +277,12 @@ function construirServidor(app, plan, agente = null) {
             } catch (err) {
                 // Una denegación de la política no es un fallo del servidor: el
                 // agente necesita el motivo para decírselo al usuario.
-                if (['TxError', 'CostEstimateError'].includes(err?.name) && err.status < 500) {
+                // Igual con los errores de dominio de cobros, tokenización y ERP.
+                // Los del ERP se cuentan siempre: un ERP caído o con credenciales
+                // vencidas es algo que el usuario tiene que saber y arreglar él.
+                const deDominio = ['TxError', 'CostEstimateError', 'BezPayError', 'TokenizationError', 'ErpNoEncontrado']
+                    .includes(err?.name) && err.status < 500;
+                if (deDominio || ['ErpHttpError', 'TokenizationError'].includes(err?.name)) {
                     anotar('denegado', err.code);
                     return resultadoDato(tool.name, { error: err.message, code: err.code, detalles: err.detalles });
                 }

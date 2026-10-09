@@ -1,15 +1,15 @@
 'use strict';
 
 /**
- * services/chatCheckout.js — pagos con Stripe iniciados desde el chat.
+ * services/chatCheckout.js — compra de BEZ con tarjeta iniciada desde el chat.
  *
- * Este servicio SÓLO crea la Checkout Session y deja el estado del plan por usuario. Lo delicado ya
- * existe y no se duplica: routes/webhooks.js verifica la firma de Stripe, provisiona el plan y RETIENE
- * la compra de BEZ hasta que cardFundsVerifier confirma los fondos (cardSettlementWorker entrega).
+ * Este servicio SÓLO crea la Checkout Session. Lo delicado ya existe y no se duplica: routes/webhooks.js
+ * verifica la firma de Stripe y RETIENE la compra de BEZ hasta que cardFundsVerifier confirma los fondos
+ * (cardSettlementWorker entrega). Los PLANES no pasan por aquí: se contratan con los Payment Links del
+ * catálogo (config/stripe-payment-links.js) y los registra services/planSubscriptions.
  *
  * Reglas:
- *  · El precio sale del servidor (config/plans.js, ids de precio de Stripe; importes con tope en BEZ).
- *    El cliente sólo elige plan/ciclo o un importe.
+ *  · El cliente sólo elige un importe (con mínimo y máximo); la moneda y el producto los fija el servidor.
  *  · La identidad sale de la sesión, nunca del cuerpo. La wallet que recibirá el BEZ es la de la cuenta,
  *    y sólo si es una wallet REAL (firmada por su dueño, o gestionada y ya provisionada): una cuenta de
  *    email sin wallet tiene una dirección provisional que no es de nadie, y entregar ahí perdería el BEZ.
@@ -17,7 +17,6 @@
  */
 
 const { query } = require('../db/pool');
-const { PLANS, getPlan } = require('../config/plans');
 
 class CheckoutError extends Error {
     constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -33,9 +32,6 @@ function getStripe() {
 /** Sólo para tests. */
 function __setStripe(client) { stripeClient = client; }
 
-// Nombre del plan en el chat (acciones/ACL) ← id de plan de la API.
-const CHAT_PLAN_NAME = Object.freeze({ starter: 'free', creator_pro: 'creator', business: 'business', enterprise_vip: 'enterprise' });
-
 function returnBase() {
     const raw = String(process.env.CHAT_CHECKOUT_RETURN_BASE || process.env.FRONTEND_URL || 'https://bezhas.com').trim().replace(/\/+$/, '');
     let u;
@@ -47,9 +43,9 @@ function returnBase() {
     }
     return u.origin;
 }
-const urls = (kind) => ({
-    success_url: `${returnBase()}/?checkout=success&kind=${kind}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${returnBase()}/?checkout=cancelled&kind=${kind}`,
+const urls = () => ({
+    success_url: `${returnBase()}/?checkout=success&kind=bez&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${returnBase()}/?checkout=cancelled&kind=bez`,
 });
 
 async function loadUser(userId) {
@@ -67,39 +63,6 @@ function deliverableWallet(u) {
     if (!isRealWallet && !isProvisionedManaged) return null;
     const addr = String(u.primary_wallet_address || u.wallet_address || '');
     return /^0x[0-9a-fA-F]{40}$/.test(addr) ? addr : null;
-}
-
-async function currentPlan(userId) {
-    const { rows } = await query(
-        `SELECT plan_id FROM user_subscriptions
-          WHERE user_id = $1 AND status = 'active' AND (renews_at IS NULL OR renews_at > NOW()) LIMIT 1`, [userId]
-    ).catch(() => ({ rows: [] }));
-    return rows[0]?.plan_id || 'starter';
-}
-
-async function createPlanCheckout({ userId, planId, cycle }) {
-    const plan = getPlan(String(planId || ''));
-    if (!plan || !(plan.priceEUR > 0)) throw new CheckoutError(400, 'INVALID_PLAN', 'Ese plan no se puede comprar.');
-    const billing = cycle === 'yearly' || cycle === 'annual' ? 'annual' : (cycle === undefined || cycle === 'monthly' ? 'monthly' : null);
-    if (!billing) throw new CheckoutError(400, 'INVALID_CYCLE', 'Ciclo de facturación no válido (monthly o yearly).');
-    const price = billing === 'annual' ? plan.stripe?.annualPriceId : plan.stripe?.monthlyPriceId;
-    if (!price) throw new CheckoutError(503, 'PAYMENTS_UNAVAILABLE', 'Ese plan no está disponible para pago todavía.');
-
-    if ((await currentPlan(userId)) === plan.id) throw new CheckoutError(409, 'ALREADY_SUBSCRIBED', 'Ya tienes este plan.');
-    const user = await loadUser(userId);
-    const sub = await query('SELECT stripe_customer_id FROM user_subscriptions WHERE user_id = $1', [userId]).catch(() => ({ rows: [] }));
-    const customer = sub.rows[0]?.stripe_customer_id;
-
-    const session = await getStripe().checkout.sessions.create({
-        mode: 'subscription',
-        line_items: [{ price, quantity: 1 }],
-        client_reference_id: String(userId),
-        ...(customer ? { customer } : (user.email ? { customer_email: user.email } : {})),
-        metadata: { kind: 'chat_plan', plan_id: plan.id, billing, user_id: String(userId) },
-        subscription_data: { metadata: { kind: 'chat_plan', plan_id: plan.id, billing, user_id: String(userId) } },
-        ...urls('plan'),
-    });
-    return { url: session.url, sessionId: session.id };
 }
 
 const bezLimits = () => ({
@@ -125,47 +88,9 @@ async function createBezCheckout({ userId, amountEur }) {
         ...(user.email ? { customer_email: user.email } : {}),
         metadata: { kind: 'chat_bez', walletAddress: wallet, user_id: String(userId) },
         payment_intent_data: { metadata: { kind: 'chat_bez', walletAddress: wallet, user_id: String(userId) } },
-        ...urls('bez'),
+        ...urls(),
     });
     return { url: session.url, sessionId: session.id };
 }
 
-// ── Webhook: estado del plan por usuario ─────────────────────────────────────
-
-/** checkout.session.completed de un plan comprado en el chat (metadata.kind === 'chat_plan'). */
-async function provisionUserPlan(session, eventId) {
-    const userId = session.metadata?.user_id;
-    const plan = getPlan(String(session.metadata?.plan_id || ''));
-    if (!userId || !plan) throw new Error('Sesión de plan sin usuario o plan válidos');
-    if (session.client_reference_id && String(session.client_reference_id) !== String(userId)) throw new Error('client_reference_id no coincide con el usuario');
-    const billing = session.metadata?.billing === 'annual' ? 'annual' : 'monthly';
-    const interval = billing === 'annual' ? "INTERVAL '1 year'" : "INTERVAL '1 month'";
-    await query(
-        `INSERT INTO user_subscriptions (user_id, plan_id, billing, status, renews_at, stripe_customer_id, stripe_subscription_id, last_event_id)
-         VALUES ($1, $2, $3, 'active', NOW() + ${interval}, $4, $5, $6)
-         ON CONFLICT (user_id) DO UPDATE
-           SET plan_id = $2, billing = $3, status = 'active', renews_at = NOW() + ${interval},
-               stripe_customer_id = $4, stripe_subscription_id = $5, last_event_id = $6, updated_at = NOW()`,
-        [userId, plan.id, billing, typeof session.customer === 'string' ? session.customer : null,
-            typeof session.subscription === 'string' ? session.subscription : null, eventId || null]
-    );
-}
-
-/** customer.subscription.updated|deleted: mantiene estado y renovación. Ignora lo que no es de un usuario del chat. */
-async function handleSubscriptionEvent(event) {
-    const sub = event.data.object;
-    if (sub.metadata?.kind !== 'chat_plan') return false;
-    const active = event.type !== 'customer.subscription.deleted' && ['active', 'trialing'].includes(sub.status);
-    const renews = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
-    await query(
-        `UPDATE user_subscriptions SET status = $2, renews_at = COALESCE($3::timestamptz, renews_at), last_event_id = $4, updated_at = NOW()
-          WHERE stripe_subscription_id = $1`,
-        [sub.id, active ? 'active' : 'canceled', renews, event.id]
-    );
-    return true;
-}
-
-module.exports = {
-    CheckoutError, CHAT_PLAN_NAME, createPlanCheckout, createBezCheckout, currentPlan, deliverableWallet,
-    provisionUserPlan, handleSubscriptionEvent, __setStripe, PLANS,
-};
+module.exports = { CheckoutError, createBezCheckout, deliverableWallet, __setStripe };

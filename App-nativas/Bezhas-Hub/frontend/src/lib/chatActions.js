@@ -35,6 +35,33 @@ export function isStripeCheckoutUrl(href) {
     } catch { return false; }
 }
 
+/** Payment Link de Stripe del catálogo del servidor (buy.stripe.com): https, host exacto, sin credenciales ni puerto. */
+export function isStripePaymentLink(href) {
+    if (typeof href !== 'string' || href.length > 2000) return false;
+    try {
+        const u = new URL(href);
+        return u.protocol === 'https:' && !u.username && !u.password && !u.port && u.hostname.toLowerCase() === 'buy.stripe.com';
+    } catch { return false; }
+}
+
+/**
+ * Plan de GET /api/ai-workspace/plans → forma que pinta la ventana de planes. El servidor entrega precios en EUR
+ * y los Payment Links de cada ciclo; «comprable» = tiene algún enlace de pago válido.
+ */
+export function normalizePlan(p) {
+    if (!p || typeof p !== 'object') return null;
+    const monthlyUrl = isStripePaymentLink(p.monthlyUrl) ? p.monthlyUrl : null;
+    const annualUrl = isStripePaymentLink(p.annualUrl) ? p.annualUrl : null;
+    return {
+        ...p,
+        currency: p.currency || 'EUR',
+        priceMonthly: p.priceMonthly ?? p.priceEUR,
+        priceYearly: p.priceYearly ?? p.yearlyEUR,
+        monthlyUrl, annualUrl,
+        purchasable: Boolean(monthlyUrl || annualUrl),
+    };
+}
+
 export function formatPrice(p, cycle = 'monthly') {
     if (cycle === 'yearly' && p.priceYearly) return `${p.priceYearly}${p.currency ? ` ${p.currency}` : ''}/año`;
     if (p.priceMonthly === undefined || p.priceMonthly === null) return '';

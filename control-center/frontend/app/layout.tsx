@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Inter, Space_Grotesk, Syne, Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
@@ -122,8 +121,6 @@ export default function RootLayout({
       <body className={inter.className} suppressHydrationWarning>
         <GoogleAnalytics />
         <Providers>{children}</Providers>
-        {/* Asistente público (public/bz-chat.js). Las SubApps lo cargan con la misma etiqueta. */}
-        <Script src="/bz-chat.js" strategy="lazyOnload" />
       </body>
     </html>
   );

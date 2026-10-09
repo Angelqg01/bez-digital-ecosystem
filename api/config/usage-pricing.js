@@ -8,8 +8,9 @@
  * 15 días de prueba gratis (trial_period_days en la suscripción).
  *
  * Precios Claude API vigentes (USD por millón de tokens, platform.claude.com
- * /docs/en/pricing — actualizados 2026-07-16). Si Anthropic cambia precios,
- * actualizar SOLO esta tabla.
+ * /docs/en/pricing — actualizados 2026-10-04). Si Anthropic cambia precios,
+ * actualizar SOLO esta tabla. Un modelo que no esté aquí se cobra con la
+ * tarifa de DEFAULT_CLAUDE_MODEL: nunca por debajo del coste.
  */
 
 const MARGIN_RATE = 0.25;              // +25% sobre coste real
@@ -19,11 +20,15 @@ const STARTER_TRIAL_DAYS = 15;
 
 // USD por 1M tokens (input / output)
 const CLAUDE_PRICES_PER_MTOK = {
+    'claude-fable-5-1': { input: 10.0, output: 50.0 },
     'claude-fable-5': { input: 10.0, output: 50.0 },
+    'claude-opus-5-5': { input: 4.0, output: 20.0 },
+    'claude-opus-5': { input: 5.0, output: 25.0 },
     'claude-opus-4-8': { input: 5.0, output: 25.0 },
     'claude-opus-4-7': { input: 5.0, output: 25.0 },
     'claude-opus-4-6': { input: 5.0, output: 25.0 },
-    'claude-sonnet-5': { input: 3.0, output: 15.0 },
+    'claude-sonnet-5-5': { input: 2.0, output: 10.0 },
+    'claude-sonnet-5': { input: 2.0, output: 10.0 },
     'claude-sonnet-4-6': { input: 3.0, output: 15.0 },
     'claude-haiku-4-5': { input: 1.0, output: 5.0 },
 };
@@ -38,6 +43,9 @@ const BEZHAS_COMPUTE_COST_EUR = {
     oracle_query: 0.006,     // consulta Quality/Dispute Oracle
     onchain_relay: 0.012,    // relay de tx on-chain (sin contar gas)
     webhook_delivery: 0.0005,
+    // Mensaje del chat de la plataforma (BeZhas AI): recuperación RAG en Postgres,
+    // streaming en Cloud Run e historial. Los tokens del modelo van aparte, por modelo.
+    ai_chat: 0.002,
     // OPERANT (SubApp de gestión empresarial autónoma). Una tarea no es una
     // llamada: es manager + especialistas + memoria vectorial + guardarraíles +
     // escritura en la cadena de auditoría. Coste medido sobre el runtime de

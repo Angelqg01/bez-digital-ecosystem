@@ -45,13 +45,13 @@ function timingSafeMatch(provided, expected) {
     return crypto.timingSafeEqual(a, b);
 }
 const { STRIPE_PAYMENT_LINKS, getStripePaymentLink } = require('../config/stripe-payment-links');
-const { BANK_TRANSFER_DETAILS, buildBankTransferInstructions } = require('../config/bank-transfer-details');
-const { TOKENOMICS_FEE, calculateFeeBreakdown } = require('../config/tokenomics');
+const { BANK_TRANSFER_DETAILS } = require('../config/bank-transfer-details');
+const { calculateFeeBreakdown } = require('../config/tokenomics');
 const { PLANS, CORE_SUBAPPS, ACTIVATABLE_SUBAPPS, calculateSubscription } = require('../config/plans');
 const { settlePayment, refundPayment } = require('../services/paymentSettlement');
 const complianceGate = require('../services/complianceGate');
+const bezPayOrders = require('../services/bezPayOrders');
 const paymentWebhooks = require('../services/paymentWebhooks');
-const { TREASURY: SETTLEMENT_TREASURY } = require('../services/bezSettlementWatcher');
 const logger = require('pino')({ level: 'info', name: 'gateway' });
 
 const router = Router();
@@ -69,7 +69,6 @@ router.use(meterUsage('api_call'));
 // una dirección sin código, que no revierten y no mueven nada.
 const BEZ_COIN_V1_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 const PRODUCTION_CHAINS = [137];
-const PLATFORM_FEE_BPS = TOKENOMICS_FEE.platformFeeBps;
 function resolveBEZToken(chainId) {
     return PRODUCTION_CHAINS.includes(chainId) ? 'BEZCoin' : 'BEZCoinV2';
 }
@@ -79,39 +78,6 @@ async function resolvePrimaryWallet(req, explicitAddress) {
     if (!req.user?.userId) return null;
     const safeWallet = await walletService.ensureFiatSafeWalletForUser(req.user.userId);
     return safeWallet.smartWalletAddress || safeWallet.ownerAddress;
-}
-
-/**
- * Rebuild the /payments/buy response from a stored order row so an
- * Idempotency-Key retry returns the SAME order (never a duplicate).
- */
-function buildBuyReplayResponse(row) {
-    let meta = {};
-    try { meta = JSON.parse(row.note) || {}; } catch (_) { /* note may be null */ }
-    const stripeLink = meta.provider === 'stripe_payment_link'
-        ? getStripePaymentLink(meta.stripeUseCase || 'token_purchase')
-        : null;
-    const bankTransfer = meta.provider === 'bank_transfer';
-    return {
-        success: true,
-        idempotent: true,
-        paymentId: row.id,
-        status: row.status,
-        provider: meta.provider || row.payment_method,
-        checkoutUrl: stripeLink?.url,
-        bankTransfer: bankTransfer ? buildBankTransferInstructions(`BEZ-${row.id}`) : undefined,
-        walletAddress: row.wallet_address,
-        amountUSD: parseFloat(row.amount_usd),
-        platformFeeUSD: parseFloat(row.platform_fee_usd),
-        platformFeeBps: PLATFORM_FEE_BPS,
-        stripeUseCase: stripeLink?.id,
-        stripeLabel: stripeLink?.label,
-        nextAction: stripeLink
-            ? 'redirect_to_checkout'
-            : bankTransfer
-                ? 'display_bank_transfer_instructions'
-                : 'await_payment_confirmation',
-    };
 }
 
 const requirePaymentSettlementKey = (req, res, next) => {
@@ -1128,7 +1094,7 @@ router.get('/apps/list', authenticateGateway, requireScope('admin'), async (req,
 router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
     body('walletAddress').optional().isEthereumAddress(),
     body('amountUSD').isFloat({ min: 1 }),
-    body('paymentMethod').isIn(['card', 'crypto', 'qr', 'bank']),
+    body('paymentMethod').isIn(bezPayOrders.METODOS),
     body('stripeUseCase').optional().isString().isLength({ min: 2, max: 80 }),
     body('email').optional().isEmail(),
 ], async (req, res) => {
@@ -1136,8 +1102,8 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
     const { amountUSD, paymentMethod, stripeUseCase, email } = req.body;
     if (bloqueadoPorEmergencia(req, res, 'fiat_to_crypto')) return;
 
-    // Stripe-style idempotency: same key → replay the original order instead
-    // of creating a duplicate (network retries must be safe).
+    // Idempotencia al estilo Stripe: misma clave → la orden original, nunca un
+    // duplicado (los reintentos de red tienen que ser seguros).
     const idempotencyKey = req.headers['idempotency-key'] || req.body.idempotencyKey || null;
     if (idempotencyKey && !/^[A-Za-z0-9_-]{8,80}$/.test(idempotencyKey)) {
         return res.status(400).json({ error: 'Idempotency-Key must be 8-80 chars [A-Za-z0-9_-]' });
@@ -1148,160 +1114,20 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
         if (!walletAddress) {
             return res.status(400).json({ error: 'walletAddress is required unless a user JWT is provided' });
         }
-
-        if (idempotencyKey) {
-            const existing = await query(
-                `SELECT id, status, wallet_address, amount_usd, platform_fee_usd, payment_method, note, created_at
-                 FROM payment_transactions WHERE idempotency_key = $1 AND type = 'buy'`,
-                [idempotencyKey]
-            );
-            if (existing.rows.length > 0) {
-                const row = existing.rows[0];
-                if (row.wallet_address?.toLowerCase() !== walletAddress.toLowerCase()) {
-                    return res.status(409).json({ error: 'Idempotency-Key already used for a different wallet' });
-                }
-                return res.json(buildBuyReplayResponse(row));
-            }
-        }
-
-        // Gate KYC/MiCA: el volumen acumulado 12m de la wallet limita la compra.
-        const kyc = await complianceGate.checkBuyAllowed(walletAddress, parseFloat(amountUSD));
-        if (!kyc.allowed) {
-            return res.status(403).json({
-                error: `Cumulative purchase limit reached for KYC level ${kyc.level} (${kyc.limitUSD} USD / 12 months)`,
-                code: 'KYC_REQUIRED',
-                kycLevel: kyc.level,
-                requiredLevel: kyc.requiredLevel,
-                limitUSD: kyc.limitUSD,
-                usedUSD: kyc.usedUSD,
-            });
-        }
-
-        const feeBreakdown = calculateFeeBreakdown(amountUSD);
-        const platformFeeUSD = feeBreakdown.platformFeeUSD;
-        const grossAmountUSD = feeBreakdown.grossAmountUSD;
-        const stripeLink = paymentMethod === 'card'
-            ? getStripePaymentLink(stripeUseCase || 'token_purchase')
-            : null;
-        const bankTransfer = paymentMethod === 'bank';
-        const onchain = paymentMethod === 'crypto' || paymentMethod === 'qr';
-
-        // On-chain rail: quote the expected BEZ so the customer knows exactly
-        // what to transfer and the settlement watcher can match it later.
-        let onchainInstructions = null;
-        if (onchain) {
-            const price = await query(
-                "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
-            ).catch(() => ({ rows: [] }));
-            const priceUSD = parseFloat(price.rows[0]?.price_usd || String(precioUsd()));
-            onchainInstructions = {
-                provider: 'onchain',
-                token: 'BEZ',
-                treasury: SETTLEMENT_TREASURY,
-                priceUSD,
-                expectedBez: priceUSD > 0 ? Math.round((parseFloat(amountUSD) / priceUSD) * 1e6) / 1e6 : null,
-                sendFrom: walletAddress,
-                note: 'Transfer the BEZ from your order wallet — the watcher matches sender + amount.',
-            };
-        }
-
-        const note = stripeLink || bankTransfer || onchain
-            ? JSON.stringify(stripeLink ? {
-                provider: 'stripe_payment_link',
-                stripeUseCase: stripeLink.id,
-                stripeLabel: stripeLink.label,
-                email: email || null,
-                platformFeeBps: PLATFORM_FEE_BPS,
-                platformFeeUSD,
-                grossAmountUSD,
-                tokenomics: feeBreakdown.allocations,
-            } : bankTransfer ? {
-                provider: 'bank_transfer',
-                paymentRail: BANK_TRANSFER_DETAILS.paymentRail,
-                beneficiaryAlias: BANK_TRANSFER_DETAILS.beneficiaryAlias,
-                iban: BANK_TRANSFER_DETAILS.iban,
-                bic: BANK_TRANSFER_DETAILS.bic,
-                platformFeeBps: PLATFORM_FEE_BPS,
-                platformFeeUSD,
-                grossAmountUSD,
-                tokenomics: feeBreakdown.allocations,
-            } : {
-                ...onchainInstructions,
-                platformFeeBps: PLATFORM_FEE_BPS,
-                platformFeeUSD,
-                grossAmountUSD,
-                tokenomics: feeBreakdown.allocations,
-            })
-            : null;
-        // TTL del intent: on-chain corto (el watcher deja de casar órdenes
-        // rancias contra transfers nuevos); card/bank más holgado.
-        const ttlHours = onchain
-            ? parseInt(process.env.ONCHAIN_ORDER_TTL_HOURS || '24', 10)
-            : parseInt(process.env.FIAT_ORDER_TTL_HOURS || '168', 10);
-
-        // Bearer token del checkout hosted: quien tenga la URL puede ver el
-        // estado de ESTA orden (y solo esta) sin API key.
-        const checkoutToken = require('crypto').randomBytes(16).toString('hex');
-
-        const result = await query(
-            `INSERT INTO payment_transactions (wallet_address, primary_wallet_address, amount_usd,
-                                               platform_fee_usd, payment_method, type, status, note, idempotency_key, app_id, expires_at, checkout_token)
-             VALUES ($1, $1, $2, $3, $4, 'buy', 'pending', $5, $6, $7, NOW() + ($8 || ' hours')::interval, $9)
-             ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
-             RETURNING id, status, created_at, expires_at, checkout_token`,
-            [walletAddress, grossAmountUSD, platformFeeUSD, paymentMethod, note, idempotencyKey, req.registeredApp?.id || null, String(ttlHours), checkoutToken]
-        );
-
-        // Carrera perdida: otro request con la misma key insertó primero → replay.
-        if (result.rows.length === 0 && idempotencyKey) {
-            const raced = await query(
-                `SELECT id, status, wallet_address, amount_usd, platform_fee_usd, payment_method, note, created_at
-                 FROM payment_transactions WHERE idempotency_key = $1 AND type = 'buy'`,
-                [idempotencyKey]
-            );
-            if (raced.rows.length > 0) {
-                return res.json(buildBuyReplayResponse(raced.rows[0]));
-            }
-            return res.status(500).json({ error: 'Payment processing failed' });
-        }
-        logger.info({
-            walletAddress,
-            amountUSD,
-            paymentMethod,
-            stripeUseCase: stripeLink?.id,
-        }, 'BEZ purchase initiated');
-
-        const bankTransferInstructions = bankTransfer
-            ? buildBankTransferInstructions(`BEZ-${result.rows[0].id}`)
-            : undefined;
-
-        res.json({
-            success: true,
-            paymentId: result.rows[0].id,
-            status: 'pending',
-            provider: stripeLink ? 'stripe_payment_link' : bankTransfer ? 'bank_transfer' : paymentMethod,
-            checkoutUrl: stripeLink?.url,
-            bankTransfer: bankTransferInstructions,
-            onchain: onchainInstructions || undefined,
-            walletAddress,
-            amountUSD: grossAmountUSD,
-            netAmountUSD: parseFloat(amountUSD),
-            platformFeeUSD,
-            platformFeeBps: PLATFORM_FEE_BPS,
-            tokenomics: feeBreakdown.allocations,
-            stripeUseCase: stripeLink?.id,
-            stripeLabel: stripeLink?.label,
-            expiresAt: result.rows[0].expires_at,
-            hostedCheckoutUrl: `${process.env.PUBLIC_PAY_BASE_URL || ''}/c/${result.rows[0].checkout_token}`,
-            nextAction: stripeLink
-                ? 'redirect_to_checkout'
-                : bankTransfer
-                    ? 'display_bank_transfer_instructions'
-                    : onchain
-                        ? 'transfer_bez_to_treasury'
-                        : 'await_payment_confirmation',
+        // La lógica vive en services/bezPayOrders.js: la comparte la
+        // herramienta MCP bezhas_checkout_prepare.
+        const orden = await bezPayOrders.crearOrden({
+            appId: req.registeredApp?.id || null,
+            walletAddress, amountUSD, paymentMethod, stripeUseCase, email, idempotencyKey,
         });
+        if (!orden.idempotent) {
+            logger.info({ walletAddress, amountUSD, paymentMethod, stripeUseCase: orden.stripeUseCase }, 'BEZ purchase initiated');
+        }
+        res.json(orden);
     } catch (error) {
+        if (error instanceof bezPayOrders.BezPayError && error.status < 500) {
+            return res.status(error.status).json({ error: error.message, code: error.code, ...(error.detalles || {}) });
+        }
         logger.error(error, 'Payment buy failed');
         res.status(500).json({ error: 'Payment processing failed' });
     }
@@ -1317,48 +1143,14 @@ router.get('/payments/:id(\\d+)', authenticateGateway, requireScope('wallet'), [
 ], async (req, res) => {
     if (!validate(req, res)) return;
     try {
-        const { rows } = await query(
-            `SELECT id, wallet_address, amount_usd, amount_bez, platform_fee_usd, payment_method,
-                    type, status, note, tx_hash, app_id, expires_at, created_at, updated_at
-             FROM payment_transactions WHERE id = $1 AND type = 'buy' LIMIT 1`,
-            [parseInt(req.params.id, 10)]
-        );
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Payment order not found' });
-        }
-        const order = rows[0];
-
-        const isAdmin = req.registeredApp?.scopes?.includes('admin');
-        const ownsAsApp = req.registeredApp && order.app_id === req.registeredApp.id;
-        const userWallet = req.user?.address?.toLowerCase();
-        const ownsAsWallet = userWallet && order.wallet_address?.toLowerCase() === userWallet;
-        if (!isAdmin && !ownsAsApp && !ownsAsWallet) {
-            return res.status(404).json({ error: 'Payment order not found' });
-        }
-
-        let meta = {};
-        try { meta = order.note ? JSON.parse(order.note) : {}; } catch { meta = {}; }
-        res.json({
-            success: true,
-            payment: {
-                paymentId: order.id,
-                status: order.status,
-                walletAddress: order.wallet_address,
-                amountUSD: parseFloat(order.amount_usd || '0'),
-                amountBEZ: order.amount_bez,
-                platformFeeUSD: parseFloat(order.platform_fee_usd || '0'),
-                paymentMethod: order.payment_method,
-                provider: meta.provider || order.payment_method,
-                txHash: order.tx_hash,
-                settlement: meta.settlement || null,
-                onchain: meta.provider === 'onchain'
-                    ? { treasury: meta.treasury, expectedBez: meta.expectedBez, token: meta.token }
-                    : undefined,
-                expiresAt: order.expires_at,
-                createdAt: order.created_at,
-                updatedAt: order.updated_at,
-            },
+        const payment = await bezPayOrders.obtenerOrden({
+            id: req.params.id,
+            appId: req.registeredApp?.id || null,
+            esAdmin: Boolean(req.registeredApp?.scopes?.includes('admin')),
+            walletUsuario: req.user?.address || null,
         });
+        if (!payment) return res.status(404).json({ error: 'Payment order not found' });
+        res.json({ success: true, payment });
     } catch (error) {
         logger.error(error, 'Payment fetch failed');
         res.status(500).json({ error: 'Failed to fetch payment' });
