@@ -136,6 +136,7 @@ const TOOLS = [
     // ── Token y mercado ──────────────────────────────────────────────────────
     {
         name: 'bezhas_token_info',
+        cacheSegundos: 20,
         planMinimo: 'starter',
         scope: 'token',
         title: 'Información del token BEZ',
@@ -144,6 +145,7 @@ const TOOLS = [
     },
     {
         name: 'bezhas_token_price',
+        cacheSegundos: 20,
         planMinimo: 'starter',
         scope: 'token',
         title: 'Precio del token BEZ',
@@ -153,6 +155,7 @@ const TOOLS = [
     },
     {
         name: 'bezhas_oracle_prices',
+        cacheSegundos: 20,
         planMinimo: 'creator_pro',
         scope: 'token',
         title: 'Precios del oráculo por cadena',
@@ -177,6 +180,7 @@ const TOOLS = [
     },
     {
         name: 'bezhas_dex_pool',
+        cacheSegundos: 20,
         planMinimo: 'creator_pro',
         scope: 'token',
         title: 'Estado del pool de liquidez',
@@ -187,6 +191,7 @@ const TOOLS = [
     // ── Red y contratos ──────────────────────────────────────────────────────
     {
         name: 'bezhas_network_stats',
+        cacheSegundos: 20,
         planMinimo: 'starter',
         scope: 'contracts',
         title: 'Estadísticas de la red',
@@ -195,6 +200,7 @@ const TOOLS = [
     },
     {
         name: 'bezhas_contracts_list',
+        cacheSegundos: 20,
         planMinimo: 'creator_pro',
         scope: 'contracts',
         title: 'Contratos desplegados',

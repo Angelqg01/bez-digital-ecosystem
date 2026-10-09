@@ -293,6 +293,13 @@ describe('MCP de cara al cliente (/api/mcp)', () => {
             expect(mockRecordUsage).not.toHaveBeenCalled();
         });
 
+        it('el Admin (scope admin) no paga ni siquiera con plan Starter', async () => {
+            conApp(['admin'], 'starter');
+            const r = cuerpo(await rpc('k', 'tools/call', { name: 'bezhas_token_price', arguments: {} }));
+            expect(r?.result?.isError).toBeFalsy();
+            expect(mockRecordUsage).not.toHaveBeenCalled();
+        });
+
         it('la gratuidad forma parte de la huella del catálogo', () => {
             // Si una herramienta pasara de gratuita a de pago sin aviso, un
             // cliente que fija la huella tiene que poder detectarlo.
@@ -358,5 +365,33 @@ describe('MCP de cara al cliente (/api/mcp)', () => {
             expect((await request(app).get('/api/mcp')).status).toBe(405);
             expect((await request(app).delete('/api/mcp')).status).toBe(405);
         });
+    });
+});
+
+describe('MCP: caché de lecturas', () => {
+    beforeEach(() => { jest.clearAllMocks(); require('../../routes/mcp-gateway').cacheLectura.mapa.clear(); });
+
+    it('lo específico del llamante nunca se cachea', () => {
+        for (const n of ['bezhas_subscription', 'bezhas_tx_status', 'bezhas_tx_prepare', 'bezhas_cost_estimate']) {
+            expect(getTool(n).cacheSegundos).toBeUndefined();
+        }
+    });
+
+    it('las lecturas públicas sí llevan caché', () => {
+        for (const n of ['bezhas_token_price', 'bezhas_network_stats', 'bezhas_dex_pool']) {
+            expect(getTool(n).cacheSegundos).toBeGreaterThan(0);
+        }
+    });
+
+    it('la caché evita repetir la lectura idéntica', async () => {
+        const bridge = require('../../services/mcpGatewayBridge');
+        const spy = jest.spyOn(bridge, 'tokenPrice').mockResolvedValue({ priceUSD: 1, updatedAt: null, source: 'seed' });
+        for (let i = 0; i < 3; i++) {
+            conApp(['token'], 'business');
+            const r = cuerpo(await rpc('k', 'tools/call', { name: 'bezhas_token_price', arguments: {} }));
+            expect(r?.result?.isError).toBeFalsy();
+        }
+        expect(spy).toHaveBeenCalledTimes(1);
+        spy.mockRestore();
     });
 });

@@ -76,6 +76,22 @@ const logger = require('../utils/logger');
 
 const router = Router();
 
+/** Caché TTL en memoria para lecturas idénticas: menos consultas a BD y RPC. */
+const cacheLectura = {
+    mapa: new Map(),
+    MAX: 500,
+    get(clave, ttlSeg) {
+        const e = this.mapa.get(clave);
+        if (!e) return undefined;
+        if (Date.now() - e.t > ttlSeg * 1000) { this.mapa.delete(clave); return undefined; }
+        return e.v;
+    },
+    set(clave, v) {
+        if (this.mapa.size >= this.MAX) this.mapa.delete(this.mapa.keys().next().value);
+        this.mapa.set(clave, { v, t: Date.now() });
+    },
+};
+
 /**
  * Límite de tasa por api-key, no por IP: varios clientes pueden compartir
  * salida NAT, y un agente en bucle no puede dejar sin servicio a los demás.
@@ -142,7 +158,8 @@ function resultadoDato(nombre, datos) {
  * descartaría los eventos duplicados.
  */
 function medirUso(app, plan, tool) {
-    if (plan !== 'starter' || tool.gratuita) return;
+    // Clave interna (scope admin): el Admin no paga por usar su propia plataforma.
+    if (plan !== 'starter' || tool.gratuita || app.scopes?.includes('admin')) return;
     recordUsage(app.id, { action: tool.accionCoste || 'api_call', ref: `mcp:${randomUUID()}` })
         .catch((err) => logger.warn({ appId: app.id, tool: tool.name, error: err?.message }, 'MCP usage metering failed'));
 }
@@ -239,9 +256,21 @@ function construirServidor(app, plan, agente = null) {
             };
 
             try {
-                const datos = await definicion.handler({
-                    args: args || {}, app, bridge, entitlements, plan, agente, tx: orquestador(),
-                });
+                // Caché sólo para lecturas públicas marcadas `cacheSegundos`
+                // (datos que no dependen del llamante). La clave incluye el plan
+                // porque la frescura declarada cambia de uno a otro.
+                // Sin inputSchema el SDK pasa su `extra` (puerto, cabeceras) en
+                // lugar de los argumentos: no puede entrar en la clave.
+                const argsClave = definicion.inputSchema ? (args || {}) : {};
+                const claveCache = definicion.cacheSegundos
+                    ? `${tool.name}|${plan}|${JSON.stringify(argsClave)}` : null;
+                let datos = claveCache ? cacheLectura.get(claveCache, definicion.cacheSegundos) : undefined;
+                if (datos === undefined) {
+                    datos = await definicion.handler({
+                        args: args || {}, app, bridge, entitlements, plan, agente, tx: orquestador(),
+                    });
+                    if (claveCache) cacheLectura.set(claveCache, datos);
+                }
                 anotar('ok');
                 medirUso(app, plan, definicion);
                 return resultadoDato(tool.name, datos);
@@ -318,3 +347,4 @@ router.get('/', sinSesion);
 router.delete('/', sinSesion);
 
 module.exports = router;
+module.exports.cacheLectura = cacheLectura;
