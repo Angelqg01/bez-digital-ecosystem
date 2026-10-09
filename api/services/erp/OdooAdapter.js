@@ -33,6 +33,12 @@ const CAMPOS = {
     asiento: ['account_id', 'debit', 'credit', 'name', 'date', 'ref'],
 };
 
+/**
+ * Campo por el que se identifica un documento. En un activo la referencia que se lista es `code` (ver _traducir):
+ * buscarlo por `name` hacía que un activo listado no se pudiera leer después.
+ */
+const CAMPO_NUMERO = { asiento: 'ref', activo: 'code' };
+
 /** Odoo devuelve las relaciones como [id, "nombre"]. Nos interesa el nombre. */
 const rel = (v) => (Array.isArray(v) ? v[1] : v) || null;
 
@@ -86,7 +92,7 @@ class OdooAdapter extends ErpAdapter {
     _dominio(tipo, f) {
         const dominio = [...MODELOS[tipo].extra];
         const campoFecha = { factura: 'invoice_date', pedido: 'date_order', albaran: 'scheduled_date', activo: 'acquisition_date', asiento: 'date' }[tipo];
-        const campoNumero = tipo === 'asiento' ? 'ref' : 'name';
+        const campoNumero = CAMPO_NUMERO[tipo] || 'name';
 
         if (f.desde) dominio.push([campoFecha, '>=', f.desde]);
         if (f.hasta) dominio.push([campoFecha, '<=', f.hasta]);
@@ -148,7 +154,7 @@ class OdooAdapter extends ErpAdapter {
 
     async obtenerDocumento(tipo, id) {
         this.comprobarTipo(tipo);
-        const campoNumero = tipo === 'asiento' ? 'ref' : 'name';
+        const campoNumero = CAMPO_NUMERO[tipo] || 'name';
         const filas = await this._ejecutar(
             MODELOS[tipo].modelo, 'search_read',
             [[...MODELOS[tipo].extra, [campoNumero, '=', String(id)]]],

@@ -77,6 +77,14 @@ function evaluarPolitica(p) {
         d('TREASURY_SCOPE_REQUIRED', 'Sólo las claves de tesorería de BeZhas pueden ordenar pagos desde la tesorería.');
     }
 
+    // Un cliente no puede ordenar un pago «desde» una dirección custodiada por BeZhas haciéndola pasar por una wallet
+    // suya (origen evm_address): sólo se podría firmar con claves que el cliente no tiene, pero el motor no puede
+    // devolverle «permitido» para un movimiento de la tesorería. Los pagos desde la tesorería usan source.type
+    // 'bezhas_treasury' y su propio permiso.
+    if (intent.source.type === 'evm_address' && require('./hotKeyGuard').esDireccionProtegida(intent.source.value)) {
+        d('SOURCE_PROTECTED_ADDRESS', 'El origen es una dirección custodiada por BeZhas y no puede usarse como wallet de un cliente.');
+    }
+
     // ── Agente ───────────────────────────────────────────────────────────────
     if (p.agente && !(p.agente.rails || []).includes(intent.rail)) {
         d('AGENT_RAIL_NOT_ALLOWED', `El agente ${p.agente.agentId} no tiene habilitado ${intent.rail}.`);

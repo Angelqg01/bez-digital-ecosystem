@@ -187,7 +187,9 @@ function lookupValidado(hostname, opciones, callback) {
         const lista = Array.isArray(direcciones) ? direcciones : [direcciones];
 
         for (const d of lista) {
-            if (esDireccionProhibida(d.address)) {
+            // El mismo override de desarrollo que validarUrl (nunca en producción): sin esto la conexión se daba de
+            // alta y luego no podía conectar nunca contra un ERP de pruebas local.
+            if (!PERMITIR_PRIVADAS && esDireccionProhibida(d.address)) {
                 return cb(new ErpHttpError(
                     `${hostname} resolvió a una dirección interna al conectar.`,
                     'ERP_DESTINO_INTERNO'

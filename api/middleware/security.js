@@ -200,11 +200,33 @@ async function auditLog(req, res, next) {
     next();
 }
 
+/**
+ * Express 4 NO captura los rechazos de un middleware `async`: una consulta que falla (p. ej. un timeout de la base de
+ * datos) quedaba como `unhandledRejection` y en producción el proceso sale (index.js), tumbando el servicio para TODOS
+ * los clientes. Aquí el fallo de una dependencia se convierte en un 503 de esa petición y el proceso sigue vivo.
+ */
+function asyncSeguro(fn) {
+    return function middlewareSeguro(req, res, next) {
+        const fallo = (err) => {
+            require('../utils/logger').error({ error: err?.message, ruta: req.originalUrl?.split('?')[0] }, 'Middleware de seguridad: dependencia no disponible');
+            if (!res.headersSent) {
+                res.status(503).json({ error: 'Servicio temporalmente no disponible. Inténtalo de nuevo en un momento.', code: 'DEPENDENCY_UNAVAILABLE' });
+            }
+        };
+        try {
+            return Promise.resolve(fn(req, res, next)).catch(fallo);
+        } catch (err) {
+            return fallo(err);
+        }
+    };
+}
+
 module.exports = {
     authenticateToken,
-    verifyWalletSignature,
-    requireRole,
-    requireOrgRole,
-    enterpriseRateLimit,
-    auditLog,
+    verifyWalletSignature: asyncSeguro(verifyWalletSignature),
+    requireRole: (...roles) => asyncSeguro(requireRole(...roles)),
+    requireOrgRole: (...roles) => asyncSeguro(requireOrgRole(...roles)),
+    enterpriseRateLimit: (...args) => asyncSeguro(enterpriseRateLimit(...args)),
+    auditLog: asyncSeguro(auditLog),
+    asyncSeguro,
 };

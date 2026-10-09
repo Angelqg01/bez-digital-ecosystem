@@ -229,6 +229,14 @@ describe('herramientas operativas del MCP', () => {
             expect(d).toMatchObject({ code: 'FEE_UNAVAILABLE' });
         });
 
+        it('un fallo puntual del RPC se reintenta una vez y no llega al cliente', async () => {
+            let n = 0;
+            rwa._setLectorComision(async () => { n += 1; if (n === 1) throw new Error('parpadeo del RPC'); return 100n * 10n ** 18n; });
+            const d = datos(await llamar(['contracts'], 'creator_pro', 'bezhas_tokenize_prepare', ARGS));
+            expect(n).toBe(2);
+            expect(d.code).not.toBe('FEE_UNAVAILABLE');
+        });
+
         it('es de solo lectura para BeZhas: no escribe en la base de datos', async () => {
             await llamar(['contracts'], 'creator_pro', 'bezhas_tokenize_prepare', ARGS);
             // Solo cuentan las tablas de negocio: el registro de auditoría de
@@ -276,5 +284,19 @@ describe('herramientas operativas del MCP', () => {
             const erp = TOOLS.filter((t) => t.name.startsWith('bezhas_erp_'));
             expect(erp.every((t) => (t.nivelRiesgo || 0) === 0)).toBe(true);
         });
+    });
+});
+
+describe('rwaTokenization.precalentar', () => {
+    const rwa2 = require('../../services/rwaTokenization');
+    afterEach(() => rwa2._setLectorComision(null));
+    it('deja en caché la comisión de las dos fábricas y nunca propaga un error', async () => {
+        const leidas = [];
+        rwa2._setLectorComision(async (dir) => { leidas.push(dir); return 100n * 10n ** 18n; });
+        const r = await rwa2.precalentar();
+        expect(r.every((x) => x.status === 'fulfilled')).toBe(true);
+        expect(new Set(leidas).size).toBe(Object.keys(rwa2.FABRICAS).length);
+        rwa2._setLectorComision(async () => { throw new Error('rpc caído'); });
+        await expect(rwa2.precalentar()).resolves.toBeDefined();
     });
 });

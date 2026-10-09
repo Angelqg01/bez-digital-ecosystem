@@ -54,6 +54,42 @@ const DOCS = [
     ['bz_edge', 'Edge Node',
         'Cada empresa ejecuta su propio Edge Node: los eventos de su ERP salen por él, se anonimizan y solo se publica su prueba (hash). '
         + 'Los datos comerciales no salen de la empresa. El alta del nodo se hace desde el onboarding de la plataforma.'],
+    ['bz_tokenizacion', 'Tokenizar activos reales (RWA)',
+        'BeZhas permite tokenizar un activo real en fracciones con un contrato RWAFactory en Polygon. Hay dos fábricas: «activos» '
+        + '(inmuebles, hoteles, locales, vehículos, barcos, helicópteros y objetos) e «industrial» (plantas, maquinaria, lotes y materia prima). '
+        + 'Hace falta el CID de IPFS de la documentación legal del activo (se sube en www.bezhas.com/rwa), el número de fracciones '
+        + '(hasta 100.000.000), la valoración en USD, el precio por fracción en BEZ y el rendimiento anual estimado. BeZhas lee la comisión '
+        + 'vigente del contrato y prepara las dos transacciones sin firmar (aprobar BEZ y tokenizar); las firma el titular con su wallet. '
+        + 'BeZhas no firma ni envía nada por ti. Desde una IA, la herramienta MCP bezhas_tokenize_prepare (plan Creator Pro o superior) hace esa preparación.'],
+    ['bz_nominas', 'Pagar nóminas y pagos a empleados',
+        'Los pagos de nómina se preparan como operaciones con propósito «payroll»: transferencia cripto (BEZ, USDC o USDT en la red elegida) '
+        + 'o conversión y salida a cuenta bancaria. BeZhas NO mueve fondos al preparar: el motor de políticas evalúa los límites por operación '
+        + 'y diarios de tu plan, el nivel de verificación (KYC), el riesgo y si el destino es nuevo, y por encima del umbral exige una o dos '
+        + 'aprobaciones humanas firmadas. Cada operación lleva una clave de idempotencia: repetirla no duplica el pago. El origen debe ser '
+        + 'una wallet tuya, nunca una dirección custodiada por BeZhas. Los asientos contables de la nómina se leen del ERP conectado.'],
+    ['bz_erp', 'Conectar tu ERP o software contable',
+        'BeZhas se conecta al ERP del cliente: SAP S/4HANA, SAP Business One, Odoo, Microsoft Dynamics y NetSuite. Por defecto es de solo lectura: '
+        + 'facturas, pedidos, albaranes, activos fijos y asientos contables, con filtros acotados. La conexión nace desactivada y solo se '
+        + 'activa con el DPA firmado y una prueba de conexión correcta. Las credenciales del ERP se guardan cifradas y nunca se devuelven. '
+        + 'Escribir en el ERP exige autorizar cada tipo de documento, una clave de idempotencia y la aprobación correspondiente. '
+        + 'El ERP debe estar publicado en internet con https: BeZhas no se conecta a direcciones internas. Desde una IA, las herramientas '
+        + 'bezhas_erp_connections, bezhas_erp_documents y bezhas_erp_document (plan Business o superior) leen esos datos.'],
+    ['bz_contabilidad', 'Contabilidad con BeZhas',
+        'BeZhas no sustituye tu ERP ni tu contabilidad: los ancla. El Edge Node de la empresa anonimiza los eventos del ERP y publica solo su hash, '
+        + 'de modo que cada operación queda probada sin sacar los datos comerciales de la empresa. Los cobros con BEZ-Pay (tarjeta, SEPA o BEZ) '
+        + 'y los pagos preparados quedan registrados y se pueden conciliar con el ERP leyendo facturas y asientos. Antes de automatizar, '
+        + 'la herramienta bezhas_cost_estimate calcula el coste mensual de tus llamadas de API, acciones de IA, envíos on-chain y tareas de OPERANT '
+        + '(departamentos como Finanzas o RRHH) con tu plan, sin consumir créditos.'],
+    ['bz_cumplimiento', 'Normativa y cumplimiento',
+        'BeZhas opera pensando en el marco español y europeo: AEAT, MiCA, SEPA y DAC8. Las operaciones con fondos exigen verificación (KYC) '
+        + 'según su importe, límites por plan y aprobación humana firmada por encima del umbral; nada se ejecuta por una IA sin esa firma. '
+        + 'BeZhas no ofrece asesoramiento fiscal ni jurídico: para el tratamiento contable y fiscal de la tokenización, las nóminas o los cobros '
+        + 'en BEZ, consulta con tu asesor. Para dudas de cumplimiento escribe a info.bezcoin@bezhas.com.'],
+    ['bz_api_integracion', 'Integrar BeZhas con otra plataforma por API',
+        'Hay tres vías. 1) API REST del Gateway con una api-key en la cabecera x-api-key y permisos por ámbito (token, contratos, wallet, pagos, KYC): '
+        + 'consulta de precio y token, pagos, estado KYC y más. 2) Servidor MCP en https://mcp.bezhas.com/mcp para conectar Claude, ChatGPT, Cursor o un '
+        + 'agente propio, con herramientas de lectura y de preparación (nunca de firma). 3) Conexión gestionada con tu ERP. Todas se miden contra tu plan '
+        + 'y tienen límites de tasa. La documentación está en www.bezhas.com/developers y www.bezhas.com/docs.'],
 ];
 
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');

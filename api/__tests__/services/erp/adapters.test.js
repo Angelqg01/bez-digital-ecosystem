@@ -57,6 +57,19 @@ describe('Adaptadores de ERP', () => {
             expect(clausula).toEqual(['name', '=', "F-1' or '1'='1"]);
         });
 
+        it('Odoo: un activo se identifica por `code` (la referencia que se lista), no por `name`', async () => {
+            const a = crearAdaptador('odoo', cfg());
+            expect(a._dominio('activo', { numero: 'AST-0002' }).find((c) => c[2] === 'AST-0002')[0]).toBe('code');
+            // Las facturas siguen por `name` y los asientos por `ref`.
+            expect(a._dominio('factura', { numero: 'F-1' }).find((c) => c[2] === 'F-1')[0]).toBe('name');
+            expect(a._dominio('asiento', { numero: 'N-1' }).find((c) => c[2] === 'N-1')[0]).toBe('ref');
+            const llamadas = [];
+            a._ejecutar = async (modelo, metodo, args) => { llamadas.push(args[0]); return [{ name: 'Nave', code: 'AST-0002', original_value: 1, currency_id: [1, 'EUR'], acquisition_date: '2021-06-30', state: 'open' }]; };
+            const doc = await a.obtenerDocumento('activo', 'AST-0002');
+            expect(llamadas[0]).toContainEqual(['code', '=', 'AST-0002']);
+            expect(doc.referencia).toBe('AST-0002');
+        });
+
         it('NetSuite: RECHAZA en vez de limpiar, porque construye SQL de verdad', () => {
             // SuiteQL no admite parámetros ligados, así que aquí sí hay inyección
             // si un valor entra crudo. Limpiar es una carrera que se pierde.

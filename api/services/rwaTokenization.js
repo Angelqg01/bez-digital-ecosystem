@@ -67,7 +67,7 @@ class TokenizationError extends Error {
 }
 
 async function leerComisionDeCadena(direccion) {
-    const url = urlsParaCadena(CHAIN_ID)[0] || 'https://polygon-rpc.com';
+    const url = urlsParaCadena(CHAIN_ID)[0] || 'https://polygon-bor-rpc.publicnode.com';
     const provider = new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true });
     const factory = new ethers.Contract(direccion, FACTORY_ABI, provider);
     let t;
@@ -89,8 +89,17 @@ async function comision(direccion) {
     if (enCache && Date.now() - enCache.t < CACHE_MS) return enCache.valor;
     let valor;
     try {
-        valor = await lectorComision(direccion);
-    } catch (_) {
+        try {
+            valor = await lectorComision(direccion);
+        } catch (primero) {
+            // Los RPC públicos fallan de forma intermitente: un reintento corto evita un «inténtalo en unos minutos»
+            // por un parpadeo, y la causa queda en el log (antes se tragaba).
+            require('../utils/logger').warn({ error: primero?.message, direccion }, 'RWA: fallo leyendo la comisión, reintento');
+            await new Promise((r) => setTimeout(r, 400));
+            valor = await lectorComision(direccion);
+        }
+    } catch (ultimo) {
+        require('../utils/logger').error({ error: ultimo?.message, direccion }, 'RWA: no se pudo leer la comisión de la fábrica');
         throw new TokenizationError(
             'No se pudo leer la comisión del contrato de tokenización en Polygon. Inténtalo en unos minutos.',
             'FEE_UNAVAILABLE', 503,
@@ -168,7 +177,16 @@ async function prepararTokenizacion(entrada) {
     };
 }
 
+/**
+ * Lee al arrancar la comisión de cada fábrica y la deja en caché: la primera lectura de un proceso recién iniciado
+ * tardaba lo bastante para agotar el tiempo y el primer cliente veía «inténtalo en unos minutos». Sin esperar y sin
+ * propagar errores: si falla, la primera petición real lo reintenta como siempre.
+ */
+function precalentar() {
+    return Promise.allSettled(Object.values(FABRICAS).map((f) => comision(f.direccion)));
+}
+
 module.exports = {
-    prepararTokenizacion, TokenizationError, CATEGORIAS, FABRICAS, FACTORY, CHAIN_ID,
+    precalentar, prepararTokenizacion, TokenizationError, CATEGORIAS, FABRICAS, FACTORY, CHAIN_ID,
     _setLectorComision: (fn) => { lectorComision = fn || leerComisionDeCadena; cacheComision.clear(); },
 };

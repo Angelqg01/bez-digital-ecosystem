@@ -838,6 +838,14 @@ async function startServer() {
     gcpLogger.warning('[STARTUP] energyFeedService not found — OMIE feed lazy-load only', { error: err.message });
   }
 
+  // Comisión de las fábricas RWA en caché desde el arranque (la primera lectura de un proceso nuevo era la lenta).
+  try {
+    require('./services/rwaTokenization').precalentar()
+      .then((r) => gcpLogger.info('[STARTUP] Comisión RWA precargada', { ok: r.filter((x) => x.status === 'fulfilled').length, total: r.length }));
+  } catch (err) {
+    gcpLogger.warning('[STARTUP] precarga RWA omitida', { error: err.message });
+  }
+
   // ── PASO 7.5: ⚡ Agente de arbitraje autónomo (opt-in) ────────────────────────
   // Solo se arranca con ARBITRAGE_AUTO=true para evitar despachos automáticos no
   // deseados. Evalúa OMIE real + telemetría de batería y despacha por MQTT.

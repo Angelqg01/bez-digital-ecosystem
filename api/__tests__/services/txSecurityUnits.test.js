@@ -111,6 +111,18 @@ describe('txPolicyEngine', () => {
         uso: { diaEur: 0, mesEur: 0, agenteDiaEur: 0 }, importeEur: 100,
         destino: { estado: 'active' }, proveedor: null, riesgo: { nivel: 'LOW' }, killSwitch: { estado: 'NORMAL' }, ...extra,
     });
+    it.each([
+        ['hot wallet de ventas', '0x52Df82920CBAE522880dD7657e43d1A754eD044E'],
+        ['tesorería DAO', '0x89c23890c742d710265dD61be789C71dC8999b12'],
+    ])('un cliente no puede usar como origen la %s de BeZhas', (_n, direccion) => {
+        const r = evaluarPolitica(ctx({ intent: { ...intent, source: { type: 'evm_address', value: direccion } } }));
+        expect(r.decision).toBe('DENY');
+        expect(r.motivos.map((m) => m.code)).toContain('SOURCE_PROTECTED_ADDRESS');
+    });
+    it('una wallet de cliente cualquiera como origen no se bloquea por esta regla', () => {
+        const r = evaluarPolitica(ctx({ intent: { ...intent, source: { type: 'evm_address', value: `0x${'ab'.repeat(20)}` } } }));
+        expect(r.motivos.map((m) => m.code)).not.toContain('SOURCE_PROTECTED_ADDRESS');
+    });
     it('el límite del agente manda si es más estricto', () => {
         const r = evaluarPolitica(ctx({ agente: { agentId: 'a', rails: ['crypto_transfer'], porOperacionEur: 50 } }));
         expect(r.decision).toBe('DENY');

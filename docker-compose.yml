@@ -127,6 +127,9 @@ services:
       # Stack de desarrollo local: un SPA (el Hub) hace decenas de llamadas por carga y con el límite por
       # defecto de producción (100 / 15 min por IP) se quedaba sin cupo en dos recargas y todo daba 429.
       RATE_LIMIT_MAX:   ${RATE_LIMIT_MAX:-2000}
+      # Frontends locales (landing de Next y Hub de Vite): la API corre en modo producción y sólo admite *.bezhas.com por
+      # defecto, así que sin esto el navegador no puede llamarla en desarrollo (el preflight devuelve 500).
+      CORS_EXTRA_ORIGINS: ${CORS_EXTRA_ORIGINS:-http://localhost:3000,http://localhost:5173}
       # Pagos del chat (Stripe): a dónde vuelve el usuario. En desarrollo local es el Hub de Vite; en producción
       # se usa FRONTEND_URL / https://bezhas.com y un http://localhost allí se rechaza.
       CHAT_CHECKOUT_RETURN_BASE: ${CHAT_CHECKOUT_RETURN_BASE:-http://localhost:5173}

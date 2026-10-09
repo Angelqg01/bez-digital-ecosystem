@@ -94,4 +94,9 @@ function revisar(env = process.env) {
     return { inventario, retiradas };
 }
 
-module.exports = { revisar, CLAVES_OPERADOR, CLAVES_MINTEO_ANTIGUO, PROTEGIDAS_BASE };
+/** ¿Es una dirección custodiada por BeZhas (tesorería, hot wallet, TX_TREASURY_ADDRESS*)? */
+function esDireccionProtegida(direccion, env = process.env) {
+    return protegidas(env).has(String(direccion || '').toLowerCase());
+}
+
+module.exports = { revisar, esDireccionProtegida, CLAVES_OPERADOR, CLAVES_MINTEO_ANTIGUO, PROTEGIDAS_BASE };
