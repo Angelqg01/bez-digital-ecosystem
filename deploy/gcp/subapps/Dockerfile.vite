@@ -2,6 +2,10 @@
 # estas apps importan ../_shared y ../packages, hermanos de su carpeta, así que se conserva el árbol App-nativas/.
 FROM node:22-alpine AS builder
 ARG APP_DIR
+# URL de la API que se incrusta en el JavaScript (sin esto las apps llaman a http://localhost:3001).
+ARG VITE_API_URL=https://api.bezhas.com/api
+ARG VITE_GATEWAY_URL=https://api.bezhas.com/api
+ENV VITE_API_URL=$VITE_API_URL VITE_GATEWAY_URL=$VITE_GATEWAY_URL
 RUN npm install -g pnpm@11
 WORKDIR /ws
 # Lo subido ya está filtrado (deploy/gcp/subapps/.gcloudignore): _shared, packages y las apps.

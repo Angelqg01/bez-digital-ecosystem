@@ -10,6 +10,9 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# La URL de la API se incrusta en el build (sin esto llama a http://localhost:3003).
+ARG NEXT_PUBLIC_API_URL=https://api.bezhas.com
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm run build
 
 FROM base AS runner

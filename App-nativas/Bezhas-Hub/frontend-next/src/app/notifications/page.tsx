@@ -3,6 +3,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 import {
     Bell, Check, CheckCheck, Trash2, Filter,
     Wallet, ShoppingBag, Users, MessageCircle,
@@ -64,7 +66,7 @@ export default function NotificationsPage() {
                 try {
                     setIsLoading(true);
                     const token = localStorage.getItem('token'); // Typical auth mechanism
-                    const res = await fetch('http://localhost:3001/api/notifications', {
+                    const res = await fetch(`${API_ORIGIN}/api/notifications`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -94,7 +96,7 @@ export default function NotificationsPage() {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         try {
             const token = localStorage.getItem('token');
-            await fetch('http://localhost:3001/api/notifications/read-all', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+            await fetch(`${API_ORIGIN}/api/notifications/read-all`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
         } catch (e) {}
     };
 
@@ -102,7 +104,7 @@ export default function NotificationsPage() {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
         try {
             const token = localStorage.getItem('token');
-            await fetch(`http://localhost:3001/api/notifications/${id}/read`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+            await fetch(`${API_ORIGIN}/api/notifications/${id}/read`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
         } catch (e) {}
     };
 
@@ -110,7 +112,7 @@ export default function NotificationsPage() {
         setNotifications(prev => prev.filter(n => n.id !== id));
         try {
             const token = localStorage.getItem('token');
-            await fetch(`http://localhost:3001/api/notifications/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            await fetch(`${API_ORIGIN}/api/notifications/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
         } catch (e) {}
     };
 

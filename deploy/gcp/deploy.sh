@@ -48,7 +48,10 @@ fi
 # Comas dentro de un valor: gcloud usa ^~^ para cambiar el separador.
 SUBS="^~^_REGION=${REGION}~_ARTIFACT_REPO=${ARTIFACT_REPO}~_TAG=${TAG}"
 SUBS+="~_WWW_URL=https://${WWW_HOST}~_API_URL=https://${API_HOST}~_MCP_HOST=${MCP_HOST}"
+# Orígenes de las SubApps (Cloud Run): llaman a la api con Bearer; sin esto el navegador bloquea sus peticiones (CORS).
+SUBAPP_ORIGINS="${SUBAPP_ORIGINS:-https://bezhas-hub-afi7mfxzxa-uc.a.run.app,https://bezhas-defi-afi7mfxzxa-uc.a.run.app,https://bezhas-purescan-afi7mfxzxa-uc.a.run.app,https://bezhas-energy-afi7mfxzxa-uc.a.run.app,https://bezhas-cargolink-afi7mfxzxa-uc.a.run.app}"
 SUBS+="~_CORS_ORIGINS=https://${WWW_HOST},https://${DOMAIN}"
+SUBS+="~_API_CORS_ORIGINS=https://${WWW_HOST},https://${DOMAIN},${SUBAPP_ORIGINS}"
 SUBS+="~_SECRET_PREFIX=${SECRET_PREFIX}"
 SUBS+="~_SA_BACKEND=${SA_BACKEND}~_SA_FRONTEND=${SA_FRONTEND}~_SA_MCP=${SA_MCP}~_SA_EDGE=${SA_EDGE}"
 SUBS+="~_VPC_NETWORK=${VPC_NETWORK}~_VPC_SUBNET=${VPC_SUBNET}"
