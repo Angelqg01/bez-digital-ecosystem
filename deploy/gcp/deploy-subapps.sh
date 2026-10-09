@@ -27,23 +27,33 @@ declare -A PORT=( [hub]=8080 [defi]=5174 [purescan]=8080 [energy]=8080 [cargolin
 APPS=("$@"); ((${#APPS[@]})) || APPS=(hub defi purescan energy cargolink)
 TAG="$(git rev-parse --short=12 HEAD)"
 declare -A URL
-for app in "${APPS[@]}"; do
-  [[ -n "${DIR[$app]:-}" ]] || { echo "❌ App desconocida: $app" >&2; exit 1; }
-  dir="${DIR[$app]}"; img="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/bezhas-${app}:${TAG}"
+FALLOS=()
+
+desplegar() {
+  local app="$1" dir="${DIR[$1]}"
+  local img="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/bezhas-${app}:${TAG}"
   echo "→ [$app] construyendo $dir"
-  gcloud builds submit "$dir" --project "$PROJECT_ID" --region "$REGION" --tag "$img" --quiet
+  gcloud builds submit "$dir" --project "$PROJECT_ID" --region "$REGION" --tag "$img" --quiet || return 1
   echo "→ [$app] desplegando en Cloud Run (bezhas-${app})"
   gcloud run deploy "bezhas-${app}" --project "$PROJECT_ID" --region "$REGION" --image "$img" \
     --port "${PORT[$app]}" --allow-unauthenticated --min-instances 0 --max-instances 3 \
-    --memory 512Mi --cpu 1 --quiet
+    --memory 512Mi --cpu 1 --quiet || return 1
   URL[$app]="$(gcloud run services describe "bezhas-${app}" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
+}
+
+for app in "${APPS[@]}"; do
+  [[ -n "${DIR[$app]:-}" ]] || { echo "❌ App desconocida: $app" >&2; exit 1; }
+  # Un fallo en una app no detiene las demás: se anota y se resume al final.
+  if ! desplegar "$app"; then FALLOS+=("$app"); echo "❌ [$app] falló; sigo con las demás" >&2; fi
 done
 
 echo; echo "✅ SubApps desplegadas:"
 json="{"; sep=""
 for app in "${APPS[@]}"; do
+  [[ -n "${URL[$app]:-}" ]] || continue
   code="$(curl -s -o /dev/null -m 15 -w '%{http_code}' "${URL[$app]}" || true)"
   echo "   $app → ${URL[$app]} (HTTP $code)"
   json+="${sep}\"${app}\":\"${URL[$app]}\""; sep=","
 done
 echo; echo "NATIVE_APP_URLS='${json}}'"
+if ((${#FALLOS[@]})); then echo; echo "⚠️  Fallaron: ${FALLOS[*]} (repite: ./deploy/gcp/deploy-subapps.sh ${FALLOS[*]})" >&2; exit 1; fi
