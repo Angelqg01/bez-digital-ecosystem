@@ -124,7 +124,9 @@ function isSafeAppUrl(raw) {
     try { u = new URL(raw); } catch (_) { return false; }
     return u.protocol === 'https:' && !u.username && !u.password && !u.port && APP_HOST_OK(u.hostname.toLowerCase());
 }
-const RUN = (n) => `https://bezhas-${n}-afi7mfxzxa-uc.a.run.app`;
+// Subdominios propios detrás del balanceador (deploy/gcp/03-load-balancer.sh): mismo WAF, certificado y la IP de siempre.
+const SUB = { hub: 'hub', defi: 'capital', purescan: 'purescan', energy: 'energy', cargolink: 'cargolink' };
+const RUN = (n) => `https://${SUB[n]}.bezhas.com`;
 let APP_OVERRIDES = {};
 try { APP_OVERRIDES = JSON.parse(process.env.NATIVE_APP_URLS || '{}'); } catch (_) { APP_OVERRIDES = {}; }
 const appUrl = (id, defecto) => (isSafeAppUrl(APP_OVERRIDES[id]) ? APP_OVERRIDES[id] : defecto);

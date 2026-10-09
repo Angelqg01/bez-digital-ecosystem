@@ -7,6 +7,8 @@
 # Leer este archivo SIEMPRE al inicio de cada sesión.
 
 > [!TODO]
+> **Hecho (2026-10-10):** hub, capital (DeFi en `/defi`), purescan, energy y cargolink ya están en `https://<sub>.bezhas.com` detrás del balanceador (`deploy/gcp/03-load-balancer.sh`, lista `SUBAPPS` en `deploy/gcp/config.env`; se despliegan con `deploy/gcp/deploy-subapps.sh`). Siguen sin desplegar wallet, gas, edge, vision, pay, prestige, sphere y genesis.
+>
 > **PENDIENTE (recordatorio):** Subir online la plataforma BeZhas-Blockchain y **todas las SubApps** con sus **enlaces reales** ya en producción. Las tarjetas de la Landing (`/`) y de `/developers` apuntan a los subdominios `*.bezhas.com` (hub, wallet, gas, edge, vision, capital, prestige, cargolink, pay, purescan, sphere, energy, genesis). Confirmar/ajustar cada subdominio cuando la SubApp esté desplegada (editar `secondaryApps` en `app/(landing)/page.tsx` y `SUBAPP_URLS` en `app/(landing)/developers/page.tsx`).
 
 # Válido para: Claude Code (terminal) \+ Cowork (desktop) \+ Claude.ai (MCPs)

@@ -9,10 +9,11 @@
 # `bezhas-<app>` en Cloud Run. Son páginas PÚBLICAS (--allow-unauthenticated): la sesión y los
 # permisos los comprueba cada app/la API, nunca la URL.
 #
-# Los servicios se llaman bezhas-<app>; su URL de Cloud Run (bezhas-<app>-afi7mfxzxa-uc.a.run.app) es la que el
-# chat ya trae por defecto (api/services/ai-workspace/actions.js), así que NO hace falta reconfigurar nada: el
-# chat las marca «Próximamente» mientras no respondan y se activan solas (sondeo cada 5 min).
-# Si alguna acaba con otra URL, el script imprime el NATIVE_APP_URLS que hay que dar a la api.
+# Los servicios se llaman bezhas-<app> y se publican en <subdominio>.bezhas.com por el balanceador
+# (deploy/gcp/03-load-balancer.sh, lista SUBAPPS en config.env). Su ingress de Cloud Run es
+# `internal-and-cloud-load-balancing`: la dirección *.run.app queda cerrada, como la de la api.
+# El chat (api/services/ai-workspace/actions.js) ya apunta a esos subdominios y marca «Próximamente»
+# las que no respondan (sondeo cada 5 min).
 set -euo pipefail
 cd "$(dirname "$0")"
 source ./config.env
@@ -46,7 +47,7 @@ desplegar() {
   fi
   echo "→ [$app] desplegando en Cloud Run (bezhas-${app})"
   gcloud run deploy "bezhas-${app}" --project "$PROJECT_ID" --region "$REGION" --image "$img" \
-    --port "${PORT[$app]}" --allow-unauthenticated --min-instances 0 --max-instances 3 \
+    --port "${PORT[$app]}" --allow-unauthenticated --ingress internal-and-cloud-load-balancing --min-instances 0 --max-instances 3 \
     --memory 512Mi --cpu 1 --quiet || return 1
   URL[$app]="$(gcloud run services describe "bezhas-${app}" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
 }
@@ -57,13 +58,12 @@ for app in "${APPS[@]}"; do
   if ! desplegar "$app"; then FALLOS+=("$app"); echo "❌ [$app] falló; sigo con las demás" >&2; fi
 done
 
-echo; echo "✅ SubApps desplegadas:"
-json="{"; sep=""
+echo; echo "✅ SubApps desplegadas (solo accesibles por el balanceador, no por *.run.app):"
 for app in "${APPS[@]}"; do
   [[ -n "${URL[$app]:-}" ]] || continue
-  code="$(curl -s -o /dev/null -m 15 -w '%{http_code}' "${URL[$app]}" || true)"
-  echo "   $app → ${URL[$app]} (HTTP $code)"
-  json+="${sep}\"${app}\":\"${URL[$app]}\""; sep=","
+  sub=""; for par in "${SUBAPPS[@]}"; do [[ "${par#*:}" == "bezhas-${app}" ]] && sub="${par%%:*}"; done
+  path=""; [[ "$app" == defi ]] && path=/defi
+  code="$(curl -s -o /dev/null -m 20 -w '%{http_code}' "https://${sub}.${DOMAIN}${path}" || true)"
+  echo "   $app → https://${sub}.${DOMAIN}${path} (HTTP $code)"
 done
-echo; echo "NATIVE_APP_URLS='${json}}'"
 if ((${#FALLOS[@]})); then echo; echo "⚠️  Fallaron: ${FALLOS[*]} (repite: ./deploy/gcp/deploy-subapps.sh ${FALLOS[*]})" >&2; exit 1; fi

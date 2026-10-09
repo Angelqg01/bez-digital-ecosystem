@@ -13,6 +13,7 @@ source ./lib.sh
 
 ESPERAR=0; [[ "${1:-}" == --wait ]] && ESPERAR=1
 HOSTS=("$DOMAIN" "$WWW_HOST" "$API_HOST" "$MCP_HOST")
+for par in "${SUBAPPS[@]}"; do HOSTS+=("${par%%:*}.${DOMAIN}"); done
 
 fallos=0
 ok()     { echo "  ✅ $*"; }

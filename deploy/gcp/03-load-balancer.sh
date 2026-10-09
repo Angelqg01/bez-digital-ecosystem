@@ -6,6 +6,7 @@
 #   www.bezhas.com   ─┼─> bezhas-control-center (bezhas.com redirige a www)
 #   api.bezhas.com   ───> bezhas-api            (REST + WebSocket)
 #   mcp.bezhas.com   ───> bezhas-api            (MCP /mcp, OAuth, /.well-known)
+#   <app>.bezhas.com ───> SubApps nativas (hub, capital=DeFi, purescan, energy, cargolink; ver SUBAPPS)
 #   http://*         ───> 301 a https
 #
 # Si el balanceador ya existía (versión anterior de la plataforma), este
@@ -87,11 +88,37 @@ crear_backend() {
 }
 
 echo "→ Backends serverless"
-for svc in $(printf '%s\n' "$FRONTEND_SERVICE" "$BACKEND_SERVICE" "$MCP_SERVICE" | sort -u); do
+SUBAPP_SERVICES=(); for par in "${SUBAPPS[@]}"; do SUBAPP_SERVICES+=("${par#*:}"); done
+for svc in $(printf '%s\n' "$FRONTEND_SERVICE" "$BACKEND_SERVICE" "$MCP_SERVICE" ${SUBAPP_SERVICES[@]+"${SUBAPP_SERVICES[@]}"} | sort -u); do
   crear_backend "$svc"
 done
 
 echo "→ URL map"
+# Reglas de las SubApps: un host por app. capital (DeFi) redirige / a /defi (la app vive bajo ese basePath).
+SUB_HOSTS=""; SUB_MATCHERS=""; SUB_CERT_HOSTS=()
+for par in "${SUBAPPS[@]}"; do
+  sub="${par%%:*}"; svc="${par#*:}"; host="${sub}.${DOMAIN}"; SUB_CERT_HOSTS+=("$host")
+  SUB_HOSTS+="  - hosts: ['${host}']
+    pathMatcher: app-${sub}
+"
+  if [[ "$sub" == capital ]]; then
+    SUB_MATCHERS+="  - name: app-${sub}
+    defaultService: https://www.googleapis.com/compute/v1/projects/${PROJECT_ID}/global/backendServices/${svc}-bs
+    routeRules:
+      - priority: 1
+        matchRules:
+          - fullPathMatch: /
+        urlRedirect:
+          pathRedirect: /defi
+          httpsRedirect: true
+          redirectResponseCode: FOUND
+"
+  else
+    SUB_MATCHERS+="  - name: app-${sub}
+    defaultService: https://www.googleapis.com/compute/v1/projects/${PROJECT_ID}/global/backendServices/${svc}-bs
+"
+  fi
+done
 MAPA=$(mktemp)
 cat > "$MAPA" <<YAML
 name: ${LB_NAME}
@@ -105,7 +132,7 @@ hostRules:
     pathMatcher: api
   - hosts: ['${MCP_HOST}']
     pathMatcher: mcp
-pathMatchers:
+${SUB_HOSTS}pathMatchers:
   - name: web
     defaultService: https://www.googleapis.com/compute/v1/projects/${PROJECT_ID}/global/backendServices/${FRONTEND_SERVICE}-bs
   - name: apex
@@ -118,6 +145,7 @@ pathMatchers:
     defaultService: https://www.googleapis.com/compute/v1/projects/${PROJECT_ID}/global/backendServices/${BACKEND_SERVICE}-bs
   - name: mcp
     defaultService: https://www.googleapis.com/compute/v1/projects/${PROJECT_ID}/global/backendServices/${MCP_SERVICE}-bs
+${SUB_MATCHERS}
 YAML
 gcloud compute url-maps import "$LB_NAME" --global --source="$MAPA" --quiet
 rm -f "$MAPA"
@@ -129,7 +157,7 @@ echo "→ Certificados gestionados por Google (uno por dominio)"
 # para que la web entera siga sin HTTPS. Separados, cada uno se activa en
 # cuanto su DNS es visible.
 CERTS=()
-for host in "$DOMAIN" "$WWW_HOST" "$API_HOST" "$MCP_HOST"; do
+for host in "$DOMAIN" "$WWW_HOST" "$API_HOST" "$MCP_HOST" ${SUB_CERT_HOSTS[@]+"${SUB_CERT_HOSTS[@]}"}; do
   nombre=$(nombre_cert "$host")
   existe gcloud compute ssl-certificates describe "$nombre" --global || \
     gcloud compute ssl-certificates create "$nombre" --global --domains="$host"

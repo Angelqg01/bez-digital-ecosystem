@@ -348,7 +348,7 @@ describe('acceso directo a las apps nativas', () => {
         const abrir = await request(app()).post('/api/ai-workspace/actions/app_cargolink/open').set('Authorization', `Bearer ${tokenDe(1)}`);
         expect(abrir.status).toBe(200);
         expect(abrir.body.kind).toBe('app');
-        expect(abrir.body.href).toMatch(/^https:\/\/bezhas-cargolink-.*\.a\.run\.app$/);
+        expect(abrir.body.href).toBe('https://cargolink.bezhas.com');
     });
     it('sólo acepta destinos https de la lista cerrada', () => {
         const { isSafeAppUrl } = require('../../services/ai-workspace/actions');
