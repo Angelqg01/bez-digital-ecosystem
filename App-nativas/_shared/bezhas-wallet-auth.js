@@ -53,14 +53,14 @@ function envApiBase() {
         import.meta.env.VITE_AUTH_API ||
         import.meta.env.VITE_HUB_API ||
         import.meta.env.VITE_API_URL ||
-        'https://api.bez.digital'
+        'https://api.bezhas.com'
       );
     }
   } catch { /* not a module env */ }
   if (typeof process !== 'undefined' && process.env) {
-    return process.env.NEXT_PUBLIC_AUTH_API || process.env.NEXT_PUBLIC_API_URL || 'https://api.bez.digital';
+    return process.env.NEXT_PUBLIC_AUTH_API || process.env.NEXT_PUBLIC_API_URL || 'https://api.bezhas.com';
   }
-  return 'https://api.bez.digital';
+  return 'https://api.bezhas.com';
 }
 
 // ── Low-level wallet helpers ─────────────────────────────────────────────────
@@ -172,7 +172,7 @@ export function getAuthHeaders() {
 
 /**
  * Construye la URL de un WebSocket con token JWT y parámetros PQC en el query.
- * @param {string} baseUrl — e.g. 'wss://api.bez.digital:3001/agent-runtime'
+ * @param {string} baseUrl — e.g. 'wss://api.bezhas.com:3001/agent-runtime'
  */
 export function getPqcWsUrl(baseUrl) {
   const session = getSession();
@@ -221,7 +221,7 @@ export async function siweLogin({
   const [rawAddress] = await eth.request({ method: 'eth_accounts' });
   const address = await checksumAddress(rawAddress);
 
-  const domain = typeof window !== 'undefined' ? window.location.host : 'app.bez.digital';
+  const domain = typeof window !== 'undefined' ? window.location.host : 'app.bezhas.com';
   const uri = typeof window !== 'undefined' ? window.location.origin : `https://${domain}`;
 
   try {
@@ -319,7 +319,7 @@ async function ensureChain(targetChainId) {
         params: [{
           chainId: '0x89',
           chainName: 'Polygon',
-          rpcUrls: ['https://polygon-rpc.com'],
+          rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
           nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
           blockExplorerUrls: ['https://polygonscan.com'],
         }],

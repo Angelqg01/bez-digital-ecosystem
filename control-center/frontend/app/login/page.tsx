@@ -273,7 +273,7 @@ function LoginFormContent() {
                             <div className="flex items-center gap-2.5 p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl mt-2">
                                 <span className="text-cyan-400 shrink-0">💡</span>
                                 <p className="text-[11px] text-cyan-300/80 leading-relaxed">
-                                    <strong>Demo:</strong> <span className="font-mono">demo@bez.digital</span> / <span className="font-mono">demo1234</span>
+                                    <strong>Demo:</strong> <span className="font-mono">demo@bezhas.com</span> / <span className="font-mono">demo1234</span>
                                 </p>
                             </div>
                         </form>

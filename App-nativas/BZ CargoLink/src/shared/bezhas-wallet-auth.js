@@ -38,14 +38,14 @@ function envApiBase() {
         import.meta.env.VITE_AUTH_API ||
         import.meta.env.VITE_HUB_API ||
         import.meta.env.VITE_API_URL ||
-        'https://api.bez.digital'
+        'https://api.bezhas.com'
       );
     }
   } catch { /* not a module env */ }
   if (typeof process !== 'undefined' && process.env) {
-    return process.env.NEXT_PUBLIC_AUTH_API || process.env.NEXT_PUBLIC_API_URL || 'https://api.bez.digital';
+    return process.env.NEXT_PUBLIC_AUTH_API || process.env.NEXT_PUBLIC_API_URL || 'https://api.bezhas.com';
   }
-  return 'https://api.bez.digital';
+  return 'https://api.bezhas.com';
 }
 
 // ── Low-level wallet helpers ─────────────────────────────────────────────────
@@ -217,7 +217,7 @@ export async function siweLogin({
     // DEMO fallback — backend unreachable / not deployed. We still require a real
     // wallet signature so the UX is genuine, but the session is local-only.
     console.warn('[bezhas-wallet-auth] JWT auth backend unavailable, using DEMO session:', err.message);
-    const domain = typeof window !== 'undefined' ? window.location.host : 'app.bez.digital';
+    const domain = typeof window !== 'undefined' ? window.location.host : 'app.bezhas.com';
     const uri = typeof window !== 'undefined' ? window.location.origin : `https://${domain}`;
     const nonce = Math.random().toString(36).slice(2);
     const message = buildSiweMessage({
@@ -272,7 +272,7 @@ async function ensureChain(targetChainId) {
         params: [{
           chainId: '0x89',
           chainName: 'Polygon',
-          rpcUrls: ['https://polygon-rpc.com'],
+          rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
           nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
           blockExplorerUrls: ['https://polygonscan.com'],
         }],

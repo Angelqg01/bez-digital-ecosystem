@@ -15,7 +15,7 @@ const auditLogSchema = new mongoose.Schema({
         index: true
     },
 
-    // Name or identifier of the performer (e.g., 'admin@bez.digital', 'system')
+    // Name or identifier of the performer (e.g., 'admin@bezhas.com', 'system')
     performedBy: {
         type: String,
         required: true,

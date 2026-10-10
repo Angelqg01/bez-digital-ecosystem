@@ -19,7 +19,13 @@ COPY . .
 # biblioteca con path.resolve(__dirname, '..', '..', 'agent-lib'): desde
 # /app/services eso da /agent-lib, fuera de /app. Sin el enlace, la API
 # arranca pero se queda sin sus cinco agentes.
-RUN ln -s /app/agent-lib /agent-lib && chown -R bezhas:bezhas /app
+# Igual con smart-contracts/: contractService.js busca los ABI y las
+# direcciones desplegadas en path.resolve(__dirname, '..', '..',
+# 'smart-contracts'), que desde /app/services es /smart-contracts. El
+# despliegue copia abi/ y deployments/ a api/smart-contracts; sin ellos la api
+# no podía instanciar ningún contrato.
+RUN ln -s /app/agent-lib /agent-lib && ln -s /app/smart-contracts /smart-contracts \
+    && chown -R bezhas:bezhas /app
 USER bezhas
 
 EXPOSE 3001

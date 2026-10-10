@@ -28,7 +28,7 @@ ENV_FILE="${ENV_FILE:-$ROOT/.env}"
 
 case "$NETWORK" in
   amoy)    DEFAULT_RPC="https://rpc-amoy.polygon.technology"; CHAIN_ID=80002 ;;
-  polygon) DEFAULT_RPC="https://polygon-rpc.com";             CHAIN_ID=137   ;;
+  polygon) DEFAULT_RPC="https://polygon-bor-rpc.publicnode.com";             CHAIN_ID=137   ;;
   *) echo "ERROR: unknown network '$NETWORK' (use: amoy | polygon)"; exit 1 ;;
 esac
 

@@ -253,7 +253,7 @@ export default function OperantNativeApp() {
                         </div>
 
                         <a
-                            href="https://bez.digital/docs/operant"
+                            href="https://bezhas.com/docs/operant"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 text-sm text-purple-300 hover:text-purple-200 font-medium"

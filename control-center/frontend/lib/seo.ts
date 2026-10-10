@@ -6,7 +6,7 @@
 
 import type { Metadata } from 'next';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bez.digital';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bezhas.com';
 
 interface PageSEO {
     title: string;
@@ -86,6 +86,12 @@ const PAGE_SEO: Record<string, PageSEO> = {
         description: 'Build on BeZhas: REST & WebSocket APIs, BeZhas.js SDK, Solidity smart contract templates, and full developer documentation.',
         path: '/developers',
         keywords: ['blockchain developer', 'Web3 SDK', 'smart contract API', 'BeZhas SDK'],
+    },
+    '/mcp': {
+        title: 'BeZhas MCP | Opera BeZhas desde Claude, ChatGPT, Codex y Gemini',
+        description: 'Conecta tu IA a BeZhas con el Model Context Protocol: consulta BEZ-Coin, prepara pagos con aprobación humana y gestiona tu suscripción desde Claude, ChatGPT, Codex, Gemini, Antigravity o Cursor. OAuth 2.1, sin api-keys en el chat.',
+        path: '/mcp',
+        keywords: ['BeZhas MCP', 'Model Context Protocol', 'MCP server', 'Claude connector', 'ChatGPT connector', 'Codex MCP', 'Gemini MCP', 'blockchain IA', 'BEZ-Coin'],
     },
     '/learn': {
         title: 'Docs & Tutorials | Learn BeZhas',

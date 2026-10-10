@@ -9,9 +9,9 @@ environments:
       vision: http://localhost:3013
       capital: http://localhost:3014
   staging:
-    gateway_base_url: https://staging-api.bez.digital
+    gateway_base_url: https://staging-api.bezhas.com
   production:
-    gateway_base_url: https://api.bez.digital
+    gateway_base_url: https://api.bezhas.com
 
 required_route_groups:
   - /api/health

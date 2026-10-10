@@ -60,7 +60,7 @@ docker run --rm bezhas/validator:latest \
   --passphrase=YOUR_PASSPHRASE
 
 # 3. Hacer stake
-# Dirígete a https://bez.digital/staking
+# Dirígete a https://bezhas.com/staking
 # Conecta tu wallet con 32+ BEZ
 # Confirma transacción
 
@@ -82,7 +82,7 @@ docker run -d \
 docker logs -f <container_id>
 
 # Validador activo?
-curl https://bez.digital/api/v1/validator/status?address=0x...
+curl https://bezhas.com/api/v1/validator/status?address=0x...
 ```
 
 ## Sincronización
@@ -157,6 +157,6 @@ monitoringport = 8080
 
 ## Documentación completa
 
-- Guía de validador: https://bez.digital/docs/validator
-- Ethstaker community: https://bez.digital/ethstaker
+- Guía de validador: https://bezhas.com/docs/validator
+- Ethstaker community: https://bezhas.com/ethstaker
 - Discord: https://discord.gg/bezhas

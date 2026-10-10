@@ -228,7 +228,7 @@ GET  /api/organizations/:orgId/hierarchy/commissions
 
 🖥️ Pantalla final:
 - **"Empieza gratis · 15 días"** (botón teal)
-- `developers.bez.digital` · `@bezhas/connect`
+- `developers.bezhas.com` · `@bezhas/connect`
 - Iconos: suscríbete 🔔 · documentación 📄
 
 🎬 Logo BEZ yin-yang cerrando; música sube y corta.

@@ -2,6 +2,8 @@
 
 MCP es el protocolo de interoperabilidad que permite que agentes, contratos y servicios compartan contexto y comandos de forma auditable. Es lo que hace posible que un flujo cruce varias empresas sin que ninguna ceda el control de sus sistemas.
 
+> **¿Quieres conectar tu IA (Claude, ChatGPT, Codex, Gemini, Cursor) a BeZhas?** Tienes las instrucciones paso a paso, los planes y las preguntas frecuentes en [BeZhas MCP](/mcp).
+
 ## Para qué sirve
 
 - Orquestar procesos multi-agente entre organizaciones (logística → aduanas → seguros)
@@ -45,5 +47,7 @@ El dispositivo no firma transacciones. Si un sensor se ve comprometido, el ataca
 
 ## Ver también
 
+- [BeZhas MCP: conecta tu IA](/mcp)
+- [Webhooks de pagos](/docs/webhooks)
 - [SDK e integraciones](/docs/sdk-integraciones)
 - [Seguridad y buenas prácticas](/docs/seguridad)

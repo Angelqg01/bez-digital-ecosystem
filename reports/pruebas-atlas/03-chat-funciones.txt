@@ -1,0 +1,49 @@
+# 03 · Funciones del chat: pregunta gratis, plan, streaming, acciones, documentos, historial, defensas
+# Ejecutado: 2026-10-09 13:29:26
+
+── 1. Pregunta gratis sin sesión y registro ──
+PASS   visitante: la primera pregunta se responde en streaming
+PASS   visitante: la segunda exige registro (401) — status 401
+
+── 2. Usuario registrado SIN plan ──
+PASS   sin plan: 402 PLAN_REQUIRED y no se llama al modelo — status 402
+PASS   sin plan: ve los planes con Payment Links de Stripe — current=none
+PASS   sin plan: los enlaces de pago son de buy.stripe.com
+
+── 3. Empresa con plan Business: chat, streaming y consumo ──
+PASS   streaming: meta → provider → delta* → usage/done — meta,actions,provider,delta,done
+PASS   consumo: cada pregunta suma 1 acción de IA al plan — 260 → 261 de 15000
+
+── 4. Acciones: catálogo, abrir, bloqueos ──
+PASS   catálogo de acciones por rol/plan — 23 acciones, 0 bloqueadas
+   Pagos y compra de BEZ: buy_bez, token_info, payments
+   Apps del ecosistema: staking, wallet, bridge, gas_tank, edge_nodes, vision_scan, nfts, sectors, enterprise, dashboard
+   Herramientas: developers, mcp, onboarding, logistics, agents
+   Cuenta y planes: subscribe_plans, settings, profile, support
+   Documentos: exclusive_docs
+PASS   todas las acciones de navegación se abren con destino interno seguro — 21 abiertas
+PASS   una acción inventada se rechaza
+PASS   sin plan: una acción bloqueada da 403 al abrirla — exclusive_docs
+
+── 5. Documentos propios de la empresa (RAG privado) ──
+PASS   subir la política contable de la empresa — status 201 published
+PASS   la empresa recupera SU documento en el chat — politica-contable-atlas.txt|politica-contable-atlas.txt|politica-contable-atlas.txt|procedimiento-cierre-atlas.txt
+PASS   listar documentos del tenant
+PASS   documento con prompt injection → cuarentena — quarantined
+PASS   borrar un documento propio
+
+── 6. Historial de conversaciones ──
+PASS   listar conversaciones (persistidas en Postgres) — 50 conversaciones
+PASS   abrir una conversación
+PASS   otra empresa NO puede abrirla
+PASS   borrar una conversación
+
+── 7. Defensas ──
+PASS   inyección de prompt: sin filtración de secretos
+PASS   mensaje de >4000 caracteres se rechaza
+PASS   sin sesión el chat completo da 401/403
+
+23/23 pasan
+ERROR ReferenceError: org2 is not defined
+    at /tmp/claude-1000/-home-amaliacr-Documentos-BeZhas-Blockchain/a2bd922e-2253-4bd1-b000-88eea0cf0be1/scratchpad/atlas/03-functions.js:78:56
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)

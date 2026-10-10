@@ -28,14 +28,14 @@ const STRIPE_PAYMENT_LINKS = Object.freeze({
             label: 'BeZhas Business',
             stripeProductId: 'prod_UOSDVEzpPuxHux',
             monthly: Object.freeze({
-                url: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
-                priceId: 'price_1TPfJUFomr6oeXVgMfB321Hf',
+                url: 'https://buy.stripe.com/00w3cv7UsggSfA22Ibew80f',
+                priceId: 'price_1UKERjFomr6oeXVgZFYsQ98u',
             }),
             annual: Object.freeze({
                 url: 'https://buy.stripe.com/8x228r8YwfcO87A4Qjew80b',
                 priceId: 'price_1TtuE9Fomr6oeXVguKlDbScU',
             }),
-            url: 'https://buy.stripe.com/aFa3cvb6E0hUafI82vew808',
+            url: 'https://buy.stripe.com/00w3cv7UsggSfA22Ibew80f',
         }),
         creator_pro: Object.freeze({
             id: 'creator_pro',

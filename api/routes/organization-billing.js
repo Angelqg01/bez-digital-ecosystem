@@ -18,6 +18,7 @@ const { Router } = require('express');
 const { body, param, validationResult } = require('express-validator');
 const { query } = require('../db/pool');
 const { authenticateToken, requireOrgRole } = require('../middleware/security');
+const planSubscriptions = require('../services/planSubscriptions');
 
 const router = Router();
 
@@ -258,6 +259,34 @@ router.delete('/:orgId/billing/contacts/:contactId', authenticateToken, requireO
     );
     if (rowCount === 0) return res.status(404).json({ error: 'Contacto no encontrado' });
     res.json({ success: true });
+});
+
+// ── Reclamar un plan comprado con un Payment Link sin app asignada ──
+// El id de la sesión de Checkout (cs_…) llega a quien pagó en la URL de vuelta
+// (/onboarding?session_id=…) y hace de justificante de la compra. El plan se
+// activa en una app de ESTA organización. Un admin de la plataforma puede
+// hacerlo por el cliente con el id que ve en el panel de Stripe.
+router.post('/:orgId/billing/plan/claim', authenticateToken, requireOrgRole(...BILLING_WRITERS), [
+    param('orgId').isUUID(),
+    body('sessionId').isString().matches(/^cs_(live|test)_[A-Za-z0-9]+$/),
+    body('appId').isUUID(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    try {
+        const compra = await planSubscriptions.reclamar({
+            sessionId: req.body.sessionId,
+            appId: req.body.appId,
+            orgId: req.params.orgId,
+            userId: req.user.userId,
+        });
+        res.json({ success: true, plan: { id: compra.plan_id, billing: compra.billing, appId: compra.app_id, status: compra.status } });
+    } catch (error) {
+        if (error instanceof planSubscriptions.PlanError) {
+            return res.status(error.status).json({ error: error.message, code: error.code });
+        }
+        res.status(500).json({ error: 'No se pudo asignar el plan' });
+    }
 });
 
 module.exports = router;

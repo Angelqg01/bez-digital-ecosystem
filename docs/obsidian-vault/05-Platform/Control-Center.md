@@ -12,7 +12,7 @@ tags: ["platform-map", "infra-devops", "p1"]
 
 > Capa 2 · Prioridad **P1** · [[Cluster-infra-devops]]
 
-Dashboard corporativo Next.js 14 (Web2.5, oculta la complejidad blockchain). Incluye TabObsidian (mapa del Brain vía filesystem) y TabIntelligence. Landing con las 13 tarjetas *.bez.digital.
+Dashboard corporativo Next.js 14 (Web2.5, oculta la complejidad blockchain). Incluye TabObsidian (mapa del Brain vía filesystem) y TabIntelligence. Landing con las 13 tarjetas *.bezhas.com.
 
 **Ubicación:** `control-center/frontend/` · puerto :3000
 

@@ -123,7 +123,7 @@ Operar una plataforma blockchain enterprise con experiencia Web2.5, sin perder v
 
 **BeZhas Architecture & Security Office**  
 **BeZhas Blockchain Initiative**  
-**Contacto tecnico:** cto-office@bez.digital
+**Contacto tecnico:** cto-office@bezhas.com
 
 [[Arquitectura de la Aplicación (El Stack Técnico)]]
 [[GUIA_PLATAFORMA_BEZHAS]]

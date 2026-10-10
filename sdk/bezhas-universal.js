@@ -33,7 +33,7 @@ class BeZhasUniversal {
     constructor(config) {
         this.config = config;
         this.apiKey = config.apiKey;
-        this.endpoint = config.endpoint || 'https://api.bez.digital/v1/bridge';
+        this.endpoint = config.endpoint || 'https://api.bezhas.com/v1/bridge';
         this.provider = config.provider; // Web3 Provider opcional
         this.debug = config.debug || false;
 

@@ -83,7 +83,7 @@ steps:
       - '--max-instances=20'
       - '--concurrency=80'
       - '--timeout=300'
-      - '--set-env-vars=NODE_ENV=production,PORT=8080,LOG_LEVEL=info,DISABLE_BULLMQ=true,DISABLE_BLOCKCHAIN_LISTENER=true,FRONTEND_URL=https://bez.digital,POLYGON_RPC_URL=https://polygon-bor.publicnode.com,BEZCOIN_CONTRACT_ADDRESS=0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8'
+      - '--set-env-vars=NODE_ENV=production,PORT=8080,LOG_LEVEL=info,DISABLE_BULLMQ=true,DISABLE_BLOCKCHAIN_LISTENER=true,FRONTEND_URL=https://bezhas.com,POLYGON_RPC_URL=https://polygon-bor.publicnode.com,BEZCOIN_CONTRACT_ADDRESS=0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8'
       - '--update-secrets=MONGODB_URI=mongodb-uri:latest,JWT_SECRET=jwt-secret:latest,STRIPE_SECRET_KEY=stripe-secret-key:latest,STRIPE_WEBHOOK_SECRET=stripe-webhook-secret:latest,HOT_WALLET_PRIVATE_KEY=hot-wallet-private-key:latest,GEMINI_API_KEY=gemini-api-key:latest,OPENAI_API_KEY=openai-api-key:latest,REDIS_URL=redis-url:latest,COOKIE_SECRET=cookie-secret:latest,DISCORD_WEBHOOK_URL=discord-webhook-url:latest,TELEGRAM_BOT_TOKEN=telegram-bot-token:latest'
       - '--service-account=bezhas-backend-sa@$PROJECT_ID.iam.gserviceaccount.com'
       - '--cpu-throttling=false'

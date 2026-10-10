@@ -81,7 +81,7 @@ function buildBaseMock() {
                     id: 1,
                     wallet_address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
                     username: 'deployer',
-                    email: 'deployer@bez.digital',
+                    email: 'deployer@bezhas.com',
                     role: 'admin',
                 }],
                 rowCount: 1,

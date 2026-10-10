@@ -18,6 +18,22 @@
  *
  * Disputa o reembolso durante el plazo → blockSettlement → no se entrega nunca.
  *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  REGLA UNIFICADA CON LA API (2026-09-18)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * El plazo ya no basta por sí solo. Antes de entregar, cardFundsVerifier (el
+ * MISMO fichero que usa la API para los Payment Links) confirma en Stripe que:
+ * se cobró exactamente el importe pedido, sin reembolso ni disputa, autorizado,
+ * con 3-D Secure, con los fondos disponibles y ABONADOS en la cuenta bancaria
+ * (dentro de un payout pagado). Sin STRIPE_SECRET_KEY no se entrega: antes, sin
+ * clave, el verificador decía que sí.
+ *
+ * Y la entrega ya no sale del hot wallet por defecto: se pide a la capa de
+ * seguridad de la API como intención desde la tesorería (dos aprobaciones
+ * EIP-712 y el tx-signer aislado). BEZPAY_DELIVERY_MODE=hot_wallet recupera la
+ * vía antigua, y sólo si se pide expresamente.
+ *
  * ⚠️ Lo que la retención SÍ y NO resuelve:
  *   SÍ  — el fraude rápido: pagar, cobrar tokens y revertir el mismo día.
  *   NO  — el contracargo de tarjeta, cuyo plazo real ronda los 120 días. Contra
@@ -30,6 +46,8 @@
 
 const logger = require('../utils/logger');
 const PaymentPG = require('../models/pg/Payment');
+const { verificarFondosTarjeta } = require('./cardFundsVerifier');
+const txClient = require('./bezhasTxClient');
 
 // ─── PLAZOS DE RETENCIÓN POR MEDIO DE PAGO ───────────────────────────────────
 // Cada medio tiene su propia ventana de reversión; el plazo se elige por eso,
@@ -80,13 +98,37 @@ function configure(deps = {}) {
   if ('verifyProviderCharge' in deps) _deps.verifyProviderCharge = deps.verifyProviderCharge;
 }
 
-function _dispense(to, amount) {
-  if (!_deps.dispense) {
-    // Por defecto, el dispensador real de BezPay. Se resuelve tarde para no
-    // crear un ciclo de require entre ambos módulos.
-    _deps.dispense = require('./bezpay.service').dispense;
+const modoEntrega = () => process.env.BEZPAY_DELIVERY_MODE || 'intent';
+
+/**
+ * Entrega por intención: no mueve nada, pide a la API que lo mueva. Devuelve
+ * `{ pendiente: true, intentId }`; la orden queda esperando la aprobación de
+ * tesorería y `seguirEntregas()` la cierra cuando se difunde.
+ */
+async function _entregarPorIntencion(to, amount, ctx = {}) {
+  const order = ctx.order || {};
+  const intento = Number(order.metadata?.entrega?.intentos || 0);
+  const v = await txClient.crearEntrega({
+    paymentId: order.payment_intent_id, wallet: to, bezAmount: amount,
+    titular: ctx.fondos?.titular || {}, intento,
+  });
+  if (v.estado === 'denied') {
+    const e = new Error(`intención denegada (${(v.motivos || []).map((m) => m.code).join(', ')})`);
+    e.code = 'INTENT_DENIED';
+    throw e;
   }
-  return _deps.dispense(to, amount);
+  return { pendiente: true, intentId: v.id, estado: v.estado, aprobacionesRequeridas: v.aprobacionesRequeridas, intentos: intento };
+}
+
+function _dispense(to, amount, ctx) {
+  if (!_deps.dispense) {
+    // hot_wallet: el dispensador antiguo de BezPay, sólo si se pide expresamente.
+    // Se resuelve tarde para no crear un ciclo de require entre ambos módulos.
+    _deps.dispense = modoEntrega() === 'hot_wallet'
+      ? require('./bezpay.service').dispense
+      : _entregarPorIntencion;
+  }
+  return _deps.dispense(to, amount, ctx);
 }
 
 let _warnedNoVerifier = false;
@@ -99,33 +141,53 @@ let _warnedNoVerifier = false;
  * "limpia" y se entregaría igual. Esto es la última comprobación antes de que
  * el BEZ salga del hot wallet.
  */
+const _cachePayouts = new Map();
+
+/**
+ * Importe que se pidió cobrar. El guardado al crear la sesión manda; para
+ * órdenes anteriores se recalcula con la misma fórmula (base + recargo). Si
+ * aun así no casa con lo cobrado, la verificación lo manda a revisión manual.
+ */
+function _cobroEsperado(order) {
+  const guardado = order.metadata?.cobroEsperado;
+  if (guardado?.importe && guardado?.moneda) return { importe: Number(guardado.importe), moneda: guardado.moneda };
+  const base = Number(order.fiat_amount || 0);
+  let recargo = 0;
+  if (order.payment_method_kind === 'card') {
+    const { CARD_SURCHARGE_PCT, CARD_SURCHARGE_FIXED } = require('./stripe.service');
+    recargo = Math.round((base * CARD_SURCHARGE_PCT + CARD_SURCHARGE_FIXED) * 100);
+  }
+  return { importe: Math.round(base * 100) + recargo, moneda: String(order.fiat_currency || 'eur').toLowerCase() };
+}
+
 async function _defaultStripeVerifier(order) {
+  // La transferencia SEPA la confirma el banco (webhook con HMAC) o un
+  // administrador: el dinero ya está en la cuenta cuando se registra.
+  if (order.payment_method_kind === 'bank_transfer') return { ok: true };
+
   if (!process.env.STRIPE_SECRET_KEY) {
     if (!_warnedNoVerifier) {
       _warnedNoVerifier = true;
-      logger.warn('[BezPayFiat] Sin STRIPE_SECRET_KEY no se puede reverificar el cobro antes de entregar — sólo protegen los webhooks');
+      logger.error('[BezPayFiat] Sin STRIPE_SECRET_KEY no se puede confirmar el cobro: NO se entrega nada hasta configurarla');
     }
-    return { ok: true };
+    // Antes esto devolvía ok: sin poder comprobar, se entregaba igual.
+    return { ok: false, reason: 'NO_PROVIDER_VERIFICATION', retryable: true };
   }
-  const ref = order.provider_reference;
-  if (!ref || !String(ref).startsWith('pi_')) return { ok: true };
 
   const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-  const pi = await stripe.paymentIntents.retrieve(ref, { expand: ['latest_charge'] });
-
-  if (pi.status !== 'succeeded') {
-    return { ok: false, reason: `PI_STATUS_${pi.status}` };
-  }
-  const charge = pi.latest_charge;
-  if (charge && typeof charge === 'object') {
-    if (charge.refunded || (charge.amount_refunded || 0) > 0) {
-      return { ok: false, reason: 'REFUNDED' };
-    }
-    if (charge.disputed) {
-      return { ok: false, reason: 'DISPUTED' };
-    }
-  }
-  return { ok: true };
+  const r = await verificarFondosTarjeta({
+    stripe,
+    referencia: order.provider_reference,
+    esperado: _cobroEsperado(order),
+    retencionHoras: holdHoursFor(order.payment_method_kind),
+    exigirAbonoBancario: process.env.BEZPAY_REQUIRE_BANK_PAYOUT !== 'false',
+    exigir3ds: process.env.BEZPAY_REQUIRE_3DS !== 'false',
+    cachePayouts: _cachePayouts,
+  });
+  if (r.ok) return { ok: true, detalles: r.detalles };
+  if (r.bloquear) return { ok: false, reason: r.motivo, retryable: false };
+  if (r.revisionManual) return { ok: false, reason: `REVISION_MANUAL:${r.motivo}`, retryable: false };
+  return { ok: false, reason: r.motivo, retryable: true };
 }
 
 /**
@@ -201,6 +263,16 @@ async function cancelFiatSettlement({ providerReference, reason }) {
     // O no existe, o ya se entregó. Si ya se entregó, el token está fuera y
     // esto es una pérdida a gestionar, no algo que el código pueda deshacer.
     const existing = await PaymentPG.findByProviderReference(providerReference).catch(() => null);
+    const entrega = existing?.metadata?.entrega;
+    if (existing?.settled_at && entrega?.estado === 'pendiente_aprobacion' && entrega.intentId) {
+      // Reclamada pero aún sin firmar: se cancela la intención y no sale nada.
+      await Promise.resolve().then(() => txClient.cancelar(entrega.intentId, reason || 'DISPUTED')).catch((err) =>
+        logger.error({ err: err.message, intentId: entrega.intentId }, '[BezPayFiat] No se pudo cancelar la intención — revisar en la API'));
+      await PaymentPG.setDeliveryState(existing.payment_intent_id, { ...entrega, estado: 'bloqueada', motivo: reason }).catch(() => {});
+      await PaymentPG.markSettlementFailed(existing.payment_intent_id, `BLOQUEADA: ${reason}`).catch(() => {});
+      logger.warn({ providerReference, intentId: entrega.intentId, reason }, '🚫 [BezPayFiat] Entrega pendiente de aprobación cancelada');
+      return { blocked: true, cancelledIntent: true, order: existing };
+    }
     if (existing?.settled_at) {
       logger.error({ providerReference, paymentId: existing.payment_intent_id, reason },
         '🔥 [BezPayFiat] Disputa sobre un pago YA entregado — pérdida, requiere gestión manual');
@@ -257,7 +329,16 @@ async function releaseDueSettlements({ limit = 50 } = {}) {
     try {
       // Se entrega el BEZ congelado al crear la orden, NO uno recalculado al
       // precio de hoy: el cliente compró a un precio y ese es el que vale.
-      const disp = await _dispense(claimed.wallet_address, bezAmount);
+      const disp = await _dispense(claimed.wallet_address, bezAmount, { order: claimed, fondos: check.detalles });
+      if (disp?.pendiente) {
+        await PaymentPG.setDeliveryState(paymentId, {
+          estado: 'pendiente_aprobacion', intentId: disp.intentId, intentos: disp.intentos || 0,
+          aprobacionesRequeridas: disp.aprobacionesRequeridas, fondos: check.detalles || null,
+        });
+        logger.info({ paymentId, intentId: disp.intentId }, '⏳ [BezPayFiat] Fondos confirmados: entrega pendiente de aprobación de tesorería');
+        result.pendingApproval = (result.pendingApproval || 0) + 1;
+        continue;
+      }
       await PaymentPG.updateByPaymentIntent(paymentId, {
         status: 'completed',
         txHash: disp.txHash,
@@ -280,6 +361,76 @@ async function releaseDueSettlements({ limit = 50 } = {}) {
   return result;
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// SEGUIR LAS ENTREGAS PENDIENTES DE APROBACIÓN
+// ═════════════════════════════════════════════════════════════════════════════
+async function seguirEntregas({ limit = 50 } = {}) {
+  const pendientes = await PaymentPG.findPendingDeliveries(limit);
+  const result = { checked: pendientes.length, delivered: 0, waiting: 0, blocked: 0, recreated: 0, failed: 0 };
+
+  for (const order of pendientes) {
+    const paymentId = order.payment_intent_id;
+    const entrega = order.metadata?.entrega || {};
+    try {
+      let v = await txClient.obtener(entrega.intentId);
+
+      if (v.estado === 'approved') {
+        // Justo antes de ejecutar, el cobro se vuelve a mirar: una disputa
+        // durante la aprobación no puede acabar en BEZ entregado.
+        const check = await _verifyStillGood(order);
+        if (!check.ok && !check.retryable) {
+          // Una cancelación fallida no puede impedir bloquear la orden.
+          await Promise.resolve().then(() => txClient.cancelar(entrega.intentId, check.reason)).catch(() => {});
+          await PaymentPG.setDeliveryState(paymentId, { ...entrega, estado: 'bloqueada', motivo: check.reason });
+          await PaymentPG.markSettlementFailed(paymentId, `BLOQUEADA: ${check.reason}`);
+          result.blocked++;
+          continue;
+        }
+        if (!check.ok) { result.waiting++; continue; }
+        v = await txClient.ejecutar(entrega.intentId);
+      }
+
+      if (v.estado === 'broadcast' && v.txHash) {
+        await PaymentPG.updateByPaymentIntent(paymentId, {
+          status: 'completed', txHash: v.txHash, completedAt: new Date(), updatedAt: new Date(),
+        });
+        await PaymentPG.setDeliveryState(paymentId, { ...entrega, estado: 'entregada', txHash: v.txHash });
+        logger.info({ paymentId, txHash: v.txHash }, '✅ [BezPayFiat] BEZ entregado por la tesorería (intención aprobada)');
+        result.delivered++;
+      } else if (v.estado === 'expired') {
+        // Nadie aprobó a tiempo: se reverifica el cobro y se crea otra intención.
+        const check = await _verifyStillGood(order);
+        if (!check.ok) {
+          if (!check.retryable) {
+            await PaymentPG.setDeliveryState(paymentId, { ...entrega, estado: 'bloqueada', motivo: check.reason });
+            await PaymentPG.markSettlementFailed(paymentId, `BLOQUEADA: ${check.reason}`);
+            result.blocked++;
+          } else {
+            result.waiting++;
+          }
+          continue;
+        }
+        const intentos = Number(entrega.intentos || 0) + 1;
+        const nueva = await _entregarPorIntencion(order.wallet_address, Number(order.bez_amount),
+          { order: { ...order, metadata: { ...order.metadata, entrega: { ...entrega, intentos } } }, fondos: check.detalles });
+        await PaymentPG.setDeliveryState(paymentId, { ...entrega, estado: 'pendiente_aprobacion', intentId: nueva.intentId, intentos });
+        result.recreated++;
+      } else if (['rejected', 'denied', 'failed_needs_review'].includes(v.estado)) {
+        await PaymentPG.setDeliveryState(paymentId, { ...entrega, estado: v.estado === 'failed_needs_review' ? 'revision_manual' : 'entrega_rechazada' });
+        await PaymentPG.markSettlementFailed(paymentId, `ENTREGA_${String(v.estado).toUpperCase()}`);
+        result.failed++;
+      } else {
+        result.waiting++;
+      }
+    } catch (err) {
+      logger.warn({ err: err.message, paymentId }, '[BezPayFiat] No se pudo seguir la entrega — se reintenta');
+      result.waiting++;
+    }
+  }
+  if (result.delivered || result.blocked || result.failed) logger.info(result, '[BezPayFiat] Seguimiento de entregas');
+  return result;
+}
+
 // ─── BARRIDO PERIÓDICO ───────────────────────────────────────────────────────
 let _timer = null;
 
@@ -288,6 +439,8 @@ function start() {
   _timer = setInterval(() => {
     releaseDueSettlements().catch(err =>
       logger.error({ err: err.message }, '[BezPayFiat] Barrido falló'));
+    seguirEntregas().catch(err =>
+      logger.error({ err: err.message }, '[BezPayFiat] Seguimiento de entregas falló'));
   }, SWEEP_INTERVAL_MS);
   if (_timer.unref) _timer.unref();
   logger.info({ intervalMs: SWEEP_INTERVAL_MS }, '⏱️  [BezPayFiat] Liberador de retenciones arrancado');
@@ -298,6 +451,7 @@ function stop() {
 }
 
 module.exports = {
+  seguirEntregas,
   recordFiatPayment,
   cancelFiatSettlement,
   releaseDueSettlements,

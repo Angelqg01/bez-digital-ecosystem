@@ -1,0 +1,5 @@
+# Construye UNA SubApp con el árbol del repo como contexto. Lo invoca deploy-subapps.sh.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'deploy/gcp/subapps/${_DOCKERFILE}', '--build-arg', 'APP_DIR=${_APP_DIR}', '-t', '${_IMAGE}', '.']
+images: ['${_IMAGE}']

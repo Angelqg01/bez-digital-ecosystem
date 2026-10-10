@@ -347,15 +347,19 @@ export default function AdminLogin() {
                                 <input
                                     type="text"
                                     required
-                                    inputMode="numeric"
                                     autoComplete="one-time-code"
+                                    autoCapitalize="characters"
                                     minLength={6}
-                                    maxLength={12}
+                                    maxLength={16}
                                     value={twoFactorCode}
                                     onChange={(e) => setTwoFactorCode(e.target.value)}
                                     className="w-full bg-[#05060a] border border-white/10 text-white px-4 py-3 focus:outline-none focus:border-[#0d33f2] focus:ring-1 focus:ring-[#0d33f2] transition-colors font-mono text-sm text-center tracking-[0.4em]"
-                                    placeholder="000000"
+                                    placeholder="000000 o código de respaldo"
                                 />
+                                <p className="mt-2 text-[10px] text-gray-500">
+                                    ¿Sin acceso al autenticador? Usa un código de respaldo (XXXXX-XXXXX) o{' '}
+                                    <Link href="/admin/recover" className="underline">restablece el 2FA</Link>.
+                                </p>
                             </div>
                             <button
                                 type="submit"

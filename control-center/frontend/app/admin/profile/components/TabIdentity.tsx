@@ -118,7 +118,7 @@ export default function TabIdentity() {
     useEffect(() => { load(); }, [load]);
 
     useEffect(() => {
-        const isProd = window.location.hostname === 'bez.digital';
+        const isProd = window.location.hostname === 'bezhas.com';
         if (isProd) {
             setNativeAppsLinks([
                 { name: 'BeZhas Wallet', url: '/dashboard/wallet' },

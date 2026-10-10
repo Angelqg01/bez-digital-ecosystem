@@ -1,0 +1,8 @@
+# 03b · Aislamiento entre empresas con plan (espera 62 s a que caduque la caché del plan)
+# Ejecutado: 2026-10-09 12:53:50
+
+documento de Atlas subido: 201
+Atlas (dueña) ve su código:        200 true
+Rival (con plan) responde:         200 · fuentes: Normativa y cumplimiento|Pagar nóminas y pagos a empleados
+Rival NO ve el código de Atlas:    PASS
+Rival NO ve el documento de Atlas: PASS

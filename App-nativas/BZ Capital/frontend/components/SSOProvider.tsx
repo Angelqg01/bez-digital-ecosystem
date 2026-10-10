@@ -8,7 +8,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { siweLogin, subscribeWithBEZ, shortAddress } from '../lib/bezhas-wallet-auth.js';
 
 // API core (login/registro fiat y wallet). Sin `/api` final: las rutas ya lo llevan.
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'https://api.bez.digital')
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'https://api.bezhas.com')
   .replace(/\/+$/, '')
   .replace(/\/api$/, '');
 

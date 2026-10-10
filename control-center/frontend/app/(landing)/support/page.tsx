@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import SectorContactFooter from '../_components/SectorContactFooter';
 
 export default function SupportPage() {
     return (
@@ -170,6 +171,8 @@ export default function SupportPage() {
                     </div>
                 </section>
             </div>
+        
+            <SectorContactFooter department="soporte" />
         </>
     );
 }

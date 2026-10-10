@@ -182,6 +182,15 @@ router.get('/connections/:id/schema/:tipo', async (req, res) => {
  */
 router.get('/connections/:id/documents/:tipo', async (req, res) => {
     try {
+        // Un filtro desconocido se RECHAZA, no se ignora: ignorarlo devolvía un resultado que no era el pedido.
+        const admitidos = new Set(['desde', 'hasta', 'estado', 'numero', 'contraparte', 'limite']);
+        const sobrante = Object.keys(req.query).find((k) => !admitidos.has(k));
+        if (sobrante) {
+            return res.status(400).json({
+                error: `Filtro no admitido: «${String(sobrante).slice(0, 40)}». Admitidos: ${[...admitidos].join(', ')}.`,
+                code: 'ERP_FILTRO_NO_ADMITIDO',
+            });
+        }
         const { desde, hasta, estado, numero, contraparte, limite } = req.query;
         const filtro = {};
         if (desde) filtro.desde = desde;

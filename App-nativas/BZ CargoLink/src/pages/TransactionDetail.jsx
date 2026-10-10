@@ -24,7 +24,7 @@ import { cargoLinkApi, LIFECYCLE_STAGES } from '../services/cargoLinkApi'
 import { useAuth } from '../context/AuthProvider'
 
 const CHAIN_ID = 2708
-const EXPLORER_URL = 'https://explorer.bez.digital'
+const EXPLORER_URL = 'https://explorer.bezhas.com'
 function txLink(hash) {
   return hash ? `${EXPLORER_URL}/tx/${hash}` : null
 }

@@ -93,4 +93,4 @@ La tesis de inversion se fundamenta en adopcion B2B, ingresos recurrentes y defe
 
 **BeZhas Strategy Office**  
 **BeZhas Blockchain Initiative**  
-**Contacto institucional:** info.bezcoin@bez.digital
+**Contacto institucional:** info.bezcoin@bezhas.com

@@ -5,6 +5,7 @@
  * and settles via the on-chain Paymaster contract.
  */
 const { query } = require('../db/pool');
+const { precioUsd } = require('../config/bez-price');
 const { cacheGet, cacheSet } = require('../cache/redis');
 const { getContract } = require('./contractService');
 const { ethers } = require('ethers');
@@ -169,7 +170,7 @@ async function getUserStats(userId) {
 
 async function usdToBez(usd) {
     const { rows } = await query(`SELECT price_usd FROM token_price_cache WHERE symbol='BEZ'`);
-    const price = rows.length ? parseFloat(rows[0].price_usd) : 0.10;
+    const price = rows.length ? parseFloat(rows[0].price_usd) : precioUsd();
     return Math.ceil((usd / price) * 1e18).toString(); // wei-like representation
 }
 

@@ -6,7 +6,7 @@
 class EnergyModule {
     constructor(config) {
         this.config = config;
-        this.baseURL = config.baseURL || 'https://api.bez.digital';
+        this.baseURL = config.baseURL || 'https://api.bezhas.com';
         this.apiKey = config.apiKey;
     }
 

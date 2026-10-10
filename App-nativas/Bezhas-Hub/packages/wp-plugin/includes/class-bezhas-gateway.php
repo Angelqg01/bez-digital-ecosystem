@@ -56,7 +56,7 @@ class WC_BeZhas_Gateway extends WC_Payment_Gateway {
                 'type'        => 'password',
                 'description' => sprintf(
                     __('Tu API Key de %s.', 'bezhas-hub'),
-                    '<a href="https://bez.digital/developer-console" target="_blank">Developer Console</a>'
+                    '<a href="https://bezhas.com/developer-console" target="_blank">Developer Console</a>'
                 ),
             ],
             'network' => [
@@ -85,7 +85,7 @@ class WC_BeZhas_Gateway extends WC_Payment_Gateway {
             return ['result' => 'failure'];
         }
 
-        $api_base = defined('BEZHAS_HUB_API_BASE') ? BEZHAS_HUB_API_BASE : 'https://api.bez.digital';
+        $api_base = defined('BEZHAS_HUB_API_BASE') ? BEZHAS_HUB_API_BASE : 'https://api.bezhas.com';
 
         $payload = [
             'orderId'   => $order_id,

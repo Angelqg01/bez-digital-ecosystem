@@ -708,7 +708,7 @@ ENCRYPTION_MASTER_KEY=<64_hex_characters>
 # Generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 # ----- DISCORD NOTIFICATIONS -----
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1448627231625838745/afE6XbHBr4e9oZFhbn7WOHuQ5MWvuJHuDdrwPS_s0673s2j3DlRvmd73IbcO-wcShgnf
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/<ID>/<TOKEN>  # en Secret Manager, nunca aquí
 DISCORD_NOTIFICATIONS=true
 DISCORD_MIN_SEVERITY=medium  # low | medium | high | critical
 
@@ -998,12 +998,12 @@ const webhook = await vault.read('secret/discord/webhook');
 ## 📞 SOPORTE Y CONTACTO
 
 **Desarrollador**: BeZhas Security Team  
-**Email**: security@bez.digital  
+**Email**: security@bezhas.com  
 **Discord**: https://discord.gg/bezhas  
-**Documentación**: https://docs.bez.digital/security  
+**Documentación**: https://docs.bezhas.com/security  
 
 **Issues**: https://github.com/bezhas/web3/issues  
-**Security Issues**: security@bez.digital (PGP disponible)
+**Security Issues**: security@bezhas.com (PGP disponible)
 
 ---
 

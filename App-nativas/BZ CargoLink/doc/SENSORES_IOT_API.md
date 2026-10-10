@@ -5,7 +5,7 @@
 > `api/scripts/cargolink-device-simulator.js` es el **ejemplo ejecutable** de
 > todo este documento: úsalo como referencia de tu integración.
 
-Base URL: `https://api.bez.digital/api/cargolink` (dev: `http://localhost:3001/api/cargolink`)
+Base URL: `https://api.bezhas.com/api/cargolink` (dev: `http://localhost:3001/api/cargolink`)
 
 ## Concepto
 

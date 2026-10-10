@@ -149,6 +149,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path,
+        // El proxy reenvía el `Origin` del navegador (http://localhost:5173) y el API, que corre en modo
+        // producción, lo rechaza por CORS: los GET pasaban (no llevan Origin) pero todo POST —el login
+        // incluido— daba 500. Quitarlo hace la llamada «servidor a servidor», que el API admite, y no
+        // abre ningún origen nuevo en el API.
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => proxyReq.removeHeader('origin'));
+        },
       }
     },
   },

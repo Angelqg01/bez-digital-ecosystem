@@ -7,6 +7,7 @@
  * audit trail, and the outbound `payment.settled` webhook event.
  */
 const { query } = require('../db/pool');
+const { precioUsd } = require('../config/bez-price');
 const { calculateFeeBreakdown } = require('../config/tokenomics');
 const paymentWebhooks = require('./paymentWebhooks');
 const logger = require('pino')({ level: 'info', name: 'payment-settlement' });
@@ -51,7 +52,7 @@ async function settlePayment({ paymentId, status = 'completed', providerReferenc
     const price = await query(
         "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
     ).catch(() => ({ rows: [] }));
-    const priceUSD = parseFloat(price.rows[0]?.price_usd || '0.10');
+    const priceUSD = parseFloat(price.rows[0]?.price_usd || String(precioUsd()));
     const amountUSD = parseFloat(payment.amount_usd || '0');
     const platformFeeUSD = parseFloat(payment.platform_fee_usd || '0');
     const netAmountUSD = Math.max(amountUSD - platformFeeUSD, 0);

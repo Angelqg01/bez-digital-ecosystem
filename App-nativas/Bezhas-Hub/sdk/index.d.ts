@@ -4,7 +4,7 @@
  */
 
 export interface BezhasHubClientOptions {
-    /** Base del API. Por defecto: https://api.bez.digital/api */
+    /** Base del API. Por defecto: https://api.bezhas.com/api */
     baseUrl?: string;
     /** API Key del Developer Portal (header X-API-Key). */
     apiKey?: string;

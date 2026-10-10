@@ -13,7 +13,7 @@ const USER: AuthUser = {
     id: 7,
     wallet_address: null,
     username: 'yoel',
-    email: 'yoel@bez.digital',
+    email: 'yoel@bezhas.com',
     role: 'ADMIN',
     avatar_url: null,
 };
@@ -104,13 +104,13 @@ describe('login con email', () => {
 
         const { result } = await renderAuth();
         await act(async () => {
-            await result.current.loginWithEmail('yoel@bez.digital', 'clave-buena');
+            await result.current.loginWithEmail('yoel@bezhas.com', 'clave-buena');
         });
 
         expect(fetchMock).toHaveBeenCalledWith('/api/auth/login-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: 'yoel@bez.digital', password: 'clave-buena' }),
+            body: JSON.stringify({ email: 'yoel@bezhas.com', password: 'clave-buena' }),
         });
         expect(result.current.isAuthenticated).toBe(true);
         expect(result.current.user).toEqual(USER);
@@ -124,7 +124,7 @@ describe('login con email', () => {
         const { result } = await renderAuth();
         await expect(
             act(async () => {
-                await result.current.loginWithEmail('yoel@bez.digital', 'clave-mala');
+                await result.current.loginWithEmail('yoel@bezhas.com', 'clave-mala');
             }),
         ).rejects.toThrow('Credenciales inválidas.');
 
@@ -139,7 +139,7 @@ describe('registro', () => {
 
         const { result } = await renderAuth();
         await act(async () => {
-            await result.current.register('yoel', 'yoel@bez.digital', 'clave-buena');
+            await result.current.register('yoel', 'yoel@bezhas.com', 'clave-buena');
         });
 
         expect(result.current.token).toBe('token-alta');
@@ -154,7 +154,7 @@ describe('registro', () => {
         const { result } = await renderAuth();
         await expect(
             act(async () => {
-                await result.current.register('yoel', 'yoel@bez.digital', 'clave-buena');
+                await result.current.register('yoel', 'yoel@bezhas.com', 'clave-buena');
             }),
         ).rejects.toThrow('Ya existe una cuenta con este email.');
     });
@@ -244,14 +244,14 @@ describe('atajos de demo', () => {
 
         const { result } = await renderAuth();
         await act(async () => {
-            await result.current.loginWithEmailDemo('inversor@bez.digital', 'lo-que-sea');
+            await result.current.loginWithEmailDemo('inversor@bezhas.com', 'lo-que-sea');
         });
 
         expect(result.current.isAuthenticated).toBe(true);
         expect(result.current.token).toMatch(/^mock-jwt-\d+$/);
         expect(result.current.user).toMatchObject({
             username: 'inversor',
-            email: 'inversor@bez.digital',
+            email: 'inversor@bezhas.com',
             role: 'Inversor Especial',
         });
     });
@@ -261,7 +261,7 @@ describe('atajos de demo', () => {
 
         const { result } = await renderAuth();
         await act(async () => {
-            await result.current.loginWithEmailDemo('inversor@bez.digital', 'lo-que-sea');
+            await result.current.loginWithEmailDemo('inversor@bezhas.com', 'lo-que-sea');
         });
 
         expect(result.current.token!.split('.')).toHaveLength(1);
@@ -272,7 +272,7 @@ describe('atajos de demo', () => {
 
         const { result } = await renderAuth();
         await act(async () => {
-            await result.current.loginWithEmailDemo('yoel@bez.digital', 'clave-buena');
+            await result.current.loginWithEmailDemo('yoel@bezhas.com', 'clave-buena');
         });
 
         expect(result.current.token).toBe('token-real');
@@ -295,7 +295,7 @@ describe('atajos de demo', () => {
 
         const { result } = await renderAuth();
         await act(async () => {
-            await result.current.registerDemo('ana', 'ana@bez.digital', 'Socio', 'clave-buena');
+            await result.current.registerDemo('ana', 'ana@bezhas.com', 'Socio', 'clave-buena');
         });
 
         expect(result.current.user?.role).toBe('Socio');
@@ -307,7 +307,7 @@ describe('atajos de demo', () => {
 
         const { result } = await renderAuth();
         await act(async () => {
-            await result.current.registerDemo('ana', 'ana@bez.digital', 'Socio', 'clave-buena');
+            await result.current.registerDemo('ana', 'ana@bezhas.com', 'Socio', 'clave-buena');
         });
 
         expect(result.current.token).toMatch(/^mock-jwt-\d+$/);

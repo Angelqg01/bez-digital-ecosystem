@@ -1,0 +1,7 @@
+# 09 · Suite completa de tests de la API (jest)
+# Ejecutado: 2026-10-09 12:55:10
+
+Test Suites: 1 skipped, 130 passed, 130 of 131 total
+Tests:       31 skipped, 1540 passed, 1571 total
+Snapshots:   0 total
+Time:        9.796 s, estimated 11 s

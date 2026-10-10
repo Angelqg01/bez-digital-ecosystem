@@ -304,8 +304,8 @@ app.use(httpsEnforcement);
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 
 // Always allow production and standard dev origins
-if (!allowedOrigins.includes('https://bez.digital')) allowedOrigins.push('https://bez.digital');
-if (!allowedOrigins.includes('https://www.bez.digital')) allowedOrigins.push('https://www.bez.digital');
+if (!allowedOrigins.includes('https://bezhas.com')) allowedOrigins.push('https://bezhas.com');
+if (!allowedOrigins.includes('https://www.bezhas.com')) allowedOrigins.push('https://www.bezhas.com');
 
 if (process.env.NODE_ENV !== 'production') {
     allowedOrigins.push(
@@ -329,7 +329,7 @@ const corsOptions = {
         const isAllowed = allowedOrigins.some(ao =>
             normalizedOrigin === ao ||
             (ao.includes('*') && normalizedOrigin.endsWith(ao.replace('*', '')))
-        ) || normalizedOrigin === 'https://bez.digital' || normalizedOrigin === 'https://www.bez.digital';
+        ) || normalizedOrigin === 'https://bezhas.com' || normalizedOrigin === 'https://www.bezhas.com';
 
         if (isAllowed) {
             callback(null, true);
@@ -936,6 +936,7 @@ function optionalRuntimeRoutes(modulePath, label) {
 const webhookRoutes = optionalRuntimeRoutes('./routes/webhook.routes', 'webhook routes');
 const automationRoutes = optionalRuntimeRoutes('./routes/automation.routes', 'automation routes');
 const aiChatRoutes = optionalRuntimeRoutes('./routes/ai-chat.routes', 'ai chat routes');
+const aiWorkspaceRoutes = optionalRuntimeRoutes('./routes/ai-workspace.routes', 'ai workspace routes');
 
 // Initialize rate limiters for admin routes
 initializeRateLimiters(advancedRateLimiter, messageRateLimiter);
@@ -970,6 +971,7 @@ app.use('/api/logistics', deprecatedSubappRoute('logistics_operations', SUBAPP_U
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/automation', automationRoutes);
 app.use('/api/ai', aiChatRoutes);
+app.use('/api/ai-workspace', aiWorkspaceRoutes); // chat RAG seguro (requiere login)
 app.use('/api/admin/sdk', require('./routes/sdkAdmin.routes')); // SDK & AI Admin Management
 // app.use('/api/plugins', require('./routes/pluginRoutes')); // Removed due to Prisma dependency missing in Prod
 app.use('/api/mcp', require('./routes/mcp.routes')); // MCP Tools Integration

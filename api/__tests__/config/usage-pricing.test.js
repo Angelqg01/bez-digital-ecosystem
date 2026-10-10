@@ -36,3 +36,20 @@ describe('usage-pricing (Starter pago por uso)', () => {
         expect(c.computeCostEUR).toBe(0.001);
     });
 });
+
+describe('chat de la plataforma (ai_chat)', () => {
+    it('precio actual de claude-sonnet-5 (2 $ / 10 $ por millón) + cómputo + 25 %', () => {
+        const c = calculateCallCost({ model: 'claude-sonnet-5', inputTokens: 1300, outputTokens: 800, action: 'ai_chat' });
+        // 1300×2/1e6 + 800×10/1e6 = 0,0106 USD → ×0,93 = 0,009858 EUR; + 0,002 cómputo = 0,011858; ×1,25 = 0,0148225
+        expect(c.claudeCostEUR).toBeCloseTo(0.009858, 6);
+        expect(c.computeCostEUR).toBe(0.002);
+        expect(c.billableEUR).toBeCloseTo(0.014823, 5);
+        expect(c.credits).toBe(15);
+    });
+
+    it('un modelo que no está en la tabla nunca se cobra por debajo del coste (tarifa por defecto)', () => {
+        const desconocido = calculateCallCost({ model: 'modelo-nuevo', inputTokens: 1000, outputTokens: 1000, action: 'ai_chat' });
+        const sonnet = calculateCallCost({ model: 'claude-sonnet-5', inputTokens: 1000, outputTokens: 1000, action: 'ai_chat' });
+        expect(desconocido.billableEUR).toBeGreaterThan(sonnet.billableEUR);
+    });
+});

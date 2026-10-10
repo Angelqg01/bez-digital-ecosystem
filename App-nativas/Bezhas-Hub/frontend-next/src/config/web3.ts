@@ -21,8 +21,8 @@ export const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YO
 const metadata = {
     name: 'BeZhas',
     description: 'Web3 Social Network with AI & Blockchain',
-    url: 'https://bez.digital',
-    icons: ['https://bez.digital/logo.png']
+    url: 'https://bezhas.com',
+    icons: ['https://bezhas.com/logo.png']
 };
 
 export const config = defaultWagmiConfig({

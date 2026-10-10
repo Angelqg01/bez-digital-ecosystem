@@ -154,7 +154,7 @@ packages/platform-sdk/
 ```bash
 docker run -d --name bezhas-edge \
   -e API_KEY="${apiKey}" \
-  -e BEZHAS_L2_RPC_URL="https://rpc.bez.digital" \
+  -e BEZHAS_L2_RPC_URL="https://rpc.bezhas.com" \
   -e REWARDS_CONTRACT_ADDRESS="${contractAddress}" \
   bezhas/edge-node:latest
 ```
@@ -487,7 +487,7 @@ D:\BeZhas-Blockchain\App-nativas\
 # .env.shared — Copiar a cada app como .env.local
 
 # BeZhas L2
-NEXT_PUBLIC_BEZHAS_L2_RPC=https://rpc.bez.digital
+NEXT_PUBLIC_BEZHAS_L2_RPC=https://rpc.bezhas.com
 NEXT_PUBLIC_BEZHAS_CHAIN_ID=2708
 NEXT_PUBLIC_BEZCOIN_ADDRESS=0x...
 NEXT_PUBLIC_STAKING_POOL_ADDRESS=0x...

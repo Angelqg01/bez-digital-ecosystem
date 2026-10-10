@@ -3,7 +3,7 @@ import { useAgentBridge } from "./use-agent-bridge";
 import AgentDetailPanel from "./agent-detail-panel";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   bez.digital — PORT FINANCE AGENT v1.0  (Fase 1.4)
+   bezhas.com — PORT FINANCE AGENT v1.0  (Fase 1.4)
    Bonos Tokenizados de Puertos · Cupones Automáticos en BEZ-Coin
    ─────────────────────────────────────────────────────────────────────
    Blockchain:  Polygon Mainnet → BNB Chain (LayerZero bridge)
@@ -14,7 +14,7 @@ import AgentDetailPanel from "./agent-detail-panel";
      • Hot Wallet:     0x52Df82920CBAE522880dD7657e43d1A754eD044E
      • PortBond NFT:   BeZhasRWAFactory.sol (ERC-1155)
      • StakingPool:    StakingPoolV2.sol
-   Backend:  api.bez.digital:3001 | ws.bez.digital:3002
+   Backend:  api.bezhas.com:3001 | ws.bezhas.com:3002
    ─────────────────────────────────────────────────────────────────────
    MODELO DE NEGOCIO BEZ:
      • Emisión bono:    1% del valor nominal → fee en BEZ
@@ -1058,7 +1058,7 @@ export default function PortFinanceAgent() {
         display: "flex", justifyContent: "space-between",
         color: C.muted, fontSize: 9, fontFamily: C.mono, background: C.surf, flexWrap: "wrap", gap: 4
       }}>
-        <span>bez.digital · Port Finance Agent v1.0 · Fase 1.4 · BEZ-Coin Native · Polygon</span>
+        <span>bezhas.com · Port Finance Agent v1.0 · Fase 1.4 · BEZ-Coin Native · Polygon</span>
         <span>BeZhasRWAFactory.sol · StakingPoolV2.sol · QualityOracle.sol · QuickSwap V3</span>
       </div>
     </div>

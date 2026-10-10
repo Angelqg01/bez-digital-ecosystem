@@ -1,6 +1,7 @@
 'use client';
 
 import { usePublicStats } from '@/lib/public-hooks';
+import SectorContactFooter from '../_components/SectorContactFooter';
 
 export default function SolutionsPage() {
   const { data } = usePublicStats();
@@ -150,6 +151,8 @@ export default function SolutionsPage() {
         </div>
       </section>
 
-    </>
+    
+            <SectorContactFooter department="ventas" />
+        </>
   );
 }

@@ -1,3 +1,4 @@
+const { precioUsd } = require('./bez-price');
 /**
  * tokenomics.js — BeZhas RWA Real Yield fee model.
  *
@@ -14,7 +15,7 @@ const TOKENOMICS_FEE = Object.freeze({
     }),
 });
 
-function calculateFeeBreakdown(netAmountUSD, bezPriceUSD = 0.10) {
+function calculateFeeBreakdown(netAmountUSD, bezPriceUSD = precioUsd()) {
     const net = Number(netAmountUSD || 0);
     const bezPrice = Number(bezPriceUSD || 0);
     const feeUSD = Number(((net * TOKENOMICS_FEE.platformFeeBps) / 10000).toFixed(2));

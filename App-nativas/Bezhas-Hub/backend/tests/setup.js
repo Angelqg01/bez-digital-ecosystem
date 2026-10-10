@@ -1,3 +1,7 @@
+// Ningún test habla con Discord (ver middleware/discordNotifier.js).
+process.env.DISCORD_NOTIFICATIONS_ENABLED = 'false';
+delete process.env.DISCORD_WEBHOOK_URL;
+
 /**
  * Jest Test Setup for BeZhas Backend
  * This file runs before each test suite

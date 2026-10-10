@@ -1,0 +1,54 @@
+# 02 · Exploración del chat: preguntas de una empresa (contabilidad, tokenización, nóminas)
+# Ejecutado: 2026-10-09 13:28:24
+
+Consumo inicial del plan: {"plan":"business","used":260,"limit":15000}
+
+P: Somos una empresa que lleva toda su contabilidad y quiere tokenizar sus activos y las nóminas. ¿Qué puede hacer BeZhas por nosotros?
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
+
+P: ¿Cómo se tokenizan activos reales como maquinaria o inmuebles?
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
+
+P: ¿Puedo pagar las nóminas de mis empleados con BEZ o con stablecoins?
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
+
+P: ¿Qué métodos de pago acepta BeZhas?
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
+
+P: ¿Cumple MiCA y la normativa fiscal española (AEAT)?
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
+
+P: ¿Cómo integro mi ERP o software contable con la API de BeZhas?
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
+
+P: ¿Qué planes hay y cuánto cuestan para una empresa como la nuestra?
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
+
+P: ¿Cómo se aprueban y firman los pagos grandes de forma segura?
+   status 429 · proveedor undefined · fuentes 0: —
+   acciones: —
+   R: {"error":"Demasiadas solicitudes, espera un momento."}
+   uso: {}
+
+Consumo tras las preguntas: {"plan":"business","used":260,"limit":15000}

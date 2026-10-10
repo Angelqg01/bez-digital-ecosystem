@@ -3,6 +3,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 import {
     Bell, Check, CheckCheck, Trash2, Filter,
     Wallet, ShoppingBag, Users, MessageCircle,
@@ -64,7 +66,7 @@ export default function NotificationsPage() {
                 try {
                     setIsLoading(true);
                     const token = localStorage.getItem('token'); // Typical auth mechanism
-                    const res = await fetch('http://localhost:3001/api/notifications', {
+                    const res = await fetch(`${API_ORIGIN}/api/notifications`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -94,7 +96,7 @@ export default function NotificationsPage() {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         try {
             const token = localStorage.getItem('token');
-            await fetch('http://localhost:3001/api/notifications/read-all', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+            await fetch(`${API_ORIGIN}/api/notifications/read-all`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
         } catch (e) {}
     };
 
@@ -102,7 +104,7 @@ export default function NotificationsPage() {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
         try {
             const token = localStorage.getItem('token');
-            await fetch(`http://localhost:3001/api/notifications/${id}/read`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+            await fetch(`${API_ORIGIN}/api/notifications/${id}/read`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
         } catch (e) {}
     };
 
@@ -110,7 +112,7 @@ export default function NotificationsPage() {
         setNotifications(prev => prev.filter(n => n.id !== id));
         try {
             const token = localStorage.getItem('token');
-            await fetch(`http://localhost:3001/api/notifications/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            await fetch(`${API_ORIGIN}/api/notifications/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
         } catch (e) {}
     };
 
@@ -189,13 +191,10 @@ export default function NotificationsPage() {
                     filtered.map(n => {
                         const Icon = ICONS[n.type];
                         const colorClass = COLORS[n.type];
-                        const Wrapper = n.href ? Link : 'div';
-                        const wrapperProps = n.href ? { href: n.href } : {};
-
                         return (
-                            <Wrapper
+                            <NotificationWrapper
                                 key={n.id}
-                                {...wrapperProps}
+                                href={n.href}
                                 onClick={() => markRead(n.id)}
                                 className={`block bg-white dark:bg-gray-900 rounded-2xl border p-5 shadow-soft-lg transition-all hover:shadow-xl cursor-pointer ${!n.read ? 'border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/10' : 'border-light-border dark:border-gray-800'}`}
                             >
@@ -217,7 +216,7 @@ export default function NotificationsPage() {
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
-                            </Wrapper>
+                            </NotificationWrapper>
                         );
                     })
                 )}
@@ -226,3 +225,9 @@ export default function NotificationsPage() {
     );
 }
 
+
+
+/** Enlace si la notificación tiene destino; un div en caso contrario. */
+function NotificationWrapper({ href, children, ...rest }: { href?: string; children: React.ReactNode; onClick: () => void; className: string }) {
+    return href ? <Link href={href} {...rest}>{children}</Link> : <div {...rest}>{children}</div>;
+}

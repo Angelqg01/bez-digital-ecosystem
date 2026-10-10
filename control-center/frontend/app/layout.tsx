@@ -33,7 +33,7 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bez.digital';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bezhas.com';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

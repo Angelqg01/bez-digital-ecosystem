@@ -1,6 +1,7 @@
 'use client';
 
 import { usePublicStats } from '@/lib/public-hooks';
+import SectorContactFooter from '../_components/SectorContactFooter';
 
 export default function NetworkPage() {
   const { data } = usePublicStats();
@@ -225,6 +226,8 @@ export default function NetworkPage() {
         </div>
       </div>
 
-    </>
+    
+            <SectorContactFooter department="infraestructura" />
+        </>
   );
 }

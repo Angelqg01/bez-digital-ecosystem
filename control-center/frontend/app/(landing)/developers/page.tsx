@@ -162,7 +162,7 @@ const nativeApps = [
     },
 ];
 
-// Enlaces ONLINE reales de cada App Nativa ya desarrollada (subdominios bez.digital).
+// Enlaces ONLINE reales de cada App Nativa ya desarrollada (subdominios bezhas.com).
 // Edita aqui para cambiar el destino de una App; las tarjetas abren en pestana nueva.
 const NATIVE_APP_URLS: Record<string, string> = {
     'BeZhas Hub': 'https://bezhas-hub-o5xep6gbwq-ew.a.run.app',
@@ -188,7 +188,7 @@ export default function DevelopersPage() {
     useEffect(() => {
         // Enforce unified SSO relative routes across all environments. Local development overrides are commented out.
         /*
-        const isLocal = window.location.hostname !== 'bez.digital';
+        const isLocal = window.location.hostname !== 'bezhas.com';
         if (isLocal) {
             setHubHref('http://127.0.0.1:5173');
             setAppsList([

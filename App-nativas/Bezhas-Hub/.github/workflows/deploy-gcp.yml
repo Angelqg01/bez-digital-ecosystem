@@ -192,7 +192,7 @@ jobs:
         working-directory: ./frontend
         run: pnpm run build
         env:
-          VITE_API_URL: https://api.bez.digital
+          VITE_API_URL: https://api.bezhas.com
           VITE_CHAIN_ID: "137"
           VITE_NETWORK: polygon
 
@@ -261,7 +261,7 @@ jobs:
           # TODO(D9): unificar build-args VITE_* con cloudbuild.yaml (fuente única) antes de re-activar auto-deploy.
           IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/bezhas/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}"
           docker build -t $IMAGE -f frontend/Dockerfile.gcp . \
-            --build-arg VITE_API_URL=https://api.bez.digital \
+            --build-arg VITE_API_URL=https://api.bezhas.com \
             --build-arg VITE_CHAIN_ID=137 \
             --build-arg VITE_NETWORK=polygon
           docker push $IMAGE
@@ -279,7 +279,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     environment:
       name: staging
-      url: https://staging.bez.digital
+      url: https://staging.bezhas.com
 
     permissions:
       contents: read
@@ -331,7 +331,7 @@ jobs:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     environment:
       name: production
-      url: https://bez.digital
+      url: https://bezhas.com
 
     permissions:
       contents: read
@@ -408,7 +408,7 @@ jobs:
       - name: Health check - Backend
         run: |
           for i in {1..10}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://api.bez.digital/api/health || echo "000")
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://api.bezhas.com/api/health || echo "000")
             if [ "$response" = "200" ]; then
               echo "✅ Backend health check passed"
               exit 0
@@ -422,7 +422,7 @@ jobs:
       - name: Health check - Frontend
         run: |
           for i in {1..10}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://bez.digital || echo "000")
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://bezhas.com || echo "000")
             if [ "$response" = "200" ]; then
               echo "✅ Frontend health check passed"
               exit 0

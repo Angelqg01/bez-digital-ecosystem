@@ -198,7 +198,7 @@ export default function BeZhasAgentMaster({ wallet, engine, liveData }) {
 
       {/* FOOTER */}
       <div style={{ borderTop: `1px solid ${C.border}`, padding: "8px 20px", display: "flex", justifyContent: "space-between", color: C.muted, fontSize: 9, fontFamily: C.mono, background: C.surf, flexWrap: "wrap", gap: 4 }}>
-        <span>bez.digital · Master Agent Dashboard v2.0 · 7 Grupos · 24 Agentes · BEZ-Coin Native</span>
+        <span>bezhas.com · Master Agent Dashboard v2.0 · 7 Grupos · 24 Agentes · BEZ-Coin Native</span>
         <span>Polygon → Mainnet · BNB · MCP Server · LayerZero · Wormhole · ASYCUDA World</span>
       </div>
     </div>

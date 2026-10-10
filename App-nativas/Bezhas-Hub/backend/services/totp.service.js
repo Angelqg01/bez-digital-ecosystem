@@ -125,53 +125,76 @@ const is2FAEnabled = () => {
     return process.env.ENABLE_2FA === 'true';
 };
 
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  CIFRADO DEL SECRETO TOTP (v2)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * v1 derivaba la clave con scrypt(JWT_SECRET || 'default-key', 'salt'). Quien
+ * tuviera el secreto de los JWT —o, sin él, cualquiera: el literal está en el
+ * repositorio— descifraba el segundo factor de todos los usuarios, y el segundo
+ * factor dejaba de ser un segundo factor.
+ *
+ * v2 usa una clave propia (TOTP_ENCRYPTION_KEY, ≥ 32 caracteres, distinta de
+ * JWT_SECRET) derivada con HKDF. En producción, sin ella no se cifra nada nuevo.
+ * Los registros v1 se siguen leyendo para no dejar a nadie fuera; se reescriben
+ * en v2 la próxima vez que el usuario configure su 2FA.
+ */
+const PREFIJO_V2 = 'v2';
+
+function claveV2() {
+    const raw = process.env.TOTP_ENCRYPTION_KEY;
+    const produccion = process.env.NODE_ENV === 'production';
+    if (!raw) {
+        if (produccion) throw new Error('TOTP_ENCRYPTION_KEY es obligatoria en producción para cifrar secretos 2FA.');
+        return crypto.hkdfSync('sha256', Buffer.from('dev-only-totp-key'), Buffer.from('bezhas/totp'), Buffer.from('v2'), 32);
+    }
+    if (produccion && (raw.length < 32 || raw === process.env.JWT_SECRET)) {
+        throw new Error('TOTP_ENCRYPTION_KEY debe tener al menos 32 caracteres y no puede ser JWT_SECRET.');
+    }
+    return Buffer.from(crypto.hkdfSync('sha256', Buffer.from(raw, 'utf8'), Buffer.from('bezhas/totp'), Buffer.from('v2'), 32));
+}
+
+/** Clave de los registros v1, sólo para leerlos. */
+const claveV1 = () => crypto.scryptSync(process.env.JWT_SECRET || 'default-key', 'salt', 32);
+
 /**
  * Encrypt a TOTP secret for secure storage
  * @param {string} secret - Plain TOTP secret
- * @returns {string} - Encrypted secret
+ * @returns {string} - `v2:iv:authTag:ciphertext`
  */
 const encryptSecret = (secret) => {
-    const algorithm = 'aes-256-gcm';
-    const key = crypto.scryptSync(process.env.JWT_SECRET || 'default-key', 'salt', 32);
-    const iv = crypto.randomBytes(16);
-
-    const cipher = crypto.createCipheriv(algorithm, key, iv);
-    let encrypted = cipher.update(secret, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    const authTag = cipher.getAuthTag();
-
-    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', claveV2(), iv);
+    const cifrado = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
+    return [PREFIJO_V2, iv.toString('hex'), cipher.getAuthTag().toString('hex'), cifrado.toString('hex')].join(':');
 };
 
 /**
- * Decrypt a stored TOTP secret
+ * Decrypt a stored TOTP secret (v2, o v1 heredado)
  * @param {string} encryptedSecret - Encrypted secret string
  * @returns {string} - Plain TOTP secret
  */
 const decryptSecret = (encryptedSecret) => {
     try {
-        const [ivHex, authTagHex, encrypted] = encryptedSecret.split(':');
-
-        const algorithm = 'aes-256-gcm';
-        const key = crypto.scryptSync(process.env.JWT_SECRET || 'default-key', 'salt', 32);
-        const iv = Buffer.from(ivHex, 'hex');
-        const authTag = Buffer.from(authTagHex, 'hex');
-
-        const decipher = crypto.createDecipheriv(algorithm, key, iv);
-        decipher.setAuthTag(authTag);
-
-        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-        decrypted += decipher.final('utf8');
-
-        return decrypted;
+        const partes = String(encryptedSecret || '').split(':');
+        const v2 = partes[0] === PREFIJO_V2;
+        const [ivHex, authTagHex, cifradoHex] = v2 ? partes.slice(1) : partes;
+        const decipher = crypto.createDecipheriv('aes-256-gcm', v2 ? claveV2() : claveV1(), Buffer.from(ivHex, 'hex'));
+        decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
+        return Buffer.concat([decipher.update(Buffer.from(cifradoHex, 'hex')), decipher.final()]).toString('utf8');
     } catch (error) {
-        console.error('Error decrypting TOTP secret:', error);
+        // Nunca se registra el valor cifrado ni el error con datos: sólo que falló.
+        console.error('Error decrypting TOTP secret');
         throw new Error('Failed to decrypt 2FA secret');
     }
 };
 
+/** ¿Está en el formato antiguo? Para reescribirlo en v2 cuando se pueda. */
+const isLegacySecret = (encryptedSecret) => !String(encryptedSecret || '').startsWith(`${PREFIJO_V2}:`);
+
 module.exports = {
+    isLegacySecret,
     generate2FASecret,
     verify2FAToken,
     generateBackupCodes,

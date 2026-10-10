@@ -15,6 +15,7 @@
 const { Router } = require('express');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken, requireRole } = require('../middleware/security');
+const { verifyAdminToken, extractAdminToken } = require('../middleware/admin-auth');
 const { INTERNAL_API_KEY } = require('../config/secrets');
 const { query } = require('../db/pool');
 const { redisClient } = require('../cache/redis');
@@ -644,11 +645,28 @@ router.patch('/edge-confirm/:requestId', authenticateToken, async (req, res) => 
 // ── SKILL Memory Endpoints ─────────────────────────────────────────────────────
 
 /**
+ * Acceso a las rutas /skills: sesión SuperAdmin del panel O un JWT de usuario
+ * con rol admin (el comportamiento de siempre).
+ *
+ * Las llama la pestaña Skills del panel de administración, que se autentica con
+ * la cookie HttpOnly de /admin-auth (issuer 'bezhas-admin-auth'). Con sólo
+ * authenticateToken + requireRole('admin') ese token nunca valía y todas daban
+ * 401. No se cambia el resto de rutas de este fichero: son de uso normal.
+ */
+function skillsAccess(req, res, next) {
+    if (verifyAdminToken(extractAdminToken(req))) return next();
+    return authenticateToken(req, res, (err) => {
+        if (err) return next(err);
+        return requireRole('admin')(req, res, next);
+    });
+}
+
+/**
  * GET /api/agent/skills
  * List recent SKILL interactions from the index.
  * Query params: limit (default 50), provider, intent
  */
-router.get('/skills', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/skills', skillsAccess, async (req, res) => {
     try {
         const SkillWriter = require('../../agent-lib/core/SkillWriter');
         const limit  = Math.min(parseInt(req.query.limit) || 50, 200);
@@ -662,6 +680,15 @@ router.get('/skills', authenticateToken, requireRole('admin'), async (req, res) 
 
         res.json({ status: 'success', data: filtered, total: filtered.length });
     } catch (err) {
+        // En el contenedor de producción `../../agent-lib` no existe (la imagen
+        // sólo lleva api/), así que el agente unificado no está disponible. Una
+        // lista vacía con el motivo es más útil al panel que un 500.
+        if (err.code === 'MODULE_NOT_FOUND') {
+            return res.json({
+                status: 'success', data: [], total: 0, available: false,
+                note: 'La memoria SKILL no está disponible en este despliegue',
+            });
+        }
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
@@ -670,7 +697,7 @@ router.get('/skills', authenticateToken, requireRole('admin'), async (req, res) 
  * GET /api/agent/skills/:id
  * Get full SKILL detail (including turn data) from the individual JSON file.
  */
-router.get('/skills/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/skills/:id', skillsAccess, async (req, res) => {
     try {
         const path = require('path');
         const fs   = require('fs');
@@ -698,7 +725,7 @@ router.get('/skills/:id', authenticateToken, requireRole('admin'), async (req, r
  * DELETE /api/agent/skills/:id
  * Remove a specific SKILL interaction (admin only).
  */
-router.delete('/skills/:id', authenticateToken, requireRole('admin'), (req, res) => {
+router.delete('/skills/:id', skillsAccess, (req, res) => {
     try {
         const path = require('path');
         const fs   = require('fs');

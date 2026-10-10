@@ -3,7 +3,7 @@
 # ===================================================
 
 # ===== STAGE 1: Dependencies =====
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 
 # Install pnpm
@@ -16,7 +16,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # ===== STAGE 2: Builder =====
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Install pnpm
@@ -29,7 +29,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Set environment variables for build-time
-ARG VITE_API_URL=https://api.bez.digital
+ARG VITE_API_URL=https://api.bezhas.com
 ARG VITE_CHAIN_ID=137
 ARG VITE_NETWORK=polygon
 
@@ -41,7 +41,7 @@ ENV NEXT_PUBLIC_API_URL=$VITE_API_URL \
 RUN pnpm run build
 
 # ===== STAGE 3: Production =====
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 WORKDIR /app
 
 # Install curl for health checks

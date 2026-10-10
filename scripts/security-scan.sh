@@ -73,9 +73,9 @@ else
 fi
 
 # ── 2. Nunca contra producción ───────────────────────────────────────────────
-# El escáner manda peticiones hostiles reales. Contra api.bez.digital eso es un
+# El escáner manda peticiones hostiles reales. Contra api.bezhas.com eso es un
 # ataque a los clientes, aunque lo lancemos nosotros.
-if [[ "$HOST" == *"bez.digital"* && "${HAWK_ALLOW_PROD:-}" != "yes-lo-se" ]]; then
+if [[ "$HOST" == *"bezhas.com"* && "${HAWK_ALLOW_PROD:-}" != "yes-lo-se" ]]; then
     err "HAWK_HOST apunta a producción ($HOST)."
     echo "     HawkScan manda peticiones hostiles de verdad: contra producción eso" >&2
     echo "     es un ataque a tus propios clientes. Escanea en local o en staging." >&2

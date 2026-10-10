@@ -3,7 +3,13 @@
 import { useEffect, useState } from 'react';
 import { Activity, ExternalLink, RefreshCw, Zap, Coins, GitBranch } from 'lucide-react';
 
-const BRAIN_URL = process.env.NEXT_PUBLIC_BRAIN_URL || 'http://localhost:4007';
+// En producción no hay un Brain en localhost:4007: caer ahí por defecto hacía que
+// el navegador del administrador sondease su propia máquina cada 4 s (error de
+// conexión rechazada en consola, y el aviso de acceso a red local en Chrome).
+// Sin NEXT_PUBLIC_BRAIN_URL, fuera de desarrollo, la pestaña indica que no está
+// configurado y no hace ninguna petición.
+const BRAIN_URL = process.env.NEXT_PUBLIC_BRAIN_URL
+    || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4007');
 
 type UsageSummary = {
     totals: { calls: number; tokens: number; bez: number };
@@ -19,6 +25,7 @@ export default function TabBrainLive() {
     const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
+        if (!BRAIN_URL) { setOnline(false); return; }
         let alive = true;
         const poll = async () => {
             try {
@@ -51,14 +58,16 @@ export default function TabBrainLive() {
                         online ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                                : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${online ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                        {online === null ? 'conectando' : online ? 'Brain :4007 online' : 'Brain offline'}
+                        {!BRAIN_URL ? 'Brain no configurado' : online === null ? 'conectando' : online ? 'Brain online' : 'Brain offline'}
                     </span>
                     <button onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-white/10">
                         <RefreshCw size={14} /> Recargar mapa
                     </button>
-                    <a href={`${BRAIN_URL}/ui`} target="_blank" rel="noreferrer" className="flex items-center gap-2 border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-cyan-300 hover:bg-cyan-500/20">
-                        <ExternalLink size={14} /> Abrir aparte
-                    </a>
+                    {BRAIN_URL && (
+                        <a href={`${BRAIN_URL}/ui`} target="_blank" rel="noreferrer" className="flex items-center gap-2 border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-cyan-300 hover:bg-cyan-500/20">
+                            <ExternalLink size={14} /> Abrir aparte
+                        </a>
+                    )}
                 </div>
             </div>
 
@@ -83,10 +92,16 @@ export default function TabBrainLive() {
             {/* Consola embebida en vivo */}
             <div className="border border-white/10 bg-[#05060a]">
                 <div className="flex items-center justify-between border-b border-white/10 px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500">
-                    <span>{BRAIN_URL}/ui</span>
+                    <span>{BRAIN_URL ? `${BRAIN_URL}/ui` : 'sin configurar'}</span>
                     <span>arrastra · zoom · clic en nodo</span>
                 </div>
-                {online === false ? (
+                {!BRAIN_URL ? (
+                    <div className="flex h-[680px] flex-col items-center justify-center gap-3 text-center text-gray-500">
+                        <Activity size={32} className="text-amber-400" />
+                        <p className="text-sm">El Brain no está configurado en este despliegue.</p>
+                        <p className="text-xs">Define <code className="text-cyan-300">NEXT_PUBLIC_BRAIN_URL</code> con la URL pública del servicio al construir el frontend.</p>
+                    </div>
+                ) : online === false ? (
                     <div className="flex h-[680px] flex-col items-center justify-center gap-3 text-center text-gray-500">
                         <Activity size={32} className="text-red-400" />
                         <p className="text-sm">Brain Console no responde en <code className="text-gray-300">{BRAIN_URL}</code>.</p>

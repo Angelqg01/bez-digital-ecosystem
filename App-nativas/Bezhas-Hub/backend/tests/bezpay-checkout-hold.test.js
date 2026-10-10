@@ -108,14 +108,15 @@ describe('orden de BezPay', () => {
 
 // ═══════════════════════════════════════════════════════════════════════════
 describe('sesiones ajenas a BezPay', () => {
-  it('sin bezpayPaymentId sigue el camino heredado (entrega directa)', async () => {
-    // Integraciones anteriores que crean sesiones sin orden BezPay: se
-    // mantienen funcionando, sin retención. Documentado, no accidental.
+  it('sin bezpayPaymentId NO se entrega nada: va a conciliación manual', async () => {
+    // Antes se entregaba en el acto desde el hot wallet, sin retención ni
+    // comprobación de fondos. Una sesión sin orden no tiene contra qué
+    // verificarse, así que no sale BEZ.
     await stripeService.handleCheckoutCompleted(session({
       type: 'token_purchase', walletAddress: WALLET, tokenAmount: '100',
     }));
 
     expect(fiatSettlement.recordFiatPayment).not.toHaveBeenCalled();
-    expect(fiatGateway.processFiatPayment).toHaveBeenCalled();
+    expect(fiatGateway.processFiatPayment).not.toHaveBeenCalled();
   });
 });

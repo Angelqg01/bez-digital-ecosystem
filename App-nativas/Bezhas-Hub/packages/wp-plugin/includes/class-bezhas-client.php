@@ -1,6 +1,6 @@
 <?php
 /**
- * BeZhas_Client — cliente HTTP central hacia api.bez.digital.
+ * BeZhas_Client — cliente HTTP central hacia api.bezhas.com.
  *
  * - Guarda y lee la configuración del tenant (API-Key, red, BeZhas_ID).
  * - Firma cada petición con la API-Key scoped (NUNCA toca claves privadas).
@@ -22,7 +22,7 @@ class BeZhas_Client {
     const MANIFEST_TKEY  = 'bezhas_hub_manifest';
 
     public static function api_base() {
-        return defined('BEZHAS_HUB_API_BASE') ? BEZHAS_HUB_API_BASE : 'https://api.bez.digital';
+        return defined('BEZHAS_HUB_API_BASE') ? BEZHAS_HUB_API_BASE : 'https://api.bezhas.com';
     }
 
     public static function api_key() {

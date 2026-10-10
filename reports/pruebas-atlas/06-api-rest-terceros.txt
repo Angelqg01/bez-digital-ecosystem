@@ -1,0 +1,29 @@
+# 06 · API REST del Gateway usada por un software contable de terceros
+# Ejecutado: 2026-10-09 12:53:48
+
+── Lecturas que el software contable necesita para valorar y conciliar ──
+PASS   GET /token/info (ficha del BEZ) — {"success":true,"source":"fallback","token":{"name":"BeZhas Coin V2","symbol":"BEZ","decimals":18,"totalSupply":"100000000","total
+PASS   GET /token/price (precio para valorar tesorería) — {"success":true,"priceUSD":0.1,"change24h":0,"updatedAt":"2026-08-22T12:44:50.515Z"}
+PASS   GET /oracle/token-prices (público, sin clave) — {"success":true,"tokens":{"BEZ":{"symbol":"BEZ","priceUSD":0.1,"change24h":0,"updatedAt":"2026-08-22
+PASS   GET /payments/tokenomics — {"success":true,"model":"rwa-real-yield-fiat-to-fiat","fee":{"netAmountUSD":100,"platformFeeBps":250,"platform
+PASS   GET /payments/stripe-links (compra de BEZ y planes) — {"success":true,"provider":"stripe_payment_link","links":{"plans":{"enterprise_vip":{"id":
+PASS   GET /payments/bank-transfer-details (SEPA) — {"success":true,"provider":"bank_transfer","bankTransfer":{"beneficiaryAlias":"bezhas.com"
+PASS   GET /contracts/list (contratos desplegados) — 9 {"success":true,"source":"deployments","contracts":[{"name":"BEZCoin",
+PASS   GET /kyc/status/:address (estado KYC de una wallet) — 403 {"error":"No tienes acceso a los datos de esa dirección.","code":"ADDRESS_ACCESS_DENIED"}
+PASS   GET /payments/history/:address — 403 {"error":"No tienes acceso a los datos de esa dirección.","code":"ADDRESS_ACCESS_DENIED"}
+
+── Controles de acceso ──
+PASS   sin api-key → 401
+PASS   api-key falsa → 401
+PASS   /apps/list (administración) exige scope admin → 403 — 403
+PASS   registrar una app con scope admin sin ser admin → 403 — 403
+PASS   operar (stake) sin el scope necesario → 403 — 403
+PASS   hacer un swap con una api-key sin scope de mercado → rechazado — 400 {"errors":[{"type":"field","msg":"Invalid value","path":"tokenIn","location":"bo
+PASS   saldo de una wallet AJENA (no autorizada para esta clave) → rechazado — 403 {"error":"No tienes acceso a los datos de esa dirección.","code":"ADDRESS_ACCESS_DENIED"}
+PASS   cabeceras de límite de tasa presentes — limit=2000
+PASS   cuerpo de 12 MB → 413 — 413
+
+── Consumo y medición ──
+PASS   una app con plan Business no se factura por llamada (cuota fija)
+
+19/19 pasan

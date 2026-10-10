@@ -42,7 +42,7 @@ class BeZhas_Entitlements {
      * Fetch entitlements from GET /api/gateway/v1/subscription (cached 5 min).
      * Falls back to core-only on any error so the store never hard-breaks.
      */
-    public static function fetch(string $api_key, string $base_url = 'https://api.bez.digital'): self {
+    public static function fetch(string $api_key, string $base_url = 'https://api.bezhas.com'): self {
         $cache_key = 'bezhas_entitlements_' . md5($api_key);
         $cached = get_transient($cache_key);
         if (is_array($cached)) {
@@ -67,7 +67,7 @@ class BeZhas_Entitlements {
     }
 
     /** Activate a SubApp on the subscription (POST). Returns decoded body or WP_Error. */
-    public static function activate(string $api_key, string $subapp, string $base_url = 'https://api.bez.digital') {
+    public static function activate(string $api_key, string $subapp, string $base_url = 'https://api.bezhas.com') {
         $resp = wp_remote_post(rtrim($base_url, '/') . '/api/gateway/v1/subscription/activate', [
             'headers' => ['x-api-key' => $api_key, 'Content-Type' => 'application/json'],
             'body'    => wp_json_encode(['subapp' => $subapp]),

@@ -3,7 +3,7 @@
  * Use this only as the receiver account for BeZhas invoices/orders.
  */
 const BANK_TRANSFER_DETAILS = Object.freeze({
-    beneficiaryAlias: 'bez.digital',
+    beneficiaryAlias: 'bezhas.com',
     iban: 'ES77 1465 0100 91 1766376210',
     bic: 'INGDESMMXXX',
     currency: 'EUR',

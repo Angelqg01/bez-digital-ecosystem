@@ -89,7 +89,7 @@
 Para: Dueños de tiendas WordPress
 
 ```
-1. Descargar plugin de hub.bez.digital/downloads
+1. Descargar plugin de hub.bezhas.com/downloads
 2. Instalar en WordPress Admin
 3. Pegar API Key en settings
 4. ¡Listo!
@@ -162,7 +162,7 @@ Para: Situaciones custom
 
 ### 🔑 API Key
 Tu credencial para acceder a BeZhas desde el backend.
-- Generada en: `hub.bez.digital/developers`
+- Generada en: `hub.bezhas.com/developers`
 - Incluir en header: `x-api-key: bez_key_xxx`
 - ⚠️ Nunca commits en código
 
@@ -220,10 +220,10 @@ Aplicación especializada dentro de BeZhas.
 
 | Canal | Respuesta | Link |
 |-------|-----------|------|
-| **Email** | <2h | support@bez.digital |
-| **Chat Live** | <30 min | hub.bez.digital/chat |
+| **Email** | <2h | support@bezhas.com |
+| **Chat Live** | <30 min | hub.bezhas.com/chat |
 | **Slack** | <30 min | discord.gg/bezhas |
-| **Docs** | 24/7 | hub.bez.digital/docs |
+| **Docs** | 24/7 | hub.bezhas.com/docs |
 
 ---
 
@@ -259,7 +259,7 @@ Aplicación especializada dentro de BeZhas.
 2. **Descarga la guía correspondiente**
 3. **Sigue los pasos**
 4. **Cuando tengas dudas:** BEZHAS_FAQ_TROUBLESHOOTING.md
-5. **Si necesitas ayuda:** support@bez.digital
+5. **Si necesitas ayuda:** support@bezhas.com
 
 ---
 
@@ -273,5 +273,5 @@ Aplicación especializada dentro de BeZhas.
 
 ---
 
-**¿Preguntas? support@bez.digital**  
+**¿Preguntas? support@bezhas.com**  
 **Última actualización: Junio 2026**

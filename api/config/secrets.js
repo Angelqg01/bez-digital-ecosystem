@@ -18,6 +18,13 @@ const DEV_MODE = !IS_PRODUCTION;
 // missing/misconfigured NODE_ENV can no longer silently disable auth.
 const AUTH_BYPASS = !IS_PRODUCTION && process.env.AUTH_BYPASS === 'true';
 
+// Emisor y audiencia de los tokens de sesión. Se firman siempre con ellos; al verificar, los tokens antiguos sin esos
+// campos se aceptan mientras no se active JWT_STRICT_CLAIMS=true (periodo de transición), pero uno que traiga otro
+// emisor o audiencia se rechaza siempre.
+const JWT_ISSUER = process.env.JWT_ISSUER || 'bezhas-api';
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'bezhas-platform';
+const JWT_STRICT_CLAIMS = process.env.JWT_STRICT_CLAIMS === 'true';
+
 const JWT_SECRET = process.env.JWT_SECRET || (DEV_MODE ? 'dev-only-secret' : null);
 if (!JWT_SECRET) {
     throw new Error('FATAL: JWT_SECRET environment variable is required in production. Set it before starting the server.');
@@ -49,6 +56,9 @@ if (AUTH_BYPASS) {
 
 module.exports = {
     JWT_SECRET,
+    JWT_ISSUER,
+    JWT_AUDIENCE,
+    JWT_STRICT_CLAIMS,
     INTERNAL_API_KEY,
     DEV_MODE,
     IS_PRODUCTION,

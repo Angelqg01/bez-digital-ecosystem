@@ -46,7 +46,7 @@ namespace BeZhas.Connect
         public CargoLinkModule CargoLink { get; }
 
         public BeZhasConnect(string? apiKey = null, string? userToken = null,
-            string baseUrl = "https://api.bez.digital", HttpClient? httpClient = null, double timeoutSeconds = 15)
+            string baseUrl = "https://api.bezhas.com", HttpClient? httpClient = null, double timeoutSeconds = 15)
         {
             _apiKey = apiKey;
             _userToken = userToken;

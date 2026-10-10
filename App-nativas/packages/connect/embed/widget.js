@@ -5,9 +5,9 @@
 // open web — no npm, no PHP, no framework.
 //
 //   <script type="module"
-//     src="https://embed.bez.digital/widget.js"
+//     src="https://embed.bezhas.com/widget.js"
 //     data-bezhas-key="pk_publishable_xxx"
-//     data-bezhas-base="https://api.bez.digital"></script>
+//     data-bezhas-base="https://api.bezhas.com"></script>
 //
 //   <div data-bezhas-widget="pay-button" data-amount="49.9" data-method="card"></div>
 //   <div data-bezhas-widget="cargolink-track" data-buid="B-123" data-rolekey="..."></div>

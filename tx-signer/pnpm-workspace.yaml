@@ -1,0 +1,9 @@
+# tx-signer se instala por su cuenta, como api/ y business-ops/: lockfile propio
+# y `pnpm install` en su directorio. Sin este fichero pnpm subiría al workspace
+# de la raíz.
+#
+# Dependencias mínimas a propósito: cada paquete que entra aquí puede tocar la
+# firma de la tesorería. ethers para construir y verificar, el cliente de KMS
+# para firmar. Nada más.
+overrides:
+  fast-xml-parser: '^5.8.0'

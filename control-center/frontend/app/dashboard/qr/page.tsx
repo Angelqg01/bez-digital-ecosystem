@@ -280,7 +280,7 @@ function QRCard({ qr, onRefresh }: { qr: QRCode; onRefresh: () => void }) {
                         <Copy className="w-4 h-4" />
                     </button>
                     {(qr.type === 'tracking' || qr.type === 'contract') && (
-                        <a href={`https://explorer.bez.digital/tx/${qr.code}`} target="_blank" rel="noopener noreferrer"
+                        <a href={`https://explorer.bezhas.com/tx/${qr.code}`} target="_blank" rel="noopener noreferrer"
                            className="p-2 rounded-xl bg-blue-50 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors">
                             <Eye className="w-4 h-4" />
                         </a>

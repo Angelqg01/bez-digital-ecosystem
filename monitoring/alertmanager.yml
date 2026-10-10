@@ -6,8 +6,8 @@ global:
   resolve_timeout: 5m
   # SMTP for email alerts (configure before deploying)
   # smtp_smarthost: 'smtp.example.com:587'
-  # smtp_from: 'alerts@bez.digital'
-  # smtp_auth_username: 'alerts@bez.digital'
+  # smtp_from: 'alerts@bezhas.com'
+  # smtp_auth_username: 'alerts@bezhas.com'
   # smtp_auth_password: '<password>'
 
 templates:
@@ -75,7 +75,7 @@ receivers:
     #     send_resolved: true
     # Uncomment for email:
     # email_configs:
-    #   - to: 'ops@bez.digital'
+    #   - to: 'ops@bezhas.com'
     #     send_resolved: true
 
   - name: infra-critical

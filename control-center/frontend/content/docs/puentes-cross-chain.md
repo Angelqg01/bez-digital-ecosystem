@@ -1,6 +1,6 @@
 # Puentes cross-chain
 
-BEZ existe en varias redes a la vez: como token nativo y de gas en la L2, y como ERC-20/BEP-20 en Polygon y BNB Chain. Los puentes mantienen esa coherencia.
+BEZ es el token nativo y de gas en la L2 y existe como ERC-20 en Polygon. BNB Chain se conectará mediante un bridge (próximamente): BEZ no está desplegado de forma nativa en BNB Chain. Los puentes mantienen la coherencia entre redes.
 
 ## Contratos de puente
 
@@ -16,14 +16,14 @@ BEZ existe en varias redes a la vez: como token nativo y de gas en la L2, y como
 | Origen | Destino | Uso típico |
 | --- | --- | --- |
 | BeZhas L2 | Polygon | Salida a liquidez DeFi |
-| BeZhas L2 | BNB Chain | Acceso a mercados BEP-20 |
-| Polygon / BNB | BeZhas L2 | Entrada de capital operativo |
+| BeZhas L2 | BNB Chain | Acceso a mercados de BNB (próximamente, pendiente del bridge) |
+| Polygon | BeZhas L2 | Entrada de capital operativo |
 | BeZhas L2 | Ethereum | Anclaje y liquidación institucional |
 
 ## Iniciar un bridge por API
 
 ```bash
-curl -X POST https://api.bez.digital/api/gateway/v1/bridge/initiate \
+curl -X POST https://api.bezhas.com/api/gateway/v1/bridge/initiate \
   -H "Authorization: Bearer $JWT" \
   -H "X-API-Key: $BEZHAS_API_KEY" \
   -H "Content-Type: application/json" \

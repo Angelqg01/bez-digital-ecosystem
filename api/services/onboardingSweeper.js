@@ -30,6 +30,7 @@
 const onboarding = require('./onboardingSession');
 const credentialIssuance = require('./credentialIssuance');
 const telemetry = require('./telemetryPipeline');
+const oauthGrant = require('./oauthGrant');
 const logger = require('../utils/logger');
 
 const INTERVALO_POR_DEFECTO = parseInt(process.env.ONBOARDING_SWEEP_MS || '600000', 10); // 10 min
@@ -58,12 +59,16 @@ async function pasada() {
         const purgado = await telemetry.purgar();
         r.telemetriaBorrada = purgado.telemetriaBorrada;
         r.episodiosBorrados = purgado.episodiosBorrados;
+        // Mismo razonamiento para el OAuth del MCP: códigos con la IP de quien
+        // autorizó y tokens caducados. Ver oauthGrant.purgarOAuth.
+        Object.assign(r, await oauthGrant.purgarOAuth());
         ultimo = { ...r, fecha: new Date().toISOString() };
         // Sólo se registra cuando hubo algo que hacer: un barrido silencioso
         // cada diez minutos llenaría el log de líneas idénticas y haría más
         // difícil ver la que importa.
         if (r.caducadas > 0 || r.anonimizadas > 0 || r.nodosCaducados > 0
-            || r.telemetriaBorrada > 0 || r.episodiosBorrados > 0) {
+            || r.telemetriaBorrada > 0 || r.episodiosBorrados > 0
+            || r.oauthCodigos > 0 || r.oauthDenylist > 0 || r.oauthRefresh > 0) {
             logger.info(r, 'Barrido de onboarding');
         }
         return r;

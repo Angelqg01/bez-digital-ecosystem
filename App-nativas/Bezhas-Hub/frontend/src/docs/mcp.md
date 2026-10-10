@@ -97,7 +97,7 @@ Action: Send email confirmation
 ## Autenticación
 
 API Key en el panel de desarrollador:
-https://bez.digital/developers/keys
+https://bezhas.com/developers/keys
 
 ## Límites
 
@@ -106,6 +106,6 @@ https://bez.digital/developers/keys
 
 ## Documentación
 
-- n8n: https://bez.digital/docs/n8n
-- Zapier: https://bez.digital/docs/zapier
-- Make: https://bez.digital/docs/make
+- n8n: https://bezhas.com/docs/n8n
+- Zapier: https://bezhas.com/docs/zapier
+- Make: https://bezhas.com/docs/make

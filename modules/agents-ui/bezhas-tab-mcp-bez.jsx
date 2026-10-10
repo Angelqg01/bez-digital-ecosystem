@@ -65,7 +65,7 @@ export function TabMCP({ engine, liveData }) {
           }}
         >
           <div style={{ fontSize: 10, color: C.muted, letterSpacing: 2, marginBottom: 12 }}>
-            MCP SERVER — {aegisUp ? "🟢 ONLINE" : "🔴 OFFLINE"} — mcp.bez.digital:4001
+            MCP SERVER — {aegisUp ? "🟢 ONLINE" : "🔴 OFFLINE"} — mcp.bezhas.com:4001
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 }}>
             {[

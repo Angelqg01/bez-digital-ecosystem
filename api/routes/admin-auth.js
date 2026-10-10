@@ -43,7 +43,7 @@ const ADMIN_WALLET = process.env.ADMIN_WALLET ? process.env.ADMIN_WALLET.toLower
 
 // Dominio de la cookie de sesión. En local, API (:3001) y panel (:3000)
 // comparten el host `localhost` y la cookie viaja sola. En producción viven en
-// subdominios distintos (api.bez.digital / app.bez.digital), y sin Domain la
+// subdominios distintos (api.bezhas.com / app.bezhas.com), y sin Domain la
 // cookie queda encerrada en el host de la API y el panel nunca la envía.
 const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
 
@@ -93,12 +93,15 @@ function verifyStepUpToken(req, expectedPurpose) {
 }
 
 /** Token de sesión completa del panel. */
-function issueSessionToken(walletAddress) {
+function issueSessionToken(walletAddress, { twoFactorVerified = false } = {}) {
     return jwt.sign(
         {
             role: 'SUPER_ADMIN',
             wallet: walletAddress,
             method: 'credentials',
+            // Solo lo pone el flujo que acaba de comprobar el código 2FA; lo
+            // leen servicios que no pueden fiarse de que el 2FA esté activo.
+            ...(twoFactorVerified ? { twoFactorVerified: true } : {}),
             iat: Math.floor(Date.now() / 1000),
         },
         JWT_SECRET,
@@ -482,9 +485,9 @@ router.post('/quick-super-admin/2fa/setup', requireSuperAdmin, async (req, res) 
             otpauthUrl,
             qrCodeUrl: await QRCode.toDataURL(otpauthUrl, { margin: 1, width: 320 }),
             backupCodes,
-            warning: adminCreds.HAS_PERSISTENT_VAULT_KEY
+            warning: adminCreds.VAULT_KEY_SOURCE === 'VAULT_KEY'
                 ? undefined
-                : 'VAULT_KEY no configurada: el secreto 2FA no sobrevivirá a un reinicio de la API',
+                : 'VAULT_KEY no configurada: el secreto 2FA se cifra con una clave derivada de JWT_SECRET; rotar JWT_SECRET lo invalidaría',
         });
     } catch (error) {
         res.status(500).json({ success: false, error: 'No se pudo generar el segundo factor' });
@@ -611,7 +614,21 @@ router.post('/local-2fa/verify', adminRateLimit('2fa-verify', 8), [
         }
 
         if (!valid) {
-            await logAttempt(req, '2FA', false, { username: stepUp.username, usedBackup });
+            // Distingue "código mal tecleado" de "el secreto guardado es
+            // ilegible": en el segundo caso reintentar el TOTP no sirve y el
+            // administrador necesita saber que debe usar un código de respaldo
+            // o resetear el 2FA desde el servidor. Sólo se llega aquí con el
+            // token de paso (contraseña ya verificada), así que no filtra nada
+            // a un anónimo.
+            const state = await adminCreds.totpSecretState();
+            await logAttempt(req, '2FA', false, { username: stepUp.username, usedBackup, secretState: state });
+            if (state !== 'ok') {
+                return res.status(401).json({
+                    success: false,
+                    code: 'TOTP_SECRET_UNREADABLE',
+                    error: 'El secreto 2FA guardado no se puede leer (la clave de cifrado cambió). Usa un código de respaldo o restablece el 2FA desde el servidor: node api/scripts/reset-admin-2fa.js',
+                });
+            }
             return res.status(401).json({ success: false, error: 'Código 2FA inválido' });
         }
 
@@ -619,7 +636,7 @@ router.post('/local-2fa/verify', adminRateLimit('2fa-verify', 8), [
         const current = await adminCreds.status();
         await logAttempt(req, '2FA', true, { username: stepUp.username, usedBackup });
 
-        res.cookie('bezhas_admin_token', issueSessionToken(current?.walletAddress || null), adminCookieOptions());
+        res.cookie('bezhas_admin_token', issueSessionToken(current?.walletAddress || null, { twoFactorVerified: true }), adminCookieOptions());
         res.json({
             success: true,
             role: 'SUPER_ADMIN',

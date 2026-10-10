@@ -210,7 +210,7 @@ docker run -d --name bezhas-node \
   -p 4000:4000 \
   -e LOCAL_API_KEY="llave_secreta_para_su_sap" \
   -e ENTERPRISE_PRIVATE_KEY="0xclave_auto_generada_y_oculta" \
-  -e BEZHAS_L2_RPC_URL="https://rpc.bez.digital" \
+  -e BEZHAS_L2_RPC_URL="https://rpc.bezhas.com" \
   -e REWARDS_CONTRACT_ADDRESS="0x123..." \
   -e ESCROW_CONTRACT_ADDRESS="0x456..." \
   bezhas/edge-node:latest

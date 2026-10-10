@@ -101,11 +101,11 @@ describe('Rutas ERP (/api/erp)', () => {
                 .get('/api/erp/connections/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/documents/factura')
                 .query({ path: '/etc/passwd', sql: 'SELECT 1', url: 'http://169.254.169.254' })
                 .set('x-api-key', 'k');
-            // Los parámetros desconocidos se ignoran por no estar en la lista:
-            // lo que llega al adaptador es sólo el filtro cerrado.
-            expect([404, 409, 502]).toContain(res.status);
+            // Un filtro desconocido se RECHAZA (400), no se ignora: ignorarlo devolvería un resultado que no es el pedido.
+            expect(res.status).toBe(400);
+            expect(res.body.code).toBe('ERP_FILTRO_NO_ADMITIDO');
             const texto = JSON.stringify(res.body);
-            expect(texto).not.toContain('169.254.169.254');
+            expect(texto).not.toContain('169.254.169.254');   // el VALOR hostil nunca se devuelve
             expect(texto).not.toContain('etc/passwd');
         });
     });

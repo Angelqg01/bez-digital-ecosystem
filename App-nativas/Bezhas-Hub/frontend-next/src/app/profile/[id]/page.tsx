@@ -60,7 +60,7 @@ export default function ProfilePage() {
     const address = routeAddress || connectedAddress;
     const isOwnProfile = !!(connectedAddress && address && connectedAddress.toLowerCase() === address.toLowerCase());
 
-    const { balance: bezBalance, isLoading: bezLoading } = useBezBalance(address);
+    const { balance: bezBalance, isLoading: bezLoading } = useBezBalance(address as `0x${string}` | undefined);
     const { openBuyBez, livePrice } = useBezPay();
 
     // ── State ────────────────────────────────────────────────────────────────

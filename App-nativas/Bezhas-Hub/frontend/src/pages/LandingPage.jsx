@@ -783,10 +783,10 @@ const LandingPage = () => {
                         Telegram
                     </a>
                     <a
-                        href="mailto:info.bezcoin@bez.digital"
+                        href="mailto:info.bezcoin@bezhas.com"
                         className="px-8 py-3 bg-transparent border border-gray-400 dark:border-white/20 text-gray-900 dark:text-white hover:bg-white/5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
                     >
-                        ✉️ info.bezcoin@bez.digital
+                        ✉️ info.bezcoin@bezhas.com
                     </a>
                 </div>
             </section>

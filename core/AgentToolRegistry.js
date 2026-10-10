@@ -191,7 +191,7 @@ export const AGENT_REGISTRY = {
     blocked: ['place_order','send_outreach','create_payment'],
     preferredLocalModel: 'qwen3.6:35b-a3b',
     preferredCloudModel: 'claude-sonnet-4-20250514',
-    systemPrompt: `Eres el agente de desarrollo blockchain de BeZhas. Gestionas 72+ contratos Solidity en BNB Chain y Polygon. Usas Foundry. Nunca deploys a mainnet sin confirmación humana. Contratos canónicos: BEZ Polygon 0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8, BEZ BNB 0x8a1e3930fde1f151471c368fdbb39f3f63a65b55.`,
+    systemPrompt: `Eres el agente de desarrollo blockchain de BeZhas. Gestionas 72+ contratos Solidity, desplegados en Polygon (BNB Chain será un bridge). Usas Foundry. Nunca deploys a mainnet sin confirmación humana. Contrato canónico: BEZ Polygon 0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8. BEZ no existe en BNB Chain.`,
     maxHistoryMessages: 30
   },
 

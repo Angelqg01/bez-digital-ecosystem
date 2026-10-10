@@ -13,7 +13,7 @@
  *   DELETE /api/identity/nodes/:nodeId — Revoke an execution node
  *
  * Security model:
- *   - All endpoints require authenticateToken + admin role
+ *   - All endpoints require a SuperAdmin session (requireSuperAdmin)
  *   - Secret values are stored in the database encrypted with AES-256-GCM
  *   - Every /reveal call is audit-logged with userId, IP, and timestamp
  *
@@ -24,7 +24,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { authenticateToken } = require('../middleware/security');
+const { requireSuperAdmin } = require('../middleware/admin-auth');
 const { query } = require('../db/pool');
 
 // ── Encryption helpers ───────────────────────────────────────────────────────
@@ -54,13 +54,25 @@ function decrypt(ciphertext) {
     return decrypted.toString('utf8');
 }
 
-// ── Middleware: require superadmin ───────────────────────────────────────────
-const requireAdmin = (req, res, next) => {
-    if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ status: 'error', message: 'Acceso denegado — solo SuperAdmin' });
-    }
-    next();
-};
+// ── Middleware: sesión SuperAdmin del panel ──────────────────────────────────
+// Estas rutas las llama el panel de administración con la cookie HttpOnly que
+// emite /admin-auth (issuer 'bezhas-admin-auth', role 'SUPER_ADMIN'). Antes
+// usaban authenticateToken, que espera un JWT de usuario con role 'admin': el
+// token del panel nunca lo satisface y todas daban 401. requireSuperAdmin valida
+// el issuer y el algoritmo; después se rellena req.user con el formato que el
+// resto del fichero ya lee (address, display_name, email).
+const requireAdmin = [
+    requireSuperAdmin,
+    (req, _res, next) => {
+        req.user = {
+            role: 'admin',
+            address: req.admin.wallet || null,
+            display_name: 'SuperAdmin',
+            email: '',
+        };
+        next();
+    },
+];
 
 // ── Ensure tables exist ──────────────────────────────────────────────────────
 async function ensureSchema() {
@@ -100,7 +112,7 @@ if (process.env.SKIP_SCHEMA_ON_IMPORT !== 'true') {
 
 // ── DID Profile ──────────────────────────────────────────────────────────────
 
-router.get('/did', authenticateToken, requireAdmin, (req, res) => {
+router.get('/did', requireAdmin, (req, res) => {
     // In a real system: resolved from on-chain IdentityRegistry contract
     res.json({
         status: 'success',
@@ -118,7 +130,7 @@ router.get('/did', authenticateToken, requireAdmin, (req, res) => {
 // ── Secrets Vault ─────────────────────────────────────────────────────────────
 
 // List secret names + metadata (never values)
-router.get('/secrets', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/secrets', requireAdmin, async (req, res) => {
     try {
         const { rows } = await query(
             `SELECT id, name, service, updated_by, updated_at FROM identity_secrets ORDER BY name`
@@ -130,7 +142,7 @@ router.get('/secrets', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Create or update a secret
-router.post('/secrets', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/secrets', requireAdmin, async (req, res) => {
     const { name, value, service } = req.body;
     if (!name || !value) {
         return res.status(400).json({ status: 'error', message: 'name and value are required' });
@@ -159,7 +171,7 @@ router.post('/secrets', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Reveal (decrypt) a secret value — audit-logged, admin only
-router.get('/secrets/:name/reveal', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/secrets/:name/reveal', requireAdmin, async (req, res) => {
     const { name } = req.params;
     try {
         const { rows } = await query(
@@ -184,7 +196,7 @@ router.get('/secrets/:name/reveal', authenticateToken, requireAdmin, async (req,
 
 // ── Execution Nodes ───────────────────────────────────────────────────────────
 
-router.get('/nodes', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/nodes', requireAdmin, async (req, res) => {
     try {
         const { rows } = await query(
             `SELECT * FROM identity_nodes ORDER BY status DESC, created_at ASC`
@@ -195,7 +207,7 @@ router.get('/nodes', authenticateToken, requireAdmin, async (req, res) => {
     }
 });
 
-router.post('/nodes', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/nodes', requireAdmin, async (req, res) => {
     const { nodeId, label, ipAddress, role } = req.body;
     if (!nodeId || !label) {
         return res.status(400).json({ status: 'error', message: 'nodeId and label are required' });
@@ -214,7 +226,7 @@ router.post('/nodes', authenticateToken, requireAdmin, async (req, res) => {
     }
 });
 
-router.delete('/nodes/:nodeId', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/nodes/:nodeId', requireAdmin, async (req, res) => {
     try {
         await query(
             `UPDATE identity_nodes SET status = 'revoked' WHERE node_id = $1`,
@@ -228,7 +240,7 @@ router.delete('/nodes/:nodeId', authenticateToken, requireAdmin, async (req, res
 
 // ── Audit Log ─────────────────────────────────────────────────────────────────
 
-router.get('/audit', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/audit', requireAdmin, async (req, res) => {
     try {
         const { rows } = await query(
             `SELECT * FROM identity_audit ORDER BY created_at DESC LIMIT 50`

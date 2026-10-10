@@ -7,7 +7,9 @@
 # Leer este archivo SIEMPRE al inicio de cada sesión.
 
 > [!TODO]
-> **PENDIENTE (recordatorio):** Subir online la plataforma BeZhas-Blockchain y **todas las SubApps** con sus **enlaces reales** ya en producción. Las tarjetas de la Landing (`/`) y de `/developers` apuntan a los subdominios `*.bez.digital` (hub, wallet, gas, edge, vision, capital, prestige, cargolink, pay, purescan, sphere, energy, genesis). Confirmar/ajustar cada subdominio cuando la SubApp esté desplegada (editar `secondaryApps` en `app/(landing)/page.tsx` y `SUBAPP_URLS` en `app/(landing)/developers/page.tsx`).
+> **Hecho (2026-10-10):** hub, capital (DeFi en `/defi`), purescan, energy y cargolink ya están en `https://<sub>.bezhas.com` detrás del balanceador (`deploy/gcp/03-load-balancer.sh`, lista `SUBAPPS` en `deploy/gcp/config.env`; se despliegan con `deploy/gcp/deploy-subapps.sh`). Siguen sin desplegar wallet, gas, edge, vision, pay, prestige, sphere y genesis.
+>
+> **PENDIENTE (recordatorio):** Subir online la plataforma BeZhas-Blockchain y **todas las SubApps** con sus **enlaces reales** ya en producción. Las tarjetas de la Landing (`/`) y de `/developers` apuntan a los subdominios `*.bezhas.com` (hub, wallet, gas, edge, vision, capital, prestige, cargolink, pay, purescan, sphere, energy, genesis). Confirmar/ajustar cada subdominio cuando la SubApp esté desplegada (editar `secondaryApps` en `app/(landing)/page.tsx` y `SUBAPP_URLS` en `app/(landing)/developers/page.tsx`).
 
 # Válido para: Claude Code (terminal) \+ Cowork (desktop) \+ Claude.ai (MCPs)
 
@@ -26,7 +28,7 @@
 BeZhas es un ecosistema blockchain empresarial B2B con:
 
 - Plataforma SaaS de trading (bots IA, análisis técnico/fundamental, carteras)  
-- Blockchain L2 propia desplegada en BNB Chain (BEP-20) y Polygon (ERC-20)  
+- Blockchain L2 propia; BEZ-Coin desplegado sólo en Polygon (ERC-20). BNB Chain será un bridge (pendiente; hoy no hay contrato BEZ en BNB)  
 - Token nativo BEZ-Coin con utilidad real (gas fees, staking, DAO, pagos)  
 - SDK B2B para sectores: logística, aduanas, RWA, pagos internacionales  
 - Capa de IA: OpenClaw (orquestador multi-LLM propio)  
@@ -110,16 +112,18 @@ BeZhas es un ecosistema blockchain empresarial B2B con:
 | Contrato | Red | Address |
 | :---- | :---- | :---- |
 | BEZ Token | **Polygon** | `0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8` |
-| BEZ Token | **BNB Chain** | `0x8a1e3930fde1f151471c368fdbb39f3f63a65b55` |
+| BEZ Token | **BNB Chain** | **No desplegado.** `0x8a1e…5b55` no tiene código (comprobado on-chain el 2026-09-18). BEZ-Coin sólo existe en Polygon; BNB Chain será un bridge (pendiente), no un despliegue nativo. |
 | Treasury DAO | BSC+Polygon | `0x89c23890c742d710265dD61be789C71dC8999b12` |
 | QualityEscrow/Safe | BSC+Polygon | `0x3EfC42095E8503d41Ad8001328FC23388E00e8a3` |
 | Hot Wallet | BSC+Polygon | `0x52Df82920CBAE522880dD7657e43d1A754eD044E` |
+| RWAFactory · activos | Polygon | `0xa7e6656eFA45EB59ca247aa15F883330692C0d9A` — la que usa la web `/rwa` y el MCP por defecto. Comisión 100 BEZ, owner la Hot Wallet. |
+| RWAFactory · industrial | Polygon | `0x5F999157aF1DEfBf4E7e1b8021850b49e458CCc0` — mismo bytecode, owner y comisión (comprobado el 2026-10-03); la de `deployments/137.json`, para clientes de Factory industrial. |
 
 ### Contratos Solidity registrados
 
 | Contrato | Función |
 | :---- | :---- |
-| `BezhasToken` | Token BEZ-Coin (ERC-20/BEP-20) |
+| `BezhasToken` | Token BEZ-Coin (ERC-20, sólo Polygon) |
 | `BeZhasCore` | Lógica central plataforma |
 | `BeZhasMarketplace` | Marketplace de servicios |
 | `StakingPoolV2` | Staking BEZ \+ rewards |
@@ -137,7 +141,7 @@ BSC\_MAINNET:    { chainId: 56,    rpc: 'https://bsc-dataseed.binance.org' }
 
 BSC\_TESTNET:    { chainId: 97,    rpc: 'https://data-seed-prebsc-1-s1.binance.org:8545' }
 
-POLYGON:        { chainId: 137,   rpc: 'https://polygon-rpc.com' }
+POLYGON:        { chainId: 137,   rpc: 'https://polygon-bor-rpc.publicnode.com' }
 
 POLYGON\_MUMBAI: { chainId: 80001, rpc: 'https://rpc-mumbai.maticvigil.com' }
 
@@ -145,11 +149,28 @@ POLYGON\_MUMBAI: { chainId: 80001, rpc: 'https://rpc-mumbai.maticvigil.com' }
 
 ## 🖥️ INFRAESTRUCTURA Y ENDPOINTS
 
+> [!IMPORTANT]
+> **Hosting de producción (2026-09-26): vuelta a GCP.** La facturación de GCP
+> que causó la suspensión de Cloud SQL está resuelta, así que la plataforma
+> vuelve a desplegarse en GCP (Cloud Run + Cloud SQL + Memorystore + Secret
+> Manager) según [`docs/developer/GCP_DEPLOYMENT_GUIDE.md`](../docs/developer/GCP_DEPLOYMENT_GUIDE.md)
+> — es de nuevo la guía vigente — usando `scripts/gcp-deploy.sh`. Las
+> migraciones 049-051, pendientes desde la suspensión, se aplican contra el
+> Cloud SQL de producción (el propio script las ejecuta vía el Cloud Run Job
+> `bezhas-db-migrate`; nadie las ha lanzado todavía, hacerlo es una acción
+> deliberada, no automática de este cambio de documentación).
+>
+> El VPS Hostinger KVM 4 (4 vCPU/16GB, Frankfurt) que se aprovisionó como
+> alternativa mientras GCP estaba descartado **se mantiene documentado como
+> plan B** de bajo coste — ver
+> [`docs/developer/HOSTINGER_DEPLOYMENT_GUIDE.md`](../docs/developer/HOSTINGER_DEPLOYMENT_GUIDE.md) —
+> pero deja de ser el destino por defecto.
+
 | Servicio | Endpoint |
 | :---- | :---- |
-| API Backend | `api.bez.digital:3001` |
-| WebSocket | `ws.bez.digital:3002` |
-| MCP Server | `mcp.bez.digital:4001` |
+| API Backend | `api.bezhas.com:3001` |
+| WebSocket | `ws.bezhas.com:3002` |
+| MCP Server | `mcp.bezhas.com:4001` |
 | Ollama (dev) | `localhost:11434` |
 
 ### Hardware del servidor principal

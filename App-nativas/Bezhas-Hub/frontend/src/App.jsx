@@ -143,6 +143,7 @@ const BezPayPage = lazy(() => import('./pages/BezPayPage')); // NEW: BeZhas Pay 
 
 // AI Guide Widget (Global)
 import BezhasGuideWidget from './components/AI/BezhasGuideWidget';
+import AIWorkspaceBar from './components/AI/AIWorkspaceBar';
 
 // Journey Overlay (Global)
 import JourneyOverlay from './components/common/JourneyOverlay';
@@ -244,6 +245,9 @@ const Root = () => {
 
                     {/* AI Guide Widget - Global y persistente en todas las páginas */}
                     <BezhasGuideWidget currentUser={mockUser} />
+
+                    {/* Chat flotante con RAG seguro (login obligatorio, acciones y enlaces directos) - Global */}
+                    <AIWorkspaceBar />
 
                     {/* Google Translate Widget - Global */}
                     <div className="fixed bottom-4 left-4 z-50 shadow-lg rounded-lg overflow-hidden">

@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { DOC_LIBRARY } from '@/lib/docs-library';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bez.digital';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bezhas.com';
 
 // All public landing pages
 const landingRoutes = [
@@ -16,6 +16,7 @@ const landingRoutes = [
     { path: '/bridges', priority: 0.7, changeFrequency: 'weekly' as const },
     { path: '/validators', priority: 0.7, changeFrequency: 'weekly' as const },
     { path: '/developers', priority: 0.8, changeFrequency: 'weekly' as const },
+    { path: '/mcp', priority: 0.8, changeFrequency: 'weekly' as const },
     { path: '/learn', priority: 0.7, changeFrequency: 'weekly' as const },
     { path: '/docs', priority: 0.7, changeFrequency: 'weekly' as const },
     { path: '/rpc', priority: 0.6, changeFrequency: 'monthly' as const },

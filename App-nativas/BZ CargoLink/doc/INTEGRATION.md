@@ -135,7 +135,7 @@ Each actor calls `POST /v1/tx/:bUid/advance` with the payload that proves their 
 
 ## 4. API endpoints reference
 
-Base URL: `https://api.bez.digital:3001/api/cargolink`
+Base URL: `https://api.bezhas.com:3001/api/cargolink`
 
 ### Keys
 
@@ -443,7 +443,7 @@ POST /api/cargolink/v1/tx
 ### Recipe A — Full lifecycle (curl)
 
 ```bash
-BASE=https://api.bez.digital:3001/api/cargolink
+BASE=https://api.bezhas.com:3001/api/cargolink
 POS_KEY=bzk_live_your_pos_key
 CUS_KEY=bzk_live_your_customs_key
 CAR_KEY=bzk_live_your_carrier_key
@@ -501,7 +501,7 @@ curl -s $BASE/v1/tx/$BUID \
 ### Recipe B — Shopify sync + webhook (Node.js)
 
 ```js
-const BASE = 'https://api.bez.digital:3001/api/cargolink';
+const BASE = 'https://api.bezhas.com:3001/api/cargolink';
 const POS_KEY = process.env.BEZHAS_POS_KEY;
 
 // 1. Link your Shopify store once
