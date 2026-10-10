@@ -3,7 +3,7 @@
 # Desplegar las SubApps nativas en Cloud Run del proyecto actual.
 # ============================================================================
 # Uso:  ./deploy/gcp/deploy-subapps.sh [hub defi purescan energy cargolink]
-#       (sin argumentos despliega las cinco)
+#       (sin argumentos despliega todas; hub defi purescan energy cargolink wallet gas pay prestige)
 #
 # Cada app se construye con Cloud Build (su propio Dockerfile) y se publica como un servicio
 # `bezhas-<app>` en Cloud Run. Son páginas PÚBLICAS (--allow-unauthenticated): la sesión y los
@@ -22,13 +22,17 @@ cd ../..
 # app → directorio:puerto
 declare -A DIR=(  [hub]="App-nativas/Bezhas-Hub/frontend-next" [defi]="App-nativas/BZ Capital/frontend"
                   [purescan]="App-nativas/BZ PureScan"          [energy]="App-nativas/bez-energy"
-                  [cargolink]="App-nativas/BZ CargoLink" )
+                  [cargolink]="App-nativas/BZ CargoLink"
+                  [wallet]="App-nativas/bez-wallet"    [gas]="App-nativas/gas-tank-manager"
+                  [pay]="App-nativas/bezhas-pay-manager" [prestige]="App-nativas/BZ Prestige" )
 # Tipo de build: «mono» = contexto raíz del repo con Dockerfile propio (deploy/gcp/subapps/), «dir» = su carpeta.
 declare -A BUILD=( [hub]="mono:Dockerfile.hub" [purescan]="mono:Dockerfile.vite" [energy]="mono:Dockerfile.vite"
-                   [cargolink]="mono:Dockerfile.vite" [defi]="dir" )
-declare -A PORT=( [hub]=8080 [defi]=5174 [purescan]=8080 [energy]=8080 [cargolink]=8080 )
+                   [cargolink]="mono:Dockerfile.vite" [defi]="dir"
+                   [wallet]="mono:Dockerfile.workspace" [gas]="mono:Dockerfile.workspace"
+                   [pay]="mono:Dockerfile.vite" [prestige]="mono:Dockerfile.workspace" )
+declare -A PORT=( [hub]=8080 [defi]=5174 [purescan]=8080 [energy]=8080 [cargolink]=8080 [wallet]=8080 [gas]=8080 [pay]=8080 [prestige]=8080 )
 
-APPS=("$@"); ((${#APPS[@]})) || APPS=(hub defi purescan energy cargolink)
+APPS=("$@"); ((${#APPS[@]})) || APPS=(hub defi purescan energy cargolink wallet gas pay prestige)
 TAG="$(git rev-parse --short=12 HEAD)"
 declare -A URL
 FALLOS=()

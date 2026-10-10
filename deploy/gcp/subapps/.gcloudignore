@@ -10,11 +10,21 @@
 !/App-nativas/bez-energy/
 !/App-nativas/BZ PureScan/
 !/App-nativas/BZ CargoLink/
+!/App-nativas/bez-wallet/
+!/App-nativas/gas-tank-manager/
+!/App-nativas/bezhas-pay-manager/
+!/App-nativas/BZ Prestige/
+# Raíz del workspace pnpm (Wallet, Gas y Prestige se instalan con él)
+!/App-nativas/pnpm-workspace.yaml
+!/App-nativas/pnpm-lock.yaml
+!/App-nativas/package.json
+!/App-nativas/tsconfig.base.json
 !/sdk/
 !/deploy/
 **/node_modules/
 **/.next/
 **/dist/
+**/*.tsbuildinfo
 **/.git/
 **/.env
 **/.env.*

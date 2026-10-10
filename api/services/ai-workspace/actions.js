@@ -125,18 +125,22 @@ function isSafeAppUrl(raw) {
     return u.protocol === 'https:' && !u.username && !u.password && !u.port && APP_HOST_OK(u.hostname.toLowerCase());
 }
 // Subdominios propios detrás del balanceador (deploy/gcp/03-load-balancer.sh): mismo WAF, certificado y la IP de siempre.
-const SUB = { hub: 'hub', defi: 'capital', purescan: 'purescan', energy: 'energy', cargolink: 'cargolink' };
+const SUB = { hub: 'hub', defi: 'capital', purescan: 'purescan', energy: 'energy', cargolink: 'cargolink', wallet: 'wallet', gas: 'gas', pay: 'pay', prestige: 'prestige' };
 const RUN = (n) => `https://${SUB[n]}.bezhas.com`;
 let APP_OVERRIDES = {};
 try { APP_OVERRIDES = JSON.parse(process.env.NATIVE_APP_URLS || '{}'); } catch (_) { APP_OVERRIDES = {}; }
 const appUrl = (id, defecto) => (isSafeAppUrl(APP_OVERRIDES[id]) ? APP_OVERRIDES[id] : defecto);
 
-// Wallet, Gas, Pay, Prestige, Sphere y Genesis se añadirán aquí cuando estén desplegadas (ver docs de despliegue).
+// Sphere y Genesis se añadirán aquí cuando estén desplegadas (ver docs de despliegue).
 const APPS = [
     ['hub', 'BeZhas Hub', 'Portal del ecosistema: perfil, comunidad y comercio.', RUN('hub'), ['hub', 'comunidad', 'portal', 'perfil publico', 'comercio']],
     ['defi', 'BeZhas DeFi', 'Staking, farming, bridge, wallet y DAO.', `${RUN('defi')}/defi`, ['defi', 'staking', 'farming', 'liquidez', 'dao', 'gobernanza']],
     ['purescan', 'BZ PureScan', 'Visión artificial, trazabilidad e inspección de calidad.', RUN('purescan'), ['purescan', 'inspeccion', 'calidad', 'vision artificial', 'trazabilidad', 'gemelo digital', 'escanear']],
     ['energy', 'BEZ Energy', 'Certificados CAE, créditos de carbono y mercados de energía.', RUN('energy'), ['energia', 'cae', 'carbono', 'esg', 'certificado energetico']],
+    ['wallet', 'BEZ Wallet', 'Wallet del ecosistema: saldos, envíos y recepción de BEZ.', RUN('wallet'), ['bez wallet', 'billetera', 'enviar bez', 'recibir bez', 'mis saldos']],
+    ['gas', 'Gas Tank Manager', 'Depósito y gestión del gas de tus operaciones.', RUN('gas'), ['gas tank', 'depositar gas', 'subsidio de gas', 'gestionar gas', 'combustible']],
+    ['pay', 'BeZhas Pay', 'Cobros y pagos: tarjeta, SEPA y checkout de BeZhas.', RUN('pay'), ['bezhas pay', 'cobrar a clientes', 'pasarela de pago', 'checkout', 'cobrar con tarjeta']],
+    ['prestige', 'BZ Prestige', 'Experiencia VIP y membresías premium.', RUN('prestige'), ['prestige', 'vip', 'membresia', 'premium']],
     ['cargolink', 'BZ CargoLink', 'Logística y aduanas: tracking de cargas y despacho verificable.', RUN('cargolink'), ['cargolink', 'logistica', 'aduana', 'aduanas', 'envio', 'carga', 'exportar', 'importar', 'expediente']],
 ].map(([id, title, description, url, keywords]) => ({
     id: `app_${id}`, category: 'ecosystem', kind: 'app', external: true, sensitive: false, href: appUrl(id, url),

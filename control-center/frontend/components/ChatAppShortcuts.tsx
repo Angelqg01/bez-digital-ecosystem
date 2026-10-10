@@ -4,7 +4,7 @@
  * Accesos directos a las apps nativas del ecosistema, dentro de la barra de chat.
  * El destino lo decide el servidor (POST /actions/:id/open); aquí solo se pintan las tarjetas.
  */
-import { Globe, Landmark, ScanLine, Truck, Zap, type LucideIcon } from 'lucide-react';
+import { Crown, CreditCard, Fuel, Globe, Landmark, ScanLine, Truck, Wallet, Zap, type LucideIcon } from 'lucide-react';
 import type { ChatAction } from '@/lib/ai-workspace';
 
 const MARCA: Record<string, { icon: LucideIcon; from: string; to: string; ring: string }> = {
@@ -12,6 +12,10 @@ const MARCA: Record<string, { icon: LucideIcon; from: string; to: string; ring: 
     app_defi: { icon: Landmark, from: 'from-violet-400/25', to: 'to-fuchsia-500/5', ring: 'hover:border-violet-300/60' },
     app_purescan: { icon: ScanLine, from: 'from-emerald-400/25', to: 'to-teal-500/5', ring: 'hover:border-emerald-300/60' },
     app_energy: { icon: Zap, from: 'from-amber-400/25', to: 'to-orange-500/5', ring: 'hover:border-amber-300/60' },
+    app_wallet: { icon: Wallet, from: 'from-sky-400/25', to: 'to-indigo-500/5', ring: 'hover:border-sky-300/60' },
+    app_gas: { icon: Fuel, from: 'from-lime-400/25', to: 'to-green-500/5', ring: 'hover:border-lime-300/60' },
+    app_pay: { icon: CreditCard, from: 'from-teal-400/25', to: 'to-cyan-500/5', ring: 'hover:border-teal-300/60' },
+    app_prestige: { icon: Crown, from: 'from-yellow-400/25', to: 'to-amber-500/5', ring: 'hover:border-yellow-300/60' },
     app_cargolink: { icon: Truck, from: 'from-rose-400/25', to: 'to-pink-500/5', ring: 'hover:border-rose-300/60' },
 };
 

@@ -374,8 +374,8 @@ describe('disponibilidad de las apps nativas', () => {
         expect(abrir.status).toBe(503);
         a._estadoApps.clear();
     });
-    it('sólo hay accesos de las 5 apps desplegadas', () => {
+    it('hay accesos de las 9 apps desplegadas', () => {
         const ids = require('../../services/ai-workspace/actions').CATALOG.filter((x) => x.external).map((x) => x.id).sort();
-        expect(ids).toEqual(['app_cargolink', 'app_defi', 'app_energy', 'app_hub', 'app_purescan']);
+        expect(ids).toEqual(['app_cargolink', 'app_defi', 'app_energy', 'app_gas', 'app_hub', 'app_pay', 'app_prestige', 'app_purescan', 'app_wallet']);
     });
 });
