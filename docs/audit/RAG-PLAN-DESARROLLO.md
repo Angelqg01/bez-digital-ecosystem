@@ -117,7 +117,8 @@ Decisión del propietario (2026-10-15): **no se leen documentos** (ni PDF ni DOC
 1. Sólo suben archivos los usuarios con **plan suscrito** (`principal.plan !== 'none'`); sin plan → 402 antes de leer el cuerpo.
 2. **Prohibidos los ejecutables**: lista blanca por firma real (imagen, vídeo, audio, PDF); EXE/ELF/Mach-O/scripts/ZIP/JAR/APK/Office/instaladores/SVG/HTML se rechazan con motivo; el Content-Type y la extensión que declara el cliente no cuentan.
 3. El archivo **se anexa a IPFS tal cual**: no se decodifica, no se parsea, no se indexa y no llega al chat ni al RAG. Un test vigila que `services/knowledge`, `services/ai-workspace` y `routes/ai-workspace.js` no importen la subida ni IPFS, y que la ruta no importe el RAG ni parsers.
-4. Endpoint único: `POST /api/nft-assets` (cuerpo binario, `x-file-name` opcional). Desactivable con `NFT_UPLOADS_ENABLED=false`; sin credenciales de Pinata responde 503 (no hay modo simulado).
+4. **RAG sólo con el conocimiento público sembrado.** `POST /api/ai-workspace/knowledge` responde 403 `TENANT_INGEST_DISABLED` (también con `global:true`), la búsqueda ignora cualquier documento de tenant que ya estuviera guardado, y se quitó el botón del clip del chat. Se reactiva con `KNOWLEDGE_TENANT_INGEST=true`; `DELETE` sigue disponible para limpiar lo anterior.
+5. Endpoint único: `POST /api/nft-assets` (cuerpo binario, `x-file-name` opcional). Desactivable con `NFT_UPLOADS_ENABLED=false`; sin credenciales de Pinata responde 503 (no hay modo simulado).
 
 ### Fase 5 — Un solo Knowledge Plane para Web, MCP y API (2 días)
 1. Herramienta MCP de solo lectura `bezhas_knowledge_search` en `mcp-gateway.js`. Usa `knowledge.search` con el principal derivado del token OAuth/api-key, nunca de los argumentos.

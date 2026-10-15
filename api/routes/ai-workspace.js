@@ -341,12 +341,17 @@ router.get('/knowledge', async (req, res) => {
     const principal = await principalDe(req, res);
     if (!principal) return;
     await sembrar();
-    res.json({ documents: await knowledge.listDocuments(principal) });
+    res.json({ documents: await knowledge.listDocuments(principal), ingestEnabled: knowledge.tenantIngestEnabled() });
 });
 
 router.post('/knowledge', async (req, res) => {
     const principal = await principalDe(req, res);
     if (!principal) return;
+    // Política: el RAG sólo contiene el conocimiento público sembrado. El texto que pega un cliente es una vía de
+    // prompt injection indirecta, así que la ingesta de tenants está APAGADA salvo KNOWLEDGE_TENANT_INGEST=true.
+    if (!knowledge.tenantIngestEnabled()) {
+        return res.status(403).json({ error: 'La ingesta de documentos en el asistente está desactivada.', code: 'TENANT_INGEST_DISABLED' });
+    }
     try {
         // tenantId nunca se lee del body: se ignora cualquier valor enviado.
         const { title, content, classification, allowed_roles, allowed_plans, global } = req.body || {};

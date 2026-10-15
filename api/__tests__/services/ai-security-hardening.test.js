@@ -1,4 +1,5 @@
 process.env.KNOWLEDGE_STORE = 'memory';
+process.env.KNOWLEDGE_TENANT_INGEST = 'true'; // estos tests ejercitan el RAG privado de tenants (apagado por defecto)
 const jwt = require('jsonwebtoken');
 const express = require('express');
 const request = require('supertest');

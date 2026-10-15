@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
+process.env.KNOWLEDGE_TENANT_INGEST = 'true';
 const URL = process.env.KNOWLEDGE_TEST_PG_URL;
 const d = URL ? describe : describe.skip;
 

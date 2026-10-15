@@ -4,6 +4,7 @@
  * la salida y acciones con destino fijado en servidor.
  */
 process.env.KNOWLEDGE_STORE = 'memory';
+process.env.KNOWLEDGE_TENANT_INGEST = 'true'; // estos tests ejercitan el RAG privado de tenants (apagado por defecto)
 process.env.AI_PROVIDER = 'extractive';
 process.env.NATIVE_APPS_PROBE = 'false'; // sin sondeo de red real en los tests
 

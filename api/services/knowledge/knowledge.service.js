@@ -111,6 +111,12 @@ class KnowledgeService {
         return { id, version: doc.version, status: doc.status, chunks: chunks.length, quarantine_reason: doc.quarantine_reason };
     }
 
+    /**
+     * ¿Se admite conocimiento privado de tenants? Por defecto NO: el asistente responde sólo con el conocimiento
+     * público sembrado (global, PUBLIC). Activable con KNOWLEDGE_TENANT_INGEST=true.
+     */
+    tenantIngestEnabled() { return process.env.KNOWLEDGE_TENANT_INGEST === 'true'; }
+
     /** Busca solo en lo que el principal puede ver. */
     async search(principal, query, { topK = 4 } = {}) {
         if (!principal || !query) return [];
@@ -124,7 +130,9 @@ class KnowledgeService {
             ? await this.store.candidatos(principal.tenantId, terminos, CANDIDATOS)
             : await this.store.chunksVisibles(principal.tenantId);
         const stats = fts ? await this.store.estadisticas(principal.tenantId, terminos) : null;
-        const allowed = visibles.filter((c) => canAccess(principal, c));
+        // Con la ingesta de tenants apagada, lo que ya hubiera de tenants (anterior a la política) tampoco se recupera.
+        const soloGlobal = !this.tenantIngestEnabled();
+        const allowed = visibles.filter((c) => (!soloGlobal || c.tenant_id == null) && canAccess(principal, c));
         if (!allowed.length) return [];
 
         // 2) BM25 (+ vector con Reciprocal Rank Fusion si hay embedder). Se descartan
