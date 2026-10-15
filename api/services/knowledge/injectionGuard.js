@@ -4,6 +4,8 @@
  */
 // Cuantificadores acotados en todos los patrones: el texto de los documentos es
 // entrada no confiable y no debe poder provocar backtracking polinómico (ReDoS).
+const { normalizar } = require('../../utils/textNormalize');
+
 const PATTERNS = [
     /ignor(?:e|a|ar)\s{1,5}(?:all|todas?|las|the|previous|anteriores|prior)[^.\n]{0,40}(?:instruction|instrucci|polic|pol[ií]tic|rule|regla)/i,
     /disregard\s{1,5}(?:all|any|the|previous)[^.\n]{0,40}(?:instruction|polic|rule)/i,
@@ -19,7 +21,11 @@ const PATTERNS = [
 function scan(text) {
     const hits = [];
     const s = String(text || '');
-    for (const re of PATTERNS) if (re.test(s)) hits.push(re.source.slice(0, 40));
+    // Se evalúa el texto tal cual Y normalizado (sin zero-width/bidi, homoglifos pasados a latino): así un documento
+    // con «ign\u200bora» o letras cirílicas no esquiva la cuarentena.
+    const n = normalizar(s);
+    for (const re of PATTERNS) if (re.test(s) || re.test(n)) hits.push(re.source.slice(0, 40));
+    if (/[\u202a-\u202e\u2066-\u2069]/.test(s)) hits.push('control bidireccional');
     return { suspicious: hits.length > 0, hits };
 }
 

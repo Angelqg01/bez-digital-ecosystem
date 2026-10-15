@@ -14,7 +14,7 @@ const ARGS = { system: 's', messages: [{ role: 'user', content: 'hola' }], maxTo
 const ENV = { ...process.env };
 afterEach(() => { process.env = { ...ENV }; delete global.fetch; });
 
-it('Anthropic: modelo claude-sonnet-5 por defecto, cabeceras correctas y texto en streaming', async () => {
+it('Anthropic: modelo claude-sonnet-5-5 por defecto, cabeceras correctas y texto en streaming', async () => {
     delete process.env.AI_PROVIDER; delete process.env.AI_MODEL_ANTHROPIC;
     process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
     global.fetch = jest.fn(async (url, init) => ({ ok: true, body: sse([
@@ -34,7 +34,7 @@ it('Anthropic: modelo claude-sonnet-5 por defecto, cabeceras correctas y texto e
     const [url, init] = global.fetch.mock.calls[0];
     expect(url).toBe('https://api.anthropic.com/v1/messages');
     expect(init.headers).toMatchObject({ 'x-api-key': 'sk-ant-test', 'anthropic-version': '2023-06-01' });
-    expect(JSON.parse(init.body)).toMatchObject({ model: 'claude-sonnet-5', stream: true, max_tokens: 50 });
+    expect(JSON.parse(init.body)).toMatchObject({ model: 'claude-sonnet-5-5', stream: true, max_tokens: 50 });
 });
 
 it('Gemini cuando solo hay su clave (la clave va en cabecera, no en la URL)', async () => {

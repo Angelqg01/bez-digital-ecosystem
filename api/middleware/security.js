@@ -47,6 +47,10 @@ function authenticateToken(req, res, next) {
         const issOk = user.iss === undefined ? !JWT_STRICT_CLAIMS : user.iss === JWT_ISSUER;
         if (!audOk || !issOk) return res.status(403).json({ error: 'Invalid or expired token' });
 
+        // Tokens que comparten secreto pero no son de sesión: el de servicio (espejo HITL → business-ops) y los de
+        // refresco no sirven para llamar a la API, ni siquiera sin iss/aud.
+        if (user.type === 'refresh' || user.role === 'service') return res.status(403).json({ error: 'Invalid or expired token' });
+
         req.user = user;
         req.pqcVerified = pqcResult.valid;
         next();

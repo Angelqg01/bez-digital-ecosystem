@@ -11,7 +11,7 @@
  */
 const logger = require('../../utils/logger');
 
-const MODELO_ANTHROPIC = () => process.env.AI_MODEL_ANTHROPIC || 'claude-sonnet-5';
+const MODELO_ANTHROPIC = () => process.env.AI_MODEL_ANTHROPIC || 'claude-sonnet-5-5';
 const MODELO_GEMINI = () => process.env.AI_MODEL_GEMINI || 'gemini-2.0-flash';
 const TIMEOUT_MS = () => Number(process.env.AI_TIMEOUT_MS || 60_000);
 
@@ -172,6 +172,13 @@ function pickProvider(forzado) {
     presupuesto.n += 1;
     return elegido;
 }
+// Cuántas veces el proveedor de pago falló y se sirvió el modo extractivo: sin esto la degradación pasa inadvertida.
+const degradaciones = { total: 0, ultimoError: null };
+function registrarDegradacion(provider, err) {
+    degradaciones.total += 1;
+    degradaciones.ultimoError = String(err.message || err).slice(0, 200);
+    logger.warn({ provider, error: degradaciones.ultimoError, degradaciones: degradaciones.total }, 'degradación del chat a modo extractivo');
+}
 function _reiniciarPresupuesto() { presupuesto.dia = ''; presupuesto.n = 0; }
 
 async function complete(args) {
@@ -180,7 +187,7 @@ async function complete(args) {
         const r = await providers[name](args);
         return { provider: name, text: r.text, usage: r.usage };
     } catch (err) {
-        logger.warn({ provider: name, error: err.message }, 'proveedor de IA falló; modo extractivo');
+        registrarDegradacion(name, err);
         const r = await providers.extractive(args);
         return { provider: 'extractive', text: r.text, usage: r.usage };
     }
@@ -214,7 +221,7 @@ async function* stream(args) {
                 yield { type: 'error', message: 'El proveedor de IA falló durante la respuesta.' };
                 return;
             }
-            logger.warn({ provider: name, error: err.message }, 'proveedor de IA falló; modo extractivo');
+            registrarDegradacion(name, err);
             name = 'extractive';
         }
     }
@@ -227,4 +234,4 @@ function modeloDe(provider) {
     return 'extractive';
 }
 
-module.exports = { _reiniciarPresupuesto, complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };
+module.exports = { degradaciones, _reiniciarPresupuesto, complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };

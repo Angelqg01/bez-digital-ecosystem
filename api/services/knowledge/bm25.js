@@ -1,3 +1,5 @@
+const { normalizar } = require('../../utils/textNormalize');
+
 /** BM25 mínimo sobre un conjunto de chunks (ya filtrado por ACL). */
 const STOP = new Set(['de', 'la', 'el', 'en', 'y', 'a', 'los', 'las', 'un', 'una', 'que', 'es', 'se', 'por', 'con', 'para', 'del', 'al', 'the', 'of', 'and', 'to', 'is', 'in', 'a',
     // Palabras de pregunta y auxiliares: no distinguen un documento de otro y diluían la consulta («¿qué es… y en qué red está?»).
@@ -15,9 +17,7 @@ function raiz(t) {
 }
 
 function tokenize(text) {
-    return String(text || '')
-        .toLowerCase()
-        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    return normalizar(text)
         .split(/[^a-z0-9]+/)
         .filter((t) => t.length > 1 && !STOP.has(t))
         .map(raiz);
