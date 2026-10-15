@@ -14,8 +14,7 @@ import PermissionPrime from '../../../_shared/PermissionPrime.jsx'
 // Ubicación en tiempo real es una función de plan de pago: sin suscripción
 // Profesional/Enterprise, ni siquiera se le pide el permiso al navegador.
 const REQUIRED_TIERS = ['professional', 'enterprise']
-import PortsMap from '../components/PortsMap'
-import { PORTS } from '../data/ports'
+import CargoMapHub from '../components/CargoMapHub'
 
 function authKey() {
   return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
@@ -95,13 +94,9 @@ const ActiveRoute = () => {
         </span>
       </div>
 
-      {/* Map */}
-      <div style={{ height: 300, position: 'relative', overflow: 'hidden', borderBottom: '1px solid var(--bz-border)' }}>
-        <PortsMap />
-        <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 500, background: 'rgba(10,14,20,0.82)', border: '1px solid var(--bz-border)', borderRadius: 8, padding: '6px 12px', pointerEvents: 'none' }}>
-          <p style={{ fontSize: 9, color: 'var(--bz-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, margin: 0 }}>Red Global de Puertos</p>
-          <p style={{ fontSize: 11, color: '#fff', fontWeight: 700, margin: 0 }}>{PORTS.length} hubs · settlement on-chain BeZhas</p>
-        </div>
+      {/* Mapa real: seguimiento, crear ruta y zonas */}
+      <div style={{ borderBottom: '1px solid var(--bz-border)' }}>
+        <CargoMapHub selectedBUid={selected} onSelect={(b) => { setSelected(b); setResult(null); setError(''); setTrackingNotice('') }} height={340} />
       </div>
 
       {/* Content */}
@@ -195,7 +190,7 @@ const ActiveRoute = () => {
           className="btn btn-primary"
           style={{ width: '100%', padding: 20 }}
           onClick={generateProof}
-          disabled={loading || !selected || !!result}
+          disabled={loading || !selected || !tx || !!result}
         >
           <QrCode size={20} />
           {loading ? 'GENERANDO PRUEBA...' : (result ? 'ENTREGADO' : 'GENERAR PRUEBA DE ENTREGA')}
