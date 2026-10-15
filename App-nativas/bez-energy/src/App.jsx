@@ -15,6 +15,7 @@ import {
 
 // Wallet login / subscribe (shared)
 import { HeaderAuthButton } from '../../_shared/BezhasAuthProvider.jsx'
+import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx'
 import useMe from './hooks/useMe'
 
 // Pages
@@ -106,6 +107,17 @@ const App = () => {
             <span>Docs</span>
           </NavLink>
         </nav>
+
+        {/* Chat de la plataforma (el mismo de www.bezhas.com), por encima de la barra inferior */}
+        <AIWorkspaceBar
+          hideAppId="app_energy"
+          bottomOffset={92}
+          suggestions={[
+            '¿Qué puede hacer BEZ Energy por mi empresa?',
+            '¿Cómo optimizo mis baterías con los precios OMIE?',
+            '¿Cómo tokenizo un parque solar?',
+          ]}
+        />
       </div>
     </Router>
   )
