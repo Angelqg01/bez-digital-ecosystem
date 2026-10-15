@@ -125,7 +125,7 @@ Decisión del propietario (2026-10-15): **no se leen documentos** (ni PDF ni DOC
 2. Endpoint equivalente en el Gateway (`x-api-key`) con el mismo principal y la misma facturación.
 3. Test que compruebe que los tres canales devuelven lo mismo para el mismo principal y nada de otro tenant.
 
-### Fase 6 — Operación (1–2 días)
+### Fase 6 — Operación (1–2 días) — HECHA en código; sin desplegar
 1. Métricas por mensaje en log JSON: `request_id`, latencia del retrieval, nº de fuentes, cobertura máxima, proveedor, abstención y degradación (sin el texto del prompt).
 2. Techo diario y rate limits con store compartido (Memorystore ya existe en la topología GCP) (H4).
 3. Kill switches por variable de entorno: `AI_PROVIDER=extractive` (ya existe), más `KNOWLEDGE_TENANT_DOCS=off` y `AI_WORKSPACE_ENABLED=false`.
@@ -149,3 +149,5 @@ Suites verdes → tests negativos de tenant → staging en Cloud Run con flag �
 
 ---
 **Fase 5 (hecha):** `services/knowledge/search.js` es el punto único para canales con api-key. Herramienta MCP `bezhas_knowledge_search` (scope `token`, desde Starter, nivel de riesgo 0, gratuita) y `GET /api/gateway/v1/knowledge/search?q=` (scope `token`, 60/min por api-key). Principal `app:<id>` sacado de la api-key y su plan; los argumentos sólo admiten `pregunta` y `limite`. Test de paridad: chat, MCP y REST devuelven los mismos documentos para la misma pregunta. Alcance: sólo documentación pública sembrada (la ingesta de tenants está apagada). No cubre onboarding/API Profile (plan aparte).
+
+**Fase 6 (hecha):** `services/ai-workspace/telemetry.js` (métricas Prometheus + una línea de log JSON por mensaje, sin texto), techo diario de IA compartido por Redis (`gateway.techoCompartidoLibre`), límite por usuario compartido (`utils/sharedRateLimitStore.js`, cae a memoria sin Redis), interruptor `AI_WORKSPACE_ENABLED=false`, y runbooks en `docs/runbooks/BEZHAS-AI-DEPLOYMENT.md` y `BEZHAS-AI-ROLLBACK.md`. Pendiente: crear las alertas y el dashboard, prueba de carga, y comprobar con Redis real (Memorystore) que los límites se comparten entre instancias.

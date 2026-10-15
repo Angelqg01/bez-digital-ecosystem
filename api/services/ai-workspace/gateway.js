@@ -10,6 +10,8 @@
  * Si el proveedor falla antes de empezar, se degrada al modo extractivo.
  */
 const logger = require('../../utils/logger');
+const { checkRateLimit } = require('../../cache/redis');
+const telemetria = require('./telemetry');
 
 const MODELO_ANTHROPIC = () => process.env.AI_MODEL_ANTHROPIC || 'claude-sonnet-5-5';
 const MODELO_GEMINI = () => process.env.AI_MODEL_GEMINI || 'gemini-2.0-flash';
@@ -158,6 +160,20 @@ function hayPresupuesto() {
     return presupuesto.n < techo;
 }
 
+/**
+ * Techo diario COMPARTIDO entre instancias (Redis, un contador por día UTC). El contador en memoria de pickProvider sigue
+ * como red de seguridad por instancia. Si Redis no está o no responde se deja pasar y manda el local. Devuelve false si el
+ * techo global ya se alcanzó.
+ */
+async function techoCompartidoLibre(check = checkRateLimit) {
+    const techo = TECHO_DIARIO();
+    if (!techo) return true;
+    try {
+        const r = await check(`ai:daily:${new Date().toISOString().slice(0, 10)}`, techo, 90_000);
+        return r.degraded ? true : r.allowed;
+    } catch (_) { return true; }
+}
+
 function pickProvider(forzado) {
     const forced = forzado || process.env.AI_PROVIDER;
     const elegido = forced && providers[forced] ? forced
@@ -177,12 +193,14 @@ const degradaciones = { total: 0, ultimoError: null };
 function registrarDegradacion(provider, err) {
     degradaciones.total += 1;
     degradaciones.ultimoError = String(err.message || err).slice(0, 200);
+    telemetria.degradacion(provider);
     logger.warn({ provider, error: degradaciones.ultimoError, degradaciones: degradaciones.total }, 'degradación del chat a modo extractivo');
 }
 function _reiniciarPresupuesto() { presupuesto.dia = ''; presupuesto.n = 0; }
 
 async function complete(args) {
-    const name = pickProvider(args.provider);
+    let name = pickProvider(args.provider);
+    if (name !== 'extractive' && !(await techoCompartidoLibre())) { logger.warn('techo diario global (compartido) de IA alcanzado; modo extractivo'); name = 'extractive'; }
     try {
         const r = await providers[name](args);
         return { provider: name, text: r.text, usage: r.usage };
@@ -201,6 +219,7 @@ async function complete(args) {
  */
 async function* stream(args) {
     let name = pickProvider(args.provider);
+    if (name !== 'extractive' && !(await techoCompartidoLibre())) { logger.warn('techo diario global (compartido) de IA alcanzado; modo extractivo'); name = 'extractive'; }
     let started = false;
     for (let attempt = 0; attempt < 2; attempt++) {
         try {
@@ -234,4 +253,4 @@ function modeloDe(provider) {
     return 'extractive';
 }
 
-module.exports = { degradaciones, _reiniciarPresupuesto, complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };
+module.exports = { techoCompartidoLibre, degradaciones, _reiniciarPresupuesto, complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };

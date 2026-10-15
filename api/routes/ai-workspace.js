@@ -9,6 +9,8 @@
  */
 const express = require('express');
 const { validarCitas } = require('../services/ai-workspace/citations');
+const telemetria = require('../services/ai-workspace/telemetry');
+const { SharedRateLimitStore } = require('../utils/sharedRateLimitStore');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const { authenticateToken } = require('../middleware/security');
@@ -54,8 +56,18 @@ const limiter = rateLimit({
 // Límite estricto por usuario para lo que cuesta IA.
 const aiLimiter = rateLimit({
     windowMs: 60_000, max: Number(process.env.AI_WORKSPACE_RATE_LIMIT || 20), keyGenerator: porUsuario,
+    store: new SharedRateLimitStore({ prefix: 'rl:ai-chat' }), // compartido entre instancias de Cloud Run (memoria local si no hay Redis)
     standardHeaders: true, legacyHeaders: false, message: { error: 'Demasiadas solicitudes, espera un momento.' },
 });
+
+/**
+ * Interruptor de apagado del chat: AI_WORKSPACE_ENABLED=false responde 503 a los mensajes (no a las lecturas: acciones,
+ * planes, historial). Es para incidentes (fuga entre tenants, documento envenenado, coste desbocado). Para dejar el chat
+ * funcionando SIN modelo de pago, AI_PROVIDER=extractive. Se aplica con una revisión nueva de Cloud Run.
+ */
+const chatApagado = (req, res, next) => (process.env.AI_WORKSPACE_ENABLED === 'false'
+    ? res.status(503).json({ error: 'El asistente está en mantenimiento. Vuelve a intentarlo más tarde.', code: 'AI_DISABLED' })
+    : next());
 
 router.use(ipLimiter);
 router.use(authenticateToken);
@@ -118,12 +130,14 @@ async function prepareTurn(principal, body) {
     const convId = validConversationId(body?.conversationId) || crypto.randomUUID();
     const conv = await conversations.getOrCreate(principal.userId, convId);
 
+    const t0 = process.hrtime.bigint();
     const { context, sources } = insp.bloqueado ? { context: '', sources: [] } : await knowledge.buildContext(principal, message, { topK: 4 });
+    const retrieval = insp.bloqueado ? null : telemetria.retrieval({ ms: Number(process.hrtime.bigint() - t0) / 1e6, sources, context });
     const history = conv.turns.slice(-MAX_TURNS);
     const userContent = context ? `${message}\n\n<contexto_recuperado>\n${context}\n</contexto_recuperado>` : message;
 
     return {
-        message, convId, conv, sources, context,
+        message, convId, conv, sources, context, retrieval, inicio: Date.now(),
         antes: insp.antes,
         bloqueado: insp.bloqueado,
         // Siguiente paso y consejo de seguridad: texto fijo del servidor a partir del mensaje y del plan (nunca del modelo).
@@ -136,7 +150,7 @@ async function prepareTurn(principal, body) {
 }
 
 // POST /api/ai-workspace/chat  (respuesta completa)
-router.post('/chat', aiLimiter, async (req, res) => {
+router.post('/chat', chatApagado, aiLimiter, async (req, res) => {
     const principal = await principalDe(req, res);
     if (!principal) return;
     let reserva = null;
@@ -146,6 +160,7 @@ router.post('/chat', aiLimiter, async (req, res) => {
             // Respuesta fija: sin modelo, sin cuota y con el mensaje ya redactado en el historial.
             const reply = turn.antes + turn.bloqueado.respuesta;
             await conversations.append(turn.conv, turn.message, reply);
+            telemetria.turno({ outcome: 'blocked', provider: 'shield', ms: Date.now() - turn.inicio, userId: principal.userId, tenant: principal.tenantId });
             return res.json({ conversationId: turn.convId, reply, sources: [], actions: turn.actions, provider: 'shield', flagged: true, blocked: true, usage: null });
         }
         // Lo paga el plan del cliente: sin plan o sin cuota → 402 antes de llamar al modelo.
@@ -158,10 +173,15 @@ router.post('/chat', aiLimiter, async (req, res) => {
         const consumo = await facturacion.liquidar(reserva, { ...usage, provider });
         const respuesta = turn.antes + safeText + turn.despues;
         await conversations.append(turn.conv, turn.message, respuesta);
+        telemetria.turno({ outcome: 'ok', provider, ms: Date.now() - turn.inicio, retrieval: turn.retrieval, userId: principal.userId, tenant: principal.tenantId, tokens: usage && { entrada: usage.inputTokens, salida: usage.outputTokens } });
         res.json({ conversationId: turn.convId, reply: respuesta, sources: turn.sources, actions: turn.actions, provider, flagged: turn.flagged, usage: consumo });
     } catch (err) {
         if (reserva && !err.status) await facturacion.anular(reserva).catch(() => {});
-        if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, upgradeActionId: err.upgradeActionId, limit: err.limit });
+        if (err.status) {
+            telemetria.turno({ outcome: err.status === 402 ? 'no_plan' : 'rechazado', ms: 0, userId: principal.userId, tenant: principal.tenantId });
+            return res.status(err.status).json({ error: err.message, code: err.code, upgradeActionId: err.upgradeActionId, limit: err.limit });
+        }
+        telemetria.turno({ outcome: 'error', ms: 0, userId: principal.userId, tenant: principal.tenantId });
         logger.error({ error: err.message }, 'ai-workspace chat');
         res.status(500).json({ error: 'No se pudo procesar el mensaje' });
     }
@@ -240,13 +260,19 @@ async function responderEnStream(req, res, principal, turn) {
         } else if (!text && turn.anular) {
             await turn.anular().catch(() => {});
         }
+        telemetria.turno({
+            outcome: controller.signal.aborted ? 'aborted' : turn.bloqueado ? 'blocked' : !text ? 'error' : 'ok',
+            canal: principal.roles && principal.roles.includes('ANON') ? 'publico' : 'chat',
+            provider: turn.bloqueado ? 'shield' : provider || 'none', ms: Date.now() - (turn.inicio || Date.now()), retrieval: turn.retrieval,
+            userId: principal.userId, tenant: principal.tenantId, tokens: usage && { entrada: usage.inputTokens, salida: usage.outputTokens },
+        });
         if (!res.writableEnded) { send('done', { conversationId: turn.convId, length: safeText.length, ...(consumo ? { usage: consumo } : {}), ...(turn.done || {}) }); res.end(); }
     }
     return safeText;
 }
 
 // POST /api/ai-workspace/chat/stream  (Server-Sent Events)
-router.post('/chat/stream', aiLimiter, async (req, res) => {
+router.post('/chat/stream', chatApagado, aiLimiter, async (req, res) => {
     const principal = await principalDe(req, res);
     if (!principal) return;
 
@@ -392,7 +418,7 @@ publicRouter.get('/apps', (req, res) => {
     res.json({ apps: actionsSvc.listPublicApps() });
 });
 
-publicRouter.post('/chat/stream', async (req, res) => {
+publicRouter.post('/chat/stream', chatApagado, async (req, res) => {
     const raw = typeof req.body?.message === 'string' ? req.body.message : '';
     if (raw.length > MAX_MENSAJE_ANONIMO) return res.status(413).json({ error: `Máximo ${MAX_MENSAJE_ANONIMO} caracteres sin iniciar sesión` });
 
@@ -430,12 +456,15 @@ publicRouter.post('/chat/stream', async (req, res) => {
 
     try {
         await sembrar();
+        const inicio = Date.now();
+        const t0 = process.hrtime.bigint();
         const { context, sources } = await knowledge.buildContext(anon, message, { topK: 4 });
+        const retrieval = telemetria.retrieval({ ms: Number(process.hrtime.bigint() - t0) / 1e6, sources, context });
         const userContent = context ? `${message}\n\n<contexto_recuperado>\n${context}\n</contexto_recuperado>` : message;
         const turn = {
             // Sin sesión no hay plan que pague un modelo: la pregunta gratis se responde en modo
             // extractivo (los fragmentos de la documentación pública), con coste de IA cero.
-            convId: null, sources, context, maxTokens: 500, provider: 'extractive',
+            convId: null, sources, context, maxTokens: 500, provider: 'extractive', retrieval, inicio,
             antes: insp.antes,
             despues: guide.siguientePaso(anon, message).texto,
             actions: actionsSvc.suggestActions(anon, message),
