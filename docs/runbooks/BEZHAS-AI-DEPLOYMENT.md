@@ -14,6 +14,7 @@ Servicio: `bezhas-api` en Cloud Run (`europe-west1`, proyecto `bezhas-prod` por 
 | `AI_WORKSPACE_ENABLED` | `true` | `false` → 503 `AI_DISABLED` en los mensajes (chat, stream y pregunta gratis). Las lecturas siguen |
 | `AI_GLOBAL_DAILY_CALLS` | `20000` | Techo diario de llamadas de pago a IA, **compartido por todas las instancias si hay Redis** (`REDIS_URL`); además cuenta cada instancia |
 | `AI_WORKSPACE_RATE_LIMIT` | `20` | Mensajes/min por usuario (compartido vía Redis; en memoria local si no hay) |
+| `OLLAMA_URL` / `AI_MODEL_OLLAMA` / `OLLAMA_NUM_CTX` | `http://127.0.0.1:11434` / `qwen3.5:4b` / `4096` | Modelo local, **sólo** con `AI_PROVIDER=ollama`. La URL debe ser privada; si Ollama falla se sirve el modo extractivo, nunca la nube. Ollama no debe exponerse a Internet |
 | `KNOWLEDGE_RETRIEVAL` | (vacío) | `fts` = prefiltro en Postgres con índice GIN. Requiere migración 065 |
 | `KNOWLEDGE_CANDIDATES` | `300` | Candidatos que reordena BM25 en modo `fts` |
 | `KNOWLEDGE_TENANT_INGEST` | (vacío = apagada) | `true` reactiva el RAG privado de clientes. **Mantener apagado** (política anti prompt injection) |

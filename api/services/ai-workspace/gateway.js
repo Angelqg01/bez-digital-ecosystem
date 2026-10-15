@@ -8,6 +8,10 @@
  * Orden: AI_PROVIDER explícito > Anthropic (ANTHROPIC_API_KEY) > Gemini
  * (GEMINI_API_KEY) > extractivo local (devuelve los fragmentos recuperados).
  * Si el proveedor falla antes de empezar, se degrada al modo extractivo.
+ *
+ * `ollama` (modelo local) SOLO se usa si AI_PROVIDER=ollama: nunca se elige solo. Va a una URL privada (loopback, red
+ * privada o nombre interno) y, si falla, se degrada al modo extractivo: jamás a un proveedor en la nube, porque eso
+ * sacaría los datos del cliente del servidor sin que nadie lo haya decidido.
  */
 const logger = require('../../utils/logger');
 const { checkRateLimit } = require('../../cache/redis');
@@ -16,6 +20,73 @@ const telemetria = require('./telemetry');
 const MODELO_ANTHROPIC = () => process.env.AI_MODEL_ANTHROPIC || 'claude-sonnet-5-5';
 const MODELO_GEMINI = () => process.env.AI_MODEL_GEMINI || 'gemini-2.0-flash';
 const TIMEOUT_MS = () => Number(process.env.AI_TIMEOUT_MS || 60_000);
+
+// ── Modelo local (Ollama) ────────────────────────────────────────────────────
+const OLLAMA_URL = () => (process.env.OLLAMA_URL || 'http://127.0.0.1:11434').replace(/\/+$/, '');
+const MODELO_OLLAMA = () => process.env.AI_MODEL_OLLAMA || 'qwen3.5:4b';
+const OLLAMA_NUM_CTX = () => Number(process.env.OLLAMA_NUM_CTX || 4096);
+const OLLAMA_KEEP_ALIVE = () => process.env.OLLAMA_KEEP_ALIVE || '5m';
+const OLLAMA_TEMPERATURE = () => Number(process.env.OLLAMA_TEMPERATURE ?? 0.2);
+
+/** Loopback, redes privadas (RFC 1918), `.internal`/`.local` o un nombre sin puntos (servicio de Docker). Nada público. */
+function esHostPrivado(host) {
+    const h = String(host || '').toLowerCase().replace(/^\[|\]$/g, '');
+    if (!h) return false;
+    if (h === 'localhost' || h === '::1' || /^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h)) return true;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+    if (/\.(internal|local|localhost)$/.test(h)) return true;
+    return !h.includes('.') && !h.includes(':'); // `ollama`, `bqte-ollama`…
+}
+
+function urlOllama() {
+    let u;
+    try { u = new URL(OLLAMA_URL()); } catch (_) { throw new Error('ollama: OLLAMA_URL no es una URL válida'); }
+    if (!/^https?:$/.test(u.protocol) || !esHostPrivado(u.hostname)) throw new Error('ollama: OLLAMA_URL debe apuntar a una dirección privada (nunca a Internet)');
+    return u.origin;
+}
+
+const aprox = (t) => Math.ceil(String(t || '').length / 3); // estimación conservadora de tokens
+
+/**
+ * Cabe en el contexto: si no, Ollama recorta por el principio SIN avisar y se perdería el system prompt. Se descartan los
+ * turnos más antiguos del historial; si ni así cabe, se falla (y se degrada al modo extractivo).
+ */
+function ajustarContexto({ system, messages, maxTokens }) {
+    const presupuesto = OLLAMA_NUM_CTX() - maxTokens - 64;
+    const coste = (ms) => aprox(system) + ms.reduce((n, m) => n + aprox(m.content) + 4, 0);
+    const msgs = [...messages];
+    while (msgs.length > 1 && coste(msgs) > presupuesto) msgs.shift();
+    if (coste(msgs) > presupuesto) throw new Error('ollama: el mensaje y el contexto no caben en la ventana del modelo local');
+    return msgs;
+}
+
+function ollamaBody(args, stream) {
+    return JSON.stringify({
+        model: MODELO_OLLAMA(),
+        stream,
+        think: false, // los modelos con razonamiento (qwen3.x) no deben gastar el presupuesto de salida pensando
+        keep_alive: OLLAMA_KEEP_ALIVE(),
+        messages: [{ role: 'system', content: args.system }, ...ajustarContexto(args)],
+        options: { num_ctx: OLLAMA_NUM_CTX(), num_predict: args.maxTokens, temperature: OLLAMA_TEMPERATURE() },
+    });
+}
+
+/** Recorre un cuerpo NDJSON (una línea JSON por evento). */
+async function* eventosNDJSON(body) {
+    const decoder = new TextDecoder();
+    let buf = '';
+    for await (const trozo of body) {
+        buf += decoder.decode(trozo, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n')) !== -1) {
+            const linea = buf.slice(0, i).trim();
+            buf = buf.slice(i + 1);
+            if (!linea) continue;
+            try { yield JSON.parse(linea); } catch (_) { /* línea no JSON: se ignora */ }
+        }
+    }
+    if (buf.trim()) { try { yield JSON.parse(buf.trim()); } catch (_) { /* resto no JSON */ } }
+}
 
 function extractiveText({ contextText }) {
     if (!contextText) {
@@ -96,6 +167,15 @@ const providers = {
             usage: { model: MODELO_GEMINI(), inputTokens: json.usageMetadata?.promptTokenCount || 0, outputTokens: json.usageMetadata?.candidatesTokenCount || 0 },
         };
     },
+    async ollama(args) {
+        const res = await fetch(`${urlOllama()}/api/chat`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: ollamaBody(args, false), signal: senal(args.signal) });
+        if (!res.ok) throw await fallo(res, 'ollama');
+        const json = await res.json();
+        return {
+            text: json.message?.content || '',
+            usage: { model: `local:${MODELO_OLLAMA()}`, inputTokens: json.prompt_eval_count || 0, outputTokens: json.eval_count || 0 },
+        };
+    },
     async extractive(args) { return { text: extractiveText(args), usage: { model: 'extractive', inputTokens: 0, outputTokens: 0 } }; },
 };
 
@@ -136,6 +216,18 @@ const streamers = {
                 usage.inputTokens = ev.usageMetadata.promptTokenCount || usage.inputTokens;
                 usage.outputTokens = ev.usageMetadata.candidatesTokenCount || usage.outputTokens;
             }
+        }
+        yield { usage };
+    },
+    async *ollama(args) {
+        const res = await fetch(`${urlOllama()}/api/chat`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: ollamaBody(args, true), signal: senal(args.signal) });
+        if (!res.ok) throw await fallo(res, 'ollama');
+        const usage = { model: `local:${MODELO_OLLAMA()}`, inputTokens: 0, outputTokens: 0 };
+        for await (const ev of eventosNDJSON(res.body)) {
+            if (ev.error) throw new Error(`ollama: ${String(ev.error).slice(0, 200)}`);
+            const texto = ev.message?.content || '';
+            if (texto) yield texto;
+            if (ev.done) { usage.inputTokens = ev.prompt_eval_count || 0; usage.outputTokens = ev.eval_count || 0; }
         }
         yield { usage };
     },
@@ -180,7 +272,7 @@ function pickProvider(forzado) {
         : process.env.ANTHROPIC_API_KEY ? 'anthropic'
         : process.env.GEMINI_API_KEY ? 'gemini'
         : 'extractive';
-    if (elegido === 'extractive') return elegido;
+    if (elegido === 'extractive' || elegido === 'ollama') return elegido; // el modelo local no cuesta: no cuenta para el techo
     if (!hayPresupuesto()) {
         logger.warn({ techo: TECHO_DIARIO() }, 'techo diario global de IA alcanzado; modo extractivo');
         return 'extractive';
@@ -250,7 +342,8 @@ async function* stream(args) {
 function modeloDe(provider) {
     if (provider === 'anthropic') return MODELO_ANTHROPIC();
     if (provider === 'gemini') return MODELO_GEMINI();
+    if (provider === 'ollama') return `local:${MODELO_OLLAMA()}`;
     return 'extractive';
 }
 
-module.exports = { techoCompartidoLibre, degradaciones, _reiniciarPresupuesto, complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };
+module.exports = { esHostPrivado, eventosNDJSON, ajustarContexto, techoCompartidoLibre, degradaciones, _reiniciarPresupuesto, complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };
