@@ -120,7 +120,7 @@ Decisión del propietario (2026-10-15): **no se leen documentos** (ni PDF ni DOC
 4. **RAG sólo con el conocimiento público sembrado.** `POST /api/ai-workspace/knowledge` responde 403 `TENANT_INGEST_DISABLED` (también con `global:true`), la búsqueda ignora cualquier documento de tenant que ya estuviera guardado, y se quitó el botón del clip del chat. Se reactiva con `KNOWLEDGE_TENANT_INGEST=true`; `DELETE` sigue disponible para limpiar lo anterior.
 5. Endpoint único: `POST /api/nft-assets` (cuerpo binario, `x-file-name` opcional). Desactivable con `NFT_UPLOADS_ENABLED=false`; sin credenciales de Pinata responde 503 (no hay modo simulado).
 
-### Fase 5 — Un solo Knowledge Plane para Web, MCP y API (2 días)
+### Fase 5 — Un solo Knowledge Plane para Web, MCP y API (2 días) — HECHA en código
 1. Herramienta MCP de solo lectura `bezhas_knowledge_search` en `mcp-gateway.js`. Usa `knowledge.search` con el principal derivado del token OAuth/api-key, nunca de los argumentos.
 2. Endpoint equivalente en el Gateway (`x-api-key`) con el mismo principal y la misma facturación.
 3. Test que compruebe que los tres canales devuelven lo mismo para el mismo principal y nada de otro tenant.
@@ -146,3 +146,6 @@ Suites verdes → tests negativos de tenant → staging en Cloud Run con flag �
 2. Aprobar que `JWT_STRICT_CLAIMS=true` cierre las sesiones con tokens antiguos.
 3. Aprobar la migración 065 en el Cloud SQL de producción y, después, `node scripts/knowledge-reindex.js`. Recordatorio: 049–051 siguen sin aplicar.
 4. Para la Fase 7: el hardware real del host de inferencia (GPU, VRAM, RAM, SO, ubicación).
+
+---
+**Fase 5 (hecha):** `services/knowledge/search.js` es el punto único para canales con api-key. Herramienta MCP `bezhas_knowledge_search` (scope `token`, desde Starter, nivel de riesgo 0, gratuita) y `GET /api/gateway/v1/knowledge/search?q=` (scope `token`, 60/min por api-key). Principal `app:<id>` sacado de la api-key y su plan; los argumentos sólo admiten `pregunta` y `limite`. Test de paridad: chat, MCP y REST devuelven los mismos documentos para la misma pregunta. Alcance: sólo documentación pública sembrada (la ingesta de tenants está apagada). No cubre onboarding/API Profile (plan aparte).
