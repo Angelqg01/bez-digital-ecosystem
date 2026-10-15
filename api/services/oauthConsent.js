@@ -41,6 +41,9 @@ const crypto = require('crypto');
 const { query } = require('../db/pool');
 const { sha256Hex, tokenAleatorio, verificarPkce } = require('./oauthTokens');
 const { verificarMembresia, organizacionesDe, LoginError } = require('./onboardingLogin');
+const { ethers } = require('ethers');
+const { issueNonce, consumeNonce, extractNonce, buildLoginMessage } = require('../utils/walletNonce');
+const { generateBezhasId } = require('../lib/bezhasId');
 const logger = require('../utils/logger');
 
 const TTL_CONSENTIMIENTO_MIN = parseInt(process.env.OAUTH_CONSENT_TTL_MIN || '10', 10);
@@ -195,6 +198,207 @@ async function identificar(sessionToken, { email, password }) {
     };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  Entrar con wallet y dar de alta al cliente nuevo sin salir del flujo
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Antes, quien llegaba desde ChatGPT o Codex sin cuenta de BeZhas con
+// contraseña se quedaba en la pantalla de login sin salida: el conector no
+// podía autorizarse y la IA no veía ninguna herramienta. Ahora puede:
+//   · entrar firmando con su wallet (mismo reto nonce + firma que /auth/login),
+//   · o crear la cuenta aquí mismo,
+//   · y, si no pertenece a ninguna organización, crear la suya como owner.
+// Los tres pasos comparten las reglas del login: sesión pendiente y vigente,
+// intentos limitados por sesión y ningún dato del usuario en el mensaje de
+// error salvo lo imprescindible.
+
+const MIN_PASSWORD = 8;
+
+function _exigirActiva(f) {
+    if (f.status !== 'pendiente' || new Date(f.expires_at).getTime() <= Date.now()) {
+        throw new OAuthConsentError(
+            'Esta autorización ya no está activa. Vuelve a intentar la conexión desde tu asistente.',
+            'invalid_session', 409
+        );
+    }
+    if (f.intentos_login >= MAX_INTENTOS) {
+        throw new OAuthConsentError('Demasiados intentos. Pide al asistente que reinicie la conexión.', 'too_many_attempts', 429);
+    }
+}
+
+/** Suma un intento fallido; al agotarlos, la sesión deja de servir. */
+async function _contarFallo(f, motivo) {
+    const { rows } = await query(
+        `UPDATE oauth_authorization_codes SET intentos_login = intentos_login + 1
+          WHERE id = $1 RETURNING intentos_login`,
+        [f.id]
+    );
+    const gastados = rows[0]?.intentos_login ?? MAX_INTENTOS;
+    if (gastados >= MAX_INTENTOS) {
+        await query(`UPDATE oauth_authorization_codes SET status = 'denegado' WHERE id = $1`, [f.id]);
+    }
+    logger.warn({ oauthCodeId: f.id, intentos: gastados, motivo }, 'Identificación fallida en consentimiento OAuth');
+    return gastados;
+}
+
+async function _fijarUsuario(f, usuario, via) {
+    await query(
+        `UPDATE oauth_authorization_codes SET user_id = $2, intentos_login = 0 WHERE id = $1`,
+        [f.id, usuario.id]
+    );
+    logger.info({ oauthCodeId: f.id, userId: usuario.id, via }, 'Identificación correcta en consentimiento OAuth');
+}
+
+const _mensajeWallet = (address, nonce) => `${buildLoginMessage(address, nonce)}\npurpose: autorizar un conector de IA en BeZhas`;
+
+/** Reto para firmar con la wallet: un nonce de un solo uso para esa dirección. */
+async function retoWallet(sessionToken, address) {
+    const f = await _fila(sessionToken);
+    _exigirActiva(f);
+    if (typeof address !== 'string' || !ethers.isAddress(address)) {
+        throw new OAuthConsentError('Dirección de wallet no válida.', 'invalid_request', 400);
+    }
+    const { nonce } = await issueNonce(address);
+    return { message: _mensajeWallet(address, nonce) };
+}
+
+/**
+ * Identifica por firma. Si la wallet no tiene cuenta, se crea —igual que hace
+ * /auth/login—: la firma demuestra que la persona controla esa dirección, que
+ * es todo lo que una cuenta por wallet necesita.
+ */
+async function identificarConWallet(sessionToken, { address, signature, message }) {
+    const f = await _fila(sessionToken);
+    _exigirActiva(f);
+    if (typeof address !== 'string' || !ethers.isAddress(address)
+        || typeof signature !== 'string' || typeof message !== 'string') {
+        throw new OAuthConsentError('Firma no válida.', 'invalid_request', 400);
+    }
+
+    let firmante = null;
+    try { firmante = ethers.verifyMessage(message, signature); } catch (_) { firmante = null; }
+    const nonce = extractNonce(message);
+    // El mensaje tiene que ser EXACTAMENTE el que emitió el reto: así una firma
+    // hecha para otra cosa no sirve para autorizar un conector.
+    const valida = firmante && firmante.toLowerCase() === address.toLowerCase()
+        && nonce && message === _mensajeWallet(address, nonce)
+        && (await consumeNonce(address)) === nonce;
+    if (!valida) {
+        const gastados = await _contarFallo(f, 'firma');
+        throw new OAuthConsentError(
+            gastados >= MAX_INTENTOS
+                ? 'Demasiados intentos. Esta autorización ya no sirve: reinicia la conexión desde tu asistente.'
+                : 'La firma no es válida o el reto caducó. Vuelve a pulsar «Entrar con wallet».',
+            'invalid_signature', 401
+        );
+    }
+
+    const direccion = address.toLowerCase();
+    const { rows } = await query(
+        `SELECT id, email, username FROM users
+          WHERE LOWER(wallet_address) = $1 OR LOWER(primary_wallet_address) = $1
+          ORDER BY created_at ASC LIMIT 1`,
+        [direccion]
+    );
+    let usuario = rows[0];
+    let nuevo = false;
+    if (!usuario) {
+        const { rows: creado } = await query(
+            `INSERT INTO users (wallet_address, primary_wallet_address, bezhas_id, last_login)
+             VALUES ($1, $1, $2, NOW())
+             RETURNING id, email, username`,
+            [direccion, generateBezhasId()]
+        );
+        usuario = creado[0];
+        nuevo = true;
+    }
+    await _fijarUsuario(f, usuario, nuevo ? 'wallet_nueva' : 'wallet');
+    return {
+        usuario: { id: usuario.id, nombre: usuario.username || usuario.email || `${direccion.slice(0, 6)}…${direccion.slice(-4)}` },
+        nuevo,
+        organizaciones: nuevo ? [] : await organizacionesDe(usuario.id),
+    };
+}
+
+/**
+ * Alta de un cliente nuevo con correo y contraseña. La cuenta es la misma que
+ * crea /auth/fiat/register (wallet gestionada incluida), así que después
+ * puede entrar en www.bezhas.com con esas credenciales.
+ */
+async function registrar(sessionToken, { email, password, nombre, aceptaPrivacidad }) {
+    const f = await _fila(sessionToken);
+    _exigirActiva(f);
+    const correo = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) || correo.length > 254) {
+        throw new OAuthConsentError('Correo no válido.', 'invalid_request', 400);
+    }
+    if (typeof password !== 'string' || password.length < MIN_PASSWORD || password.length > 128) {
+        throw new OAuthConsentError(`La contraseña tiene que tener al menos ${MIN_PASSWORD} caracteres.`, 'weak_password', 400);
+    }
+    if (aceptaPrivacidad !== true) {
+        throw new OAuthConsentError('Para crear la cuenta tienes que aceptar la política de privacidad.', 'privacy_required', 400);
+    }
+    const alias = typeof nombre === 'string' && nombre.trim() ? nombre.trim().slice(0, 40) : null;
+
+    const { rows: existe } = await query('SELECT 1 FROM users WHERE LOWER(email) = $1 LIMIT 1', [correo]);
+    if (existe.length) {
+        throw new OAuthConsentError('Ese correo ya tiene cuenta en BeZhas: inicia sesión con él.', 'email_taken', 409);
+    }
+
+    const hash = await bcrypt.hash(password, 12);
+    // Dirección provisional, igual que /auth/fiat/register: la sustituye la
+    // wallet gestionada en cuanto existe la fila del usuario.
+    const provisional = `0x${crypto.createHash('sha256').update(`fiat:${correo}:${Date.now()}`).digest('hex').slice(0, 40)}`;
+    let usuario;
+    try {
+        const { rows } = await query(
+            `INSERT INTO users (wallet_address, primary_wallet_address, username, email, password_hash,
+                                auth_type, custody_mode, bezhas_id, last_login)
+             VALUES ($1, $1, $2, $3, $4, 'fiat', 'managed', $5, NOW())
+             RETURNING id, email, username`,
+            [provisional, alias, correo, hash, generateBezhasId()]
+        );
+        usuario = rows[0];
+    } catch (err) {
+        if (err.code === '23505') {
+            throw new OAuthConsentError('Ese correo ya tiene cuenta en BeZhas: inicia sesión con él.', 'email_taken', 409);
+        }
+        throw err;
+    }
+
+    // La wallet gestionada no es imprescindible para autorizar el conector:
+    // si falla, la cuenta queda creada y /auth/safe-wallet/ensure la completa.
+    try {
+        await require('./walletService').ensureFiatSafeWalletForUser(usuario.id);
+    } catch (err) {
+        logger.warn({ userId: usuario.id, error: err.message }, 'Alta OAuth sin wallet gestionada; se completará después');
+    }
+
+    logger.info({ userId: usuario.id, privacidadAceptadaEn: new Date().toISOString() }, 'Alta de cliente desde el consentimiento OAuth');
+    await _fijarUsuario(f, usuario, 'registro');
+    return { usuario: { id: usuario.id, nombre: usuario.username || usuario.email }, nuevo: true, organizaciones: [] };
+}
+
+/** Crea la organización del cliente con él como owner. Exige estar identificado. */
+async function crearOrganizacion(sessionToken, { nombre }) {
+    const f = await _fila(sessionToken);
+    _exigirActiva(f);
+    if (!f.user_id) {
+        throw new OAuthConsentError('Hay que identificarse antes de crear la organización.', 'login_required', 401);
+    }
+    const n = typeof nombre === 'string' ? nombre.trim() : '';
+    if (n.length < 2 || n.length > 120) {
+        throw new OAuthConsentError('El nombre de la organización tiene que tener entre 2 y 120 caracteres.', 'invalid_request', 400);
+    }
+    const { rows } = await query(`INSERT INTO organizations (name) VALUES ($1) RETURNING id`, [n]);
+    await query(
+        `INSERT INTO organization_members (organization_id, user_id, role) VALUES ($1, $2, 'owner')`,
+        [rows[0].id, f.user_id]
+    );
+    logger.info({ oauthCodeId: f.id, userId: f.user_id, organizationId: rows[0].id }, 'Organización creada desde el consentimiento OAuth');
+    return { organizacionId: rows[0].id, organizaciones: await organizacionesDe(f.user_id) };
+}
+
 /**
  * Aprueba la autorización: resuelve (o crea) el app_registry de la
  * organización elegida, fija el scope realmente concedido y emite el código.
@@ -302,5 +506,6 @@ async function canjearCodigo({ code, clientId, redirectUri, codeVerifier }) {
 
 module.exports = {
     crearSolicitud, obtenerSolicitud, identificar, aprobar, denegar, canjearCodigo,
+    retoWallet, identificarConWallet, registrar, crearOrganizacion,
     OAuthConsentError, SCOPES_MAXIMOS, MAX_INTENTOS,
 };

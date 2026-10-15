@@ -221,6 +221,13 @@ function paginaConsentimiento(token, nonce) {
   button.no { background:transparent; color:var(--dim); border:1px solid var(--line); font-weight:400; }
   button:disabled { opacity:.5; cursor:default; }
   .aviso { color:#f66; font-size:13px; margin-top:8px; min-height:16px; }
+  button.sec { background:transparent; color:var(--txt); border:1px solid var(--teal); }
+  .sep { display:flex; align-items:center; gap:10px; color:var(--dim); font-size:12px; margin:14px 0 8px; }
+  .sep:before, .sep:after { content:''; flex:1; border-top:1px solid var(--line); }
+  .nota { margin-top:10px; font-size:12px; }
+  a { color:var(--teal); }
+  .check { display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--dim); margin:4px 0 8px; }
+  .check input { width:auto; margin-top:3px; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -238,6 +245,35 @@ function paginaConsentimiento(token, nonce) {
       <button class="ok" type="submit" id="b-login">Entrar</button>
       <p class="aviso" id="err-login"></p>
     </form>
+    <div class="sep"><span>o</span></div>
+    <button class="sec" type="button" id="b-wallet">Entrar con wallet</button>
+    <p class="dim nota" id="n-wallet" hidden>Para entrar con wallet abre esta página en un navegador con MetaMask, Rabby u otra wallet.</p>
+    <p class="aviso" id="err-wallet"></p>
+    <p class="dim nota">¿Eres nuevo en BeZhas? <a href="#" id="a-registro">Crea tu cuenta</a> sin salir de aquí.</p>
+  </div>
+
+  <div id="registro" hidden>
+    <h1>Crea tu cuenta de BeZhas</h1>
+    <p class="dim">Con ella podrás autorizar este conector y entrar en www.bezhas.com.</p>
+    <form id="f-reg">
+      <div class="campo"><label>Nombre (opcional)</label><input type="text" id="r-nombre" maxlength="40" autocomplete="name"></div>
+      <div class="campo"><label>Correo</label><input type="email" id="r-email" autocomplete="email" required></div>
+      <div class="campo"><label>Contraseña (mínimo 8 caracteres)</label><input type="password" id="r-pass" minlength="8" maxlength="128" autocomplete="new-password" required></div>
+      <label class="check"><input type="checkbox" id="r-priv" required> Acepto la <a href="https://www.bezhas.com/privacy" target="_blank" rel="noopener noreferrer">política de privacidad</a> de BeZhas.</label>
+      <button class="ok" type="submit" id="b-reg">Crear cuenta y continuar</button>
+      <p class="aviso" id="err-reg"></p>
+    </form>
+    <p class="dim nota"><a href="#" id="a-login">Ya tengo cuenta</a></p>
+  </div>
+
+  <div id="org" hidden>
+    <h1>Crea tu organización</h1>
+    <p class="dim">El conector se vincula a una organización. Créala ahora: serás su propietario y podrás invitar a tu equipo desde el panel.</p>
+    <form id="f-org">
+      <div class="campo"><label>Nombre de la empresa u organización</label><input type="text" id="o-nombre" minlength="2" maxlength="120" required></div>
+      <button class="ok" type="submit" id="b-org">Crear y continuar</button>
+      <p class="aviso" id="err-org"></p>
+    </form>
   </div>
 
   <div id="consentir" hidden>
@@ -245,6 +281,7 @@ function paginaConsentimiento(token, nonce) {
     <p class="dim" id="c-client"></p>
     <div class="campo"><label>Organización</label><select id="c-org"></select></div>
     <div class="scopes"><div class="dim" style="margin-bottom:6px">Este conector podrá:</div><ul id="c-scopes"></ul></div>
+    <p class="dim nota" style="margin-top:-4px"><a href="#" id="a-nueva-org">Crear otra organización</a></p>
     <button class="ok" id="b-aprobar">Autorizar</button>
     <button class="no" id="b-denegar">Cancelar</button>
     <p class="aviso" id="err-consent"></p>
@@ -266,7 +303,19 @@ function paginaConsentimiento(token, nonce) {
   var API = '/oauth/authorize/' + TOKEN;
   var DESCRIPCIONES = { token: 'Consultar precio y datos del token BEZ', contracts: 'Consultar contratos y red', wallet: 'Consultar saldos de wallet' };
 
-  function show(id) { ['cargando','login','consentir','hecho','error'].forEach(function (s) { document.getElementById(s).hidden = s !== id; }); }
+  function show(id) { ['cargando','login','registro','org','consentir','hecho','error'].forEach(function (s) { document.getElementById(s).hidden = s !== id; }); }
+  function $(id) { return document.getElementById(id); }
+  function pedir(ruta, cuerpo) {
+    return fetch(API + ruta, cuerpo === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store', body: JSON.stringify(cuerpo) })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); });
+  }
+  // Tras identificarse: sin ninguna organización desde la que pueda conectar,
+  // se le ofrece crear la suya; si no, se pasa a elegir y autorizar.
+  function continuar(lista) {
+    var conectables = (lista || []).filter(function (o) { return o.puedeConectar; });
+    if (!conectables.length) { show('org'); return; }
+    show('consentir'); cargarOrganizaciones(lista);
+  }
 
   fetch(API + '/status', { cache: 'no-store' }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
     .then(function (res) {
@@ -300,9 +349,67 @@ function paginaConsentimiento(token, nonce) {
         b.disabled = false; b.textContent = 'Entrar';
         document.getElementById('l-pass').value = '';
         if (!res.ok) { document.getElementById('err-login').textContent = res.d.error_description || 'No se pudo entrar.'; return; }
-        show('consentir'); cargarOrganizaciones(res.d.organizaciones);
+        continuar(res.d.organizaciones);
       })
       .catch(function () { b.disabled = false; b.textContent = 'Entrar'; document.getElementById('err-login').textContent = 'Fallo de red.'; });
+  });
+
+  // ── Entrar con wallet: reto de un solo uso, firma en la wallet, verificación en BeZhas.
+  if (!window.ethereum) { $('n-wallet').hidden = false; $('b-wallet').disabled = true; }
+  $('b-wallet').addEventListener('click', function () {
+    var b = this, err = $('err-wallet'); err.textContent = '';
+    if (!window.ethereum) return;
+    b.disabled = true; b.textContent = 'Abriendo la wallet…';
+    var cuenta;
+    window.ethereum.request({ method: 'eth_requestAccounts' })
+      .then(function (cuentas) {
+        cuenta = cuentas && cuentas[0];
+        if (!cuenta) throw new Error('La wallet no compartió ninguna cuenta.');
+        return pedir('/wallet/reto?address=' + encodeURIComponent(cuenta));
+      })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.d.error_description || 'No se pudo preparar la firma.');
+        b.textContent = 'Firma el mensaje en tu wallet…';
+        return window.ethereum.request({ method: 'personal_sign', params: [res.d.message, cuenta] })
+          .then(function (firma) { return pedir('/wallet', { address: cuenta, signature: firma, message: res.d.message }); });
+      })
+      .then(function (res) {
+        b.disabled = false; b.textContent = 'Entrar con wallet';
+        if (!res.ok) { err.textContent = res.d.error_description || 'No se pudo entrar con la wallet.'; return; }
+        continuar(res.d.organizaciones);
+      })
+      .catch(function (e) { b.disabled = false; b.textContent = 'Entrar con wallet'; err.textContent = (e && e.message) || 'Firma cancelada.'; });
+  });
+
+  // ── Alta de cliente nuevo
+  $('a-registro').addEventListener('click', function (ev) { ev.preventDefault(); show('registro'); });
+  $('a-login').addEventListener('click', function (ev) { ev.preventDefault(); show('login'); });
+  $('f-reg').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var b = $('b-reg'); b.disabled = true; b.textContent = 'Creando la cuenta…';
+    pedir('/registro', { nombre: $('r-nombre').value, email: $('r-email').value, password: $('r-pass').value, aceptaPrivacidad: $('r-priv').checked })
+      .then(function (res) {
+        b.disabled = false; b.textContent = 'Crear cuenta y continuar';
+        $('r-pass').value = '';
+        if (!res.ok) { $('err-reg').textContent = res.d.error_description || 'No se pudo crear la cuenta.'; return; }
+        continuar(res.d.organizaciones);
+      })
+      .catch(function () { b.disabled = false; b.textContent = 'Crear cuenta y continuar'; $('err-reg').textContent = 'Fallo de red.'; });
+  });
+
+  // ── Organización propia
+  $('a-nueva-org').addEventListener('click', function (ev) { ev.preventDefault(); show('org'); });
+  $('f-org').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var b = $('b-org'); b.disabled = true; b.textContent = 'Creando…';
+    pedir('/organizacion', { nombre: $('o-nombre').value })
+      .then(function (res) {
+        b.disabled = false; b.textContent = 'Crear y continuar';
+        if (!res.ok) { $('err-org').textContent = res.d.error_description || 'No se pudo crear la organización.'; return; }
+        show('consentir'); cargarOrganizaciones(res.d.organizaciones);
+        $('c-org').value = res.d.organizacionId;
+      })
+      .catch(function () { b.disabled = false; b.textContent = 'Crear y continuar'; $('err-org').textContent = 'Fallo de red.'; });
   });
 
   document.getElementById('b-aprobar').addEventListener('click', function () {
@@ -361,6 +468,42 @@ router.post('/authorize/:token([0-9a-f]{64})/login', loginLimiter, async (req, r
         const { email, password } = req.body || {};
         const r = await oauthConsent.identificar(req.params.token, { email, password });
         res.json({ organizaciones: r.organizaciones });
+    } catch (err) { _manejarErrorConsentimiento(err, res); }
+});
+
+// Reto para entrar con wallet: nonce de un solo uso ligado a esa dirección.
+router.get('/authorize/:token([0-9a-f]{64})/wallet/reto', loginLimiter, async (req, res) => {
+    try {
+        res.json(await oauthConsent.retoWallet(req.params.token, String(req.query.address || '')));
+    } catch (err) { _manejarErrorConsentimiento(err, res); }
+});
+
+router.post('/authorize/:token([0-9a-f]{64})/wallet', loginLimiter, async (req, res) => {
+    try {
+        const { address, signature, message } = req.body || {};
+        const r = await oauthConsent.identificarConWallet(req.params.token, { address, signature, message });
+        res.json({ organizaciones: r.organizaciones, nuevo: r.nuevo });
+    } catch (err) { _manejarErrorConsentimiento(err, res); }
+});
+
+// Alta de cliente nuevo: más estrecho que el login, porque crea filas.
+const registroLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, max: 10, keyGenerator: (req) => req.ip,
+    message: { error: 'too_many_requests' }, standardHeaders: true, legacyHeaders: false,
+});
+
+router.post('/authorize/:token([0-9a-f]{64})/registro', registroLimiter, async (req, res) => {
+    try {
+        const { email, password, nombre, aceptaPrivacidad } = req.body || {};
+        const r = await oauthConsent.registrar(req.params.token, { email, password, nombre, aceptaPrivacidad });
+        res.status(201).json({ organizaciones: r.organizaciones, nuevo: true });
+    } catch (err) { _manejarErrorConsentimiento(err, res); }
+});
+
+router.post('/authorize/:token([0-9a-f]{64})/organizacion', registroLimiter, async (req, res) => {
+    try {
+        const r = await oauthConsent.crearOrganizacion(req.params.token, { nombre: (req.body || {}).nombre });
+        res.status(201).json(r);
     } catch (err) { _manejarErrorConsentimiento(err, res); }
 });
 
