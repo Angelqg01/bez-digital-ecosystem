@@ -144,15 +144,21 @@ class PgStore {
         return { N: r.n, avgLen: r.avg_len || 0, df: new Map(ts.map((t, i) => [t, r[`df${i}`]])) };
     }
 
-    /** Rellena `tokens` de las filas que no lo tienen (anteriores a la migración 065). Devuelve cuántas. */
-    async reindexar(lote = 200) {
+    /**
+     * Rellena `tokens` de las filas que no lo tienen (anteriores a la migración 065). Devuelve cuántas.
+     * `todo: true` los recalcula TODOS: hay que hacerlo cuando cambia el tokenizador (sinónimos, raíz, STOP), porque
+     * lo indexado y lo buscado tienen que salir del mismo tokenizador.
+     */
+    async reindexar({ lote = 200, todo = false } = {}) {
         let total = 0;
+        let ultimo = '';
         for (;;) {
             const { rows } = await this.db.query(
                 `SELECT c.id, c.content, c.section, d.title FROM knowledge_chunks c
                    JOIN knowledge_documents d ON d.id = c.document_id
-                  WHERE c.tokens IS NULL LIMIT $1`, [lote]);
+                  WHERE ${todo ? 'c.id > $2' : 'c.tokens IS NULL AND $2::text IS NOT NULL'} ORDER BY c.id LIMIT $1`, [lote, ultimo]);
             if (!rows.length) return total;
+            ultimo = rows[rows.length - 1].id;
             for (const r of rows) {
                 await this.db.query('UPDATE knowledge_chunks SET tokens = $2, ntok = $3 WHERE id = $1', [r.id, tokensDe(r.title, r.section, r.content), longitudDe(r.title, r.section, r.content)]);
             }

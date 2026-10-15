@@ -16,11 +16,22 @@ function raiz(t) {
     return t.replace(/s$/, '').slice(0, 6);
 }
 
+/**
+ * Sinónimos de precio. «¿Cuánto cuesta el plan Business?» no compartía ninguna palabra con el documento de planes, que
+ * dice «precios» y «€/mes»: el ranking devolvía otro documento o una coincidencia débil con aviso de «no estoy seguro».
+ * Se aplica igual a documentos y consulta (antes de la raíz), así que sólo añade coincidencias entre estas palabras.
+ */
+const SINONIMOS = new Map([
+    ['cuesta', 'precio'], ['cuestan', 'precio'], ['cuestas', 'precio'], ['cuesten', 'precio'], ['costara', 'precio'], ['costaria', 'precio'],
+    ['coste', 'precio'], ['costes', 'precio'], ['costo', 'precio'], ['costos', 'precio'],
+    ['tarifa', 'precio'], ['tarifas', 'precio'], ['vale', 'precio'], ['valen', 'precio'], ['valor', 'precio'],
+]);
+
 function tokenize(text) {
     return normalizar(text)
         .split(/[^a-z0-9]+/)
         .filter((t) => t.length > 1 && !STOP.has(t))
-        .map(raiz);
+        .map((t) => raiz(SINONIMOS.get(t) || t));
 }
 
 /**

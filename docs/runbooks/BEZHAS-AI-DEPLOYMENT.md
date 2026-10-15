@@ -31,7 +31,7 @@ Servicio: `bezhas-api` en Cloud Run (`europe-west1`, proyecto `bezhas-prod` por 
    ```bash
    gcloud run jobs execute bezhas-db-migrate --region europe-west1 --args "scripts/knowledge-reindex.js" --wait
    ```
-   (o ejecuta `node scripts/knowledge-reindex.js` con las variables de la API). Es idempotente.
+   (o ejecuta `node scripts/knowledge-reindex.js` con las variables de la API). Es idempotente. **Si cambias el tokenizador** (`services/knowledge/bm25.js`: sinónimos, raíz, palabras vacías) ejecuta `node scripts/knowledge-reindex.js --all` para recalcular todos los índices: lo indexado y lo buscado deben salir del mismo tokenizador.
 4. Activa el modo `fts` **después** de comprobar el paso 3:
    ```bash
    gcloud run services update bezhas-api --region europe-west1 --update-env-vars KNOWLEDGE_RETRIEVAL=fts

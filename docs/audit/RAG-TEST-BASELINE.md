@@ -60,3 +60,22 @@ Recursos: VRAM máx **3.791 MiB de 8.151** (el modelo cabe entero en GPU, sin of
 - Los 2 fallos de acierto son de clasificación (10 frases distintas, repetidas). 100 rondas con 5 tareas son sólo 20 por tarea y pocos casos distintos: **es una señal, no una medida de calidad** con tráfico real.
 - `prompt_eval_count` de Ollama no cuenta el prefijo en caché, así que los tokens de entrada reportados son menores que los reales (sin efecto en la factura local: el modelo local no cobra tokens).
 - No probado: modelo 2B, `qwen3.8` (17 GB, no cabe en 8 GB de VRAM), carga sostenida de horas, la app completa corriendo a la vez (la API/Postgres de Docker sí estaban levantados durante la prueba, sin medir su consumo aparte), calidad de español con un corpus de preguntas reales.
+
+## Ajuste posterior: preguntas de precio (2026-10-15, probado en el navegador)
+
+**Qué se encontró.** En la prueba del chat en el navegador, «¿Cuánto cuestan los planes de BeZhas?» devolvía el documento correcto pero con cobertura 0,37 (< 0,5), y el chat avisaba «No estoy seguro de que esto responda a tu pregunta». «¿Cuánto cuesta el plan Business?» ni siquiera devolvía `bz_planes` en primer lugar. Causa: el documento dice «precios» y «€/mes»; la gente pregunta «cuesta», «cuestan», «coste», «tarifa», «cuánto vale». Mi corpus no lo detectó porque yo había escrito las preguntas con la palabra «precios».
+
+**Cambio.** `services/knowledge/bm25.js`: sinónimos de precio (cuesta/cuestan/coste/costo/tarifa/vale/valor → «precio») aplicados igual a documentos y consulta. Se añaden 12 preguntas de precio redactadas como las escribiría un cliente (tipo `precio`).
+
+| | Antes (66 preguntas) | Después |
+|---|---|---|
+| recall@4 global | 86,2 % | **96,6 %** |
+| recall@4 preguntas de precio (12) | 50 % | **100 %** |
+| 1.ª posición / MRR | 77,6 % / 0,815 | 82,8 % / 0,894 |
+| Directas, paráfrasis, exactas (44) | 100 % | 100 % (sin regresión) |
+| Inglés (2) | 0 % | 0 % (sin cambio; sigue siendo el hueco para embeddings) |
+| Abstención o coincidencia débil avisada | 100 % | 100 % |
+
+Las 54 preguntas originales dan el mismo resultado que el baseline anterior (95,7 % → los 2 únicos fallos siguen siendo las de inglés). «¿Cuánto cuestan los planes de BeZhas?» pasa a `bz_planes` con cobertura 1,00 (ya no sale el aviso). **Limitación conocida:** con «plan Business» o «Enterprise VIP» otro documento corto que también habla de planes (`bz_ia_consumo`) sigue saliendo primero; `bz_planes` está en el contexto y la cobertura es ≥ 0,5, pero en modo extractivo (visitante sin sesión) el primer fragmento mostrado no es el de precios.
+
+**Operación:** como cambia el tokenizador, los `tokens` ya indexados en Postgres quedan desfasados. Tras desplegar: `node scripts/knowledge-reindex.js --all`. (En producción, al aplicar la 065 por primera vez, el reindex normal ya calcula todo con el tokenizador nuevo.) Verificado en Postgres real: `fts` devuelve los mismos documentos y en el mismo orden que el modo completo para las 66 preguntas, y `reindexar({todo:true})` recalcula las filas.
