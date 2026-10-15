@@ -64,7 +64,8 @@ describe('RAG con aislamiento por tenant', () => {
     it('responde con el conocimiento público sembrado y lo cita', async () => {
         const res = await ask(tokenDe(1), { message: '¿Qué planes y precios tiene BeZhas?' });
         expect(res.status).toBe(200);
-        expect(res.body.provider).toBe('extractive');
+        // Precios de planes: los redacta el servidor desde la configuración (facts.js), sin modelo; sigue citando la fuente.
+        expect(res.body.provider).toBe('facts');
         expect(res.body.sources.some((s) => s.document_id === 'bz_planes')).toBe(true);
         expect(res.body.reply).toMatch(/Creator Pro/);
         expect(res.body.reply).toMatch(/IVA/);

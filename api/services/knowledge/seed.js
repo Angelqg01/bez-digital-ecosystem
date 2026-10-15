@@ -9,21 +9,10 @@
  * el asistente responde con esto y no debe inventar precios ni direcciones.
  */
 const crypto = require('crypto');
-const { PLANS } = require('../../config/plans');
-const { getEntitlements } = require('../../config/plan-entitlements');
+const { textoPlanes, textoLimites } = require('./planFacts');
 
-const eur = (n) => n.toLocaleString('es-ES', { maximumFractionDigits: 2 });
-const planes = PLANS.map((p) => (p.priceEUR === 0
-    ? `- ${p.name} (${p.profile}): sin cuota fija, pago por uso (coste real + 25 %), hasta ${p.aiActions} acciones de IA al mes; ${p.trialDays || 0} días de prueba.`
-    : `- ${p.name} (${p.profile}): ${eur(p.priceEUR)} €/mes + IVA o ${eur(p.yearlyEUR)} €/año + IVA (2 meses gratis); ${p.aiActions ? `${eur(p.aiActions)} acciones de IA` : 'acciones de IA ilimitadas'}, ${p.gasSubsidy}% de subvención de gas.`)).join('\n');
-
-const CARRILES = { crypto_transfer: 'transferencia cripto', fiat_to_crypto: 'euros → cripto', crypto_to_fiat: 'cripto → euros', fiat_to_fiat: 'euros → euros' };
-const limitesPorPlan = PLANS.filter((p) => p.id !== 'starter').map((p) => {
-    const ops = getEntitlements(p.id).operaciones || {};
-    const lineas = Object.entries(ops.rails || {}).map(([carril, l]) =>
-        `${CARRILES[carril] || carril}: hasta ${eur(l.porOperacionEur)} € por operación, ${eur(l.diarioEur)} €/día y ${eur(l.mensualEur)} €/mes, con aprobación humana desde ${eur(l.aprobacionDesdeEur)} €`);
-    return `- ${p.name}: ${lineas.join('; ')}${ops.dobleAprobacionDesdeEur ? `; doble aprobación desde ${eur(ops.dobleAprobacionDesdeEur)} €` : ''}.`;
-}).join('\n');
+const planes = textoPlanes();
+const limitesPorPlan = textoLimites();
 
 const DOCS = [
     ['bz_que_es', 'Qué es BeZhas',
@@ -35,7 +24,7 @@ const DOCS = [
         + 'Pagando la suscripción con BEZ hay un 20 % de descuento. Los planes se contratan desde la web con tarjeta (Stripe) '
         + 'y se activan en la app del cliente. Para comparar planes, abre la sección de planes de la plataforma.'],
     ['bz_ia_consumo', 'Uso del asistente BeZhas AI',
-        'Cada mensaje al asistente BeZhas AI con sesión iniciada consume una acción de IA del plan de tu organización. '
+        'Usar el chat del asistente BeZhas AI con sesión iniciada cuesta una acción de IA por mensaje, que sale del plan de tu organización. '
         + 'En Creator Pro, Business y Enterprise VIP sale de las acciones incluidas en la cuota mensual; en Starter se factura '
         + 'por su coste real (modelo de IA y cómputo) + 25 %, en créditos de 0,001 € al mes. Si se agotan las acciones del mes, '
         + 'hay que mejorar el plan. Sin plan activo el asistente no está disponible. Sin sesión, cada visitante tiene una '
@@ -159,6 +148,42 @@ const DOCS = [
         + 'Edge Node Manager, CargoLink (logística), PureScan (trazabilidad alimentaria con IA de visión y pasaportes digitales de producto), Energy (gestión '
         + 'energética e IoT) y Vision Scan. El Gas Tank (paymaster) abstrae el coste de gas de las transacciones corporativas: una empresa recarga con fiat '
         + '(Stripe), el importe se convierte en gas y se consulta el historial de consumo.'],
+    ['bz_energia_app', 'BEZ Energy: central eléctrica virtual para energía, baterías y parques solares o eólicos',
+        'BEZ Energy es la SubApp de BeZhas para el sector energético (energía, VPP, baterías, parques solares y eólicos, comercializadoras). '
+        + 'Está en línea en energy.bezhas.com y se abre desde el catálogo de aplicaciones (tarjeta «BEZ Energy»). Reúne: telemetría de nodos y '
+        + 'contadores, precios del mercado eléctrico OMIE e indicadores de Red Eléctrica (ESIOS), un agente automático de arbitraje de baterías (cargar con '
+        + 'precio bajo y vender con precio alto), respuesta de la demanda (demand response), control SCADA con comandos firmados, un monedero de energía, '
+        + 'mercado P2P entre nodos, recompensas de staking por flexibilidad y un informe de seguridad y cumplimiento (Aegis, RD 88/2026 de agregador '
+        + 'independiente). Toda acción sobre equipos físicos pasa por una cola de aprobación humana (HITL). La telemetría exige sesión, y los comandos de control '
+        + 'exigen rol de operador y la aprobación humana.'],
+    ['bz_energia_mercado', 'Arbitraje de baterías con precios OMIE y ESIOS',
+        'Sí: BeZhas Energy incluye precios del mercado diario OMIE (con su predicción) e indicadores ESIOS de Red Eléctrica (requiere clave ESIOS) y un '
+        + 'agente de arbitraje de baterías que decide cargar cuando el precio del mercado eléctrico es bajo o negativo y descargar o vender cuando es alto. '
+        + 'La ejecución es opcional y pasa por aprobación humana (HITL): el agente propone, una persona autoriza. Para optimizar las baterías de un grupo '
+        + 'energético se conectan sus nodos (Edge Node) a BEZ Energy; el modelo de predicción se usa sobre precios y telemetría. BeZhas no es un '
+        + 'comercializador ni un operador de mercado: lee precios y propone estrategias, no consta que presente ofertas en OMIE por el cliente, y no '
+        + 'garantiza resultados económicos.'],
+    ['bz_energia_telemetria', 'Telemetría de inversores y contadores inteligentes con Edge Node',
+        'La telemetría de inversores, baterías y contadores inteligentes llega por MQTT a un Edge Node de la propia empresa. Las lecturas se verifican: '
+        + 'el motor Aegis rechaza las firmas inválidas, las repeticiones y las suplantaciones (anti-spoofing) antes de aceptarlas. Los datos comerciales '
+        + 'se quedan en la empresa: el Edge Node anonimiza y solo se publica la prueba (hash) en la cadena. Estado real: el bróker MQTT, la verificación '
+        + 'y el almacén de histórico existen; el driver que lee físicamente inversores y medidores por Modbus o SunSpec (Edge Gateway) está '
+        + 'pendiente y la demostración usa datos simulados hasta que haya un Edge Node con hardware conectado. Pide a BeZhas una demostración guiada con '
+        + 'tu equipo antes de comprometer una instalación.'],
+    ['bz_energia_cae', 'Certificados de ahorro energético (CAE), créditos de carbono y mercado P2P de energía',
+        'BeZhas dispone de contratos para certificados de ahorro energético (EnergyCAEToken), créditos de carbono (CarbonCreditToken), tokens de parque '
+        + 'solar (SolarFarmToken) y mercado P2P de energía (P2PEnergyMarket), junto con oráculos de energía y ESG, y su API (emitir CAE por ahorro '
+        + 'verificado, listar CAE, publicar ofertas P2P y comprar). Estado real: los contratos están escritos y probados; no todos constan como desplegados en '
+        + 'el registro de despliegues y la API usa direcciones de marcador de posición hasta que se configuran, así que hay que confirmar con BeZhas qué contratos '
+        + 'están activos antes de contratar. No existe una equivalencia fija entre un kWh y un BEZ: el valor de un certificado lo fija el mercado y la '
+        + 'regulación aplicable, y no hay rentabilidad garantizada. Un CAE o un crédito de carbono es un instrumento regulado: consulta a tu asesor legal.'],
+    ['bz_energia_tokenizar', 'Tokenizar un parque solar, eólico o una instalación de energía',
+        'Para tokenizar un parque solar o eólico, una batería o una planta se usa el RWAFactory «industrial» en Polygon (plantas, maquinaria, lotes). '
+        + 'No hay que desplegar ningún contrato propio: BeZhas lee la comisión vigente del contrato y prepara dos transacciones sin firmar (aprobar BEZ y '
+        + 'tokenizar) que firma el titular con su wallet, mejor un Safe multifirma. Hace falta el CID de IPFS de la documentación legal del activo (se sube '
+        + 'en www.bezhas.com/rwa), el número de fracciones (hasta 100.000.000), la valoración en USD, el precio por fracción en BEZ y el rendimiento anual '
+        + 'estimado. Desde una IA: herramienta bezhas_tokenize_prepare (plan Creator Pro o superior). La estructura jurídica del emisor y la oferta a '
+        + 'inversores (MiCA, folleto, KYC) las decide el cliente con su asesor: BeZhas no emite valores ni garantiza rentabilidades.'],
     ['bz_privacidad', 'Privacidad y datos',
         'Los datos comerciales de la empresa no salen de ella: el Edge Node anonimiza los eventos del ERP y solo se publica su hash. Las credenciales del ERP '
         + 'se guardan cifradas y nunca se devuelven. Para conectar un ERP hace falta un DPA firmado. Puedes consultar, exportar y borrar la telemetría de uso '
@@ -173,7 +198,7 @@ const DOCS = [
         + '4) para automatizar, crea una api-key en «Desarrolladores» y conecta tu IA al MCP o usa el SDK. Cada respuesta del chat indica el siguiente paso.'],
     ['bz_que_plan', 'Qué plan elegir',
         'Elige por lo que necesitas: Starter para probar y automatizar con la API y el MCP básico; Creator Pro para tokenizar activos, cobros y nóminas; '
-        + 'Business para conectar tu ERP (SAP, Odoo, Dynamics, NetSuite) y operar con aprobaciones; Enterprise VIP para gobernanza por DAO y máxima cuota. '
+        + 'Business para conectar tu ERP (SAP, Odoo, Dynamics, NetSuite) y operar con aprobaciones; Enterprise VIP (Holdings / Instituciones) para grupos con varias sociedades, gobernanza por DAO y máxima cuota. Los planes se contratan por organización, no «por sociedad» ni «por entidad»: no existe un precio por sociedad. '
         + 'Puedes subir de plan cuando una función lo requiera; el chat te dice cuál desbloquea cada cosa.'],
     ['bz_automatizar', 'Automatizar tu plataforma con API, MCP y SDK',
         'Tres caminos: API REST del Gateway (cabecera x-api-key, empieza por GET /api/gateway/v1/token/price), MCP (conecta Claude, ChatGPT, Gemini o Cursor a '

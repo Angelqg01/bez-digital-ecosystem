@@ -9,6 +9,8 @@
  */
 const express = require('express');
 const { validarCitas } = require('../services/ai-workspace/citations');
+const { comprobarCifras } = require('../services/ai-workspace/figures');
+const facts = require('../services/ai-workspace/facts');
 const telemetria = require('../services/ai-workspace/telemetry');
 const { SharedRateLimitStore } = require('../utils/sharedRateLimitStore');
 const rateLimit = require('express-rate-limit');
@@ -100,6 +102,9 @@ Reglas obligatorias:
 - No ayudes a atacar, eludir controles (KYC, aprobaciones, límites) ni acceder sin autorización a BeZhas ni a terceros.
 - No tienes acceso a claves privadas ni puedes ejecutar transacciones: para acciones sensibles, indica al usuario la sección correspondiente.`;
 
+/** Lo que el modelo tenía delante: el contexto recuperado, el historial de la conversación y el mensaje del usuario. */
+const fuentesDeCifras = (turn) => ({ contexto: turn.messages.map((m) => m.content).join('\n'), mensaje: turn.message });
+
 /** Resuelve el principal desde la sesión; responde 401 si no se puede. */
 async function principalDe(req, res) {
     const p = await resolverPrincipal(req.user);
@@ -140,8 +145,13 @@ async function prepareTurn(principal, body) {
         message, convId, conv, sources, context, retrieval, inicio: Date.now(),
         antes: insp.antes,
         bloqueado: insp.bloqueado,
+        // Precios y límites de pago: los redacta el servidor desde la configuración, sin modelo (ver ai-workspace/facts.js).
+        determinista: insp.bloqueado ? null : facts.respuestaDeterminista(principal, message),
         // Siguiente paso y consejo de seguridad: texto fijo del servidor a partir del mensaje y del plan (nunca del modelo).
-        despues: insp.bloqueado ? '' : guide.siguientePaso(principal, message).texto,
+        despues: insp.bloqueado ? '' : (facts.respuestaDeterminista(principal, message)
+            // Precios y límites: el cierre es el genérico (plan y seguridad), no el del tema que mencione el mensaje.
+            ? guide.siguientePaso(principal, 'plan precios', { omitirHolding: true }).texto
+            : guide.siguientePaso(principal, message).texto),
         // Acciones sugeridas SOLO a partir del mensaje del usuario (nunca del contexto ni del modelo).
         actions: insp.bloqueado ? actionsSvc.suggestActions(principal, 'soporte contacto') : actionsSvc.suggestActions(principal, message),
         flagged: scan(message).suspicious || !!insp.bloqueado,
@@ -163,13 +173,22 @@ router.post('/chat', chatApagado, aiLimiter, async (req, res) => {
             telemetria.turno({ outcome: 'blocked', provider: 'shield', ms: Date.now() - turn.inicio, userId: principal.userId, tenant: principal.tenantId });
             return res.json({ conversationId: turn.convId, reply, sources: [], actions: turn.actions, provider: 'shield', flagged: true, blocked: true, usage: null });
         }
+        if (turn.determinista) {
+            // Precios y límites: respuesta del servidor desde la configuración. No usa modelo, así que no consume cuota.
+            const reply = turn.antes + turn.determinista.texto + turn.despues;
+            await conversations.append(turn.conv, turn.message, reply);
+            telemetria.turno({ outcome: 'ok', provider: 'facts', ms: Date.now() - turn.inicio, retrieval: turn.retrieval, userId: principal.userId, tenant: principal.tenantId });
+            return res.json({ conversationId: turn.convId, reply, sources: turn.sources, actions: turn.actions, provider: 'facts', flagged: turn.flagged, usage: null });
+        }
         // Lo paga el plan del cliente: sin plan o sin cuota → 402 antes de llamar al modelo.
         reserva = await facturacion.reservar(principal);
         const { provider, text, usage } = await gateway.complete({
             system: SYSTEM_PROMPT, messages: turn.messages, maxTokens: 800, sources: turn.sources, contextText: turn.context,
         });
         const { text: saneado } = await hooks.run('afterModel', { principal, text });
-        const safeText = validarCitas(saneado, turn.sources.length).text;
+        const conCitas = validarCitas(saneado, turn.sources.length).text;
+        const { text: safeText, retiradas } = comprobarCifras(conCitas, fuentesDeCifras(turn));
+        if (retiradas.length) telemetria.cifrasRetiradas(retiradas.length);
         const consumo = await facturacion.liquidar(reserva, { ...usage, provider });
         const respuesta = turn.antes + safeText + turn.despues;
         await conversations.append(turn.conv, turn.message, respuesta);
@@ -217,6 +236,13 @@ async function responderEnStream(req, res, principal, turn) {
             // Respuesta fija del escudo: no se llama al modelo.
             send('provider', { provider: 'shield' });
             send('delta', { text: turn.bloqueado.respuesta });
+        } else if (turn.determinista) {
+            send('provider', { provider: 'facts' });
+            provider = 'facts';
+            if (turn.antes) send('delta', { text: turn.antes });
+            text = turn.determinista.texto;
+            send('delta', { text });
+            if (turn.despues) { send('delta', { text: turn.despues }); despuesEnviado = true; }
         } else {
             if (turn.antes) send('delta', { text: turn.antes });
             for await (const ev of gateway.stream({
@@ -240,9 +266,14 @@ async function responderEnStream(req, res, principal, turn) {
         safeText = text;
         if (turn.bloqueado) {
             safeText = (turn.antes || '') + turn.bloqueado.respuesta;
+        } else if (turn.determinista) {
+            safeText = (turn.antes || '') + text + (turn.despues || '');
         } else if (text) {
             try {
-                const limpio = validarCitas((await hooks.run('afterModel', { principal, text })).text, turn.sources.length).text;
+                const conCitas = validarCitas((await hooks.run('afterModel', { principal, text })).text, turn.sources.length).text;
+                const verificado = comprobarCifras(conCitas, fuentesDeCifras(turn));
+                if (verificado.retiradas.length) telemetria.cifrasRetiradas(verificado.retiradas.length);
+                const limpio = verificado.text;
                 // Lo mostrado y guardado = aviso previo + respuesta saneada del modelo + siguiente paso (texto fijo del servidor).
                 safeText = (turn.antes || '') + limpio + (despuesEnviado ? turn.despues : '');
                 if (limpio !== text && !res.writableEnded) send('replace', { text: safeText });
@@ -263,7 +294,7 @@ async function responderEnStream(req, res, principal, turn) {
         telemetria.turno({
             outcome: controller.signal.aborted ? 'aborted' : turn.bloqueado ? 'blocked' : !text ? 'error' : 'ok',
             canal: principal.roles && principal.roles.includes('ANON') ? 'publico' : 'chat',
-            provider: turn.bloqueado ? 'shield' : provider || 'none', ms: Date.now() - (turn.inicio || Date.now()), retrieval: turn.retrieval,
+            provider: turn.bloqueado ? 'shield' : turn.determinista ? 'facts' : provider || 'none', ms: Date.now() - (turn.inicio || Date.now()), retrieval: turn.retrieval,
             userId: principal.userId, tenant: principal.tenantId, tokens: usage && { entrada: usage.inputTokens, salida: usage.outputTokens },
         });
         if (!res.writableEnded) { send('done', { conversationId: turn.convId, length: safeText.length, ...(consumo ? { usage: consumo } : {}), ...(turn.done || {}) }); res.end(); }
@@ -281,7 +312,7 @@ router.post('/chat/stream', chatApagado, aiLimiter, async (req, res) => {
     try {
         turn = await prepareTurn(principal, req.body);
         // Lo paga el plan del cliente: sin plan o sin cuota → 402 antes de llamar al modelo (un turno bloqueado no usa modelo).
-        if (!turn.bloqueado) reserva = await facturacion.reservar(principal);
+        if (!turn.bloqueado && !turn.determinista) reserva = await facturacion.reservar(principal);
     } catch (err) {
         if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, upgradeActionId: err.upgradeActionId, limit: err.limit });
         logger.error({ error: err.message }, 'ai-workspace stream');

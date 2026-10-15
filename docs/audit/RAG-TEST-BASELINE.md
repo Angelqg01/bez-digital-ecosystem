@@ -79,3 +79,19 @@ Recursos: VRAM máx **3.791 MiB de 8.151** (el modelo cabe entero en GPU, sin of
 Las 54 preguntas originales dan el mismo resultado que el baseline anterior (95,7 % → los 2 únicos fallos siguen siendo las de inglés). «¿Cuánto cuestan los planes de BeZhas?» pasa a `bz_planes` con cobertura 1,00 (ya no sale el aviso). **Limitación conocida:** con «plan Business» o «Enterprise VIP» otro documento corto que también habla de planes (`bz_ia_consumo`) sigue saliendo primero; `bz_planes` está en el contexto y la cobertura es ≥ 0,5, pero en modo extractivo (visitante sin sesión) el primer fragmento mostrado no es el de precios.
 
 **Operación:** como cambia el tokenizador, los `tokens` ya indexados en Postgres quedan desfasados. Tras desplegar: `node scripts/knowledge-reindex.js --all`. (En producción, al aplicar la 065 por primera vez, el reindex normal ya calcula todo con el tokenizador nuevo.) Verificado en Postgres real: `fts` devuelve los mismos documentos y en el mismo orden que el modo completo para las 66 preguntas, y `reindexar({todo:true})` recalcula las filas.
+
+## Ajuste posterior: conocimiento de energía y respuestas deterministas (2026-10-15, prueba del CTO energético)
+
+Origen: el informe `docs/audit/informe-energia/INFORME-CTO-ENERGIA.md` (4 de 13 tareas incorrectas). Cambios: 5 documentos de energía en el conocimiento, sinónimos de «cobrar» en el tokenizador, `bz_ia_consumo` redactado para responder «cuánto cuesta usar el chat», precios y límites redactados por el servidor y comprobación de cifras.
+
+| | Antes (66 preguntas) | Después (77 preguntas) |
+|---|---|---|
+| recall@4 global | 96,6 % | **97,1 %** |
+| 1.ª posición / MRR | 82,8 % / 0,894 | 85,5 % / 0,901 |
+| Preguntas de precio (12) | 100 % | 100 % |
+| Preguntas del CTO energético (11, nuevas) | — | **100 %** |
+| Directas, paráfrasis, exactas | 100 % | 100 % |
+| Inglés (2) | 0 % | 0 % |
+| Abstención o coincidencia débil avisada | 100 % | 100 % (la abstención total baja de 75 % a 62,5 %: las preguntas fuera de tema ahora rozan los documentos de energía, siempre con cobertura < 0,5) |
+
+Las 12 tareas de chat del CTO se repitieron contra el modelo local real (`qwen3.5:4b`): 12/12 cumplen sus criterios (`api/__tests__/integration/cto-energia-ollama.test.js`). `fts` devuelve los mismos documentos que el modo completo para las 77 preguntas (Postgres 16 real). Como cambia el tokenizador: tras desplegar, `node scripts/knowledge-reindex.js --all`.

@@ -520,6 +520,100 @@
       "esperados": [
         "bz_planes"
       ]
+    },
+    {
+      "id": "c01",
+      "tipo": "cto_energia",
+      "q": "Soy el CTO de un grupo energético (parques solares y eólicos, baterías y comercialización). ¿Qué puede hacer BeZhas por nosotros?",
+      "esperados": [
+        "bz_energia_app",
+        "bz_que_es"
+      ]
+    },
+    {
+      "id": "c02",
+      "tipo": "cto_energia",
+      "q": "Queremos tokenizar un parque solar de 50 MW para vender participaciones a inversores. ¿Qué necesitamos y cómo se hace?",
+      "esperados": [
+        "bz_energia_tokenizar",
+        "bz_tokenizacion"
+      ]
+    },
+    {
+      "id": "c03",
+      "tipo": "cto_energia",
+      "q": "¿Podemos emitir y vender certificados de ahorro energético (CAE) y créditos de carbono en BeZhas?",
+      "esperados": [
+        "bz_energia_cae"
+      ]
+    },
+    {
+      "id": "c04",
+      "tipo": "cto_energia",
+      "q": "¿Cómo conectamos la telemetría de nuestros inversores y contadores inteligentes y la anclamos en blockchain sin sacar los datos de la empresa?",
+      "esperados": [
+        "bz_energia_telemetria",
+        "bz_edge"
+      ]
+    },
+    {
+      "id": "c05",
+      "tipo": "cto_energia",
+      "q": "Usamos SAP S/4HANA. ¿Cómo lo conectamos y qué datos podemos leer?",
+      "esperados": [
+        "bz_erp"
+      ]
+    },
+    {
+      "id": "c06",
+      "tipo": "cto_energia",
+      "q": "¿Cómo cobramos a nuestros clientes industriales y liquidamos con BEZ?",
+      "esperados": [
+        "bz_cobros"
+      ]
+    },
+    {
+      "id": "c07",
+      "tipo": "cto_energia",
+      "q": "¿Qué límites y aprobaciones hay para mover fondos desde la tesorería del grupo?",
+      "esperados": [
+        "bz_limites"
+      ]
+    },
+    {
+      "id": "c08",
+      "tipo": "cto_energia",
+      "q": "¿Qué normativa cumple BeZhas: MiCA, DAC8, fiscalidad española?",
+      "esperados": [
+        "bz_cumplimiento"
+      ]
+    },
+    {
+      "id": "c09",
+      "tipo": "cto_energia",
+      "q": "Somos un grupo con 8 sociedades y varios parques. ¿Qué plan nos conviene y cuánto cuesta?",
+      "esperados": [
+        "bz_planes",
+        "bz_que_plan"
+      ]
+    },
+    {
+      "id": "c10",
+      "tipo": "cto_energia",
+      "q": "¿Podéis optimizar nuestras baterías con los precios del mercado eléctrico (OMIE) y hacer arbitraje con IA?",
+      "esperados": [
+        "bz_energia_mercado"
+      ]
+    },
+    {
+      "id": "c11",
+      "tipo": "cto_energia",
+      "q": "¿Cómo automatizamos todo esto con nuestro propio agente de IA, por MCP o API, y qué herramientas tiene?",
+      "esperados": [
+        "bz_mcp",
+        "bz_api_integracion",
+        "bz_automatizar"
+      ]
     }
   ]
 }

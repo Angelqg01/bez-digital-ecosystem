@@ -24,6 +24,7 @@ function raiz(t) {
 const SINONIMOS = new Map([
     ['cuesta', 'precio'], ['cuestan', 'precio'], ['cuestas', 'precio'], ['cuesten', 'precio'], ['costara', 'precio'], ['costaria', 'precio'],
     ['coste', 'precio'], ['costes', 'precio'], ['costo', 'precio'], ['costos', 'precio'],
+    ['cobrar', 'cobro'], ['cobramos', 'cobro'], ['cobrais', 'cobro'], ['cobran', 'cobro'], ['cobrando', 'cobro'], ['cobrado', 'cobro'],
     ['tarifa', 'precio'], ['tarifas', 'precio'], ['vale', 'precio'], ['valen', 'precio'], ['valor', 'precio'],
 ]);
 

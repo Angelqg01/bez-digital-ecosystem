@@ -30,6 +30,11 @@ const degradaciones = nuevo(client.Counter, {
     name: 'bezhas_ai_provider_degradations_total', help: 'Veces que el proveedor de IA falló y se sirvió el modo extractivo', labelNames: ['provider'],
 });
 
+const cifras = nuevo(client.Counter, {
+    name: 'bezhas_ai_figures_removed_total', help: 'Cifras con unidad (€, $, %) retiradas de una respuesta porque no constaban en la documentación', labelNames: [],
+});
+function cifrasRetiradas(n) { cifras.inc(n); }
+
 const UMBRAL_DEBIL = 0.5;
 
 /** Cobertura máxima declarada en el contexto recuperado (atributo relevance de cada <untrusted_document>). */
@@ -64,4 +69,4 @@ function turno({ canal = 'chat', outcome, provider = 'none', ms = 0, retrieval: 
     }, 'ai-workspace turno');
 }
 
-module.exports = { retrieval, turno, degradacion, coberturaMax, _metricas: { mensajes, duracion, retrievalSeg, retrievalRes, degradaciones } };
+module.exports = { retrieval, turno, degradacion, cifrasRetiradas, coberturaMax, _metricas: { mensajes, duracion, retrievalSeg, retrievalRes, degradaciones } };

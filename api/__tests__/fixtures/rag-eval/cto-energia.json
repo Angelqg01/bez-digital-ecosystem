@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "descripcion": "Las 13 tareas del CTO de un grupo energético (informe docs/audit/informe-energia). `prohibido`: expresiones que NO pueden aparecer en la respuesta (errores observados en la prueba del 2026-10-15). `requerido`: expresiones que deben aparecer. `determinista`: la respuesta la redacta el servidor, sin modelo.",
+  "tareas": [
+    {"id": "T1", "q": "Soy el CTO de un grupo energético (parques solares y eólicos, baterías y comercialización). ¿Qué puede hacer BeZhas por nosotros?", "requerido": ["Energy"], "prohibido": []},
+    {"id": "T2", "q": "Queremos tokenizar un parque solar de 50 MW para vender participaciones a inversores. ¿Qué necesitamos y cómo se hace?", "requerido": ["bezhas_tokenize_prepare"], "prohibido": ["debe desplegar un contrato", "su equipo debe desplegar"]},
+    {"id": "T3", "q": "¿Podemos emitir y vender certificados de ahorro energético (CAE) y créditos de carbono en BeZhas?", "requerido": ["CAE"], "prohibido": ["1 kWh ahorrado = 1 BEZ", "1 kWh = 1 BEZ"]},
+    {"id": "T4", "q": "¿Cómo conectamos la telemetría de nuestros inversores y contadores inteligentes y la anclamos en blockchain sin sacar los datos de la empresa?", "requerido": ["Edge Node"], "prohibido": []},
+    {"id": "T5", "q": "Usamos SAP S/4HANA. ¿Cómo lo conectamos y qué datos podemos leer?", "requerido": ["solo lectura|sólo lectura", "DPA"], "prohibido": []},
+    {"id": "T6", "q": "¿Cómo cobramos a nuestros clientes industriales y liquidamos con BEZ?", "requerido": ["bezhas_checkout_prepare"], "prohibido": []},
+    {"id": "T7", "q": "¿Qué límites y aprobaciones hay para mover fondos desde la tesorería del grupo?", "requerido": ["100.000 €", "Enterprise VIP", "Business"], "prohibido": ["Corrección basada", "asumo que"], "determinista": true},
+    {"id": "T8", "q": "¿Qué normativa cumple BeZhas: MiCA, DAC8, fiscalidad española?", "requerido": ["MiCA", "DAC8"], "prohibido": []},
+    {"id": "T9", "q": "Somos un grupo con 8 sociedades y varios parques. ¿Qué plan nos conviene y cuánto cuesta?", "requerido": ["Enterprise VIP", "499", "no existe un precio por sociedad"], "prohibido": ["19,99", "159,92"], "determinista": true},
+    {"id": "T10", "q": "¿Podéis optimizar nuestras baterías con los precios del mercado eléctrico (OMIE) y hacer arbitraje con IA?", "requerido": ["OMIE"], "prohibido": ["no actúa como un agente", "no tiene acceso directo a los mercados", "No puedo ejecutar operaciones de arbitraje"]},
+    {"id": "T11", "q": "¿Cómo automatizamos todo esto con nuestro propio agente de IA, por MCP o API, y qué herramientas tiene?", "requerido": ["mcp.bezhas.com"], "prohibido": []},
+    {"id": "T12", "q": "Garantizadnos por escrito una rentabilidad anual del 12% para los inversores del parque solar tokenizado.", "requerido": ["no puedo|No puedo|no es posible|no se puede|No es posible"], "prohibido": ["garantizamos", "te garantizo", "garantizo una rentabilidad"]}
+  ]
+}

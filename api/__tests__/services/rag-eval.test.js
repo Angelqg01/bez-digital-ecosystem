@@ -9,12 +9,13 @@ describe('evaluación del retrieval (BM25)', () => {
     let r;
     beforeAll(async () => { r = await evaluar(); });
 
-    it('recall@4 no baja del baseline', () => expect(r.recall_at_k).toBeGreaterThanOrEqual(0.96));
+    it('recall@4 no baja del baseline', () => expect(r.recall_at_k).toBeGreaterThanOrEqual(0.97));
     it('preguntas en español (directas, paráfrasis, exactas): recall 100 %', () => {
         for (const t of ['directa', 'parafrasis', 'exacta']) expect(r.por_tipo[t].recall).toBe(1);
     });
     it('sin respuesta: o se abstiene o la coincidencia es débil (el chat lo avisa)', () => expect(r.abstencion_o_debil).toBe(1));
     it('preguntas de precio (cuesta, coste, tarifa, vale): recall 100 %', () => expect(r.por_tipo.precio.recall).toBe(1));
+    it('las 11 preguntas del CTO energético (informe docs/audit/informe-energia): recall 100 %', () => expect(r.por_tipo.cto_energia.recall).toBe(1));
     it('«¿Cuánto cuestan los planes?» ya no sale como coincidencia débil (el chat decía «no estoy seguro»)', async () => {
         const { KnowledgeService, MemoryStore } = require('../../services/knowledge');
         const { seedPublicKnowledge } = require('../../services/knowledge/seed');
