@@ -384,6 +384,7 @@ app.use('/api/organizations', organizationTechRoutes);
 app.use('/api/organizations', organizationBillingRoutes);
 app.use('/api/ai-workspace/public', aiWorkspaceRoutes.publicRouter); // una pregunta gratis sin sesión
 app.use('/api/ai-workspace', aiWorkspaceRoutes);   // chat de la plataforma con RAG (sesión obligatoria)
+app.use('/api/nft-assets', require('./routes/nft-assets')); // subida de archivos para NFT: plan suscrito, sin ejecutables, sin lectura
 app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);
 app.use('/api/admin/governance', adminGovernanceRoutes);

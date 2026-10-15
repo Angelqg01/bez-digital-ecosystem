@@ -112,10 +112,12 @@ Cada fase va en commits pequeños, con tests y con feature flag cuando cambie el
 3. Detrás de `KNOWLEDGE_RETRIEVAL=fts` y comparado contra el baseline de la Fase 2. Sólo se activa si no empeora recall@4.
 4. Embeddings con pgvector **sólo si** la Fase 2 muestra fallos semánticos claros. El RRF ya está escrito; faltan el embedder y la columna.
 
-### Fase 4 — Ingestión de documentos reales (2–3 días)
-1. Subida de PDF/DOCX/MD/TXT con límites de tipo y tamaño. Comprobar primero si `services/documentService.js` y `routes/documents.js` ya tienen parsers reutilizables antes de añadir dependencias.
-2. Deduplicación por checksum, versionado (ya existe) y borrado efectivo (ya existe; añadir test de que lo borrado no vuelve a salir).
-3. Referencias de página/sección en el chunk.
+### Fase 4 — Subida de archivos SÓLO para NFT, sin leer documentos — HECHA en código
+Decisión del propietario (2026-10-15): **no se leen documentos** (ni PDF ni DOCX ni nada) para alimentar el RAG, para evitar prompt injection. Sustituye a la «ingesta de PDF/DOCX» del plan original. Reglas:
+1. Sólo suben archivos los usuarios con **plan suscrito** (`principal.plan !== 'none'`); sin plan → 402 antes de leer el cuerpo.
+2. **Prohibidos los ejecutables**: lista blanca por firma real (imagen, vídeo, audio, PDF); EXE/ELF/Mach-O/scripts/ZIP/JAR/APK/Office/instaladores/SVG/HTML se rechazan con motivo; el Content-Type y la extensión que declara el cliente no cuentan.
+3. El archivo **se anexa a IPFS tal cual**: no se decodifica, no se parsea, no se indexa y no llega al chat ni al RAG. Un test vigila que `services/knowledge`, `services/ai-workspace` y `routes/ai-workspace.js` no importen la subida ni IPFS, y que la ruta no importe el RAG ni parsers.
+4. Endpoint único: `POST /api/nft-assets` (cuerpo binario, `x-file-name` opcional). Desactivable con `NFT_UPLOADS_ENABLED=false`; sin credenciales de Pinata responde 503 (no hay modo simulado).
 
 ### Fase 5 — Un solo Knowledge Plane para Web, MCP y API (2 días)
 1. Herramienta MCP de solo lectura `bezhas_knowledge_search` en `mcp-gateway.js`. Usa `knowledge.search` con el principal derivado del token OAuth/api-key, nunca de los argumentos.
