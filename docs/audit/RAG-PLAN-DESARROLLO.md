@@ -106,8 +106,8 @@ Cada fase va en commits pequeños, con tests y con feature flag cuando cambie el
 
 **Hecho cuando:** existe el baseline publicado en `docs/audit/RAG-TEST-BASELINE.md` y el test e2e está en CI.
 
-### Fase 3 — Escala del retrieval (2 días)
-1. Migración nueva (063): columna `tsv tsvector` generada con `to_tsvector('spanish', …)` e índice GIN en `knowledge_chunks`.
+### Fase 3 — Escala del retrieval (2 días) — HECHA en código, migración sin aplicar en producción
+1. Migración nueva (065; la 063 y la 064 ya existían): columna `tsv tsvector` generada con `to_tsvector('spanish', …)` e índice GIN en `knowledge_chunks`.
 2. `PgStore.candidatos(tenantId, query, n=200)` hace el prefiltro FTS en SQL (tenant + status + vigencia), y el BM25 actual reordena sólo esos candidatos. Se elimina el `LIMIT 5000` ciego (H2).
 3. Detrás de `KNOWLEDGE_RETRIEVAL=fts` y comparado contra el baseline de la Fase 2. Sólo se activa si no empeora recall@4.
 4. Embeddings con pgvector **sólo si** la Fase 2 muestra fallos semánticos claros. El RRF ya está escrito; faltan el embedder y la columna.
@@ -126,7 +126,7 @@ Cada fase va en commits pequeños, con tests y con feature flag cuando cambie el
 1. Métricas por mensaje en log JSON: `request_id`, latencia del retrieval, nº de fuentes, cobertura máxima, proveedor, abstención y degradación (sin el texto del prompt).
 2. Techo diario y rate limits con store compartido (Memorystore ya existe en la topología GCP) (H4).
 3. Kill switches por variable de entorno: `AI_PROVIDER=extractive` (ya existe), más `KNOWLEDGE_TENANT_DOCS=off` y `AI_WORKSPACE_ENABLED=false`.
-4. `docs/runbooks/BEZHAS-AI-DEPLOYMENT.md` y `BEZHAS-AI-ROLLBACK.md`: despliegue con `scripts/gcp-deploy.sh`, migración 063 vía `bezhas-db-migrate`, rollback de revisión de Cloud Run.
+4. `docs/runbooks/BEZHAS-AI-DEPLOYMENT.md` y `BEZHAS-AI-ROLLBACK.md`: despliegue con `scripts/gcp-deploy.sh`, migración 065 vía `bezhas-db-migrate`, rollback de revisión de Cloud Run.
 
 ### Fase 7 — Proveedor local opcional (cuando haya hardware)
 1. Proveedor `ollama` en `gateway.js` (misma interfaz, `OLLAMA_URL` privada) detrás de `AI_PROVIDER`. Nunca fallback silencioso a cloud con datos de tenant.
@@ -141,5 +141,5 @@ Suites verdes → tests negativos de tenant → staging en Cloud Run con flag �
 ## 5. Bloqueos que sólo puede resolver el propietario
 1. Confirmar el valor actual de `AI_MODEL_ANTHROPIC` y si hay `ANTHROPIC_API_KEY` válida en Secret Manager. Gemini y OpenAI no sirven ahora mismo: la clave de Gemini es inválida y OpenAI no tiene créditos.
 2. Aprobar que `JWT_STRICT_CLAIMS=true` cierre las sesiones con tokens antiguos.
-3. Aprobar la migración 063 en el Cloud SQL de producción. Recordatorio: 049–051 siguen sin aplicar.
+3. Aprobar la migración 065 en el Cloud SQL de producción y, después, `node scripts/knowledge-reindex.js`. Recordatorio: 049–051 siguen sin aplicar.
 4. Para la Fase 7: el hardware real del host de inferencia (GPU, VRAM, RAM, SO, ubicación).

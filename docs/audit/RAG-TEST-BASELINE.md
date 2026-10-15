@@ -24,3 +24,14 @@ Corpus: `api/__tests__/fixtures/rag-eval/questions.json` (54 preguntas: 30 direc
 - No hay prueba de aislamiento contra un Postgres real: `knowledge-isolation.test.js` usa el almacén en memoria. La barrera SQL (`PgStore.chunksVisibles`, `WHERE tenant_id IS NOT DISTINCT FROM`) sigue sin test automático.
 
 **Pruebas automáticas asociadas** (`pnpm exec jest`): `rag-eval.test.js` (umbrales sobre este baseline), `knowledge-isolation.test.js` (10 casos de tenant, borrado, cuarentena, vigencia y versión), `ai-citations.test.js` (citas inexistentes).
+
+## Fase 3 — búsqueda en Postgres (medido con Postgres 16 real, contenedor desechable)
+
+Prueba: 400 documentos de un mismo tenant (14.324 fragmentos) + los 32 globales. `KNOWLEDGE_RETRIEVAL` sin definir (modo actual) frente a `fts`.
+
+| Modo | p50 | p95 | Resultado |
+|---|---|---|---|
+| completo (actual, `LIMIT 5000` sin orden) | 247 ms | 407 ms | **no devuelve nada**: el tope de 5000 deja fuera el conocimiento global y la respuesta queda vacía |
+| `fts` (índice GIN + estadísticas BM25 en SQL) | 22 ms | 33 ms | top-1 correcto en las 4 preguntas |
+
+Esto confirma el hallazgo H2: con más de 5000 fragmentos por tenant el modo actual **falla en silencio**, no sólo se vuelve lento. Con el corpus de evaluación (54 preguntas) `fts` devuelve los mismos documentos y en el mismo orden que el modo completo (`__tests__/integration/knowledge-pg.test.js`, se salta si no hay `KNOWLEDGE_TEST_PG_URL`). El modo `fts` sigue DESACTIVADO por defecto.

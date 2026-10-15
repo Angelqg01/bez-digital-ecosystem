@@ -29,17 +29,20 @@ function tokenize(text) {
  * asistente presenta como respuesta un documento que no tiene nada que ver. Un término que no existe en ningún documento
  * pesa mucho y deja la cobertura baja: la pregunta queda sin respuesta en vez de inventada.
  */
-function bm25Rank(query, chunks, { k1 = 1.4, b = 0.75, minCoverage = 0.25 } = {}) {
+function bm25Rank(query, chunks, { k1 = 1.4, b = 0.75, minCoverage = 0.25, stats = null } = {}) {
     const qTerms = [...new Set(tokenize(query))];
     if (!qTerms.length || !chunks.length) return [];
 
     // El título se cuenta tres veces: una pregunta que nombra un tema («¿qué es el BEZ…?») debe encontrar el documento que se llama así.
     const docs = chunks.map((c) => ({ c, tokens: tokenize(`${c.title || ''} ${c.title || ''} ${c.title || ''} ${c.section || ''} ${c.content}`) }));
-    const avgLen = docs.reduce((s, d) => s + d.tokens.length, 0) / docs.length || 1;
+    // `stats` ({N, avgLen, df}) permite rankear un SUBCONJUNTO de candidatos (prefiltrado en SQL) con las estadísticas de
+    // toda la colección visible: sin ellas, idf y longitud media saldrían de los candidatos y el orden cambiaría.
+    const avgLen = (stats && stats.avgLen) || docs.reduce((s, d) => s + d.tokens.length, 0) / docs.length || 1;
     const df = new Map();
-    for (const d of docs) for (const t of new Set(d.tokens)) df.set(t, (df.get(t) || 0) + 1);
+    if (stats) for (const [t, n] of stats.df) df.set(t, n);
+    else for (const d of docs) for (const t of new Set(d.tokens)) df.set(t, (df.get(t) || 0) + 1);
 
-    const N = docs.length;
+    const N = (stats && stats.N) || docs.length;
     const idfDe = (q) => Math.log(1 + (N - (df.get(q) || 0) + 0.5) / ((df.get(q) || 0) + 0.5));
     const masaTotal = qTerms.reduce((m, q) => m + idfDe(q), 0) || 1;
     return docs
