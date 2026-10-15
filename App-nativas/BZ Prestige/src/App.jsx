@@ -6,6 +6,7 @@ import { Diamond, Scan, Store, BarChart3, Code2 } from 'lucide-react'
 import EcosystemBar from './components/EcosystemBar'
 import DevHubPanel from './components/DevHubPanel'
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen } from './context/AuthProvider'
+import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 
 // Pages
 import Authenticator from './pages/Authenticator'
@@ -79,6 +80,8 @@ function AppWrapper() {
     <Router>
       <AuthProvider>
         <App />
+        {/* Chat de la plataforma (el mismo de www.bezhas.com) */}
+        <AIWorkspaceBar hideAppId="app_prestige" bottomOffset={84} />
       </AuthProvider>
     </Router>
   )

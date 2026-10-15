@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import SetupWizard from './pages/SetupWizard';
 import Rewards from './pages/Rewards';
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen } from './context/AuthProvider';
+import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 import { useLocation } from 'react-router-dom';
 import EcosystemBar from './components/EcosystemBar';
 import DevHubPanel from './components/DevHubPanel';
@@ -120,6 +121,8 @@ export default function AppWrapper() {
   return (
     <AuthProvider>
       <App />
+      {/* Chat de la plataforma (el mismo de www.bezhas.com) */}
+      <AIWorkspaceBar bottomOffset={12} />
     </AuthProvider>
   );
 }

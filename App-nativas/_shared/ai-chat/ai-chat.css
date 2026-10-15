@@ -5,7 +5,7 @@
  */
 .bzai, .bzai * { box-sizing: border-box; }
 .bzai { position: fixed; left: 0; right: 0; bottom: var(--bzai-bottom, 12px); z-index: 120; display: flex; justify-content: center;
-  padding: 0 12px; pointer-events: none; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; color: #f1f5f9; font-size: 14px; line-height: 1.5; }
+  padding: 0 12px 0 calc(12px + var(--bzai-left, 0px)); pointer-events: none; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; color: #f1f5f9; font-size: 14px; line-height: 1.5; }
 .bzai button, .bzai textarea { font: inherit; color: inherit; }
 .bzai p, .bzai ul, .bzai ol, .bzai li, .bzai nav { margin: 0; padding: 0; }
 .bzai-col { pointer-events: auto; display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 768px; }
@@ -24,7 +24,9 @@
 .bzai-empty { padding: 24px 0; text-align: center; font-size: 14px; color: #94a3b8; }
 .bzai-span { grid-column: 1 / -1; }
 .bzai-grid { display: grid; gap: 8px; grid-template-columns: 1fr; }
-@media (min-width: 640px) { .bzai-grid { grid-template-columns: 1fr 1fr; } .bzai { padding: 0 24px; } }
+@media (min-width: 640px) { .bzai-grid { grid-template-columns: 1fr 1fr; } .bzai { padding-right: 24px; padding-left: calc(24px + var(--bzai-left, 0px)); } }
+/* En móvil la barra lateral no existe y la navegación inferior puede ser otra */
+@media (max-width: 768px) { .bzai { bottom: var(--bzai-bottom-m, var(--bzai-bottom, 12px)); padding-left: 12px; padding-right: 12px; } }
 .bzai-card { display: block; width: 100%; text-align: left; padding: 8px 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: transparent; cursor: pointer; }
 .bzai-card:hover { border-color: rgba(103,232,249,.4); background: rgba(255,255,255,.05); }
 .bzai-card-title { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }

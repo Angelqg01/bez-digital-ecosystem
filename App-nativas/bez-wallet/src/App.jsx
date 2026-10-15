@@ -3,6 +3,7 @@ import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Code2 } from 'lucide-react';
 
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen, OrganizationBar, OrganizationSettingsPage } from './context/AuthProvider';
+import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 import { useGasTank } from '@bezhas/platform-sdk/gas';
 
 import EcosystemBar from './components/EcosystemBar';
@@ -366,6 +367,8 @@ export default function AppWrapper() {
   return (
     <AuthProvider>
       <App />
+      {/* Chat de la plataforma (el mismo de www.bezhas.com) */}
+      <AIWorkspaceBar hideAppId="app_wallet" bottomOffset={12} />
     </AuthProvider>
   );
 }

@@ -15,6 +15,7 @@ import {
 import EcosystemBar from './components/EcosystemBar'
 import GuidedTour, { TourButton } from './components/GuidedTour'
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen, OrganizationBar, OrganizationSettingsPage } from './context/AuthProvider'
+import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 
 // Pages
 import ActiveRoute from './pages/ActiveRoute'
@@ -133,6 +134,8 @@ export default function AppWrapper() {
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <App />
+        {/* Chat de la plataforma (el mismo de www.bezhas.com) */}
+        <AIWorkspaceBar hideAppId="app_cargolink" bottomOffset={92} />
       </AuthProvider>
     </Router>
   )

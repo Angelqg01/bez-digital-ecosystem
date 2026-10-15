@@ -13,6 +13,8 @@
  * Props:
  *   hideAppId     id de la tarjeta de app que NO se muestra (la app en la que ya estás)
  *   bottomOffset  px sobre el borde inferior (para no tapar una barra de navegación fija)
+ *   bottomOffsetMobile  igual, pero en pantallas ≤ 768 px (si la navegación cambia en móvil); por defecto bottomOffset
+ *   leftOffset    px de margen izquierdo en pantallas > 768 px (para no pisar una barra lateral fija)
  *   suggestions   preguntas sugeridas; si falta, las genéricas de la plataforma
  *   siteUrl       origen de la web principal (las rutas internas del catálogo se abren allí). Por defecto VITE_SITE_URL o https://www.bezhas.com
  *
@@ -82,7 +84,7 @@ function AppShortcuts({ apps, onOpen, disabled, compact = false, hideAppId }) {
     );
 }
 
-export default function AIWorkspaceBar({ hideAppId, bottomOffset = 12, suggestions, siteUrl }) {
+export default function AIWorkspaceBar({ hideAppId, bottomOffset = 12, bottomOffsetMobile, leftOffset = 0, suggestions, siteUrl }) {
     const { token, isAuthenticated, openLoginModal, apiBase } = useAuth();
     const { AI_BASE, aiFetch } = useMemo(() => createAiClient(apiBase), [apiBase]);
     const site = (siteUrl || envSiteUrl()).replace(/\/+$/, '');
@@ -303,7 +305,7 @@ export default function AIWorkspaceBar({ hideAppId, bottomOffset = 12, suggestio
     if (!mounted) return null;
 
     return (
-        <div className="bzai" style={{ '--bzai-bottom': `${bottomOffset}px` }}>
+        <div className="bzai" style={{ '--bzai-bottom': `${bottomOffset}px`, '--bzai-bottom-m': `${bottomOffsetMobile ?? bottomOffset}px`, '--bzai-left': `${leftOffset}px` }}>
             <div className="bzai-col">
                 {open && (
                     <section aria-label="Conversación con BeZhas AI" className="bzai-panel">
