@@ -8,6 +8,7 @@
  * nunca del body. Conocimiento y conversaciones viven en Postgres.
  */
 const express = require('express');
+const { validarCitas } = require('../services/ai-workspace/citations');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const { authenticateToken } = require('../middleware/security');
@@ -152,7 +153,8 @@ router.post('/chat', aiLimiter, async (req, res) => {
         const { provider, text, usage } = await gateway.complete({
             system: SYSTEM_PROMPT, messages: turn.messages, maxTokens: 800, sources: turn.sources, contextText: turn.context,
         });
-        const { text: safeText } = await hooks.run('afterModel', { principal, text });
+        const { text: saneado } = await hooks.run('afterModel', { principal, text });
+        const safeText = validarCitas(saneado, turn.sources.length).text;
         const consumo = await facturacion.liquidar(reserva, { ...usage, provider });
         const respuesta = turn.antes + safeText + turn.despues;
         await conversations.append(turn.conv, turn.message, respuesta);
@@ -220,7 +222,7 @@ async function responderEnStream(req, res, principal, turn) {
             safeText = (turn.antes || '') + turn.bloqueado.respuesta;
         } else if (text) {
             try {
-                const limpio = (await hooks.run('afterModel', { principal, text })).text;
+                const limpio = validarCitas((await hooks.run('afterModel', { principal, text })).text, turn.sources.length).text;
                 // Lo mostrado y guardado = aviso previo + respuesta saneada del modelo + siguiente paso (texto fijo del servidor).
                 safeText = (turn.antes || '') + limpio + (despuesEnviado ? turn.despues : '');
                 if (limpio !== text && !res.writableEnded) send('replace', { text: safeText });
