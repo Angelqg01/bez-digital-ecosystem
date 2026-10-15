@@ -14,7 +14,7 @@ sesión, sin planes, sin streaming).
 
 ## Uso
 
-Dentro de `<BezhasAuthProvider>` (ya lo montan Energy, Genesis, PureScan, Sphere y Pay):
+Dentro de `<BezhasAuthProvider>` (ya lo montan Energy, Genesis, PureScan, Sphere y Pay; hoy usan este chat **Energy y PureScan**, ver `docs/audit/chat-energy/README.md` para el estado del resto):
 
 ```jsx
 import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx'
@@ -45,6 +45,10 @@ cd control-center/frontend && pnpm exec jest __tests__/lib/ai-workspace-parity.t
 ```
 Si cambias el renderizado, cambia las dos y regenera el JSON de casos. El componente y el CSS (`ai-chat.css`, acotado a
 `.bzai`, sin Tailwind) siguen el diseño de `AIWorkspaceBar.tsx`: si cambia allí (p. ej. una pestaña nueva), hay que reflejarlo aquí.
+
+## Dónde NO ponerlo
+- En pantallas de pago (checkout): la barra fija puede tapar los botones de pago.
+- En apps con su propia caja de texto fija abajo (p. ej. Sphere, que es una mensajería): quedarían dos cajas de chat apiladas.
 
 ## Lo que NO hace
 - No hay caja para adjuntar documentos (la política es que los archivos sólo sirven para NFT y no se leen).

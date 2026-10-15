@@ -23,7 +23,18 @@
 
 ## Límites y pendiente
 - **No desplegado.** Hay que reconstruir y desplegar Energy (`deploy/gcp/deploy-subapps.sh energy`). El build de producción de Vite sale bien en local; el build con el Dockerfile de las SubApps **no se ha ejecutado**.
-- Las otras SubApps (CargoLink, Genesis, Prestige, PureScan, Sphere, Vision, Wallet, Pay, Gas, Edge) siguen con `bz-chat.js`: el componente está listo para adoptarlo igual (README de `_shared/ai-chat`). Mientras tanto, el usuario ve dos chats distintos según la app.
+- **Estado por SubApp** (el chat compartido sustituye a `bz-chat.js`):
+
+  | SubApp | Estado | Motivo |
+  |---|---|---|
+  | BEZ Energy | ✅ migrada y probada | — |
+  | BZ PureScan | ✅ migrada y probada (móvil: la barra queda sobre su navegación inferior) | ![PureScan](img/06-purescan-movil.jpg) |
+  | BZ Genesis | ⏳ pendiente | Ya monta `BezhasAuthProvider`, pero no tiene dependencias instaladas aquí y no pude compilarla ni verla |
+  | BeZhas Pay Manager | ⛔ se deja con el widget antiguo | Es una pasarela de pago: la barra fija tapa parte del selector de métodos de pago; hace falta decidir dónde va (p. ej. sólo en el panel de comercio, no en el checkout) |
+  | BZ Sphere | ⛔ se deja con el widget antiguo | Es una app de mensajería con su propia caja de texto fija abajo: dos cajas de chat apiladas confundirían más |
+  | CargoLink, Prestige, Vision, Wallet, Gas, Edge | ⏳ pendiente | No montan `BezhasAuthProvider`: habría que decidir cómo conviven con su propia sesión |
+
+  Mientras tanto, el usuario ve el chat nuevo en Energy y PureScan y el widget antiguo (burbuja 💬) en el resto.
 - El texto del «siguiente paso» de energía lo escribe el servidor y dice «abre BEZ Energy en el catálogo de acciones» incluso estando ya en Energy. Corregirlo exige que la SubApp diga al servidor en qué app está (cabecera nueva → hay que añadirla al CORS de la API). No se ha hecho.
 - La prueba usó una API local con base de datos simulada y las rutas `/api/energy/*` sin montar (404 esperados); no se probó el inicio de sesión real por email o wallet de Energy contra la API de producción.
 - No hay prueba automática del componente React (Energy no tiene entorno de test de componentes); la cobertura es la lógica compartida y la prueba en el navegador.
