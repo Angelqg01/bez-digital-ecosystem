@@ -40,3 +40,5 @@
 **/Sensores/
 **/*.log
 /sdk/**/*.tgz
+# El whitepaper de Energy se sirve desde public/ (página Docs): la regla **/*.pdf de arriba lo excluía y daba 404.
+!/App-nativas/bez-energy/public/*.pdf
