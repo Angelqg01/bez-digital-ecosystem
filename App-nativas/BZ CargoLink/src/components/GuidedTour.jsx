@@ -5,7 +5,8 @@
 import React from 'react'
 import { GuidedTour as BaseGuidedTour, TourButton as BaseTourButton } from '@bezhas/guided-tour/react'
 
-const EVENT = 'cargolink:start-tour'
+export const TOUR_EVENT = 'cargolink:start-tour'
+const EVENT = TOUR_EVENT
 const SEEN_KEY = 'cargolink_tour_seen_v1'
 
 export default function GuidedTour() {

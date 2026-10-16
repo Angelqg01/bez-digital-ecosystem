@@ -7,6 +7,7 @@ import EcosystemBar from './components/EcosystemBar'
 import DevHubPanel from './components/DevHubPanel'
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen } from './context/AuthProvider'
 import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
+import HeaderMenu from '../../_shared/HeaderMenu.jsx';
 
 // Pages
 import Authenticator from './pages/Authenticator'
@@ -34,9 +35,7 @@ const App = () => {
             </h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button onClick={() => setDevOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#00f0ff', background: 'rgba(0,240,255,0.06)', padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(0,240,255,0.2)', cursor: 'pointer', fontSize: 10, fontWeight: 800 }}>
-              <Code2 size={14} /> API HUB
-            </button>
+            <HeaderMenu items={[{ key: 'api', label: 'API Hub', hint: 'Claves, webhooks e integración', icon: Code2, onClick: () => setDevOpen(true) }]} />
             <HeaderAuthButton />
           </div>
         </header>

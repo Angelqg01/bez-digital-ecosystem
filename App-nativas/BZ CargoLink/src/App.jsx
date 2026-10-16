@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, NavLink, Link, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   Terminal,
   Map as MapIcon,
@@ -11,9 +11,12 @@ import {
   Users,
   Radio,
   Settings as SettingsIcon,
+  HelpCircle,
+  Building2,
 } from 'lucide-react'
 import EcosystemBar from './components/EcosystemBar'
-import GuidedTour, { TourButton } from './components/GuidedTour'
+import GuidedTour, { TOUR_EVENT } from './components/GuidedTour'
+import HeaderMenu from '../../_shared/HeaderMenu.jsx'
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen, OrganizationBar, OrganizationSettingsPage } from './context/AuthProvider'
 import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 
@@ -33,6 +36,7 @@ const App = () => {
   const { token, user } = useAuth()
   const isAdmin = (user?.role || '').toLowerCase() === 'admin'
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isDashboard = location.pathname === '/'
   const showLock = !token && !isDashboard
@@ -50,19 +54,17 @@ const App = () => {
             </h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <TourButton compact />
-            <Link to="/settings" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--bz-text)', background: 'var(--bz-surface-container)', padding: '6px 12px', borderRadius: 6, border: '1px solid var(--bz-border)', textDecoration: 'none' }} title="Configuración y sensores">
-              <SettingsIcon size={16} color="var(--bz-primary)" />
-              <span style={{ fontSize: 10, fontWeight: 800 }}>CONFIG</span>
-            </Link>
-            <Link to="/integration" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--bz-text)', background: 'var(--bz-surface-container)', padding: '6px 12px', borderRadius: 6, border: '1px solid var(--bz-border)', textDecoration: 'none' }}>
-              <Code2 size={16} color="var(--bz-primary)" />
-              <span style={{ fontSize: 10, fontWeight: 800 }}>API HUB</span>
-            </Link>
-            <Link to="/organization" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--bz-text)', background: 'var(--bz-surface-container)', padding: '6px 12px', borderRadius: 6, border: '1px solid var(--bz-border)', textDecoration: 'none' }} title="Organización: KYB, blockchain, facturación">
-              <span style={{ fontSize: 10, fontWeight: 800 }}>ORG</span>
-            </Link>
-            <OrganizationBar />
+            <HeaderMenu
+              onNavigate={navigate}
+              items={[
+                { key: 'tour', label: 'Cómo usar', hint: 'Recorrido animado por cada función', icon: HelpCircle, onClick: () => window.dispatchEvent(new CustomEvent(TOUR_EVENT)) },
+                { key: 'settings', label: 'Configuración y sensores', icon: SettingsIcon, to: '/settings' },
+                { key: 'api', label: 'API Hub', hint: 'Claves, webhooks e integración', icon: Code2, to: '/integration' },
+                { key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: '/organization' },
+              ]}
+            >
+              <OrganizationBar />
+            </HeaderMenu>
             <HeaderAuthButton />
           </div>
         </header>

@@ -1,6 +1,7 @@
 import React, { Suspense, useMemo, useState } from 'react';
-import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { Code2 } from 'lucide-react';
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Code2, Building2 } from 'lucide-react';
+import HeaderMenu from '../../_shared/HeaderMenu.jsx';
 
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen, OrganizationBar, OrganizationSettingsPage } from './context/AuthProvider';
 import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
@@ -310,6 +311,7 @@ function AppRoutes() {
 
 function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [devOpen, setDevOpen] = useState(false);
   const { token } = useAuth();
 
@@ -344,7 +346,9 @@ function App() {
               <span style={{ fontSize: '10px', background: 'rgba(0, 240, 255, 0.1)', color: '#00f0ff', padding: '2px 8px', borderRadius: '12px', fontWeight: 800 }}>TESTNET ACTIVE</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <OrganizationBar />
+              <HeaderMenu onNavigate={navigate} items={[{ key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: ROUTES.organization }]}>
+                <OrganizationBar />
+              </HeaderMenu>
               <HeaderAuthButton />
             </div>
           </div>
