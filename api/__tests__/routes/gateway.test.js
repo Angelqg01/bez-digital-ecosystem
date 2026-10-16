@@ -321,7 +321,9 @@ describe('Gateway Routes', () => {
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(200);
             expect(res.body.token).toHaveProperty('symbol', 'BEZ');
-            expect(res.body.token).toHaveProperty('wrappedVersion');
+            expect(res.body.token).toHaveProperty('decimals', 18);
+            // No hay wBEZ desplegado: BEZ-Coin sólo existe en Polygon.
+            expect(res.body.token).not.toHaveProperty('wrappedVersion');
         });
     });
 

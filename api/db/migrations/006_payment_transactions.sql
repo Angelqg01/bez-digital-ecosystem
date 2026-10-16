@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS token_price_cache (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Seed initial BEZ price
+-- Seed initial BEZ price (fase semilla: 0,0075 USD, ver config/bez-price.js)
 INSERT INTO token_price_cache (symbol, price_usd, change_24h)
-VALUES ('BEZ', 0.10, 0)
+VALUES ('BEZ', 0.0075, 0)
 ON CONFLICT (symbol) DO NOTHING;

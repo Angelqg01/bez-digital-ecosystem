@@ -781,40 +781,33 @@ router.get('/treasury/overview', authenticateGateway, requireScope('treasury'), 
 // ═══════════════════════════════════════════════════════════
 
 router.get('/token/info', authenticateGateway, requireScope('token'), async (req, res) => {
+    const chainId = cadenaOResponder400(res, req.query.chainId);
+    if (chainId === null) return;
+    const bezTokenName = resolveBEZToken(chainId);
     try {
-        const chainId = cadenaOResponder400(res, req.query.chainId);
-        if (chainId === null) return;
-        const bezTokenName = resolveBEZToken(chainId);
         const token = await contractService.getTokenInfo(bezTokenName, chainId);
         res.json({
             success: true,
             source: 'onchain',
-            token: {
-                ...token,
-                circulatingSupply: token.totalSupply,
-                wrappedVersion: {
-                    name: 'Wrapped BeZhas Coin',
-                    symbol: 'wBEZ',
-                    chains: [137, 42161],
-                },
-            },
+            token: { ...token, circulatingSupply: token.totalSupply },
         });
     } catch (error) {
+        // Sin nodo no hay supply que enseñar: antes se servía «BeZhas Coin V2»,
+        // 100 M de supply, la cadena 2708 y un wBEZ en Arbitrum, nada de lo cual
+        // es BEZ-Coin (3.000 M en Polygon). Sólo lo que no depende del nodo.
+        logger.warn({ chainId, error: error.message }, 'Token info on-chain read failed');
+        let address = null;
+        try {
+            address = await contractService.getContractAddress(bezTokenName, chainId);
+        } catch (e) {
+            logger.warn({ chainId, error: e.message }, 'BEZ address not in deployments');
+        }
         res.json({
             success: true,
-            source: 'fallback',
+            source: 'unavailable',
             token: {
-                name: 'BeZhas Coin V2',
-                symbol: 'BEZ',
-                decimals: 18,
-                totalSupply: '100000000',
-                totalSupplyWei: '100000000000000000000000000',
-                chainId: 2708,
-                wrappedVersion: {
-                    name: 'Wrapped BeZhas Coin',
-                    symbol: 'wBEZ',
-                    chains: [137, 42161],
-                },
+                address, name: 'BEZ-Coin', symbol: 'BEZ', decimals: 18, chainId,
+                totalSupply: null, totalSupplyWei: null, circulatingSupply: null,
             },
         });
     }
