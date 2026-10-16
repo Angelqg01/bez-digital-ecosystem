@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Cpu, Globe2, MapPinned, Copy, CheckCircle2, ShieldCheck } from 'lucide-react'
 import { cargoLinkApi } from '../services/cargoLinkApi'
+import { getActorKey, setActorKey as setActorKeyStore } from '../services/actorKey'
 
 /**
  * IotHubPanel — Hub de Ingestión Unificado (Developer Hub).
@@ -50,7 +51,7 @@ const SecretReveal = ({ title, entries }) => {
 }
 
 const IotHubPanel = () => {
-  const [actorKey, setActorKey] = useState(() => localStorage.getItem('cargolink_actor_key') || '')
+  const [actorKey, setActorKey] = useState(() => getActorKey())
   const [tab, setTab] = useState('device')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -80,7 +81,7 @@ const IotHubPanel = () => {
   const [fenceEnforce, setFenceEnforce] = useState(false)
   const [fences, setFences] = useState([])
 
-  useEffect(() => { localStorage.setItem('cargolink_actor_key', actorKey) }, [actorKey])
+  useEffect(() => { setActorKeyStore(actorKey) }, [actorKey])
 
   const refreshLists = useCallback(async () => {
     if (!actorKey) return

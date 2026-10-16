@@ -10,6 +10,7 @@
 import React, { useEffect, useState } from 'react'
 import { Plug, RefreshCw, Boxes, AlertCircle } from 'lucide-react'
 import { cargoLinkApi, LIFECYCLE_STAGES } from '../services/cargoLinkApi'
+import { authKey } from '../services/actorKey'
 
 const stageIndex = status => LIFECYCLE_STAGES.indexOf(status)
 
@@ -31,10 +32,7 @@ const StatusTrail = ({ status }) => {
   )
 }
 
-function defaultAuthKey() {
-  if (typeof localStorage === 'undefined') return null
-  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
-}
+const defaultAuthKey = authKey
 
 const PosNetworkPanel = ({ apiKey: apiKeyProp }) => {
   const apiKey = apiKeyProp || defaultAuthKey()

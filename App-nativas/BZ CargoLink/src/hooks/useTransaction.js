@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cargoLinkApi, LIFECYCLE_STAGES } from '../services/cargoLinkApi'
 import { useAuth } from '../context/AuthProvider'
+import { authKey } from '../services/actorKey'
 
-function authKey() {
-  if (typeof localStorage === 'undefined') return null
-  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
-}
 
 export function useTransactions({ status, pollMs = 30_000 } = {}) {
   const { token } = useAuth()

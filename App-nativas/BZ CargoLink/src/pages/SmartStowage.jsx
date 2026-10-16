@@ -12,10 +12,8 @@ import {
 } from 'lucide-react'
 import { useTransactions } from '../hooks/useTransaction'
 import { cargoLinkApi } from '../services/cargoLinkApi'
+import { authKey } from '../services/actorKey'
 
-function authKey() {
-  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
-}
 
 const SmartStowage = () => {
   const navigate = useNavigate()
@@ -66,7 +64,7 @@ const SmartStowage = () => {
     }
   }
 
-  const result = validation?.validation || validation?.result
+  const result = validation?.validation?.result || validation?.validation || validation?.result
 
   return (
     <div style={{ padding: 20 }}>

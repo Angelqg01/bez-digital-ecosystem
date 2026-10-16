@@ -20,10 +20,8 @@ import {
 } from 'lucide-react'
 import { useTransactions } from '../hooks/useTransaction'
 import { cargoLinkApi } from '../services/cargoLinkApi'
+import { authKey } from '../services/actorKey'
 
-function authKey() {
-  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
-}
 
 const METRIC_ICON = {
   temperature: Thermometer,
@@ -244,8 +242,8 @@ const Telemetry = () => {
                   <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--bz-text-muted)', textTransform: 'uppercase' }}>{t.metric}</span>
                 </div>
                 <p style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Space Grotesk', color: t.breach ? '#ef4444' : '#fff' }}>
-                  {t.value != null ? t.value : '—'}
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bz-text-muted)', marginLeft: 4 }}>{t.unit || ''}</span>
+                  {t.value != null ? t.value : (t.lat != null ? `${Number(t.lat).toFixed(3)}, ${Number(t.lng).toFixed(3)}` : '—')}
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bz-text-muted)', marginLeft: 4 }}>{t.value != null ? (t.unit || '') : ''}</span>
                 </p>
                 <p style={{ fontSize: 9, color: 'var(--bz-text-muted)', marginTop: 4 }}>
                   {t.device_id} · {new Date(t.recorded_at).toLocaleTimeString()}
@@ -279,7 +277,7 @@ const Telemetry = () => {
                         {t.metric}
                       </span>
                       <span style={{ fontSize: 13, fontWeight: 800, fontFamily: 'Space Grotesk' }}>
-                        {t.value != null ? `${t.value}${t.unit || ''}` : '—'}
+                        {t.value != null ? `${t.value}${t.unit || ''}` : (t.lat != null ? `${Number(t.lat).toFixed(3)}, ${Number(t.lng).toFixed(3)}` : '—')}
                       </span>
                       {t.breach && (
                         <span style={{ fontSize: 8, fontWeight: 900, background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: 4 }}>BREACH</span>

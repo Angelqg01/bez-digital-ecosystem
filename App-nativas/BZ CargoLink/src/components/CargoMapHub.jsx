@@ -3,14 +3,15 @@
  * pasos, modo, corredor → B-UID) y Zonas (geocercas). Datos reales de la API de CargoLink (tx, telemetría IoT, geofences).
  * Crear B-UIDs y geocercas exige rol pos/admin: si la clave no lo permite, la API responde 403 y se muestra el motivo.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import CargoMap, { STATUS_COLOR, FENCE_COLOR } from './CargoMap'
 import { PORTS } from '../data/ports'
 import { cargoLinkApi } from '../services/cargoLinkApi'
 import { loadShipments, loadFences } from '../services/mapData'
 import { CHOKEPOINTS, MODES, buildPath, pathLengthKm, etaHours, corridorPolygon, formatKm, formatDuration, ago, haversineKm } from '../utils/geo'
+import { authKey, hasActorKey } from '../services/actorKey'
+import ActorKeyCard from './ActorKeyCard'
 
-const authKey = () => localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
 const MODE_LABEL = { sea: '🚢 Marítimo', road: '🚚 Carretera', rail: '🚆 Ferrocarril', air: '✈️ Aéreo' }
 const STATUS_LABEL = { CREATED: 'Creado', CUSTOMS_CLEARED: 'Aduana OK', STOWED: 'Estibado', DEPARTED: 'Zarpó', IN_TRANSIT: 'En tránsito', DELIVERED: 'Entregado' }
 const KIND_LABEL = { port: 'Puerto', customs: 'Aduana', warehouse: 'Almacén', route_corridor: 'Corredor' }
@@ -43,19 +44,33 @@ export default function CargoMapHub({ selectedBUid, onSelect, height = 340 }) {
   // Borrador de geocerca
   const [fence, setFence] = useState({ name: '', kind: 'warehouse', radiusM: 2000, enforce: false, lat: null, lng: null })
 
+  const fencesRef = useRef({ global: [], sel: [] })
+  const selRef = useRef(selectedBUid)
+  selRef.current = selectedBUid
+
   const refresh = useCallback(async () => {
     const key = authKey()
     if (!key) { setLoading(false); return }
     try {
-      const [s, f] = await Promise.all([loadShipments(cargoLinkApi, key, { ports: PORTS }), loadFences(cargoLinkApi, key)])
-      setShipments(s); setFences(f); setError('')
+      // Sin bUid la API sólo devuelve las zonas globales; los corredores de ruta son de un B-UID concreto: se piden aparte.
+      const sel = selRef.current
+      // Los envíos son imprescindibles; las zonas son accesorias: si fallan (p. ej. un corte puntual de la BD) no se pierde el resto.
+      const [s, f, fSel] = await Promise.all([
+        loadShipments(cargoLinkApi, key, { ports: PORTS }),
+        loadFences(cargoLinkApi, key).catch(() => null),
+        sel ? loadFences(cargoLinkApi, key, sel).catch(() => null) : Promise.resolve([]),
+      ])
+      const byId = new Map([...(f || fencesRef.current.global), ...(fSel || fencesRef.current.sel)].map((z) => [z.id, z]))
+      fencesRef.current = { global: f || fencesRef.current.global, sel: fSel || fencesRef.current.sel }
+      setShipments(s); setFences([...byId.values()]); setError('')
     } catch (e) { setError(e.message) } finally { setLoading(false) }
   }, [])
 
   useEffect(() => { refresh(); const t = setInterval(refresh, 30000); return () => clearInterval(t) }, [refresh])
 
   const selected = shipments.find((s) => s.bUid === selectedBUid) || null
-  useEffect(() => { if (selected) setFitToken((n) => n + 1) }, [selected?.bUid]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (selected) setFitToken((n) => n + 1) }, [selected?.bUid])
+  useEffect(() => { if (selectedBUid) refresh() }, [selectedBUid, refresh]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const draftPath = useMemo(() => (origin && destination ? buildPath([origin, ...waypoints, destination]) : []), [origin, destination, waypoints])
   const draftKm = draftPath.length ? pathLengthKm(draftPath) : 0
@@ -146,6 +161,7 @@ export default function CargoMapHub({ selectedBUid, onSelect, height = 340 }) {
 
       <div style={{ padding: '12px 16px', background: 'var(--bz-bg)' }}>
         {error && <p role="alert" style={{ color: '#ef4444', fontSize: 11, margin: '0 0 8px' }}>{error}</p>}
+        {(!hasActorKey() || /api key/i.test(error)) && <ActorKeyCard compact onChange={refresh} />}
         {notice && <p role="status" style={{ color: 'var(--bz-secondary)', fontSize: 11, margin: '0 0 8px' }}>{notice}</p>}
 
         {tab === 'track' && (

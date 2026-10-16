@@ -14,6 +14,7 @@ import { Code2, Key, Webhook, Download, Copy, CheckCircle2, Globe, X, ChevronDow
 import { bezhasPlatform } from '../services/bezhasPlatform'
 import { usePlatformState } from '../hooks/usePlatformState'
 import { cargoGateway } from '../services/cargoGateway'
+import { authKey } from '../services/actorKey'
 
 /* ─── Catálogo de Endpoints por sector ──────────────────────────────────── */
 const ENDPOINTS = {
@@ -254,7 +255,7 @@ export default function DevHubPanel({ sector = 'wallet', onClose }) {
                   onClick={async () => {
                     try {
                       const selected = events.slice(0, bezhasPlatform.plans[platformState.planId].webhookLimit)
-                      await cargoGateway.registerWebhook({ url: webhookUrl, events: selected }, platformState.apiKey)
+                      await cargoGateway.registerWebhook({ url: webhookUrl, events: selected }, authKey())
                       bezhasPlatform.registerWebhook(webhookUrl, selected)
                       setNotice('Webhook guardado en el Core BeZhas.')
                     } catch (error) {
@@ -279,7 +280,7 @@ export default function DevHubPanel({ sector = 'wallet', onClose }) {
                         onClick={async () => {
                           try {
                             const targetUrl = webhookUrl || 'https://api.example.com/webhooks/bezhas'
-                            await cargoGateway.registerWebhook({ url: targetUrl, events: [ev] }, platformState.apiKey)
+                            await cargoGateway.registerWebhook({ url: targetUrl, events: [ev] }, authKey())
                             bezhasPlatform.registerWebhook(targetUrl, [ev])
                             setNotice(`${ev} suscrito en el Core BeZhas.`)
                           } catch (error) {
