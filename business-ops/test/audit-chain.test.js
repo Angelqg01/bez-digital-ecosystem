@@ -101,3 +101,23 @@ test('tenantId por defecto del registro puede ser sobrescrito por el propio entr
   const r = audit.log({ tenantId: 'otro', event: 'x' });
   assert.equal(r.tenantId, 'otro');
 });
+
+test('AuditLog: un argumento undefined no rompe la cadena tras guardarla (viaje por JSON)', () => {
+  const AuditLog = require('../src/guardrails/AuditLog');
+  const a = new AuditLog({ tenantId: 't' });
+  const registros = [
+    a.log({ event: 'policy:decision', action: { tool: 'blockchain', args: { to: '0x1', counterparty: undefined, lista: [1, undefined, 3] } } }),
+    a.log({ event: 'hitl:resolved', approvalId: 'a1', nota: undefined }),
+  ];
+  // SqliteStore guarda con JSON.stringify y lee con JSON.parse: eso es lo que verifica verifyChain.
+  const leidos = registros.map((r) => JSON.parse(JSON.stringify(r)));
+  assert.equal(AuditLog._verifyRecords(leidos).ok, true);
+});
+
+test('AuditLog: alterar un campo sigue rompiendo la cadena', () => {
+  const AuditLog = require('../src/guardrails/AuditLog');
+  const a = new AuditLog({ tenantId: 't' });
+  const leidos = [a.log({ event: 'x', importe: 10 }), a.log({ event: 'y' })].map((r) => JSON.parse(JSON.stringify(r)));
+  leidos[0].importe = 11;
+  assert.equal(AuditLog._verifyRecords(leidos).ok, false);
+});
