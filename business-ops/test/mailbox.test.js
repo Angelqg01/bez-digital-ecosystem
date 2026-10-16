@@ -106,3 +106,29 @@ test('Mailbox y correo: mail.hostinger.com (frontal sin SMTP) se corrige a smtp/
     Object.assign(process.env, antes);
   }
 });
+
+test('Mailbox: el digest DMARC cachea por UID y separa lo que no es un informe', async () => {
+  const zlib = require('zlib');
+  const informe = zlib.gzipSync(`<feedback><report_metadata><org_name>x</org_name><date_range><begin>${Math.floor(Date.now() / 1000) - 3600}</begin><end>${Math.floor(Date.now() / 1000)}</end></date_range></report_metadata><policy_published><domain>bezhas.com</domain><p>quarantine</p></policy_published><record><row><source_ip>1.2.3.4</source_ip><count>3</count><policy_evaluated><disposition>none</disposition><dkim>pass</dkim><spf>pass</spf></policy_evaluated></row><identifiers><header_from>bezhas.com</header_from></identifiers></record></feedback>`);
+  const correo = (adjunto) => Buffer.from(
+    'From: a@b.c\r\nTo: yoelceo@bezhas.com\r\nSubject: Report domain: bezhas.com\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=B\r\n\r\n' +
+    '--B\r\nContent-Type: text/plain\r\n\r\nhola\r\n--B\r\nContent-Type: application/gzip; name="r.xml.gz"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="r.xml.gz"\r\n\r\n' +
+    adjunto.toString('base64') + '\r\n--B--\r\n');
+  const fuentes = { 10: correo(informe), 11: correo(Buffer.from('no es un informe')) };
+  let descargas = 0;
+  const factory = () => ({
+    connect: async () => {}, getMailboxLock: async () => ({ release() {} }), logout: async () => {},
+    search: async () => [10, 11],
+    fetch: async function* (uids) { for (const u of uids) { descargas++; yield { uid: u, source: fuentes[u] }; } },
+  });
+  const m = lector({ imapFactory: factory });
+  const d = await m.dmarcDigest({ days: 7 });
+  assert.equal(d.reports, 1);
+  assert.equal(d.messages, 3);
+  assert.equal(d.pass, 3);
+  assert.deepEqual(d.skipped.map((s) => s.uid), [11], 'el correo sin informe se anota, no se oculta');
+  assert.equal(descargas, 2);
+
+  await m.dmarcDigest({ days: 7 });
+  assert.equal(descargas, 2, 'refrescar no vuelve a bajar los mismos correos');
+});

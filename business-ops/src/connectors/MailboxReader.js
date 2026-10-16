@@ -23,6 +23,7 @@
 const PAGE_SIZE = 30;
 const MAX_LIMIT = 100;
 const SORTS = new Set(['newest', 'oldest', 'unread']);
+const DMARC_MAX_REPORTS = 150;
 const IMAP_TIMEOUTS = { connectionTimeout: 15000, greetingTimeout: 15000, socketTimeout: 30000 };
 
 class MailboxReader {
@@ -38,6 +39,7 @@ class MailboxReader {
     this.port = Number(config.port || e.IMAP_PORT || 993);
     this.tlsRejectUnauthorized = config.tlsRejectUnauthorized ?? (e.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false');
     this._imapFactory = imapFactory;
+    this._dmarcCache = new Map();   // uid → informe ya parseado (o su error): no se vuelve a bajar
   }
 
   get configured() { return !!(this.host && this.user && this.pass); }
@@ -154,6 +156,51 @@ class MailboxReader {
         text: (p.text || (p.html ? stripHtml(p.html) : '') || '').trim(),
         attachments: (p.attachments || []).map((a) => ({ filename: a.filename || '(sin nombre)', contentType: a.contentType, size: a.size })),
       };
+    });
+  }
+
+  /**
+   * Digest DMARC: abre los informes agregados que llegan al buzón (adjuntos
+   * zip/gzip/XML), los parsea y los resume por remitente. Solo lectura. Un
+   * informe ya procesado se guarda por UID, así que refrescar no repite el IMAP.
+   * @param {object} o
+   * @param {number} [o.days=14]  ventana de llegada
+   */
+  async dmarcDigest({ days = 14, folder = 'INBOX' } = {}) {
+    const dias = Math.min(Math.max(Number(days) || 14, 1), 90);
+    const { toXml, parseReport, summarize } = require('../platform/dmarc');
+    const desde = new Date(Date.now() - (dias + 1) * 86_400_000);
+
+    return this._withMailbox(folder, async (client) => {
+      const uids = ((await client.search({ subject: 'Report domain', since: desde }, { uid: true })) || [])
+        .sort((a, b) => b - a).slice(0, DMARC_MAX_REPORTS);
+      const nuevos = uids.filter((u) => !this._dmarcCache.has(u));
+
+      if (nuevos.length) {
+        const { simpleParser } = require('mailparser');
+        for await (const m of client.fetch(nuevos, { uid: true, source: true }, { uid: true })) {
+          try {
+            const p = await simpleParser(m.source);
+            const informes = [];
+            for (const a of p.attachments || []) {
+              try { informes.push(parseReport(toXml(a.content))); } catch { /* adjunto que no es informe: se ignora */ }
+            }
+            this._dmarcCache.set(m.uid, informes.length ? { reports: informes } : { error: 'sin informe DMARC en los adjuntos' });
+          } catch (err) {
+            this._dmarcCache.set(m.uid, { error: err.message });
+          }
+        }
+      }
+
+      const reports = []; const skipped = [];
+      for (const u of uids) {
+        const e = this._dmarcCache.get(u);
+        if (e?.reports) reports.push(...e.reports); else skipped.push({ uid: u, reason: e?.error || 'no procesado' });
+      }
+      // Dentro de la ventana según la propia fecha del informe (la de llegada puede diferir).
+      const limite = Date.now() - dias * 86_400_000;
+      const enVentana = reports.filter((r) => !r.end || r.end >= limite);
+      return { configured: true, mailbox: this.user, ...summarize(enVentana, { days: dias }), scanned: uids.length, skipped };
     });
   }
 

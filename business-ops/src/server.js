@@ -1422,6 +1422,14 @@ app.get('/tenants/:tenantId/mailbox', auth, scopeToTenant, mailboxAccess, rateLi
   } catch (err) { mailboxError(res, err); }
 });
 
+// Digest DMARC: informes agregados del buzón resumidos por remitente. Va ANTES
+// de /mailbox/:uid, o "dmarc" se tomaría por un uid.
+app.get('/tenants/:tenantId/mailbox/dmarc', auth, scopeToTenant, mailboxAccess, rateLimit, async (req, res) => {
+  try {
+    res.json(await mailbox.dmarcDigest({ days: req.query.days }));
+  } catch (err) { mailboxError(res, err); }
+});
+
 app.get('/tenants/:tenantId/mailbox/:uid', auth, scopeToTenant, mailboxAccess, rateLimit, async (req, res) => {
   try {
     res.json(await mailbox.get({ folder: req.query.folder || 'INBOX', uid: req.params.uid }));

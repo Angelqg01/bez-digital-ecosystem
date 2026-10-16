@@ -45,3 +45,15 @@ test('Rutas de bandeja: sin credenciales responde 503, no una bandeja vacía', a
     assert.equal((await r.json()).code, 'mailbox_not_configured');
   });
 });
+
+test('Rutas de bandeja: /mailbox/dmarc es el digest, no un uid, y respeta el acceso por tenant', async () => {
+  Object.assign(mailbox, { host: 'imap.bezhas.test', user: 'yoelceo@bezhas.com', pass: 'x', _imapFactory: () => ({ ...imapFalso(), search: async () => [] }) });
+  await conServidor(async (base) => {
+    const r = await get(base, '/tenants/bezhas/mailbox/dmarc?days=7');
+    assert.equal(r.status, 200, 'no se interpreta "dmarc" como uid (daría 400)');
+    const d = await r.json();
+    assert.equal(d.reports, 0);
+    assert.equal(d.recommendation.level, 'unknown');
+    assert.equal((await get(base, '/tenants/acme/mailbox/dmarc')).status, 403);
+  });
+});
