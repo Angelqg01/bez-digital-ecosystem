@@ -20,6 +20,8 @@ const mockBilling = {
     getMonthlySpend: jest.fn().mockResolvedValue(0),
 };
 jest.mock('../../services/aiBillingService', () => mockBilling);
+const mockPrincipal = jest.fn().mockResolvedValue({ plan: 'none' });
+jest.mock('../../services/ai-workspace/principal', () => ({ resolverPrincipal: (...a) => mockPrincipal(...a) }));
 
 const app = require('../../index');
 
@@ -253,6 +255,24 @@ describe('Routes: /api/ai-billing', () => {
             expect(res.status).toBe(200);
             expect(res.body.tier).toBe('professional');
             expect(res.body.discount).toBe(0.10);
+        });
+
+        it('resuelve el plan de la organización para un usuario con id UUID (sin tocar ai_subscriptions)', async () => {
+            mockPrincipal.mockResolvedValueOnce({ plan: 'business' });
+            const token = makeToken({ userId: '4d13de02-8cac-49ab-8574-c59e62f98542' });
+            const res = await request(app).get('/api/ai-billing/subscription').set('Authorization', `Bearer ${token}`);
+            expect(res.status).toBe(200);
+            expect(res.body.tier).toBe('professional');
+            expect(mockBilling.getActiveSubscriptionTier).not.toHaveBeenCalled();
+        });
+
+        it('Enterprise VIP → enterprise y sin plan → free', async () => {
+            mockPrincipal.mockResolvedValueOnce({ plan: 'enterprise_vip' });
+            const uuid = '4d13de02-8cac-49ab-8574-c59e62f98542';
+            let res = await request(app).get('/api/ai-billing/subscription').set('Authorization', `Bearer ${makeToken({ userId: uuid })}`);
+            expect(res.body.tier).toBe('enterprise');
+            res = await request(app).get('/api/ai-billing/subscription').set('Authorization', `Bearer ${makeToken({ userId: uuid })}`);
+            expect(res.body.tier).toBe('free');
         });
     });
 
