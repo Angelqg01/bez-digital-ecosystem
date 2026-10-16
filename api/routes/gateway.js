@@ -19,7 +19,7 @@
  *   /api/gateway/v1/webhooks/*   — Outbound signed payment events (register, deliveries, retry)
  */
 const { Router } = require('express');
-const { precioUsd } = require('../config/bez-price');
+const { precioUsd, bezPublicado } = require('../config/bez-price');
 const { chainCall } = require('../utils/chainCall');
 const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
@@ -1405,6 +1405,7 @@ router.get('/oracle/token-prices', publicPriceLimiter, async (req, res) => {
 
     const tokens = {};
     for (const row of rows) {
+        if (row.symbol === 'BEZ') continue;
         tokens[row.symbol] = {
             symbol: row.symbol,
             priceUSD: parseFloat(row.price_usd),
@@ -1412,6 +1413,9 @@ router.get('/oracle/token-prices', publicPriceLimiter, async (req, res) => {
             updatedAt: row.updated_at,
         };
     }
+    // BEZ siempre con el precio de configuración (el mismo con el que se liquida).
+    const bez = bezPublicado(rows.find((r) => r.symbol === 'BEZ'));
+    if (!bez.seed) tokens.BEZ = { symbol: 'BEZ', priceUSD: bez.priceUSD, change24h: bez.change24h, updatedAt: bez.updatedAt };
 
     // Sin fila en caché seguimos respondiendo con el precio semilla: un 500 aquí
     // rompería la portada por no tener un dato meramente informativo.
@@ -1477,22 +1481,9 @@ router.get('/token/price', authenticateGateway, requireScope('token'), async (re
             "SELECT price_usd, change_24h, updated_at FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
         ).catch(() => ({ rows: [] }));
 
-        if (cached.rows.length > 0) {
-            return res.json({
-                success: true,
-                priceUSD: parseFloat(cached.rows[0].price_usd),
-                change24h: parseFloat(cached.rows[0].change_24h || 0),
-                updatedAt: cached.rows[0].updated_at,
-            });
-        }
-
-        // Fallback: initial price from config
-        res.json({
-            success: true,
-            priceUSD: precioUsd(),
-            change24h: 0,
-            updatedAt: new Date().toISOString(),
-        });
+        // Siempre el precio de configuración, que es con el que se liquida.
+        const bez = bezPublicado(cached.rows[0]);
+        res.json({ success: true, priceUSD: bez.priceUSD, change24h: bez.change24h, updatedAt: bez.updatedAt });
     } catch (error) {
         logger.error(error, 'Token price fetch failed');
         res.status(500).json({ error: 'Failed to fetch token price' });
@@ -2269,12 +2260,20 @@ router.get('/network/stats', async (req, res) => {
             query('SELECT * FROM daily_analytics ORDER BY date DESC LIMIT 1').catch(() => ({ rows: [] })),
         ]);
 
-        const priceUSD = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].price_usd) : precioUsd();
-        const change24h = tokenPrice.rows.length > 0 ? parseFloat(tokenPrice.rows[0].change_24h || 0) : 0;
-        const totalSupply = 100_000_000; // 100M BEZ from deploy-config
+        const { priceUSD, change24h } = bezPublicado(tokenPrice.rows[0]);
+        // Supply real de BEZ-Coin en cadena (3.000 M en Polygon). Antes eran 100 M y un 42,8 %
+        // «circulante» fijos, así que la capitalización publicada salía 70 veces menor. Sin nodo: null.
+        let totalSupply = null;
+        try {
+            const chainId = cadenaPorDefecto();
+            const info = await contractService.getTokenInfo(resolveBEZToken(chainId), chainId);
+            totalSupply = parseFloat(info.totalSupply);
+        } catch (e) {
+            logger.warn({ error: e.message }, 'network/stats: supply on-chain no disponible');
+        }
         const totalStaked = parseFloat(stakingAgg.rows[0].total_staked);
-        const circulatingSupply = totalSupply * 0.428; // 42.8% circulating as per tokenomics
-        const marketCap = priceUSD * circulatingSupply;
+        const circulatingSupply = totalSupply;
+        const marketCap = totalSupply === null ? null : priceUSD * circulatingSupply;
         const tvl = parseFloat(farmingAgg.rows[0].tvl);
         const analytics = latestAnalytics.rows[0] || {};
 

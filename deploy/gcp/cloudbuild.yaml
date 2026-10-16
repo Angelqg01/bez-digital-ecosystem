@@ -224,6 +224,7 @@ steps:
           --service-account=${_SA_MCP}@$PROJECT_ID.iam.gserviceaccount.com \
           --port=8080 --cpu=1 --memory=1Gi --min-instances=1 --max-instances=3 \
           --no-cpu-throttling --execution-environment=gen2 \
+          --network=${_VPC_NETWORK} --subnet=${_VPC_SUBNET} --vpc-egress=private-ranges-only \
           --labels=app=bezhas,component=agent-runtime,commit=${_TAG} \
           --set-env-vars="^~^NODE_ENV=production~API_URL=${_API_URL}/api~AEGIS_API_URL=$$(url_run bezhas-aegis)~AI_ENGINE_URL=$$(url_run bezhas-ai-gateway)~HITL_CALLBACK_URL=${_API_URL}/api/hitl~CORE_CORS_ORIGINS=${_CORS_ORIGINS}" \
           $$(flag_secretos agent) --quiet
