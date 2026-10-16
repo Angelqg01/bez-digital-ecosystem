@@ -40,6 +40,28 @@ const automation = crearAdminAutomation({
     knowledgeStore: { chunksVisibles: (t) => require('../services/knowledge').knowledge.store.chunksVisibles(t) },
 });
 
+// ── Caché corta de lecturas ──────────────────────────────────────────────────
+// Cada lectura abre una conexión a OPERANT (y, si es la bandeja, una IMAP al
+// buzón: 2-4 s). Abrir la pestaña lanzaba varias a la vez, y la propia pestaña
+// las repetía al refrescar. Se reutiliza la respuesta unos segundos y las
+// peticiones simultáneas comparten una sola. Los errores NO se cachean, y toda
+// escritura vacía la caché para que el panel vea su propio efecto al instante.
+const cache = new Map();
+// Apagada bajo test (Jest fija JEST_WORKER_ID; NODE_ENV no siempre es 'test'),
+// salvo que el propio test la active con ADMIN_OPERANT_CACHE=on.
+const cacheActiva = () => process.env.ADMIN_OPERANT_CACHE === 'on'
+    || (process.env.ADMIN_OPERANT_CACHE !== 'off' && process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID);
+
+function conCache(clave, ttlMs, fn) {
+    if (!cacheActiva()) return fn();
+    const hit = cache.get(clave);
+    if (hit && Date.now() - hit.at < ttlMs) return hit.promesa;
+    const promesa = fn().catch((err) => { cache.delete(clave); throw err; });
+    cache.set(clave, { at: Date.now(), promesa });
+    return promesa;
+}
+const vaciarCache = () => cache.clear();
+
 const igualesSeguro = (a, b) => {
     const x = Buffer.from(String(a)); const y = Buffer.from(String(b));
     return x.length === y.length && crypto.timingSafeEqual(x, y);
@@ -67,7 +89,9 @@ router.post('/automations/tick', (req, res, next) => {
         return res.status(503).json({ error: 'automatizaciones desactivadas (ADMIN_AUTOMATION_ENABLED=false)', code: 'AUTOMATION_DISABLED' });
     }
     try {
-        res.json({ results: await automation.tick({ actor: req.automationActor || actorDe(req) }) });
+        const results = await automation.tick({ actor: req.automationActor || actorDe(req) });
+        vaciarCache();
+        res.json({ results });
     } catch (err) { fail(res, err); }
 });
 
@@ -104,18 +128,19 @@ const wrap = (fn) => async (req, res) => {
 };
 
 // Estado del puente: sondeo barato para pintar el semáforo de la pestaña.
-router.get('/status', wrap(async () => ({
+router.get('/status', wrap(() => conCache('status', 10_000, async () => ({
     configured: operant.configured(),
     tenantId: tenantId(),
     runtime: await operant.health(),
-})));
+}))));
 
 // ── Automatizaciones: sección de admin → señal → tarea de OPERANT ───────────
-router.get('/automations', wrap(async () => ({ automations: await automation.listar() })));
+router.get('/automations', wrap(() => conCache('automations', 10_000, async () => ({ automations: await automation.listar(), coverage: automation.cobertura() }))));
 
 router.post('/automations/:id/run', escritura, async (req, res) => {
     try {
         const r = await automation.ejecutar(req.params.id, { actor: actorDe(req), force: req.body?.force === true });
+        vaciarCache();
         if (r.status === 'unknown') return res.status(404).json({ error: 'automatización desconocida' });
         res.json(r);
     } catch (err) { fail(res, err); }
@@ -123,11 +148,13 @@ router.post('/automations/:id/run', escritura, async (req, res) => {
 
 router.post('/approvals/:approvalId/resolve', escritura, async (req, res) => {
     try {
-        res.json(await automation.resolverAprobacion({
+        const resuelta = await automation.resolverAprobacion({
             approvalId: req.params.approvalId, decision: req.body?.decision,
             reason: typeof req.body?.reason === 'string' ? req.body.reason.slice(0, 500) : undefined,
             actor: actorDe(req),
-        }));
+        });
+        vaciarCache();
+        res.json(resuelta);
     } catch (err) {
         if (err.status === 400) return res.status(400).json({ error: err.message });
         fail(res, err);
@@ -135,21 +162,22 @@ router.post('/approvals/:approvalId/resolve', escritura, async (req, res) => {
 });
 
 router.post('/knowledge/sync', escritura, async (req, res) => {
-    try { res.json(await automation.sincronizarConocimiento({ actor: actorDe(req) })); }
+    try { const r = await automation.sincronizarConocimiento({ actor: actorDe(req) }); vaciarCache(); res.json(r); }
     catch (err) { if (err.status) return res.status(err.status).json({ error: err.message }); fail(res, err); }
 });
 
-router.get('/overview', wrap(() => operant.tenantDashboard({ tenantId: tenantId() })));
-router.get('/approvals', wrap(() => operant.listApprovals({ tenantId: tenantId() })));
-router.get('/audit/verify', wrap(() => operant.auditVerify({ tenantId: tenantId() })));
+router.get('/overview', wrap(() => conCache('overview', 10_000, () => operant.tenantDashboard({ tenantId: tenantId() }))));
+router.get('/approvals', wrap(() => conCache('approvals', 10_000, () => operant.listApprovals({ tenantId: tenantId() }))));
+router.get('/audit/verify', wrap(() => conCache('audit', 30_000, () => operant.auditVerify({ tenantId: tenantId() }))));
 
 router.get('/mailbox', wrap((req) => {
     const { folder, q, sort, limit, offset } = req.query;
-    return operant.mailboxList({ tenantId: tenantId(), folder, q, sort, limit, offset });
+    return conCache(`mailbox:${JSON.stringify([folder, q, sort, limit, offset])}`, 15_000,
+        () => operant.mailboxList({ tenantId: tenantId(), folder, q, sort, limit, offset }));
 }));
 
 // Antes de /mailbox/:uid, o "dmarc" se tomaría por un uid.
-router.get('/mailbox/dmarc', wrap((req) => operant.mailboxDmarc({ tenantId: tenantId(), days: req.query.days })));
+router.get('/mailbox/dmarc', wrap((req) => conCache(`dmarc:${req.query.days || ''}`, 30_000, () => operant.mailboxDmarc({ tenantId: tenantId(), days: req.query.days }))));
 
 router.get('/mailbox/:uid', wrap((req) => operant.mailboxGet({
     tenantId: tenantId(), uid: req.params.uid, folder: req.query.folder,

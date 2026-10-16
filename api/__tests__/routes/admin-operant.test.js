@@ -23,6 +23,8 @@ jest.mock('../../services/operantBridge', () => {
         dispatchTask: jest.fn(async () => ({ taskId: 't_9' })),
         resolveApproval: jest.fn(async () => ({ ok: true })),
         kbIngest: jest.fn(async () => ({ ok: true })),
+        funnel: jest.fn(async () => ({ pendingIntake: 0 })),
+        marketingQueue: jest.fn(async () => ({ hold: false, posts: [] })),
     };
 });
 const bridge = require('../../services/operantBridge');
@@ -130,6 +132,8 @@ describe('Routes: /api/admin/operant (solo lectura)', () => {
             const ids = res.body.automations.map((a) => a.id);
             expect(ids).toEqual(expect.arrayContaining(['pending-plan-assignments', 'rag-coverage', 'dmarc-health', 'audit-chain']));
             expect(bridge.dispatchTask).not.toHaveBeenCalled();
+            expect(res.body.coverage).toHaveLength(10);
+            expect(res.body.coverage.filter((c) => !c.covered).map((c) => c.department).sort()).toEqual(['fundraising', 'hr']);
         });
 
         it.each(['/automations/dmarc-health/run', '/approvals/a1/resolve', '/knowledge/sync'])(
@@ -202,6 +206,32 @@ describe('Routes: /api/admin/operant (solo lectura)', () => {
                 expect(res.status).toBe(503);
                 expect(res.body.code).toBe('AUTOMATION_DISABLED');
             });
+        });
+    });
+
+    describe('caché de lecturas', () => {
+        beforeEach(() => { process.env.ADMIN_OPERANT_CACHE = 'on'; });
+        afterEach(() => { delete process.env.ADMIN_OPERANT_CACHE; });
+
+        it('dos lecturas seguidas comparten una sola llamada a OPERANT', async () => {
+            await auth(request(app).get('/api/admin/operant/audit/verify'));
+            const antes = bridge.auditVerify.mock.calls.length;
+            await auth(request(app).get('/api/admin/operant/audit/verify'));
+            expect(bridge.auditVerify.mock.calls.length).toBe(antes);
+        });
+
+        it('los errores no se cachean: al volver OPERANT, se recupera solo', async () => {
+            bridge.tenantDashboard.mockRejectedValueOnce(new bridge.OperantUnavailableError('caído'));
+            expect((await auth(request(app).get('/api/admin/operant/overview'))).status).toBe(503);
+            expect((await auth(request(app).get('/api/admin/operant/overview'))).status).toBe(200);
+        });
+
+        it('una escritura vacía la caché: el panel ve su propio efecto', async () => {
+            await auth(request(app).get('/api/admin/operant/approvals'));
+            const antes = bridge.listApprovals.mock.calls.length;
+            await auth(request(app).post('/api/admin/operant/approvals/a1/resolve').set('x-bezhas-admin', '1').send({ decision: 'approve' }));
+            await auth(request(app).get('/api/admin/operant/approvals'));
+            expect(bridge.listApprovals.mock.calls.length).toBe(antes + 1);
         });
     });
 });
