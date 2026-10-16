@@ -94,6 +94,7 @@ const organizationBillingRoutes = require('./routes/organization-billing');
 const aiWorkspaceRoutes = require('./routes/ai-workspace');
 const adminConfigRoutes = require('./routes/admin-config');
 const adminGovernanceRoutes = require('./routes/admin-governance');
+const adminOperantRoutes = require('./routes/admin-operant');   // ← pestaña OPERANT del panel SuperAdmin (solo lectura)
 const adminConsoleRoutes = require('./routes/admin-console');   // ← API única del propietario + gas subvencionado
 const mcpGatewayRoutes = require('./routes/mcp-gateway');
 const mcpPublicRoutes = require('./routes/mcp-public');
@@ -390,6 +391,7 @@ app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);
 app.use('/api/admin/governance', adminGovernanceRoutes);
 app.use('/api/admin/console', adminConsoleRoutes);
+app.use('/api/admin/operant', adminOperantRoutes);
 
 // ── Blockchain / Contratos / Tokens ──────────────────────────────────────────
 app.use('/api/contracts', contractsAbiRoutes);  // ABI/deploy/agent (específico primero)

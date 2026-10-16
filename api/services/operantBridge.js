@@ -180,6 +180,26 @@ function tenantUsage({ tenantId }) {
     return request('GET', `/bridge/tenants/${encodeURIComponent(tenantId)}/usage`);
 }
 
+/** Panel del tenant (KPIs, tareas, aprobaciones, cuota). Solo lectura. */
+function tenantDashboard({ tenantId }) {
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/dashboard`);
+}
+
+/** Lote de la bandeja del buzón de la plataforma (OPERANT lo lee por IMAP). Solo lectura. */
+function mailboxList({ tenantId, folder, q, sort, limit, offset }) {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries({ folder, q, sort, limit, offset })) {
+        if (v !== undefined && v !== '') qs.set(k, String(v));
+    }
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/mailbox?${qs}`);
+}
+
+/** Un correo completo, como texto plano. No lo marca como leído. */
+function mailboxGet({ tenantId, uid, folder }) {
+    const qs = folder ? `?folder=${encodeURIComponent(folder)}` : '';
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/mailbox/${encodeURIComponent(uid)}${qs}`);
+}
+
 module.exports = {
     OperantUnavailableError,
     OperantError,
@@ -195,5 +215,8 @@ module.exports = {
     auditVerify,
     auditMarkAnchored,
     tenantUsage,
+    tenantDashboard,
+    mailboxList,
+    mailboxGet,
     _resetCircuitForTests: () => { failures = 0; openUntil = 0; },
 };

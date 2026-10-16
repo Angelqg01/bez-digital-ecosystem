@@ -1,0 +1,111 @@
+const request = require('supertest');
+const jwt = require('jsonwebtoken');
+const { makeAdminToken } = require('../helpers');
+
+// El puente a OPERANT se simula entero: aquí se prueba la puerta de admin y el
+// reparto de errores, no el runtime de OPERANT.
+jest.mock('../../services/operantBridge', () => {
+    class OperantUnavailableError extends Error {}
+    class OperantError extends Error {
+        constructor(status, body) { super(body?.error || 'x'); this.status = status; this.body = body; }
+    }
+    return {
+        OperantUnavailableError,
+        OperantError,
+        configured: jest.fn(() => true),
+        health: jest.fn(async () => ({ available: true, circuit: 'closed' })),
+        tenantDashboard: jest.fn(async () => ({ tenantId: 'bezhas', plan: 'enterprise' })),
+        listApprovals: jest.fn(async () => ({ approvals: [] })),
+        auditVerify: jest.fn(async () => ({ valid: true })),
+        mailboxList: jest.fn(async () => ({ total: 1, messages: [{ uid: 7 }] })),
+        mailboxGet: jest.fn(async () => ({ uid: 7, text: 'hola' })),
+    };
+});
+const bridge = require('../../services/operantBridge');
+const app = require('../../index');
+
+const superAdmin = () => jwt.sign(
+    { role: 'SUPER_ADMIN', wallet: '0x' + '1'.repeat(40), method: 'credentials' },
+    process.env.JWT_SECRET,
+    { expiresIn: '2h', issuer: 'bezhas-admin-auth' },
+);
+const auth = (r) => r.set('Authorization', `Bearer ${superAdmin()}`);
+
+describe('Routes: /api/admin/operant (solo lectura)', () => {
+    afterEach(() => jest.clearAllMocks());
+
+    describe('sin sesión SuperAdmin', () => {
+        it.each(['/status', '/overview', '/approvals', '/audit/verify', '/mailbox', '/mailbox/7'])(
+            'rechaza GET %s sin token', async (ruta) => {
+                const res = await request(app).get(`/api/admin/operant${ruta}`);
+                expect(res.status).toBe(401);
+                expect(bridge.tenantDashboard).not.toHaveBeenCalled();
+                expect(bridge.mailboxList).not.toHaveBeenCalled();
+            });
+
+        it('rechaza un JWT de usuario con role admin (otro emisor)', async () => {
+            const res = await request(app).get('/api/admin/operant/mailbox')
+                .set('Authorization', `Bearer ${makeAdminToken()}`);
+            expect(res.status).toBe(401);
+            expect(bridge.mailboxList).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('con sesión SuperAdmin', () => {
+        it('status: salud del runtime', async () => {
+            const res = await auth(request(app).get('/api/admin/operant/status'));
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({ configured: true, tenantId: 'bezhas', runtime: { available: true } });
+        });
+
+        it('overview y approvals usan SIEMPRE el tenant de la empresa', async () => {
+            await auth(request(app).get('/api/admin/operant/overview').query({ tenantId: 'cliente-ajeno' }));
+            await auth(request(app).get('/api/admin/operant/approvals').query({ tenantId: 'cliente-ajeno' }));
+            expect(bridge.tenantDashboard).toHaveBeenCalledWith({ tenantId: 'bezhas' });
+            expect(bridge.listApprovals).toHaveBeenCalledWith({ tenantId: 'bezhas' });
+        });
+
+        it('mailbox: reenvía filtros y no deja elegir tenant', async () => {
+            const res = await auth(request(app).get('/api/admin/operant/mailbox')
+                .query({ q: 'dmarc', sort: 'unread', limit: '30', offset: '30', tenantId: 'otro' }));
+            expect(res.status).toBe(200);
+            expect(bridge.mailboxList).toHaveBeenCalledWith(expect.objectContaining({
+                tenantId: 'bezhas', q: 'dmarc', sort: 'unread', limit: '30', offset: '30',
+            }));
+        });
+
+        it('mailbox/:uid abre un correo', async () => {
+            const res = await auth(request(app).get('/api/admin/operant/mailbox/7'));
+            expect(res.body).toMatchObject({ uid: 7, text: 'hola' });
+        });
+
+        it('no expone ninguna escritura en la fase 1', async () => {
+            for (const ruta of ['/approvals/1', '/mailbox/7/seen', '/tasks']) {
+                const res = await auth(request(app).post(`/api/admin/operant${ruta}`).send({}));
+                expect([404, 405]).toContain(res.status);
+            }
+        });
+    });
+
+    describe('errores del puente', () => {
+        it('OPERANT caído → 503, no un panel vacío', async () => {
+            bridge.tenantDashboard.mockRejectedValueOnce(new bridge.OperantUnavailableError('circuito abierto'));
+            const res = await auth(request(app).get('/api/admin/operant/overview'));
+            expect(res.status).toBe(503);
+            expect(res.body.code).toBe('OPERANT_UNAVAILABLE');
+        });
+
+        it('buzón sin configurar conserva su código', async () => {
+            bridge.mailboxList.mockRejectedValueOnce(new bridge.OperantError(503, { error: 'buzón sin configurar', code: 'mailbox_not_configured' }));
+            const res = await auth(request(app).get('/api/admin/operant/mailbox'));
+            expect(res.status).toBe(503);
+            expect(res.body.code).toBe('mailbox_not_configured');
+        });
+
+        it('un 401/403 de OPERANT no se reenvía como si fuera la sesión del admin', async () => {
+            bridge.listApprovals.mockRejectedValueOnce(new bridge.OperantError(401, { error: 'x' }));
+            const res = await auth(request(app).get('/api/admin/operant/approvals'));
+            expect(res.status).toBe(502);
+        });
+    });
+});
