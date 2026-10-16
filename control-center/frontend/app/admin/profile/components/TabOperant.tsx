@@ -44,10 +44,11 @@ interface Automation {
     id: string; section: string; department: string; title: string; description: string;
     available: boolean; attention: boolean; summary: string; lastRun: { at: string; taskId: string } | null;
 }
-interface RunResult { id: string; status: 'dispatched' | 'skipped' | 'duplicate' | 'unavailable' | 'unknown' | 'error'; reason?: string; taskId?: string; summary?: string }
+interface RunResult { id: string; status: 'dispatched' | 'skipped' | 'duplicate' | 'unavailable' | 'unknown' | 'error'; reason?: string; taskId?: string; summary?: string; audited?: boolean }
+interface Coverage { department: string; covered: boolean; automations: string[]; reason: string | null }
 const SECCIONES: Record<string, string> = {
     identity: 'Identity & Security', treasury: 'Treasury & Web3', ecosystem: 'Ecosystem & RWA', intelligence: 'MCP Intelligence',
-    obsidian: 'Obsidian Map', brainlive: 'Brain Live', watchdog: 'Watchdog', governance: 'DAO Governance', skills: 'SKILL Memory',
+    obsidian: 'Obsidian Map · contenido', brainlive: 'Brain Live · red', watchdog: 'Watchdog', governance: 'DAO Governance', skills: 'SKILL Memory',
 };
 const usd = (n?: number) => `$${Number(n || 0).toFixed(2)}`;
 const fecha = (d: string | null) => (d ? new Date(d).toLocaleString() : '');
@@ -75,10 +76,12 @@ export default function TabOperant() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
     const [deciding, setDeciding] = useState<string | null>(null);
+    const [sesionCaducada, setSesionCaducada] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
         setError('');
+        setSesionCaducada(false);
         try {
             const s = await api.get<Status>(`${BASE}/status`);
             setStatus(s);
@@ -93,7 +96,10 @@ export default function TabOperant() {
             if (o.status === 'fulfilled') setOverview(o.value); else setError(`Panel del tenant: ${errMsg(o.reason)}`);
             setAudit(a.status === 'fulfilled' ? a.value : { error: errMsg(a.reason) });
         } catch (e) {
-            setError(errMsg(e));
+            if (e instanceof ApiError && e.status === 401) {
+                // Sin sesión no se enseñan datos viejos como si siguieran vigentes.
+                setSesionCaducada(true); setStatus(null); setOverview(null); setAudit(null);
+            } else setError(errMsg(e));
         } finally {
             setLoading(false);
         }
@@ -112,7 +118,7 @@ export default function TabOperant() {
         finally { setDeciding(null); }
     };
 
-    if (loading && !status) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#0d33f2]" /></div>;
+    if (loading && !status && !sesionCaducada) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#0d33f2]" /></div>;
 
     const down = status && (!status.configured || !status.runtime.available);
     const calls = overview?.agentCalls;
@@ -121,7 +127,7 @@ export default function TabOperant() {
     const auditOk = audit && (audit.valid ?? audit.ok);
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className={`space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 transition-opacity ${loading && status ? 'opacity-60' : ''}`} aria-busy={loading}>
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-2">OPERANT · Agentes IA</h2>
@@ -134,6 +140,12 @@ export default function TabOperant() {
                 </button>
             </div>
 
+            {sesionCaducada && (
+                <div className="border border-amber-700 bg-amber-900/20 text-amber-200 text-sm px-4 py-3 flex items-center justify-between gap-4">
+                    <span>La sesión de SuperAdmin ha caducado o no es válida.</span>
+                    <a href="/admin/login" className="text-[10px] font-bold uppercase tracking-widest border border-amber-600 px-3 py-1 hover:bg-amber-900/40">Iniciar sesión</a>
+                </div>
+            )}
             {error && <div className="border border-red-700 bg-red-900/30 text-red-300 text-sm px-4 py-3">{error}</div>}
 
             {down && (
@@ -218,18 +230,22 @@ export default function TabOperant() {
 
 function Automations({ onChanged }: { onChanged: () => void }) {
     const [items, setItems] = useState<Automation[]>([]);
+    const [coverage, setCoverage] = useState<Coverage[]>([]);
     const [busy, setBusy] = useState<string | null>(null);
     const [msg, setMsg] = useState<{ tone: 'ok' | 'warn' | 'bad'; text: string } | null>(null);
 
     const load = useCallback(async () => {
-        try { setItems((await api.get<{ automations: Automation[] }>(`${BASE}/automations`)).automations); }
+        try {
+            const r = await api.get<{ automations: Automation[]; coverage: Coverage[] }>(`${BASE}/automations`);
+            setItems(r.automations); setCoverage(r.coverage || []);
+        }
         catch (e) { setMsg({ tone: 'bad', text: errMsg(e) }); }
     }, []);
     useEffect(() => { load(); }, [load]);
 
-    const tone = (r: RunResult) => (r.status === 'dispatched' ? 'ok' : r.status === 'unavailable' || r.status === 'error' ? 'bad' : 'warn') as 'ok' | 'warn' | 'bad';
+    const tone = (r: RunResult) => (r.status === 'dispatched' && r.audited !== false ? 'ok' : r.status === 'unavailable' || r.status === 'error' ? 'bad' : 'warn') as 'ok' | 'warn' | 'bad';
     const dicho = (r: RunResult) => ({
-        dispatched: `Tarea ${r.taskId} lanzada a OPERANT.`,
+        dispatched: `Tarea ${r.taskId} lanzada a OPERANT.${r.audited === false ? ' Atención: no quedó registrada en el log de auditoría del panel.' : ''}`,
         skipped: 'La señal no pide acción ahora.',
         duplicate: `Ya había una tarea por esta misma señal (${r.taskId || 'sin id'}).`,
         unavailable: `No se pudo medir: ${r.reason}`,
@@ -282,6 +298,25 @@ function Automations({ onChanged }: { onChanged: () => void }) {
                 </div>
             </div>
             <p className="text-xs text-gray-500">Cada tarjeta mide una señal real de su sección con cifras agregadas (sin emails, chats ni correos) y, si pide acción, lanza una tarea al departamento de OPERANT. Lo que la tarea haga hacia fuera pasa por la cola de aprobación.</p>
+
+            {coverage.length > 0 && (
+                <div className="border border-white/10 bg-black/20 p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="text-[10px] uppercase tracking-widest text-gray-500">Cobertura por departamento de OPERANT</div>
+                        <span className="text-xs text-gray-400">{coverage.filter((c) => c.covered).length} de {coverage.length} con señal propia</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {coverage.map((c) => (
+                            <span key={c.department} title={c.covered ? c.automations.join(', ') : c.reason || ''} className={`text-[11px] px-2 py-1 border ${c.covered ? 'border-emerald-800 text-emerald-300 bg-emerald-900/20' : 'border-white/10 text-gray-500'}`}>
+                                {c.department}{c.covered ? ` · ${c.automations.length}` : ' · sin fuente'}
+                            </span>
+                        ))}
+                    </div>
+                    {coverage.filter((c) => !c.covered).map((c) => (
+                        <p key={c.department} className="text-xs text-gray-500"><b className="text-gray-400">{c.department}:</b> {c.reason}</p>
+                    ))}
+                </div>
+            )}
 
             {msg && <div className={`border px-4 py-2 text-sm ${msg.tone === 'ok' ? 'border-emerald-700 bg-emerald-900/20 text-emerald-200' : msg.tone === 'warn' ? 'border-amber-700 bg-amber-900/20 text-amber-200' : 'border-red-700 bg-red-900/30 text-red-300'}`}>{msg.text}</div>}
 
