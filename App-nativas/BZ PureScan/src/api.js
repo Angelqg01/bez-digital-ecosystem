@@ -16,6 +16,7 @@
 
 import axios from 'axios';
 import { BeZhasClient } from '../../_shared/bezhas-blockchain-client.js';
+import { pollScan, ScanError } from './utils/pollScan.js';
 
 // ── Configuration ──
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3001/api';
@@ -24,6 +25,14 @@ const api = axios.create({
   baseURL: `${GATEWAY_URL}/purescan`,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
+});
+
+// El backend exige sesión en /api/purescan (salvo la escritura del agente): se adjunta el JWT de la sesión.
+api.interceptors.request.use((config) => {
+  let token = null;
+  try { token = localStorage.getItem('bezhas-jwt') || localStorage.getItem('bezhas_access_token'); } catch { /* sin almacenamiento */ }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
 });
 
 // ── Blockchain Client ──
@@ -45,20 +54,39 @@ function getClient() {
 export const runEdgeInference = async (imageBlob) => {
   const formData = new FormData();
   formData.append('image', imageBlob);
-  const response = await api.post('/inference', formData, {
-    timeout: 10000,
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return response.data;
+  try {
+    const response = await api.post('/inference', formData, {
+      timeout: 10000,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (err) {
+    // Sin modelo de visión en el servidor no hay detecciones: se sigue sin ellas (y se dice) en vez de abortar el escaneo.
+    if (err.response?.status === 503 && err.response?.data?.code === 'INFERENCE_UNAVAILABLE') {
+      return { detections: [], metrics: {}, unavailable: true, reason: err.response.data.error };
+    }
+    throw err;
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════
 //  LAYER 3: SEMANTIC REASONING (GEMINI)
 // ═══════════════════════════════════════════════════════════════
 
-export const analyzeWithGemini = async (scanData) => {
-  const response = await api.post('/analyze', scanData, { timeout: 10000 });
-  return response.data;
+export const getScan = async (scanRef) => (await api.get(`/scans/${encodeURIComponent(scanRef)}`)).data;
+
+// El análisis lo hace un agente de forma asíncrona: /analyze responde 202 con un scanRef y se sondea /scans/:ref.
+export const analyzeWithGemini = async (scanData, { onProgress, intervalMs, timeoutMs } = {}) => {
+  let started;
+  try {
+    started = (await api.post('/analyze', scanData, { timeout: 10000 })).data;
+  } catch (err) {
+    const d = err.response?.data;
+    if (d?.scanRef) throw new ScanError(d.error || 'No hay un agente disponible para analizar el escaneo', { status: d.status, scanRef: d.scanRef });
+    throw err;
+  }
+  const scan = await pollScan(getScan, started.scanRef, { onProgress, intervalMs, timeoutMs });
+  return { success: true, scanRef: scan.scanRef, status: scan.status, analysis: scan.analysis, riskLevel: scan.riskLevel };
 };
 
 // ═══════════════════════════════════════════════════════════════
