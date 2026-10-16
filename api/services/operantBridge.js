@@ -206,6 +206,11 @@ function mailboxDmarc({ tenantId, days }) {
     return request('GET', `/tenants/${encodeURIComponent(tenantId)}/mailbox/dmarc${qs}`);
 }
 
+/** Indexa (o reemplaza, por id) un artículo en la base de conocimiento del tenant. */
+function kbIngest({ tenantId, id, title, body, tags }) {
+    return request('POST', `/tenants/${encodeURIComponent(tenantId)}/kb`, { id, title, body, tags });
+}
+
 module.exports = {
     OperantUnavailableError,
     OperantError,
@@ -225,5 +230,6 @@ module.exports = {
     mailboxList,
     mailboxGet,
     mailboxDmarc,
+    kbIngest,
     _resetCircuitForTests: () => { failures = 0; openUntil = 0; },
 };

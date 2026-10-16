@@ -19,7 +19,10 @@ jest.mock('../../services/operantBridge', () => {
         auditVerify: jest.fn(async () => ({ valid: true })),
         mailboxList: jest.fn(async () => ({ total: 1, messages: [{ uid: 7 }] })),
         mailboxGet: jest.fn(async () => ({ uid: 7, text: 'hola' })),
-        mailboxDmarc: jest.fn(async () => ({ reports: 2, messages: 10, pass: 10, fail: 0 })),
+        mailboxDmarc: jest.fn(async () => ({ reports: 2, messages: 10, pass: 10, fail: 0, failing: [], recommendation: {} })),
+        dispatchTask: jest.fn(async () => ({ taskId: 't_9' })),
+        resolveApproval: jest.fn(async () => ({ ok: true })),
+        kbIngest: jest.fn(async () => ({ ok: true })),
     };
 });
 const bridge = require('../../services/operantBridge');
@@ -88,7 +91,7 @@ describe('Routes: /api/admin/operant (solo lectura)', () => {
             expect(bridge.mailboxGet).not.toHaveBeenCalled();
         });
 
-        it('no expone ninguna escritura en la fase 1', async () => {
+        it('no expone escrituras sobre el buzón ni tareas libres', async () => {
             for (const ruta of ['/approvals/1', '/mailbox/7/seen', '/tasks']) {
                 const res = await auth(request(app).post(`/api/admin/operant${ruta}`).send({}));
                 expect([404, 405]).toContain(res.status);
@@ -115,6 +118,90 @@ describe('Routes: /api/admin/operant (solo lectura)', () => {
             bridge.listApprovals.mockRejectedValueOnce(new bridge.OperantError(401, { error: 'x' }));
             const res = await auth(request(app).get('/api/admin/operant/approvals'));
             expect(res.status).toBe(502);
+        });
+    });
+
+    describe('automatizaciones (escrituras)', () => {
+        const escribe = (r) => auth(r).set('x-bezhas-admin', '1');
+
+        it('GET /automations lista el catálogo con su señal y no lanza nada', async () => {
+            const res = await auth(request(app).get('/api/admin/operant/automations'));
+            expect(res.status).toBe(200);
+            const ids = res.body.automations.map((a) => a.id);
+            expect(ids).toEqual(expect.arrayContaining(['pending-plan-assignments', 'rag-coverage', 'dmarc-health', 'audit-chain']));
+            expect(bridge.dispatchTask).not.toHaveBeenCalled();
+        });
+
+        it.each(['/automations/dmarc-health/run', '/approvals/a1/resolve', '/knowledge/sync'])(
+            'rechaza POST %s sin la cabecera x-bezhas-admin', async (ruta) => {
+                const res = await auth(request(app).post(`/api/admin/operant${ruta}`).send({ decision: 'approve' }));
+                expect(res.status).toBe(403);
+                expect(res.body.code).toBe('ADMIN_HEADER_REQUIRED');
+                expect(bridge.dispatchTask).not.toHaveBeenCalled();
+                expect(bridge.resolveApproval).not.toHaveBeenCalled();
+            });
+
+        it('rechaza escrituras sin sesión aunque lleven la cabecera', async () => {
+            const res = await request(app).post('/api/admin/operant/automations/dmarc-health/run').set('x-bezhas-admin', '1').send({});
+            expect(res.status).toBe(401);
+        });
+
+        it('run con force lanza la tarea y devuelve su id', async () => {
+            const res = await escribe(request(app).post('/api/admin/operant/automations/dmarc-health/run').send({ force: true }));
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({ status: 'dispatched', taskId: 't_9', department: 'operations' });
+        });
+
+        it('automatización desconocida → 404', async () => {
+            const res = await escribe(request(app).post('/api/admin/operant/automations/inventada/run').send({}));
+            expect(res.status).toBe(404);
+        });
+
+        it('resolver aprobación: valida la decisión y usa al admin como aprobador', async () => {
+            const mala = await escribe(request(app).post('/api/admin/operant/approvals/a1/resolve').send({ decision: 'quizas' }));
+            expect(mala.status).toBe(400);
+            const ok = await escribe(request(app).post('/api/admin/operant/approvals/a1/resolve').send({ decision: 'reject', reason: 'no procede' }));
+            expect(ok.status).toBe(200);
+            expect(bridge.resolveApproval).toHaveBeenCalledWith(expect.objectContaining({
+                tenantId: 'bezhas', approvalId: 'a1', decision: 'reject', approver: expect.stringMatching(/^admin:/),
+            }));
+        });
+
+        describe('tick del programador', () => {
+            const TOKEN = 'x'.repeat(40);
+            afterEach(() => { delete process.env.ADMIN_AUTOMATION_TOKEN; delete process.env.ADMIN_AUTOMATION_ENABLED; });
+
+            it('sin token configurado, la puerta del programador está cerrada', async () => {
+                const res = await request(app).post('/api/admin/operant/automations/tick').set('x-automation-token', TOKEN);
+                expect(res.status).toBe(401);
+                expect(res.body.code).toBe('AUTOMATION_TOKEN_INVALID');
+            });
+
+            it('con el token correcto evalúa el catálogo entero', async () => {
+                process.env.ADMIN_AUTOMATION_TOKEN = TOKEN;
+                const res = await request(app).post('/api/admin/operant/automations/tick').set('x-automation-token', TOKEN);
+                expect(res.status).toBe(200);
+                expect(res.body.results.length).toBeGreaterThanOrEqual(8);
+            });
+
+            it('un token distinto no vale y un token corto nunca vale', async () => {
+                process.env.ADMIN_AUTOMATION_TOKEN = TOKEN;
+                expect((await request(app).post('/api/admin/operant/automations/tick').set('x-automation-token', 'y'.repeat(40))).status).toBe(401);
+                process.env.ADMIN_AUTOMATION_TOKEN = 'corto';
+                expect((await request(app).post('/api/admin/operant/automations/tick').set('x-automation-token', 'corto')).status).toBe(401);
+            });
+
+            it('sin token ni sesión admin → 401', async () => {
+                expect((await request(app).post('/api/admin/operant/automations/tick')).status).toBe(401);
+            });
+
+            it('ADMIN_AUTOMATION_ENABLED=false lo apaga', async () => {
+                process.env.ADMIN_AUTOMATION_TOKEN = TOKEN;
+                process.env.ADMIN_AUTOMATION_ENABLED = 'false';
+                const res = await request(app).post('/api/admin/operant/automations/tick').set('x-automation-token', TOKEN);
+                expect(res.status).toBe(503);
+                expect(res.body.code).toBe('AUTOMATION_DISABLED');
+            });
         });
     });
 });
