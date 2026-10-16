@@ -154,10 +154,15 @@ const DOCS = [
         + 'contadores, precios del mercado eléctrico OMIE e indicadores de Red Eléctrica (ESIOS), un agente automático de arbitraje de baterías (cargar con '
         + 'precio bajo y vender con precio alto), respuesta de la demanda (demand response), control SCADA con comandos firmados, un monedero de energía, '
         + 'mercado P2P entre nodos, recompensas de staking por flexibilidad y un informe de seguridad y cumplimiento (Aegis, RD 88/2026 de agregador '
-        + 'independiente). Toda acción sobre equipos físicos pasa por una cola de aprobación humana (HITL). La telemetría exige sesión, y los comandos de control '
-        + 'exigen rol de operador y la aprobación humana.'],
+        + 'independiente). Los datos de mercado son reales: el precio horario del mercado diario lo publica OMIE y la demanda y el mix de generación de la red '
+        + 'española los publica Red Eléctrica (REE), sin clave. La telemetría de los nodos es de DEMOSTRACIÓN hasta que el titular conecta su planta, y la '
+        + 'pantalla lo dice siempre («Datos de demostración»). Los comandos SCADA admitidos son cargar y descargar batería, reducir carga, modo isla, '
+        + 'potencia reactiva y parada de emergencia; exigen rol de operador, los críticos los aprueba una segunda persona (HITL), y un comando solo se da por '
+        + 'entregado cuando un equipo lo ha recibido: sin edge conectado queda firmado y auditado pero no entregado. La telemetría exige sesión.'],
     ['bz_energia_mercado', 'Arbitraje de baterías con precios OMIE y ESIOS',
-        'Sí: BeZhas Energy incluye precios del mercado diario OMIE (con su predicción) e indicadores ESIOS de Red Eléctrica (requiere clave ESIOS) y un '
+        'Sí: BeZhas Energy incluye los precios reales del mercado diario OMIE (la curva del día; el precio a +1 h y +6 h es el precio ya publicado para esas horas, '
+        + 'no la predicción de un modelo), la demanda y el mix de generación de Red Eléctrica (REE; la frecuencia y el balance en tiempo real no los publica su API '
+        + 'abierta, así que no se muestran) y un '
         + 'agente de arbitraje de baterías que decide cargar cuando el precio del mercado eléctrico es bajo o negativo y descargar o vender cuando es alto. '
         + 'La ejecución es opcional y pasa por aprobación humana (HITL): el agente propone, una persona autoriza. Para optimizar las baterías de un grupo '
         + 'energético se conectan sus nodos (Edge Node) a BEZ Energy; el modelo de predicción se usa sobre precios y telemetría. BeZhas no es un '
@@ -167,9 +172,19 @@ const DOCS = [
         'La telemetría de inversores, baterías y contadores inteligentes llega por MQTT a un Edge Node de la propia empresa. Las lecturas se verifican: '
         + 'el motor Aegis rechaza las firmas inválidas, las repeticiones y las suplantaciones (anti-spoofing) antes de aceptarlas. Los datos comerciales '
         + 'se quedan en la empresa: el Edge Node anonimiza y solo se publica la prueba (hash) en la cadena. Estado real: el bróker MQTT, la verificación '
-        + 'y el almacén de histórico existen; el driver que lee físicamente inversores y medidores por Modbus o SunSpec (Edge Gateway) está '
-        + 'pendiente y la demostración usa datos simulados hasta que haya un Edge Node con hardware conectado. Pide a BeZhas una demostración guiada con '
-        + 'tu equipo antes de comprometer una instalación.'],
+        + 'y el almacén de histórico existen, y desde SCADA se puede conectar una planta propia que envía sus lecturas por HTTPS con una clave de nodo; el '
+        + 'driver que lee físicamente inversores y medidores por Modbus o SunSpec (Edge Gateway) está pendiente, así que el cliente (o su integrador) '
+        + 'debe enviar las lecturas desde su SCADA o pasarela. Sin planta conectada la telemetría es de demostración y está marcada como tal. '
+        + 'Pide a BeZhas una demostración guiada con tu equipo antes de comprometer una instalación.'],
+    ['bz_energia_conectar', 'Conectar una planta o un parque a la red de BeZhas Energy: alta de nodos y envío de lecturas',
+        'Un director de despacho, gerente de generación o superintendente de planta conecta su instalación así: en BEZ Energy, pantalla SCADA, botón «Conectar planta». '
+        + 'Se da de alta un nodo con nombre, tipo (solar, eólica, hidráulica, batería o carga controlable), capacidad en kW, ubicación y protocolo. BeZhas devuelve una '
+        + 'clave de nodo (bzn_…) que solo se muestra una vez y de la que solo se guarda el hash. El SCADA o la pasarela de la planta envía las lecturas por HTTPS a '
+        + 'POST /api/energy/telemetry/ingest con esa clave (potencia en kW, tensión, frecuencia, estado de carga, energía), como máximo una por segundo y nodo. '
+        + 'Una lectura imposible, como más potencia que la capacidad declarada, se rechaza. Con una planta conectada, el panel pasa de «datos de demostración» '
+        + 'a «en vivo» con sus lecturas, y las alertas, la analítica y los comandos usan sus nodos. Esto no equivale a conectarse a la red de transporte ni a '
+        + 'ser operador del sistema: BeZhas no despacha generación en la red eléctrica nacional ni presenta ofertas en el mercado por el cliente; es una capa '
+        + 'de monitorización, alertas y órdenes auditadas sobre los activos del cliente.'],
     ['bz_energia_cae', 'Certificados de ahorro energético (CAE), créditos de carbono y mercado P2P de energía',
         'BeZhas dispone de contratos para certificados de ahorro energético (EnergyCAEToken), créditos de carbono (CarbonCreditToken), tokens de parque '
         + 'solar (SolarFarmToken) y mercado P2P de energía (P2PEnergyMarket), junto con oráculos de energía y ESG, y su API (emitir CAE por ahorro '

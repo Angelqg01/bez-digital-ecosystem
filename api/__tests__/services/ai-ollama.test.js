@@ -112,3 +112,24 @@ describe('facturación', () => {
         expect(desconocido.claudeCostEUR).toBeGreaterThan(0);
     });
 });
+
+describe('Qwen3: el razonamiento no debe salir al usuario', () => {
+  const gw = require('../../services/ai-workspace/gateway');
+  const msgs = [{ role: 'user', content: 'hola' }, { role: 'assistant', content: 'qué tal' }, { role: 'user', content: '¿cómo conecto mi planta?' }];
+
+  it('reconoce qwen3 y no qwen3.5', () => {
+    expect(gw.esQwen3('qwen3:4b')).toBe(true);
+    expect(gw.esQwen3('qwen3')).toBe(true);
+    expect(gw.esQwen3('qwen3.5:4b')).toBe(false);
+    expect(gw.esQwen3('llama3:8b')).toBe(false);
+  });
+  it('añade /no_think sólo al último mensaje del usuario y no lo duplica', () => {
+    const out = gw.sinRazonamiento(msgs, 'qwen3:4b');
+    expect(out[2].content).toBe('¿cómo conecto mi planta? /no_think');
+    expect(out[0].content).toBe('hola');
+    expect(gw.sinRazonamiento(out, 'qwen3:4b')[2].content).toBe('¿cómo conecto mi planta? /no_think');
+  });
+  it('con otros modelos no toca nada', () => {
+    expect(gw.sinRazonamiento(msgs, 'qwen3.5:4b')).toEqual(msgs);
+  });
+});

@@ -614,6 +614,59 @@
         "bz_api_integracion",
         "bz_automatizar"
       ]
+    },
+    {
+      "id": "so01",
+      "tipo": "cto_energia",
+      "q": "Soy el director de despacho de energía de una empresa eléctrica. ¿Cómo conecto mis plantas a BeZhas Energy?",
+      "esperados": [
+        "bz_energia_conectar",
+        "bz_energia_app"
+      ]
+    },
+    {
+      "id": "so02",
+      "tipo": "cto_energia",
+      "q": "Soy superintendente de una planta fotovoltaica y quiero enviar las lecturas de mi inversor a BeZhas. ¿Cómo se envían los datos?",
+      "esperados": [
+        "bz_energia_conectar",
+        "bz_energia_telemetria"
+      ]
+    },
+    {
+      "id": "so03",
+      "tipo": "cto_energia",
+      "q": "¿Los precios de OMIE que muestra BeZhas Energy son reales o simulados?",
+      "esperados": [
+        "bz_energia_mercado",
+        "bz_energia_app"
+      ]
+    },
+    {
+      "id": "so04",
+      "tipo": "cto_energia",
+      "q": "¿Los datos de telemetría que veo en el panel de energía son reales? ¿Cómo sé si son de demostración?",
+      "esperados": [
+        "bz_energia_telemetria",
+        "bz_energia_app"
+      ]
+    },
+    {
+      "id": "so05",
+      "tipo": "cto_energia",
+      "q": "¿Puede BeZhas despachar mi generación en la red eléctrica nacional como operador del sistema?",
+      "esperados": [
+        "bz_energia_conectar",
+        "bz_energia_mercado"
+      ]
+    },
+    {
+      "id": "so06",
+      "tipo": "cto_energia",
+      "q": "Si mando un comando de modo isla desde SCADA, ¿quién lo aprueba y cómo sé si llegó al equipo?",
+      "esperados": [
+        "bz_energia_app"
+      ]
     }
   ]
 }

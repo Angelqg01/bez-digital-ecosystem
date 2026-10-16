@@ -60,13 +60,26 @@ function ajustarContexto({ system, messages, maxTokens }) {
     return msgs;
 }
 
+/**
+ * Qwen3 (sin «.5») razona por defecto y las versiones de Ollama anteriores a la que entiende `think:false` lo ignoran:
+ * el usuario veía el razonamiento en inglés («Okay, let's see. The user is…») y la respuesta se cortaba sin llegar a ella.
+ * El interruptor propio de Qwen3 es `/no_think` al final del último mensaje del usuario, y funciona en cualquier versión.
+ */
+const esQwen3 = (modelo) => /^qwen3(:|$)/i.test(String(modelo || ''));
+function sinRazonamiento(msgs, modelo) {
+    if (!esQwen3(modelo)) return msgs;
+    const i = msgs.map((m) => m.role).lastIndexOf('user');
+    if (i < 0) return msgs;
+    return msgs.map((m, j) => (j === i && !/\/no_think\s*$/.test(m.content) ? { ...m, content: `${m.content} /no_think` } : m));
+}
+
 function ollamaBody(args, stream) {
     return JSON.stringify({
         model: MODELO_OLLAMA(),
         stream,
         think: false, // los modelos con razonamiento (qwen3.x) no deben gastar el presupuesto de salida pensando
         keep_alive: OLLAMA_KEEP_ALIVE(),
-        messages: [{ role: 'system', content: args.system }, ...ajustarContexto(args)],
+        messages: [{ role: 'system', content: args.system }, ...sinRazonamiento(ajustarContexto(args), MODELO_OLLAMA())],
         options: { num_ctx: OLLAMA_NUM_CTX(), num_predict: args.maxTokens, temperature: OLLAMA_TEMPERATURE() },
     });
 }
@@ -346,4 +359,4 @@ function modeloDe(provider) {
     return 'extractive';
 }
 
-module.exports = { esHostPrivado, eventosNDJSON, ajustarContexto, techoCompartidoLibre, degradaciones, _reiniciarPresupuesto, complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };
+module.exports = { esQwen3, sinRazonamiento, esHostPrivado, eventosNDJSON, ajustarContexto, techoCompartidoLibre, degradaciones, _reiniciarPresupuesto, complete, stream, pickProvider, modeloDe, extractiveText, eventosSSE };

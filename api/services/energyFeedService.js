@@ -66,10 +66,18 @@ function parseMarginalPdbc(text) {
   return out;
 }
 
+/**
+ * Fecha y hora en España peninsular. OMIE publica sus períodos en hora local de Madrid; el contenedor corre en UTC, así que
+ * usar getHours() elegía el precio de 1-2 h antes y, entre las 22:00 y las 24:00 UTC, el fichero del día equivocado.
+ */
+function madridParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(date).reduce((a, p) => ({ ...a, [p.type]: p.value }), {});
+  return { year: Number(parts.year), month: parts.month, day: parts.day, hour: Number(parts.hour), minute: Number(parts.minute) };
+}
+
 function omieFileUrl(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
+  const { year: y, month: m, day: d } = madridParts(date);
   return `https://www.omie.es/es/file-download?parents%5B0%5D=marginalpdbc&filename=marginalpdbc_${y}${m}${d}.1`;
 }
 
@@ -90,8 +98,8 @@ function buildOmieResponse(rows, now = new Date()) {
 
   // OMIE may publish 24 hourly or 96 quarter-hourly periods per day.
   const periodsPerHour = Math.max(1, Math.round(rows.length / 24)); // 1 or 4
-  const period = now.getHours() * periodsPerHour
-    + Math.floor(now.getMinutes() / (60 / periodsPerHour)) + 1;
+  const t = madridParts(now);
+  const period = t.hour * periodsPerHour + Math.floor(t.minute / (60 / periodsPerHour)) + 1;
 
   const byPeriod = new Map(rows.map((r) => [r.hour, r.price_es]));
   const at = (p) => (byPeriod.has(p) ? byPeriod.get(p) : null);
@@ -186,7 +194,114 @@ async function getEsiosIndicators() {
   }
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// REE apidatos (público, sin clave): demanda real y mix de generación
+// ─────────────────────────────────────────────────────────────
+
+const REE_BASE = 'https://apidatos.ree.es/es/datos';
+const REE_TTL = 120; // 2 min
+const REE_TIMEOUT = 15000; // apidatos tarda a veces 5-10 s
+const REE_GROUPS = {
+  solar: ['Solar fotovoltaica', 'Solar térmica'],
+  wind: ['Eólica'],
+  hydro: ['Hidráulica'],
+  nuclear: ['Nuclear'],
+  gas: ['Ciclo combinado', 'Turbina de gas'],
+};
+let _lastRee = null;
+
+
+/** Último valor de la serie «Real» de demanda-tiempo-real (MW) o null. Puro. */
+function parseReeDemand(json) {
+  const series = (json && json.included || []).find((i) => i.type === 'Real');
+  const values = series && series.attributes && series.attributes.values;
+  if (!values || values.length === 0) return null;
+  const last = values[values.length - 1];
+  return Number.isFinite(Number(last.value)) ? { demand_mw: Math.round(Number(last.value)), at: last.datetime } : null;
+}
+
+/** Mix de generación (% sobre el total) desde estructura-generacion. Puro. */
+function parseReeMix(json) {
+  const items = (json && json.included) || [];
+  const pct = new Map();
+  let renewable = 0;
+  for (const i of items) {
+    const v = i.attributes && i.attributes.values && i.attributes.values[0];
+    if (!v || i.type === 'Generación total') continue;
+    const p = Number(v.percentage) * 100;
+    if (!Number.isFinite(p)) continue;
+    pct.set(i.type, p);
+    if (i.attributes.type === 'Renovable') renewable += p;
+  }
+  if (pct.size === 0) return null;
+  const group = (names) => parseFloat(names.reduce((a, n) => a + (pct.get(n) || 0), 0).toFixed(1));
+  return {
+    renewable_pct: parseFloat(renewable.toFixed(1)),
+    mix: Object.fromEntries(Object.entries(REE_GROUPS).map(([k, names]) => [`${k}_pct`, group(names)])),
+  };
+}
+
+/**
+ * Indicadores reales de la red española (demanda y mix) desde apidatos.ree.es. No publica frecuencia ni balance
+ * en tiempo real, así que van a null (no se inventan). Devuelve null si falla (el caller marca el simulado).
+ */
+let _reeInFlight = null;
+let _reeAt = 0;
+
+async function fetchReeGrid(now) {
+  const day = (d) => d.toISOString().slice(0, 10);
+  const yesterday = new Date(now.getTime() - 86_400_000);
+  const opts = { timeout: REE_TIMEOUT };
+  try {
+    const [dem, mix] = await Promise.all([
+      axios.get(`${REE_BASE}/demanda/demanda-tiempo-real`, { ...opts, params: { start_date: `${day(now)}T00:00`, end_date: `${day(now)}T23:59`, time_trunc: 'hour' } }),
+      axios.get(`${REE_BASE}/generacion/estructura-generacion`, { ...opts, params: { start_date: `${day(yesterday)}T00:00`, end_date: `${day(yesterday)}T23:59`, time_trunc: 'day' } }),
+    ]);
+    const demand = parseReeDemand(dem.data);
+    const structure = parseReeMix(mix.data);
+    if (!demand && !structure) return null;
+    const out = {
+      timestamp: now.toISOString(),
+      source: 'REE apidatos',
+      simulated: false,
+      demand_mw: demand ? demand.demand_mw : null,
+      demand_at: demand ? demand.at : null,
+      frequency_hz: null,
+      grid_balance_mw: null,
+      renewable_pct: structure ? structure.renewable_pct : null,
+      mix: structure ? structure.mix : null,
+      mix_period: `${day(yesterday)} (último día completo)`,
+      notes: 'REE no publica frecuencia ni balance en tiempo real en su API abierta.',
+    };
+    _lastRee = out;
+    _reeAt = Date.now();
+    if (cache) { try { await cache.cacheSet('bezhas:energy:ree:grid', out, REE_TTL); } catch { /* ignore */ } }
+    return out;
+  } catch (err) {
+    logger.warn('[ENERGY][REE] live fetch failed: %s', err.message);
+    return null;
+  }
+}
+
+/**
+ * Indicadores reales de la red española (demanda y mix) desde apidatos.ree.es. No publica frecuencia ni balance en tiempo
+ * real, así que van a null (no se inventan). La API de REE tarda a veces 5-10 s: se sirve el último valor bueno mientras se
+ * refresca en segundo plano (una sola petición a la vez) y sólo la primera llamada espera. Sin dato → null (el caller marca el simulado).
+ */
+async function getReeGrid(now = new Date()) {
+  if (_lastRee && Date.now() - _reeAt < REE_TTL * 1000) return _lastRee;
+  if (!_reeInFlight) _reeInFlight = fetchReeGrid(now).finally(() => { _reeInFlight = null; });
+  if (_lastRee) return _lastRee;          // valor viejo ahora, fresco en la próxima
+  return _reeInFlight;
+}
+
 module.exports = {
+  madridParts,
+  parseReeDemand,
+  parseReeMix,
+  getReeGrid,
+  __resetReeForTests: () => { _lastRee = null; _reeAt = 0; _reeInFlight = null; },
   parseMarginalPdbc,
   buildOmieResponse,
   omieFileUrl,
