@@ -21,9 +21,8 @@ const navItems = [
 ];
 
 const crossAppLinks = [
-    { href: process.env.NEXT_PUBLIC_BEZHAS_HOME_URL || 'http://localhost:5173', label: 'Home principal', icon: ExternalLink },
-    { href: 'http://localhost:3000', label: 'Core Console', icon: ExternalLink },
-    { href: 'http://localhost:5173', label: 'BeZhas App', icon: ExternalLink },
+    { href: process.env.NEXT_PUBLIC_BEZHAS_HOME_URL || 'https://www.bezhas.com', label: 'Home principal', icon: ExternalLink },
+    { href: process.env.NEXT_PUBLIC_BEZHAS_HUB_URL || 'https://hub.bezhas.com', label: 'BeZhas Hub', icon: ExternalLink },
 ];
 
 export function Sidebar() {

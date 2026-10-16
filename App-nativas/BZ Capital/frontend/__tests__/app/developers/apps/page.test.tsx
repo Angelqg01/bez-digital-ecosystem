@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import DevelopersAppsPage from '../../app/developers/apps/page';
+import DevelopersAppsPage from '../../../../app/developers/apps/page';
 
 describe('DevelopersAppsPage (Landing Page)', () => {
     it('renders the Hero Section correctly', () => {

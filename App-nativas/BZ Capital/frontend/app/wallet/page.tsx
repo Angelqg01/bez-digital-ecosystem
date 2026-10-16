@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { Wallet as WalletIcon, Copy, ArrowUpRight, ArrowDownLeft, RefreshCw, Loader2 } from 'lucide-react';
-import { useWalletBalance, useWalletHistory, login, type WalletTx } from '@/lib/hooks';
+import { useWalletBalance, useWalletHistory, type WalletTx } from '@/lib/hooks';
+import { sessionAddress } from '@/lib/api';
+import { useAuth } from '@/components/SSOProvider';
 
 function txIcon(type: string) {
     switch (type) {
@@ -14,9 +16,8 @@ function txIcon(type: string) {
 }
 
 export default function WalletPage() {
-    const [address, setAddress] = useState(() =>
-        typeof window !== 'undefined' ? localStorage.getItem('bez_wallet') || '' : ''
-    );
+    const { loginWithWallet } = useAuth();
+    const [address, setAddress] = useState(() => sessionAddress() || '');
     const [sendTo, setSendTo] = useState('');
     const [sendAmount, setSendAmount] = useState('');
     const [sendToken, setSendToken] = useState('BEZ');
@@ -25,18 +26,17 @@ export default function WalletPage() {
     const { data: historyData, isLoading: histLoading } = useWalletHistory(address || null);
     const transactions: WalletTx[] = historyData?.transactions ?? [];
 
+    // Login SIWE del SSOProvider (nonce de la API): antes se firmaba un mensaje
+    // libre y se ignoraba el fallo del login, así que la página «conectaba» una
+    // wallet sin sesión y todas las lecturas daban 401.
+    const [connectError, setConnectError] = useState('');
     const connectWallet = async () => {
-        if (typeof window === 'undefined') return;
-        const eth = (window as unknown as { ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<string | string[]> } }).ethereum;
-        if (!eth) return;
-        const accounts = await eth.request({ method: 'eth_requestAccounts' }) as string[];
-        if (accounts[0]) {
-            const wallet = accounts[0];
-            const message = `BeZhas DeFi login: ${Date.now()}`;
-            const signature = await eth.request({ method: 'personal_sign', params: [message, wallet] }) as string;
-            await login(wallet, signature, message).catch(() => { });
-            setAddress(wallet);
-            localStorage.setItem('bez_wallet', wallet);
+        setConnectError('');
+        try {
+            const session = await loginWithWallet('login');
+            setAddress(session.address);
+        } catch (e: unknown) {
+            setConnectError(e instanceof Error ? e.message : 'No se pudo conectar la wallet.');
         }
     };
 
@@ -51,6 +51,7 @@ export default function WalletPage() {
                     <p className="text-slate-400 mt-2">Connect your wallet to view balances and manage assets</p>
                 </div>
                 <button onClick={connectWallet} className="btn-primary text-lg px-8 py-3">Connect Wallet</button>
+                {connectError && <p className="text-sm text-red-400">{connectError}</p>}
             </div>
         );
     }

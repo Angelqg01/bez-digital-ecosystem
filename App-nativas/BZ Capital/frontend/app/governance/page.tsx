@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Vote, Clock, CheckCircle, XCircle, Plus, Loader2 } from 'lucide-react';
 import { useGovernanceProposals, voteOnProposal, type Proposal } from '@/lib/hooks';
+import { sessionAddress } from '@/lib/api';
 import {
     createProposalOnChain,
     executeProposalOnChain,
@@ -59,7 +60,7 @@ export default function GovernancePage() {
     const { data, isLoading, mutate } = useGovernanceProposals();
     const proposals: Proposal[] = data?.proposals ?? [];
     const filtered = filter === 'all' ? proposals : proposals.filter((p) => p.status === filter);
-    const address = typeof window !== 'undefined' ? localStorage.getItem('bez_wallet') : null;
+    const address = sessionAddress();
 
     const handleVote = async (proposalId: string, vote: 'for' | 'against') => {
         if (!address) { setError('Connect wallet first'); return; }

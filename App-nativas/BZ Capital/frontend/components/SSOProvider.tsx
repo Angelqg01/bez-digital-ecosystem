@@ -588,9 +588,14 @@ export const SSOProvider = ({ children }: { children: React.ReactNode }) => {
   // Login / sign-up with a Web3 wallet (SIWE, with demo fallback).
   const loginWithWallet = async (mode: 'login' | 'subscribe' = 'login') => {
     const session = await siweLogin({ statement: 'Inicia sesión en BeZhas DeFi con tu wallet.', mode });
+    // siweLogin cae a una sesión «demo» con un token que no firma nadie si la API
+    // no responde: con ella el panel se desbloqueaba y todo daba 401. Aquí no vale.
+    if (session.authMethod !== 'siwe') {
+      throw new Error('No se pudo verificar la firma con la API de BeZhas. Inténtalo de nuevo.');
+    }
     const walletUser = {
       username: shortAddress(session.address),
-      role: session.authMethod === 'siwe' ? 'Wallet Verified' : 'Wallet (Demo)',
+      role: 'Wallet Verified',
       walletAddress: session.address,
     };
     localStorage.setItem('bezhas-jwt', session.token);
