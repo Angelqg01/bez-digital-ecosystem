@@ -23,6 +23,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const ENERGY_API = `${API_BASE_URL}/energy`;
 const REQUEST_TIMEOUT_MS = 8000;
+const SLOW_TIMEOUT_MS = 20000; // REE (apidatos) puede tardar 5-10 s
 
 /**
  * Simulated fallback gate.
@@ -44,10 +45,10 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function apiGet(path) {
+async function apiGet(path, timeoutMs = REQUEST_TIMEOUT_MS) {
   const res = await fetch(`${ENERGY_API}${path}`, {
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`GET ${path} → ${res.status}`);
   return res.json();
@@ -113,6 +114,8 @@ function normalizeTelemetry(raw) {
     unit: 'kW',
     status: mapStatus(n.status),
     protocol: n.protocol,
+    soc: n.soc_pct != null ? Number(n.soc_pct) : null,
+    lastReadingAt: n.last_reading_at || null,
     diagnostics: buildDiagnostics(n),
   }));
 
@@ -125,11 +128,14 @@ function normalizeTelemetry(raw) {
 
   return {
     timestamp: raw.timestamp,
+    // El backend marca la telemetría de demostración (`simulated`) y su origen: la UI debe decirlo siempre.
+    simulated: raw.simulated !== false,
+    source: raw.source || (raw.simulated === false ? 'live' : 'simulated'),
     global: {
       netFlow: Number(raw.global.net_flow_kw ?? 0),
       totalOutput,
       gridFrequency: raw.global.grid_frequency,
-      selfSufficiency: raw.global.self_sufficiency_pct,
+      selfSufficiency: raw.global.self_sufficiency_pct ?? null,
       efficiency,
       carbonOffset: +(totalOutput * 0.0004).toFixed(2),
     },
@@ -141,6 +147,7 @@ function normalizeAlerts(raw) {
   const arr = Array.isArray(raw) ? raw : raw && Array.isArray(raw.alerts) ? raw.alerts : [];
   return arr.map((a) => ({
     id: a.id,
+    type: a.type,
     level: SEVERITY_LEVEL[String(a.severity || '').toUpperCase()] || 'Info',
     title: a.title || humanize(a.type),
     diagnosis: a.diagnosis || a.message,
@@ -236,16 +243,60 @@ export const getWalletStats = async () => {
   }
 };
 
-export const sendControlCommand = async (nodeId, command, params = {}) => {
-  try {
-    return await apiPost('/control', { nodeId, command, params });
-  } catch (error) {
-    if (!ALLOW_SIMULATED_FALLBACK) throw error;
-    // Demo-friendly: surface as a simulated dispatch instead of a hard error.
-    console.warn('[energy] control → simulated dispatch:', error.message);
-    return { success: true, simulated: true, nodeId, command, params };
-  }
+/** Precio OMIE real (curva del día) o null si el backend no responde. */
+export const getOmie = async () => {
+  try { return await apiGet('/market/omie'); } catch (error) { console.warn('[energy] OMIE unavailable:', error.message); return null; }
 };
+
+/** Demanda y mix de generación de la red española (REE) o null. */
+export const getGridIndicators = async () => {
+  try { return await apiGet('/market/esios', SLOW_TIMEOUT_MS); } catch (error) { console.warn('[energy] grid indicators unavailable:', error.message); return null; }
+};
+
+/** Analítica agregada de un nodo propio (muestras, media, pico, kWh) y su serie reciente. */
+export const getNodeAnalytics = async (nodeId, hours = 24) => {
+  const [stats, hist] = await Promise.all([
+    apiGet(`/analytics?nodeId=${encodeURIComponent(nodeId)}&hours=${hours}`),
+    apiGet(`/telemetry/${encodeURIComponent(nodeId)}/history?hours=${hours}&limit=300`).catch(() => ({ samples: [] })),
+  ]);
+  return { stats, samples: (hist.samples || []).slice().reverse() };
+};
+
+/** Cola de aprobaciones humanas (HITL) de comandos SCADA críticos. Requiere rol de operador. */
+export const getPendingApprovals = async () => {
+  try { const d = await apiGet('/control/pending'); return d.pending || []; } catch { return []; }
+};
+export const approveJob = (jobId) => apiPost(`/control/${encodeURIComponent(jobId)}/approve`, {});
+export const rejectJob = (jobId, reason) => apiPost(`/control/${encodeURIComponent(jobId)}/reject`, { reason });
+
+export const getCaeTokens = async () => {
+  try { return await apiGet('/cae/tokens'); } catch { return null; }
+};
+
+export const getWalletHistory = async (limit = 5) => {
+  try { const d = await apiGet(`/wallet/history?limit=${limit}`); return Array.isArray(d.history) ? d.history : []; } catch { return []; }
+};
+
+/** Nodos del titular. `simulated` = lista de demostración (aún no ha conectado ninguna planta). */
+export const getNodes = async () => {
+  try { return await apiGet('/nodes'); } catch (error) { console.warn('[energy] nodes unavailable:', error.message); return { total: 0, simulated: true, nodes: [] }; }
+};
+
+/** Conectar una planta: devuelve { node, nodeKey } (la clave sólo se muestra esta vez). */
+export const registerNode = (body) => apiPost('/nodes', body);
+
+export const revokeNode = async (id) => {
+  const res = await fetch(`${ENERGY_API}/nodes/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...authHeaders() }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `DELETE node → ${res.status}`);
+  return data;
+};
+
+/**
+ * Comando SCADA. NUNCA se simula el éxito: antes, en desarrollo, un 403 o un comando rechazado se mostraba como
+ * «despachado (simulado)». En un panel de operación eso es peligroso: o el equipo lo recibió o no.
+ */
+export const sendControlCommand = (nodeId, command, params = {}) => apiPost('/control', { nodeId, command, params });
 
 export const buyEnergyCredit = async (amountBzhs, txHash) => {
   try {
