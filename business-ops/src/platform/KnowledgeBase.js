@@ -97,7 +97,11 @@ class KnowledgeBase {
       embedding: null,
     };
     article.embedding = await this._embed(text); // null si no hay embedder o falla
-    this._articles.push(article);
+    // Upsert por id: volver a ingerir el mismo artículo lo REEMPLAZA. Sin esto,
+    // cada sincronización (p. ej. desde el RAG de BeZhas) duplicaba el artículo
+    // y el buscador devolvía la misma respuesta varias veces.
+    const previo = id ? this._articles.findIndex((a) => a.id === id) : -1;
+    if (previo >= 0) this._articles[previo] = article; else this._articles.push(article);
     this._invIndex = null;   // invalidar índice: se reconstruirá si toca
     await this._persist();
     return article.id;

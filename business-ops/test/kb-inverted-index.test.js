@@ -80,3 +80,15 @@ test('consulta sin coincidencias devuelve []', async () => {
   const r = await kb.search('kryptonita-inexistente-999');
   assert.deepEqual(r, []);
 });
+
+test('KB: ingerir dos veces el mismo id reemplaza el artículo, no lo duplica', async () => {
+  const KnowledgeBase = require('../src/platform/KnowledgeBase');
+  const kb = new KnowledgeBase({ tenantId: 't' });
+  await kb.ingest({ id: 'rag:planes', title: 'Planes', body: 'precio del plan starter' });
+  await kb.ingest({ id: 'rag:planes', title: 'Planes', body: 'precio del plan creator pro actualizado' });
+  await kb.ingest({ title: 'Sin id', body: 'otro artículo' });
+  await kb.ingest({ title: 'Sin id', body: 'otro artículo' });
+  assert.equal(kb.size, 3, 'el id repetido no suma; los artículos sin id siguen sumando');
+  const hits = await kb.search('creator pro actualizado');
+  assert.equal(hits.filter((h) => h.id === 'rag:planes').length, 1);
+});
