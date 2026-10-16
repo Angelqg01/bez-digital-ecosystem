@@ -4,9 +4,9 @@
 
 ```bash
 # Ver revisiones y cuál sirve tráfico
-gcloud run revisions list --service bezhas-api --region europe-west1 --limit 5
+gcloud run revisions list --service bezhas-api --region us-central1 --limit 5
 # Devolver el 100 % del tráfico a una revisión anterior (instantáneo, no borra nada)
-gcloud run services update-traffic bezhas-api --region europe-west1 --to-revisions <REVISION_ANTERIOR>=100
+gcloud run services update-traffic bezhas-api --region us-central1 --to-revisions <REVISION_ANTERIOR>=100
 ```
 
 ## Rollback de la migración 065 (sólo si hiciera falta)
@@ -17,7 +17,7 @@ DROP INDEX IF EXISTS idx_knowledge_chunks_tsv;
 ALTER TABLE knowledge_chunks DROP COLUMN IF EXISTS tsv, DROP COLUMN IF EXISTS tokens, DROP COLUMN IF EXISTS ntok;
 DELETE FROM migrations WHERE name LIKE '065%';   -- comprobar el nombre exacto antes
 ```
-Hacer antes una copia: `gcloud sql backups create --instance bezhas-postgres`.
+Hacer antes una copia: `gcloud sql backups create --instance bezhas-pg`.
 
 ## Runbooks por incidente
 

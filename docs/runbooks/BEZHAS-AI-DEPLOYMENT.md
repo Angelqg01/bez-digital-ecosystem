@@ -1,6 +1,6 @@
 # BeZhas AI (chat + RAG) — despliegue y operación
 
-Servicio: `bezhas-api` en Cloud Run (`europe-west1`, proyecto `bezhas-prod` por defecto). El chat, el RAG, el MCP y la subida de archivos NFT viven en esa misma API. Despliegue general: `scripts/gcp-deploy.sh` (ver `docs/developer/GCP_DEPLOYMENT_GUIDE.md`).
+Servicio: `bezhas-api` en Cloud Run (`us-central1`, proyecto `project-a2f60001-ecbb-49af-8c2` (`deploy/gcp/config.env`)). El chat, el RAG, el MCP y la subida de archivos NFT viven en esa misma API. Despliegue general: `./deploy/gcp/deploy.sh` (ver `docs/developer/GCP_DEPLOYMENT_GUIDE.md`).
 
 > ⚠️ `gcloud run deploy --set-env-vars` **reemplaza todas** las variables. Para tocar un flag usa siempre `gcloud run services update … --update-env-vars` (o `--remove-env-vars`), nunca `--set-env-vars`.
 
@@ -25,16 +25,16 @@ Servicio: `bezhas-api` en Cloud Run (`europe-west1`, proyecto `bezhas-prod` por 
 
 ## 2. Primer despliegue del bloque RAG (orden)
 
-1. **Antes de nada** (y nunca pases `--reset` a `db/migrate.js`: borra todas las tablas): copia de seguridad de Cloud SQL (`gcloud sql backups create --instance bezhas-postgres`). Las migraciones 049–051 siguen **sin aplicar**: `db/migrate.js` aplica las pendientes en orden, así que se aplicarán todas junto con la 065. Revísalas antes (`api/db/migrations/049*–051*`).
-2. Despliega la revisión nueva con `scripts/gcp-deploy.sh` (el job `bezhas-db-migrate` aplica migraciones, incluida la 065, que sólo **añade** columnas e índice).
+1. **Antes de nada** (y nunca pases `--reset` a `db/migrate.js`: borra todas las tablas): copia de seguridad de Cloud SQL (`gcloud sql backups create --instance bezhas-pg`). Las migraciones 049–051 siguen **sin aplicar**: `db/migrate.js` aplica las pendientes en orden, así que se aplicarán todas junto con la 065. Revísalas antes (`api/db/migrations/049*–051*`).
+2. Despliega la revisión nueva con `./deploy/gcp/deploy.sh` (el job `bezhas-db-migrate` aplica migraciones, incluida la 065, que sólo **añade** columnas e índice).
 3. Rellena los índices de las filas anteriores:
    ```bash
-   gcloud run jobs execute bezhas-db-migrate --region europe-west1 --args "scripts/knowledge-reindex.js" --wait
+   gcloud run jobs execute bezhas-db-migrate --region us-central1 --args "scripts/knowledge-reindex.js" --wait
    ```
    (o ejecuta `node scripts/knowledge-reindex.js` con las variables de la API). Es idempotente. **Si cambias el tokenizador** (`services/knowledge/bm25.js`: sinónimos, raíz, palabras vacías) ejecuta `node scripts/knowledge-reindex.js --all` para recalcular todos los índices: lo indexado y lo buscado deben salir del mismo tokenizador.
 4. Activa el modo `fts` **después** de comprobar el paso 3:
    ```bash
-   gcloud run services update bezhas-api --region europe-west1 --update-env-vars KNOWLEDGE_RETRIEVAL=fts
+   gcloud run services update bezhas-api --region us-central1 --update-env-vars KNOWLEDGE_RETRIEVAL=fts
    ```
 5. Smoke tests (sección 4).
 
@@ -42,13 +42,13 @@ Servicio: `bezhas-api` en Cloud Run (`europe-west1`, proyecto `bezhas-prod` por 
 
 ```bash
 # a) Chat sin modelo de pago (sigue respondiendo con fragmentos de la documentación, coste 0)
-gcloud run services update bezhas-api --region europe-west1 --update-env-vars AI_PROVIDER=extractive
+gcloud run services update bezhas-api --region us-central1 --update-env-vars AI_PROVIDER=extractive
 # b) Chat apagado del todo (503 en los mensajes; el resto de la plataforma sigue)
-gcloud run services update bezhas-api --region europe-west1 --update-env-vars AI_WORKSPACE_ENABLED=false
+gcloud run services update bezhas-api --region us-central1 --update-env-vars AI_WORKSPACE_ENABLED=false
 # c) Subidas de archivos NFT apagadas
-gcloud run services update bezhas-api --region europe-west1 --update-env-vars NFT_UPLOADS_ENABLED=false
+gcloud run services update bezhas-api --region us-central1 --update-env-vars NFT_UPLOADS_ENABLED=false
 # d) Volver al modo de búsqueda anterior (sin índice GIN)
-gcloud run services update bezhas-api --region europe-west1 --remove-env-vars KNOWLEDGE_RETRIEVAL
+gcloud run services update bezhas-api --region us-central1 --remove-env-vars KNOWLEDGE_RETRIEVAL
 ```
 Cada comando crea una revisión nueva (≈1 min). Para revertir un interruptor: `--remove-env-vars <NOMBRE>`.
 
@@ -60,7 +60,7 @@ curl -s -o /dev/null -w "actions sin token → %{http_code} (esperado 401)\n" $A
 curl -s -o /dev/null -w "nft-assets sin token → %{http_code} (esperado 401)\n" -X POST $API/api/nft-assets
 curl -s -H "x-api-key: $BEZHAS_TEST_KEY" "$API/api/gateway/v1/knowledge/search?q=planes%20y%20precios" | head -c 400
 ```
-Con un token de prueba de un usuario con plan: `POST /api/ai-workspace/chat` → 200, `reply` con cita `[1]`; con un usuario sin plan → 402. Versión desplegada: `gcloud run services describe bezhas-api --region europe-west1 --format "value(status.latestReadyRevisionName)"`.
+Con un token de prueba de un usuario con plan: `POST /api/ai-workspace/chat` → 200, `reply` con cita `[1]`; con un usuario sin plan → 402. Versión desplegada: `gcloud run services describe bezhas-api --region us-central1 --format "value(status.latestReadyRevisionName)"`.
 
 ## 5. Observabilidad
 

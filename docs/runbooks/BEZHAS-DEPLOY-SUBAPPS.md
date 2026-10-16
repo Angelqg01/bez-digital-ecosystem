@@ -5,7 +5,7 @@ Orden obligatorio: **primero la API, después las SubApps**. Las SubApps nuevas 
 `/api/ai-billing/subscription` corregido.
 
 ## 0. Antes de empezar
-- Copia de seguridad de Cloud SQL: `gcloud sql backups create --instance bezhas-postgres`.
+- Copia de seguridad de Cloud SQL: `gcloud sql backups create --instance bezhas-pg`.
 - Nunca pases `--reset` a `db/migrate.js`.
 - Revisa las migraciones pendientes **049–066** (`api/db/migrations/`): la 051 revoca claves de desarrollo; la 065 añade columnas e
   índice de búsqueda; la **066 crea `vpp_nodes`** (conectar plantas). Todas son aditivas salvo lo que diga cada una.
@@ -13,8 +13,8 @@ Orden obligatorio: **primero la API, después las SubApps**. Las SubApps nuevas 
   `Billetera Yoroi frases de recuperación.txt` y los `.env`, e incluye el PDF de Energy. **Aun así, saca ese archivo del repositorio.**
 
 ## 1. API
-1. `GCP_PROJECT_ID=… GCP_REGION=europe-west1 ./scripts/gcp-deploy.sh` (el job `bezhas-db-migrate` aplica 049–066).
-2. Reindexa el conocimiento (el tokenizador cambió): `gcloud run jobs execute bezhas-db-migrate --region europe-west1 --args "scripts/knowledge-reindex.js" --wait`
+1. `./deploy/gcp/deploy.sh` (el job `bezhas-db-migrate` aplica 049–066).
+2. Reindexa el conocimiento (el tokenizador cambió): `gcloud run jobs execute bezhas-db-migrate --region us-central1 --args "scripts/knowledge-reindex.js" --wait`
 3. Después `KNOWLEDGE_RETRIEVAL=fts` con `--update-env-vars`; `PINATA_JWT`, `ANTHROPIC_API_KEY`/`AI_MODEL_ANTHROPIC`, `REDIS_URL`; `JWT_STRICT_CLAIMS` el último.
 4. Energía: no hace falta clave (OMIE y REE son públicos). `ESIOS_API_KEY` es opcional (precio spot de ESIOS).
 
@@ -42,7 +42,7 @@ curl -s $API/energy/nodes -H "Authorization: Bearer $TOKEN" | grep -o '"simulate
 - Cabeceras de CargoLink, Prestige, Wallet: botón de configuración con Entrar/Salir dentro.
 
 ## 3. Marcha atrás
-- SubApp: `gcloud run services update-traffic bezhas-<app> --to-revisions <revisión-anterior>=100 --region europe-west1`.
+- SubApp: `gcloud run services update-traffic bezhas-<app> --to-revisions <revisión-anterior>=100 --region us-central1`.
 - API: ver `BEZHAS-AI-ROLLBACK.md`. Las migraciones 065/066 sólo añaden; no hace falta deshacerlas.
 
 ## Qué se verificó antes de escribir esto
