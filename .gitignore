@@ -117,3 +117,9 @@ bezhas-edge-node/sdk/
 api/smart-contracts/
 # Copias de seguridad de la zona DNS (deploy/gcp/04-hostinger-dns.sh)
 deploy/gcp/dns-backups/
+
+# Frases de recuperación de billeteras: nunca al repositorio
+Billetera*
+*frases*recuperaci*
+*seed*phrase*
+*recovery*phrase*
