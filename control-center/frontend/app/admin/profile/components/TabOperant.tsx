@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Bot, Mail, ShieldCheck, ClipboardCheck, Loader2, RefreshCw, Search } from 'lucide-react';
+import { Bot, Mail, ShieldCheck, ClipboardCheck, Loader2, RefreshCw, Search, MailCheck } from 'lucide-react';
 import api, { ApiError } from '@/lib/api';
 
 // Fase 1: SOLO LECTURA. Todo pasa por /api/admin/operant, que exige la sesión de
@@ -24,6 +24,16 @@ interface Overview {
 interface MailItem { uid: number; subject: string; from: string; fromName?: string; date: string | null; unread: boolean }
 interface MailList { mailbox?: string; total: number; hasMore: boolean; offset: number; messages: MailItem[] }
 interface MailDetail extends MailItem { to: { name: string; address: string }[]; text: string; attachments: { filename: string; size: number }[] }
+
+interface DmarcSender { sourceIp: string; label: string; reporters: string[]; messages: number; pass: number; fail: number; dkimPass: number; spfPass: number; quarantined: number; rejected: number }
+interface DmarcReporter { org: string; reports: number; messages: number; pass: number; fail: number }
+interface Dmarc {
+    windowDays: number; reports: number; messages: number; pass: number; fail: number; passRate: number | null; policy: string | null;
+    range: { from: string; to: string; spanDays: number } | null;
+    reporters: DmarcReporter[]; senders: DmarcSender[]; failing: DmarcSender[];
+    recommendation: { level: 'unknown' | 'blocked' | 'wait' | 'ready' | 'done'; text: string };
+    scanned: number; skipped: { uid: number; reason: string }[];
+}
 
 const BASE = '/admin/operant';
 const usd = (n?: number) => `$${Number(n || 0).toFixed(2)}`;
@@ -170,8 +180,102 @@ export default function TabOperant() {
                 </>
             )}
 
+            {status?.configured && status.runtime.available && <DmarcDigest />}
             {status?.configured && status.runtime.available && <Mailbox />}
         </div>
+    );
+}
+
+const REC_TONE = { unknown: 'idle', blocked: 'bad', wait: 'warn', ready: 'ok', done: 'ok' } as const;
+const REC_LABEL = { unknown: 'sin datos', blocked: 'no endurecer', wait: 'esperar', ready: 'listo para valorar', done: 'hecho' } as const;
+const pct = (n: number | null) => (n === null ? '–' : `${(n * 100).toFixed(1)}%`);
+
+function DmarcDigest() {
+    const [days, setDays] = useState(14);
+    const [data, setData] = useState<Dmarc | null>(null);
+    const [busy, setBusy] = useState(true);
+    const [error, setError] = useState('');
+    const [all, setAll] = useState(false);
+
+    const load = useCallback(async () => {
+        setBusy(true);
+        setError('');
+        try { setData(await api.get<Dmarc>(`${BASE}/mailbox/dmarc?days=${days}`)); }
+        catch (e) { setError(errMsg(e)); }
+        finally { setBusy(false); }
+    }, [days]);
+
+    useEffect(() => { load(); }, [load]);
+
+    const rows = data ? (all ? data.senders : data.failing) : [];
+    return (
+        <section className="bg-white/5 border border-white/10 p-6 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-[#0d33f2]"><MailCheck size={22} /><h3 className="font-bold uppercase tracking-widest text-sm text-white">Digest DMARC</h3></div>
+                <div className="flex items-center gap-2">
+                    {data && <Pill tone={data.fail === 0 ? 'ok' : 'warn'}>{pct(data.passRate)} pasan</Pill>}
+                    {data?.policy && <Pill tone="idle">p={data.policy}</Pill>}
+                    <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="bg-black/30 border border-white/10 px-2 py-1 text-xs">
+                        <option value={7}>7 días</option>
+                        <option value={14}>14 días</option>
+                        <option value={30}>30 días</option>
+                    </select>
+                    <button onClick={load} className="border border-white/10 p-1.5 hover:bg-white/5" aria-label="Recalcular digest"><RefreshCw size={13} className={busy ? 'animate-spin' : ''} /></button>
+                </div>
+            </div>
+
+            {error && <div className="text-sm text-red-300">{error}</div>}
+            {busy && !data && <div className="flex justify-center py-4"><Loader2 className="animate-spin text-[#0d33f2]" size={18} /></div>}
+
+            {data && (
+                <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <Kpi label="Informes" value={data.reports} hint={data.range ? `${data.range.spanDays} días de datos` : 'sin informes'} />
+                        <Kpi label="Mensajes" value={data.messages} />
+                        <Kpi label="Pasan DMARC" value={<span className="text-emerald-300">{data.pass}</span>} />
+                        <Kpi label="No pasan" value={<span className={data.fail ? 'text-amber-300' : ''}>{data.fail}</span>} hint={`${data.failing.length} origen(es)`} />
+                    </div>
+
+                    <div className={`border px-4 py-3 text-sm flex items-start gap-3 ${data.recommendation.level === 'blocked' ? 'border-red-700 bg-red-900/20' : data.recommendation.level === 'wait' ? 'border-amber-700 bg-amber-900/20' : 'border-white/10 bg-black/20'}`}>
+                        <Pill tone={REC_TONE[data.recommendation.level]}>{REC_LABEL[data.recommendation.level]}</Pill>
+                        <span className="text-gray-300">{data.recommendation.text}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div>
+                            <div className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Por receptor</div>
+                            {data.reporters.map((r) => (
+                                <div key={r.org} className="flex items-center justify-between text-sm border-b border-white/5 py-1.5">
+                                    <span className="text-gray-300">{r.org}</span>
+                                    <span className="text-xs text-gray-500">{r.messages} · <span className={r.fail ? 'text-amber-300' : 'text-emerald-300'}>{r.fail} fallos</span></span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="lg:col-span-2">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="text-[10px] uppercase tracking-widest text-gray-500">{all ? 'Todos los remitentes' : 'Remitentes que no pasan'}</div>
+                                <button onClick={() => setAll(!all)} className="text-[10px] uppercase tracking-widest text-[#0d33f2] hover:underline">{all ? 'Ver solo fallos' : `Ver todos (${data.senders.length})`}</button>
+                            </div>
+                            {rows.length === 0 && <p className="text-sm text-gray-500">{all ? 'Sin remitentes.' : 'Ningún remitente falla en la ventana.'}</p>}
+                            <div className="max-h-[300px] overflow-y-auto">
+                                {rows.map((s) => (
+                                    <div key={s.sourceIp} className="text-sm border-b border-white/5 py-1.5">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <span className="text-gray-200">{s.label}{s.label !== s.sourceIp && <code className="text-xs text-gray-500"> {s.sourceIp}</code>}</span>
+                                            <span className="text-xs whitespace-nowrap"><span className="text-emerald-300">{s.pass} ok</span> · <span className={s.fail ? 'text-amber-300' : 'text-gray-500'}>{s.fail} fallos</span></span>
+                                        </div>
+                                        <div className="text-[11px] text-gray-500">visto por {s.reporters.join(', ')} · DKIM {s.dkimPass} · SPF {s.spfPass}{s.quarantined ? ` · ${s.quarantined} en cuarentena` : ''}{s.rejected ? ` · ${s.rejected} rechazados` : ''}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {data.skipped.length > 0 && <p className="text-xs text-gray-500">{data.skipped.length} correo(s) con asunto de informe no contenían un informe legible y no cuentan.</p>}
+                    <p className="text-xs text-gray-500">Solo lectura: el digest orienta, pero cambiar la política DMARC en el DNS lo decide una persona.</p>
+                </>
+            )}
+        </section>
     );
 }
 
