@@ -7,6 +7,7 @@
  *
  * Props:
  *   items     [{ key, label, icon?, to?, onClick?, hidden?, hint? }]  `to` navega con onNavigate; `onClick` ejecuta.
+ *   auth      el acceso de usuario (HeaderAuthButton): va arriba del menú y lo cierra al pulsarlo
  *   children  contenido extra dentro del menú (p. ej. el selector de organización)
  *   onNavigate(to)  navegación de la app (useNavigate); sin ella, los items con `to` hacen location.assign
  *   label     texto del botón (se oculta en móvil, queda el icono)
@@ -28,11 +29,13 @@ const CSS = `
   color:var(--bzhm-fg,#e6edf3);font-size:13px;font-weight:600;cursor:pointer}
 .bzhm-item:hover{background:rgba(255,255,255,.07)}
 .bzhm-hint{display:block;font-size:11px;font-weight:400;color:var(--bzhm-muted,#8aa0b4)}
+.bzhm-auth{padding:6px 6px 8px;margin-bottom:4px;border-bottom:1px solid var(--bzhm-border,rgba(255,255,255,.14))}
+.bzhm-auth>div{flex-wrap:wrap}
 .bzhm-extra{padding:8px 6px 4px;border-top:1px solid var(--bzhm-border,rgba(255,255,255,.14));margin-top:4px}
 @media (max-width:640px){.bzhm-label{display:none}}
 `;
 
-export default function HeaderMenu({ items = [], children = null, onNavigate, label = 'Config', accent, title = 'Configuración' }) {
+export default function HeaderMenu({ items = [], children = null, auth = null, onNavigate, label = 'Config', accent, title = 'Configuración' }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const btnRef = useRef(null);
@@ -85,6 +88,12 @@ export default function HeaderMenu({ items = [], children = null, onNavigate, la
       </button>
       {open && (
         <div id={popId} className="bzhm-pop" role="menu" aria-label={title} onKeyDown={onMenuKey}>
+          {auth ? (
+            <div className="bzhm-auth" data-testid="header-menu-auth"
+              onClick={(e) => { if (e.target.closest('button')) setTimeout(() => close(), 0); }}>
+              {auth}
+            </div>
+          ) : null}
           {visible.map((item) => {
             const Icon = item.icon;
             return (

@@ -35,8 +35,7 @@ const App = () => {
             </h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <HeaderMenu items={[{ key: 'api', label: 'API Hub', hint: 'Claves, webhooks e integración', icon: Code2, onClick: () => setDevOpen(true) }]} />
-            <HeaderAuthButton />
+            <HeaderMenu items={[{ key: 'api', label: 'API Hub', hint: 'Claves, webhooks e integración', icon: Code2, onClick: () => setDevOpen(true) }]} auth={<HeaderAuthButton />} />
           </div>
         </header>
 

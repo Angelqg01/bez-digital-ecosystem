@@ -346,10 +346,9 @@ function App() {
               <span style={{ fontSize: '10px', background: 'rgba(0, 240, 255, 0.1)', color: '#00f0ff', padding: '2px 8px', borderRadius: '12px', fontWeight: 800 }}>TESTNET ACTIVE</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <HeaderMenu onNavigate={navigate} items={[{ key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: ROUTES.organization }]}>
+              <HeaderMenu onNavigate={navigate} items={[{ key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: ROUTES.organization }]} auth={<HeaderAuthButton />}>
                 <OrganizationBar />
               </HeaderMenu>
-              <HeaderAuthButton />
             </div>
           </div>
         )}

@@ -41,7 +41,7 @@ import { OrganizationSettingsPage } from '../../_shared/OrganizationSettings.jsx
 const SphereHeaderMenu = () => {
   const navigate = useNavigate()
   return (
-    <HeaderMenu onNavigate={navigate} items={[{ key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: '/organization' }]}>
+    <HeaderMenu onNavigate={navigate} items={[{ key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: '/organization' }]} auth={<HeaderAuthButton />}>
       <OrganizationBar />
     </HeaderMenu>
   )
@@ -54,7 +54,6 @@ const App = () => {
         <div className="app-shell">
           <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 200, display: 'flex', alignItems: 'center', gap: 10 }}>
             <SphereHeaderMenu />
-            <HeaderAuthButton />
           </div>
           <Routes>
             <Route path="/" element={<Chat />} />

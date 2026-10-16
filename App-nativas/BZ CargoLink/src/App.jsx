@@ -62,10 +62,10 @@ const App = () => {
                 { key: 'api', label: 'API Hub', hint: 'Claves, webhooks e integración', icon: Code2, to: '/integration' },
                 { key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: '/organization' },
               ]}
+              auth={<HeaderAuthButton />}
             >
               <OrganizationBar />
             </HeaderMenu>
-            <HeaderAuthButton />
           </div>
         </header>
 
