@@ -65,20 +65,13 @@ test('Calendar real: scheduleMeeting hace booking vía Cal.com v2', async () => 
 });
 
 // ── Email ───────────────────────────────────────────────────────
-test('Email real vía Resend: POST a la API con el remitente configurado', async () => {
-  const fetchFn = fakeFetch([['api.resend.com', { id: 'email_1' }]]);
-  const e = new EmailConnector({ tenantId: 't', config: { resendKey: 're_x', from: 'ventas@bezhas.com', fetch: fetchFn } });
-  assert.equal(e.mode, 'resend');
-  const r = await e.send({ to: 'lead@puerto.es', subject: 'Propuesta', body: 'Hola' });
-  assert.equal(r.sent, true);
-  assert.equal(r.provider, 'resend');
-
-  // Antes del envío se comprueba el canal (GET /domains, sin enviar nada); el
-  // POST del correo es la llamada siguiente.
-  const comprobacion = fetchFn.calls.find((c) => c.url.includes('/domains'));
-  assert.ok(comprobacion, 'se verifica el canal antes de enviar');
-  const envio = fetchFn.calls.find((c) => c.url.includes('/emails'));
-  assert.match(envio.body, /"from":"ventas@bezhas.com"/);
+test('Email real: sin host declarado, las credenciales de Hostinger apuntan a smtp.hostinger.com:465', () => {
+  const e = new EmailConnector({ tenantId: 't', config: { user: 'yoelceo@bezhas.com', pass: 'x' } });
+  assert.equal(e.mode, 'smtp');
+  assert.equal(e.host, 'smtp.hostinger.com');
+  assert.equal(e.port, 465);
+  assert.equal(e.from, 'yoelceo@bezhas.com', 'el remitente por defecto es el buzón');
+  assert.equal(e.imapHost, 'imap.hostinger.com');
 });
 
 test('Email exige destinatario y cae a simulado sin credenciales', async () => {
@@ -139,18 +132,20 @@ test('Email: un envío simulado se reporta como NO enviado', async () => {
 
 test('Email: la comprobación se cachea y el canal se recupera solo', async () => {
   let intentos = 0;
-  const fetchFn = async () => { intentos++; return { ok: intentos > 1, status: intentos > 1 ? 200 : 401, json: async () => ({}) }; };
   const e = new EmailConnector({
     tenantId: 't',
-    config: { resendKey: 're_x', from: 'ventas@bezhas.com', fetch: fetchFn, verifyTtlMs: 0 },
+    config: { host: 'smtp.bezhas.test', user: 'yoelceo@bezhas.com', pass: 'x', verifyTtlMs: 0 },
   });
+  e._transport = {
+    verify: async () => { intentos++; if (intentos === 1) throw new Error('535 credenciales rechazadas'); return true; },
+  };
 
   const primera = await e.verify();
-  assert.equal(primera.ok, false, 'clave rechazada → canal degradado');
-  assert.match(primera.detail, /401|inválida/);
+  assert.equal(primera.ok, false, 'credenciales rechazadas → canal degradado');
+  assert.match(primera.detail, /535/);
 
   // Con TTL 0 la siguiente comprobación vuelve a preguntar: si el problema se
-  // arregló (clave corregida, servidor levantado), el canal se recupera sin
+  // arregló (contraseña corregida, servidor levantado), el canal se recupera sin
   // reiniciar la plataforma.
   const segunda = await e.verify();
   assert.equal(segunda.ok, true);

@@ -143,8 +143,8 @@ Es lo que decide de verdad si el correo llega, y no depende del código.
 - Muchos proveedores domésticos y algunos cloud **bloquean el puerto 25 saliente**. Si es
   el caso, no hay servidor propio que valga: hay que pedir el desbloqueo o usar un relay.
 - **Alternativa honesta:** un relay de salida (Resend, Postmark, SES) con tu dominio y tu
-  DKIM. El conector ya lo soporta — basta `RESEND_API_KEY` y el `.env` deja de necesitar
-  SMTP. Sigues siendo dueño del dominio y del contenido; delegas solo la reputación de la
+  DKIM. El conector ya no trae la vía HTTP de Resend (la plataforma envía solo por el
+  buzón de Hostinger); un relay se usaría apuntando `SMTP_HOST` a su servidor SMTP. Sigues siendo dueño del dominio y del contenido; delegas solo la reputación de la
   IP, que es justo la parte que cuesta años construir. Para el volumen de un piloto es la
   opción sensata; el servidor propio tiene sentido cuando el volumen o la soberanía del
   dato lo justifiquen.

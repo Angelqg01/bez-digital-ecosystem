@@ -23,6 +23,7 @@
     "express": "^4.21.1",
     "imapflow": "^2.0.5",
     "jsonwebtoken": "^9.0.3",
+    "mailparser": "^3.9.39",
     "nodemailer": "^9.1.1",
     "pg": "^8.13.1"
   },

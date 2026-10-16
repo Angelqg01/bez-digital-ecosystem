@@ -1,6 +1,7 @@
 'use strict';
 
-require('dotenv').config();
+// .env.local (credenciales locales, p. ej. HOSTINGER_SMTP_*) gana a .env.
+require('dotenv').config({ path: ['.env.local', '.env'] });
 
 // Del .env del monorepo se hereda SOLO lo que de verdad hay que compartir con
 // la API de BeZhas. Nada más.
@@ -48,6 +49,7 @@ const { buildDashboard } = require('./platform/dashboard');
 const { streamTenantEvents } = require('./platform/sse');
 const path = require('path');
 const EmailConnector = require('./connectors/EmailConnector');
+const MailboxReader = require('./connectors/MailboxReader');
 const TwentyCRM = require('./connectors/TwentyCRM');
 const StorageConnector = require('./connectors/StorageConnector');
 const FileSystemConnector = require('./connectors/FileSystemConnector');
@@ -1393,6 +1395,46 @@ app.get('/tenants/:tenantId/alerts', auth, scopeToTenant, (req, res) => {
 });
 
 // Estado del exportador OTLP (admin): si está activo, a dónde y si falla.
+// ── Bandeja de correo (buzón de Hostinger, solo lectura) ─────────────────────
+// Es UN buzón de la plataforma, no uno por tenant: sin esta lista cualquier
+// cliente con api-key podría leer el correo de BeZhas. Solo los tenants de
+// MAILBOX_TENANTS (por defecto `bezhas`) acceden, también el admin.
+const mailbox = new MailboxReader();
+const mailboxTenants = new Set((process.env.MAILBOX_TENANTS || 'bezhas').split(',').map((t) => t.trim()).filter(Boolean));
+
+function mailboxAccess(req, res, next) {
+  if (!mailboxTenants.has(req.params.tenantId)) return res.status(403).json({ error: 'este tenant no tiene acceso a la bandeja', code: 'mailbox_forbidden' });
+  next();
+}
+
+function mailboxError(res, err) {
+  if (err.code === 'MAILBOX_NOT_CONFIGURED') return res.status(503).json({ error: err.message, code: 'mailbox_not_configured', configured: false });
+  if (err.code === 'BAD_UID') return res.status(400).json({ error: err.message });
+  if (err.code === 'NOT_FOUND') return res.status(404).json({ error: err.message });
+  console.warn(`[mailbox] ${err.message}`);
+  return res.status(502).json({ error: `no se pudo leer el buzón: ${err.message}`, code: 'mailbox_unreachable' });
+}
+
+app.get('/tenants/:tenantId/mailbox', auth, scopeToTenant, mailboxAccess, rateLimit, async (req, res) => {
+  try {
+    const { folder, q, sort, limit, offset } = req.query;
+    res.json({ ...mailbox.describe(), ...(await mailbox.list({ folder: folder || 'INBOX', q, sort, limit, offset })) });
+  } catch (err) { mailboxError(res, err); }
+});
+
+app.get('/tenants/:tenantId/mailbox/:uid', auth, scopeToTenant, mailboxAccess, rateLimit, async (req, res) => {
+  try {
+    res.json(await mailbox.get({ folder: req.query.folder || 'INBOX', uid: req.params.uid }));
+  } catch (err) { mailboxError(res, err); }
+});
+
+app.post('/tenants/:tenantId/mailbox/:uid/seen', auth, scopeToTenant, mailboxAccess, rateLimit, async (req, res) => {
+  try {
+    res.json(await mailbox.markSeen({ folder: req.query.folder || 'INBOX', uid: req.params.uid }));
+  } catch (err) { mailboxError(res, err); }
+});
+
+
 app.get('/observability/otlp', auth, (req, res) => {
   if (!req.isAdmin) return res.status(403).json({ error: 'solo admin' });
   res.json(otlp.status());
@@ -1427,4 +1469,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { app, checkLocalModels, tenants, modelGateway, store, costTracker, usageMeter, telemetry, apiKeys, rateLimiter, scheduler, watchdog, otlp, langfuse, buildTools, hydrateFromStore, emailProbe, checkEmailChannel };
+module.exports = { app, checkLocalModels, tenants, modelGateway, store, costTracker, usageMeter, telemetry, apiKeys, rateLimiter, scheduler, watchdog, otlp, langfuse, buildTools, hydrateFromStore, emailProbe, checkEmailChannel, mailbox };

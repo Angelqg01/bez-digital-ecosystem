@@ -4,7 +4,7 @@ const BaseChannel = require('./BaseChannel');
 
 /**
  * EmailChannel — email entrante (webhook de Inbound Parse: SendGrid, Mailgun…)
- * y respuesta saliente (Resend/SendGrid API).
+ * y respuesta saliente por SMTP (buzón de Hostinger, vía EmailConnector).
  * Espera campos { from, subject, text } del webhook del proveedor.
  */
 class EmailChannel extends BaseChannel {

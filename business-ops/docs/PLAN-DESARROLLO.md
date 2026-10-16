@@ -17,7 +17,7 @@
 | **Guardrails** | ✅ RedLines (10, incl. on-chain y smart contracts) + PolicyEngine (overrides que solo endurecen) + AuditLog persistido. Cuotas de plan aplicadas |
 | **Cognición** | ✅ ModelGateway híbrido (Anthropic + Ollama local) con reintentos/backoff y fallback a simulado · RAG semántico real por coseno · LearningEngine destilando playbooks · tool-use con guardrails por invocación |
 | **Agentes** | ✅ **10 departamentos** completos: los 6 genéricos + Blockchain Ops, Legal, Tesorería y Fundraising (vertical BeZhas, §2.5) |
-| **Conectores** | ✅ Reales tras credenciales: email (Resend/SMTP), Stripe, Cal.com, Twenty CRM, Telegram/WhatsApp, MCP, n8n, blockchain (ethers) y `bezhas-core`. Sin credenciales → simulado explícito |
+| **Conectores** | ✅ Reales tras credenciales: email (Hostinger SMTP/IMAP), Stripe, Cal.com, Twenty CRM, Telegram/WhatsApp, MCP, n8n, blockchain (ethers) y `bezhas-core`. Sin credenciales → simulado explícito |
 | **API** | ✅ Express + clave por tenant (hash + rotación), scoping, rate-limit por plan, webhooks (Stripe con firma HMAC), billing |
 | **Datos** | ✅ Store con 3 adaptadores: memoria, **SQLite embebido** (por defecto) y Postgres/RLS. Postgres pendiente de verificar en vivo |
 | **Frontend** | ✅ Panel estático: onboarding, KPIs, bandeja HITL, KB, políticas, agenda, trazas y digest; tiempo real por SSE |
