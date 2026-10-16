@@ -115,9 +115,17 @@ export default function Recharge() {
             </div>
           </div>
 
-          <button className="btn-primary" onClick={() => setStep('success')}>
-            {payMethod === 'card' ? '💳 Pay with Stripe' : '🔷 Confirm Crypto Payment'}
-          </button>
+          {/* La API todavía no tiene endpoint de recarga (routes/gas.js sólo expone
+              /status y /balances). Antes este botón saltaba a «Recharge Complete,
+              $X Added» sin cobrar ni acreditar nada. */}
+          <div role="status" style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', background: 'var(--bezhas-surface-2)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+            La recarga online del Gas Tank aún no está disponible. Para recargar ahora escribe a info.bezcoin@bezhas.com
+            y te enviaremos la factura.
+          </div>
+          <a className="btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
+             href={`mailto:info.bezcoin@bezhas.com?subject=${encodeURIComponent(`Recarga Gas Tank ${selected} USD`)}`}>
+            Solicitar recarga de ${selected}.00
+          </a>
           <button className="btn-secondary" style={{ width: '100%', marginTop: '0.75rem' }} onClick={() => setStep('select')}>
             ← Change Amount
           </button>
