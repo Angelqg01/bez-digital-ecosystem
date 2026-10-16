@@ -14,6 +14,9 @@ emails de clientes, ni chats, ni correos entran en la tarea.
 |---|---|---|---|
 | Ecosystem & RWA | `pending-plan-assignments` | compras de plan pagadas sin asignar (`plan_purchases`) | support |
 | Ecosystem & RWA | `stuck-onboarding` | altas sin completar > 3 días (`onboarding_sessions`) | support |
+| Identity & Security | `team-invitations-stalled` | invitaciones de equipo sin aceptar > 14 días, por rol (`organization_members`) | hr |
+| Identity & Security | `access-review-due` | cada 90 días: revisión de accesos (recuentos de miembros por estado y de owner/admin activos) | hr |
+| Treasury & Web3 | `investor-update-due` | cada 30 días: borrador del informe a inversores desde métricas agregadas (suscripciones activas, compras de plan y de BEZ, validadores activos) | fundraising |
 | Ecosystem & RWA | `sales-intake-backlog` | ≥ 5 leads en la cola del formulario que el embudo no absorbe (OPERANT `/funnel`) | sales |
 | Treasury & Web3 | `past-due-subscriptions` | suscripciones en mora (`gateway_subscriptions`) | finance |
 | Treasury & Web3 | `failed-payments` | ≥ 3 pagos fallidos en 7 días (`payment_transactions`) | finance |
@@ -27,10 +30,12 @@ emails de clientes, ni chats, ni correos entran en la tarea.
 
 ### Cobertura por departamento de OPERANT
 
-8 de los 10 departamentos tienen señal propia. **Faltan dos, y no se ha inventado una señal para que salga completo**:
+Los 10 departamentos tienen al menos una señal propia. Dos de ellos, `hr` y `fundraising`, no tienen datos personales ni de correo de los que partir (y no se leen), así que su señal es **de cadencia** y usa solo agregados:
 
-- `hr`: BeZhas no guarda en la plataforma datos de personas, ofertas ni candidatos de los que sacar una señal fiable.
-- `fundraising`: las relaciones con inversores no tienen una fuente estructurada en la plataforma; una señal sobre su contenido exigiría leer correos, y eso no se hace.
+- `hr`: invitaciones de equipo atascadas y la revisión trimestral de accesos. La tarea recibe recuentos por rol o estado, nunca nombres ni correos.
+- `fundraising`: el informe mensual a inversores. La tarea recibe las métricas medidas; las que no se pueden medir se le dicen como **pendientes** (no se rellenan ni se estiman), no puede citar cifras que no estén en el mensaje y debe dejar claro que el token es de utilidad, no una inversión.
+
+Las señales de cadencia miden contra la última vez que el panel lanzó esa misma automatización (`admin_automation_runs`): lanzarla a mano o «forzar» reinicia el ciclo. Sin poder leer el registro, no actúan.
 
 La pestaña muestra esta cobertura (`GET /automations` → `coverage`).
 
@@ -56,6 +61,7 @@ Para Cloud Scheduler hace falta un token propio, porque no hay sesión de admin:
 | `ADMIN_AUTOMATION_TOKEN` | ≥ 32 caracteres. Sin él, la puerta del programador está cerrada. Cabecera: `x-automation-token`. |
 | `ADMIN_AUTOMATION_ENABLED=false` | Apaga el tick (503). |
 | `ADMIN_AUTOMATION_COOLDOWN_HOURS` | Enfriamiento por señal (24). |
+| `ADMIN_OPERANT_CACHE=off` | Desactiva la caché corta de lecturas del panel. |
 
 Ejemplo (no ejecutado; el token va en Secret Manager, no en el comando):
 
@@ -78,6 +84,6 @@ Las lecturas del panel (`status`, `overview`, `approvals`, `audit/verify`, bande
 ## Límites conocidos
 
 - La métrica del RAG es por instancia y se reinicia con cada despliegue; solo da una idea de la cobertura.
-- Las señales SQL (`plan_purchases`, `gateway_subscriptions`, `payment_transactions`, `onboarding_sessions`, `validator_*`, `tx_intents`) se validaron contra un Postgres 16 desechable con datos de prueba, no contra Cloud SQL.
+- Las señales SQL (`plan_purchases`, `gateway_subscriptions`, `payment_transactions`, `onboarding_sessions`, `validator_*`, `tx_intents`, `organization_members`) se validaron contra un Postgres 16 desechable con datos de prueba, no contra Cloud SQL.
 - Aprobar y rechazar se probó con aprobaciones reales de OPERANT (transferencias simuladas, sin clave ni correo): el rechazo no ejecuta nada y la aprobación ejecuta una sola vez.
 - Los registros de auditoría de OPERANT guardados antes de la corrección de `undefined` (commit `d7ed4800`) no se pueden reparar y seguirán fallando al verificarse.

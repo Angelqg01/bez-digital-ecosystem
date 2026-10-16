@@ -133,7 +133,7 @@ describe('Routes: /api/admin/operant (solo lectura)', () => {
             expect(ids).toEqual(expect.arrayContaining(['pending-plan-assignments', 'rag-coverage', 'dmarc-health', 'audit-chain']));
             expect(bridge.dispatchTask).not.toHaveBeenCalled();
             expect(res.body.coverage).toHaveLength(10);
-            expect(res.body.coverage.filter((c) => !c.covered).map((c) => c.department).sort()).toEqual(['fundraising', 'hr']);
+            expect(res.body.coverage.filter((c) => !c.covered)).toEqual([]);
         });
 
         it.each(['/automations/dmarc-health/run', '/approvals/a1/resolve', '/knowledge/sync'])(

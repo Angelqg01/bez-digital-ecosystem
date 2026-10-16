@@ -212,14 +212,82 @@ describe('adminAutomation', () => {
         });
     });
 
+    describe('RR.HH. y fundraising', () => {
+        const DIAS = 86_400_000;
+        const conUltima = (id, haceDias, extra = {}) => fakeDb({
+            ultima: { status: 'dispatched', task_id: 't_0', fingerprint: 'x', created_at: new Date(AHORA - haceDias * DIAS).toISOString() },
+            ...extra,
+        });
+
+        it('invitaciones de equipo: solo las de más de 14 días, por rol y sin datos personales', async () => {
+            const db = fakeDb({ "status = 'invited'": [{ role: 'developer', n: 2 }, { role: 'admin', n: 1 }] });
+            const { svc, operant } = crear({ db });
+            const r = await svc.ejecutar('team-invitations-stalled', { actor: 's' });
+            expect(r).toMatchObject({ status: 'dispatched', department: 'hr' });
+            const input = operant.dispatchTask.mock.calls[0][0].input;
+            expect(input).toMatch(/3 invitación/);
+            expect(input).not.toMatch(/@/);
+        });
+
+        it('revisión de accesos: nunca hecha o de hace más de 90 días → actúa; reciente → no', async () => {
+            const miembros = { 'FROM organization_members GROUP BY': [{ status: 'active', role: 'owner', n: 2 }, { status: 'active', role: 'developer', n: 5 }, { status: 'invited', role: 'admin', n: 1 }] };
+            const nunca = crear({ db: fakeDb(miembros) });
+            const r0 = await nunca.svc.ejecutar('access-review-due', { actor: 's' });
+            expect(r0.status).toBe('dispatched');
+            expect(nunca.operant.dispatchTask.mock.calls[0][0].input).toMatch(/2 miembro\(s\) con rol owner o admin activo/);
+
+            const vieja = crear({ db: conUltima('access-review-due', 100, miembros) });
+            expect((await vieja.svc.ejecutar('access-review-due', { actor: 's' })).status).toBe('dispatched');
+            const reciente = crear({ db: conUltima('access-review-due', 20, miembros) });
+            expect((await reciente.svc.ejecutar('access-review-due', { actor: 's' })).status).toBe('skipped');
+        });
+
+        it('informe a inversores: usa solo métricas medidas y le dice a la tarea lo que NO se pudo medir', async () => {
+            const err = Object.assign(new Error('x'), { code: '42P01' });
+            const db = fakeDb({
+                "FROM gateway_subscriptions WHERE status = 'active'": [{ n: 12 }],
+                'FROM plan_purchases WHERE created_at': [{ n: 4 }],
+                'FROM validator_heartbeats WHERE day >=': [{ n: 7 }],
+                "type = 'buy'": err,
+            });
+            const { svc, operant } = crear({ db });
+            const r = await svc.ejecutar('investor-update-due', { actor: 's' });
+            expect(r.status).toBe('dispatched');
+            const input = operant.dispatchTask.mock.calls[0][0].input;
+            expect(input).toMatch(/"suscripcionesActivas":12/);
+            expect(input).toMatch(/NO se pudieron medir: comprasBez30d, importeBez30dUsd/);
+            expect(input).toMatch(/no lo rellenes ni lo estimes/);
+            expect(input).toMatch(/el token es utilidad, no inversión/);
+        });
+
+        it('informe a inversores: sin ninguna métrica no hay informe; reciente, tampoco', async () => {
+            const err = Object.assign(new Error('x'), { code: '42P01' });
+            const roto = fakeDb({ 'FROM gateway_subscriptions': err, 'FROM plan_purchases': err, 'FROM validator_heartbeats': err, 'FROM payment_transactions': err });
+            expect((await crear({ db: roto }).svc.ejecutar('investor-update-due', { actor: 's' })).status).toBe('unavailable');
+
+            const reciente = crear({ db: conUltima('investor-update-due', 10) });
+            expect((await reciente.svc.ejecutar('investor-update-due', { actor: 's' })).status).toBe('skipped');
+        });
+
+        it('si no se puede leer el registro, las revisiones periódicas no actúan', async () => {
+            const err = Object.assign(new Error('x'), { code: '42P01' });
+            const db = fakeDb();
+            const base = db.query.getMockImplementation();
+            db.query.mockImplementation(async (sql, p) => { if (/FROM admin_automation_runs/.test(sql)) throw err; return base(sql, p); });
+            const { svc, operant } = crear({ db });
+            for (const id of ['access-review-due', 'investor-update-due']) {
+                expect((await svc.ejecutar(id, { actor: 's' })).status).toBe('unavailable');
+            }
+            expect(operant.dispatchTask).not.toHaveBeenCalled();
+        });
+    });
+
     describe('cobertura por departamento', () => {
-        it('cubre los 10 departamentos de OPERANT salvo los que no tienen fuente, y lo dice', () => {
+        it('los 10 departamentos de OPERANT tienen al menos una señal propia', () => {
             const c = cobertura();
             expect(c).toHaveLength(10);
-            const sin = c.filter((x) => !x.covered).map((x) => x.department).sort();
-            expect(sin).toEqual(['fundraising', 'hr']);
-            for (const x of c.filter((y) => !y.covered)) expect(x.reason.length).toBeGreaterThan(40);
-            for (const x of c.filter((y) => y.covered)) expect(x.automations.length).toBeGreaterThan(0);
+            expect(c.filter((x) => !x.covered)).toEqual([]);
+            for (const x of c) expect(x.automations.length).toBeGreaterThan(0);
         });
 
         it('todo departamento de una automatización existe en OPERANT', () => {

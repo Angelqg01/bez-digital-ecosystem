@@ -42,6 +42,20 @@ async function consulta(query, sql, params = []) {
     }
 }
 
+const DIA = 86_400_000;
+
+/**
+ * ¿Toca ya una revisión periódica? Se mide contra la última vez que el panel
+ * lanzó esta misma automatización (admin_automation_runs), no contra un reloj
+ * propio: así «forzar» o lanzarla a mano también reinicia el ciclo.
+ */
+async function cadencia({ ultima, now }, id, dias) {
+    const u = await ultima(id);
+    if (u?.error) return { error: u.error };
+    const edad = u ? now - new Date(u.created_at).getTime() : Infinity;
+    return { vencida: edad >= dias * DIA, edadDias: u ? Math.floor(edad / DIA) : null, ciclo: u ? new Date(u.created_at).toISOString() : 'nunca' };
+}
+
 const noDisponible = (reason) => ({ available: false, attention: false, summary: reason, metrics: {}, fingerprint: null });
 
 /**
@@ -272,6 +286,93 @@ const CATALOG = [
         },
     },
     {
+        id: 'team-invitations-stalled',
+        section: 'identity',
+        department: 'hr',
+        title: 'Invitaciones de equipo sin aceptar',
+        description: 'Personas invitadas a una organización que llevan más de 14 días sin incorporarse.',
+        async collect({ query }) {
+            const r = await consulta(query, "SELECT role, COUNT(*)::int AS n FROM organization_members WHERE status = 'invited' AND created_at < NOW() - INTERVAL '14 days' GROUP BY role");
+            if (r.error) return noDisponible(r.error);
+            const porRol = Object.fromEntries(r.rows.map((x) => [x.role, x.n]));
+            const total = r.rows.reduce((a, x) => a + x.n, 0);
+            return {
+                available: true, attention: total > 0, metrics: { total, porRol },
+                summary: total ? `${total} invitación(es) sin aceptar tras 14 días (${Object.entries(porRol).map(([k, n]) => `${k}: ${n}`).join(', ')}).` : 'Ninguna invitación de equipo atascada.',
+                fingerprint: huella(porRol),
+                input: `Hay ${total} invitación(es) de equipo sin aceptar desde hace más de 14 días, por rol: ${JSON.stringify(porRol)}. `
+                    + 'Redacta el recordatorio de incorporación (qué ganan al unirse, cómo aceptar, a quién escribir si hay un problema) como plantilla por rol, para aprobar. No hay nombres ni correos: la plantilla es genérica.',
+            };
+        },
+    },
+    {
+        id: 'access-review-due',
+        section: 'identity',
+        department: 'hr',
+        title: 'Revisión trimestral de accesos',
+        description: 'Cada 90 días, revisar quién tiene qué rol en las organizaciones (altas, cambios y bajas).',
+        async collect(deps) {
+            const c = await cadencia(deps, 'access-review-due', 90);
+            if (c.error) return noDisponible(`registro de automatizaciones no disponible: ${c.error}`);
+            const r = await consulta(deps.query, 'SELECT status, role, COUNT(*)::int AS n FROM organization_members GROUP BY status, role');
+            if (r.error) return noDisponible(r.error);
+            const porEstado = {}; let privilegiados = 0;
+            for (const x of r.rows) {
+                porEstado[x.status] = (porEstado[x.status] || 0) + x.n;
+                if (x.status === 'active' && ['owner', 'admin'].includes(x.role)) privilegiados += x.n;
+            }
+            const metrics = { miembros: porEstado, privilegiadosActivos: privilegiados, ultimaRevisionHaceDias: c.edadDias };
+            return {
+                available: true, attention: c.vencida, metrics,
+                summary: c.vencida
+                    ? `${c.edadDias === null ? 'Nunca se ha lanzado' : `Última revisión hace ${c.edadDias} días`}; ${privilegiados} miembro(s) con rol owner/admin activo.`
+                    : `Revisión al día (hace ${c.edadDias} días de 90).`,
+                fingerprint: huella({ ciclo: c.ciclo }),
+                input: `Toca la revisión trimestral de accesos. Hay ${privilegiados} miembro(s) con rol owner o admin activo; recuento de miembros por estado: ${JSON.stringify(porEstado)}. `
+                    + 'Prepara la lista de comprobación de la revisión (cuentas que ya no deberían tener acceso, roles excesivos, invitaciones caducadas) y el calendario de seguimiento, para el responsable. Sin nombres: solo el procedimiento.',
+            };
+        },
+    },
+    {
+        id: 'investor-update-due',
+        section: 'treasury',
+        department: 'fundraising',
+        title: 'Informe mensual a inversores',
+        description: 'Cada 30 días, borrador de actualización a inversores a partir de métricas agregadas de la plataforma.',
+        async collect(deps) {
+            const c = await cadencia(deps, 'investor-update-due', 30);
+            if (c.error) return noDisponible(`registro de automatizaciones no disponible: ${c.error}`);
+            const [subs, compras, vals, bez] = await Promise.all([
+                consulta(deps.query, "SELECT COUNT(*)::int AS n FROM gateway_subscriptions WHERE status = 'active'"),
+                consulta(deps.query, "SELECT COUNT(*)::int AS n FROM plan_purchases WHERE created_at > NOW() - INTERVAL '30 days' AND status IN ('active', 'pending_assignment')"),
+                consulta(deps.query, 'SELECT COUNT(DISTINCT operator)::int AS n FROM validator_heartbeats WHERE day >= CURRENT_DATE - 7'),
+                consulta(deps.query, "SELECT COUNT(*)::int AS n, COALESCE(SUM(amount_usd), 0)::float AS usd FROM payment_transactions WHERE type = 'buy' AND status = 'completed' AND created_at > NOW() - INTERVAL '30 days'"),
+            ]);
+            // Lo que no se puede medir se dice como tal en la tarea: un informe a
+            // inversores con una cifra inventada, o con un cero que no es, es lo peor.
+            const dato = (r, f) => (r.error ? null : f(r.rows[0] || {}));
+            const metrics = {
+                suscripcionesActivas: dato(subs, (x) => x.n),
+                comprasDePlan30d: dato(compras, (x) => x.n),
+                validadoresActivos7d: dato(vals, (x) => x.n),
+                comprasBez30d: dato(bez, (x) => x.n),
+                importeBez30dUsd: dato(bez, (x) => Math.round(x.usd * 100) / 100),
+            };
+            const faltan = Object.entries(metrics).filter(([, v]) => v === null).map(([k]) => k);
+            if (faltan.length === Object.keys(metrics).length) return noDisponible('ninguna métrica disponible para el informe');
+            return {
+                available: true, attention: c.vencida, metrics: { ...metrics, ultimoInformeHaceDias: c.edadDias, sinMedir: faltan },
+                summary: c.vencida
+                    ? `${c.edadDias === null ? 'Nunca se ha preparado un informe' : `Último informe hace ${c.edadDias} días`}${faltan.length ? `; sin poder medir: ${faltan.join(', ')}` : ''}.`
+                    : `Informe al día (hace ${c.edadDias} días de 30).`,
+                fingerprint: huella({ ciclo: c.ciclo }),
+                input: `Toca el informe mensual a inversores. Métricas agregadas de la plataforma: ${JSON.stringify(metrics)}`
+                    + `${faltan.length ? `. NO se pudieron medir: ${faltan.join(', ')}; indícalo como pendiente, no lo rellenes ni lo estimes` : ''}. `
+                    + 'Redacta el borrador de la actualización (hitos, cifras tal como constan, riesgos y próximos pasos) para revisión humana. No cites cifras que no estén en este mensaje ni hagas promesas de rentabilidad: el token es utilidad, no inversión.',
+            };
+        },
+    },
+    {
         id: 'operant-failures',
         section: 'watchdog',
         department: 'operations',
@@ -318,10 +419,7 @@ const CATALOG = [
  * Departamentos de OPERANT sin ninguna señal propia en la plataforma. No se
  * inventa una para que la tabla salga completa: se dice por qué falta.
  */
-const SIN_FUENTE = {
-    hr: 'BeZhas no guarda en la plataforma datos de personas, ofertas ni candidatos de los que sacar una señal fiable.',
-    fundraising: 'Las relaciones con inversores no tienen una fuente estructurada en la plataforma (viven en el buzón y en hojas externas); una señal sobre su contenido exigiría leer correos, y eso no se hace.',
-};
+const SIN_FUENTE = {};   // vacío: los 10 tienen señal. Si alguno vuelve a quedarse sin ella, se declara aquí con el motivo.
 const DEPARTAMENTOS = ['sales', 'support', 'marketing', 'hr', 'finance', 'operations', 'blockchain', 'legal', 'treasury', 'fundraising'];
 
 function cobertura(listado = CATALOG) {
@@ -338,7 +436,7 @@ function cobertura(listado = CATALOG) {
 
 function crearAdminAutomation({ query, operant, metricValues, knowledgeStore, now = () => Date.now() } = {}) {
     const tenantId = () => process.env.BEZHAS_TENANT_ID || 'bezhas';
-    const deps = () => ({ query, operant, metricValues, now: now() });
+    const deps = () => ({ query, operant, metricValues, now: now(), ultima });
 
     const porId = (id) => CATALOG.find((a) => a.id === id);
 
