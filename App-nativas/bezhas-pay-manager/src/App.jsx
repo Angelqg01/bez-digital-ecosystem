@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { CreditCard, Landmark, ShieldCheck, ArrowRight, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
 import { HeaderAuthButton, useAuth } from '../../_shared/BezhasAuthProvider.jsx';
+import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 
 // Compra de BEZ-Coin con fiat contra el Gateway (/payments/buy).
 //
@@ -228,15 +229,19 @@ function CheckoutRedirect() {
 
 export default function App() {
   return (
-    <div className="pay-app-wrapper">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px' }}>
-        <HeaderAuthButton />
-      </div>
+    // padding inferior: la barra del chat es fija y no puede tapar el botón de pago.
+    <div className="pay-app-wrapper" style={{ paddingBottom: 120 }}>
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 16px', maxWidth: 520, margin: '0 auto' }}>
+        <span style={{ fontWeight: 800, fontSize: 14, color: '#FFD700', letterSpacing: '.02em' }}>BeZhas Pay</span>
+        <HeaderAuthButton compact />
+      </header>
       <Routes>
         <Route path="/" element={<Comprar />} />
         <Route path="/c/:token" element={<CheckoutRedirect />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {/* Chat de la plataforma (el mismo de www.bezhas.com), con la sesión de esta app */}
+      <AIWorkspaceBar hideAppId="app_pay" bottomOffset={12} suggestions={['¿Cómo compro BEZ?', '¿Cuándo recibo mis BEZ?', '¿Qué límite tengo sin KYC?']} />
     </div>
   );
 }
