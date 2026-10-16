@@ -1,4 +1,4 @@
-const { crearAdminAutomation, CATALOG } = require('../../services/adminAutomation');
+const { crearAdminAutomation, CATALOG, cobertura } = require('../../services/adminAutomation');
 
 const AHORA = Date.parse('2026-10-16T12:00:00Z');
 
@@ -27,6 +27,8 @@ function fakeOperant(extra = {}) {
         tenantDashboard: jest.fn(async () => ({ tasks: [] })),
         auditVerify: jest.fn(async () => ({ valid: true })),
         kbIngest: jest.fn(async () => ({ ok: true })),
+        funnel: jest.fn(async () => ({ pendingIntake: 0 })),
+        marketingQueue: jest.fn(async () => ({ hold: false, posts: [] })),
         ...extra,
     };
 }
@@ -163,5 +165,66 @@ describe('adminAutomation', () => {
         expect(r).toMatchObject({ documentos: 1, enviados: 1, fallos: [] });
         expect(operant.kbIngest).toHaveBeenCalledTimes(1);
         expect(operant.kbIngest.mock.calls[0][0]).toMatchObject({ id: 'rag:planes', title: 'Planes', body: 'primera\n\nsegunda' });
+    });
+
+    describe('departamentos adicionales', () => {
+        it('ventas: solo actúa con una cola de 5 o más leads', async () => {
+            const poca = crear({ operant: fakeOperant({ funnel: jest.fn(async () => ({ pendingIntake: 3 })) }) });
+            expect((await poca.svc.ejecutar('sales-intake-backlog', { actor: 's' })).status).toBe('skipped');
+            const mucha = crear({ operant: fakeOperant({ funnel: jest.fn(async () => ({ pendingIntake: 12 })) }) });
+            const r = await mucha.svc.ejecutar('sales-intake-backlog', { actor: 's' });
+            expect(r).toMatchObject({ status: 'dispatched', department: 'sales' });
+            expect(mucha.operant.dispatchTask.mock.calls[0][0].input).toMatch(/12 leads/);
+        });
+
+        it('marketing: solo cuentan los borradores sin aprobar que tocan en menos de 24 h', async () => {
+            const h = 3_600_000;
+            const posts = [
+                { id: 'a', state: 'draft', network: 'linkedin', scheduledFor: AHORA + 5 * h },
+                { id: 'b', state: 'draft', network: 'x', scheduledFor: AHORA + 72 * h },
+                { id: 'c', state: 'approved', network: 'x', scheduledFor: AHORA + 2 * h },
+            ];
+            const { svc, operant } = crear({ operant: fakeOperant({ marketingQueue: jest.fn(async () => ({ hold: false, posts })) }) });
+            const r = await svc.ejecutar('marketing-drafts-due', { actor: 's' });
+            expect(r.status).toBe('dispatched');
+            expect(operant.dispatchTask.mock.calls[0][0].input).toMatch(/1 borrador/);
+        });
+
+        it('validadores: antes de las 12:00 UTC "no ha latido hoy" no cuenta; una penalización sí', async () => {
+            const db = fakeDb({ 'FROM (SELECT DISTINCT operator': [{ n: 4 }], 'FROM validator_slashes': [{ n: 0 }] });
+            const manana = crearAdminAutomation({ query: db.query, operant: fakeOperant(), metricValues: async () => null, now: () => Date.parse('2026-10-16T08:00:00Z') });
+            expect((await manana.ejecutar('validators-silent', { actor: 's' })).status).toBe('skipped');
+
+            const tarde = crearAdminAutomation({ query: db.query, operant: fakeOperant(), metricValues: async () => null, now: () => Date.parse('2026-10-16T15:00:00Z') });
+            expect((await tarde.ejecutar('validators-silent', { actor: 's' })).status).toBe('dispatched');
+
+            const db2 = fakeDb({ 'FROM (SELECT DISTINCT operator': [{ n: 0 }], 'FROM validator_slashes': [{ n: 2 }] });
+            const pena = crearAdminAutomation({ query: db2.query, operant: fakeOperant(), metricValues: async () => null, now: () => Date.parse('2026-10-16T08:00:00Z') });
+            expect((await pena.ejecutar('validators-silent', { actor: 's' })).status).toBe('dispatched');
+        });
+
+        it('tesorería: movimientos atascados más de 24 h generan una tarea de solo análisis', async () => {
+            const db = fakeDb({ 'FROM tx_intents': [{ status: 'awaiting_approval', n: 2, desde: new Date(AHORA - 40 * 3_600_000).toISOString() }] });
+            const { svc, operant } = crear({ db });
+            const r = await svc.ejecutar('treasury-intents-stuck', { actor: 's' });
+            expect(r).toMatchObject({ status: 'dispatched', department: 'treasury' });
+            expect(operant.dispatchTask.mock.calls[0][0].input).toMatch(/no apruebes ni ejecutes/i);
+        });
+    });
+
+    describe('cobertura por departamento', () => {
+        it('cubre los 10 departamentos de OPERANT salvo los que no tienen fuente, y lo dice', () => {
+            const c = cobertura();
+            expect(c).toHaveLength(10);
+            const sin = c.filter((x) => !x.covered).map((x) => x.department).sort();
+            expect(sin).toEqual(['fundraising', 'hr']);
+            for (const x of c.filter((y) => !y.covered)) expect(x.reason.length).toBeGreaterThan(40);
+            for (const x of c.filter((y) => y.covered)) expect(x.automations.length).toBeGreaterThan(0);
+        });
+
+        it('todo departamento de una automatización existe en OPERANT', () => {
+            const validos = cobertura().map((x) => x.department);
+            for (const a of CATALOG) expect(validos).toContain(a.department);
+        });
     });
 });

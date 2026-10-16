@@ -178,6 +178,100 @@ const CATALOG = [
         },
     },
     {
+        id: 'sales-intake-backlog',
+        section: 'ecosystem',
+        department: 'sales',
+        title: 'Leads en cola sin procesar',
+        description: 'Leads del formulario público que el embudo automático no ha absorbido.',
+        async collect({ operant }) {
+            let f;
+            try { f = await operant.funnel({ tenantId: process.env.BEZHAS_TENANT_ID || 'bezhas' }); }
+            catch (err) { return noDisponible(`embudo no disponible: ${err.message}`); }
+            const n = Number(f.pendingIntake) || 0;
+            // El embudo corre solo cada 30 min; una cola de 5 o más es que no da abasto o está parado.
+            return {
+                available: true, attention: n >= 5, metrics: { enCola: n },
+                summary: n >= 5 ? `${n} leads en cola: el embudo automático no los está absorbiendo.` : `${n} lead(s) en cola (umbral 5).`,
+                fingerprint: huella({ tramo: Math.floor(n / 5) }),
+                input: `La cola del formulario público tiene ${n} leads sin procesar y el embudo automático (cada 30 min) no los absorbe. `
+                    + 'Prioriza la cola por encaje con el perfil de cliente, prepara el primer contacto de los mejores como borrador y señala si algo parece bloquear el embudo. El envío en frío sigue requiriendo aprobación humana.',
+            };
+        },
+    },
+    {
+        id: 'marketing-drafts-due',
+        section: 'obsidian',
+        department: 'marketing',
+        title: 'Publicaciones sin aprobar a punto de tocar',
+        description: 'Borradores de la cola social que se publican en menos de 24 h y nadie ha aprobado.',
+        async collect({ operant, now }) {
+            let q;
+            try { q = await operant.marketingQueue({ tenantId: process.env.BEZHAS_TENANT_ID || 'bezhas' }); }
+            catch (err) { return noDisponible(`cola social no disponible: ${err.message}`); }
+            const posts = q.posts || [];
+            const urgentes = posts.filter((p) => p.state === 'draft' && Number(p.scheduledFor) < now + 24 * 3_600_000);
+            const redes = [...new Set(urgentes.map((p) => p.network))];
+            return {
+                available: true, attention: urgentes.length > 0,
+                metrics: { enCola: posts.length, sinAprobarUrgentes: urgentes.length, congelada: !!q.hold },
+                summary: urgentes.length ? `${urgentes.length} borrador(es) sin aprobar con publicación en menos de 24 h (${redes.join(', ')}).` : `${posts.length} publicación(es) en cola, ninguna urgente sin aprobar.`,
+                fingerprint: huella(urgentes.map((p) => p.id).sort()),
+                input: `Hay ${urgentes.length} borrador(es) de la cola social sin aprobar que se publican en menos de 24 horas (redes: ${redes.join(', ')}). `
+                    + 'Revisa tono y datos de cada uno, propón mejoras o una versión alternativa y deja claro qué aprobaría un humano. No se publica nada sin esa aprobación.',
+            };
+        },
+    },
+    {
+        id: 'validators-silent',
+        section: 'brainlive',
+        department: 'blockchain',
+        title: 'Validadores callados o penalizados',
+        description: 'Validadores que dejaron de latir hoy y penalizaciones de los últimos 7 días.',
+        async collect({ query, now }) {
+            const [a, b] = await Promise.all([
+                consulta(query, 'SELECT COUNT(*)::int AS n FROM (SELECT DISTINCT operator FROM validator_heartbeats WHERE day = CURRENT_DATE - 1) y WHERE NOT EXISTS (SELECT 1 FROM validator_heartbeats t WHERE t.operator = y.operator AND t.day = CURRENT_DATE)'),
+                consulta(query, "SELECT COUNT(*)::int AS n FROM validator_slashes WHERE slashed_at > NOW() - INTERVAL '7 days'"),
+            ]);
+            if (a.error || b.error) return noDisponible(a.error || b.error);
+            const callados = a.rows[0]?.n || 0;
+            const penalizaciones = b.rows[0]?.n || 0;
+            // Antes de las 12:00 UTC "no ha latido hoy" aún no quiere decir nada: casi todos latirán después.
+            const tarde = new Date(now).getUTCHours() >= 12;
+            const attention = (tarde && callados > 0) || penalizaciones > 0;
+            return {
+                available: true, attention, metrics: { callados, penalizaciones7d: penalizaciones, evaluaCallados: tarde },
+                summary: attention
+                    ? `${tarde ? callados : 0} validador(es) sin latido hoy y ${penalizaciones} penalización(es) en 7 días.`
+                    : (tarde ? 'Todos los validadores de ayer han latido hoy; sin penalizaciones.' : `Sin penalizaciones; los latidos de hoy se evalúan a partir de las 12:00 UTC (${callados} pendientes).`),
+                fingerprint: huella({ callados: tarde ? callados : 0, penalizaciones }),
+                input: `${tarde ? callados : 0} validador(es) que latieron ayer no lo han hecho hoy y hay ${penalizaciones} penalización(es) en los últimos 7 días. `
+                    + 'Analiza el riesgo para la red y el staking, indica qué operadores contactar y redacta el aviso como borrador. No muevas fondos ni toques contratos.',
+            };
+        },
+    },
+    {
+        id: 'treasury-intents-stuck',
+        section: 'treasury',
+        department: 'treasury',
+        title: 'Movimientos de tesorería atascados',
+        description: 'Transacciones a la espera de aprobación o de revisión desde hace más de 24 h.',
+        async collect({ query, now }) {
+            const r = await consulta(query, "SELECT status, COUNT(*)::int AS n, MIN(created_at) AS desde FROM tx_intents WHERE status IN ('awaiting_approval', 'awaiting_manual_execution', 'failed_needs_review') AND created_at < NOW() - INTERVAL '24 hours' GROUP BY status");
+            if (r.error) return noDisponible(r.error);
+            const porEstado = Object.fromEntries(r.rows.map((x) => [x.status, x.n]));
+            const total = r.rows.reduce((acc, x) => acc + x.n, 0);
+            const masVieja = r.rows.reduce((m, x) => Math.min(m, new Date(x.desde).getTime()), Infinity);
+            const espera = total ? now - masVieja : 0;
+            return {
+                available: true, attention: total > 0, metrics: { total, porEstado, esperaMaximaHoras: horas(espera) },
+                summary: total ? `${total} movimiento(s) llevan más de 24 h sin resolverse (${Object.entries(porEstado).map(([k, n]) => `${k}: ${n}`).join(', ')}); el más antiguo, ${horas(espera)} h.` : 'Ningún movimiento de tesorería atascado más de 24 h.',
+                fingerprint: huella(porEstado),
+                input: `Hay ${total} movimiento(s) de tesorería sin resolver desde hace más de 24 horas, por estado: ${JSON.stringify(porEstado)}. `
+                    + 'Resume qué espera cada grupo, quién debe actuar y el riesgo de dejarlo (expiración, liquidez) en un informe para el responsable. Solo análisis: no apruebes ni ejecutes nada.',
+            };
+        },
+    },
+    {
         id: 'operant-failures',
         section: 'watchdog',
         department: 'operations',
@@ -219,6 +313,28 @@ const CATALOG = [
         },
     },
 ];
+
+/**
+ * Departamentos de OPERANT sin ninguna señal propia en la plataforma. No se
+ * inventa una para que la tabla salga completa: se dice por qué falta.
+ */
+const SIN_FUENTE = {
+    hr: 'BeZhas no guarda en la plataforma datos de personas, ofertas ni candidatos de los que sacar una señal fiable.',
+    fundraising: 'Las relaciones con inversores no tienen una fuente estructurada en la plataforma (viven en el buzón y en hojas externas); una señal sobre su contenido exigiría leer correos, y eso no se hace.',
+};
+const DEPARTAMENTOS = ['sales', 'support', 'marketing', 'hr', 'finance', 'operations', 'blockchain', 'legal', 'treasury', 'fundraising'];
+
+function cobertura(listado = CATALOG) {
+    return DEPARTAMENTOS.map((d) => {
+        const propias = listado.filter((a) => a.department === d);
+        return {
+            department: d,
+            automations: propias.map((a) => a.id),
+            covered: propias.length > 0,
+            reason: propias.length ? null : (SIN_FUENTE[d] || 'sin automatización definida'),
+        };
+    });
+}
 
 function crearAdminAutomation({ query, operant, metricValues, knowledgeStore, now = () => Date.now() } = {}) {
     const tenantId = () => process.env.BEZHAS_TENANT_ID || 'bezhas';
@@ -339,7 +455,7 @@ function crearAdminAutomation({ query, operant, metricValues, knowledgeStore, no
         return { documentos: docs.size, enviados, fallos };
     }
 
-    return { sincronizarConocimiento, catalog: CATALOG.map(({ id, section, department, title }) => ({ id, section, department, title })), listar, ejecutar, tick, resolverAprobacion, registrar, evaluar, porId };
+    return { cobertura: () => cobertura(), sincronizarConocimiento, catalog: CATALOG.map(({ id, section, department, title }) => ({ id, section, department, title })), listar, ejecutar, tick, resolverAprobacion, registrar, evaluar, porId };
 }
 
-module.exports = { crearAdminAutomation, CATALOG, COOLDOWN_MS };
+module.exports = { crearAdminAutomation, CATALOG, COOLDOWN_MS, cobertura, DEPARTAMENTOS };

@@ -211,6 +211,16 @@ function kbIngest({ tenantId, id, title, body, tags }) {
     return request('POST', `/tenants/${encodeURIComponent(tenantId)}/kb`, { id, title, body, tags });
 }
 
+/** Estado del embudo de ventas: leads pendientes de procesar. Solo lectura. */
+function funnel({ tenantId }) {
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/funnel`);
+}
+
+/** Cola de publicaciones sociales programadas. Solo lectura. */
+function marketingQueue({ tenantId }) {
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/marketing/queue`);
+}
+
 module.exports = {
     OperantUnavailableError,
     OperantError,
@@ -231,5 +241,7 @@ module.exports = {
     mailboxGet,
     mailboxDmarc,
     kbIngest,
+    funnel,
+    marketingQueue,
     _resetCircuitForTests: () => { failures = 0; openUntil = 0; },
 };
