@@ -57,6 +57,9 @@ router.get('/mailbox', wrap((req) => {
     return operant.mailboxList({ tenantId: tenantId(), folder, q, sort, limit, offset });
 }));
 
+// Antes de /mailbox/:uid, o "dmarc" se tomaría por un uid.
+router.get('/mailbox/dmarc', wrap((req) => operant.mailboxDmarc({ tenantId: tenantId(), days: req.query.days })));
+
 router.get('/mailbox/:uid', wrap((req) => operant.mailboxGet({
     tenantId: tenantId(), uid: req.params.uid, folder: req.query.folder,
 })));

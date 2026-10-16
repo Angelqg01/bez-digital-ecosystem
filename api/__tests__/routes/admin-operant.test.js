@@ -19,6 +19,7 @@ jest.mock('../../services/operantBridge', () => {
         auditVerify: jest.fn(async () => ({ valid: true })),
         mailboxList: jest.fn(async () => ({ total: 1, messages: [{ uid: 7 }] })),
         mailboxGet: jest.fn(async () => ({ uid: 7, text: 'hola' })),
+        mailboxDmarc: jest.fn(async () => ({ reports: 2, messages: 10, pass: 10, fail: 0 })),
     };
 });
 const bridge = require('../../services/operantBridge');
@@ -35,7 +36,7 @@ describe('Routes: /api/admin/operant (solo lectura)', () => {
     afterEach(() => jest.clearAllMocks());
 
     describe('sin sesión SuperAdmin', () => {
-        it.each(['/status', '/overview', '/approvals', '/audit/verify', '/mailbox', '/mailbox/7'])(
+        it.each(['/status', '/overview', '/approvals', '/audit/verify', '/mailbox', '/mailbox/7', '/mailbox/dmarc'])(
             'rechaza GET %s sin token', async (ruta) => {
                 const res = await request(app).get(`/api/admin/operant${ruta}`);
                 expect(res.status).toBe(401);
@@ -77,6 +78,14 @@ describe('Routes: /api/admin/operant (solo lectura)', () => {
         it('mailbox/:uid abre un correo', async () => {
             const res = await auth(request(app).get('/api/admin/operant/mailbox/7'));
             expect(res.body).toMatchObject({ uid: 7, text: 'hola' });
+        });
+
+        it('mailbox/dmarc es el digest (no un uid) y usa el tenant de la empresa', async () => {
+            const res = await auth(request(app).get('/api/admin/operant/mailbox/dmarc').query({ days: '14', tenantId: 'otro' }));
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({ reports: 2, fail: 0 });
+            expect(bridge.mailboxDmarc).toHaveBeenCalledWith({ tenantId: 'bezhas', days: '14' });
+            expect(bridge.mailboxGet).not.toHaveBeenCalled();
         });
 
         it('no expone ninguna escritura en la fase 1', async () => {

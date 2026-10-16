@@ -200,6 +200,12 @@ function mailboxGet({ tenantId, uid, folder }) {
     return request('GET', `/tenants/${encodeURIComponent(tenantId)}/mailbox/${encodeURIComponent(uid)}${qs}`);
 }
 
+/** Digest DMARC del buzón (informes agregados resumidos por remitente). Solo lectura. */
+function mailboxDmarc({ tenantId, days }) {
+    const qs = days ? `?days=${encodeURIComponent(days)}` : '';
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/mailbox/dmarc${qs}`);
+}
+
 module.exports = {
     OperantUnavailableError,
     OperantError,
@@ -218,5 +224,6 @@ module.exports = {
     tenantDashboard,
     mailboxList,
     mailboxGet,
+    mailboxDmarc,
     _resetCircuitForTests: () => { failures = 0; openUntil = 0; },
 };
