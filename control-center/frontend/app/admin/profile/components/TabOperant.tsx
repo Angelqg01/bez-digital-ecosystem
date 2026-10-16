@@ -1,12 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Bot, Mail, ShieldCheck, ClipboardCheck, Loader2, RefreshCw, Search, MailCheck } from 'lucide-react';
+import { Bot, Mail, ShieldCheck, ClipboardCheck, Loader2, RefreshCw, Search, MailCheck, Zap } from 'lucide-react';
 import api, { ApiError } from '@/lib/api';
 
-// Fase 1: SOLO LECTURA. Todo pasa por /api/admin/operant, que exige la sesión de
-// SuperAdmin y habla con OPERANT desde el servidor: la clave de OPERANT no llega
-// nunca al navegador. Las acciones (aprobar, lanzar tareas, programar) son fase 2.
+// Todo pasa por /api/admin/operant, que exige la sesión de SuperAdmin y habla con
+// OPERANT desde el servidor: la clave de OPERANT no llega nunca al navegador.
+// Las lecturas son GET; las escrituras (lanzar automatizaciones, resolver
+// aprobaciones, sincronizar el RAG) llevan la cabecera x-bezhas-admin, que fuerza
+// la comprobación previa de CORS, y quedan registradas con el admin como actor.
 
 interface Status { configured: boolean; tenantId: string; runtime: { available: boolean; circuit?: string; reason?: string } }
 interface Task { id: string; department?: string; type?: string; status: string; attempts?: number; deadLetter?: boolean }
@@ -36,6 +38,17 @@ interface Dmarc {
 }
 
 const BASE = '/admin/operant';
+const WRITE = { headers: { 'x-bezhas-admin': '1' } };
+
+interface Automation {
+    id: string; section: string; department: string; title: string; description: string;
+    available: boolean; attention: boolean; summary: string; lastRun: { at: string; taskId: string } | null;
+}
+interface RunResult { id: string; status: 'dispatched' | 'skipped' | 'duplicate' | 'unavailable' | 'unknown' | 'error'; reason?: string; taskId?: string; summary?: string }
+const SECCIONES: Record<string, string> = {
+    identity: 'Identity & Security', treasury: 'Treasury & Web3', ecosystem: 'Ecosystem & RWA', intelligence: 'MCP Intelligence',
+    obsidian: 'Obsidian Map', brainlive: 'Brain Live', watchdog: 'Watchdog', governance: 'DAO Governance', skills: 'SKILL Memory',
+};
 const usd = (n?: number) => `$${Number(n || 0).toFixed(2)}`;
 const fecha = (d: string | null) => (d ? new Date(d).toLocaleString() : '');
 const errMsg = (e: unknown) => (e instanceof ApiError ? (e.data as { error?: string } | null)?.error || e.message : (e as Error).message);
@@ -61,6 +74,7 @@ export default function TabOperant() {
     const [audit, setAudit] = useState<{ valid?: boolean; ok?: boolean; error?: string } | null>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
+    const [deciding, setDeciding] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -87,6 +101,17 @@ export default function TabOperant() {
 
     useEffect(() => { load(); }, [load]);
 
+    const resolve = async (approvalId: string, decision: 'approve' | 'reject') => {
+        const nota = window.prompt(decision === 'approve' ? 'Nota de la aprobación (opcional):' : 'Motivo del rechazo (opcional):');
+        if (nota === null) return;   // cancelado
+        setDeciding(approvalId);
+        try {
+            await api.post(`${BASE}/approvals/${encodeURIComponent(approvalId)}/resolve`, { decision, reason: nota || undefined }, WRITE);
+            await load();
+        } catch (e) { setError(errMsg(e)); }
+        finally { setDeciding(null); }
+    };
+
     if (loading && !status) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#0d33f2]" /></div>;
 
     const down = status && (!status.configured || !status.runtime.available);
@@ -101,7 +126,7 @@ export default function TabOperant() {
                 <div>
                     <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-2">OPERANT · Agentes IA</h2>
                     <p className="text-gray-400 text-sm max-w-2xl">
-                        Vista de solo lectura de la gestión empresarial autónoma de BeZhas: cuota, aprobaciones humanas pendientes, tareas, auditoría y bandeja del buzón.
+                        Gestión empresarial autónoma de BeZhas conectada al panel: señales de cada sección, automatizaciones que lanzan tareas a OPERANT, aprobaciones humanas, auditoría y bandeja del buzón.
                     </p>
                 </div>
                 <button onClick={load} className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest border border-white/10 px-3 py-2 hover:bg-white/5">
@@ -145,9 +170,13 @@ export default function TabOperant() {
                                     <div className="flex items-center gap-2"><code className="text-xs text-gray-400">{a.approvalId}</code><Pill tone="warn">{a.action?.category || 'acción'}</Pill></div>
                                     <div>{a.reason || 'Aprobación humana requerida.'}</div>
                                     {a.agentId && <div className="text-xs text-gray-500">{a.agentId}</div>}
+                                    <div className="flex gap-2 pt-1">
+                                        <button disabled={deciding === a.approvalId} onClick={() => resolve(a.approvalId, 'approve')} className="text-[10px] font-bold uppercase tracking-widest border border-emerald-700 text-emerald-300 px-3 py-1 hover:bg-emerald-900/30 disabled:opacity-40">Aprobar</button>
+                                        <button disabled={deciding === a.approvalId} onClick={() => resolve(a.approvalId, 'reject')} className="text-[10px] font-bold uppercase tracking-widest border border-red-700 text-red-300 px-3 py-1 hover:bg-red-900/30 disabled:opacity-40">Rechazar</button>
+                                    </div>
                                 </div>
                             ))}
-                            {approvals.length > 0 && <p className="text-xs text-gray-500">Aprobar o rechazar desde aquí llega en la fase 2; mientras, se resuelven desde el panel de OPERANT o Telegram.</p>}
+                            {approvals.length > 0 && <p className="text-xs text-gray-500">La decisión queda registrada con tu sesión como aprobador y se ejecuta bajo las líneas rojas de OPERANT.</p>}
                         </section>
 
                         <section className="bg-white/5 border border-white/10 p-6 space-y-4">
@@ -180,9 +209,106 @@ export default function TabOperant() {
                 </>
             )}
 
+            {status?.configured && status.runtime.available && <Automations onChanged={load} />}
             {status?.configured && status.runtime.available && <DmarcDigest />}
             {status?.configured && status.runtime.available && <Mailbox />}
         </div>
+    );
+}
+
+function Automations({ onChanged }: { onChanged: () => void }) {
+    const [items, setItems] = useState<Automation[]>([]);
+    const [busy, setBusy] = useState<string | null>(null);
+    const [msg, setMsg] = useState<{ tone: 'ok' | 'warn' | 'bad'; text: string } | null>(null);
+
+    const load = useCallback(async () => {
+        try { setItems((await api.get<{ automations: Automation[] }>(`${BASE}/automations`)).automations); }
+        catch (e) { setMsg({ tone: 'bad', text: errMsg(e) }); }
+    }, []);
+    useEffect(() => { load(); }, [load]);
+
+    const tone = (r: RunResult) => (r.status === 'dispatched' ? 'ok' : r.status === 'unavailable' || r.status === 'error' ? 'bad' : 'warn') as 'ok' | 'warn' | 'bad';
+    const dicho = (r: RunResult) => ({
+        dispatched: `Tarea ${r.taskId} lanzada a OPERANT.`,
+        skipped: 'La señal no pide acción ahora.',
+        duplicate: `Ya había una tarea por esta misma señal (${r.taskId || 'sin id'}).`,
+        unavailable: `No se pudo medir: ${r.reason}`,
+        unknown: 'Automatización desconocida.',
+        error: r.reason || 'Error.',
+    }[r.status]);
+
+    const run = async (a: Automation, force: boolean) => {
+        if (force && !window.confirm(`Lanzar «${a.title}» aunque la señal no lo pida?`)) return;
+        setBusy(a.id);
+        try {
+            const r = await api.post<RunResult>(`${BASE}/automations/${a.id}/run`, { force }, WRITE);
+            setMsg({ tone: tone(r), text: `${a.title}: ${dicho(r)}` });
+            await load(); onChanged();
+        } catch (e) { setMsg({ tone: 'bad', text: errMsg(e) }); }
+        finally { setBusy(null); }
+    };
+
+    const tick = async () => {
+        setBusy('tick');
+        try {
+            const { results } = await api.post<{ results: RunResult[] }>(`${BASE}/automations/tick`, {}, WRITE);
+            const n = results.filter((r) => r.status === 'dispatched').length;
+            setMsg({ tone: n ? 'ok' : 'warn', text: n ? `${n} tarea(s) lanzada(s) a OPERANT.` : 'Ninguna señal pide acción ahora mismo.' });
+            await load(); onChanged();
+        } catch (e) { setMsg({ tone: 'bad', text: errMsg(e) }); }
+        finally { setBusy(null); }
+    };
+
+    const syncRag = async () => {
+        setBusy('sync');
+        try {
+            const r = await api.post<{ documentos: number; enviados: number; fallos: unknown[] }>(`${BASE}/knowledge/sync`, {}, WRITE);
+            setMsg({ tone: r.fallos.length ? 'warn' : 'ok', text: `RAG → OPERANT: ${r.enviados} de ${r.documentos} documentos públicos sincronizados${r.fallos.length ? `, ${r.fallos.length} con error` : ''}.` });
+        } catch (e) { setMsg({ tone: 'bad', text: errMsg(e) }); }
+        finally { setBusy(null); }
+    };
+
+    const porSeccion = items.reduce<Record<string, Automation[]>>((acc, a) => { (acc[a.section] ||= []).push(a); return acc; }, {});
+    const atencion = items.filter((a) => a.attention).length;
+
+    return (
+        <section className="bg-white/5 border border-white/10 p-6 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-[#0d33f2]"><Zap size={22} /><h3 className="font-bold uppercase tracking-widest text-sm text-white">Automatizaciones</h3></div>
+                <div className="flex items-center gap-2">
+                    <Pill tone={atencion ? 'warn' : 'ok'}>{atencion ? `${atencion} piden acción` : 'todo en orden'}</Pill>
+                    <button disabled={busy !== null} onClick={syncRag} className="text-[10px] font-bold uppercase tracking-widest border border-white/10 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40">{busy === 'sync' ? 'Sincronizando…' : 'Sincronizar RAG → OPERANT'}</button>
+                    <button disabled={busy !== null} onClick={tick} className="text-[10px] font-bold uppercase tracking-widest border border-[#0d33f2] text-[#7b93ff] px-3 py-1.5 hover:bg-[#0d33f2]/10 disabled:opacity-40">{busy === 'tick' ? 'Evaluando…' : 'Evaluar y lanzar todo'}</button>
+                </div>
+            </div>
+            <p className="text-xs text-gray-500">Cada tarjeta mide una señal real de su sección con cifras agregadas (sin emails, chats ni correos) y, si pide acción, lanza una tarea al departamento de OPERANT. Lo que la tarea haga hacia fuera pasa por la cola de aprobación.</p>
+
+            {msg && <div className={`border px-4 py-2 text-sm ${msg.tone === 'ok' ? 'border-emerald-700 bg-emerald-900/20 text-emerald-200' : msg.tone === 'warn' ? 'border-amber-700 bg-amber-900/20 text-amber-200' : 'border-red-700 bg-red-900/30 text-red-300'}`}>{msg.text}</div>}
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {Object.entries(porSeccion).map(([sec, list]) => (
+                    <div key={sec} className="border border-white/10 bg-black/20 p-4 space-y-3">
+                        <div className="text-[10px] uppercase tracking-widest text-gray-500">{SECCIONES[sec] || sec}</div>
+                        {list.map((a) => (
+                            <div key={a.id} className="space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-sm font-bold">{a.title}</span>
+                                    <Pill tone={!a.available ? 'idle' : a.attention ? 'warn' : 'ok'}>{!a.available ? 'sin datos' : a.attention ? 'pide acción' : 'ok'}</Pill>
+                                </div>
+                                <div className="text-xs text-gray-400">{a.summary}</div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[11px] text-gray-500">→ {a.department}{a.lastRun ? ` · última: ${fecha(a.lastRun.at)}` : ''}</span>
+                                    <div className="flex gap-2">
+                                        <button disabled={busy !== null || !a.available || !a.attention} onClick={() => run(a, false)} className="text-[10px] font-bold uppercase tracking-widest border border-white/10 px-2.5 py-1 hover:bg-white/5 disabled:opacity-30">{busy === a.id ? '…' : 'Lanzar'}</button>
+                                        <button disabled={busy !== null || !a.available} onClick={() => run(a, true)} title="Lanzar aunque la señal no lo pida" className="text-[10px] uppercase tracking-widest text-gray-500 hover:text-gray-300 disabled:opacity-30">forzar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ))}
+            </div>
+        </section>
     );
 }
 
