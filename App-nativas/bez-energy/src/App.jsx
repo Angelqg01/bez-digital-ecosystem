@@ -15,6 +15,7 @@ import {
 
 // Wallet login / subscribe (shared)
 import { HeaderAuthButton } from '../../_shared/BezhasAuthProvider.jsx'
+import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx'
 import useMe from './hooks/useMe'
 
 // Pages
@@ -43,7 +44,7 @@ const App = () => {
                 BeZhas Node 01
               </div>
               <div className="status-badge">
-                <span style={{ color: 'var(--bez-secondary)' }}>●</span> Status: Synchronized
+                Panel de operación de la VPP
               </div>
             </div>
           </div>
@@ -53,8 +54,8 @@ const App = () => {
             <div style={{ textAlign: 'right', display: 'none', md: 'block' }}>
               <div style={{ fontSize: '12px', color: 'var(--bez-text-muted)', fontFamily: 'monospace' }}>v4.0.2-Stable</div>
             </div>
-            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bez-surface-2)', border: '1px solid var(--bez-border)', overflow: 'hidden' }}>
-              <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Felix" alt="User" />
+            <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bez-surface-2)', border: '1px solid var(--bez-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: 'var(--bez-primary)' }}>
+              <ShieldCheck size={20} />
             </div>
           </div>
         </header>
@@ -106,6 +107,17 @@ const App = () => {
             <span>Docs</span>
           </NavLink>
         </nav>
+
+        {/* Chat de la plataforma (el mismo de www.bezhas.com), por encima de la barra inferior */}
+        <AIWorkspaceBar
+          hideAppId="app_energy"
+          bottomOffset={92}
+          suggestions={[
+            '¿Qué puede hacer BEZ Energy por mi empresa?',
+            '¿Cómo optimizo mis baterías con los precios OMIE?',
+            '¿Cómo tokenizo un parque solar?',
+          ]}
+        />
       </div>
     </Router>
   )

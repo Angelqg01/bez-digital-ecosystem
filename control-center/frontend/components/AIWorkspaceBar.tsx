@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-    ArrowUp, Check, ChevronDown, Copy, FileText, History, LayoutGrid, Loader2, Lock, Paperclip, Plus, Sparkles, Square, Trash2, X,
+    ArrowUp, Check, ChevronDown, Copy, FileText, History, LayoutGrid, Loader2, Lock, Plus, Sparkles, Square, Trash2, X,
 } from 'lucide-react';
 import ChatAppShortcuts, { esApp } from '@/components/ChatAppShortcuts';
 import { useAuth } from '@/lib/auth-context';
@@ -21,8 +21,6 @@ import {
 } from '@/lib/ai-workspace';
 
 const SUGGESTIONS = ['¿Qué planes ofrece BeZhas?', '¿Cómo compro BEZ?', '¿Cómo conecto mi IA por MCP?'];
-const MAX_UPLOAD_CHARS = 200_000;
-const ALLOWED_UPLOAD = /\.(txt|md|markdown|csv|json)$/i;
 const HIDDEN_ON = [/^\/admin/, /^\/login/, /^\/register/];
 
 type Panel = 'chat' | 'history' | 'actions';
@@ -52,7 +50,6 @@ export default function AIWorkspaceBar() {
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const endRef = useRef<HTMLDivElement>(null);
-    const fileRef = useRef<HTMLInputElement>(null);
     const abortRef = useRef<AbortController | null>(null);
 
     useEffect(() => { setMounted(true); setFreeUsed(freeQuestionUsed()); }, []);
@@ -242,27 +239,6 @@ export default function AIWorkspaceBar() {
         catch { /* sin permiso de portapapeles */ }
     };
 
-    /** Añade un documento propio al conocimiento privado de su organización (RAG). */
-    const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        e.target.value = '';
-        if (!file) return;
-        setOpen(true);
-        setPanel('chat');
-        if (!loggedIn || !token) { openLoginModal(); return; }
-        if (!ALLOWED_UPLOAD.test(file.name)) return notice('Formato no admitido. Usa .txt, .md, .csv o .json.');
-        try {
-            const content = await file.text();
-            if (content.length > MAX_UPLOAD_CHARS) return notice('El archivo es demasiado grande (máx. 200.000 caracteres).');
-            const res = await aiFetch<{ status: string }>('/knowledge', token, {
-                method: 'POST', body: JSON.stringify({ title: file.name, content, classification: 'INTERNAL' }),
-            });
-            notice(res.status === 'quarantined'
-                ? `«${file.name}» no se ha indexado: contiene instrucciones sospechosas.`
-                : `«${file.name}» añadido a tu conocimiento privado. Ya puedes preguntarme sobre él.`);
-        } catch (err: any) { notice(err.message || 'No se pudo subir el documento'); }
-    };
-
     const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(input); }
         if (e.key === 'Escape') setOpen(false);
@@ -440,7 +416,7 @@ export default function AIWorkspaceBar() {
                                     )}
                                     {dialog.kind === 'docs' && (
                                         <div className="space-y-1">
-                                            {dialog.docs.length === 0 && <p className="text-sm text-slate-400">Aún no hay documentos. Añade uno con el clip.</p>}
+                                            {dialog.docs.length === 0 && <p className="text-sm text-slate-400">No hay documentos disponibles.</p>}
                                             {dialog.docs.map((d) => (
                                                 <button key={d.id} disabled={d.status !== 'published'}
                                                     onClick={() => { setDialog(null); setPanel('chat'); setInput(`Resume el documento «${d.title}» y dime lo más importante.`); textareaRef.current?.focus(); }}
@@ -460,12 +436,6 @@ export default function AIWorkspaceBar() {
 
                 <form onSubmit={(e) => { e.preventDefault(); void send(input); }}
                     className="flex items-end gap-1 rounded-3xl border border-white/15 bg-slate-950/95 p-2 shadow-xl backdrop-blur focus-within:border-cyan-300/60">
-                    <input ref={fileRef} type="file" accept=".txt,.md,.markdown,.csv,.json" className="hidden" onChange={onFile} />
-                    <button type="button" onClick={() => fileRef.current?.click()}
-                        className="mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-white/10 hover:text-slate-100"
-                        aria-label="Añadir un documento a mi conocimiento privado" title="Añadir documento (.txt, .md, .csv, .json)">
-                        <Paperclip size={18} />
-                    </button>
                     <textarea ref={textareaRef} value={input} rows={1} maxLength={4000}
                         onChange={(e) => setInput(e.target.value)} onFocus={() => setOpen(true)} onKeyDown={onKeyDown}
                         placeholder={loggedIn ? 'Pregunta a BeZhas AI…' : freeUsed ? 'Regístrate o inicia sesión para seguir…' : 'Haz tu pregunta gratis a BeZhas AI…'}

@@ -22,7 +22,7 @@
 const { Router } = require('express');
 const jwt = require('jsonwebtoken');
 const { requireSuperAdmin } = require('../middleware/admin-auth');
-const { JWT_SECRET } = require('../config/secrets');
+const { JWT_SECRET, JWT_ISSUER, JWT_AUDIENCE } = require('../config/secrets');
 const { cadenaPorDefecto, entorno } = require('../config/chain-policy');
 const { catalogo, contratosDeLaCadena } = require('../config/admin-sectors');
 const sponsor = require('../services/adminSponsor');
@@ -87,7 +87,7 @@ router.post('/session', (req, res) => {
     const token = jwt.sign(
         { role: 'admin', via: 'admin-console', address: wallet, userId: 0 },
         JWT_SECRET,
-        { algorithm: 'HS256', expiresIn: SESSION_TTL_S },
+        { algorithm: 'HS256', expiresIn: SESSION_TTL_S, issuer: JWT_ISSUER, audience: JWT_AUDIENCE },
     );
     logger.warn('[admin-console] sesión de sector emitida para el SuperAdmin');
     res.json({ token, expiresIn: SESSION_TTL_S, uso: 'Authorization: Bearer <token>' });

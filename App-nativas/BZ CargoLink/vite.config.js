@@ -15,7 +15,8 @@ export default defineConfig({
     fs: { allow: ['..', SHARED] },
   },
   resolve: {
-    dedupe: ['react', 'react-dom'],
+    // lucide-react: lo importa _shared/ai-chat (el chat de la plataforma) y _shared no tiene node_modules propio.
+    dedupe: ['react', 'react-dom', 'lucide-react'],
     alias: {
       '@': '/src',
     },

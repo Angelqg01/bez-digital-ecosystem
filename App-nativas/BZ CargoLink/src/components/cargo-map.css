@@ -1,0 +1,41 @@
+/* Mapa de CargoLink (Leaflet empaquetado). Colores de la app: --bz-primary, --bz-secondary. */
+.cm-wrap { position: relative; width: 100%; background: #0a0e14; overflow: hidden; }
+.cm-map { position: absolute; inset: 0; z-index: 1; }
+.cm-map.is-picking, .cm-map.is-picking .leaflet-grab { cursor: crosshair; }
+.cm-wrap .leaflet-container { background: #0a0e14; font-family: inherit; }
+.cm-wrap .leaflet-control-attribution { background: rgba(10,14,20,.75); color: #8aa0b4; font-size: 9px; }
+.cm-wrap .leaflet-control-attribution a { color: #8fd8ff; }
+.cm-wrap .leaflet-bar a { background: #11161d; color: #e6edf3; border-color: #26323d; }
+.cm-wrap .leaflet-popup-content-wrapper { border-radius: 10px; }
+
+.cm-tools { position: absolute; top: 8px; right: 8px; z-index: 500; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; pointer-events: none; }
+.cm-tools > * { pointer-events: auto; }
+.cm-box { background: rgba(10,14,20,.88); border: 1px solid var(--bz-border, #26323d); border-radius: 10px; padding: 6px 8px; backdrop-filter: blur(6px); }
+.cm-box label { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: #dbe7f3; cursor: pointer; padding: 2px 0; white-space: nowrap; }
+.cm-box input { accent-color: #00f0ff; }
+.cm-seg { display: flex; gap: 2px; }
+.cm-seg button { background: transparent; border: 0; color: #9db2c6; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+.cm-seg button.on { background: rgba(0,240,255,.16); color: #00f0ff; }
+.cm-btn { background: rgba(10,14,20,.88); border: 1px solid var(--bz-border, #26323d); color: #00f0ff; font-size: 10px; font-weight: 800; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.cm-btn:hover { border-color: #00f0ff; }
+
+.cm-hint { position: absolute; left: 8px; right: 8px; bottom: 26px; z-index: 500; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: rgba(0,240,255,.14); border: 1px solid rgba(0,240,255,.5); color: #d9fbff; border-radius: 10px; padding: 8px 10px; font-size: 11px; font-weight: 700; }
+.cm-hint button { background: transparent; border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: 6px; font-size: 10px; padding: 3px 8px; cursor: pointer; }
+.cm-legend { position: absolute; left: 8px; top: 8px; z-index: 500; font-size: 9px; color: #c8d6e5; pointer-events: none; }
+.cm-legend .cm-box { display: flex; flex-direction: column; gap: 2px; }
+.cm-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
+/* Marcadores de envíos */
+.clm { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; line-height: 1;
+  background: #0d1a24; border: 2px solid var(--c, #00f0ff); box-shadow: 0 0 12px var(--c, #00f0ff); transition: transform .15s; }
+.clm.is-sel { transform: scale(1.35); box-shadow: 0 0 18px var(--c, #00f0ff), 0 0 0 4px rgba(255,255,255,.18); }
+.clm.is-est { border-style: dashed; opacity: .85; }
+.clm.has-alert { --c: #ff4d4d; animation: clm-pulse 1.4s ease-in-out infinite; }
+@keyframes clm-pulse { 50% { box-shadow: 0 0 22px #ff4d4d, 0 0 0 7px rgba(255,77,77,.22); } }
+.clm-pin { width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--c, #2ff801); border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+.clm-pin span { display: block; transform: rotate(45deg); text-align: center; font-size: 10px; font-weight: 900; color: #04110e; line-height: 18px; }
+.clm-wp { width: 12px; height: 12px; border-radius: 3px; background: #ffd34d; border: 2px solid #1b1400; transform: rotate(45deg); }
+@media (prefers-reduced-motion: reduce) { .clm.has-alert { animation: none; } .clm { transition: none; } }
+
+.cm-tiles-dark { filter: invert(1) hue-rotate(180deg) brightness(.88) contrast(.92) saturate(.7); }

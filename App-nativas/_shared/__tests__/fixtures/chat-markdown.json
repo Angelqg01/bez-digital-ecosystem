@@ -1,0 +1,90 @@
+{
+  "descripcion": "Casos COMUNES del renderizado Markdown seguro del chat. Los leen _shared/__tests__/ai-chat.test.mjs (SubApps) y control-center/frontend/__tests__/lib/ai-workspace-parity.test.ts: las dos implementaciones tienen que dar EXACTAMENTE la misma salida.",
+  "casos": [
+    {
+      "nombre": "texto plano",
+      "entrada": "Hola mundo",
+      "esperado": "<p>Hola mundo</p>"
+    },
+    {
+      "nombre": "negrita, cursiva y código",
+      "entrada": "**negrita** y *cursiva* y `codigo`",
+      "esperado": "<p><strong>negrita</strong> y <em>cursiva</em> y <code>codigo</code></p>"
+    },
+    {
+      "nombre": "script se escapa",
+      "entrada": "<script>alert(1)</script>",
+      "esperado": "<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>"
+    },
+    {
+      "nombre": "html y atributos se escapan",
+      "entrada": "<img src=x onerror=alert(1)> \"comillas\" 'simples' & ampersand",
+      "esperado": "<p>&lt;img src=x onerror=alert(1)&gt; &quot;comillas&quot; &#39;simples&#39; &amp; ampersand</p>"
+    },
+    {
+      "nombre": "enlace interno",
+      "entrada": "Ve a [planes](/dashboard/plans?x=1&y=2)",
+      "esperado": "<p>Ve a <a href=\"/dashboard/plans?x=1&amp;y=2\">planes</a></p>"
+    },
+    {
+      "nombre": "enlace a bezhas.com",
+      "entrada": "[web](https://www.bezhas.com/rwa)",
+      "esperado": "<p><a href=\"https://www.bezhas.com/rwa\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">web</a></p>"
+    },
+    {
+      "nombre": "enlace a dominio ajeno queda como texto",
+      "entrada": "[malo](https://evil.example/phish)",
+      "esperado": "<p>malo</p>"
+    },
+    {
+      "nombre": "enlace javascript queda como texto",
+      "entrada": "[clic](javascript:alert(1))",
+      "esperado": "<p>clic)</p>"
+    },
+    {
+      "nombre": "enlace con puerto o credenciales se bloquea",
+      "entrada": "[a](https://bezhas.com:8443/x) [b](https://user:pw@bezhas.com/x)",
+      "esperado": "<p>a b</p>"
+    },
+    {
+      "nombre": "ruta con .. se bloquea",
+      "entrada": "[a](/../etc/passwd)",
+      "esperado": "<p>a</p>"
+    },
+    {
+      "nombre": "imagen markdown no se pinta",
+      "entrada": "![x](https://evil.example/p.png?d=1)",
+      "esperado": "<p>!x</p>"
+    },
+    {
+      "nombre": "lista con viñetas",
+      "entrada": "- uno\n- dos\n* tres",
+      "esperado": "<ul><li>uno</li><li>dos</li><li>tres</li></ul>"
+    },
+    {
+      "nombre": "lista numerada",
+      "entrada": "1. primero\n2) segundo",
+      "esperado": "<ol><li>primero</li><li>segundo</li></ol>"
+    },
+    {
+      "nombre": "titulo",
+      "entrada": "## Titulo\ntexto",
+      "esperado": "<p class=\"font-semibold\">Titulo</p><p>texto</p>"
+    },
+    {
+      "nombre": "bloque de codigo",
+      "entrada": "```\nconst a = '<b>';\n```\nfin",
+      "esperado": "<pre><code>const a = &#39;&lt;b&gt;&#39;;</code></pre><p>fin</p>"
+    },
+    {
+      "nombre": "bloque de codigo sin cerrar",
+      "entrada": "```\nabierto <i>",
+      "esperado": "<pre><code>abierto &lt;i&gt;</code></pre>"
+    },
+    {
+      "nombre": "vacio",
+      "entrada": "",
+      "esperado": ""
+    }
+  ]
+}

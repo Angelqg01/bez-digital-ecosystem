@@ -33,6 +33,23 @@ function envApiBase() {
   return 'https://api.bezhas.com';
 }
 
+/** Quita barras finales y un `/api` final: las SubApps definen VITE_API_URL con `/api` (…/api) y aquí se añade otra vez. */
+export function normalizeApiBase(url) {
+  return String(url || '').replace(/\/+$/, '').replace(/\/api$/i, '');
+}
+
+/**
+ * Credenciales de la sesión: la de wallet (con firma PQC) o, si el usuario entró con correo/contraseña, el JWT suelto
+ * (`bezhas-jwt`). Antes sólo se miraba la de wallet y quien entraba con correo se quedaba siempre en «free».
+ */
+export function resolveAuth() {
+  const session = getSession();
+  if (session) return { present: true, headers: getAuthHeaders() };
+  let jwt = null;
+  try { jwt = localStorage.getItem('bezhas-jwt') || localStorage.getItem('bezhas_access_token'); } catch { /* sin almacenamiento */ }
+  return jwt ? { present: true, headers: { Authorization: `Bearer ${jwt}` } } : { present: false, headers: {} };
+}
+
 // Orden de menor a mayor — usado por hasTier() para comparaciones "al menos X".
 export const TIER_ORDER = ['free', 'starter', 'professional', 'enterprise'];
 
@@ -47,19 +64,19 @@ export function useSubscriptionTier({ apiBase = envApiBase() } = {}) {
 
   useEffect(() => {
     let active = true;
-    const session = getSession();
+    const auth = resolveAuth();
 
     // Sin sesión → no hay nada que consultar; se queda en 'free' (lo más
     // restrictivo). Nunca asumimos un plan de pago sin poder verificarlo.
-    if (!session) {
+    if (!auth.present) {
       setTier('free');
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    fetch(`${apiBase}/api/ai-billing/subscription`, {
-      headers: getAuthHeaders(),
+    fetch(`${normalizeApiBase(apiBase)}/api/ai-billing/subscription`, {
+      headers: auth.headers,
       credentials: 'include',
       signal: AbortSignal.timeout(8000),
     })

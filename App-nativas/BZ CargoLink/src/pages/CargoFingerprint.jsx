@@ -11,14 +11,12 @@ import {
 import { useTransactions } from '../hooks/useTransaction'
 import { cargoGateway } from '../services/cargoGateway'
 import PermissionPrime from '../../../_shared/PermissionPrime.jsx'
+import { authKey } from '../services/actorKey'
 
 // Captura de cámara para huella de integridad es una función de plan de
 // pago: sin suscripción Profesional/Enterprise, no se pide el permiso.
 const REQUIRED_TIERS = ['professional', 'enterprise']
 
-function authKey() {
-  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
-}
 
 const hashBytes = async (arrayBuffer) => {
   const digest = await crypto.subtle.digest('SHA-256', arrayBuffer)

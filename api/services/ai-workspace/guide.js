@@ -28,11 +28,15 @@ const TEMAS = [
       paso: 'prepara el pago con `bezhas_tx_prepare` (propósito «payroll»): verás la decisión de la política y las aprobaciones que hacen falta antes de firmar.' },
     { id: 'operant', re: /\boperant\b|departamentos? (?:de )?ia|automatiz\w* (?:ventas|soporte|finanzas|rrhh)/, minimo: 'creator_pro',
       paso: 'activa los departamentos que te convienen (Ventas y Soporte en Starter; Finanzas desde Creator Pro; hasta 10 en Enterprise VIP).' },
+    { id: 'energia', re: /\b(energi\w*|vpp|omie|esios|bateri\w*|solar\w*|eolic\w*|fotovoltaic\w*|scada|inversor\w*|contador\w* inteligente\w*|certificados? de ahorro|\bcae\b|credito\w* de carbono)/, minimo: null,
+      paso: 'abre «BEZ Energy» en el catálogo de acciones del chat (energy.bezhas.com). Parte de la app es una demostración con datos simulados: pide a BeZhas una demostración guiada con tu equipo antes de comprometer una instalación.' },
     { id: 'automatizar', re: /\b(api|sdk|mcp|webhook|integrar|integracion|automatiz|claude|chatgpt|cursor)/, minimo: 'starter',
       paso: '1) crea tu api-key con los permisos mínimos, 2) pruébala con `GET /api/gateway/v1/token/price` (cabecera `x-api-key`), 3) conecta tu IA a `https://mcp.bezhas.com/mcp` o instala el SDK con `pnpm add @bezhas/sdk`.' },
     { id: 'comprar_bez', re: /\b(comprar bez|compro bez|adquirir bez|comprar tokens|buy bez)\b|\bcomprar\b.{0,12}\bbez\b/, minimo: null,
       paso: 'abre «Comprar BEZ», paga con tarjeta o SEPA y recibirás los BEZ en tu wallet cuando el banco confirme el cobro (normalmente en pocos días hábiles).' },
 ];
+
+const HOLDING = /\b(holding\w*|grupo (?:empresarial|energetic\w*|de empresas|industrial|financiero)|(?:\d+|varias|muchas|ocho|diez) sociedades|filiales?|varias empresas|multinacional|instituci\w+|conglomerado)\b/;
 
 const INTENCION_COMPRA = /\b(contrat|suscrib|comprar|compro|precio|cuesta|cuanto vale|plan(?:es)?\b|upgrade|subir de plan|probar)/;
 
@@ -61,6 +65,9 @@ const CONSEJOS = {
         'crea una api-key por integración con el menor número de permisos, guárdala en un gestor de secretos (no en el código ni en el repositorio) y rótala si dudas de ella.',
         'limita desde qué orígenes y direcciones puede operar cada clave, y revisa periódicamente el uso en tu panel.',
     ],
+    energia: [
+        'los comandos que mueven equipos físicos (SCADA) pasan por aprobación humana y van firmados: no automatices el control de una planta sin esa aprobación ni compartas credenciales de inversores o contadores en el chat.',
+    ],
     comprar_bez: [
         'compra siempre desde www.bezhas.com o los enlaces que te da este chat; BeZhas nunca te pedirá BEZ por mensaje directo ni por Telegram.',
     ],
@@ -78,9 +85,10 @@ function nombrePlan(id) { return NOMBRE[id] || id; }
 /**
  * @param {{plan?:string}} principal
  * @param {string} mensaje   mensaje (ya redactado) del usuario
+ * @param {{omitirHolding?:boolean}} [opts]  omitirHolding: la respuesta ya incluye la recomendación para grupos (facts.js)
  * @returns {{texto:string, tema:string|null, requierePlan:string|null}}
  */
-function siguientePaso(principal, mensaje) {
+function siguientePaso(principal, mensaje, { omitirHolding = false } = {}) {
     const t = norm(mensaje);
     const plan = RANGO[principal?.plan] !== undefined ? principal.plan : 'none';
     const tema = TEMAS.find((x) => x.re.test(t)) || null;
@@ -99,6 +107,11 @@ function siguientePaso(principal, mensaje) {
         lineas.push('**Siguiente paso:** para usar BeZhas AI y las herramientas de tu IA necesitas un plan. Starter es de pago por uso con 15 días de prueba; los demás son de cuota mensual o anual. Abre «Suscribirme a un plan» y elige el que encaje.');
     } else if (plan === 'none') {
         lineas.push('**Siguiente paso:** para seguir con BeZhas AI contrata un plan (Starter, de pago por uso, incluye 15 días de prueba): abre «Suscribirme a un plan».');
+    }
+
+    // Un grupo con varias sociedades: el plan pensado es Enterprise VIP (Holdings / Instituciones). Los planes son por organización.
+    if (!omitirHolding && HOLDING.test(t) && RANGO[plan] < RANGO.enterprise_vip) {
+        lineas.push('**Plan para un grupo:** si gestionas varias sociedades, el plan pensado es **Enterprise VIP** (Holdings / Instituciones): acciones de IA ilimitadas y los límites de pago más altos. Los planes se contratan por organización, no hay precio por sociedad.');
     }
 
     const claveConsejo = tema?.id && CONSEJOS[tema.id] ? tema.id : 'general';

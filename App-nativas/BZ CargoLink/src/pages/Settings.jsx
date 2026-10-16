@@ -14,11 +14,8 @@ import {
 } from 'lucide-react'
 import IotHubPanel from '../components/IotHubPanel'
 import { cargoLinkApi } from '../services/cargoLinkApi'
+import { authKey } from '../services/actorKey'
 
-function authKey() {
-  if (typeof localStorage === 'undefined') return null
-  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
-}
 
 const SENSOR_CAPABILITIES = [
   { icon: Radio, color: '#3b82f6', title: 'Telemetría en vivo', desc: 'Temperatura, humedad, shock, luz, presión, GPS, RFID y balizas BLE por B-UID.' },

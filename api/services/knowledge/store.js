@@ -12,6 +12,8 @@
  * servicio, antes de rankear y otra vez antes de entregar.
  */
 
+const { tokenize } = require('./bm25');
+
 const DOC_COLS = ['id', 'tenant_id', 'title', 'source', 'category', 'classification', 'allowed_roles', 'allowed_plans',
     'valid_from', 'valid_to', 'version', 'checksum', 'status', 'quarantine_reason', 'created_by', 'updated_at'];
 
@@ -31,6 +33,9 @@ class MemoryStore {
         return [...this.chunks.values()].filter((c) => c.tenant_id === null || c.tenant_id === tenantId);
     }
 
+    /** Sin índice: todos los visibles (el BM25 los filtra). Misma interfaz que PgStore.candidatos. */
+    async candidatos(tenantId) { return this.chunksVisibles(tenantId); }
+
     async putDocument(doc, chunks) {
         await this.removeDocument(doc.id);
         this.docs.set(doc.id, doc);
@@ -45,6 +50,12 @@ class MemoryStore {
 
     async size() { return this.docs.size; }
 }
+
+/** Longitud en tokens como la ve el BM25: el título cuenta tres veces. */
+const longitudDe = (titulo, seccion, contenido) => tokenize(`${titulo || ''} ${titulo || ''} ${titulo || ''} ${seccion || ''} ${contenido || ''}`).length;
+
+/** Mismos tokens que el BM25 (título + sección + contenido): lo indexado y lo buscado coinciden. */
+const tokensDe = (titulo, seccion, contenido) => [...new Set(tokenize(`${titulo || ''} ${seccion || ''} ${contenido || ''}`))].join(' ');
 
 const jsonOrEmpty = (v) => JSON.stringify(Array.isArray(v) ? v : []);
 
@@ -86,10 +97,73 @@ class PgStore {
                FROM knowledge_chunks c
                JOIN knowledge_documents d ON d.id = c.document_id AND d.version = c.version
               WHERE d.status = 'published' AND (d.tenant_id IS NULL OR d.tenant_id = $1)
+              ORDER BY c.document_id, c.chunk_index
               LIMIT 5000`,
             [tenantId]
         );
         return rows.map(filaADoc);
+    }
+
+    /**
+     * Prefiltro en SQL: chunks publicados del tenant (o globales) que contienen ALGÚN término de la pregunta, los
+     * mejores `limite` por ts_rank_cd, más los que aún no tienen `tokens` (anteriores a la migración 065). La ACL fina
+     * y el ranking BM25 siguen haciéndose en el servicio.
+     */
+    async candidatos(tenantId, terminos, limite = 300) {
+        const ts = [...new Set(terminos)].filter((t) => /^[a-z0-9]{1,40}$/.test(t)).slice(0, 40).join(' | ');
+        if (!ts) return [];
+        const { rows } = await this.db.query(
+            `SELECT c.id, c.document_id, c.chunk_index, c.content, c.section, c.version, c.checksum,
+                    d.title, d.tenant_id, d.classification, d.allowed_roles, d.allowed_plans,
+                    d.valid_from, d.valid_to, d.status
+               FROM knowledge_chunks c
+               JOIN knowledge_documents d ON d.id = c.document_id AND d.version = c.version
+              WHERE d.status = 'published' AND (d.tenant_id IS NULL OR d.tenant_id = $1)
+                AND (c.tokens IS NULL OR c.tsv @@ to_tsquery('simple', $2))
+              ORDER BY (c.tokens IS NULL) DESC, ts_rank_cd(c.tsv, to_tsquery('simple', $2)) DESC, c.id
+              LIMIT $3`,
+            [tenantId, ts, limite]
+        );
+        return rows.map(filaADoc);
+    }
+
+    /**
+     * Estadísticas de la colección visible para el BM25 (N, longitud media y frecuencia documental de cada término),
+     * en una sola consulta agregada. Permite rankear sólo los candidatos sin cambiar el orden respecto a cargar todo.
+     */
+    async estadisticas(tenantId, terminos) {
+        const ts = [...new Set(terminos)].filter((t) => /^[a-z0-9]{1,40}$/.test(t)).slice(0, 40);
+        const cols = ts.map((_, i) => `count(*) FILTER (WHERE c.tsv @@ to_tsquery('simple', $${i + 2}))::int AS df${i}`);
+        const { rows } = await this.db.query(
+            `SELECT count(*)::int AS n, COALESCE(avg(c.ntok), 0)::float AS avg_len${cols.length ? ', ' + cols.join(', ') : ''}
+               FROM knowledge_chunks c JOIN knowledge_documents d ON d.id = c.document_id AND d.version = c.version
+              WHERE d.status = 'published' AND (d.tenant_id IS NULL OR d.tenant_id = $1)`,
+            [tenantId, ...ts]
+        );
+        const r = rows[0];
+        return { N: r.n, avgLen: r.avg_len || 0, df: new Map(ts.map((t, i) => [t, r[`df${i}`]])) };
+    }
+
+    /**
+     * Rellena `tokens` de las filas que no lo tienen (anteriores a la migración 065). Devuelve cuántas.
+     * `todo: true` los recalcula TODOS: hay que hacerlo cuando cambia el tokenizador (sinónimos, raíz, STOP), porque
+     * lo indexado y lo buscado tienen que salir del mismo tokenizador.
+     */
+    async reindexar({ lote = 200, todo = false } = {}) {
+        let total = 0;
+        let ultimo = '';
+        for (;;) {
+            const { rows } = await this.db.query(
+                `SELECT c.id, c.content, c.section, d.title FROM knowledge_chunks c
+                   JOIN knowledge_documents d ON d.id = c.document_id
+                  WHERE ${todo ? 'c.id > $2' : 'c.tokens IS NULL AND $2::text IS NOT NULL'} ORDER BY c.id LIMIT $1`, [lote, ultimo]);
+            if (!rows.length) return total;
+            ultimo = rows[rows.length - 1].id;
+            for (const r of rows) {
+                await this.db.query('UPDATE knowledge_chunks SET tokens = $2, ntok = $3 WHERE id = $1', [r.id, tokensDe(r.title, r.section, r.content), longitudDe(r.title, r.section, r.content)]);
+            }
+            total += rows.length;
+        }
     }
 
     async putDocument(doc, chunks) {
@@ -118,9 +192,9 @@ class PgStore {
             if (up.rowCount === 0) throw Object.assign(new Error('El documento pertenece a otro tenant'), { status: 403 });
             for (const c of chunks) {
                 await client.query(
-                    `INSERT INTO knowledge_chunks (id, document_id, chunk_index, content, section, version, checksum)
-                     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-                    [c.id, c.document_id, c.chunk_index, c.content, c.section || null, c.version, c.checksum]
+                    `INSERT INTO knowledge_chunks (id, document_id, chunk_index, content, section, version, checksum, tokens, ntok)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+                    [c.id, c.document_id, c.chunk_index, c.content, c.section || null, c.version, c.checksum, tokensDe(doc.title, c.section, c.content), longitudDe(doc.title, c.section, c.content)]
                 );
             }
             await client.query('COMMIT');

@@ -9,6 +9,7 @@ import AiInsights from './pages/AiInsights';
 import ScanCredits from './pages/ScanCredits';
 import CommandCenter from './pages/CommandCenter';
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen } from './context/AuthProvider';
+import AIWorkspaceBar from '../../../_shared/ai-chat/AIWorkspaceBar.jsx';
 import EcosystemBar from './components/EcosystemBar';
 import DevHubPanel from './components/DevHubPanel';
 import { Code2 } from 'lucide-react';
@@ -160,6 +161,8 @@ export default function AppWrapper() {
   return (
     <AuthProvider>
       <App />
+      {/* Chat de la plataforma (el mismo de www.bezhas.com) */}
+      <AIWorkspaceBar bottomOffset={12} bottomOffsetMobile={84} leftOffset={220} />
     </AuthProvider>
   );
 }

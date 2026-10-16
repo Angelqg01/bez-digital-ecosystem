@@ -34,19 +34,19 @@ const Docs = () => {
         <ValueCard 
           icon={<Zap size={32} color="var(--bez-solar)" />}
           title="¿Qué es BeZhas Energy?"
-          desc="Una plataforma L2 que conecta inversores solares y baterías directamente a la blockchain. Un Agente IA (Aegis) decide autónomamente cuándo cargar, descargar o vender energía al pool eléctrico (OMIE) en base a predicciones de precios en tiempo real."
+          desc="Una plataforma que conecta tus plantas, baterías y cargas a una capa de monitorización, alertas y órdenes auditadas. Lee los precios reales del mercado diario (OMIE) y los datos de la red (REE); un agente propone cuándo cargar, descargar o vender y una persona lo autoriza. Los comandos se firman y sólo se dan por entregados cuando un equipo los recibe. No eres operador del sistema ni presentas ofertas en el mercado a través de BeZhas."
         />
 
         <ValueCard 
           icon={<Database size={32} color="var(--bez-secondary)" />}
           title="¿Qué Ganas como Usuario?"
-          desc="Al conectar tu batería o inversor a nuestra VPP, cedes parte de su capacidad de flexibilización. A cambio, recibes pagos pasivos en token $BEZ por el arbitraje generado y por tu aportación a la estabilidad de la red eléctrica."
+          desc="Ves tu generación y tus precios en un único panel, recibes alertas calculadas con los precios publicados y puedes ordenar la batería y las cargas con aprobación humana. Las recompensas en token BEZ por flexibilidad y arbitraje dependen de contratos que todavía no constan como desplegados en su totalidad y no hay rentabilidad garantizada: confirma con BeZhas qué está activo antes de contar con ellas."
         />
 
         <ValueCard 
           icon={<ShieldCheck size={32} color="var(--bez-reputation)" />}
           title="Certificados RWA y CAEs"
-          desc="Toda la energía que inyectas o ahorras se certifica criptográficamente mediante el token BZCAE. Estos certificados pueden venderse a grandes empresas que necesitan cumplir con sus cuotas de reducción de emisiones de carbono."
+          desc="Los certificados de ahorro energético (CAE) y los créditos de carbono son instrumentos regulados: los contratos están escritos y probados, pero no todos constan como desplegados. El valor de un certificado lo fija el mercado y la normativa aplicable, y no hay equivalencia fija entre un kWh y un BEZ. Consulta a tu asesor legal antes de emitirlos o venderlos."
         />
 
       </section>

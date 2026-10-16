@@ -50,7 +50,7 @@ h1, h2, h3, h4, .font-space {
   backdrop-filter: blur(10px);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1100; /* por encima de los controles del mapa (500) y del menú de configuración */
 }
 
 .main-content {
@@ -142,4 +142,11 @@ h1, h2, h3, h4, .font-space {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: .5; }
+}
+
+/* Cabecera en móvil: título más compacto para que quepan el botón de configuración y el acceso de usuario. */
+@media (max-width: 420px) {
+  .header { gap: 8px; }
+  .header h1 { font-size: 12px !important; letter-spacing: 1px !important; }
+  .header > div { min-width: 0; }
 }

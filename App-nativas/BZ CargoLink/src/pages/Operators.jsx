@@ -9,6 +9,7 @@ import React from 'react'
 import { useAuth } from '../context/AuthProvider'
 import { cargoLinkAdmin, cargoLinkApi, KEY_ROLES } from '../services/cargoLinkApi'
 import { useTransactions } from '../hooks/useTransaction'
+import { authKey, setActorKey } from '../services/actorKey'
 
 const ROLE_LABEL = {
   pos: 'POS / Cliente', customs: 'Aduanas', carrier: 'Naviera / Carrier',
@@ -118,6 +119,8 @@ const Operators = () => {
         <div className="card" style={{ padding: 14, border: '1px solid var(--bz-primary)' }}>
           <p style={{ fontSize: 10, color: 'var(--bz-text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Clave emitida (cópiala ahora)</p>
           <code style={{ display: 'block', marginTop: 6, color: 'var(--bz-primary)', fontSize: 13, wordBreak: 'break-all', fontFamily: 'monospace' }}>{issued}</code>
+          <button type="button" className="btn" style={{ marginTop: 10, border: '1px solid var(--bz-primary)', padding: '8px 12px' }}
+            onClick={() => { setActorKey(issued); setNotice('Clave guardada: este navegador ya opera con ella.') }}>Usar esta clave en este navegador</button>
         </div>
       )}
 
@@ -203,7 +206,7 @@ const Operators = () => {
           <h3 style={{ color: '#fff', marginBottom: 12, fontSize: 15 }}>Registrar dispositivo</h3>
           <form onSubmit={async (e) => {
             e.preventDefault()
-            const key = localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
+            const key = authKey()
             if (!key) { setError('Sin autenticación'); return }
             setDeviceBusy(true); setError(null); setNotice(null); setIssuedDeviceKey(null)
             try {

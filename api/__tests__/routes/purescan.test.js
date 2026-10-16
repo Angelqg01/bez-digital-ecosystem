@@ -294,3 +294,35 @@ describe('lecturas', () => {
         expect(res.body).toMatchObject({ success: true, did: 'did:bezhas:0xabc' });
     });
 });
+
+describe('POST /inference — sin modelo desplegado', () => {
+    it('responde 503 honesto y no inventa detecciones', async () => {
+        const res = await request(appWith()).post('/api/purescan/inference').send({});
+        expect(res.status).toBe(503);
+        expect(res.body).toMatchObject({ success: false, code: 'INFERENCE_UNAVAILABLE' });
+        expect(res.body.detections).toBeUndefined();
+    });
+});
+
+describe('manager lazy y titular del escaneo', () => {
+    it('acepta una función que devuelve el manager en cada petición', async () => {
+        mockSvc.createScan.mockResolvedValue({ scan_ref: 'SCAN-L', status: 'analyzing' });
+        const manager = { dispatch: jest.fn() };
+        let ready = null;
+        const app = appWith({ manager: () => ready });
+
+        ready = manager; // el runtime se levanta después de montar el router
+        await request(app).post('/api/purescan/analyze').send({ sku: 'S' });
+        expect(mockSvc.createScan.mock.calls[0][1]).toBe(manager);
+    });
+
+    it('con sesión usa la wallet de la sesión y no la del cuerpo', async () => {
+        mockSvc.createScan.mockResolvedValue({ scan_ref: 'SCAN-W', status: 'analyzing' });
+        const app = express();
+        app.use(express.json());
+        app.use((req, _res, next) => { req.user = { address: '0xSESSION' }; next(); });
+        app.use('/api/purescan', purescanRouter({}, null));
+        await request(app).post('/api/purescan/analyze').send({ sku: 'S', walletAddress: '0xATTACKER' });
+        expect(mockSvc.createScan.mock.calls[0][0].walletAddress).toBe('0xSESSION');
+    });
+});

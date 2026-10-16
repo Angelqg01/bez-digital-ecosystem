@@ -66,8 +66,11 @@ const round6 = (n) => Math.round(n * 1e6) / 1e6;
  *            margin:number, billableEUR:number, credits:number}}
  */
 function calculateCallCost({ model, inputTokens = 0, outputTokens = 0, action = 'api_call' } = {}) {
-    const prices = CLAUDE_PRICES_PER_MTOK[model] ||
-        (inputTokens || outputTokens ? CLAUDE_PRICES_PER_MTOK[DEFAULT_CLAUDE_MODEL] : null);
+    // Modelo local (`local:<nombre>`, p. ej. Ollama): sin coste por token; sólo el cómputo de BeZhas. Sin esta salida,
+    // un modelo desconocido con tokens se facturaría al precio del modelo por defecto (el más caro).
+    const local = String(model || '').startsWith('local:');
+    const prices = local ? null : (CLAUDE_PRICES_PER_MTOK[model] ||
+        (inputTokens || outputTokens ? CLAUDE_PRICES_PER_MTOK[DEFAULT_CLAUDE_MODEL] : null));
 
     const claudeCostUSD = prices
         ? (inputTokens / 1e6) * prices.input + (outputTokens / 1e6) * prices.output

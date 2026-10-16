@@ -85,6 +85,7 @@ const monitorRoutes = require('./routes/monitor');
 const adminAuthRoutes = require('./routes/admin-auth');
 const runtimeRoutes = require('./routes/runtime');
 const aiBillingRoutes = require('./routes/ai-billing');
+const purescanRoutes = require('./routes/purescan');
 const unifiedAgentRoutes = require('./routes/unified-agent');
 const identityRoutes = require('./routes/identity');
 const organizationsRoutes = require('./routes/organizations');
@@ -384,6 +385,7 @@ app.use('/api/organizations', organizationTechRoutes);
 app.use('/api/organizations', organizationBillingRoutes);
 app.use('/api/ai-workspace/public', aiWorkspaceRoutes.publicRouter); // una pregunta gratis sin sesión
 app.use('/api/ai-workspace', aiWorkspaceRoutes);   // chat de la plataforma con RAG (sesión obligatoria)
+app.use('/api/nft-assets', require('./routes/nft-assets')); // subida de archivos para NFT: plan suscrito, sin ejecutables, sin lectura
 app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);
 app.use('/api/admin/governance', adminGovernanceRoutes);
@@ -418,6 +420,15 @@ app.use('/api/agent', unifiedAgentRoutes);  // endpoint unificado para el fronte
 app.use('/api/runtime', runtimeRoutes);
 app.use('/api/openclaw', openclawRoutes);
 app.use('/api/ai-billing', aiBillingRoutes);
+
+// ── BZ PureScan — trazabilidad alimentaria ───────────────────────────────────
+// Antes sólo lo montaba server.js (otro punto de entrada): en la api de producción /api/purescan daba 404 y la
+// SubApp no funcionaba. Con sesión obligatoria, salvo la escritura del resultado por el agente, que lleva su
+// clave interna (x-internal-key) y no un JWT de usuario. El manager se resuelve en cada petición (lazy).
+const purescanAuth = (req, res, next) => (
+  req.method === 'POST' && /^\/scans\/[^/]+\/result$/.test(req.path) ? next() : authenticateToken(req, res, next)
+);
+app.use('/api/purescan', purescanAuth, purescanRoutes(() => agentRuntime.getManager()));
 app.use('/api/mtfc', mtfcRoutes);
 
 // ── 🏢 OPERANT — Gestión empresarial autónoma ────────────────────────────────

@@ -52,6 +52,8 @@ const aegis = require('../services/aegisAnomalyEngine'); // Phase 2 — real tel
 const telemetryStore = require('../services/energyTelemetryStore'); // Phase 3 — persisted history/analytics
 const controlSecurity = require('../services/controlSecurity'); // Phase 5 — sign outbound SCADA commands
 const hitlQueue = require('../services/hitlQueue'); // Phase 5 — real human-in-the-loop approvals
+const energyNodes = require('../services/energyNodes'); // registro de nodos propios + ingesta HTTPS
+const { buildAlerts } = require('../services/energyAlerts'); // alertas calculadas con datos reales
 const logger = require('../utils/logger');
 
 /** Sign a SCADA command and publish it to the Edge (best-effort). Returns transport+onchain audit. */
@@ -61,6 +63,16 @@ async function dispatchSignedCommand(jobId, nodeId, command, params) {
   logger.info(`[ENERGY][SCADA] job=${jobId} node=${nodeId} cmd=${command} transport=${published ? 'mqtt(signed)' : 'mock'}`);
   const onchain = await vppChainBridge.logCommandOnChain(jobId, nodeId, command, params, params.powerKw || 0);
   return { published, onchain };
+}
+
+/** Los nodos nd-… son de un titular: sólo él puede leer su histórico, analítica o mandarles comandos. Devuelve true si falta. */
+async function nodeNotOwned(req, res, nodeId) {
+  if (!String(nodeId).startsWith('nd-')) return false;
+  const owner = req.user && req.user.bezhas_id;
+  const mine = owner ? await energyNodes.listNodes(owner) : [];
+  if (mine.some((n) => n.id === nodeId)) return false;
+  res.status(404).json({ error: `Node ${nodeId} not found`, code: 'NODE_NOT_FOUND' });
+  return true;
 }
 
 /** Map a service error (with optional .status) onto an HTTP response. */
@@ -267,15 +279,46 @@ const buildOmiePrice = () => {
  */
 router.get('/telemetry', authenticateToken, async (req, res) => {
   try {
+    // 1) Nodos propios del titular con lecturas reales (ingesta HTTPS). Nunca se mezclan con la demo.
+    const owner = req.user && req.user.bezhas_id;
+    if (owner) {
+      const own = await energyNodes.latestFor(owner);
+      if (own.telemetry) return res.json(own.telemetry);
+    }
+    // 2) Sin nodos propios: broker MQTT de la plataforma o, si no hay, demostración — siempre marcada.
     const data = await withCache('telemetry:all', CACHE_TTL.TELEMETRY, async () => {
-      // Live telemetry from Edge Nodes (MQTT) when available; else simulated.
-      // PRODUCCIÓN alternativa: query('SELECT DISTINCT ON (node_id) * FROM telemetry_logs ORDER BY node_id, ts DESC')
-      return vppBroker.getLatestTelemetry() || buildTelemetry();
+      const live = vppBroker.getLatestTelemetry();
+      return live ? { ...live, simulated: false, source: 'MQTT' } : { ...buildTelemetry(), simulated: true, source: 'simulated' };
     });
     res.json(data);
   } catch (err) {
     logger.error('[ENERGY][TELEMETRY]', err);
     res.status(500).json({ error: 'Failed to fetch VPP telemetry', code: 'TELEMETRY_ERROR' });
+  }
+});
+
+/**
+ * @route   POST /api/energy/telemetry/ingest
+ * @desc    Lectura enviada por un nodo propio (Authorization: Bearer bzn_…). Se valida su plausibilidad y se guarda
+ *          en telemetry_logs; una lectura imposible (p. ej. más potencia que la capacidad declarada) se rechaza con 422.
+ * @access  Clave de nodo (no JWT)
+ */
+const ingestHits = new Map();
+router.post('/telemetry/ingest', async (req, res) => {
+  try {
+    const key = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    const node = await energyNodes.authenticate(key);
+    if (!node) return res.status(401).json({ error: 'Clave de nodo no válida', code: 'INVALID_NODE_KEY' });
+    // Máximo una lectura por segundo y nodo (un nodo ruidoso no debe llenar telemetry_logs).
+    const last = ingestHits.get(node.id) || 0;
+    if (Date.now() - last < 1000) return res.status(429).json({ error: 'Máximo una lectura por segundo', code: 'RATE_LIMITED' });
+    ingestHits.set(node.id, Date.now());
+    if (ingestHits.size > 5000) ingestHits.clear();
+    res.status(201).json(await energyNodes.ingest(node, req.body || {}));
+  } catch (err) {
+    if (err instanceof energyNodes.NodeError) return res.status(err.status).json({ error: err.message, code: err.code });
+    logger.error('[ENERGY][INGEST]', err);
+    res.status(500).json({ error: 'No se pudo guardar la lectura', code: 'INGEST_ERROR' });
   }
 });
 
@@ -287,14 +330,22 @@ router.get('/telemetry', authenticateToken, async (req, res) => {
 router.get(
   '/telemetry/:nodeId',
   authenticateToken,
-  [param('nodeId').matches(/^n\d+$/).withMessage('Invalid nodeId format')],
+  [param('nodeId').matches(/^(n\d+|nd-[a-f0-9]{8})$/).withMessage('Invalid nodeId format')],
   validate,
   async (req, res) => {
     const { nodeId } = req.params;
     try {
+      const owner = req.user && req.user.bezhas_id;
+      if (owner && nodeId.startsWith('nd-')) {
+        const own = await energyNodes.latestFor(owner);
+        const one = own.telemetry && { ...own.telemetry, nodes: own.telemetry.nodes.filter((n) => n.id === nodeId) };
+        if (!one || !one.nodes.length) return res.status(404).json({ error: `Node ${nodeId} not found`, code: 'NODE_NOT_FOUND' });
+        return res.json(one);
+      }
       const data = await withCache(`telemetry:${nodeId}`, CACHE_TTL.TELEMETRY, async () => {
-        // Live node telemetry from MQTT when available; else simulated.
-        return vppBroker.getNodeTelemetry(nodeId) || buildTelemetry(nodeId);
+        // Live node telemetry from MQTT when available; else simulated (marked).
+        const live = vppBroker.getNodeTelemetry(nodeId);
+        return live ? { ...live, simulated: false, source: 'MQTT' } : { ...buildTelemetry(nodeId), simulated: true, source: 'simulated' };
       });
 
       if (!data.nodes.length) {
@@ -315,7 +366,10 @@ router.get(
  */
 router.get('/nodes', authenticateToken, async (req, res) => {
   try {
-    // PRODUCCIÓN: await query('SELECT * FROM vpp_nodes WHERE owner_address = $1', [req.user.address])
+    const owner = req.user && req.user.bezhas_id;
+    const own = owner ? await energyNodes.listNodes(owner) : [];
+    if (own.length) return res.json({ total: own.length, simulated: false, nodes: own });
+    // Sin nodos propios: lista de demostración, marcada como tal.
     const nodes = [
       { id: 'n1', type: NODE_TYPE.SOLAR, name: 'Array Alpha', location: 'Rooftop A', registered: '2025-01-15', status: 'ONLINE' },
       { id: 'n2', type: NODE_TYPE.WIND, name: 'Turbine V1', location: 'Field B', registered: '2025-02-01', status: 'ONLINE' },
@@ -323,10 +377,37 @@ router.get('/nodes', authenticateToken, async (req, res) => {
       { id: 'n4', type: NODE_TYPE.BATTERY, name: 'BESS Unit 1', location: 'Warehouse D', registered: '2025-03-10', status: 'ONLINE' },
       { id: 'n5', type: NODE_TYPE.LOAD, name: 'Industrial HVAC', location: 'Plant E', registered: '2025-04-01', status: 'ACTIVE' },
     ];
-    res.json({ total: nodes.length, nodes });
+    res.json({ total: nodes.length, simulated: true, nodes });
   } catch (err) {
     logger.error('[ENERGY][NODES]', err);
     res.status(500).json({ error: 'Failed to fetch node registry', code: 'NODES_ERROR' });
+  }
+});
+
+/**
+ * @route   POST /api/energy/nodes
+ * @desc    Conectar una planta: da de alta un nodo propio y devuelve su clave (bzn_…) UNA sola vez.
+ * @body    { name, type: SOLAR|WIND|HYDRO|BATTERY|LOAD, capacityKw, location?, protocol? }
+ */
+router.post('/nodes', authenticateToken, async (req, res) => {
+  try {
+    const result = await energyNodes.registerNode(req.user && req.user.bezhas_id, req.body || {});
+    res.status(201).json({ success: true, ...result, ingest: { method: 'POST', path: '/api/energy/telemetry/ingest', auth: 'Authorization: Bearer <nodeKey>' } });
+  } catch (err) {
+    if (err instanceof energyNodes.NodeError) return res.status(err.status).json({ error: err.message, code: err.code });
+    logger.error('[ENERGY][NODES][REGISTER]', err);
+    res.status(500).json({ error: 'No se pudo registrar el nodo', code: 'NODES_ERROR' });
+  }
+});
+
+/** @route DELETE /api/energy/nodes/:id — revoca un nodo propio (su clave deja de valer). */
+router.delete('/nodes/:id', authenticateToken, [param('id').matches(/^nd-[a-f0-9]{8}$/)], validate, async (req, res) => {
+  try {
+    res.json({ success: true, ...(await energyNodes.revokeNode(req.user && req.user.bezhas_id, req.params.id)) });
+  } catch (err) {
+    if (err instanceof energyNodes.NodeError) return res.status(err.status).json({ error: err.message, code: err.code });
+    logger.error('[ENERGY][NODES][REVOKE]', err);
+    res.status(500).json({ error: 'No se pudo revocar el nodo', code: 'NODES_ERROR' });
   }
 });
 
@@ -347,6 +428,7 @@ router.get(
   validate,
   async (req, res) => {
     try {
+      if (await nodeNotOwned(req, res, req.params.nodeId)) return;
       const samples = await telemetryStore.getHistory(req.params.nodeId, {
         hours: req.query.hours || 24,
         limit: req.query.limit || 100,
@@ -375,6 +457,7 @@ router.get(
   validate,
   async (req, res) => {
     try {
+      if (await nodeNotOwned(req, res, req.query.nodeId)) return;
       const stats = await telemetryStore.getAnalytics(req.query.nodeId, { hours: req.query.hours || 24 });
       res.json({ node_id: req.query.nodeId, window_hours: req.query.hours || 24, ...stats });
     } catch (err) {
@@ -399,7 +482,8 @@ router.get('/market/omie', authenticateToken, async (req, res) => {
   try {
     const data = await withCache('omie', CACHE_TTL.OMIE_PRICE, async () => {
       // Real OMIE day-ahead price (marginalpdbc) when reachable; else simulated.
-      return (await energyFeed.getOmiePrice()) || buildOmiePrice();
+      const live = await energyFeed.getOmiePrice();
+      return live ? { ...live, simulated: false } : { ...buildOmiePrice(), simulated: true, source: 'simulated' };
     });
     res.json(data);
   } catch (err) {
@@ -418,11 +502,14 @@ router.get('/market/esios', authenticateToken, async (req, res) => {
   try {
     const data = await withCache('esios', CACHE_TTL.ESIOS, async () => {
       // Real ESIOS indicators when ESIOS_API_KEY is configured; else simulated.
+      const ree = await energyFeed.getReeGrid();      // demanda y mix reales (apidatos.ree.es, sin clave)
+      if (ree) return ree;
       const live = await energyFeed.getEsiosIndicators();
-      if (live) return live;
+      if (live) return { ...live, simulated: false };
       return {
         timestamp: new Date().toISOString(),
-        source: 'REE ESIOS',
+        source: 'simulated',
+        simulated: true,
         demand_mw: parseFloat((28000 + Math.random() * 8000).toFixed(0)),
         frequency_hz: parseFloat((49.95 + Math.random() * 0.1).toFixed(3)),
         renewable_pct: parseFloat((55 + Math.random() * 30).toFixed(1)),
@@ -452,48 +539,19 @@ router.get('/market/esios', authenticateToken, async (req, res) => {
  */
 router.get('/alerts', authenticateToken, async (req, res) => {
   try {
-    const data = await withCache('alerts', CACHE_TTL.ALERTS, async () => {
-      // PRODUCCIÓN: await OpenClaw.invoke('energy-agent', { skill: 'get_alerts', userId: req.user.id })
-      return [
-        {
-          id: 'a1',
-          severity: 'HIGH',
-          type: 'ARBITRAGE_OPPORTUNITY',
-          source: 'BeZhasEnergyAgent/XGBoost',
-          message: '95% solar yield predicted. Recommend battery charge prior to 18:00 UTC grid spike.',
-          action: { command: 'CHARGE_BATTERY', nodeId: 'n4', powerKw: 50 },
-          expires: new Date(Date.now() + 3_600_000).toISOString(),
-        },
-        {
-          id: 'a2',
-          severity: 'WARNING',
-          type: 'NEGATIVE_PRICE_IMMINENT',
-          source: 'BeZhasEnergyAgent/OMIE',
-          message: 'OMIE Pool Price dropping below zero in 2 hours. Activating max-charge protocol.',
-          action: { command: 'CHARGE_BATTERY', nodeId: 'n4', powerKw: 500 },
-          expires: new Date(Date.now() + 7_200_000).toISOString(),
-        },
-        {
-          id: 'a3',
-          severity: 'INFO',
-          type: 'DEMAND_RESPONSE_ELIGIBLE',
-          source: 'BeZhasEnergyAgent/LightGBM',
-          message: 'Peak demand event expected 20:00–22:00. Activating load curtailment on n5 yields €42 DR incentive.',
-          action: { command: 'SHED_LOAD', nodeId: 'n5', durationMin: 120 },
-          expires: new Date(Date.now() + 10_800_000).toISOString(),
-        },
-        {
-          id: 'a4',
-          severity: 'INFO',
-          type: 'AEGIS_AUDIT',
-          source: 'Aegis/AnomalyDetector',
-          message: 'Telemetry integrity check passed. No spoofing events detected in last 24h. RD 88/2026 compliant.',
-          action: null,
-          expires: new Date(Date.now() + 86_400_000).toISOString(),
-        },
-      ];
+    // Alertas calculadas con la curva OMIE real y el estado de los nodos del titular (no cacheadas entre usuarios).
+    const owner = req.user && req.user.bezhas_id;
+    const own = owner ? await energyNodes.listNodes(owner) : [];
+    const omie = (await energyFeed.getOmiePrice()) || null;
+    let events = [];
+    try { events = await telemetryStore.getAegisEvents({ hours: 24, limit: 50 }); } catch (_) { /* sin eventos */ }
+    const data = buildAlerts({
+      omie,
+      nodes: own.length ? own : [{ id: 'n4', type: 'BATTERY' }, { id: 'n5', type: 'LOAD' }],
+      simulated: own.length === 0,
+      aegisEvents: events,
     });
-    res.json({ count: data.length, alerts: data });
+    res.json({ count: data.length, simulated_nodes: own.length === 0, price_source: omie ? 'OMIE' : 'none', alerts: data });
   } catch (err) {
     logger.error('[ENERGY][ALERTS]', err);
     res.status(500).json({ error: 'Failed to fetch energy alerts', code: 'ALERTS_ERROR' });
@@ -624,7 +682,7 @@ router.post(
   requireRole('operator'),
   aegisCheck('scada_command'),                // Aegis: detectar comandos anómalos
   [
-    body('nodeId').matches(/^n\d+$/).withMessage('Invalid nodeId'),
+    body('nodeId').matches(/^(n\d+|nd-[a-f0-9]{8})$/).withMessage('Invalid nodeId'),
     body('command').isIn(Object.keys(SCADA_COMMANDS)).withMessage('Unsupported SCADA command'),
     body('params').optional().isObject(),
   ],
@@ -648,6 +706,14 @@ router.post(
     }
 
     try {
+      // Un operador sólo manda a nodos propios: los nd-… son de un titular concreto (los n1-n5 son la demo compartida).
+      if (nodeId.startsWith('nd-')) {
+        const owner = req.user && req.user.bezhas_id;
+        const mine = owner ? await energyNodes.listNodes(owner) : [];
+        if (!mine.some((n) => n.id === nodeId)) {
+          return res.status(404).json({ error: `Node ${nodeId} not found`, code: 'NODE_NOT_FOUND' });
+        }
+      }
       const jobId = `scada_${Date.now()}_${nodeId}`;
 
       // HITL obligatorio para comandos críticos — encolar para aprobación humana real.
@@ -675,6 +741,9 @@ router.post(
         params,
         signed: true,
         transport: published ? 'mqtt' : 'mock',
+        // Sin broker/edge conectado el comando queda firmado y auditado pero NO llega a ningún equipo: se dice.
+        delivered: Boolean(published),
+        ...(published ? {} : { warning: 'Ningún equipo ha recibido el comando: no hay un edge conectado por MQTT a este nodo.' }),
         dispatched_at: new Date().toISOString(),
         onchain_tx: onchain && onchain.ok ? onchain.hash : null,
         audit_trail: onchain && onchain.ok

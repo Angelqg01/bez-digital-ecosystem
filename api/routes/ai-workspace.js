@@ -8,6 +8,11 @@
  * nunca del body. Conocimiento y conversaciones viven en Postgres.
  */
 const express = require('express');
+const { validarCitas } = require('../services/ai-workspace/citations');
+const { comprobarCifras } = require('../services/ai-workspace/figures');
+const facts = require('../services/ai-workspace/facts');
+const telemetria = require('../services/ai-workspace/telemetry');
+const { SharedRateLimitStore } = require('../utils/sharedRateLimitStore');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const { authenticateToken } = require('../middleware/security');
@@ -53,8 +58,18 @@ const limiter = rateLimit({
 // Límite estricto por usuario para lo que cuesta IA.
 const aiLimiter = rateLimit({
     windowMs: 60_000, max: Number(process.env.AI_WORKSPACE_RATE_LIMIT || 20), keyGenerator: porUsuario,
+    store: new SharedRateLimitStore({ prefix: 'rl:ai-chat' }), // compartido entre instancias de Cloud Run (memoria local si no hay Redis)
     standardHeaders: true, legacyHeaders: false, message: { error: 'Demasiadas solicitudes, espera un momento.' },
 });
+
+/**
+ * Interruptor de apagado del chat: AI_WORKSPACE_ENABLED=false responde 503 a los mensajes (no a las lecturas: acciones,
+ * planes, historial). Es para incidentes (fuga entre tenants, documento envenenado, coste desbocado). Para dejar el chat
+ * funcionando SIN modelo de pago, AI_PROVIDER=extractive. Se aplica con una revisión nueva de Cloud Run.
+ */
+const chatApagado = (req, res, next) => (process.env.AI_WORKSPACE_ENABLED === 'false'
+    ? res.status(503).json({ error: 'El asistente está en mantenimiento. Vuelve a intentarlo más tarde.', code: 'AI_DISABLED' })
+    : next());
 
 router.use(ipLimiter);
 router.use(authenticateToken);
@@ -87,6 +102,9 @@ Reglas obligatorias:
 - No ayudes a atacar, eludir controles (KYC, aprobaciones, límites) ni acceder sin autorización a BeZhas ni a terceros.
 - No tienes acceso a claves privadas ni puedes ejecutar transacciones: para acciones sensibles, indica al usuario la sección correspondiente.`;
 
+/** Lo que el modelo tenía delante: el contexto recuperado, el historial de la conversación y el mensaje del usuario. */
+const fuentesDeCifras = (turn) => ({ contexto: turn.messages.map((m) => m.content).join('\n'), mensaje: turn.message });
+
 /** Resuelve el principal desde la sesión; responde 401 si no se puede. */
 async function principalDe(req, res) {
     const p = await resolverPrincipal(req.user);
@@ -117,16 +135,23 @@ async function prepareTurn(principal, body) {
     const convId = validConversationId(body?.conversationId) || crypto.randomUUID();
     const conv = await conversations.getOrCreate(principal.userId, convId);
 
+    const t0 = process.hrtime.bigint();
     const { context, sources } = insp.bloqueado ? { context: '', sources: [] } : await knowledge.buildContext(principal, message, { topK: 4 });
+    const retrieval = insp.bloqueado ? null : telemetria.retrieval({ ms: Number(process.hrtime.bigint() - t0) / 1e6, sources, context });
     const history = conv.turns.slice(-MAX_TURNS);
     const userContent = context ? `${message}\n\n<contexto_recuperado>\n${context}\n</contexto_recuperado>` : message;
 
     return {
-        message, convId, conv, sources, context,
+        message, convId, conv, sources, context, retrieval, inicio: Date.now(),
         antes: insp.antes,
         bloqueado: insp.bloqueado,
+        // Precios y límites de pago: los redacta el servidor desde la configuración, sin modelo (ver ai-workspace/facts.js).
+        determinista: insp.bloqueado ? null : facts.respuestaDeterminista(principal, message),
         // Siguiente paso y consejo de seguridad: texto fijo del servidor a partir del mensaje y del plan (nunca del modelo).
-        despues: insp.bloqueado ? '' : guide.siguientePaso(principal, message).texto,
+        despues: insp.bloqueado ? '' : (facts.respuestaDeterminista(principal, message)
+            // Precios y límites: el cierre es el genérico (plan y seguridad), no el del tema que mencione el mensaje.
+            ? guide.siguientePaso(principal, 'plan precios', { omitirHolding: true }).texto
+            : guide.siguientePaso(principal, message).texto),
         // Acciones sugeridas SOLO a partir del mensaje del usuario (nunca del contexto ni del modelo).
         actions: insp.bloqueado ? actionsSvc.suggestActions(principal, 'soporte contacto') : actionsSvc.suggestActions(principal, message),
         flagged: scan(message).suspicious || !!insp.bloqueado,
@@ -135,7 +160,7 @@ async function prepareTurn(principal, body) {
 }
 
 // POST /api/ai-workspace/chat  (respuesta completa)
-router.post('/chat', aiLimiter, async (req, res) => {
+router.post('/chat', chatApagado, aiLimiter, async (req, res) => {
     const principal = await principalDe(req, res);
     if (!principal) return;
     let reserva = null;
@@ -145,21 +170,37 @@ router.post('/chat', aiLimiter, async (req, res) => {
             // Respuesta fija: sin modelo, sin cuota y con el mensaje ya redactado en el historial.
             const reply = turn.antes + turn.bloqueado.respuesta;
             await conversations.append(turn.conv, turn.message, reply);
+            telemetria.turno({ outcome: 'blocked', provider: 'shield', ms: Date.now() - turn.inicio, userId: principal.userId, tenant: principal.tenantId });
             return res.json({ conversationId: turn.convId, reply, sources: [], actions: turn.actions, provider: 'shield', flagged: true, blocked: true, usage: null });
+        }
+        if (turn.determinista) {
+            // Precios y límites: respuesta del servidor desde la configuración. No usa modelo, así que no consume cuota.
+            const reply = turn.antes + turn.determinista.texto + turn.despues;
+            await conversations.append(turn.conv, turn.message, reply);
+            telemetria.turno({ outcome: 'ok', provider: 'facts', ms: Date.now() - turn.inicio, retrieval: turn.retrieval, userId: principal.userId, tenant: principal.tenantId });
+            return res.json({ conversationId: turn.convId, reply, sources: turn.sources, actions: turn.actions, provider: 'facts', flagged: turn.flagged, usage: null });
         }
         // Lo paga el plan del cliente: sin plan o sin cuota → 402 antes de llamar al modelo.
         reserva = await facturacion.reservar(principal);
         const { provider, text, usage } = await gateway.complete({
             system: SYSTEM_PROMPT, messages: turn.messages, maxTokens: 800, sources: turn.sources, contextText: turn.context,
         });
-        const { text: safeText } = await hooks.run('afterModel', { principal, text });
+        const { text: saneado } = await hooks.run('afterModel', { principal, text });
+        const conCitas = validarCitas(saneado, turn.sources.length).text;
+        const { text: safeText, retiradas } = comprobarCifras(conCitas, fuentesDeCifras(turn));
+        if (retiradas.length) telemetria.cifrasRetiradas(retiradas.length);
         const consumo = await facturacion.liquidar(reserva, { ...usage, provider });
         const respuesta = turn.antes + safeText + turn.despues;
         await conversations.append(turn.conv, turn.message, respuesta);
+        telemetria.turno({ outcome: 'ok', provider, ms: Date.now() - turn.inicio, retrieval: turn.retrieval, userId: principal.userId, tenant: principal.tenantId, tokens: usage && { entrada: usage.inputTokens, salida: usage.outputTokens } });
         res.json({ conversationId: turn.convId, reply: respuesta, sources: turn.sources, actions: turn.actions, provider, flagged: turn.flagged, usage: consumo });
     } catch (err) {
         if (reserva && !err.status) await facturacion.anular(reserva).catch(() => {});
-        if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, upgradeActionId: err.upgradeActionId, limit: err.limit });
+        if (err.status) {
+            telemetria.turno({ outcome: err.status === 402 ? 'no_plan' : 'rechazado', ms: 0, userId: principal.userId, tenant: principal.tenantId });
+            return res.status(err.status).json({ error: err.message, code: err.code, upgradeActionId: err.upgradeActionId, limit: err.limit });
+        }
+        telemetria.turno({ outcome: 'error', ms: 0, userId: principal.userId, tenant: principal.tenantId });
         logger.error({ error: err.message }, 'ai-workspace chat');
         res.status(500).json({ error: 'No se pudo procesar el mensaje' });
     }
@@ -195,6 +236,13 @@ async function responderEnStream(req, res, principal, turn) {
             // Respuesta fija del escudo: no se llama al modelo.
             send('provider', { provider: 'shield' });
             send('delta', { text: turn.bloqueado.respuesta });
+        } else if (turn.determinista) {
+            send('provider', { provider: 'facts' });
+            provider = 'facts';
+            if (turn.antes) send('delta', { text: turn.antes });
+            text = turn.determinista.texto;
+            send('delta', { text });
+            if (turn.despues) { send('delta', { text: turn.despues }); despuesEnviado = true; }
         } else {
             if (turn.antes) send('delta', { text: turn.antes });
             for await (const ev of gateway.stream({
@@ -218,9 +266,14 @@ async function responderEnStream(req, res, principal, turn) {
         safeText = text;
         if (turn.bloqueado) {
             safeText = (turn.antes || '') + turn.bloqueado.respuesta;
+        } else if (turn.determinista) {
+            safeText = (turn.antes || '') + text + (turn.despues || '');
         } else if (text) {
             try {
-                const limpio = (await hooks.run('afterModel', { principal, text })).text;
+                const conCitas = validarCitas((await hooks.run('afterModel', { principal, text })).text, turn.sources.length).text;
+                const verificado = comprobarCifras(conCitas, fuentesDeCifras(turn));
+                if (verificado.retiradas.length) telemetria.cifrasRetiradas(verificado.retiradas.length);
+                const limpio = verificado.text;
                 // Lo mostrado y guardado = aviso previo + respuesta saneada del modelo + siguiente paso (texto fijo del servidor).
                 safeText = (turn.antes || '') + limpio + (despuesEnviado ? turn.despues : '');
                 if (limpio !== text && !res.writableEnded) send('replace', { text: safeText });
@@ -238,13 +291,19 @@ async function responderEnStream(req, res, principal, turn) {
         } else if (!text && turn.anular) {
             await turn.anular().catch(() => {});
         }
+        telemetria.turno({
+            outcome: controller.signal.aborted ? 'aborted' : turn.bloqueado ? 'blocked' : !text ? 'error' : 'ok',
+            canal: principal.roles && principal.roles.includes('ANON') ? 'publico' : 'chat',
+            provider: turn.bloqueado ? 'shield' : turn.determinista ? 'facts' : provider || 'none', ms: Date.now() - (turn.inicio || Date.now()), retrieval: turn.retrieval,
+            userId: principal.userId, tenant: principal.tenantId, tokens: usage && { entrada: usage.inputTokens, salida: usage.outputTokens },
+        });
         if (!res.writableEnded) { send('done', { conversationId: turn.convId, length: safeText.length, ...(consumo ? { usage: consumo } : {}), ...(turn.done || {}) }); res.end(); }
     }
     return safeText;
 }
 
 // POST /api/ai-workspace/chat/stream  (Server-Sent Events)
-router.post('/chat/stream', aiLimiter, async (req, res) => {
+router.post('/chat/stream', chatApagado, aiLimiter, async (req, res) => {
     const principal = await principalDe(req, res);
     if (!principal) return;
 
@@ -253,7 +312,7 @@ router.post('/chat/stream', aiLimiter, async (req, res) => {
     try {
         turn = await prepareTurn(principal, req.body);
         // Lo paga el plan del cliente: sin plan o sin cuota → 402 antes de llamar al modelo (un turno bloqueado no usa modelo).
-        if (!turn.bloqueado) reserva = await facturacion.reservar(principal);
+        if (!turn.bloqueado && !turn.determinista) reserva = await facturacion.reservar(principal);
     } catch (err) {
         if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, upgradeActionId: err.upgradeActionId, limit: err.limit });
         logger.error({ error: err.message }, 'ai-workspace stream');
@@ -339,12 +398,17 @@ router.get('/knowledge', async (req, res) => {
     const principal = await principalDe(req, res);
     if (!principal) return;
     await sembrar();
-    res.json({ documents: await knowledge.listDocuments(principal) });
+    res.json({ documents: await knowledge.listDocuments(principal), ingestEnabled: knowledge.tenantIngestEnabled() });
 });
 
 router.post('/knowledge', async (req, res) => {
     const principal = await principalDe(req, res);
     if (!principal) return;
+    // Política: el RAG sólo contiene el conocimiento público sembrado. El texto que pega un cliente es una vía de
+    // prompt injection indirecta, así que la ingesta de tenants está APAGADA salvo KNOWLEDGE_TENANT_INGEST=true.
+    if (!knowledge.tenantIngestEnabled()) {
+        return res.status(403).json({ error: 'La ingesta de documentos en el asistente está desactivada.', code: 'TENANT_INGEST_DISABLED' });
+    }
     try {
         // tenantId nunca se lee del body: se ignora cualquier valor enviado.
         const { title, content, classification, allowed_roles, allowed_plans, global } = req.body || {};
@@ -385,7 +449,7 @@ publicRouter.get('/apps', (req, res) => {
     res.json({ apps: actionsSvc.listPublicApps() });
 });
 
-publicRouter.post('/chat/stream', async (req, res) => {
+publicRouter.post('/chat/stream', chatApagado, async (req, res) => {
     const raw = typeof req.body?.message === 'string' ? req.body.message : '';
     if (raw.length > MAX_MENSAJE_ANONIMO) return res.status(413).json({ error: `Máximo ${MAX_MENSAJE_ANONIMO} caracteres sin iniciar sesión` });
 
@@ -423,12 +487,15 @@ publicRouter.post('/chat/stream', async (req, res) => {
 
     try {
         await sembrar();
+        const inicio = Date.now();
+        const t0 = process.hrtime.bigint();
         const { context, sources } = await knowledge.buildContext(anon, message, { topK: 4 });
+        const retrieval = telemetria.retrieval({ ms: Number(process.hrtime.bigint() - t0) / 1e6, sources, context });
         const userContent = context ? `${message}\n\n<contexto_recuperado>\n${context}\n</contexto_recuperado>` : message;
         const turn = {
             // Sin sesión no hay plan que pague un modelo: la pregunta gratis se responde en modo
             // extractivo (los fragmentos de la documentación pública), con coste de IA cero.
-            convId: null, sources, context, maxTokens: 500, provider: 'extractive',
+            convId: null, sources, context, maxTokens: 500, provider: 'extractive', retrieval, inicio,
             antes: insp.antes,
             despues: guide.siguientePaso(anon, message).texto,
             actions: actionsSvc.suggestActions(anon, message),

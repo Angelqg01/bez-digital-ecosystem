@@ -22,6 +22,7 @@ import {
 import { useTransaction, stageIndex, stageProgress } from '../hooks/useTransaction'
 import { cargoLinkApi, LIFECYCLE_STAGES } from '../services/cargoLinkApi'
 import { useAuth } from '../context/AuthProvider'
+import { authKey } from '../services/actorKey'
 
 const CHAIN_ID = 2708
 const EXPLORER_URL = 'https://explorer.bezhas.com'
@@ -72,7 +73,7 @@ const TransactionDetail = () => {
   const nextStage = currentIdx < LIFECYCLE_STAGES.length - 1 ? LIFECYCLE_STAGES[currentIdx + 1] : null
 
   const loadTelemetry = async () => {
-    const key = localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
+    const key = authKey()
     if (!key || !bUid) return
     setTelemetryLoading(true)
     try {
@@ -84,12 +85,21 @@ const TransactionDetail = () => {
 
   React.useEffect(() => { if (tx) loadTelemetry() }, [tx?.b_uid])
 
+  // Datos que el backend exige para cada etapa (api/services/cargoLinkValidators.js).
+  const STAGE_FIELDS = {
+    DEPARTED: [['vessel', 'Buque'], ['voyage', 'Viaje / voyage'], ['departurePort', 'Puerto de salida (opcional)']],
+    IN_TRANSIT: [['routeId', 'Ruta / referencia de seguimiento']],
+    DELIVERED: [['signatureHash', 'Hash de firma / POD']],
+  }
+  const [fields, setFields] = useState({})
+  React.useEffect(() => { setFields({}) }, [nextStage])
+
   const handleAdvance = async () => {
     setAdvancing(true)
     setAdvanceError(null)
     setAdvanceResult(null)
     try {
-      const res = await advance({})
+      const res = await advance({ to: nextStage, ...Object.fromEntries(Object.entries(fields).filter(([, v]) => String(v).trim())) })
       setAdvanceResult(res)
     } catch (err) {
       setAdvanceError(err.message)
@@ -273,6 +283,10 @@ const TransactionDetail = () => {
       {/* Advance action */}
       {nextStage && (
         <div>
+          {(STAGE_FIELDS[nextStage] || []).map(([name, label]) => (
+            <input key={name} aria-label={label} placeholder={label} value={fields[name] || ''} onChange={(e) => setFields((f) => ({ ...f, [name]: e.target.value }))}
+              style={{ width: '100%', padding: '10px 12px', marginBottom: 8, background: '#090d16', border: '1px solid var(--bz-border)', borderRadius: 8, color: '#fff', fontSize: 13 }} />
+          ))}
           <button
             className="btn btn-primary"
             style={{ width: '100%', padding: 18 }}

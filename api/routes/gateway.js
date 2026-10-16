@@ -27,6 +27,8 @@ const { authenticateGateway, requireScope, authenticateSSOToken } = require('../
 const { requireAddressAccess, exigirTitularidadEnCuerpo } = require('../middleware/address-access');
 const { cadenaOResponder400, cadenaPorDefecto } = require('../config/chain-policy');
 const killSwitch = require('../services/killSwitch');
+const { resolverPlan } = require('../middleware/resolve-plan');
+const { buscarConocimiento } = require('../services/knowledge/search');
 const { meterUsage } = require('../middleware/gateway-metering');
 const ssoService = require('../services/ssoService');
 const walletService = require('../services/walletService');
@@ -1455,6 +1457,24 @@ router.get('/oracle/token-prices', publicPriceLimiter, async (req, res) => {
 
     priceMemo = { at: Date.now(), body };
     res.json(body);
+});
+
+/**
+ * GET /knowledge/search?q=…&limit=4 — el mismo Knowledge Plane que el chat y el MCP (herramienta bezhas_knowledge_search).
+ * Sólo documentación pública; el principal sale de la api-key y su plan, nunca de la consulta.
+ */
+const knowledgeLimiter = rateLimit({
+    windowMs: 60 * 1000, max: parseInt(process.env.KNOWLEDGE_SEARCH_RATE_LIMIT, 10) || 60,
+    keyGenerator: (req) => String(req.registeredApp?.id || req.ip),
+    message: { error: 'Too many knowledge searches.', code: 'KNOWLEDGE_RATE_LIMIT' }, standardHeaders: true, legacyHeaders: false,
+});
+router.get('/knowledge/search', authenticateGateway, requireScope('token'), knowledgeLimiter, resolverPlan, async (req, res) => {
+    try {
+        res.json({ success: true, ...(await buscarConocimiento({ app: req.registeredApp, plan: req.plan, pregunta: req.query.q, limite: req.query.limit })) });
+    } catch (err) {
+        if (err.status) return res.status(err.status).json({ success: false, error: err.message, code: err.code });
+        res.status(500).json({ success: false, error: 'Knowledge search failed' });
+    }
 });
 
 router.get('/token/price', authenticateGateway, requireScope('token'), async (req, res) => {

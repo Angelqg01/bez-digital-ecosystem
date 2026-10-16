@@ -69,3 +69,48 @@ describe('energyFeedService — OMIE marginalpdbc parser', () => {
     expect(url).toContain('marginalpdbc_20260606.1');
   });
 });
+
+describe('REE apidatos (parsers puros)', () => {
+  const feed = require('../../services/energyFeedService');
+  it('parseReeDemand toma el último valor de la serie Real', () => {
+    const json = { included: [{ type: 'Prevista', attributes: { values: [{ value: 1 }] } }, { type: 'Real', attributes: { values: [{ value: 26000.4, datetime: 'a' }, { value: 26308, datetime: 'b' }] } }] };
+    expect(feed.parseReeDemand(json)).toEqual({ demand_mw: 26308, at: 'b' });
+    expect(feed.parseReeDemand({ included: [] })).toBeNull();
+  });
+  it('parseReeMix suma las renovables y agrupa solar/gas', () => {
+    const v = (p) => ({ values: [{ percentage: p }] });
+    const json = { included: [
+      { type: 'Solar fotovoltaica', attributes: { type: 'Renovable', ...v(0.25) } }, { type: 'Solar térmica', attributes: { type: 'Renovable', ...v(0.02) } },
+      { type: 'Eólica', attributes: { type: 'Renovable', ...v(0.10) } }, { type: 'Nuclear', attributes: { type: 'No-Renovable', ...v(0.22) } },
+      { type: 'Ciclo combinado', attributes: { type: 'No-Renovable', ...v(0.23) } }, { type: 'Generación total', attributes: { type: 'total', ...v(1) } },
+    ] };
+    const m = feed.parseReeMix(json);
+    expect(m.renewable_pct).toBe(37); expect(m.mix.solar_pct).toBe(27); expect(m.mix.gas_pct).toBe(23); expect(m.mix.nuclear_pct).toBe(22);
+    expect(feed.parseReeMix({ included: [] })).toBeNull();
+  });
+});
+
+describe('getReeGrid — sirve el último valor bueno mientras refresca', () => {
+  const axios = require('axios');
+  const feed = require('../../services/energyFeedService');
+  const dem = { data: { included: [{ type: 'Real', attributes: { values: [{ value: 30000, datetime: 'x' }] } }] } };
+  const mix = { data: { included: [{ type: 'Eólica', attributes: { type: 'Renovable', values: [{ percentage: 0.2 }] } }] } };
+
+  afterEach(() => { jest.restoreAllMocks(); feed.__resetReeForTests(); });
+
+  it('devuelve datos reales marcados simulated:false y con frecuencia/balance nulos (no se inventan)', async () => {
+    jest.spyOn(axios, 'get').mockImplementation(async (url) => (/demanda/.test(url) ? dem : mix));
+    const r = await feed.getReeGrid();
+    expect(r).toMatchObject({ source: 'REE apidatos', simulated: false, demand_mw: 30000, renewable_pct: 20, frequency_hz: null, grid_balance_mw: null });
+  });
+  it('si REE falla y no hay nada guardado devuelve null (el caller marca el simulado)', async () => {
+    jest.spyOn(axios, 'get').mockRejectedValue(new Error('timeout'));
+    expect(await feed.getReeGrid()).toBeNull();
+  });
+  it('con un valor bueno guardado, una caída de REE no lo borra', async () => {
+    const spy = jest.spyOn(axios, 'get').mockImplementation(async (url) => (/demanda/.test(url) ? dem : mix));
+    const first = await feed.getReeGrid();
+    spy.mockRejectedValue(new Error('timeout'));
+    expect(await feed.getReeGrid(new Date(Date.now() + 10 * 60_000))).toEqual(first);
+  });
+});

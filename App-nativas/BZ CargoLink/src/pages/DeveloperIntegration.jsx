@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useBilling } from '../hooks/useBilling'
 import { cargoLinkAdmin } from '../services/cargoLinkApi'
+import { authKey } from '../services/actorKey'
 import { cargoGateway } from '../services/cargoGateway'
 import { blockchainStatusText } from '../utils/blockchainDisplay'
 import PosNetworkPanel from '../components/PosNetworkPanel'
@@ -122,7 +123,7 @@ const DeveloperIntegration = () => {
 
   const saveWebhook = async () => {
     try {
-      const response = await cargoGateway.registerWebhook({ url: webhookUrl, events: selectedEvents })
+      const response = await cargoGateway.registerWebhook({ url: webhookUrl, events: selectedEvents }, authKey())
       setNotice(`Webhook activado en Core: ${response.webhook?.id || 'registrado'} para ${selectedEvents.length} evento(s).`)
     } catch (error) {
       setNotice(error.message)

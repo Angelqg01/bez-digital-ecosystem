@@ -15,7 +15,7 @@ import InvestorDashboard from './pages/InvestorDashboard'
 import EnergyModule from './pages/EnergyModule'
 import IdentityModule from './pages/IdentityModule'
 import IndustrialModule from './pages/IndustrialModule'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { 
   MessageSquare, 
   Shield, 
@@ -33,7 +33,19 @@ import {
 } from 'lucide-react'
 import { NotificationProvider } from './components/NotificationSystem'
 import { HeaderAuthButton, OrganizationBar } from '../../_shared/BezhasAuthProvider.jsx'
+import HeaderMenu from '../../_shared/HeaderMenu.jsx'
+import { Building2 } from 'lucide-react'
 import { OrganizationSettingsPage } from '../../_shared/OrganizationSettings.jsx'
+
+// Dentro del Router para poder navegar sin recargar.
+const SphereHeaderMenu = () => {
+  const navigate = useNavigate()
+  return (
+    <HeaderMenu onNavigate={navigate} items={[{ key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: '/organization' }]} auth={<HeaderAuthButton />}>
+      <OrganizationBar />
+    </HeaderMenu>
+  )
+}
 
 const App = () => {
   return (
@@ -41,19 +53,7 @@ const App = () => {
       <Router>
         <div className="app-shell">
           <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 200, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <NavLink
-              to="/organization"
-              title="Organización: KYB, blockchain, facturación"
-              style={{
-                display: 'flex', alignItems: 'center', padding: '6px 14px', borderRadius: 20,
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                color: '#94a3b8', fontSize: 11, fontWeight: 700, textDecoration: 'none',
-              }}
-            >
-              🏢 Org
-            </NavLink>
-            <OrganizationBar />
-            <HeaderAuthButton />
+            <SphereHeaderMenu />
           </div>
           <Routes>
             <Route path="/" element={<Chat />} />

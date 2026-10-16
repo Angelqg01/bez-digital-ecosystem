@@ -16,12 +16,13 @@ const crypto = require('crypto');
 const { CLASSIFICATIONS, canAccess, isAdmin } = require('./acl');
 const { chunkText } = require('./chunker');
 const { scan, neutralize } = require('./injectionGuard');
-const { bm25Rank } = require('./bm25');
+const { bm25Rank, tokenize } = require('./bm25');
 const { MemoryStore } = require('./store');
 
 const MAX_DOC_CHARS = 200_000;
 const MAX_TOP_K = 8;
 const MIN_RELATIVE_SCORE = 0.5;
+const CANDIDATOS = Number(process.env.KNOWLEDGE_CANDIDATES || 300);
 
 const sha256 = (s) => `sha256:${crypto.createHash('sha256').update(s).digest('hex')}`;
 const cosine = (a, b) => {
@@ -110,18 +111,33 @@ class KnowledgeService {
         return { id, version: doc.version, status: doc.status, chunks: chunks.length, quarantine_reason: doc.quarantine_reason };
     }
 
+    /**
+     * ¿Se admite conocimiento privado de tenants? Por defecto NO: el asistente responde sólo con el conocimiento
+     * público sembrado (global, PUBLIC). Activable con KNOWLEDGE_TENANT_INGEST=true.
+     */
+    tenantIngestEnabled() { return process.env.KNOWLEDGE_TENANT_INGEST === 'true'; }
+
     /** Busca solo en lo que el principal puede ver. */
     async search(principal, query, { topK = 4 } = {}) {
         if (!principal || !query) return [];
         const k = Math.min(Math.max(1, topK), MAX_TOP_K);
 
         // 1) ACL ANTES de rankear (el store ya recorta a global + tenant propio).
-        const allowed = (await this.store.chunksVisibles(principal.tenantId)).filter((c) => canAccess(principal, c));
+        // KNOWLEDGE_RETRIEVAL=fts: Postgres prefiltra por términos (índice GIN) y Node sólo reordena los candidatos.
+        const fts = process.env.KNOWLEDGE_RETRIEVAL === 'fts' && typeof this.store.candidatos === 'function' && typeof this.store.estadisticas === 'function';
+        const terminos = fts ? tokenize(query) : [];
+        const visibles = fts
+            ? await this.store.candidatos(principal.tenantId, terminos, CANDIDATOS)
+            : await this.store.chunksVisibles(principal.tenantId);
+        const stats = fts ? await this.store.estadisticas(principal.tenantId, terminos) : null;
+        // Con la ingesta de tenants apagada, lo que ya hubiera de tenants (anterior a la política) tampoco se recupera.
+        const soloGlobal = !this.tenantIngestEnabled();
+        const allowed = visibles.filter((c) => (!soloGlobal || c.tenant_id == null) && canAccess(principal, c));
         if (!allowed.length) return [];
 
         // 2) BM25 (+ vector con Reciprocal Rank Fusion si hay embedder). Se descartan
         //    resultados claramente menos relevantes que el mejor.
-        const scored = bm25Rank(query, allowed);
+        const scored = bm25Rank(query, allowed, stats && stats.N ? { stats } : {});
         const floor = scored.length ? scored[0].score * MIN_RELATIVE_SCORE : 0;
         const cobertura = new Map(scored.map((r) => [r.chunk.id, r.coverage]));
         let ranked = scored.filter((r) => r.score >= floor).map((r) => r.chunk);

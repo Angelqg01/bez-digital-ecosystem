@@ -14,12 +14,9 @@ import PermissionPrime from '../../../_shared/PermissionPrime.jsx'
 // Ubicación en tiempo real es una función de plan de pago: sin suscripción
 // Profesional/Enterprise, ni siquiera se le pide el permiso al navegador.
 const REQUIRED_TIERS = ['professional', 'enterprise']
-import PortsMap from '../components/PortsMap'
-import { PORTS } from '../data/ports'
+import CargoMapHub from '../components/CargoMapHub'
+import { authKey } from '../services/actorKey'
 
-function authKey() {
-  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
-}
 
 const ActiveRoute = () => {
   const navigate = useNavigate()
@@ -30,6 +27,7 @@ const ActiveRoute = () => {
   const [error, setError] = useState('')
   const [trackingNotice, setTrackingNotice] = useState('')
   const [showPrime, setShowPrime] = useState(false)
+  const [pod, setPod] = useState('')
 
   const tx = transactions.find(t => t.b_uid === selected)
   const progress = tx ? stageProgress(tx.status) : 0
@@ -40,9 +38,12 @@ const ActiveRoute = () => {
       setError('')
       setLoading(true)
       const key = authKey()
-      const payload = coords
-        ? { lat: coords.latitude, lng: coords.longitude, geoVerified: true }
-        : { geoVerified: false }
+      // El backend acepta firma/POD o coordenadas como prueba; sin ninguna de las dos rechaza la entrega.
+      const payload = pod.trim()
+        ? { signatureHash: pod.trim(), ...(coords ? { lat: coords.latitude, lng: coords.longitude, geoVerified: true } : {}) }
+        : coords
+          ? { lat: coords.latitude, lng: coords.longitude, geoVerified: true }
+          : { geoVerified: false }
       const res = await cargoLinkApi.advanceTransaction(key, selected, payload)
       setResult(res)
       setTrackingNotice(coords
@@ -58,6 +59,7 @@ const ActiveRoute = () => {
   const generateProof = () => {
     if (!selected) { setError('Selecciona un B-UID'); return }
     setError('')
+    if (pod.trim()) { submitProof(null); return }   // prueba por firma: no hace falta pedir la ubicación
     setShowPrime(true)
   }
 
@@ -95,13 +97,9 @@ const ActiveRoute = () => {
         </span>
       </div>
 
-      {/* Map */}
-      <div style={{ height: 300, position: 'relative', overflow: 'hidden', borderBottom: '1px solid var(--bz-border)' }}>
-        <PortsMap />
-        <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 500, background: 'rgba(10,14,20,0.82)', border: '1px solid var(--bz-border)', borderRadius: 8, padding: '6px 12px', pointerEvents: 'none' }}>
-          <p style={{ fontSize: 9, color: 'var(--bz-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, margin: 0 }}>Red Global de Puertos</p>
-          <p style={{ fontSize: 11, color: '#fff', fontWeight: 700, margin: 0 }}>{PORTS.length} hubs · settlement on-chain BeZhas</p>
-        </div>
+      {/* Mapa real: seguimiento, crear ruta y zonas */}
+      <div style={{ borderBottom: '1px solid var(--bz-border)' }}>
+        <CargoMapHub selectedBUid={selected} onSelect={(b) => { setSelected(b); setResult(null); setError(''); setTrackingNotice('') }} height={340} />
       </div>
 
       {/* Content */}
@@ -180,14 +178,16 @@ const ActiveRoute = () => {
               <CheckCircle2 size={18} color="var(--bz-secondary)" />
               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--bz-secondary)' }}>ENTREGADO</span>
             </div>
-            {result.validation && (
+            {(result.validation?.result || result.validation) && (
               <p style={{ fontSize: 11, color: 'var(--bz-text-muted)', marginTop: 6 }}>
-                Prueba: {result.validation.proof} {result.validation.geoVerified ? '(GPS verificado)' : ''}
+                Prueba: {(result.validation.result || result.validation).proof} {(result.validation.result || result.validation).geoVerified ? '(GPS verificado)' : ''}
               </p>
             )}
           </div>
         )}
 
+        <input aria-label="Hash de firma o POD" placeholder="Hash de firma / POD (alternativa al GPS)" value={pod} onChange={e => setPod(e.target.value)} disabled={!!result}
+          style={{ width: '100%', padding: '10px 12px', marginBottom: 12, background: '#090d16', border: '1px solid var(--bz-border)', borderRadius: 10, color: '#fff', fontSize: 13 }} />
         {error && <p style={{ color: '#ef4444', fontSize: 11, marginBottom: 16, textAlign: 'center' }}>{error}</p>}
 
         {/* Action Button */}
@@ -195,7 +195,7 @@ const ActiveRoute = () => {
           className="btn btn-primary"
           style={{ width: '100%', padding: 20 }}
           onClick={generateProof}
-          disabled={loading || !selected || !!result}
+          disabled={loading || !selected || !tx || !!result}
         >
           <QrCode size={20} />
           {loading ? 'GENERANDO PRUEBA...' : (result ? 'ENTREGADO' : 'GENERAR PRUEBA DE ENTREGA')}

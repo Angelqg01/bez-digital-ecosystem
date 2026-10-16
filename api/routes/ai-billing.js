@@ -10,6 +10,7 @@ const { body, query: qv, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/security');
 const pricing = require('../services/aiPricingService');
 const billing = require('../services/aiBillingService');
+const { resolverPrincipal } = require('../services/ai-workspace/principal');
 
 const router = Router();
 
@@ -116,9 +117,24 @@ router.get('/stats', authenticateToken, async (req, res) => {
     }
 });
 
+// Plan de la plataforma (organización → app → gateway_subscriptions) → nivel que entienden las SubApps.
+const PLAN_A_TIER = { starter: 'starter', creator_pro: 'professional', business: 'professional', enterprise_vip: 'enterprise' };
+const TIER_RANK = VALID_TIERS;
+
 router.get('/subscription', authenticateToken, async (req, res) => {
     try {
-        const tier = await billing.getActiveSubscriptionTier(req.user.userId);
+        // Antes sólo se miraba ai_subscriptions.user_id (INTEGER): con el id UUID real de la sesión la consulta
+        // fallaba para todos los usuarios y las SubApps degradaban siempre a 'free'. Ahora manda el plan de la
+        // organización y la tabla antigua sólo se consulta si el id es numérico.
+        let tier = 'free';
+        try {
+            const principal = await resolverPrincipal(req.user);
+            tier = PLAN_A_TIER[principal && principal.plan] || 'free';
+        } catch (_) { /* sin plan resoluble: se queda en free */ }
+        if (/^\d+$/.test(String(req.user.userId))) {
+            const legacy = await billing.getActiveSubscriptionTier(req.user.userId);
+            if (TIER_RANK.indexOf(legacy) > TIER_RANK.indexOf(tier)) tier = legacy;
+        }
         const meta = pricing.SUBSCRIPTION_TIERS[tier];
         res.json({ tier, ...meta });
     } catch (err) {

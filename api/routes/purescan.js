@@ -24,8 +24,11 @@ const svc = require('../services/pureScanService');
  *   GET  /analytics          → agregados reales
  *   GET  /profile/did        → DID derivado de la wallet configurada
  */
-module.exports = function (manager = null, bridge = null) {
+module.exports = function (managerOrGetter = null, bridge = null) {
     const router = express.Router();
+    // El runtime de agentes se levanta tras el arranque (y puede no levantarse): se admite una función que lo
+    // devuelva en cada petición en vez de fijar `null` para siempre al montar el router.
+    const getManager = () => (typeof managerOrGetter === 'function' ? managerOrGetter() : managerOrGetter);
 
     /** Envuelve un handler async para que un throw acabe en 500 y no cuelgue. */
     const wrap = (fn) => (req, res) => {
@@ -38,11 +41,13 @@ module.exports = function (manager = null, bridge = null) {
 
     // ── Escaneo ──────────────────────────────────────────────────────────────
     router.post('/analyze', wrap(async (req, res) => {
-        const { sku, product, batch, walletAddress, ...rest } = req.body || {};
+        const { sku, product, batch, walletAddress: bodyWallet, ...rest } = req.body || {};
+        // Con sesión, el titular del escaneo es la wallet de la sesión, no la que declare el cuerpo.
+        const walletAddress = (req.user && req.user.address) || bodyWallet;
 
         const scan = await svc.createScan(
             { sku, product, batch, walletAddress, payload: rest },
-            manager
+            getManager()
         );
 
         // 202: aceptado y en curso. 503 si no hay runtime al que encargárselo —
@@ -55,9 +60,23 @@ module.exports = function (manager = null, bridge = null) {
             status: scan.status,
             taskId: scan.taskId || null,
             poll: `/api/purescan/scans/${scan.scan_ref}`,
-            ...(scan.error ? { error: scan.error } : {}),
+            ...(scan.error || scan.status === 'unavailable'
+                ? { error: scan.error || 'No hay un agente disponible para analizar el escaneo' } : {}),
         });
     }));
+
+    /**
+     * Inferencia de visión en el servidor. No hay ningún modelo desplegado: responder con detecciones inventadas en
+     * trazabilidad alimentaria sería peor que no responder, así que se dice la verdad (503) y el cliente decide.
+     * El análisis real va por /analyze (agente) y se sondea en /scans/:ref.
+     */
+    router.post('/inference', (_req, res) => {
+        res.status(503).json({
+            success: false,
+            error: 'No hay un modelo de visión desplegado en el servidor',
+            code: 'INFERENCE_UNAVAILABLE',
+        });
+    });
 
     router.get('/scans/:ref', wrap(async (req, res) => {
         const scan = await svc.getScan(req.params.ref);

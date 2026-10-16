@@ -10,10 +10,8 @@ import {
 } from 'lucide-react'
 import { useTransactions } from '../hooks/useTransaction'
 import { cargoLinkApi } from '../services/cargoLinkApi'
+import { authKey } from '../services/actorKey'
 
-function authKey() {
-  return localStorage.getItem('bezhas_access_token') || localStorage.getItem('bezhas-jwt')
-}
 
 const CustomsSync = () => {
   const navigate = useNavigate()
@@ -38,7 +36,9 @@ const CustomsSync = () => {
     setSyncing(true)
     try {
       const key = authKey()
+      // `to` explícito: un admin sin destino toma el camino principal (GATE_IN, que exige almacén); esta pantalla es el despacho.
       const res = await cargoLinkApi.advanceTransaction(key, selected, {
+        to: 'CUSTOMS_CLEARED',
         manifestId: form.manifestId || tx?.pos_ref || selected,
         declaredValue: Number(form.declaredValue),
         hsCode: form.hsCode || undefined,
@@ -51,7 +51,7 @@ const CustomsSync = () => {
     }
   }
 
-  const validation = result?.validation || result?.result
+  const validation = result?.validation?.result || result?.validation || result?.result
 
   return (
     <div style={{ padding: 20 }}>

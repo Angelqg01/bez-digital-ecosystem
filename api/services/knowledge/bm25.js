@@ -1,3 +1,5 @@
+const { normalizar } = require('../../utils/textNormalize');
+
 /** BM25 mínimo sobre un conjunto de chunks (ya filtrado por ACL). */
 const STOP = new Set(['de', 'la', 'el', 'en', 'y', 'a', 'los', 'las', 'un', 'una', 'que', 'es', 'se', 'por', 'con', 'para', 'del', 'al', 'the', 'of', 'and', 'to', 'is', 'in', 'a',
     // Palabras de pregunta y auxiliares: no distinguen un documento de otro y diluían la consulta («¿qué es… y en qué red está?»).
@@ -14,13 +16,23 @@ function raiz(t) {
     return t.replace(/s$/, '').slice(0, 6);
 }
 
+/**
+ * Sinónimos de precio. «¿Cuánto cuesta el plan Business?» no compartía ninguna palabra con el documento de planes, que
+ * dice «precios» y «€/mes»: el ranking devolvía otro documento o una coincidencia débil con aviso de «no estoy seguro».
+ * Se aplica igual a documentos y consulta (antes de la raíz), así que sólo añade coincidencias entre estas palabras.
+ */
+const SINONIMOS = new Map([
+    ['cuesta', 'precio'], ['cuestan', 'precio'], ['cuestas', 'precio'], ['cuesten', 'precio'], ['costara', 'precio'], ['costaria', 'precio'],
+    ['coste', 'precio'], ['costes', 'precio'], ['costo', 'precio'], ['costos', 'precio'],
+    ['cobrar', 'cobro'], ['cobramos', 'cobro'], ['cobrais', 'cobro'], ['cobran', 'cobro'], ['cobrando', 'cobro'], ['cobrado', 'cobro'],
+    ['tarifa', 'precio'], ['tarifas', 'precio'], ['vale', 'precio'], ['valen', 'precio'], ['valor', 'precio'],
+]);
+
 function tokenize(text) {
-    return String(text || '')
-        .toLowerCase()
-        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    return normalizar(text)
         .split(/[^a-z0-9]+/)
         .filter((t) => t.length > 1 && !STOP.has(t))
-        .map(raiz);
+        .map((t) => raiz(SINONIMOS.get(t) || t));
 }
 
 /**
@@ -29,17 +41,20 @@ function tokenize(text) {
  * asistente presenta como respuesta un documento que no tiene nada que ver. Un término que no existe en ningún documento
  * pesa mucho y deja la cobertura baja: la pregunta queda sin respuesta en vez de inventada.
  */
-function bm25Rank(query, chunks, { k1 = 1.4, b = 0.75, minCoverage = 0.25 } = {}) {
+function bm25Rank(query, chunks, { k1 = 1.4, b = 0.75, minCoverage = 0.25, stats = null } = {}) {
     const qTerms = [...new Set(tokenize(query))];
     if (!qTerms.length || !chunks.length) return [];
 
     // El título se cuenta tres veces: una pregunta que nombra un tema («¿qué es el BEZ…?») debe encontrar el documento que se llama así.
     const docs = chunks.map((c) => ({ c, tokens: tokenize(`${c.title || ''} ${c.title || ''} ${c.title || ''} ${c.section || ''} ${c.content}`) }));
-    const avgLen = docs.reduce((s, d) => s + d.tokens.length, 0) / docs.length || 1;
+    // `stats` ({N, avgLen, df}) permite rankear un SUBCONJUNTO de candidatos (prefiltrado en SQL) con las estadísticas de
+    // toda la colección visible: sin ellas, idf y longitud media saldrían de los candidatos y el orden cambiaría.
+    const avgLen = (stats && stats.avgLen) || docs.reduce((s, d) => s + d.tokens.length, 0) / docs.length || 1;
     const df = new Map();
-    for (const d of docs) for (const t of new Set(d.tokens)) df.set(t, (df.get(t) || 0) + 1);
+    if (stats) for (const [t, n] of stats.df) df.set(t, n);
+    else for (const d of docs) for (const t of new Set(d.tokens)) df.set(t, (df.get(t) || 0) + 1);
 
-    const N = docs.length;
+    const N = (stats && stats.N) || docs.length;
     const idfDe = (q) => Math.log(1 + (N - (df.get(q) || 0) + 0.5) / ((df.get(q) || 0) + 0.5));
     const masaTotal = qTerms.reduce((m, q) => m + idfDe(q), 0) || 1;
     return docs
