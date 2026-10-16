@@ -1,220 +1,210 @@
-import React, { useState } from 'react';
-import { useBEZBalance } from '@bezhas/platform-sdk/wallet';
+import React, { useEffect, useMemo, useState } from 'react';
 import { C, Card, Btn, Input, Chip } from '../components/ui/DesignSystem';
+import { useAuth } from '../context/AuthProvider';
+
+// Compra de BEZ-Coin con fiat contra el Gateway (/payments/buy).
+//
+// Antes esta página simulaba el pago con un setTimeout, anunciaba «+X BEZ has
+// been added to your wallet» sin cobrar nada, calculaba con 0,07 USD/BEZ y
+// enseñaba un IBAN lituano (LT82…, REVOLT21, «BeZhas Corporate Ltd.») que no es
+// la cuenta de BeZhas y una dirección de depósito inventada. Ahora cada compra
+// es un pedido real y los datos de pago los da la API.
+
+const GATEWAY = '/api/gateway/v1';
+const FEE = 0.025; // config/tokenomics.js: 250 bps sobre el neto
+
+const usd = (v) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD' }).format(v);
+const precioUsd = (v) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD', maximumFractionDigits: 6 }).format(v);
+const fmtBez = (v) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(v);
+
+function idempotencyKey() {
+  const r = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `wallet-${r.replace(/[^A-Za-z0-9_-]/g, '')}`.slice(0, 80);
+}
 
 export default function Buy() {
-  const [method, setMethod] = useState('card'); // card, bank, crypto
+  const { token, apiBase, authHeaders, openLoginModal } = useAuth();
+  const [method, setMethod] = useState('card'); // card | bank
   const [amount, setAmount] = useState('');
-  const [status, setStatus] = useState('idle'); // idle, processing, success
-  const { refresh } = useBEZBalance();
+  const [price, setPrice] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [order, setOrder] = useState(null);
 
-  const handlePurchase = () => {
-    setStatus('processing');
-    // Simulate payment processing
-    setTimeout(() => {
-      setStatus('success');
-      refresh(); // Update the global balance
-    }, 2000);
+  useEffect(() => {
+    if (!token) return undefined;
+    let alive = true;
+    fetch(`${apiBase}${GATEWAY}/token/price`, { headers: authHeaders() })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d?.priceUSD > 0) setPrice(d.priceUSD); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [token, apiBase, authHeaders]);
+
+  const net = parseFloat(amount);
+  const valid = Number.isFinite(net) && net >= 1;
+  const fee = valid ? Math.round(net * FEE * 100) / 100 : 0;
+  const estBez = useMemo(() => (valid && price ? net / price : null), [valid, net, price]);
+
+  const handlePurchase = async () => {
+    if (!token) { openLoginModal(); return; }
+    if (!valid) return;
+    setBusy(true);
+    setError('');
+    setOrder(null);
+    try {
+      const res = await fetch(`${apiBase}${GATEWAY}/payments/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey(), ...authHeaders() },
+        body: JSON.stringify({ amountUSD: net, paymentMethod: method }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (data.code === 'KYC_REQUIRED') {
+          throw new Error('Has alcanzado el límite de compra sin verificación de identidad (KYC).');
+        }
+        throw new Error(data.error || `Error ${res.status}`);
+      }
+      if (method === 'card' && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+      setOrder(data);
+      setAmount('');
+    } catch (e) {
+      setError(e.message || 'No se pudo crear el pedido.');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const getEstBEZ = () => {
-    const val = parseFloat(amount) || 0;
-    return (val / 0.07).toFixed(2); // Mock rate: 1 BEZ = $0.07
-  };
-
-  if (status === 'success') {
-    return (
-      <div style={{ maxWidth: 600, margin: '0 auto', paddingTop: '4rem' }}>
-        <Card glow color={C.primary} style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
-          <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', color: C.primary }}>Top-Up Successful</h2>
-          <p style={{ color: C.muted, fontFamily: C.mono, fontSize: '1rem', marginBottom: '2rem' }}>
-            +{getEstBEZ()} BEZ has been added to your wallet.
-          </p>
-          <Btn variant="fill" color={C.primary} onClick={() => { setStatus('idle'); setAmount(''); }}>
-            Buy More
-          </Btn>
-        </Card>
-      </div>
-    );
-  }
+  const statusUrl = order?.hostedCheckoutUrl
+    ? (order.hostedCheckoutUrl.startsWith('/') ? `${apiBase}${order.hostedCheckoutUrl}` : order.hostedCheckoutUrl)
+    : null;
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <div className="page-header animate-in">
-        <h1 className="page-title">Buy BEZ-Coin</h1>
-        <p className="page-subtitle">Add funds to your wallet using fiat or crypto</p>
+        <h1 className="page-title">Comprar BEZ-Coin</h1>
+        <p className="page-subtitle">Con tarjeta (Stripe) o transferencia SEPA. Los BEZ se entregan en tu wallet al confirmarse el pago.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem' }} className="animate-in-delay-1">
-        
-        {/* Main Content */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }} className="animate-in-delay-1">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
-          {/* Methods selector */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-            <MethodCard 
-              id="card" 
-              title="Credit Card" 
-              icon="💳" 
-              desc="Instant · Stripe" 
-              active={method === 'card'} 
-              onClick={() => setMethod('card')} 
-            />
-            <MethodCard 
-              id="bank" 
-              title="Bank Transfer" 
-              icon="🏦" 
-              desc="1-3 Days · SEPA/Wire" 
-              active={method === 'bank'} 
-              onClick={() => setMethod('bank')} 
-            />
-            <MethodCard 
-              id="crypto" 
-              title="Crypto Bridge" 
-              icon="⛓️" 
-              desc="5 mins · USDC/USDT" 
-              active={method === 'crypto'} 
-              onClick={() => setMethod('crypto')} 
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+            <MethodCard title="Tarjeta" icon="💳" desc="Página segura de Stripe" active={method === 'card'} onClick={() => setMethod('card')} />
+            <MethodCard title="Transferencia" icon="🏦" desc="SEPA · 1-3 días" active={method === 'bank'} onClick={() => setMethod('bank')} />
           </div>
 
           <Card>
-            {/* CARD FLOW */}
-            {method === 'card' && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                  <h3 style={{ color: C.text, fontSize: '1.2rem', fontWeight: 600 }}>Stripe Express Checkout</h3>
-                  <Chip color={C.primary}>Powered by Stripe</Chip>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <Btn variant="outline" color={C.text} style={{ flex: 1, background: C.card2 }}> Pay</Btn>
-                  <Btn variant="outline" color={C.text} style={{ flex: 1, background: C.card2 }}>G Pay</Btn>
-                </div>
-                
-                <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, marginBottom: '1.5rem' }}>Or pay with card</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ color: C.text, fontSize: '1.2rem', fontWeight: 600 }}>
+                {method === 'card' ? 'Pago con tarjeta' : 'Transferencia bancaria'}
+              </h3>
+              <Chip color={C.primary}>{method === 'card' ? 'Stripe' : 'SEPA'}</Chip>
+            </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <Input 
-                    label="Amount (USD)" 
-                    sym="$" 
-                    value={amount} 
-                    onChange={setAmount} 
-                    usd={`≈ ${getEstBEZ()} BEZ`}
-                  />
-                  
-                  <div style={{ padding: '12px', background: C.card2, borderRadius: 10, border: `1px solid ${C.border2}` }}>
-                    <div style={{ color: C.muted, fontSize: 11, marginBottom: 8 }}>Card Information</div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <input type="text" placeholder="Card number" style={inputStyle} disabled />
-                      <input type="text" placeholder="MM/YY" style={{...inputStyle, width: '80px'}} disabled />
-                      <input type="text" placeholder="CVC" style={{...inputStyle, width: '70px'}} disabled />
-                    </div>
-                  </div>
-                </div>
+            <Input
+              label="Importe (USD)"
+              sym="$"
+              value={amount}
+              onChange={setAmount}
+              usd={estBez != null ? `≈ ${fmtBez(estBez)} BEZ` : undefined}
+            />
 
-                <Btn 
-                  full 
-                  color={C.gold} 
-                  style={{ marginTop: '2rem' }} 
-                  disabled={!amount || status === 'processing'}
-                  onClick={handlePurchase}
-                >
-                  {status === 'processing' ? 'Processing...' : `Pay $${amount || '0.00'} securely`}
-                </Btn>
-              </div>
+            {error && (
+              <div role="alert" style={{ color: C.red || '#FF6B9D', fontSize: 13, marginTop: '1rem' }}>{error}</div>
             )}
 
-            {/* BANK FLOW */}
-            {method === 'bank' && (
-              <div>
-                <h3 style={{ color: C.text, fontSize: '1.2rem', fontWeight: 600, marginBottom: '1.5rem' }}>Bank Transfer (B2B)</h3>
-                <p style={{ color: C.muted, fontSize: 14, marginBottom: '1.5rem' }}>
-                  Send funds to your dedicated Virtual IBAN. Funds will automatically convert to BEZ-Coin upon receipt.
-                </p>
+            <Btn
+              full
+              color={C.gold}
+              style={{ marginTop: '1.5rem' }}
+              disabled={busy || (token && !valid)}
+              onClick={handlePurchase}
+            >
+              {busy ? 'Creando pedido…'
+                : !token ? 'Inicia sesión para comprar'
+                : method === 'card' ? `Pagar ${valid ? usd(net + fee) : ''} con tarjeta`
+                : 'Obtener datos de transferencia'}
+            </Btn>
 
-                <div style={{ background: C.card2, borderRadius: 12, padding: '1rem', border: `1px solid ${C.border2}`, marginBottom: '1.5rem' }}>
-                  <BankRow label="Beneficiary" value="BeZhas Corporate Ltd." />
-                  <BankRow label="IBAN" value="LT82 3500 0100 0000 0270 88" />
-                  <BankRow label="BIC / SWIFT" value="REVOLT21" />
-                  <BankRow label="Reference" value="BZ-AC-8492" />
-                </div>
-                <Btn full variant="outline" color={C.blue}>Download Instructions (PDF)</Btn>
-              </div>
-            )}
-
-            {/* CRYPTO FLOW */}
-            {method === 'crypto' && (
-              <div>
-                <h3 style={{ color: C.text, fontSize: '1.2rem', fontWeight: 600, marginBottom: '1.5rem' }}>Deposit Crypto</h3>
-                <p style={{ color: C.muted, fontSize: 14, marginBottom: '1.5rem' }}>
-                  Send USDC or USDT on Ethereum or Polygon. It will be bridged automatically to BEZ L2.
-                </p>
-                
-                <div style={{ background: C.card2, borderRadius: 12, padding: '1rem', border: `1px solid ${C.border2}`, textAlign: 'center' }}>
-                  <div style={{ background: '#fff', width: 160, height: 160, margin: '0 auto 1rem', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{color: '#000', fontSize: 12}}>QR Code</span>
-                  </div>
-                  <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Your Deposit Address</div>
-                  <div style={{ color: C.text, fontFamily: C.mono, fontSize: 14, marginTop: 4 }}>0x8a2F...c3D1</div>
-                </div>
+            {order && (
+              <div style={{ marginTop: '1.5rem', background: C.card2, borderRadius: 12, padding: '1rem', border: `1px solid ${C.border2}` }}>
+                <div style={{ color: C.primary, fontWeight: 600, marginBottom: 8 }}>Pedido #{order.paymentId} · pendiente de pago</div>
+                <Row label="Total" value={usd(order.amountUSD)} />
+                {order.bankTransfer && (
+                  <>
+                    <Row label="Beneficiario" value={order.bankTransfer.beneficiaryAlias} />
+                    <Row label="IBAN" value={order.bankTransfer.iban} />
+                    <Row label="BIC" value={order.bankTransfer.bic} />
+                    <Row label="Referencia" value={order.bankTransfer.reference} />
+                    <p style={{ color: C.muted, fontSize: 12, marginTop: 8 }}>Usa la referencia exacta para que se concilie con tu pedido.</p>
+                  </>
+                )}
+                {statusUrl && (
+                  <a href={statusUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, color: C.primary, fontSize: 13 }}>
+                    Ver estado del pago ↗
+                  </a>
+                )}
               </div>
             )}
           </Card>
         </div>
 
-        {/* Sidebar Order Summary */}
         <div>
           <Card>
-            <h4 style={{ color: C.text, fontSize: 14, fontWeight: 600, marginBottom: '1rem' }}>Order Summary</h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: C.muted, fontSize: 12 }}>
-              <span>You Pay</span>
-              <span>{method === 'card' && amount ? `$${parseFloat(amount).toFixed(2)}` : '-'}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: C.muted, fontSize: 12 }}>
-              <span>Fees</span>
-              <span style={{ color: C.primary }}>$0.00</span>
-            </div>
+            <h4 style={{ color: C.text, fontSize: 14, fontWeight: 600, marginBottom: '1rem' }}>Resumen</h4>
+            <Summary label="Importe" value={valid ? usd(net) : '-'} />
+            <Summary label="Comisión (2,5 %)" value={valid ? usd(fee) : '-'} />
+            <Summary label="Precio" value={price ? `1 BEZ = ${precioUsd(price)}` : '-'} />
             <div style={{ borderTop: `1px solid ${C.border}`, margin: '1rem 0' }}></div>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: C.gold, fontSize: 14, fontWeight: 600 }}>
-              <span>You Receive</span>
-              <span>{method === 'card' && amount ? `${getEstBEZ()} BEZ` : '-'}</span>
+              <span>Recibes</span>
+              <span>{estBez != null ? `${fmtBez(estBez)} BEZ` : '-'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: C.text, fontSize: 13, marginTop: 8 }}>
+              <span>Total a pagar</span>
+              <span>{valid ? usd(net + fee) : '-'}</span>
             </div>
           </Card>
         </div>
-
       </div>
     </div>
   );
 }
 
-// Subcomponents
 const MethodCard = ({ title, icon, desc, active, onClick }) => (
-  <div 
+  <button
+    type="button"
     onClick={onClick}
-    style={{ 
-      background: active ? `${C.primary}11` : C.card, 
+    aria-pressed={active}
+    style={{
+      textAlign: 'left',
+      background: active ? `${C.primary}11` : C.card,
       border: `1px solid ${active ? C.primary : C.border}`,
-      borderRadius: 12, 
-      padding: '1rem', 
+      borderRadius: 12,
+      padding: '1rem',
       cursor: 'pointer',
-      transition: 'all 0.2s'
+      transition: 'all 0.2s',
     }}
   >
     <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>{icon}</div>
     <div style={{ color: C.text, fontSize: 14, fontWeight: 600 }}>{title}</div>
     <div style={{ color: C.muted, fontSize: 11, marginTop: 4 }}>{desc}</div>
-  </div>
+  </button>
 );
 
-const BankRow = ({ label, value }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${C.border}` }}>
+const Row = ({ label, value }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderBottom: `1px solid ${C.border}` }}>
     <span style={{ color: C.muted, fontSize: 12 }}>{label}</span>
-    <span style={{ color: C.text, fontFamily: C.mono, fontSize: 12 }}>{value}</span>
+    <span style={{ color: C.text, fontFamily: C.mono, fontSize: 12, textAlign: 'right', wordBreak: 'break-all' }}>{value}</span>
   </div>
 );
 
-const inputStyle = {
-  flex: 1, background: 'transparent', border: 'none', color: C.text, fontSize: 14, fontFamily: C.mono, outline: 'none'
-};
+const Summary = ({ label, value }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: C.muted, fontSize: 12 }}>
+    <span>{label}</span>
+    <span>{value}</span>
+  </div>
+);
