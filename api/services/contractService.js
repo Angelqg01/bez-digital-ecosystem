@@ -106,6 +106,7 @@ function getSigner() {
 
 // ── ABI Cache (in-memory, loaded once from disk) ──
 const abiCache = {};
+const ABI_ALIASES = { BEZCoin: 'BEZCoinV2', BezhasToken: 'BEZCoinV2' };
 
 function loadABI(contractName) {
     if (abiCache[contractName]) return abiCache[contractName];
@@ -117,7 +118,14 @@ function loadABI(contractName) {
         return artifact.abi;
     }
 
-    const abiPath = path.join(ABI_DIR, `${contractName}.json`);
+    let abiPath = path.join(ABI_DIR, `${contractName}.json`);
+    // BEZ-Coin en Polygon figura en deployments como BEZCoin/BezhasToken, pero
+    // sólo se publica el ABI de BEZCoinV2. Para name/symbol/decimals/totalSupply
+    // /balanceOf/transfer los tres son el mismo ERC-20; sin este alias /token/info
+    // caía siempre a datos de relleno en producción.
+    if (!fs.existsSync(abiPath) && ABI_ALIASES[contractName]) {
+        abiPath = path.join(ABI_DIR, `${ABI_ALIASES[contractName]}.json`);
+    }
     if (!fs.existsSync(abiPath)) {
         throw new Error(`ABI not found for ${contractName}. Build contracts first or add smart-contracts/abi/${contractName}.json.`);
     }

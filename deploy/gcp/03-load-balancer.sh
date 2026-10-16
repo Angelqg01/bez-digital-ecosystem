@@ -156,12 +156,17 @@ echo "→ Certificados gestionados por Google (uno por dominio)"
 # tarde (p. ej. `api`, si los resolutores aún guardan en caché la IP antigua)
 # para que la web entera siga sin HTTPS. Separados, cada uno se activa en
 # cuanto su DNS es visible.
+# Excepción: CERT_SHARED_SUBS (config.env) comparten uno, por el límite de 10 certificados del proyecto.
+declare -A DOMINIOS_CERT=()
 CERTS=()
 for host in "$DOMAIN" "$WWW_HOST" "$API_HOST" "$MCP_HOST" ${SUB_CERT_HOSTS[@]+"${SUB_CERT_HOSTS[@]}"}; do
   nombre=$(nombre_cert "$host")
+  if [[ -z "${DOMINIOS_CERT[$nombre]:-}" ]]; then CERTS+=("$nombre"); DOMINIOS_CERT[$nombre]="$host"
+  else DOMINIOS_CERT[$nombre]+=",$host"; fi
+done
+for nombre in "${CERTS[@]}"; do
   existe gcloud compute ssl-certificates describe "$nombre" --global || \
-    gcloud compute ssl-certificates create "$nombre" --global --domains="$host"
-  CERTS+=("$nombre")
+    gcloud compute ssl-certificates create "$nombre" --global --domains="${DOMINIOS_CERT[$nombre]}"
 done
 LISTA_CERTS=$(IFS=,; echo "${CERTS[*]}")
 

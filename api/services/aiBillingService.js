@@ -169,8 +169,8 @@ async function getUserStats(userId) {
 // ─── USD → BEZ conversion ───────────────────────────────────────────
 
 async function usdToBez(usd) {
-    const { rows } = await query(`SELECT price_usd FROM token_price_cache WHERE symbol='BEZ'`);
-    const price = rows.length ? parseFloat(rows[0].price_usd) : precioUsd();
+    // Precio de configuración, nunca token_price_cache: una fila desfasada cambiaba lo que se cobra.
+    const price = precioUsd();
     return Math.ceil((usd / price) * 1e18).toString(); // wei-like representation
 }
 

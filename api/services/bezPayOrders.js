@@ -135,10 +135,8 @@ async function crearOrden({ appId = null, walletAddress, amountUSD, paymentMetho
     // transferir y el vigilante de liquidación lo case después.
     let onchainInstructions = null;
     if (onchain) {
-        const price = await query(
-            "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
-        ).catch(() => ({ rows: [] }));
-        const priceUSD = parseFloat(price.rows[0]?.price_usd || String(precioUsd()));
+        // Mismo precio que usará la liquidación: el de configuración.
+        const priceUSD = precioUsd();
         onchainInstructions = {
             provider: 'onchain',
             token: 'BEZ',

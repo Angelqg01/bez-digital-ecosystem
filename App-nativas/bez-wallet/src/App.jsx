@@ -1,13 +1,13 @@
 import React, { Suspense, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Code2, Building2 } from 'lucide-react';
+import { Code2, Building2, LogOut } from 'lucide-react';
 import HeaderMenu from '../../_shared/HeaderMenu.jsx';
+import { useSidebar, AppHeader, SidebarBackdrop } from '../../_shared/AppShell.jsx';
 
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen, OrganizationBar, OrganizationSettingsPage } from './context/AuthProvider';
 import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 import { useGasTank } from '@bezhas/platform-sdk/gas';
 
-import EcosystemBar from './components/EcosystemBar';
 import DevHubPanel from './components/DevHubPanel';
 
 import Dashboard from './pages/Dashboard';
@@ -162,6 +162,8 @@ function SidebarLink({ item }) {
     <NavLink
       to={item.path}
       end={item.end}
+      title={item.label}
+      aria-label={item.label}
       className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
     >
       <span className="sidebar-link-icon">{item.icon}</span>
@@ -178,7 +180,7 @@ function GasMeter() {
   const txsRemaining = numberOrZero(gasTxs).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
   return (
-    <div className="gas-meter">
+    <div className="gas-meter bz-sb-hide-collapsed">
       <div className="gas-meter-header">
         <span>⛽ Gas Tank Balance</span>
         <span className="gas-meter-value">{isLoading ? '...' : formatUsd(gasBalance)}</span>
@@ -195,65 +197,14 @@ function GasMeter() {
   );
 }
 
-function ApiHubButton({ onClick }) {
+function Sidebar({ sidebar }) {
   return (
-    <div style={{ padding: '0 1rem' }}>
-      <button
-        type="button"
-        onClick={onClick}
-        style={{
-          width: '100%',
-          padding: '0.6rem',
-          background: 'rgba(0,240,255,0.06)',
-          color: '#00f0ff',
-          border: '1px solid rgba(0,240,255,0.2)',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontWeight: 800,
-          fontSize: 12,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-        }}
-      >
-        <Code2 size={14} aria-hidden="true" /> API Hub
-      </button>
-    </div>
-  );
-}
-
-function LogoutButton() {
-  const { logout } = useAuth();
-
-  return (
-    <button
-      type="button"
-      onClick={logout}
-      style={{
-        width: '100%',
-        padding: '0.75rem',
-        background: 'rgba(255, 59, 48, 0.1)',
-        color: '#ff3b30',
-        border: '1px solid rgba(255, 59, 48, 0.2)',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontWeight: 'bold',
-      }}
-    >
-      🚪 Disconnect Hub
-    </button>
-  );
-}
-
-function Sidebar({ onOpenDevHub }) {
-  return (
-    <aside className="wallet-sidebar">
+    <aside className="wallet-sidebar bz-sb" {...sidebar.sidebarProps}>
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">B</div>
         <div>
-          <div className="sidebar-logo-text">BeZhas Enterprise</div>
-          <div className="sidebar-logo-version">v1.1.0 · Validator L2 · Chain 2708</div>
+          <div className="sidebar-logo-text">BEZ Wallet</div>
+          <div className="sidebar-logo-version">BeZhas Enterprise · Polygon</div>
         </div>
       </div>
 
@@ -267,13 +218,18 @@ function Sidebar({ onOpenDevHub }) {
       ))}
 
       <GasMeter />
-      <ApiHubButton onClick={onOpenDevHub} />
-
-      <div style={{ marginTop: 8, padding: '0 1rem 1rem' }}>
-        <LogoutButton />
-      </div>
     </aside>
   );
+}
+
+/** Título de la sección actual para la cabecera. */
+function seccionActual(pathname) {
+  for (const g of NAV_GROUPS) {
+    for (const i of g.items) {
+      if (i.end ? pathname === i.path : pathname.startsWith(i.path)) return i.label;
+    }
+  }
+  return null;
 }
 
 function AppRoutes() {
@@ -313,7 +269,8 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const [devOpen, setDevOpen] = useState(false);
-  const { token } = useAuth();
+  const { token, user, logout } = useAuth();
+  const sidebar = useSidebar('bez-wallet');
 
   const isFullscreen = useMemo(
     () => FULLSCREEN_ROUTES.has(location.pathname),
@@ -324,33 +281,36 @@ function App() {
   const showLock = !token && !isDashboard && !isFullscreen;
 
   return (
-    <div className="wallet-layout" style={{ gridTemplateColumns: isFullscreen ? '1fr' : undefined }}>
-      {!isFullscreen && <Sidebar onOpenDevHub={() => setDevOpen(true)} />}
+    <div className="wallet-layout" {...(isFullscreen ? {} : sidebar.layoutProps)} style={{ gridTemplateColumns: isFullscreen ? '1fr' : undefined }}>
+      {!isFullscreen && <Sidebar sidebar={sidebar} />}
+      {!isFullscreen && <SidebarBackdrop sidebar={sidebar} />}
 
       <main className="wallet-main" style={{ padding: isFullscreen ? '1rem' : undefined }}>
-        {/* Top Header Bar with Auth Button */}
         {!isFullscreen && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px 24px',
-            background: 'rgba(15, 23, 42, 0.4)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-            borderRadius: '16px',
-            marginBottom: '20px',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#00f0ff' }}>🌐 BeZhas L2 Network</span>
-              <span style={{ fontSize: '10px', background: 'rgba(0, 240, 255, 0.1)', color: '#00f0ff', padding: '2px 8px', borderRadius: '12px', fontWeight: 800 }}>TESTNET ACTIVE</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <HeaderMenu onNavigate={navigate} items={[{ key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: ROUTES.organization }]} auth={<HeaderAuthButton />}>
-                <OrganizationBar />
-              </HeaderMenu>
-            </div>
-          </div>
+          <AppHeader
+            sidebar={sidebar}
+            title="BEZ Wallet"
+            section={seccionActual(location.pathname)}
+            chip="Polygon"
+            menu={(
+              <>
+                {!token && <HeaderAuthButton compact />}
+                <HeaderMenu
+                  onNavigate={navigate}
+                  label={token ? (user?.username || 'Cuenta') : 'Menú'}
+                  title="Cuenta y configuración"
+                  auth={token ? <HeaderAuthButton compact /> : null}
+                  items={[
+                    { key: 'org', label: 'Organización', hint: 'KYB, blockchain, facturación', icon: Building2, to: ROUTES.organization, hidden: !token },
+                    { key: 'api', label: 'API Hub', hint: 'Endpoints y SDK de esta app', icon: Code2, onClick: () => setDevOpen(true) },
+                    { key: 'out', label: 'Cerrar sesión', icon: LogOut, onClick: logout, hidden: !token },
+                  ]}
+                >
+                  {token ? <OrganizationBar /> : null}
+                </HeaderMenu>
+              </>
+            )}
+          />
         )}
 
         {showLock ? (
@@ -360,8 +320,9 @@ function App() {
         )}
       </main>
 
-      {!isFullscreen && <EcosystemBar appName="BeZhas Enterprise" />}
       {devOpen && <DevHubPanel sector="enterprise-validator-scan" onClose={() => setDevOpen(false)} />}
+      {/* Chat de la plataforma (el mismo de www.bezhas.com); leftOffset = ancho del sidebar */}
+      <AIWorkspaceBar hideAppId="app_wallet" bottomOffset={12} leftOffset={isFullscreen ? 0 : (sidebar.collapsed ? 72 : 260)} />
     </div>
   );
 }
@@ -370,8 +331,6 @@ export default function AppWrapper() {
   return (
     <AuthProvider>
       <App />
-      {/* Chat de la plataforma (el mismo de www.bezhas.com) */}
-      <AIWorkspaceBar hideAppId="app_wallet" bottomOffset={12} />
     </AuthProvider>
   );
 }

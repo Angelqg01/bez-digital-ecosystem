@@ -40,6 +40,8 @@ function fakeProvider(logs, head = 5000) {
     };
 }
 
+afterAll(() => { delete process.env.BEZ_PRICE_USD; });
+
 // Estado simulado de la DB, enrutado por SQL.
 let usedTxs, pendingOrders, cursorRow, cursorWrites;
 
@@ -47,13 +49,15 @@ beforeEach(() => {
     settlePayment.mockClear();
     settlePayment.mockResolvedValue({ payment: { id: 1 }, nextAction: 'settlement_recorded' });
     usedTxs = new Set();
+    // El vigilante toma el precio de la configuración (nunca de token_price_cache):
+    // aquí se fija a 0.10 para que las cuentas del test sigan siendo redondas.
+    process.env.BEZ_PRICE_USD = '0.10';
     // Orden pendiente: 103 USD gross − 3 USD fee = 100 USD netos → a 0.10 USD/BEZ = 1000 BEZ esperados
     pendingOrders = [{ id: 55, amount_usd: '103.00', platform_fee_usd: '3.00' }];
     cursorRow = [];
     cursorWrites = [];
     mockQuery.mockReset();
     mockQuery.mockImplementation(async (sql, params = []) => {
-        if (sql.includes('token_price_cache')) return { rows: [{ price_usd: '0.10' }] };
         if (sql.includes('tx_hash = $1')) return { rows: usedTxs.has(params[0]) ? [{}] : [] };
         if (sql.includes("payment_method IN ('crypto', 'qr')")) {
             return { rows: params[0] === BUYER.toLowerCase() ? pendingOrders : [] };

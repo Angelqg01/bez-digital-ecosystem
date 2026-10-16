@@ -21,7 +21,7 @@ app.use('/api/gateway/v1', gatewayRoutes);
 
 const PATH = '/api/gateway/v1/oracle/token-prices';
 const priceRow = (over = {}) => ({
-    symbol: 'BEZ', price_usd: '0.25000000', change_24h: '3.5000',
+    symbol: 'BEZ', price_usd: '0.00750000', change_24h: '3.5000',
     updated_at: '2026-08-14T05:00:00.000Z', ...over,
 });
 
@@ -46,10 +46,10 @@ describe('Gateway oracle prices (público)', () => {
         mockQuery.mockResolvedValueOnce({ rows: [priceRow()], rowCount: 1 });
         const res = await request(app).get(PATH);
         expect(res.body.tokens.BEZ).toMatchObject({
-            symbol: 'BEZ', priceUSD: 0.25, change24h: 3.5,
+            symbol: 'BEZ', priceUSD: 0.0075, change24h: 3.5,
         });
         // Claves planas: la portada también las acepta como alternativa.
-        expect(res.body.bezCoinPriceUSD).toBe(0.25);
+        expect(res.body.bezCoinPriceUSD).toBe(0.0075);
         expect(res.body.bezCoinChange24h).toBe(3.5);
     });
 
@@ -61,6 +61,13 @@ describe('Gateway oracle prices (público)', () => {
         const res = await request(app).get(PATH);
         expect(Object.keys(res.body.tokens).sort()).toEqual(['BEZ', 'BEZCoinV2']);
         expect(res.body.tokens.BEZCoinV2.priceUSD).toBe(1.5);
+    });
+
+    it('una fila de BEZ con otro precio no se publica: manda la configuración', async () => {
+        mockQuery.mockResolvedValueOnce({ rows: [priceRow({ price_usd: '0.10000000' })] });
+        const res = await request(app).get(PATH);
+        expect(res.body.tokens.BEZ).toMatchObject({ priceUSD: 0.0075, seed: true, updatedAt: null });
+        expect(res.body.source).toBe('seed');
     });
 
     it('sin fila en caché cae al precio semilla en vez de romper la portada', async () => {
@@ -169,9 +176,9 @@ describe('Gateway oracle prices (público)', () => {
     it('los campos nuevos no desplazan a los que ya consumía la portada', async () => {
         mockQuery.mockResolvedValueOnce({ rows: [priceRow()], rowCount: 1 });
         const res = await request(app).get(PATH);
-        expect(res.body.tokens.BEZ.priceUSD).toBe(0.25);
-        expect(res.body.bezCoinPriceUSD).toBe(0.25);
-        expect(res.body.price).toBe(0.25);
+        expect(res.body.tokens.BEZ.priceUSD).toBe(0.0075);
+        expect(res.body.bezCoinPriceUSD).toBe(0.0075);
+        expect(res.body.price).toBe(0.0075);
     });
 
     it('el precio semilla no se sella con la hora actual', async () => {
