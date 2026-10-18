@@ -17,9 +17,14 @@
 
 import Script from 'next/script';
 import { useEffect, useState } from 'react';
+import { ADS_ID } from '@/lib/adsTag';
 
 const COOKIE_CONSENT_KEY = 'bezhas_cookie_consent';
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+// Etiqueta de Google Ads (medición de anuncios). Va en el MISMO gtag.js que GA4:
+// una sola etiqueta de Google por página, con dos `config`.
+const PRIMARY_ID = GA_ID || ADS_ID;
+const TAG_IDS = Array.from(new Set([GA_ID, ADS_ID].filter(Boolean))) as string[];
 
 type ConsentState = 'accepted' | 'necessary' | null;
 
@@ -37,7 +42,7 @@ function pushGtagConsent(consentState: ConsentState) {
         // Full analytics + ads measurement
         window.gtag('consent', 'update', {
             analytics_storage: 'granted',
-            ad_storage: 'denied', // never grant ads storage on B2B platforms
+            ad_storage: 'granted', // medición de anuncios sólo tras aceptar cookies
         });
     } else {
         // Cookieless, anonymized — still useful for aggregate traffic
@@ -75,14 +80,14 @@ export default function GoogleAnalytics() {
         if (consent !== null) pushGtagConsent(consent);
     }, [consent]);
 
-    // Never load GA4 if no GA ID is configured OR consent not given
-    if (!GA_ID || consent === null) return null;
+    // Never load the tag if no ID is configured OR consent not given
+    if (!PRIMARY_ID || consent === null) return null;
 
     return (
         <>
             {/* Google tag (gtag.js) — loaded only after consent given */}
             <Script
-                src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+                src={`https://www.googletagmanager.com/gtag/js?id=${PRIMARY_ID}`}
                 strategy="afterInteractive"
                 onLoad={() => {
                     window.dataLayer = window.dataLayer || [];
@@ -93,9 +98,11 @@ export default function GoogleAnalytics() {
                         ad_storage: 'denied',
                     });
                     window.gtag('js', new Date());
-                    window.gtag('config', GA_ID, {
-                        anonymize_ip: true,
-                        send_page_view: true,
+                    TAG_IDS.forEach((id) => {
+                        window.gtag('config', id, {
+                            anonymize_ip: true,
+                            send_page_view: true,
+                        });
                     });
                     // Apply actual user consent immediately after init
                     if (consent) pushGtagConsent(consent);
