@@ -28,7 +28,18 @@ BEGIN
 
   -- Defensa en profundidad: aunque alguien se los conceda por error más
   -- adelante, estos dos atributos anularían toda la RLS.
-  EXECUTE 'ALTER ROLE operant_app NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE';
+  --
+  -- En Postgres 16 sólo un SUPERUSUARIO real puede tocar SUPERUSER/BYPASSRLS,
+  -- incluso para quitarlos. Cloud SQL no da superusuario (su rol más alto,
+  -- cloudsqlsuperuser, falla aquí con «permission denied to alter role»). Ahí
+  -- CREATE ROLE ya deja todos los atributos en NO, así que basta con comprobarlo
+  -- y negarse a seguir si alguien los hubiera concedido: la garantía es la misma.
+  IF (SELECT rolsuper FROM pg_roles WHERE rolname = current_user) THEN
+    EXECUTE 'ALTER ROLE operant_app NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE';
+  ELSIF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'operant_app'
+                 AND (rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole)) THEN
+    RAISE EXCEPTION 'operant_app tiene atributos privilegiados (SUPERUSER/BYPASSRLS/CREATEDB/CREATEROLE) y este rol no puede quitárselos: la RLS no aislaría a los tenants';
+  END IF;
   EXECUTE format('GRANT CONNECT ON DATABASE %I TO operant_app', current_database());
 END $$;
 
