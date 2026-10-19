@@ -8,6 +8,13 @@
  * NO contiene lógica de negocio: eso vive en los agentes.
  */
 class BaseChannel {
+  /** Ningún texto simulado del modelo (con trozos del prompt interno) llega a un cliente. */
+  static sinSimulado(texto) {
+    return /^\s*\[SIMULADO/i.test(String(texto))
+      ? 'Ahora mismo no puedo responder a tu consulta. Una persona del equipo la revisará y te contestará lo antes posible.'
+      : texto;
+  }
+
   static get ACUSE() {
     return 'Hemos recibido tu mensaje. El equipo responsable lo revisará y te responderá lo antes posible.';
   }
@@ -46,7 +53,7 @@ class BaseChannel {
     if (task.status === 'failed') return 'No hemos podido procesar tu mensaje. Inténtalo de nuevo.';
     const r = task.result || {};
     // Soporte: resolution.reply, que está redactada para el cliente.
-    if (r.resolution?.reply) return r.resolution.reply;
+    if (r.resolution?.reply) return BaseChannel.sinSimulado(r.resolution.reply);
     // Cualquier otro departamento devuelve su resumen INTERNO (puntuaciones, notas del equipo…):
     // no es para el cliente. Se le acusa recibo y la tarea sigue su curso con el equipo.
     if (task.department && task.department !== 'support') return BaseChannel.ACUSE;

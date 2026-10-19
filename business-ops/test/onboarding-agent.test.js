@@ -16,6 +16,7 @@ const MemoryManager = require('../src/cognition/MemoryManager');
 const PolicyEngine = require('../src/guardrails/PolicyEngine');
 const EventBus = require('../src/core/EventBus');
 const Orchestrator = require('../src/core/Orchestrator');
+const BaseChannelRef = require('../src/channels/BaseChannel');
 
 const { detectarIntencion, idioma } = OnboardingAgent;
 
@@ -139,4 +140,28 @@ test('enrutado: newsletter, alta y planes van a Soporte (no a Ventas)', async ()
   for (const text of ['quiero la newsletter', 'Quiero crear mi cuenta', 'quiero contratar un plan']) {
     assert.equal((await clasificar(text)).department, 'support', text);
   }
+});
+
+test('modelo caído: el cliente nunca recibe el texto simulado (lleva trozos del prompt interno)', async () => {
+  const tenantId = 'acme';
+  const knowledgeBase = new KnowledgeBase({ tenantId });
+  await knowledgeBase.ingest({ title: 'Reembolsos', body: 'Los reembolsos se tramitan en 14 días desde facturación.', tags: ['facturación'] });
+  const manager = new SupportManager({
+    tenantId, model: new ModelGateway({ providers: {} }), memory: new MemoryManager({ tenantId }),
+    guardrails: new PolicyEngine({ tenantId, plan: 'pro' }), knowledgeBase, bus: new EventBus(tenantId),
+  });
+
+  const conKb = await manager.run({ type: 'support:ticket', payload: { text: '¿Cómo funcionan los reembolsos?', customerId: 'c1' } });
+  assert.doesNotMatch(conKb.resolution.reply, /SIMULADO|CONSULTA:|CONOCIMIENTO DISPONIBLE/);
+  assert.match(conKb.resolution.reply, /Reembolsos/);
+
+  const sinKb = await manager.run({ type: 'support:ticket', payload: { text: 'pregunta sin nada en la base zzzqq', customerId: 'c2' } });
+  assert.doesNotMatch(sinKb.resolution.reply, /SIMULADO|CONSULTA:/);
+  assert.match(sinKb.resolution.reply, /persona del equipo/);
+  assert.equal(sinKb.resolution.escalate, true);
+});
+
+test('BaseChannel: un texto simulado se sustituye por un mensaje honesto en cualquier canal', () => {
+  assert.doesNotMatch(BaseChannelRef.sinSimulado('[SIMULADO · tier=mid] Responde a la consulta'), /SIMULADO/);
+  assert.equal(BaseChannelRef.sinSimulado('Hola'), 'Hola');
 });

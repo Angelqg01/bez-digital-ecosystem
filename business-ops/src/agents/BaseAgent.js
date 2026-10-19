@@ -83,7 +83,7 @@ class BaseAgent {
   /**
    * Llamada al modelo con el contexto del agente y recuperación de memoria (RAG).
    */
-  async think(prompt, { useMemory = true, maxTokens = 1500, mode = 'base' } = {}) {
+  async think(prompt, { useMemory = true, maxTokens = 1500, mode = 'base', withMeta = false } = {}) {
     let context = '';
     if (useMemory && this.memory) {
       const recalled = await this.memory.recall(prompt, { agentId: this.id, k: 5 });
@@ -102,6 +102,9 @@ class BaseAgent {
       meta: { tenantId: this.tenantId, agentId: this.id },
     });
 
+    // `withMeta` devuelve además si el texto es REAL: un agente que habla con un cliente tiene
+    // que saber si el modelo cayó (sin crédito, sin clave…) para no entregarle un texto simulado.
+    if (withMeta) return { text: result.text, simulated: result.simulated === true, fallback: result.fallback === true, error: result.error || null };
     return result.text;
   }
 
