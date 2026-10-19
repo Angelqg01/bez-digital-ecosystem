@@ -163,6 +163,24 @@ else
   AUTORESPUESTA="desactivada"
 fi
 
+# Motor de IA (el tier mid usa el modelo ligero: con CPU, 7B tarda ~8-20 s por llamada y el canal da 30 s en total).
+# Por defecto Claude. Si existe una IA LOCAL publicada por túnel (scripts/ollama/), ésta
+# pasa a ser la primaria y Claude el respaldo (cuando hay clave): el coste es cero y, si el túnel cae
+# o Claude no tiene saldo, el cliente recibe el aviso honesto y se escala a una persona.
+TIERS="~TIER_FRONTIER_PROVIDER=anthropic~TIER_FRONTIER_MODEL=claude-opus-5-5~TIER_MID_PROVIDER=anthropic~TIER_MID_MODEL=claude-sonnet-5-5~TIER_FAST_PROVIDER=anthropic~TIER_FAST_MODEL=claude-haiku-5-5"
+if tiene_version "${P}OPERANT_OLLAMA_URL" && tiene_version "${P}OPERANT_OLLAMA_API_KEY"; then
+  for sec in OPERANT_OLLAMA_URL OPERANT_OLLAMA_API_KEY; do
+    gcloud secrets add-iam-policy-binding "${P}${sec}" --member="serviceAccount:${SA}" \
+      --role=roles/secretmanager.secretAccessor --quiet >/dev/null
+  done
+  SECRETOS+=",OLLAMA_URL=${P}OPERANT_OLLAMA_URL:latest,OLLAMA_API_KEY=${P}OPERANT_OLLAMA_API_KEY:latest"
+  TIERS="~TIER_FRONTIER_PROVIDER=ollama~TIER_FRONTIER_MODEL=${OLLAMA_MODELO_PESADO:-qwen2.5:7b}~TIER_MID_PROVIDER=ollama~TIER_MID_MODEL=${OLLAMA_MODELO_MEDIO:-qwen2.5:3b}~TIER_FAST_PROVIDER=ollama~TIER_FAST_MODEL=${OLLAMA_MODELO_LIGERO:-qwen2.5:3b}"
+  if [[ "$MOTOR" == activado* ]]; then
+    TIERS+="~TIER_FRONTIER_FALLBACK_PROVIDER=anthropic~TIER_FRONTIER_FALLBACK_MODEL=claude-opus-5-5~TIER_MID_FALLBACK_PROVIDER=anthropic~TIER_MID_FALLBACK_MODEL=claude-sonnet-5-5~TIER_FAST_FALLBACK_PROVIDER=anthropic~TIER_FAST_FALLBACK_MODEL=claude-haiku-5-5"
+  fi
+  MOTOR="IA LOCAL por túnel${MOTOR:+ (respaldo: $MOTOR)}"
+fi
+
 echo "→ Servicio ${SERVICE} (motor IA: ${MOTOR}; correo: ${CORREO}; Telegram: ${TELEGRAM}; auto-respuesta por correo: ${AUTORESPUESTA})"
 gcloud run deploy "$SERVICE" \
   --image="$IMAGEN" --region="$REGION" --service-account="$SA" \
@@ -171,7 +189,7 @@ gcloud run deploy "$SERVICE" \
   --no-cpu-throttling --execution-environment=gen2 \
   --network="$VPC_NETWORK" --subnet="$VPC_SUBNET" --vpc-egress=private-ranges-only \
   --labels=app=bezhas,component=operant,commit="$TAG" \
-  --set-env-vars="^~^NODE_ENV=production~BEZHAS_API_URL=https://${API_HOST}~BEZHAS_TENANT_ID=bezhas${TELEGRAM_ENV}~TIER_FRONTIER_PROVIDER=anthropic~TIER_FRONTIER_MODEL=claude-opus-5-5~TIER_MID_PROVIDER=anthropic~TIER_MID_MODEL=claude-sonnet-5-5~TIER_FAST_PROVIDER=anthropic~TIER_FAST_MODEL=claude-haiku-5-5${EXTRA_ENV}${AUTORESPUESTA_ENV}" \
+  --set-env-vars="^~^NODE_ENV=production~BEZHAS_API_URL=https://${API_HOST}~BEZHAS_TENANT_ID=bezhas${TELEGRAM_ENV}${TIERS}${EXTRA_ENV}${AUTORESPUESTA_ENV}" \
   --set-secrets="$SECRETOS" --quiet
 
 # La API (misma cuenta de servicio) puede invocarlo; nadie más.
