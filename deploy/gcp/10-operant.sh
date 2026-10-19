@@ -20,7 +20,8 @@
 # Idempotente: se puede relanzar para desplegar una versión nueva.
 #
 # Uso:        ./deploy/gcp/10-operant.sh
-# Opcional:   TAG=<etiqueta>   (por defecto, el commit actual)
+# Opcional:   TAG=<etiqueta>   (por defecto, el commit actual; si su imagen ya
+#             existe en Artifact Registry no se reconstruye)
 #
 # MOTOR IA: sin BC_ANTHROPIC_API_KEY el servicio arranca en modo SIMULADO y lo
 # dice en /healthz (Ollama no es práctico en Cloud Run). Para activarlo:
@@ -83,6 +84,9 @@ gcloud secrets add-iam-policy-binding "${P}JWT_SECRET" --member="serviceAccount:
   --role=roles/secretmanager.secretAccessor --quiet >/dev/null
 
 # ── 2. Imagen ───────────────────────────────────────────────────────────────
+if gcloud artifacts docker images describe "$IMAGEN" >/dev/null 2>&1; then
+  echo "→ La imagen ${IMAGEN##*/} ya existe: no se reconstruye (usa otra TAG para forzarlo)"
+else
 echo "→ Cloud Build: ${IMAGEN##*/}"
 gcloud builds submit business-ops \
   --project="$PROJECT_ID" --region="$REGION" \
@@ -90,6 +94,7 @@ gcloud builds submit business-ops \
   --service-account="projects/${PROJECT_ID}/serviceAccounts/${SA_DEPLOYER}@${PROJECT_ID}.iam.gserviceaccount.com" \
   --gcs-source-staging-dir="gs://${PROJECT_ID}_cloudbuild/source" \
   --substitutions="_REGION=${REGION},_ARTIFACT_REPO=${ARTIFACT_REPO},_TAG=${TAG}"
+fi
 
 # ── 3. Migraciones (rol dueño; crean operant_app, RLS y pgvector) ───────────
 echo "→ Migraciones de OPERANT"
@@ -122,7 +127,7 @@ gcloud run deploy "$SERVICE" \
   --no-cpu-throttling --execution-environment=gen2 \
   --network="$VPC_NETWORK" --subnet="$VPC_SUBNET" --vpc-egress=private-ranges-only \
   --labels=app=bezhas,component=operant,commit="$TAG" \
-  --set-env-vars="^~^NODE_ENV=production~PORT=4000~BEZHAS_API_URL=https://${API_HOST}~BEZHAS_TENANT_ID=bezhas~TELEGRAM_ENABLED=false~TIER_FRONTIER_PROVIDER=anthropic~TIER_FRONTIER_MODEL=claude-opus-5-5~TIER_MID_PROVIDER=anthropic~TIER_MID_MODEL=claude-sonnet-5-5~TIER_FAST_PROVIDER=anthropic~TIER_FAST_MODEL=claude-haiku-5-5" \
+  --set-env-vars="^~^NODE_ENV=production~BEZHAS_API_URL=https://${API_HOST}~BEZHAS_TENANT_ID=bezhas~TELEGRAM_ENABLED=false~TIER_FRONTIER_PROVIDER=anthropic~TIER_FRONTIER_MODEL=claude-opus-5-5~TIER_MID_PROVIDER=anthropic~TIER_MID_MODEL=claude-sonnet-5-5~TIER_FAST_PROVIDER=anthropic~TIER_FAST_MODEL=claude-haiku-5-5" \
   --set-secrets="$SECRETOS" --quiet
 
 # La API (misma cuenta de servicio) puede invocarlo; nadie más.
