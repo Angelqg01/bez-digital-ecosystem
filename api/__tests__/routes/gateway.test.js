@@ -126,17 +126,19 @@ describe('Gateway Routes', () => {
             expect(res.status).toBe(400);
         });
 
-        it('creates staking position', async () => {
-            mockQuery.mockResolvedValueOnce({ rows: [{ id: 1 }], rowCount: 1 }); // user lookup
-            mockQuery.mockResolvedValueOnce({
-                rows: [{ id: 'pos-1', wallet_address: TEST_WALLET, amount_staked: 100 }],
-                rowCount: 1,
-            });
+        it('sin contrato de staking no crea una posición fantasma', async () => {
+            delete process.env.STAKING_OFFCHAIN_LEDGER;
+            mockQuery.mockClear();
+            // Red sin contrato de staking (como Polygon hoy): getContractAddress → null.
+            mockContractService.getContractAddress.mockResolvedValueOnce(null);
             const res = await request(app)
                 .post('/api/gateway/v1/staking/stake')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ walletAddress: TEST_WALLET, amount: 100 });
-            expect([200, 500]).toContain(res.status);
+            expect([503, 500]).toContain(res.status);
+            if (res.status === 503) expect(res.body.code).toBe('STAKING_NOT_AVAILABLE');
+            const inserts = mockQuery.mock.calls.filter(([sql]) => /INSERT INTO staking_positions/.test(String(sql)));
+            expect(inserts).toHaveLength(0);
         });
     });
 

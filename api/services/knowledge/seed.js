@@ -140,9 +140,12 @@ const DOCS = [
         + 'autonomía asistida; Business 8 departamentos, 2.000 tareas al mes y autonomía total; Enterprise VIP los 10 departamentos, 9.000 tareas al mes y '
         + 'autonomía gobernada. Pasada la cuota se factura por uso. Una tarea no es una llamada: la ejecutan un responsable y especialistas con memoria y registro de auditoría.'],
     ['bz_staking', 'Staking y apps financieras (DeFi)',
-        'La app DeFi de BeZhas (BZ Capital) agrupa staking, farming, bridge, wallet, DAO y liquidez conectados al token BEZ. Para hacer staking se abre la '
-        + 'aplicación, se conecta la wallet, se aprueba BEZ para el contrato de staking y se deposita la cantidad deseada; las recompensas dependen de la '
-        + 'participación total y son variables. Cada operación la firma tu wallet: el asistente no ejecuta transacciones, solo abre la pantalla.'],
+        'La app DeFi de BeZhas (BZ Capital) agrupa staking, farming, bridge, wallet, DAO y liquidez conectados al token BEZ. ESTADO ACTUAL: en Polygon, '
+        + 'donde vive BEZ-Coin, el contrato de staking aún NO está desplegado y el de farming existe pero todavía no tiene pools abiertos; por tanto hoy no '
+        + 'se puede hacer staking ni farming y no hay rentabilidad que prometer ni cifrar (no hay APR publicado). Tampoco hay aún un DEX para cambiar BEZ por '
+        + 'otros tokens: para obtener BEZ ahora se usa la compra directa. Cuando el contrato esté activo, el flujo será conectar la wallet, aprobar BEZ y '
+        + 'depositar; las recompensas dependerán de la participación total y serán variables. Cada operación la firma tu wallet: el asistente no ejecuta '
+        + 'transacciones. Nunca afirmes que una posición de staking existe sin comprobarlo on-chain.'],
     ['bz_apps', 'Apps del ecosistema BeZhas',
         'El ecosistema son varias apps conectadas por SSO: Hub (centro social y marketplace), DeFi, Wallet (billetera de BEZ-Coin sobre la L2), Gas Tank Manager, '
         + 'Edge Node Manager, CargoLink (logística), PureScan (trazabilidad alimentaria con IA de visión y pasaportes digitales de producto), Energy (gestión '

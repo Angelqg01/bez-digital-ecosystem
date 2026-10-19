@@ -411,6 +411,18 @@ router.post('/staking/stake', authenticateGateway, requireScope('staking'), [
             });
         }
 
+        // Sin contrato de staking en esta cadena (hoy, Polygon) NO se crea una
+        // posición contable: no bloquea BEZ, no genera recompensas y la web la
+        // presentaba como «Staked successfully». Quien quiera el libro interno
+        // (desarrollo, demos) lo activa a propósito.
+        if (process.env.STAKING_OFFCHAIN_LEDGER !== 'true') {
+            return res.status(503).json({
+                error: 'Staking not available on this network yet',
+                code: 'STAKING_NOT_AVAILABLE',
+                message: 'El contrato de staking de BEZ aún no está desplegado en esta red. No se ha registrado ni movido nada.',
+            });
+        }
+
         const { rows: userRows } = await query(
             'SELECT id FROM users WHERE wallet_address = $1', [walletAddress.toLowerCase()]
         );
