@@ -129,3 +129,10 @@ test('lo que escribe un cliente por un canal va a Soporte, no a Tesorería ni a 
   // Un canal que no es de cliente tampoco.
   assert.equal(enrutarCanalDeCliente('interno', { text: 'x' }).department, undefined);
 });
+
+test('el cliente no ve marcadores sin rellenar como [Nombre del Asesor]', () => {
+  const SupportChatAgent = require('../src/agents/support/SupportChatAgent');
+  assert.equal(SupportChatAgent.limpiarMarcadores('Saludos,\n[Nombre del Asesor]'), 'Saludos,\nEl equipo de BeZhas');
+  assert.equal(SupportChatAgent.limpiarMarcadores('Atentamente, [Tu nombre]'), 'Atentamente, El equipo de BeZhas');
+  assert.equal(SupportChatAgent.limpiarMarcadores('Sin marcadores [1] aquí'), 'Sin marcadores [1] aquí');
+});

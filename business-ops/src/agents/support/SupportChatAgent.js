@@ -52,7 +52,9 @@ class SupportChatAgent extends BaseAgent {
       `CONSULTA: "${query}"\n\n` +
       `CONOCIMIENTO DISPONIBLE:\n${kbContext || '(no hay artículos de conocimiento)'}\n\n` +
       `HISTORIAL DEL CLIENTE:\n${history || '(sin historial previo)'}\n\n` +
-      `Instrucciones: Si el conocimiento no es suficiente para responder la pregunta, di claramente que no dispones de esa información y que un agente humano lo revisará.`,
+      `Instrucciones: Responde SOLO con lo que dice el conocimiento disponible; no inventes datos, precios ni direcciones. ` +
+      `Si el conocimiento no es suficiente, di claramente que no dispones de esa información y que una persona del equipo lo revisará. ` +
+      `Firma siempre como «El equipo de BeZhas»; nunca uses marcadores como [Nombre del Asesor] ni corchetes sin rellenar.`,
       { useMemory: true, withMeta: true }
     );
 
@@ -60,7 +62,7 @@ class SupportChatAgent extends BaseAgent {
     // prompt interno: jamás se le entrega a un cliente. Si la base de conocimiento tiene algo, se
     // le da tal cual (extractivo, sin inventar); si no, se dice la verdad y se escala a una persona.
     const modelDown = r.simulated || r.fallback;
-    let response = r.text;
+    let response = SupportChatAgent.limpiarMarcadores(r.text);
     if (modelDown) {
       response = hits.length
         ? `Esto es lo que dice nuestra documentación sobre tu consulta:\n\n${hits[0].title}: ${String(hits[0].snippet || hits[0].body || '').slice(0, 700)}\n\nSi necesitas algo más concreto, una persona del equipo te ayudará.`
@@ -76,5 +78,15 @@ class SupportChatAgent extends BaseAgent {
     };
   }
 }
+
+/**
+ * Un modelo pequeño copia a veces la plantilla de la firma («[Nombre del Asesor]», «[Tu nombre]»).
+ * Un cliente no debe ver corchetes sin rellenar: se sustituyen por la firma real.
+ */
+SupportChatAgent.limpiarMarcadores = function limpiarMarcadores(texto = '') {
+  return String(texto)
+    .replace(/\[(?:nombre|name|tu nombre|su nombre|asesor|agente|firma|equipo)[^\]]{0,40}\]/gi, 'El equipo de BeZhas')
+    .replace(/(El equipo de BeZhas)(\s*\n?\s*\1)+/g, '$1');
+};
 
 module.exports = SupportChatAgent;
