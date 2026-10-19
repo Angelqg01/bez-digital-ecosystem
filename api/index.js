@@ -436,6 +436,8 @@ app.use('/api/mtfc', mtfcRoutes);
 // ── 🏢 OPERANT — Gestión empresarial autónoma ────────────────────────────────
 // 10 departamentos de agentes IA servidos por suscripción: entitlements por
 // plan, cuota + pago por uso, y anclaje merkle de la auditoría en L2.
+app.use('/api/operant/channels', require('./routes/operant-channels')); // webhooks de Telegram → OPERANT (secreto propio, sin sesión)
+app.use('/api/newsletter', require('./routes/newsletter'));           // suscripción con doble confirmación
 app.use('/api/operant', operantRoutes);
 
 // ── Seguridad / Aegis ─────────────────────────────────────────────────────────

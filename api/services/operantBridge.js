@@ -93,7 +93,7 @@ function configured() {
     return Boolean(INTERNAL_KEY);
 }
 
-async function request(method, path, body) {
+async function request(method, path, body, opciones = {}) {
     if (!configured()) {
         throw new OperantUnavailableError('falta OPERANT_INTERNAL_KEY');
     }
@@ -102,7 +102,8 @@ async function request(method, path, body) {
     }
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeoutMs = opciones.timeoutMs || TIMEOUT_MS;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
         const res = await fetch(`${BASE_URL}${path}`, {
             method,
@@ -110,6 +111,7 @@ async function request(method, path, body) {
             headers: {
                 'content-type': 'application/json',
                 'x-api-key': INTERNAL_KEY,
+                ...(opciones.headers || {}),
                 ...(await cabeceraIdToken()),
             },
             body: body === undefined ? undefined : JSON.stringify(body),
@@ -131,7 +133,7 @@ async function request(method, path, body) {
             openUntil = Date.now() + COOLDOWN_MS;
             logger.error({ failures, cooldownMs: COOLDOWN_MS }, 'Circuito OPERANT abierto');
         }
-        throw new OperantUnavailableError(err.name === 'AbortError' ? `timeout ${TIMEOUT_MS}ms` : err.message);
+        throw new OperantUnavailableError(err.name === 'AbortError' ? `timeout ${timeoutMs}ms` : err.message);
     } finally {
         clearTimeout(timer);
     }
@@ -264,12 +266,24 @@ function marketingQueue({ tenantId }) {
     return request('GET', `/tenants/${encodeURIComponent(tenantId)}/marketing/queue`);
 }
 
+/**
+ * Reenvía a OPERANT un mensaje entrante de un canal (Telegram, correo…) tal como llegó.
+ * Los webhooks de los proveedores no pueden llamar a OPERANT directamente (es privado en
+ * Cloud Run): entran por la API, que verifica su secreto y los pasa por aquí con el ID token.
+ * `headers` lleva el secreto propio del canal, que OPERANT vuelve a comprobar.
+ */
+function forwardChannel({ channel, tenantId, body, headers }) {
+    return request('POST', `/channels/${encodeURIComponent(channel)}/${encodeURIComponent(tenantId)}/inbound`, body,
+        { headers, timeoutMs: 28000 });
+}
+
 module.exports = {
     OperantUnavailableError,
     OperantError,
     configured,
     circuitState,
     health,
+    forwardChannel,
     provisionTenant,
     dispatchTask,
     getTask,

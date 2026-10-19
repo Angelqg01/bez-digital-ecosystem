@@ -279,6 +279,9 @@ class Orchestrator {
       { kw: ['tokenomics', 'precio del token', 'precio de bez', 'salud del token', 'bez-coin', 'bez coin'], department: 'treasury', type: 'treasury:tokenomics' },
       { kw: ['tesorería', 'tesoreria', 'treasury', 'runway', 'balance del treasury', 'meses de autonomía', 'meses de autonomia'], department: 'treasury', type: 'treasury:runway' },
       { kw: ['inversor', 'family office', 'fondo de capital', 'venture capital', 'ronda de inversión', 'ronda de inversion', 'ronda de financiación', 'ronda de financiacion', 'term sheet', 'due diligence', 'capital institucional'], department: 'fundraising', type: 'fundraising:inbound' },
+      // Alta de perfil, plan y newsletter: las atiende Soporte (OnboardingAgent). Va antes que
+      // Ventas porque «contratar un plan» o «crear mi cuenta» no son un lead que cualificar.
+      { kw: ['newsletter', 'boletín', 'boletin', 'crear cuenta', 'crear mi cuenta', 'crear un perfil', 'crear mi perfil', 'bezhas id', 'bezhas_id', 'registrarme', 'darme de alta', 'sign up', 'create an account', 'contratar un plan', 'suscribirme', 'planes'], department: 'support', type: 'support:ticket' },
       { kw: ['precio', 'comprar', 'demo', 'contrato', 'propuesta', 'cotiza'], department: 'sales', type: 'sales:inbound' },
       { kw: ['no funciona', 'error', 'ayuda', 'problema', 'soporte', 'factura no'], department: 'support', type: 'support:ticket' },
       { kw: ['campaña', 'contenido', 'redes', 'post', 'marketing', 'seo'], department: 'marketing', type: 'marketing:request' },

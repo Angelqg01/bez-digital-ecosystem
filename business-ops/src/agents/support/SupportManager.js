@@ -10,6 +10,7 @@ const TicketTriageAgent = require('./TicketTriageAgent');
 const SupportChatAgent = require('./SupportChatAgent');
 const SentimentAgent = require('./SentimentAgent');
 const MacroSuggesterAgent = require('./MacroSuggesterAgent');
+const OnboardingAgent = require('./OnboardingAgent');
 
 /**
  * SupportManager — atención al cliente 24/7.
@@ -37,9 +38,15 @@ class SupportManager extends DepartmentManager {
     this.registerSpecialist(new SupportChatAgent(childCtx));
     this.registerSpecialist(new SentimentAgent(childCtx));
     this.registerSpecialist(new MacroSuggesterAgent(childCtx));
+    this.registerSpecialist(new OnboardingAgent({ ...childCtx, ...(ctx.onboarding || {}) }));
   }
 
   async run(task) {
+    // Alta de perfil, plan y newsletter: reglas, no modelo. Si es asunto del agente de alta,
+    // él responde (y no se gasta una llamada de IA); con «plan» sólo añade el enlace al final.
+    const alta = await this.getSpecialist('support.onboarding-agent').run(task);
+    if (alta.handled) return this._respuestaDeAlta(task, alta);
+
     // Triage y sentimiento solo dependen del texto de entrada: encadenarlos
     // duplicaba la latencia (dos llamadas al modelo en serie) sin motivo.
     const [triage, sentiment] = await Promise.all([
@@ -61,7 +68,7 @@ class SupportManager extends DepartmentManager {
     const escalate = handoff.handoff || triage.requiresEscalation || !chat.grounded || sentiment.requiresHuman;
     const resolution = {
       escalate,
-      reply: chat.reply,
+      reply: alta.appendToReply ? `${chat.reply}${alta.appendToReply}` : chat.reply,
       reason: escalate
         ? `escala por: ${[
           handoff.reason,
@@ -118,6 +125,33 @@ class SupportManager extends DepartmentManager {
       suggestion,
       summary,
       outcome
+    };
+  }
+
+  /** Resultado de una petición de alta/newsletter resuelta por el agente de alta. */
+  async _respuestaDeAlta(task, alta) {
+    const escalate = alta.escalate === true;
+    const triage = { category: 'onboarding', priority: 'low', sentiment: 'neutral', note: alta.intent, status: 'ok', requiresEscalation: escalate };
+    const sentiment = { label: 'neutral', polarity: 0, severity: 'none', signals: [], summary: '', requiresHuman: false };
+    const resolution = {
+      escalate,
+      reply: alta.reply,
+      reason: escalate ? `escala por: ${alta.escalateReason || alta.intent}` : `resuelto por el agente de alta (${alta.intent})`,
+      status: 'ok',
+    };
+    let escalation = null;
+    if (escalate) {
+      try { escalation = await this.getSpecialist('support.escalation').run(withPayload(task, { triage, resolution, sentiment })); }
+      catch { /* el resumen para el humano es un extra: sin él, la tarea sigue escalada */ }
+    }
+    const outcome = escalate ? 'escalated' : 'ok';
+    const summary = `support: onboarding/${alta.intent} → ${escalate ? 'escalado' : 'resuelto'}`;
+    await this.remember({ task: 'support:onboarding', summary, outcome });
+    return {
+      department: 'support', triage,
+      kb: { grounded: true, hits: [] },
+      sentiment: { label: sentiment.label, polarity: 0, severity: 'none', signals: [], summary: '' },
+      resolution, escalation, suggestion: null, summary, outcome,
     };
   }
 }
