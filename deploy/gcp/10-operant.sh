@@ -121,7 +121,22 @@ else
   MOTOR="SIMULADO (falta ${P}ANTHROPIC_API_KEY)"
 fi
 
-echo "→ Servicio ${SERVICE} (motor IA: ${MOTOR})"
+# Correo (buzón de Hostinger): sólo si 11-operant-correo.sh ha guardado la contraseña.
+# Con él OPERANT envía por SMTP (smtp.hostinger.com:465) y lee la bandeja y el DMARC
+# por IMAP (imap.hostinger.com, deducido del host SMTP).
+CORREO_OPERANT="${CORREO_OPERANT:-yoelceo@bezhas.com}"
+EXTRA_ENV=""
+if [[ -n "$(gcloud secrets versions list "${P}OPERANT_SMTP_PASS" --filter=state=ENABLED --limit=1 --format='value(name)' 2>/dev/null)" ]]; then
+  gcloud secrets add-iam-policy-binding "${P}OPERANT_SMTP_PASS" --member="serviceAccount:${SA}" \
+    --role=roles/secretmanager.secretAccessor --quiet >/dev/null
+  SECRETOS+=",SMTP_PASS=${P}OPERANT_SMTP_PASS:latest"
+  EXTRA_ENV="~SMTP_HOST=smtp.hostinger.com~SMTP_PORT=465~SMTP_USER=${CORREO_OPERANT}~MAIL_FROM=BeZhas <${CORREO_OPERANT}>"
+  CORREO="activado (${CORREO_OPERANT})"
+else
+  CORREO="simulado (falta ${P}OPERANT_SMTP_PASS: ./deploy/gcp/11-operant-correo.sh)"
+fi
+
+echo "→ Servicio ${SERVICE} (motor IA: ${MOTOR}; correo: ${CORREO})"
 gcloud run deploy "$SERVICE" \
   --image="$IMAGEN" --region="$REGION" --service-account="$SA" \
   --ingress=all --no-allow-unauthenticated \
@@ -129,7 +144,7 @@ gcloud run deploy "$SERVICE" \
   --no-cpu-throttling --execution-environment=gen2 \
   --network="$VPC_NETWORK" --subnet="$VPC_SUBNET" --vpc-egress=private-ranges-only \
   --labels=app=bezhas,component=operant,commit="$TAG" \
-  --set-env-vars="^~^NODE_ENV=production~BEZHAS_API_URL=https://${API_HOST}~BEZHAS_TENANT_ID=bezhas~TELEGRAM_ENABLED=false~TIER_FRONTIER_PROVIDER=anthropic~TIER_FRONTIER_MODEL=claude-opus-5-5~TIER_MID_PROVIDER=anthropic~TIER_MID_MODEL=claude-sonnet-5-5~TIER_FAST_PROVIDER=anthropic~TIER_FAST_MODEL=claude-haiku-5-5" \
+  --set-env-vars="^~^NODE_ENV=production~BEZHAS_API_URL=https://${API_HOST}~BEZHAS_TENANT_ID=bezhas~TELEGRAM_ENABLED=false~TIER_FRONTIER_PROVIDER=anthropic~TIER_FRONTIER_MODEL=claude-opus-5-5~TIER_MID_PROVIDER=anthropic~TIER_MID_MODEL=claude-sonnet-5-5~TIER_FAST_PROVIDER=anthropic~TIER_FAST_MODEL=claude-haiku-5-5${EXTRA_ENV}" \
   --set-secrets="$SECRETOS" --quiet
 
 # La API (misma cuenta de servicio) puede invocarlo; nadie más.
