@@ -136,7 +136,34 @@ else
   CORREO="simulado (falta ${P}OPERANT_SMTP_PASS: ./deploy/gcp/11-operant-correo.sh)"
 fi
 
-echo "→ Servicio ${SERVICE} (motor IA: ${MOTOR}; correo: ${CORREO})"
+# Canales de atención al cliente (12-operant-canales.sh los activa guardando sus secretos):
+#   Telegram: bot general + secreto del webhook. Entra por la API (api.bezhas.com/api/operant/channels/telegram).
+#   Correo:   auto-respondedor de los alias de atención, SÓLO desde la fecha de activación guardada.
+tiene_version() { [[ -n "$(gcloud secrets versions list "$1" --filter=state=ENABLED --limit=1 --format='value(name)' 2>/dev/null)" ]]; }
+TELEGRAM_ENV="~TELEGRAM_ENABLED=false"
+if tiene_version "${P}OPERANT_TELEGRAM_BOT_TOKEN" && tiene_version "${P}OPERANT_TELEGRAM_SECRET"; then
+  for sec in OPERANT_TELEGRAM_BOT_TOKEN OPERANT_TELEGRAM_SECRET; do
+    gcloud secrets add-iam-policy-binding "${P}${sec}" --member="serviceAccount:${SA}" \
+      --role=roles/secretmanager.secretAccessor --quiet >/dev/null
+  done
+  SECRETOS+=",TELEGRAM_BOT_TOKEN=${P}OPERANT_TELEGRAM_BOT_TOKEN:latest,TELEGRAM_WEBHOOK_SECRET=${P}OPERANT_TELEGRAM_SECRET:latest"
+  TELEGRAM_ENV="~TELEGRAM_ENABLED=true"
+  TELEGRAM="activado"
+else
+  TELEGRAM="desactivado (falta ${P}OPERANT_TELEGRAM_BOT_TOKEN: ./deploy/gcp/12-operant-canales.sh)"
+fi
+AUTORESPUESTA_ENV=""
+if [[ -n "$EXTRA_ENV" ]] && tiene_version "${P}OPERANT_MAIL_AUTOREPLY_SINCE"; then
+  gcloud secrets add-iam-policy-binding "${P}OPERANT_MAIL_AUTOREPLY_SINCE" --member="serviceAccount:${SA}" \
+    --role=roles/secretmanager.secretAccessor --quiet >/dev/null
+  SECRETOS+=",MAIL_AUTOREPLY_SINCE=${P}OPERANT_MAIL_AUTOREPLY_SINCE:latest"
+  AUTORESPUESTA_ENV="~MAIL_AUTOREPLY=true"
+  AUTORESPUESTA="activa"
+else
+  AUTORESPUESTA="desactivada"
+fi
+
+echo "→ Servicio ${SERVICE} (motor IA: ${MOTOR}; correo: ${CORREO}; Telegram: ${TELEGRAM}; auto-respuesta por correo: ${AUTORESPUESTA})"
 gcloud run deploy "$SERVICE" \
   --image="$IMAGEN" --region="$REGION" --service-account="$SA" \
   --ingress=all --no-allow-unauthenticated \
@@ -144,7 +171,7 @@ gcloud run deploy "$SERVICE" \
   --no-cpu-throttling --execution-environment=gen2 \
   --network="$VPC_NETWORK" --subnet="$VPC_SUBNET" --vpc-egress=private-ranges-only \
   --labels=app=bezhas,component=operant,commit="$TAG" \
-  --set-env-vars="^~^NODE_ENV=production~BEZHAS_API_URL=https://${API_HOST}~BEZHAS_TENANT_ID=bezhas~TELEGRAM_ENABLED=false~TIER_FRONTIER_PROVIDER=anthropic~TIER_FRONTIER_MODEL=claude-opus-5-5~TIER_MID_PROVIDER=anthropic~TIER_MID_MODEL=claude-sonnet-5-5~TIER_FAST_PROVIDER=anthropic~TIER_FAST_MODEL=claude-haiku-5-5${EXTRA_ENV}" \
+  --set-env-vars="^~^NODE_ENV=production~BEZHAS_API_URL=https://${API_HOST}~BEZHAS_TENANT_ID=bezhas${TELEGRAM_ENV}~TIER_FRONTIER_PROVIDER=anthropic~TIER_FRONTIER_MODEL=claude-opus-5-5~TIER_MID_PROVIDER=anthropic~TIER_MID_MODEL=claude-sonnet-5-5~TIER_FAST_PROVIDER=anthropic~TIER_FAST_MODEL=claude-haiku-5-5${EXTRA_ENV}${AUTORESPUESTA_ENV}" \
   --set-secrets="$SECRETOS" --quiet
 
 # La API (misma cuenta de servicio) puede invocarlo; nadie más.
