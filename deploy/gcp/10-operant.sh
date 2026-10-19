@@ -55,7 +55,9 @@ guardar_secreto() {
   gcloud secrets add-iam-policy-binding "$1" --member="serviceAccount:${SA}" \
     --role=roles/secretmanager.secretAccessor --quiet >/dev/null
 }
-aleatorio() { openssl rand -hex 24; }
+# Sin salto de línea final: un `echo` guardaba «clave\n» y la comparación contra el
+# valor de la cabecera HTTP (que va recortado) nunca coincidía («puente no autorizado»).
+aleatorio() { printf %s "$(openssl rand -hex 24)"; }
 
 # ── 1. Base de datos y roles ────────────────────────────────────────────────
 echo "→ Base de datos '${DB_NAME}' en ${SQL_INSTANCE}"
