@@ -71,6 +71,14 @@ contract DeployDexPool is Script {
             uint256 liquidity = dex.addLiquidity(bez, quote, seedBez, seedQuote, 0);
 
             console2.log("Seeded liquidity. LP minted:", liquidity);
+
+            // Los LP tokens son la propiedad de la liquidez: se acuñan a quien siembra
+            // (el deployer). Si el owner es otro (la Safe), se le entregan para que la
+            // liquidez no dependa de la clave de despliegue.
+            if (owner != deployer) {
+                IERC20(dex.getPool(bez, quote).lpToken).transfer(owner, liquidity);
+                console2.log("LP tokens transferidos al owner", owner);
+            }
             console2.log("Spot BEZ->QUOTE (raw 1e18):", dex.getSpotPrice(bez, quote));
             console2.log("(consumer must normalize by decimal difference: BEZ 18 / USDC 6 => x1e12)");
         } else {

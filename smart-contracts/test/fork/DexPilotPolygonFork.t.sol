@@ -63,6 +63,9 @@ contract DexPilotPolygonFork is Test {
         (BeZhasDEX dex, bytes32 id) = new DeployDexPool().run();
 
         assertEq(dex.owner(), SAFE, "el owner debe ser la Safe, no el deployer");
+        address lp = dex.getPool(BEZ, USDC).lpToken;
+        assertEq(IERC20(lp).balanceOf(deployer), 0, "el deployer no debe quedarse con los LP");
+        assertGt(IERC20(lp).balanceOf(SAFE), 0, "los LP deben estar en la Safe");
         assertEq(dex.feeBps(), 30);
 
         BeZhasDEX.Pool memory pool = dex.getPool(BEZ, USDC);
