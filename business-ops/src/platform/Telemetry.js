@@ -22,6 +22,7 @@ class Telemetry {
     this._counters = new Map();       // "name{labels}" -> number
     this._gauges = new Map();         // "name{labels}" -> number (puede bajar)
     this._hist = new Map();           // name -> { count, sum, min, max, buckets:{le->n} }
+    this._lastFallback = new Map();   // tenant -> { tier, model, error, at } del último fallo del proveedor
     this._traces = [];                // [{ tenantId, taskId, department, type, status, ms, at }]
     // taskId -> waitedMs ya observado. Acotado para que una instancia larga no
     // acumule una entrada por cada tarea que haya pasado por HITL.
@@ -140,7 +141,18 @@ class Telemetry {
     if (inTok) this.inc('operant_model_input_tokens_total', { tenant, tier: u.tier || 'unknown' }, inTok);
     if (outTok) this.inc('operant_model_output_tokens_total', { tenant, tier: u.tier || 'unknown' }, outTok);
     if (typeof u.latencyMs === 'number') this.observe('operant_model_latency_ms', u.latencyMs);
-    if (u.fallback) this.inc('operant_model_fallback_total', { tenant, tier: u.tier || 'unknown' });
+    if (u.fallback) {
+      this.inc('operant_model_fallback_total', { tenant, tier: u.tier || 'unknown' });
+      // Para que la alerta diga POR QUÉ: «proveedor caído» sin causa obliga a ir a los logs.
+      // Se recorta y se le quitan claves por si el proveedor las devolviera en su error.
+      const error = String(u.error || '').replace(/\b(sk|key|AIza)[-_A-Za-z0-9]{8,}/g, '[clave]').slice(0, 160);
+      this._lastFallback.set(tenant, { tier: u.tier || 'unknown', model: u.model || null, error, at: new Date(this.clock()).toISOString() });
+    }
+  }
+
+  /** Último fallo del proveedor visto para un tenant (o null). */
+  lastFallback(tenantId) {
+    return this._lastFallback.get(tenantId) || null;
   }
 
   _latency(task) {

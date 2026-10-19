@@ -233,3 +233,17 @@ test('snapshotFor no rompe si aún no hay métricas ni cuota', () => {
   assert.equal(snap.quotaLimit, null);
   assert.deepEqual(evaluate(snap), [], 'un tenant recién creado no debe disparar alertas');
 });
+
+test('la alerta de degradación a simulado dice cuál fue el último fallo del proveedor', () => {
+  const a = evaluate({ ...sano, modelFallbacks: 1, lastFallback: { tier: 'mid', model: 'qwen2.5:7b', error: 'fetch failed' } })
+    .find((x) => x.id === 'model_fallback');
+  assert.match(a.detail, /Último fallo: qwen2\.5:7b — fetch failed/);
+});
+
+test('Telemetry recuerda el último fallo y no guarda claves', () => {
+  const Telemetry = require('../src/platform/Telemetry');
+  const t = new Telemetry();
+  t.recordModel({ tier: 'mid', model: 'm', fallback: true, meta: { tenantId: 'bezhas' }, error: 'Incorrect API key sk-abcdef1234567890XYZ' });
+  assert.doesNotMatch(t.lastFallback('bezhas').error, /sk-abcdef/);
+  assert.equal(t.lastFallback('otro'), null);
+});

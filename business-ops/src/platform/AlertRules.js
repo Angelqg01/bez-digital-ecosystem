@@ -44,6 +44,7 @@ const DEFAULTS = {
  * @param {number} snapshot.modelCalls
  * @param {number} snapshot.modelAvgMs
  * @param {number} snapshot.modelFallbacks  - respuestas degradadas a simulado
+ * @param {object} [snapshot.lastFallback]  - { tier, model, error } del último fallo del proveedor
  * @param {object} [thresholds]
  * @returns {Array<{id, severity, title, detail}>}
  */
@@ -118,7 +119,10 @@ function evaluate(snapshot = {}, thresholds = {}) {
       id: 'model_fallback',
       severity: 'critical',
       title: 'El motor IA está degradado a simulado',
-      detail: `${fallbacks} respuestas se generaron en modo simulado porque el proveedor real falló. El contenido producido NO es fiable.`,
+      detail: `${fallbacks} respuestas se generaron en modo simulado porque el proveedor real falló. El contenido producido NO es fiable.`
+        + (snapshot.lastFallback
+          ? ` Último fallo: ${snapshot.lastFallback.model || snapshot.lastFallback.tier} — ${snapshot.lastFallback.error || 'sin detalle'}.`
+          : ''),
     });
   }
 
@@ -149,6 +153,7 @@ function snapshotFor({ telemetry, usageMeter, orchestrator, tenantId }) {
     modelCalls: sum('operant_model_calls_total'),
     modelAvgMs: h.operant_model_latency_ms?.avg || 0,
     modelFallbacks: sum('operant_model_fallback_total'),
+    lastFallback: telemetry?.lastFallback ? telemetry.lastFallback(tenantId) : null,
   };
 }
 
