@@ -109,3 +109,23 @@ test('utilidades: cuerpo sin citas, alias por destinatario real', () => {
   assert.equal(aliasDe(['otro@x.com', 'Ventas@bezhas.com']), 'ventas@bezhas.com');
   assert.equal(motivoParaNoResponder(base()), null);
 });
+
+test('lo que escribe un cliente por un canal va a Soporte, no a Tesorería ni a Ventas', async () => {
+  const { enrutarCanalDeCliente } = require('../src/channels/routing');
+  const Orchestrator = require('../src/core/Orchestrator');
+  const clasificar = (input) => Orchestrator.prototype._classify.call({ _learnedRoutes: [] }, input);
+
+  // Sin el enrutado, «bez-coin» caía en Tesorería y «comprar» en Ventas: acuse de recibo y nada más.
+  assert.equal((await clasificar({ text: '¿Qué es BEZ-Coin?' })).department, 'treasury');
+  for (const texto of ['¿Qué es BEZ-Coin?', 'Envía los pasos para comprar tokens', 'quiero invertir en una ronda']) {
+    for (const canal of ['telegram', 'email', 'whatsapp', 'web']) {
+      const input = enrutarCanalDeCliente(canal, { text: texto, channel: canal });
+      assert.equal((await clasificar(input)).department, 'support', `${canal}: ${texto}`);
+    }
+  }
+  // Los webhooks que ya traen tipo y departamento no se tocan.
+  const stripe = enrutarCanalDeCliente('telegram', { text: 'x', type: 'finance:payment', department: 'finance' });
+  assert.equal(stripe.department, 'finance');
+  // Un canal que no es de cliente tampoco.
+  assert.equal(enrutarCanalDeCliente('interno', { text: 'x' }).department, undefined);
+});

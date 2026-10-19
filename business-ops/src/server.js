@@ -755,7 +755,7 @@ app.all('/channels/:channel/:tenantId/inbound', async (req, res) => {
   }
 
   try {
-    const input = channel.parseInbound(req.body);
+    const input = require('./channels/routing').enrutarCanalDeCliente(req.params.channel, channel.parseInbound(req.body));
     const task = await tenants.handleAndWait(req.params.tenantId, input, { timeoutMs: 30000 });
 
     if (typeof channel.deliver === 'function') {

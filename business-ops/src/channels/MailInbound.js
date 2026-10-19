@@ -138,6 +138,7 @@ class MailInbound {
           alias, messageId: msg.messageId, references: msg.references,
         });
         input.meta.area = this.aliases[alias];
+        require('./routing').enrutarCanalDeCliente('email', input);
         const task = await this.tenants.handleAndWait(this.tenantId, input, { timeoutMs: 45_000 });
         await this.channel.deliver({ tenantId: this.tenantId, input, task });
         this._anotar(msg.from);
