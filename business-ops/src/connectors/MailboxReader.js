@@ -204,6 +204,60 @@ class MailboxReader {
     });
   }
 
+  /**
+   * Correos aún no atendidos por el auto-respondedor (sin la marca IMAP `keyword`), llegados
+   * desde `since`. Devuelve cada uno ya parseado, con las cabeceras que deciden si se le puede
+   * contestar (Auto-Submitted, Precedence, List-*, destinatarios reales). NO los marca ni los
+   * lee: eso es `markHandled`.
+   */
+  async fetchUnhandled({ since, keyword = 'OperantHandled', limit = 25, folder = 'INBOX', skipUids = new Set() } = {}) {
+    const desde = since instanceof Date ? since : new Date(since);
+    return this._withMailbox(folder, async (client) => {
+      const uids = ((await client.search({ since: desde, unKeyword: keyword }, { uid: true })) || [])
+        .filter((u) => !skipUids.has(u)).sort((a, b) => a - b).slice(0, limit);
+      const out = [];
+      const { simpleParser } = require('mailparser');
+      for (const uid of uids) {
+        const m = await client.fetchOne(uid, { uid: true, source: true, internalDate: true }, { uid: true });
+        if (!m) continue;
+        const p = await simpleParser(m.source);
+        const dir = (campo) => (campo?.value || []).map((a) => String(a.address || '').toLowerCase()).filter(Boolean);
+        const cab = (n) => { const v = p.headers.get(n); return v == null ? null : String(typeof v === 'object' && v.text ? v.text : v); };
+        const direcciones = (n) => (cab(n) || '').match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)?.map((x) => x.toLowerCase()) || [];
+        out.push({
+          uid,
+          internalDate: m.internalDate ? new Date(m.internalDate) : null,
+          messageId: p.messageId || null,
+          inReplyTo: p.inReplyTo || null,
+          references: Array.isArray(p.references) ? p.references : (p.references ? [p.references] : []),
+          from: (p.from?.value?.[0]?.address || '').toLowerCase(),
+          fromName: p.from?.value?.[0]?.name || '',
+          replyTo: dir(p.replyTo)[0] || null,
+          recipients: [...new Set([...dir(p.to), ...dir(p.cc), ...direcciones('delivered-to'), ...direcciones('x-original-to')])],
+          subject: p.subject || '',
+          text: (p.text || (p.html ? stripHtml(p.html) : '') || '').trim(),
+          headers: {
+            autoSubmitted: cab('auto-submitted'), precedence: cab('precedence'),
+            listId: cab('list-id'), listUnsubscribe: cab('list-unsubscribe'),
+            autoResponseSuppress: cab('x-auto-response-suppress'), xAutoreply: cab('x-autoreply'),
+            returnPath: cab('return-path'),
+          },
+        });
+      }
+      return out;
+    });
+  }
+
+  /** Marca con una palabra clave propia (no con \\Seen: el humano sigue viendo el correo como nuevo). */
+  async markHandled({ folder = 'INBOX', uid, keyword = 'OperantHandled' } = {}) {
+    const id = Number(uid);
+    if (!Number.isInteger(id) || id <= 0) throw Object.assign(new Error('uid inválido'), { code: 'BAD_UID' });
+    return this._withMailbox(folder, async (client) => {
+      await client.messageFlagsAdd(id, [keyword], { uid: true });
+      return { uid: id, handled: true };
+    }, { readOnly: false });
+  }
+
   /** Marca como leído. Es la única escritura que hace este lector. */
   async markSeen({ folder = 'INBOX', uid } = {}) {
     const id = Number(uid);

@@ -8,6 +8,10 @@
  * NO contiene lógica de negocio: eso vive en los agentes.
  */
 class BaseChannel {
+  static get ACUSE() {
+    return 'Hemos recibido tu mensaje. El equipo responsable lo revisará y te responderá lo antes posible.';
+  }
+
   constructor({ name = 'base' } = {}) {
     this.name = name;
   }
@@ -41,8 +45,12 @@ class BaseChannel {
     if (!task) return '';
     if (task.status === 'failed') return 'No hemos podido procesar tu mensaje. Inténtalo de nuevo.';
     const r = task.result || {};
-    // Soporte: resolution.reply; resto: resumen del departamento.
-    return r.resolution?.reply || r.summary || r.answer || 'Recibido.';
+    // Soporte: resolution.reply, que está redactada para el cliente.
+    if (r.resolution?.reply) return r.resolution.reply;
+    // Cualquier otro departamento devuelve su resumen INTERNO (puntuaciones, notas del equipo…):
+    // no es para el cliente. Se le acusa recibo y la tarea sigue su curso con el equipo.
+    if (task.department && task.department !== 'support') return BaseChannel.ACUSE;
+    return r.answer || r.summary || 'Recibido.';
   }
 }
 

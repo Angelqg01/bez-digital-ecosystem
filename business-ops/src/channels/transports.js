@@ -67,7 +67,8 @@ function makeEmail(env) {
   if (porTenant().simulated) return simulated('email');
   return async ({ tenantId, to, text, meta }) => {
     const r = await porTenant(tenantId).send({
-      to, body: text, subject: meta?.subject ? `Re: ${meta.subject}` : 'Tu consulta',
+      to, body: text, subject: meta?.subject ? (/^re:/i.test(meta.subject) ? meta.subject : `Re: ${meta.subject}`) : 'Tu consulta',
+      from: meta?.from, headers: meta?.headers,
     });
     if (!r.sent) throw new Error(`email send: ${r.reason || 'no enviado'}`);
     return { sent: true };

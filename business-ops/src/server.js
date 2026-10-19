@@ -1403,6 +1403,7 @@ app.get('/tenants/:tenantId/alerts', auth, scopeToTenant, (req, res) => {
 // cliente con api-key podría leer el correo de BeZhas. Solo los tenants de
 // MAILBOX_TENANTS (por defecto `bezhas`) acceden, también el admin.
 const mailbox = new MailboxReader();
+let mailInbound = null;   // auto-respondedor de correo (arranca tras hidratar, si MAIL_AUTOREPLY=true)
 const mailboxTenants = new Set((process.env.MAILBOX_TENANTS || 'bezhas').split(',').map((t) => t.trim()).filter(Boolean));
 
 function mailboxAccess(req, res, next) {
@@ -1473,6 +1474,27 @@ if (require.main === module) {
       // el arranque contradecía a /healthz y hacía dudar de si la IA funcionaba.
       const motor = providers.anthropic ? 'Anthropic' : (providers.ollama ? `Ollama (${tierMap.fast.model})` : 'SIMULADO');
       app.listen(PORT, () => console.log(`OPERANT API → http://localhost:${PORT} (motor ${motor} · store ${store.constructor.name})`));
+
+      // Auto-respondedor del correo de atención (support@, ventas@, facturacion@, marketing@,
+      // infrastructure@). Sólo si se activa a propósito Y con fecha de activación: sin `since`
+      // no arranca, porque contestaría a todo el histórico del buzón.
+      if (process.env.MAIL_AUTOREPLY === 'true') {
+        try {
+          const MailInbound = require('./channels/MailInbound');
+          mailInbound = new MailInbound({
+            reader: mailbox, tenants, channel: channels.email,
+            tenantId: process.env.BEZHAS_TENANT_ID || 'bezhas',
+            since: process.env.MAIL_AUTOREPLY_SINCE,
+            intervalMs: parseInt(process.env.MAIL_AUTOREPLY_INTERVAL_MS || '60000', 10),
+          });
+          mailInbound.start();
+          console.log(`[mail-inbound] atendiendo correo de los alias desde ${process.env.MAIL_AUTOREPLY_SINCE}`);
+        } catch (err) {
+          console.error(`[mail-inbound] NO arranca: ${err.message}`);
+        }
+      } else {
+        console.log('[mail-inbound] desactivado (MAIL_AUTOREPLY!=true)');
+      }
     })
     .catch((err) => {
       console.error(`[store] rehidratación fallida: ${err.message}`);
