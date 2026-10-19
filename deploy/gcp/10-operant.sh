@@ -163,7 +163,7 @@ else
   AUTORESPUESTA="desactivada"
 fi
 
-# Motor de IA (el tier mid usa el modelo ligero: con CPU, 7B tarda ~8-20 s por llamada y el canal da 30 s en total).
+# Motor de IA (con la GPU NVIDIA, 7B responde en ~2 s; en CPU tardaba 8-20 s y los canales dan 30 s en total).
 # Por defecto Claude. Si existe una IA LOCAL publicada por túnel (scripts/ollama/), ésta
 # pasa a ser la primaria y Claude el respaldo (cuando hay clave): el coste es cero y, si el túnel cae
 # o Claude no tiene saldo, el cliente recibe el aviso honesto y se escala a una persona.
@@ -174,7 +174,7 @@ if tiene_version "${P}OPERANT_OLLAMA_URL" && tiene_version "${P}OPERANT_OLLAMA_A
       --role=roles/secretmanager.secretAccessor --quiet >/dev/null
   done
   SECRETOS+=",OLLAMA_URL=${P}OPERANT_OLLAMA_URL:latest,OLLAMA_API_KEY=${P}OPERANT_OLLAMA_API_KEY:latest"
-  TIERS="~TIER_FRONTIER_PROVIDER=ollama~TIER_FRONTIER_MODEL=${OLLAMA_MODELO_PESADO:-qwen2.5:7b}~TIER_MID_PROVIDER=ollama~TIER_MID_MODEL=${OLLAMA_MODELO_MEDIO:-qwen2.5:3b}~TIER_FAST_PROVIDER=ollama~TIER_FAST_MODEL=${OLLAMA_MODELO_LIGERO:-qwen2.5:3b}"
+  TIERS="~TIER_FRONTIER_PROVIDER=ollama~TIER_FRONTIER_MODEL=${OLLAMA_MODELO_PESADO:-qwen2.5:7b}~TIER_MID_PROVIDER=ollama~TIER_MID_MODEL=${OLLAMA_MODELO_MEDIO:-qwen2.5:7b}~TIER_FAST_PROVIDER=ollama~TIER_FAST_MODEL=${OLLAMA_MODELO_LIGERO:-qwen2.5:3b}"
   if [[ "$MOTOR" == activado* ]]; then
     TIERS+="~TIER_FRONTIER_FALLBACK_PROVIDER=anthropic~TIER_FRONTIER_FALLBACK_MODEL=claude-opus-5-5~TIER_MID_FALLBACK_PROVIDER=anthropic~TIER_MID_FALLBACK_MODEL=claude-sonnet-5-5~TIER_FAST_FALLBACK_PROVIDER=anthropic~TIER_FAST_FALLBACK_MODEL=claude-haiku-5-5"
   fi
