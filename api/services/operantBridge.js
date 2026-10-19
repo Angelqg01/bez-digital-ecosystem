@@ -148,7 +148,8 @@ function safeJson(text) {
 /** Salud del runtime (no abre circuito: es justo lo que se usa para sondearlo). */
 async function health() {
     try {
-        const data = await request('GET', '/healthz');
+        // `/health`, no `/healthz`: en Cloud Run ésta es una ruta reservada y devuelve 404 sin llegar a OPERANT.
+        const data = await request('GET', '/health');
         return { available: true, circuit: circuitState(), ...data };
     } catch (err) {
         return { available: false, circuit: circuitState(), reason: err.message };

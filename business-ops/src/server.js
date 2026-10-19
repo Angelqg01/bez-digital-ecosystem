@@ -522,7 +522,10 @@ if (process.env.INTERNAL_API_KEY) {
 app.get('/', (req, res) => res.json({ status: 'online', product: 'OPERANT', tenants: tenants.list().length }));
 
 // Liveness/readiness: comprueba dependencias (store) sin tocar el flujo.
-app.get('/healthz', async (req, res) => {
+// `/healthz` es una ruta reservada de Cloud Run: el Google Front End la intercepta y
+// responde 404 sin llegar al contenedor, así que en Cloud Run la API sondea `/health`.
+// Mismo manejador; `/healthz` se conserva para el compose y el HEALTHCHECK del Dockerfile.
+app.get(['/healthz', '/health'], async (req, res) => {
   const checks = { store: 'unknown', model: providers.anthropic ? 'live' : (providers.ollama ? 'ollama' : 'simulado') };
   try {
     if (store.connect) await store.connect();
