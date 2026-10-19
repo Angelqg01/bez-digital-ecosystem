@@ -74,6 +74,18 @@ class ModelGateway {
       this._emitUsage(req, route, result.usage, false, { latencyMs: this._now() - t0, output: result.text });
       return result;
     } catch (err) {
+      // Proveedor de respaldo del tier (p. ej. Ollama local primero y Anthropic si el túnel cae):
+      // se prueba UNA vez antes de degradar a simulado.
+      const alt = this._respaldo(route);
+      if (alt) {
+        try {
+          const t1 = this._now();
+          const r = await this._withRetries(() => this._callProvider(alt.provider, alt.route, req));
+          console.warn(`[gateway] ${route.provider} falló (${err.message}); atendido por el respaldo ${alt.route.provider}`);
+          this._emitUsage(req, alt.route, r.usage, false, { latencyMs: this._now() - t1, output: r.text, via: 'respaldo', primaryError: err.message });
+          return r;
+        } catch (err2) { err.message = `${err.message}; respaldo ${alt.route.provider}: ${err2.message}`; }
+      }
       if (!this.fallbackToSimulated) throw err;
       // Degradación: el proveedor está caído/sin crédito/sin modelo. Mejor una
       // respuesta simulada marcada que una tarea muerta. El fallo queda visible
@@ -85,6 +97,14 @@ class ModelGateway {
       this._emitUsage(req, route, result.usage, true, { latencyMs: this._now() - t0, fallback: true, output: result.text, error: err.message });
       return result;
     }
+  }
+
+  /** Respaldo configurado en el tier (route.fallback = {provider, model}) y realmente disponible. */
+  _respaldo(route) {
+    const f = route.fallback;
+    const provider = f && this.providers[f.provider];
+    if (!provider || f.provider === route.provider) return null;
+    return { provider, route: { provider: f.provider, model: f.model } };
   }
 
   _now() { return (typeof performance !== 'undefined' ? performance.now() : Date.now()); }

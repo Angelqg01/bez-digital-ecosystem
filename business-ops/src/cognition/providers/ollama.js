@@ -17,8 +17,11 @@ class OllamaProvider {
    * @param {string} opts.embedModel - modelo de embeddings (def. nomic-embed-text)
    * @param {function} opts.fetch   - inyectable para tests (def. global fetch)
    */
-  constructor({ baseUrl = process.env.OLLAMA_URL || 'http://localhost:11434', embedModel = 'nomic-embed-text', fetch, embedCacheMax = 500 } = {}) {
+  constructor({ baseUrl = process.env.OLLAMA_URL || 'http://localhost:11434', apiKey = process.env.OLLAMA_API_KEY || '', embedModel = 'nomic-embed-text', fetch, embedCacheMax = 500 } = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
+    // Un Ollama detrás de un túnel público no tiene autenticación propia: la pasarela que lo protege
+    // (scripts/ollama-gate.js) exige este Bearer. En local (sin clave) no se manda nada.
+    this.apiKey = apiKey;
     this.embedModel = embedModel;
     this._fetch = fetch || globalThis.fetch;
     // Interfaz compatible con Anthropic SDK: provider.messages.create(...)
@@ -35,12 +38,16 @@ class OllamaProvider {
     this.embedMisses = 0;
   }
 
+  _headers() {
+    return { 'Content-Type': 'application/json', ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}) };
+  }
+
   /** Traduce el formato Anthropic (system + messages + tools) → /api/chat de Ollama. */
   async _chat({ model, system, messages = [], max_tokens, tools }) {
     const msgs = system ? [{ role: 'system', content: system }, ...messages] : messages;
     const resp = await this._fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._headers(),
       body: JSON.stringify({
         model,
         messages: msgs.flatMap((m) => this._toOllamaMessages(m)),
@@ -130,7 +137,7 @@ class OllamaProvider {
 
     const resp = await this._fetch(`${this.baseUrl}/api/embeddings`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._headers(),
       body: JSON.stringify({ model, prompt: text }),
     });
     if (!resp.ok) {

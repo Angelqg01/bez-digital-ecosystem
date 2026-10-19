@@ -104,6 +104,13 @@ const tierMap = {
   mid:      { provider: process.env.TIER_MID_PROVIDER || (providers.ollama ? 'ollama' : 'anthropic'), model: process.env.TIER_MID_MODEL || (providers.ollama ? 'qwen2.5:14b' : 'claude-sonnet-4-6') },
   fast:     { provider: process.env.TIER_FAST_PROVIDER || (providers.ollama ? 'ollama' : 'anthropic'), model: process.env.TIER_FAST_MODEL || (providers.ollama ? 'qwen2.5:7b' : 'claude-haiku-4-5') },
 };
+// Respaldo por tier: TIER_<X>_FALLBACK_PROVIDER / TIER_<X>_FALLBACK_MODEL (p. ej. IA local primero y
+// Claude si el túnel al Ollama cae). Sólo se usa si ese proveedor está realmente configurado.
+for (const [tier, nombre] of [['frontier', 'FRONTIER'], ['mid', 'MID'], ['fast', 'FAST']]) {
+  const fp = process.env[`TIER_${nombre}_FALLBACK_PROVIDER`];
+  const fm = process.env[`TIER_${nombre}_FALLBACK_MODEL`];
+  if (fp && fm) tierMap[tier].fallback = { provider: fp, model: fm };
+}
 // El store se crea aquí (antes que los trackers) porque uso y coste persisten.
 // Prioridad: DATABASE_URL (Postgres) → SQLITE_PATH (base de datos interna
 // embebida; por defecto data/operant.db) → memoria (SQLITE_PATH=memory).
