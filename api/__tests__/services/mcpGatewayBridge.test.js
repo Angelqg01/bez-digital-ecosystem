@@ -48,7 +48,10 @@ describe('MCP bridge: DEX', () => {
     test('con DEX, traduce símbolos a direcciones y respeta los 6 decimales de USDT', async () => {
         contractService.getContractAddress.mockResolvedValue(BEZ);
         const quoteSwap = jest.fn().mockResolvedValue(75_000_000n); // 75 USDT con 6 decimales
-        contractService.getContract.mockResolvedValue({ quoteSwap });
+        contractService.getContract.mockResolvedValue({
+            quoteSwap,
+            getPool: jest.fn().mockResolvedValue({ exists: true, reserve0: 1n, reserve1: 1n }),
+        });
         const r = await bridge.dexQuote({ from: 'BEZ', to: 'USDT', amount: '10000' });
         const [tin, tout, amountIn] = quoteSwap.mock.calls[0];
         expect(tin).toBe(BEZ);
@@ -61,5 +64,21 @@ describe('MCP bridge: DEX', () => {
         contractService.getContractAddress.mockResolvedValue(BEZ);
         const r = await bridge.dexQuote({ from: 'BEZ', to: 'BNB', amount: '1' });
         expect(r).toMatchObject({ disponible: false, motivo: 'token_no_disponible_en_cadena', token: 'BNB' });
+    });
+
+    test('par sin pool: pool_inexistente, sin llamar a quoteSwap', async () => {
+        contractService.getContractAddress.mockResolvedValue(BEZ);
+        const quoteSwap = jest.fn();
+        contractService.getContract.mockResolvedValue({ quoteSwap, getPool: jest.fn().mockResolvedValue({ exists: false }) });
+        const r = await bridge.dexQuote({ from: 'BEZ', to: 'USDT', amount: '1' });
+        expect(r).toMatchObject({ disponible: false, motivo: 'pool_inexistente', par: 'BEZ/USDT' });
+        expect(quoteSwap).not.toHaveBeenCalled();
+    });
+
+    test('pool creada sin liquidez: pool_sin_liquidez', async () => {
+        contractService.getContractAddress.mockResolvedValue(BEZ);
+        contractService.getContract.mockResolvedValue({ quoteSwap: jest.fn(), getPool: jest.fn().mockResolvedValue({ exists: true, reserve0: 0n, reserve1: 0n }) });
+        const r = await bridge.dexQuote({ from: 'BEZ', to: 'USDC', amount: '1' });
+        expect(r.motivo).toBe('pool_sin_liquidez');
     });
 });

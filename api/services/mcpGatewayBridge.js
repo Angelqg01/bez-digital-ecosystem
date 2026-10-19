@@ -155,6 +155,12 @@ async function dexQuote({ from, to, amount, chainId }) {
     if (falta) return sinMercado('token_no_disponible_en_cadena', cid, { token: falta });
 
     const dex = await contractService.getContract('BeZhasDEX', cid);
+    // getPool no revierte: se mira antes de cotizar para distinguir «ese par no
+    // existe» o «no tiene liquidez» de un fallo real del nodo.
+    const pool = await dex.getPool(tIn.address, tOut.address);
+    if (!pool.exists) return sinMercado('pool_inexistente', cid, { par: `${from}/${to}` });
+    if (pool.reserve0 === 0n || pool.reserve1 === 0n) return sinMercado('pool_sin_liquidez', cid, { par: `${from}/${to}` });
+
     const { ethers } = require('ethers');
     const out = await dex.quoteSwap(tIn.address, tOut.address, ethers.parseUnits(String(amount), tIn.decimals));
     return {
@@ -173,7 +179,9 @@ async function dexPool({ tokenA = 'BEZ', tokenB = 'USDT', chainId } = {}) {
     if (!(await dexDesplegado(cid))) return sinMercado('dex_no_desplegado', cid);
     const [a, b] = await Promise.all([resolverToken(tokenA, cid), resolverToken(tokenB, cid)]);
     if (!a || !b) return sinMercado('token_no_disponible_en_cadena', cid);
-    return { disponible: true, chainId: cid, ...(await contractService.getDEXPool(a.address, b.address, cid)) };
+    const pool = await contractService.getDEXPool(a.address, b.address, cid);
+    if (!pool.exists) return sinMercado('pool_inexistente', cid, { par: `${tokenA}/${tokenB}` });
+    return { disponible: true, chainId: cid, ...pool };
 }
 
 // ── Red y contratos ──────────────────────────────────────────────────────────
