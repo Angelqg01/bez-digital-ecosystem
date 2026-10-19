@@ -53,7 +53,9 @@ class OllamaProvider {
         messages: msgs.flatMap((m) => this._toOllamaMessages(m)),
         stream: false,
         tools: tools?.length ? tools.map(OllamaProvider._toOllamaTool) : undefined,
-        options: max_tokens ? { num_predict: max_tokens } : undefined,
+        // Temperatura baja: en atención al cliente un modelo pequeño con la temperatura por defecto
+        // «completa» con nombres que no existen (llegó a inventar una «L2 Lamina Air»).
+        options: { temperature: Number(process.env.OLLAMA_TEMPERATURE ?? 0.2), ...(max_tokens ? { num_predict: max_tokens } : {}) },
       }),
     });
     if (!resp.ok) {

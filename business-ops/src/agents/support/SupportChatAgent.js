@@ -54,6 +54,7 @@ class SupportChatAgent extends BaseAgent {
       `HISTORIAL DEL CLIENTE:\n${history || '(sin historial previo)'}\n\n` +
       `Instrucciones: Responde SOLO con lo que dice el conocimiento disponible; no inventes datos, precios ni direcciones. ` +
       `Si el conocimiento no es suficiente, di claramente que no dispones de esa información y que una persona del equipo lo revisará. ` +
+      `No menciones productos, redes, cadenas, funciones ni nombres que no aparezcan literalmente en el conocimiento (por ejemplo, BEZ-Coin vive en Polygon: no inventes otra red). ` +
       `Firma siempre como «El equipo de BeZhas»; nunca uses marcadores como [Nombre del Asesor] ni corchetes sin rellenar.`,
       { useMemory: true, withMeta: true }
     );
