@@ -196,6 +196,74 @@ async function identificar(sessionToken, { email, password }) {
 }
 
 /**
+ * Crea una cuenta de cliente y su organización desde la propia pantalla.
+ *
+ * Existe porque esta pantalla sólo reconoce cuentas de `users` con contraseña:
+ * quien llegaba desde un asistente sin cuenta (o con el correo del buzón de la
+ * empresa, que no es una cuenta) se topaba con «Correo o contraseña incorrectos»
+ * sin salida. Misma tabla y mismo formato de fila que POST /auth/register-email,
+ * más una organización donde la persona es owner, porque sin ella el paso
+ * siguiente («Autorizar») no tiene a qué conectar el asistente. La wallet
+ * gestionada no se crea aquí: ese registro ya la completa después, en el login.
+ */
+async function registrar(sessionToken, { email, password, organizacion }) {
+    const f = await _fila(sessionToken);
+    if (f.status !== 'pendiente' || new Date(f.expires_at).getTime() <= Date.now()) {
+        throw new OAuthConsentError(
+            'Esta autorización ya no está activa. Vuelve a intentar la conexión desde tu asistente.',
+            'invalid_session', 409
+        );
+    }
+    const correo = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const nombreOrg = typeof organizacion === 'string' ? organizacion.trim() : '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) || correo.length > 254) {
+        throw new OAuthConsentError('Escribe un correo válido.', 'invalid_request', 400);
+    }
+    if (typeof password !== 'string' || password.length < 8 || password.length > 200) {
+        throw new OAuthConsentError('La contraseña debe tener al menos 8 caracteres.', 'invalid_request', 400);
+    }
+    if (nombreOrg.length < 2 || nombreOrg.length > 255) {
+        throw new OAuthConsentError('Escribe el nombre de tu empresa u organización.', 'invalid_request', 400);
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const direccionProvisional = `0x${crypto.createHash('sha256').update(`fiat:${correo}:${Date.now()}`).digest('hex').slice(0, 40)}`;
+    let usuario;
+    try {
+        const { rows } = await query(
+            `INSERT INTO users (wallet_address, primary_wallet_address, email, password_hash, auth_type, custody_mode, last_login)
+             VALUES ($1, $1, $2, $3, 'fiat', 'managed', NOW())
+             RETURNING id, email, username`,
+            [direccionProvisional, correo, passwordHash]
+        );
+        usuario = rows[0];
+    } catch (err) {
+        if (err.code === '23505') {
+            throw new OAuthConsentError(
+                'Ese correo ya tiene una cuenta. Inicia sesión o usa «¿Olvidaste tu contraseña?».',
+                'email_exists', 409
+            );
+        }
+        throw err;
+    }
+
+    const { rows: org } = await query(`INSERT INTO organizations (name) VALUES ($1) RETURNING id`, [nombreOrg]);
+    await query(
+        `INSERT INTO organization_members (organization_id, user_id, role) VALUES ($1, $2, 'owner')`,
+        [org[0].id, usuario.id]
+    );
+    await query(
+        `UPDATE oauth_authorization_codes SET user_id = $2, intentos_login = 0 WHERE id = $1`,
+        [f.id, usuario.id]
+    );
+    logger.info({ oauthCodeId: f.id, userId: usuario.id }, 'Cuenta creada desde el consentimiento OAuth');
+    return {
+        usuario: { id: usuario.id, nombre: usuario.username || usuario.email },
+        organizaciones: await organizacionesDe(usuario.id),
+    };
+}
+
+/**
  * Aprueba la autorización: resuelve (o crea) el app_registry de la
  * organización elegida, fija el scope realmente concedido y emite el código.
  * El código se devuelve en claro una única vez; en BD sólo queda su hash.
@@ -301,6 +369,6 @@ async function canjearCodigo({ code, clientId, redirectUri, codeVerifier }) {
 }
 
 module.exports = {
-    crearSolicitud, obtenerSolicitud, identificar, aprobar, denegar, canjearCodigo,
+    crearSolicitud, obtenerSolicitud, identificar, registrar, aprobar, denegar, canjearCodigo,
     OAuthConsentError, SCOPES_MAXIMOS, MAX_INTENTOS,
 };

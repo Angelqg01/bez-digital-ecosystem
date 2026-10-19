@@ -199,6 +199,62 @@ describe('Authorization Server OAuth 2.1 + PKCE (/oauth, /.well-known)', () => {
             expect(res.body.organizaciones[0].puedeConectar).toBe(true);
         });
 
+        it('la pantalla ofrece crear cuenta y recuperar la contraseña', async () => {
+            const res = await request(app).get(`/oauth/authorize/${TOKEN}`);
+            expect(res.text).toContain('id="ir-registro"');
+            expect(res.text).toContain('id="ir-olvido"');
+            expect(res.text).toContain('/api/auth/forgot-password');
+            expect(res.text).toContain('/api/auth/reset-password');
+        });
+
+        it('registro: crea usuario y organización (owner) y devuelve las organizaciones', async () => {
+            mockQuery.mockResolvedValueOnce({
+                rows: [{ id: 'code-1', status: 'pendiente', expires_at: new Date(Date.now() + 60000), intentos_login: 0 }],
+            });
+            mockQuery.mockResolvedValueOnce({ rows: [{ id: 'user-9', email: 'nuevo@acme.com', username: null }] }); // INSERT users
+            mockQuery.mockResolvedValueOnce({ rows: [{ id: 'org-9' }] });                                          // INSERT organizations
+            mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });                                            // INSERT member
+            mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });                                            // UPDATE user_id
+            mockQuery.mockResolvedValueOnce({
+                rows: [{ id: 'org-9', name: 'Acme SL', verification_status: 'unverified', legacy_enterprise_id: null, role: 'owner' }],
+            });
+
+            const res = await request(app).post(`/oauth/authorize/${TOKEN}/register`)
+                .send({ email: 'Nuevo@Acme.com', password: 'una-clave-larga', organizacion: 'Acme SL' });
+            expect(res.status).toBe(201);
+            expect(res.body.organizaciones[0]).toMatchObject({ nombre: 'Acme SL', papel: 'owner', puedeConectar: true });
+            const insertUser = mockQuery.mock.calls.find((c) => /INSERT INTO users/.test(c[0]));
+            expect(insertUser[1][1]).toBe('nuevo@acme.com');              // correo normalizado
+            expect(insertUser[1][2]).not.toBe('una-clave-larga');          // sólo se guarda el hash
+        });
+
+        it('registro: contraseña corta, correo inválido u organización vacía se rechazan sin crear nada', async () => {
+            const fila = { rows: [{ id: 'code-1', status: 'pendiente', expires_at: new Date(Date.now() + 60000), intentos_login: 0 }] };
+            for (const cuerpo of [
+                { email: 'a@b.co', password: 'corta', organizacion: 'Acme' },
+                { email: 'no-es-correo', password: 'una-clave-larga', organizacion: 'Acme' },
+                { email: 'a@b.co', password: 'una-clave-larga', organizacion: '' },
+            ]) {
+                mockQuery.mockClear();
+                mockQuery.mockResolvedValueOnce(fila);
+                const res = await request(app).post(`/oauth/authorize/${TOKEN}/register`).send(cuerpo);
+                expect(res.status).toBe(400);
+                expect(mockQuery.mock.calls.some((c) => /INSERT INTO (users|organizations|organization_members)/.test(c[0]))).toBe(false);
+            }
+        });
+
+        it('registro con un correo que ya existe: 409 con salida hacia iniciar sesión o recuperar', async () => {
+            mockQuery.mockResolvedValueOnce({
+                rows: [{ id: 'code-1', status: 'pendiente', expires_at: new Date(Date.now() + 60000), intentos_login: 0 }],
+            });
+            mockQuery.mockRejectedValueOnce(Object.assign(new Error('duplicate'), { code: '23505' }));
+            const res = await request(app).post(`/oauth/authorize/${TOKEN}/register`)
+                .send({ email: 'ya@acme.com', password: 'una-clave-larga', organizacion: 'Acme' });
+            expect(res.status).toBe(409);
+            expect(res.body.error).toBe('email_exists');
+            expect(res.body.error_description).toMatch(/Olvidaste/);
+        });
+
         it('consent sin organizationId: 400', async () => {
             mockQuery.mockResolvedValueOnce({
                 rows: [{
