@@ -63,7 +63,11 @@ fi
 # disparar falsos positivos de las reglas OWASP; se permiten antes. Su
 # autenticidad la comprueba la api con la firma del emisor. Se actualiza en
 # cada ejecución: las rutas cambian con la plataforma.
-WEBHOOKS="request.headers['host'] == '${API_HOST}' && (request.path == '/api/webhooks/stripe' || request.path == '/api/webhooks/bank')"
+# El de Telegram (OPERANT) además sólo se admite desde los rangos de Telegram: sin esto, la
+# regla OWASP 921150 (protocolattack) bloqueaba sus mensajes con «403 body_denied_by_security_policy».
+# La autenticidad la sigue comprobando la api con el secreto del webhook.
+TELEGRAM_IPS="inIpRange(origin.ip, '149.154.160.0/20') || inIpRange(origin.ip, '91.108.4.0/22')"
+WEBHOOKS="request.headers['host'] == '${API_HOST}' && (request.path == '/api/webhooks/stripe' || request.path == '/api/webhooks/bank' || (request.path == '/api/operant/channels/telegram' && (${TELEGRAM_IPS})))"
 if existe gcloud compute security-policies rules describe 900 --security-policy="$ARMOR_POLICY"; then
   gcloud compute security-policies rules update 900 --security-policy="$ARMOR_POLICY" \
     --expression="$WEBHOOKS" --action=allow --description="Webhooks firmados" >/dev/null
