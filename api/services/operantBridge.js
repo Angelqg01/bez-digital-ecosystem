@@ -24,6 +24,40 @@ const logger = require('pino')({ level: 'info', name: 'operant-bridge' });
 
 const BASE_URL = (process.env.OPERANT_API_URL || 'http://localhost:3010').replace(/\/$/, '');
 const INTERNAL_KEY = process.env.OPERANT_INTERNAL_KEY || '';
+
+/**
+ * OPERANT en Cloud Run se despliega con `--no-allow-unauthenticated`, como el
+ * resto de backends privados: Cloud Run exige un ID token de Google cuyo
+ * audience sea su URL. Va en `X-Serverless-Authorization` y no en
+ * `Authorization` ni en `x-api-key`: Cloud Run lo valida y lo retira, y deja
+ * intacta la clave interna que OPERANT comprueba por su cuenta. En local
+ * (localhost, o una URL http) no hace nada. Falla abierto: si no se puede
+ * acuñar el token, la petición sale igualmente y Cloud Run responde 401, que
+ * aquí cuenta como servicio no disponible.
+ */
+let _idTokenClient = null;
+let _idTokenCache = { token: null, exp: 0 };
+async function cabeceraIdToken() {
+    let origin;
+    try { origin = new URL(BASE_URL); } catch { return {}; }
+    if (origin.protocol !== 'https:' || /^(localhost|127\.0\.0\.1)$/.test(origin.hostname)) return {};
+    if (_idTokenCache.token && _idTokenCache.exp > Date.now()) {
+        return { 'x-serverless-authorization': `Bearer ${_idTokenCache.token}` };
+    }
+    try {
+        const { GoogleAuth } = require('google-auth-library');
+        _idTokenClient = _idTokenClient || await new GoogleAuth().getIdTokenClient(origin.origin);
+        const headers = await _idTokenClient.getRequestHeaders();
+        const bearer = headers.Authorization || headers.authorization || '';
+        const token = bearer.replace(/^Bearer\s+/i, '');
+        if (!token) return {};
+        _idTokenCache = { token, exp: Date.now() + 45 * 60 * 1000 }; // dura ~1 h
+        return { 'x-serverless-authorization': `Bearer ${token}` };
+    } catch (err) {
+        logger.warn({ error: err.message }, 'No se pudo acuñar el ID token para OPERANT');
+        return {};
+    }
+}
 const TIMEOUT_MS = parseInt(process.env.OPERANT_TIMEOUT_MS || '20000', 10);
 const FAILURE_THRESHOLD = parseInt(process.env.OPERANT_FAILURE_THRESHOLD || '3', 10);
 const COOLDOWN_MS = parseInt(process.env.OPERANT_COOLDOWN_MS || '60000', 10);
@@ -76,6 +110,7 @@ async function request(method, path, body) {
             headers: {
                 'content-type': 'application/json',
                 'x-api-key': INTERNAL_KEY,
+                ...(await cabeceraIdToken()),
             },
             body: body === undefined ? undefined : JSON.stringify(body),
         });
