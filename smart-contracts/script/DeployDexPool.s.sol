@@ -15,6 +15,9 @@ import {BeZhasDEX} from "../src/core/BeZhasDEX.sol";
  *   - BEZ_TOKEN       (req)  address del token BEZ (Polygon v1: 0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8)
  *   - QUOTE_TOKEN     (req)  address del token quote (USDC Polygon: 0x3c499c542cef5E3811e1192cE70d8cc03d5c3359)
  *   - DEX_ADDRESS     (opt)  si se indica, usa ese DEX; si no, despliega uno nuevo
+ *   - DEX_OWNER      (opt)  owner final del DEX (puede cambiar la comision). Por defecto el deployer;
+ *                           en produccion, la Safe de tesoreria 0x89c23890c742d710265dD61be789C71dC8999b12.
+ *                           Se pasa en el constructor: no hace falta transferir la propiedad despues.
  *   - DEX_FEE_BPS     (opt)  comision (default 30 = 0.3%), solo al desplegar DEX nuevo
  *   - SEED_BEZ        (opt)  cantidad de BEZ a sembrar (en unidades minimas, 18 dec). 0 = no sembrar
  *   - SEED_QUOTE      (opt)  cantidad de quote a sembrar (en unidades minimas, USDC 6 dec)
@@ -36,6 +39,7 @@ contract DeployDexPool is Script {
         address bez = vm.envAddress("BEZ_TOKEN");
         address quote = vm.envAddress("QUOTE_TOKEN");
         address dexAddr = vm.envOr("DEX_ADDRESS", address(0));
+        address owner = vm.envOr("DEX_OWNER", deployer);
         uint16 feeBps = uint16(vm.envOr("DEX_FEE_BPS", uint256(30)));
         uint256 seedBez = vm.envOr("SEED_BEZ", uint256(0));
         uint256 seedQuote = vm.envOr("SEED_QUOTE", uint256(0));
@@ -46,8 +50,9 @@ contract DeployDexPool is Script {
         vm.startBroadcast(pk);
 
         if (dexAddr == address(0)) {
-            dex = new BeZhasDEX(deployer, feeBps);
+            dex = new BeZhasDEX(owner, feeBps);
             console2.log("BeZhasDEX deployed at", address(dex));
+            console2.log("DEX owner", owner);
         } else {
             dex = BeZhasDEX(dexAddr);
             console2.log("Using existing BeZhasDEX at", address(dex));
