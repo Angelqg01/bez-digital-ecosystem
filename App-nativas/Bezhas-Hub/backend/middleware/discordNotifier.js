@@ -87,7 +87,11 @@ const EVENT_EMOJIS = {
  * Verificar si se debe enviar notificación
  */
 function shouldNotify(severity, eventType) {
-    if (!DISCORD_CONFIG.ENABLED) {
+    if (!DISCORD_CONFIG.ENABLED || process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
+        // Se vuelve a mirar al enviar, no sólo al cargar el módulo: un script o
+        // test que fija NODE_ENV=test DESPUÉS de requerirlo (el pie del embed lo
+        // delató: «BeZhas Security System | test») saltaba la guarda de arriba y
+        // mandaba una alerta HIGH real a producción.
         return false;
     }
 

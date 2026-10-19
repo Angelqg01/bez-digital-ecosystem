@@ -538,6 +538,16 @@ async function handleStripeWebhook(rawBody, signature) {
         return { success: false, code: 'SIGNATURE_INVALID', error: error.message };
     }
 
+    // constructEvent devuelve siempre un objeto con `type`. Si no lo trae, la
+    // petición no es un evento de Stripe utilizable (mock, sonda o cuerpo
+    // corrupto): se rechaza como la firma inválida, sin la alerta HIGH que está
+    // reservada a fallos reales con dinero de por medio («Cannot read properties
+    // of undefined (reading 'type')» era justo esto).
+    if (!event || typeof event.type !== 'string') {
+        audit.admin('STRIPE_WEBHOOK_EVENT_INVALID', 'medium', { eventId: event?.id || null });
+        return { success: false, code: 'EVENT_INVALID', error: 'Stripe event without type' };
+    }
+
     try {
 
         audit.admin('STRIPE_WEBHOOK_RECEIVED', 'info', {
