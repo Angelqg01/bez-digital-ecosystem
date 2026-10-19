@@ -21,14 +21,56 @@
 const { query } = require('../db/pool');
 const { bezPublicado } = require('../config/bez-price');
 const contractService = require('./contractService');
+const logger = require('../utils/logger');
+
+/**
+ * Cadena por defecto del MCP: Polygon, la única donde existe BEZ-Coin. Sin esto
+ * se caía a 31337 (nodo local) y todas las lecturas on-chain fallaban en
+ * producción con «Contract … not deployed on chain default».
+ */
+const CADENA_POR_DEFECTO = 137;
+const CADENAS_PRODUCCION = [137]; // BEZ no está desplegado en BNB Chain
+const cadena = (chainId) => chainId ?? CADENA_POR_DEFECTO;
+const nombreBEZ = (chainId) => (CADENAS_PRODUCCION.includes(chainId) ? 'BEZCoin' : 'BEZCoinV2');
+
+/** Stablecoins oficiales por cadena (los mismos que ofrece el selector de la web). */
+const TOKENS_POR_CADENA = {
+    137: {
+        USDT: { address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', decimals: 6 },
+        USDC: { address: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', decimals: 6 },
+        MATIC: { address: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', decimals: 18 }, // WMATIC
+    },
+    56: {
+        USDT: { address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 },
+        USDC: { address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18 },
+        BNB: { address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', decimals: 18 }, // WBNB
+    },
+};
 
 /** Precio semilla cuando aún no hay fila de caché. Mismo valor que el Gateway. */
 
 // ── Token ────────────────────────────────────────────────────────────────────
 
-/** Equivale a GET /api/gateway/v1/token/info */
+/**
+ * Equivale a GET /api/gateway/v1/token/info.
+ *
+ * Si el nodo no responde no se inventa supply: se devuelve lo que no depende
+ * de él (dirección, símbolo, decimales) y `source: 'unavailable'`.
+ */
 async function tokenInfo({ chainId } = {}) {
-    return contractService.getTokenInfo('BEZCoinV2', chainId);
+    const cid = cadena(chainId);
+    const nombre = nombreBEZ(cid);
+    try {
+        const token = await contractService.getTokenInfo(nombre, cid);
+        return { source: 'onchain', ...token, circulatingSupply: token.totalSupply };
+    } catch (err) {
+        logger.warn({ chainId: cid, error: err.message }, 'MCP token_info: lectura on-chain fallida');
+        const address = await contractService.getContractAddress(nombre, cid).catch(() => null);
+        return {
+            source: 'unavailable', address, name: 'BEZ-Coin', symbol: 'BEZ', decimals: 18, chainId: cid,
+            totalSupply: null, totalSupplyWei: null, circulatingSupply: null,
+        };
+    }
 }
 
 /**
@@ -71,14 +113,67 @@ async function oraclePrices() {
 
 // ── DEX ──────────────────────────────────────────────────────────────────────
 
+/**
+ * Resuelve un símbolo (BEZ, USDT…) a dirección y decimales en la cadena.
+ * null si ese token no existe en esa cadena (p. ej. BNB en Polygon).
+ */
+async function resolverToken(simbolo, cid) {
+    if (simbolo === 'BEZ') {
+        const address = await contractService.getContractAddress(nombreBEZ(cid), cid).catch(() => null);
+        return address ? { address, decimals: 18 } : null;
+    }
+    return TOKENS_POR_CADENA[cid]?.[simbolo] ?? null;
+}
+
+/**
+ * Estado «sin mercado» explícito. Igual que token_price, que un DEX aún no esté
+ * desplegado en la cadena es un estado real, no un fallo de la herramienta: con
+ * un error genérico el agente reintentaba y el cliente creía que BeZhas estaba caído.
+ */
+function sinMercado(motivo, cid, extra = {}) {
+    return {
+        disponible: false,
+        motivo,
+        chainId: cid,
+        nota: 'No se ha movido nada. Para comprar BEZ ahora mismo usa la compra directa en Polygon (bezhas_checkout_prepare o /defi → Comprar BEZ-Coin).',
+        ...extra,
+    };
+}
+
+async function dexDesplegado(cid) {
+    return Boolean(await contractService.getContractAddress('BeZhasDEX', cid).catch(() => null));
+}
+
 /** Equivale a GET /api/gateway/v1/dex/quote. Solo calcula: no firma ni envía. */
 async function dexQuote({ from, to, amount, chainId }) {
-    return contractService.quoteDEXSwap(from, to, amount, chainId);
+    const cid = cadena(chainId);
+    if (from === to) return sinMercado('mismo_token', cid, { nota: 'El token de origen y el de destino son el mismo.' });
+    if (!(await dexDesplegado(cid))) return sinMercado('dex_no_desplegado', cid);
+
+    const [tIn, tOut] = await Promise.all([resolverToken(from, cid), resolverToken(to, cid)]);
+    const falta = !tIn ? from : !tOut ? to : null;
+    if (falta) return sinMercado('token_no_disponible_en_cadena', cid, { token: falta });
+
+    const dex = await contractService.getContract('BeZhasDEX', cid);
+    const { ethers } = require('ethers');
+    const out = await dex.quoteSwap(tIn.address, tOut.address, ethers.parseUnits(String(amount), tIn.decimals));
+    return {
+        disponible: true,
+        chainId: cid,
+        from, to,
+        amountIn: String(amount),
+        amountOut: ethers.formatUnits(out, tOut.decimals),
+        amountOutWei: out.toString(),
+    };
 }
 
 /** Equivale a GET /api/gateway/v1/dex/pool */
 async function dexPool({ tokenA = 'BEZ', tokenB = 'USDT', chainId } = {}) {
-    return contractService.getDEXPool(tokenA, tokenB, chainId);
+    const cid = cadena(chainId);
+    if (!(await dexDesplegado(cid))) return sinMercado('dex_no_desplegado', cid);
+    const [a, b] = await Promise.all([resolverToken(tokenA, cid), resolverToken(tokenB, cid)]);
+    if (!a || !b) return sinMercado('token_no_disponible_en_cadena', cid);
+    return { disponible: true, chainId: cid, ...(await contractService.getDEXPool(a.address, b.address, cid)) };
 }
 
 // ── Red y contratos ──────────────────────────────────────────────────────────

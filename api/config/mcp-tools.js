@@ -596,6 +596,8 @@ function sanearNoFiable(valor, profundidad = 0) {
         const limpio = valor.replace(INVISIBLES, '');
         return limpio.length > MAX_CADENA ? `${limpio.slice(0, MAX_CADENA)}…[recortado]` : limpio;
     }
+    // Una fecha no tiene claves propias: recorrerla como objeto la dejaba en {}.
+    if (valor instanceof Date) return Number.isNaN(valor.getTime()) ? null : valor.toISOString();
     if (Array.isArray(valor)) return valor.map((v) => sanearNoFiable(v, profundidad + 1));
     if (valor && typeof valor === 'object') {
         return Object.fromEntries(Object.entries(valor).map(([k, v]) => [sanearNoFiable(k, profundidad + 1), sanearNoFiable(v, profundidad + 1)]));
