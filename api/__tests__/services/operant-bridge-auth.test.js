@@ -55,3 +55,20 @@ test('si no se puede acuñar el token, la petición sale igualmente (falla abier
     expect(llamadas).toHaveLength(1);
     expect(llamadas[0].headers['x-serverless-authorization']).toBeUndefined();
 });
+
+test('un 503 con status:degraded (p. ej. el correo caído) es OPERANT vivo y degradado, no caído', async () => {
+    const bridge = cargar('http://localhost:4000');
+    global.fetch = jest.fn(async () => ({
+        ok: false, status: 503,
+        text: async () => JSON.stringify({ status: 'degraded', checks: { store: 'ok', email: 'degradado' } }),
+    }));
+    const h = await bridge.health();
+    expect(h).toMatchObject({ available: true, degraded: true, status: 'degraded' });
+});
+
+test('un 503 sin cuerpo reconocible sigue siendo no disponible', async () => {
+    const bridge = cargar('http://localhost:4000');
+    global.fetch = jest.fn(async () => ({ ok: false, status: 503, text: async () => 'Service Unavailable' }));
+    const h = await bridge.health();
+    expect(h.available).toBe(false);
+});

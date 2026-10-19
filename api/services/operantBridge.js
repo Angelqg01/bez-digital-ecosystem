@@ -152,6 +152,13 @@ async function health() {
         const data = await request('GET', '/health');
         return { available: true, circuit: circuitState(), ...data };
     } catch (err) {
+        // OPERANT responde 503 con un cuerpo `status: degraded` cuando una dependencia
+        // (el correo, p. ej.) falla. Eso es un servicio VIVO con un canal caído, no un
+        // servicio caído: tratarlo como no disponible escondía todo OPERANT del panel
+        // por una contraseña de buzón mal puesta.
+        if (err instanceof OperantError && err.body && typeof err.body.status === 'string') {
+            return { available: true, degraded: true, circuit: circuitState(), ...err.body };
+        }
         return { available: false, circuit: circuitState(), reason: err.message };
     }
 }
