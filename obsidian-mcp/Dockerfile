@@ -2,8 +2,10 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install --omit=dev
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod --ignore-workspace
 
 COPY src ./src
 COPY scripts ./scripts
@@ -13,4 +15,4 @@ ENV MCP_PORT=4007
 
 EXPOSE 4007
 
-CMD ["npm", "start"]
+CMD ["node", "src/index.js"]

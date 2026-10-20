@@ -35,7 +35,11 @@ class ObsidianProxyTool extends BaseTool {
         try {
             const response = await axios.post(`${OBSIDIAN_MCP_URL}/tools/${this.#toolName}`, params, {
                 timeout: this.timeoutMs - 1000,
-                headers: { 'Content-Type': 'application/json' },
+                // El Brain exige BRAIN_API_KEY en todo salvo /health cuando está definida.
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(process.env.BRAIN_API_KEY ? { 'x-brain-key': process.env.BRAIN_API_KEY } : {}),
+                },
             });
             return { success: true, data: response.data.data, meta: { source: 'obsidian-mcp', tool: this.#toolName } };
         } catch (err) {

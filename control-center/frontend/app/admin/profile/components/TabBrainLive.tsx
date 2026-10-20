@@ -1,15 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Activity, ExternalLink, RefreshCw, Zap, Coins, GitBranch } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Activity, BrainCircuit, RefreshCw, Zap, Coins, GitBranch } from 'lucide-react';
 
-// En producción no hay un Brain en localhost:4007: caer ahí por defecto hacía que
-// el navegador del administrador sondease su propia máquina cada 4 s (error de
-// conexión rechazada en consola, y el aviso de acceso a red local en Chrome).
-// Sin NEXT_PUBLIC_BRAIN_URL, fuera de desarrollo, la pestaña indica que no está
-// configurado y no hace ninguna petición.
-const BRAIN_URL = process.env.NEXT_PUBLIC_BRAIN_URL
-    || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4007');
+// Todo pasa por /api/brain: una ruta del servidor del panel que exige la sesión
+// de SuperAdmin y es la única que conoce la URL privada del Brain, su clave y
+// el ID token de Cloud Run. El navegador nunca llama al Brain directamente.
 
 type UsageSummary = {
     totals: { calls: number; tokens: number; bez: number };
@@ -19,29 +15,58 @@ type UsageSummary = {
     updatedAt: string;
 };
 
+type BrainHealth = {
+    status: string;
+    notes: number | null;
+    semantic: { reachable: boolean; cached: number };
+    uptime: number | null;
+};
+
+type Estado = 'conectando' | 'online' | 'offline' | 'sin-configurar';
+
+const POLL_MS = 4000;
+const GRAPH_W = 960;
+const GRAPH_H = 420;
+
+async function leer<T>(view: string): Promise<{ ok: true; data: T } | { ok: false; status: number }> {
+    const res = await fetch(`/api/brain?view=${view}&limit=12`, { cache: 'no-store' });
+    if (!res.ok) return { ok: false, status: res.status };
+    return { ok: true, data: await res.json() };
+}
+
 export default function TabBrainLive() {
     const [summary, setSummary] = useState<UsageSummary | null>(null);
-    const [online, setOnline] = useState<boolean | null>(null);
+    const [health, setHealth] = useState<BrainHealth | null>(null);
+    const [estado, setEstado] = useState<Estado>('conectando');
     const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
-        if (!BRAIN_URL) { setOnline(false); return; }
         let alive = true;
         const poll = async () => {
             try {
-                const res = await fetch(`${BRAIN_URL}/telemetry/summary?limit=8`, { cache: 'no-store' });
-                const data = await res.json();
-                if (alive) { setSummary(data); setOnline(true); }
+                const r = await leer<UsageSummary>('summary');
+                if (!alive) return;
+                if (r.ok) { setSummary(r.data); setEstado('online'); }
+                else setEstado(r.status === 503 ? 'sin-configurar' : 'offline');
             } catch {
-                if (alive) setOnline(false);
+                if (alive) setEstado('offline');
             }
         };
+        const pollHealth = async () => {
+            try {
+                const r = await leer<BrainHealth>('health');
+                if (alive && r.ok) setHealth(r.data);
+            } catch { /* el resumen ya marca el estado */ }
+        };
         poll();
-        const id = setInterval(poll, 4000);
-        return () => { alive = false; clearInterval(id); };
-    }, []);
+        pollHealth();
+        const id = setInterval(poll, POLL_MS);
+        const idHealth = setInterval(pollHealth, POLL_MS * 8);
+        return () => { alive = false; clearInterval(id); clearInterval(idHealth); };
+    }, [reloadKey]);
 
     const maxCalls = summary?.topFunctions[0]?.calls || 1;
+    const online = estado === 'online';
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -49,8 +74,8 @@ export default function TabBrainLive() {
                 <div>
                     <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Brain Live · Red en vivo</h2>
                     <p className="text-gray-400 text-sm max-w-3xl">
-                        Grafo de conocimiento + telemetría de API en tiempo real: qué actor usa qué función, tokens consumidos y BEZ movido.
-                        Los nodos-actor (rosa) son agentes/tenants/usuarios API; las líneas teal con partículas doradas son tráfico vivo.
+                        Telemetría de API en tiempo real: qué actor usa qué función, tokens consumidos y BEZ movido.
+                        Los nodos-actor (rosa) son agentes/tenants/usuarios API; los destinos (teal) son módulos de la plataforma.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -58,16 +83,16 @@ export default function TabBrainLive() {
                         online ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                                : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${online ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                        {!BRAIN_URL ? 'Brain no configurado' : online === null ? 'conectando' : online ? 'Brain online' : 'Brain offline'}
+                        {estado === 'sin-configurar' ? 'Brain no configurado' : estado === 'conectando' ? 'conectando' : online ? 'Brain online' : 'Brain offline'}
                     </span>
-                    <button onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-white/10">
-                        <RefreshCw size={14} /> Recargar mapa
-                    </button>
-                    {BRAIN_URL && (
-                        <a href={`${BRAIN_URL}/ui`} target="_blank" rel="noreferrer" className="flex items-center gap-2 border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-cyan-300 hover:bg-cyan-500/20">
-                            <ExternalLink size={14} /> Abrir aparte
-                        </a>
+                    {health && (
+                        <span className="flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-violet-300">
+                            <BrainCircuit size={12} /> {health.notes ?? 0} notas · semántica {health.semantic.reachable ? 'activa' : 'por términos'}
+                        </span>
                     )}
+                    <button onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-white/10">
+                        <RefreshCw size={14} /> Recargar
+                    </button>
                 </div>
             </div>
 
@@ -89,26 +114,23 @@ export default function TabBrainLive() {
                 ))}
             </div>
 
-            {/* Consola embebida en vivo */}
+            {/* Mapa de tráfico */}
             <div className="border border-white/10 bg-[#05060a]">
                 <div className="flex items-center justify-between border-b border-white/10 px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500">
-                    <span>{BRAIN_URL ? `${BRAIN_URL}/ui` : 'sin configurar'}</span>
-                    <span>arrastra · zoom · clic en nodo</span>
+                    <span>actores → módulos · grosor = llamadas</span>
+                    <span>{summary?.updatedAt ? `actualizado ${new Date(summary.updatedAt).toLocaleTimeString()}` : ''}</span>
                 </div>
-                {!BRAIN_URL ? (
-                    <div className="flex h-[680px] flex-col items-center justify-center gap-3 text-center text-gray-500">
-                        <Activity size={32} className="text-amber-400" />
-                        <p className="text-sm">El Brain no está configurado en este despliegue.</p>
-                        <p className="text-xs">Define <code className="text-cyan-300">NEXT_PUBLIC_BRAIN_URL</code> con la URL pública del servicio al construir el frontend.</p>
-                    </div>
-                ) : online === false ? (
-                    <div className="flex h-[680px] flex-col items-center justify-center gap-3 text-center text-gray-500">
-                        <Activity size={32} className="text-red-400" />
-                        <p className="text-sm">Brain Console no responde en <code className="text-gray-300">{BRAIN_URL}</code>.</p>
-                        <p className="text-xs">Arranca el servicio: <code className="text-cyan-300">cd obsidian-mcp &amp;&amp; pnpm dev</code></p>
-                    </div>
+                {estado === 'sin-configurar' ? (
+                    <Aviso color="text-amber-400" titulo="El Brain no está configurado en este despliegue."
+                        detalle={<>Falta <code className="text-cyan-300">BRAIN_URL</code> en el servidor del panel (lo pone <code className="text-cyan-300">deploy/gcp/14-brain.sh</code>).</>} />
+                ) : estado === 'offline' ? (
+                    <Aviso color="text-red-400" titulo="El Brain no responde."
+                        detalle={<>En local: <code className="text-cyan-300">cd obsidian-mcp &amp;&amp; pnpm dev</code></>} />
+                ) : summary?.topEdges.length ? (
+                    <MapaTrafico edges={summary.topEdges} />
                 ) : (
-                    <iframe key={reloadKey} src={`${BRAIN_URL}/ui`} title="BeZhas Brain Console" className="h-[680px] w-full border-0" />
+                    <Aviso color="text-cyan-400" titulo="Aún no hay tráfico registrado."
+                        detalle={<>Cada petición autenticada a la API aparece aquí en segundos.</>} />
                 )}
             </div>
 
@@ -152,6 +174,76 @@ export default function TabBrainLive() {
                     </div>
                 </section>
             </div>
+        </div>
+    );
+}
+
+function Aviso({ color, titulo, detalle }: { color: string; titulo: string; detalle: React.ReactNode }) {
+    return (
+        <div className="flex h-[420px] flex-col items-center justify-center gap-3 px-4 text-center text-gray-500">
+            <Activity size={32} className={color} />
+            <p className="text-sm">{titulo}</p>
+            <p className="text-xs">{detalle}</p>
+        </div>
+    );
+}
+
+// Grafo bipartito: actores a la izquierda, módulos a la derecha. Las aristas
+// agregan todas las funciones de un mismo par y su grosor es proporcional a
+// las llamadas; el trazo discontinuo animado marca el tráfico vivo.
+function MapaTrafico({ edges }: { edges: UsageSummary['topEdges'] }) {
+    const { actores, destinos, enlaces } = useMemo(() => {
+        const pares = new Map<string, { source: string; target: string; calls: number; bez: number }>();
+        for (const e of edges) {
+            const k = `${e.source}\u0000${e.target}`;
+            const p = pares.get(k) || { source: e.source, target: e.target, calls: 0, bez: 0 };
+            p.calls += e.calls;
+            p.bez += e.bez;
+            pares.set(k, p);
+        }
+        const lista = [...pares.values()];
+        const actores = [...new Set(lista.map((p) => p.source))];
+        const destinos = [...new Set(lista.map((p) => p.target))];
+        return { actores, destinos, enlaces: lista };
+    }, [edges]);
+
+    const y = (i: number, n: number) => (GRAPH_H / (n + 1)) * (i + 1);
+    const xA = 210;
+    const xD = GRAPH_W - 210;
+    const maxC = Math.max(...enlaces.map((e) => e.calls), 1);
+
+    return (
+        <div className="w-full overflow-x-auto">
+            <svg viewBox={`0 0 ${GRAPH_W} ${GRAPH_H}`} className="h-[420px] w-full min-w-[640px]" role="img" aria-label="Mapa de tráfico de la API">
+                <style>{`@keyframes flujo{to{stroke-dashoffset:-24}} .flujo{animation:flujo 1.2s linear infinite}`}</style>
+                {enlaces.map((e) => {
+                    const y1 = y(actores.indexOf(e.source), actores.length);
+                    const y2 = y(destinos.indexOf(e.target), destinos.length);
+                    const w = 1 + (e.calls / maxC) * 7;
+                    const d = `M${xA},${y1} C${GRAPH_W / 2},${y1} ${GRAPH_W / 2},${y2} ${xD},${y2}`;
+                    return (
+                        <g key={`${e.source}-${e.target}`}>
+                            <path d={d} fill="none" stroke="#00D4AA" strokeOpacity={0.25} strokeWidth={w} />
+                            <path d={d} fill="none" stroke={e.bez > 0 ? '#FFD700' : '#00D4AA'} strokeWidth={Math.max(1, w / 3)}
+                                strokeDasharray="4 8" className="flujo">
+                                <title>{`${e.source} → ${e.target}: ${e.calls} llamadas${e.bez > 0 ? `, ${e.bez.toFixed(2)} BEZ` : ''}`}</title>
+                            </path>
+                        </g>
+                    );
+                })}
+                {actores.map((a, i) => (
+                    <g key={`a-${a}`} transform={`translate(${xA},${y(i, actores.length)})`}>
+                        <circle r={7} fill="#FF6B9D" />
+                        <text x={-14} dy="0.35em" textAnchor="end" fill="#f9a8d4" fontSize={13}>{a.length > 24 ? `${a.slice(0, 23)}…` : a}</text>
+                    </g>
+                ))}
+                {destinos.map((d, i) => (
+                    <g key={`d-${d}`} transform={`translate(${xD},${y(i, destinos.length)})`}>
+                        <circle r={8} fill="#00D4AA" />
+                        <text x={14} dy="0.35em" fill="#67e8f9" fontSize={13}>{d}</text>
+                    </g>
+                ))}
+            </svg>
         </div>
     );
 }

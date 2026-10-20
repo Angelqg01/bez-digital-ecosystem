@@ -8,6 +8,7 @@ const { getConsumerStats } = require('../services/eventConsumer');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { brainHeaders } = require('../services/brainClient');
 
 const router = Router();
 
@@ -72,7 +73,7 @@ function checkAccess(req, res, next) {
 const FETCH_COOLDOWN_MS = parseInt(process.env.MONITOR_FETCH_COOLDOWN_MS || '60000', 10);
 const ultimoFallo = new Map();
 
-async function safeFetch(url, timeoutMs = 3000) {
+async function safeFetch(url, timeoutMs = 3000, headers = undefined) {
   // Una URL vacía es una fuente sin configurar, no un fallo: ni se intenta.
   if (!url) return null;
 
@@ -80,7 +81,7 @@ async function safeFetch(url, timeoutMs = 3000) {
   if (fallo && Date.now() - fallo < FETCH_COOLDOWN_MS) return null;
 
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) });
     if (!res.ok) {
       ultimoFallo.set(url, Date.now());
       return null;
@@ -145,7 +146,7 @@ router.get('/overview', checkAccess, async (_req, res) => {
   ] = await Promise.allSettled([
     query('SELECT 1'),
     pingRedis(),
-    safeFetch(BRAIN_SUMMARY_URL),
+    brainHeaders(BRAIN_SUMMARY_URL).then((h) => safeFetch(BRAIN_SUMMARY_URL, 3000, h)),
     safeFetch(AEGIS_HEALTH_URL),
     safeFetch(PROMETHEUS_TARGETS_URL),
     query(

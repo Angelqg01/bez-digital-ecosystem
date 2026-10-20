@@ -1,0 +1,17 @@
+# Construye la imagen del Brain (obsidian-mcp/) y la sube a Artifact Registry.
+# Lo lanza 14-brain.sh con el contexto en obsidian-mcp/.
+substitutions:
+  _REGION: us-central1
+  _ARTIFACT_REPO: bezhas
+  _TAG: manual
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: [build, -t, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-brain:${_TAG}", .]
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-brain:${_TAG}
+
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -94,7 +94,11 @@ services:
     container_name: bezhas-obsidian-mcp
     restart: unless-stopped
     environment:
-      NODE_ENV:                ${NODE_ENV:-production}
+      # Con NODE_ENV=production el Brain exige BRAIN_API_KEY y no arranca sin
+      # ella. En local queda abierto (UI integrada en :4007) salvo que se
+      # defina la clave; docker-compose.prod.yml la hace obligatoria.
+      NODE_ENV:                ${BRAIN_NODE_ENV:-development}
+      BRAIN_API_KEY:           ${BRAIN_API_KEY:-}
       MCP_PORT:                4007
       OBSIDIAN_VAULT_PATH:     /vault
       OBSIDIAN_MAX_NOTE_BYTES: 512000
@@ -226,6 +230,8 @@ services:
       # comportamiento correcto.
       MONITOR_PROMETHEUS_URL:   ${MONITOR_PROMETHEUS_URL:-http://prometheus:9090/api/v1/targets}
       MONITOR_BRAIN_URL:        ${MONITOR_BRAIN_URL:-http://obsidian-mcp:4007/telemetry/summary}
+      OBSIDIAN_MCP_URL:         ${OBSIDIAN_MCP_URL:-http://obsidian-mcp:4007}
+      BRAIN_API_KEY:            ${BRAIN_API_KEY:-}
       # Aegis no es un servicio de este compose: se deja configurable y sin
       # valor por defecto útil, para que el panel diga «Offline» en vez de
       # fingir que apunta a algo.

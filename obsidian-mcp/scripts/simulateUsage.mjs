@@ -4,6 +4,8 @@
 // Uso: node scripts/simulateUsage.mjs [rondas=12] [--base http://localhost:4007]
 const baseArg = process.argv.indexOf('--base');
 const BASE = baseArg > -1 ? process.argv[baseArg + 1] : 'http://localhost:4007';
+// Con BRAIN_API_KEY definida el Brain exige la clave también en local.
+const AUTH = process.env.BRAIN_API_KEY ? { 'x-brain-key': process.env.BRAIN_API_KEY } : {};
 const ROUNDS = Number(process.argv[2]) || 12;
 
 // [source, target, fn, peso, tokensMedio, bezMedio]
@@ -43,13 +45,13 @@ for (let round = 0; round < ROUNDS; round += 1) {
   });
   const res = await fetch(`${BASE}/telemetry/usage`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...AUTH },
     body: JSON.stringify({ events }),
   }).then((r) => r.json());
   sent += res.recorded || 0;
   process.stdout.write(`\r[SimUsage] ronda ${round + 1}/${ROUNDS} — ${sent} eventos`);
   await new Promise((r) => setTimeout(r, 400));
 }
-const summary = await fetch(`${BASE}/telemetry/summary`).then((r) => r.json());
+const summary = await fetch(`${BASE}/telemetry/summary`, { headers: AUTH }).then((r) => r.json());
 console.log(`\n[SimUsage] totales: ${summary.totals.calls} llamadas · ${summary.totals.tokens} tokens · ${summary.totals.bez.toFixed(2)} BEZ`);
 console.log(`[SimUsage] top función: ${summary.topFunctions[0]?.fn} (${summary.topFunctions[0]?.calls})`);
