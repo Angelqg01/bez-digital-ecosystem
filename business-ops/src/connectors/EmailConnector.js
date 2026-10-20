@@ -15,12 +15,14 @@ function direccionDe(texto) {
 }
 
 /**
- * EmailConnector — envío de correo REAL.
+ * EmailConnector — envío de correo REAL por el buzón de Hostinger.
  *
- * Dos vías, la primera disponible gana:
- *   1. Resend (RESEND_API_KEY): API HTTP, sin dependencias.
- *   2. SMTP propio (SMTP_HOST, nodemailer): servidor Stalwart auto-alojado u otro.
- * Sin ninguna configuración → modo simulado (registra en consola).
+ * Una sola vía: SMTP (nodemailer) contra Hostinger, con el buzón
+ * `yoelceo@bezhas.com` (smtp.hostinger.com:465, SSL) y copia en "Enviados" por
+ * IMAP. Las credenciales salen de SMTP_* o, si no están, de HOSTINGER_SMTP_*
+ * (el mismo `.env.local` que ya usa el resto de la plataforma).
+ * Sin credenciales → modo simulado (registra en consola).
+ * La lectura del buzón (bandeja de entrada) vive en `MailboxReader`.
  *
  * El envío en frío pasa SIEMPRE por HITL antes de llegar aquí (línea roja
  * cold_outbound): este conector solo ejecuta el "sí" ya aprobado.
@@ -45,7 +47,7 @@ function direccionDe(texto) {
  * sí tenía un camino honesto.
  *
  * Ahora `verify()` comprueba la conexión SIN enviar nada (SMTP: handshake +
- * autenticación; Resend: la clave contra su API), se cachea con un TTL corto
+ * autenticación), se cachea con un TTL corto
  * para que el servicio se recupere solo en cuanto el servidor aparezca, y si no
  * responde el conector queda `degraded`: no finge, y `send()` devuelve
  * `sent: false` con el motivo.
@@ -62,16 +64,20 @@ class EmailConnector extends BaseConnector {
   constructor({ tenantId, config = {} } = {}) {
     super({ tenantId, config });
     this.name = 'email';
-    // Resend (HTTP)
-    this.resendKey = config.resendKey || process.env.RESEND_API_KEY || '';
-    // SMTP (nodemailer)
-    this.host = config.host || process.env.SMTP_HOST || '';
-    this.port = Number(config.port || process.env.SMTP_PORT || 587);
-    this.user = config.user || process.env.SMTP_USER || '';
-    this.pass = config.pass || process.env.SMTP_PASS || '';
-    this.from = config.from || process.env.MAIL_FROM || process.env.EMAIL_FROM || `no-reply@${tenantId || 'operant'}.local`;
-    // Servidor propio (Stalwart) sin certificado público: permite desactivar la
-    // validación TLS explícitamente (nunca por defecto) vía SMTP_TLS_REJECT_UNAUTHORIZED=false.
+    // SMTP (nodemailer). SMTP_* gana; HOSTINGER_SMTP_* es el respaldo. Una
+    // variable SMTP_* definida pero vacía desactiva el correo a propósito (así
+    // lo hacen los tests y el piloto) y no cae al respaldo.
+    const e = process.env;
+    const var_ = (...nombres) => { const n = nombres.find((k) => e[k] !== undefined); return n ? e[n] : undefined; };
+    this.user = config.user || var_('SMTP_USER', 'HOSTINGER_SMTP_USER') || '';
+    this.pass = config.pass || var_('SMTP_PASS', 'HOSTINGER_SMTP_PASS') || '';
+    // `mail.hostinger.com` es un frontal de Cloudflare sin SMTP: el servidor real es smtp.hostinger.com.
+    const hostEnv = var_('SMTP_HOST', 'HOSTINGER_SMTP_HOST')?.replace(/^mail\.hostinger\.com$/i, 'smtp.hostinger.com');
+    // Con credenciales y sin host declarado, el destino es Hostinger.
+    this.host = config.host || hostEnv || (hostEnv === undefined && this.user && this.pass ? 'smtp.hostinger.com' : '');
+    this.port = Number(config.port || var_('SMTP_PORT', 'HOSTINGER_SMTP_PORT') || 465);
+    this.from = config.from || e.MAIL_FROM || e.EMAIL_FROM || this.user || `no-reply@${tenantId || 'operant'}.local`;
+    // TLS: validación activa salvo SMTP_TLS_REJECT_UNAUTHORIZED=false (explícito, nunca por defecto).
     this.tlsRejectUnauthorized = config.tlsRejectUnauthorized ?? (process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false');
     // Copia en "Enviados" (IMAP). Con SMTP_HOST=smtp.X el servidor IMAP se deduce
     // como imap.X; con cualquier otro host hay que declarar IMAP_HOST.
@@ -84,9 +90,8 @@ class EmailConnector extends BaseConnector {
     this.saveSentCopy = (config.saveSentCopy ?? (process.env.SAVE_SENT_COPY !== 'false')) && !!this.imapHost && !!this.imapUser;
     this._imapFactory = config.imapFactory || null;   // inyectable en tests
     this.imapRetryDelayMs = config.imapRetryDelayMs ?? 1000;
-    this._fetch = config.fetch || globalThis.fetch;
     this._transport = null;
-    this.mode = this.resendKey ? 'resend' : (this.host ? 'smtp' : 'simulado');
+    this.mode = this.host ? 'smtp' : 'simulado';
     this.simulated = this.mode === 'simulado';
     this.verifyTtlMs = config.verifyTtlMs ?? VERIFY_TTL_MS;
     this._lastVerify = null;   // { ok, detail, at }
@@ -174,9 +179,7 @@ class EmailConnector extends BaseConnector {
 
   /** Descripción del canal para health/observabilidad, sin secretos. */
   describe() {
-    const destino = this.mode === 'resend' ? 'api.resend.com'
-      : this.mode === 'smtp' ? `${this.host}:${this.port}`
-        : '(ninguno)';
+    const destino = this.mode === 'smtp' ? `${this.host}:${this.port}` : '(ninguno)';
     return {
       mode: this.mode,
       target: destino,
@@ -189,7 +192,7 @@ class EmailConnector extends BaseConnector {
 
   /**
    * ¿Se puede enviar de verdad? No envía nada: SMTP hace el handshake y la
-   * autenticación (`transport.verify()`), Resend consulta sus dominios.
+   * autenticación (`transport.verify()`).
    * @param {boolean} [force] - ignora la caché
    */
   async verify({ force = false } = {}) {
@@ -201,17 +204,6 @@ class EmailConnector extends BaseConnector {
       // No hay nada que alcanzar, y tampoco se está engañando a nadie: el modo
       // simulado es honesto por definición.
       resultado = { ok: true, detail: 'sin correo configurado (modo simulado)' };
-    } else if (this.mode === 'resend') {
-      try {
-        const r = await this._fetch('https://api.resend.com/domains', {
-          headers: { Authorization: `Bearer ${this.resendKey}` },
-        });
-        resultado = r.ok
-          ? { ok: true, detail: 'clave de Resend válida' }
-          : { ok: false, detail: `Resend respondió HTTP ${r.status}${r.status === 401 ? ' (clave inválida)' : ''}` };
-      } catch (err) {
-        resultado = { ok: false, detail: `no se pudo hablar con Resend: ${err.message}` };
-      }
     } else {
       const transport = this._getTransport();
       if (!transport) {
@@ -263,17 +255,6 @@ class EmailConnector extends BaseConnector {
         console.warn(`[email:${this.tenantId}] canal degradado, NO se envía a ${to}: ${estado.detail}`);
         return { sent: false, degraded: true, provider: this.mode, reason: estado.detail, from: remitente, to, subject };
       }
-    }
-
-    if (this.mode === 'resend') {
-      const r = await this._fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${this.resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: remitente, to, subject: subject || '(sin asunto)', text: body, html: html || undefined }),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(`email(resend): HTTP ${r.status} ${data?.message || ''}`.trim());
-      return { sent: true, provider: 'resend', id: data.id, from: remitente, to, subject };
     }
 
     if (this.mode === 'smtp') {

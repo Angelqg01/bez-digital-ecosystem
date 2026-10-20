@@ -51,17 +51,26 @@ function makeWhatsApp(env) {
   };
 }
 
+/**
+ * Correo de salida por el buzón de Hostinger (SMTP). Reutiliza EmailConnector,
+ * que además verifica el canal y guarda la copia en "Enviados". Sin credenciales
+ * → simulado.
+ */
 function makeEmail(env) {
-  const key = env.RESEND_API_KEY;
-  const from = env.EMAIL_FROM;
-  if (!key || !from) return simulated('email');
-  return async ({ to, text, meta }) => {
-    const r = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, subject: meta?.subject ? `Re: ${meta.subject}` : 'Tu consulta', text }),
+  const EmailConnector = require('../connectors/EmailConnector');
+  const conectores = new Map();
+  const porTenant = (tenantId) => {
+    const id = tenantId || 'plataforma';
+    if (!conectores.has(id)) conectores.set(id, new EmailConnector({ tenantId: id }));
+    return conectores.get(id);
+  };
+  if (porTenant().simulated) return simulated('email');
+  return async ({ tenantId, to, text, meta }) => {
+    const r = await porTenant(tenantId).send({
+      to, body: text, subject: meta?.subject ? (/^re:/i.test(meta.subject) ? meta.subject : `Re: ${meta.subject}`) : 'Tu consulta',
+      from: meta?.from, headers: meta?.headers,
     });
-    if (!r.ok) throw new Error(`email send ${r.status}`);
+    if (!r.sent) throw new Error(`email send: ${r.reason || 'no enviado'}`);
     return { sent: true };
   };
 }

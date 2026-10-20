@@ -3,7 +3,7 @@
 /**
  * Punto de entrada. Arranca la API y, opcionalmente, aprovisiona un tenant demo.
  */
-require('dotenv').config();
+require('dotenv').config({ path: ['.env.local', '.env'] });
 const { app, tenants, store } = require('./server');
 const EmailConnector = require('./connectors/EmailConnector');
 const CRMConnector = require('./connectors/CRMConnector');

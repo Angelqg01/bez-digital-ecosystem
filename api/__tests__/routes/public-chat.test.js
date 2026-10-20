@@ -19,6 +19,14 @@ describe('POST /api/public-chat', () => {
         expect(res.body.reply).toMatch(/No está desplegado en BNB/);
     });
 
+    it('responde a qué precio está BEZ y cómo comprarlo', async () => {
+        const res = await preguntar('¿A qué precio está BEZ-Coin y cómo puedo comprarlo con euros?');
+        expect(res.body.answered).toBe(true);
+        expect(res.body.reply).toMatch(/0,0075 USD/);
+        expect(res.body.reply).toMatch(/SEPA/);
+        expect(res.body.reply).not.toMatch(/0,10 USD|0\.10/);
+    });
+
     it('lo que no sabe lo dice, sin inventar', async () => {
         const res = await preguntar('¿Cuál es la capital de Mongolia?');
         expect(res.body.answered).toBe(false);

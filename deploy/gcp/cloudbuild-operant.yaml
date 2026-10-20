@@ -1,0 +1,17 @@
+# Construye la imagen de OPERANT (business-ops/) y la sube a Artifact Registry.
+# Lo lanza 10-operant.sh con el contexto en business-ops/.
+substitutions:
+  _REGION: us-central1
+  _ARTIFACT_REPO: bezhas
+  _TAG: manual
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: [build, -t, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-operant:${_TAG}", .]
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-operant:${_TAG}
+
+options:
+  logging: CLOUD_LOGGING_ONLY

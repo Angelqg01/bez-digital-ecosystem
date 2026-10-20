@@ -3,7 +3,7 @@
 # Desplegar las SubApps nativas en Cloud Run del proyecto actual.
 # ============================================================================
 # Uso:  ./deploy/gcp/deploy-subapps.sh [hub defi purescan energy cargolink]
-#       (sin argumentos despliega todas; hub defi purescan energy cargolink wallet gas pay prestige)
+#       (sin argumentos despliega todas menos gas; hub defi purescan energy cargolink wallet pay prestige)
 #
 # Cada app se construye con Cloud Build (su propio Dockerfile) y se publica como un servicio
 # `bezhas-<app>` en Cloud Run. Son páginas PÚBLICAS (--allow-unauthenticated): la sesión y los
@@ -32,7 +32,10 @@ declare -A BUILD=( [hub]="mono:Dockerfile.hub" [purescan]="mono:Dockerfile.vite"
                    [pay]="mono:Dockerfile.vite" [prestige]="mono:Dockerfile.workspace" )
 declare -A PORT=( [hub]=8080 [defi]=5174 [purescan]=8080 [energy]=8080 [cargolink]=8080 [wallet]=8080 [gas]=8080 [pay]=8080 [prestige]=8080 )
 
-APPS=("$@"); ((${#APPS[@]})) || APPS=(hub defi purescan energy cargolink wallet gas pay prestige)
+# gas NO va por defecto: su recarga no tiene endpoint de cobro en la API (routes/gas.js sólo
+# expone /status y /balances) y el panel aún enseña cifras de ejemplo. Se despliega a mano
+# (./deploy/gcp/deploy-subapps.sh gas) cuando exista.
+APPS=("$@"); ((${#APPS[@]})) || APPS=(hub defi purescan energy cargolink wallet pay prestige)
 TAG="$(git rev-parse --short=12 HEAD)"
 declare -A URL
 FALLOS=()

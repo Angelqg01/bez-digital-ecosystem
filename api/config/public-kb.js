@@ -33,6 +33,14 @@ const ENTRADAS = [
         enlace: 'https://bezhas.com/token',
     },
     {
+        titulo: 'Comprar BEZ-Coin: precio y métodos de pago',
+        texto: 'BEZ-Coin se compra con euros o dólares desde BeZhas Pay (pay.bezhas.com), BeZhas DeFi (sección Payments) '
+            + 'o la BEZ Wallet: con tarjeta, en la página segura de Stripe, o por transferencia SEPA con IBAN y una referencia de pedido. '
+            + 'Precio de la fase semilla: 0,0075 USD por BEZ, más una comisión de plataforma del 2,5 %. Los BEZ se entregan en tu wallet '
+            + 'de Polygon cuando se confirma el pago. Sin verificar identidad (KYC) el límite de compra es de 150 USD en 12 meses.',
+        enlace: 'https://pay.bezhas.com',
+    },
+    {
         titulo: 'Conector MCP: cómo conectar tu IA',
         texto: 'Puedes conectar Claude, ChatGPT, Cursor, Antigravity o un agente propio al servidor MCP de BeZhas. '
             + 'El alta asistida está en https://mcp.bezhas.com/mcp/onboarding y no requiere clave previa. '

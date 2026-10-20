@@ -1,15 +1,12 @@
 import useSWR, { mutate } from 'swr';
-import { apiFetch } from './api';
+import { apiFetch, API_BASE, sessionAddress } from './api';
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 // ── SWR fetcher (uses apiFetch for auth headers) ──
 const fetcher = <T>(path: string) => apiFetch<T>(path);
 
 // ── Wallet address helper ──
-function storedAddress(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('bez_wallet') || null;
-}
+const storedAddress = sessionAddress;
 
 // ══════════════════════════════════
 //  TRANSACTION RECEIPT TRACKING
@@ -130,7 +127,7 @@ export function useAuth() {
 export async function login(walletAddress: string, signature: string, message: string) {
     const data = await apiFetch<{ accessToken: string; refreshToken: string }>('/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ walletAddress, signature, message, appOrigin: 'bezhas-defi' }),
+        body: JSON.stringify({ walletAddress, signature, message, appOrigin: 'defi' }),
     });
     if (typeof window !== 'undefined') {
         localStorage.setItem('bez_token', data.accessToken);
@@ -315,13 +312,18 @@ export function useBridgeStatus(transferId?: string) {
 // ══════════════════════════════════
 
 export interface TreasuryOverview {
-    totalFunds: string;
-    allocations: { sector: string; amount: string; percentage: number }[];
-    recentSpends: { description: string; amount: string; date: string }[];
+    totalStaked: string;
+    totalFarming: string;
+    bridgeVolume: string;
+    totalUsers: number;
+    updatedAt: string;
 }
 
 export function useTreasuryOverview() {
-    return useSWR<TreasuryOverview>('/api/treasury/overview', fetcher);
+    return useSWR<TreasuryOverview>('/api/treasury/overview', async (path: string) => {
+        const data = await apiFetch<{ treasury: TreasuryOverview }>(path);
+        return data.treasury;
+    });
 }
 
 // ══════════════════════════════════
@@ -329,11 +331,13 @@ export function useTreasuryOverview() {
 // ══════════════════════════════════
 
 export interface TokenInfo {
+    address?: string | null;
     name: string;
     symbol: string;
-    totalSupply: string;
-    circulatingSupply: string;
+    totalSupply: string | null;
+    circulatingSupply: string | null;
     decimals: number;
+    chainId?: number;
 }
 
 export function useTokenInfo() {
@@ -388,6 +392,10 @@ export interface BuyBEZResult {
     };
     stripeUseCase?: string;
     stripeLabel?: string;
+    amountUSD?: number;
+    platformFeeUSD?: number;
+    hostedCheckoutUrl?: string;
+    onchain?: { token: string; treasury: string; priceUSD: number; expectedBez: number | null; sendFrom: string };
     nextAction?: 'redirect_to_checkout' | 'display_bank_transfer_instructions' | 'await_payment_confirmation';
 }
 
@@ -496,7 +504,6 @@ export function useBlockchainSSE(eventType?: string) {
 
     useEffect(() => {
         const params = eventType ? `?type=${eventType}` : '';
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         const es = new EventSource(`${API_BASE}/api/blockchain/stream${params}`);
 
         es.addEventListener('blockchain_event', (e) => {

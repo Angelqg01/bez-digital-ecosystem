@@ -14,7 +14,11 @@ sesión, sin planes, sin streaming).
 
 ## Uso
 
-Dentro de `<BezhasAuthProvider>` (ya lo montan Energy, Genesis, PureScan, Sphere y Pay; hoy usan este chat **Energy y PureScan**, ver `docs/audit/chat-energy/README.md` para el estado del resto):
+Dentro de `<BezhasAuthProvider>` (ya lo montan Energy, Genesis, PureScan, Sphere y Pay; hoy usan este chat **Energy, PureScan, Wallet, Gas Tank y Pay**, ver `docs/audit/chat-energy/README.md` para el estado del resto).
+
+**BeZhas DeFi (Next.js)** usa una copia en `BZ Capital/frontend/components/ai-chat/` (Next no resuelve bien módulos fuera de su raíz); la única diferencia es que `useAuth` sale de su `SSOProvider`. Si cambias estos archivos, vuelve a copiarlos allí.
+
+Con sidebar fijo, pasa `leftOffset` con su ancho (contraído o no) para que la barra no lo pise:
 
 ```jsx
 import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx'
@@ -47,7 +51,7 @@ Si cambias el renderizado, cambia las dos y regenera el JSON de casos. El compon
 `.bzai`, sin Tailwind) siguen el diseño de `AIWorkspaceBar.tsx`: si cambia allí (p. ej. una pestaña nueva), hay que reflejarlo aquí.
 
 ## Dónde NO ponerlo
-- En pantallas de pago (checkout): la barra fija puede tapar los botones de pago.
+- En pantallas de pago (checkout): la barra fija puede tapar los botones de pago. Excepción: Pay, que deja `padding-bottom: 120px` para que el botón de pago nunca quede debajo.
 - En apps con su propia caja de texto fija abajo (p. ej. Sphere, que es una mensajería): quedarían dos cajas de chat apiladas.
 
 ## Lo que NO hace

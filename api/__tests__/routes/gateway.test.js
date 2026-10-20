@@ -126,17 +126,19 @@ describe('Gateway Routes', () => {
             expect(res.status).toBe(400);
         });
 
-        it('creates staking position', async () => {
-            mockQuery.mockResolvedValueOnce({ rows: [{ id: 1 }], rowCount: 1 }); // user lookup
-            mockQuery.mockResolvedValueOnce({
-                rows: [{ id: 'pos-1', wallet_address: TEST_WALLET, amount_staked: 100 }],
-                rowCount: 1,
-            });
+        it('sin contrato de staking no crea una posición fantasma', async () => {
+            delete process.env.STAKING_OFFCHAIN_LEDGER;
+            mockQuery.mockClear();
+            // Red sin contrato de staking (como Polygon hoy): getContractAddress → null.
+            mockContractService.getContractAddress.mockResolvedValueOnce(null);
             const res = await request(app)
                 .post('/api/gateway/v1/staking/stake')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ walletAddress: TEST_WALLET, amount: 100 });
-            expect([200, 500]).toContain(res.status);
+            expect([503, 500]).toContain(res.status);
+            if (res.status === 503) expect(res.body.code).toBe('STAKING_NOT_AVAILABLE');
+            const inserts = mockQuery.mock.calls.filter(([sql]) => /INSERT INTO staking_positions/.test(String(sql)));
+            expect(inserts).toHaveLength(0);
         });
     });
 
@@ -321,7 +323,9 @@ describe('Gateway Routes', () => {
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(200);
             expect(res.body.token).toHaveProperty('symbol', 'BEZ');
-            expect(res.body.token).toHaveProperty('wrappedVersion');
+            expect(res.body.token).toHaveProperty('decimals', 18);
+            // No hay wBEZ desplegado: BEZ-Coin sólo existe en Polygon.
+            expect(res.body.token).not.toHaveProperty('wrappedVersion');
         });
     });
 

@@ -9,8 +9,16 @@ const GENESIS = '0'.repeat(64);
  *  produciría hashes distintos según quién construyó el objeto. */
 function stableStringify(value) {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  const keys = Object.keys(value).sort();
+  if (Array.isArray(value)) return `[${value.map((v) => (v === undefined ? 'null' : stableStringify(v))).join(',')}]`;
+  // Se omiten las claves con valor `undefined` (y funciones/símbolos), igual que
+  // JSON.stringify. El registro se hashea con el objeto en memoria pero se lee
+  // de la base tras un viaje por JSON, donde esas claves ya no existen: si el
+  // hash las contara, cualquier acción con un argumento opcional sin rellenar
+  // (p. ej. `counterparty: undefined` en una transferencia) rompía la cadena en
+  // cuanto se verificaba, y con ella la prueba de integridad y el anclaje.
+  const keys = Object.keys(value)
+    .filter((k) => !['undefined', 'function', 'symbol'].includes(typeof value[k]))
+    .sort();
   return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(',')}}`;
 }
 

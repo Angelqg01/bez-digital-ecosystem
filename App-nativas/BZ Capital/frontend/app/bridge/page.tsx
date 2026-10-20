@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ArrowLeftRight, ArrowDown, Clock, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { useBridgeTransfers, initiateBridge, type BridgeTransfer } from '@/lib/hooks';
+import { sessionAddress } from '@/lib/api';
 
 type Chain = 'l2' | 'polygon' | 'ethereum';
 
@@ -20,7 +21,7 @@ export default function BridgePage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const address = typeof window !== 'undefined' ? localStorage.getItem('bez_wallet') : null;
+    const address = sessionAddress();
     const { data, isLoading, mutate } = useBridgeTransfers(address);
     const transfers: BridgeTransfer[] = data?.transfers ?? [];
 

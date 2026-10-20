@@ -62,3 +62,39 @@ test('sin fallback (por defecto) el error se sigue propagando', async () => {
   const gw = new ModelGateway({ providers: { anthropic: prov }, sleep: async () => {} });
   await assert.rejects(() => gw.complete({ tier: 'fast', messages: [] }), /http 400/);
 });
+
+test('respaldo por tier: si el proveedor primario falla, lo atiende el de respaldo y NO se degrada a simulado', async () => {
+  const primario = failingProvider(503);
+  const respaldo = { messages: { create: async () => ({ content: [{ type: 'text', text: 'respuesta real del respaldo' }], usage: { input_tokens: 1, output_tokens: 1 } }) } };
+  const gw = new ModelGateway({
+    providers: { ollama: primario, anthropic: respaldo },
+    tierMap: { mid: { provider: 'ollama', model: 'qwen2.5:7b', fallback: { provider: 'anthropic', model: 'claude-sonnet-5-5' } } },
+    fallbackToSimulated: true, maxRetries: 0, sleep: async () => {},
+  });
+  const r = await gw.complete({ tier: 'mid', messages: [{ role: 'user', content: 'hola' }] });
+  assert.equal(r.text, 'respuesta real del respaldo');
+  assert.notEqual(r.fallback, true);
+  assert.equal(r.simulated, undefined);
+});
+
+test('respaldo por tier: si también falla, se degrada a simulado con los dos errores', async () => {
+  const gw = new ModelGateway({
+    providers: { ollama: failingProvider(503), anthropic: failingProvider(400) },
+    tierMap: { mid: { provider: 'ollama', model: 'm', fallback: { provider: 'anthropic', model: 'c' } } },
+    fallbackToSimulated: true, maxRetries: 0, sleep: async () => {},
+  });
+  const r = await gw.complete({ tier: 'mid', messages: [{ role: 'user', content: 'hola' }] });
+  assert.equal(r.fallback, true);
+  assert.match(r.error, /503/);
+  assert.match(r.error, /respaldo anthropic/);
+});
+
+test('respaldo no configurado (sin proveedor registrado): se ignora', async () => {
+  const gw = new ModelGateway({
+    providers: { ollama: failingProvider(503) },
+    tierMap: { mid: { provider: 'ollama', model: 'm', fallback: { provider: 'anthropic', model: 'c' } } },
+    fallbackToSimulated: true, maxRetries: 0, sleep: async () => {},
+  });
+  const r = await gw.complete({ tier: 'mid', messages: [{ role: 'user', content: 'hola' }] });
+  assert.equal(r.fallback, true);
+});

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { CreditCard, Smartphone, QrCode, ArrowRight, CheckCircle, Clock, Loader2, AlertCircle, DollarSign, ArrowDownToLine } from 'lucide-react';
-import { usePaymentHistory, useTokenPrice, buyBEZ, sellBEZ, sendPayment } from '@/lib/hooks';
+import { usePaymentHistory, useTokenPrice, buyBEZ, sellBEZ, sendPayment, type BuyBEZResult } from '@/lib/hooks';
+import { sessionAddress, API_BASE } from '@/lib/api';
 
 type PaymentMethod = 'crypto' | 'card' | 'qr' | 'bank';
 type Tab = 'buy' | 'sell' | 'pay' | 'history';
@@ -14,7 +15,7 @@ export default function PaymentsPage() {
     const [sellAmount, setSellAmount] = useState('');
     const [payRecipient, setPayRecipient] = useState('');
     const [payNote, setPayNote] = useState('');
-    const [payMethod, setPayMethod] = useState<PaymentMethod>('crypto');
+    const [payMethod, setPayMethod] = useState<PaymentMethod>('card');
     const [receiveMethod, setReceiveMethod] = useState<PaymentMethod>('card');
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -28,19 +29,27 @@ export default function PaymentsPage() {
         instructions: string;
     } | null>(null);
 
+    // Pedido cripto/QR recién creado: sin esto la página decía «Purchase initiated»
+    // y no enseñaba ni a qué dirección ni cuánto había que transferir.
+    const [order, setOrder] = useState<BuyBEZResult | null>(null);
+
     const { data: priceData } = useTokenPrice();
     const { data: historyData, error: histErr, isLoading: histLoading } = usePaymentHistory();
 
-    const rate = priceData?.priceUSD ?? 0.10;
+    // Sin precio de la API no se estima nada: el 0,10 de relleno era 13 veces el
+    // precio real de la fase semilla (0,0075 USD).
+    const rate = priceData?.priceUSD && priceData.priceUSD > 0 ? priceData.priceUSD : null;
+    const fmtRate = rate ? `1 BEZ = $${rate.toFixed(4)}` : '—';
     const payments = historyData?.payments ?? [];
 
-    const walletAddr = typeof window !== 'undefined' ? localStorage.getItem('bez_wallet') : null;
+    const walletAddr = sessionAddress();
 
     async function handleBuy() {
         if (!buyAmount || !walletAddr) return;
         setLoading(true);
         setFeedback(null);
         setBankTransfer(null);
+        setOrder(null);
         try {
             const result = await buyBEZ({
                 walletAddress: walletAddr,
@@ -54,11 +63,13 @@ export default function PaymentsPage() {
             }
             if (result.nextAction === 'display_bank_transfer_instructions' && result.bankTransfer) {
                 setBankTransfer(result.bankTransfer);
+                setOrder(result);
                 setFeedback({ type: 'success', msg: 'Bank transfer order created. Use the reference shown below.' });
                 setBuyAmount('');
                 return;
             }
-            setFeedback({ type: 'success', msg: 'Purchase initiated successfully' });
+            setOrder(result);
+            setFeedback({ type: 'success', msg: `Pedido #${result.paymentId} creado: completa el pago con los datos de abajo.` });
             setBuyAmount('');
         } catch (e: unknown) {
             setFeedback({ type: 'error', msg: e instanceof Error ? e.message : 'Purchase failed' });
@@ -113,6 +124,31 @@ export default function PaymentsPage() {
                 </div>
             )}
 
+            {order && (
+                <div className="card max-w-lg border-bez-primary/30 bg-bez-primary/10 text-sm space-y-2">
+                    <h2 className="text-white font-semibold">Pedido #{order.paymentId}</h2>
+                    {typeof order.amountUSD === 'number' && (
+                        <div className="flex justify-between gap-4"><span className="text-slate-400">Total</span><span className="text-white">${order.amountUSD.toFixed(2)} (comisión ${order.platformFeeUSD?.toFixed(2)})</span></div>
+                    )}
+                    {order.onchain && (
+                        <>
+                            <div className="flex justify-between gap-4"><span className="text-slate-400">Envía</span><span className="text-white">{order.onchain.expectedBez?.toLocaleString('es-ES')} {order.onchain.token}</span></div>
+                            <div><span className="text-slate-400">A la tesorería</span><p className="font-mono text-white break-all">{order.onchain.treasury}</p></div>
+                            <div><span className="text-slate-400">Desde</span><p className="font-mono text-white break-all">{order.onchain.sendFrom}</p></div>
+                        </>
+                    )}
+                    {order.hostedCheckoutUrl && (
+                        <a
+                            href={order.hostedCheckoutUrl.startsWith('/') ? `${API_BASE}${order.hostedCheckoutUrl}` : order.hostedCheckoutUrl}
+                            target="_blank" rel="noopener noreferrer"
+                            className="btn-primary inline-flex items-center gap-2 mt-2"
+                        >
+                            Ver estado del pago <ArrowRight size={16} />
+                        </a>
+                    )}
+                </div>
+            )}
+
             {bankTransfer && (
                 <div className="card max-w-lg border-blue-500/30 bg-blue-500/10 text-sm">
                     <h2 className="text-white font-semibold mb-3">Bank transfer details</h2>
@@ -164,12 +200,12 @@ export default function PaymentsPage() {
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">You receive</span>
                                 <span className="text-white font-medium">
-                                    {buyAmount ? `~${(parseFloat(buyAmount) / rate).toFixed(2)} BEZ` : '0 BEZ'}
+                                    {buyAmount && rate ? `~${(parseFloat(buyAmount) / rate).toLocaleString('es-ES', { maximumFractionDigits: 2 })} BEZ` : '—'}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm mt-1">
                                 <span className="text-slate-400">Rate</span>
-                                <span className="text-slate-300">1 BEZ = ${rate.toFixed(4)}</span>
+                                <span className="text-slate-300">{fmtRate}</span>
                             </div>
                             <div className="flex justify-between text-sm mt-1">
                                 <span className="text-slate-400">Fee</span>
@@ -179,12 +215,13 @@ export default function PaymentsPage() {
 
                         <div>
                             <label className="text-sm text-slate-400 block mb-2">Payment Method</label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {/* Crypto/QR no: en el Gateway esas vías cobran EN BEZ (el vigilante
+                                casa transferencias de BEZ a la tesorería), así que «comprar BEZ con
+                                cripto» pedía enviar 3.333 BEZ para recibir 3.333 BEZ. */}
+                            <div className="grid grid-cols-2 gap-2">
                                 {([
                                     { method: 'card' as PaymentMethod, label: 'Card', icon: CreditCard },
-                                    { method: 'bank' as PaymentMethod, label: 'Bank', icon: DollarSign },
-                                    { method: 'crypto' as PaymentMethod, label: 'Crypto', icon: ArrowRight },
-                                    { method: 'qr' as PaymentMethod, label: 'QR Code', icon: QrCode },
+                                    { method: 'bank' as PaymentMethod, label: 'Bank (SEPA)', icon: DollarSign },
                                 ]).map(({ method, label, icon: Icon }) => (
                                     <button
                                         key={method}
@@ -232,12 +269,12 @@ export default function PaymentsPage() {
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">You receive</span>
                                 <span className="text-white font-medium">
-                                    {sellAmount ? `~$${(parseFloat(sellAmount) * rate).toFixed(2)}` : '$0.00'}
+                                    {sellAmount && rate ? `~$${(parseFloat(sellAmount) * rate).toFixed(2)}` : '—'}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm mt-1">
                                 <span className="text-slate-400">Rate</span>
-                                <span className="text-slate-300">1 BEZ = ${rate.toFixed(4)}</span>
+                                <span className="text-slate-300">{fmtRate}</span>
                             </div>
                             <div className="flex justify-between text-sm mt-1">
                                 <span className="text-slate-400">Fee</span>

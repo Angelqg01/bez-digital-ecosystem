@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Coins, Lock, Unlock, Gift, Loader2 } from 'lucide-react';
-import { useStakingPositions, stake, unstake, type StakePosition } from '@/lib/hooks';
+import { useStakingPositions, unstake, type StakePosition } from '@/lib/hooks';
+import { sessionAddress } from '@/lib/api';
 import { stakeBEZOnChain, unstakeBEZOnChain } from '@/lib/contracts';
 
 export default function StakingPage() {
@@ -11,7 +12,7 @@ export default function StakingPage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const address = typeof window !== 'undefined' ? localStorage.getItem('bez_wallet') : null;
+    const address = sessionAddress();
     const { data, isLoading, mutate } = useStakingPositions(address);
     const positions: StakePosition[] = data?.positions ?? [];
 
@@ -22,7 +23,9 @@ export default function StakingPage() {
         if (!address || !amount) return;
         setLoading(true); setError(null); setSuccess(null);
         try {
-            await stakeBEZOnChain(amount).catch(async () => stake(address, parseFloat(amount)));
+            // Sin contrato on-chain NO se cae a una posición «contable»: no bloquea BEZ ni
+            // rinde nada, y antes se mostraba «Staked successfully». Si falla, se dice.
+            await stakeBEZOnChain(amount);
             setSuccess(`Staked ${amount} BEZ successfully`);
             setAmount('');
             mutate();

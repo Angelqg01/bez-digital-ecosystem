@@ -49,10 +49,9 @@ async function settlePayment({ paymentId, status = 'completed', providerReferenc
         throw new SettlementError('EXPIRED', 'Payment order expired — create a new order');
     }
 
-    const price = await query(
-        "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
-    ).catch(() => ({ rows: [] }));
-    const priceUSD = parseFloat(price.rows[0]?.price_usd || String(precioUsd()));
+    // Precio de configuración, nunca token_price_cache: con la semilla de 0,10 de
+    // la 006 una compra de 25 USD entregaba 250 BEZ en vez de 3.333.
+    const priceUSD = precioUsd();
     const amountUSD = parseFloat(payment.amount_usd || '0');
     const platformFeeUSD = parseFloat(payment.platform_fee_usd || '0');
     const netAmountUSD = Math.max(amountUSD - platformFeeUSD, 0);

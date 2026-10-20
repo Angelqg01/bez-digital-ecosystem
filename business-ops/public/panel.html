@@ -316,6 +316,7 @@
       <button class="active" data-view-btn="overview" onclick="showView('overview')">Panel</button>
       <button data-view-btn="workbench" onclick="showView('workbench')">Operar</button>
       <button data-view-btn="controls" onclick="showView('controls')">Control</button>
+      <button data-view-btn="mail" onclick="showView('mail'); loadMail(true)">Correo</button>
       <button data-view-btn="onboarding" onclick="showView('onboarding')">Alta</button>
     </nav>
 
@@ -554,6 +555,45 @@
               <button onclick="savePolicy()">Aplicar política</button>
             </div>
             <div id="policies"><div class="empty">Sin políticas personalizadas.</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-mail" class="view">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Bandeja</h2><p id="mailBox">Buzón de Hostinger, solo lectura.</p></div>
+            <span id="mailCount" class="pill">sin cargar</span>
+          </div>
+          <div class="stack">
+            <div class="form-grid">
+              <label>Buscar
+                <input id="mailQuery" placeholder="asunto, remitente o texto" onkeydown="if(event.key==='Enter') loadMail(true)">
+              </label>
+              <label>Orden
+                <select id="mailSort" onchange="loadMail(true)">
+                  <option value="newest">Más nuevos</option>
+                  <option value="oldest">Más antiguos</option>
+                  <option value="unread">Sin leer</option>
+                </select>
+              </label>
+            </div>
+            <div class="actions">
+              <button class="secondary" onclick="loadMail(true)">Actualizar bandeja</button>
+            </div>
+            <div id="mailList" class="stack"><div class="empty">Pulsa «Correo» o «Actualizar bandeja» para cargar.</div></div>
+            <div class="actions"><button id="mailMore" class="secondary" style="display:none" onclick="loadMail(false)">Mostrar 30 más</button></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Mensaje</h2><p>Se muestra como texto plano; el HTML de terceros no se ejecuta.</p></div>
+          </div>
+          <div class="stack">
+            <div id="mailDetail"><div class="empty">Selecciona un correo de la bandeja.</div></div>
           </div>
         </div>
       </div>
@@ -1084,6 +1124,64 @@ function setLive(on) {
   const live = $('live');
   live.classList.toggle('live', !!on);
   live.querySelector('span:last-child').textContent = on ? 'en vivo' : 'offline';
+}
+
+// ── Correo (buzón de Hostinger, solo lectura) ───────────────────────────────
+const mail = { offset: 0, uid: null };
+
+async function loadMail(reset) {
+  if (!tenant()) return showMessage('Indica un tenantId para abrir la bandeja.', 'error');
+  if (reset) mail.offset = 0;
+  const qs = new URLSearchParams({ offset: String(mail.offset), limit: '30', sort: $('mailSort').value });
+  if ($('mailQuery').value.trim()) qs.set('q', $('mailQuery').value.trim());
+  try {
+    const r = await api('/tenants/' + encodeURIComponent(tenant()) + '/mailbox?' + qs);
+    showMessage('');
+    $('mailBox').textContent = 'Buzón ' + (r.mailbox || '') + ' · solo lectura.';
+    $('mailCount').textContent = r.total + (r.total === 1 ? ' correo' : ' correos');
+    $('mailCount').className = 'pill ok';
+    const html = r.messages.map((m) => `
+      <div class="row" style="cursor:pointer" onclick="openMail(${Number(m.uid)})">
+        <div>
+          <b>${m.unread ? '● ' : ''}${safe(m.subject)}</b>
+          <div class="muted">${safe(m.fromName || m.from)} · ${safe(m.date ? new Date(m.date).toLocaleString() : '')}</div>
+        </div>
+      </div>`).join('');
+    if (reset) $('mailList').innerHTML = html || '<div class="empty">No hay correos.</div>';
+    else $('mailList').insertAdjacentHTML('beforeend', html);
+    mail.offset = r.offset + r.messages.length;
+    $('mailMore').style.display = r.hasMore ? '' : 'none';
+  } catch (err) {
+    $('mailCount').textContent = 'no disponible';
+    $('mailCount').className = 'pill bad';
+    showMessage('Bandeja: ' + err.message, 'error');
+  }
+}
+
+async function openMail(uid) {
+  mail.uid = uid;
+  $('mailDetail').innerHTML = '<div class="empty">Abriendo…</div>';
+  try {
+    const m = await api('/tenants/' + encodeURIComponent(tenant()) + '/mailbox/' + uid);
+    const addrs = (l) => (l || []).map((a) => safe(a.name ? `${a.name} <${a.address}>` : a.address)).join(', ');
+    const adj = (m.attachments || []).map((a) => safe(a.filename) + ' (' + Math.round((a.size || 0) / 1024) + ' KB)').join(', ');
+    $('mailDetail').innerHTML = `
+      <h2 style="margin:0">${safe(m.subject)}</h2>
+      <div class="muted">De: ${safe(m.fromName ? `${m.fromName} <${m.from}>` : m.from)}<br>Para: ${addrs(m.to)}${m.cc?.length ? '<br>Cc: ' + addrs(m.cc) : ''}<br>${safe(m.date ? new Date(m.date).toLocaleString() : '')}</div>
+      ${adj ? '<div class="muted">Adjuntos (no se descargan): ' + adj + '</div>' : ''}
+      <div class="output" style="white-space:pre-wrap">${safe(m.text || '(sin texto)')}</div>
+      ${m.unread ? '<div class="actions"><button class="secondary" onclick="markMailSeen(' + Number(m.uid) + ')">Marcar como leído</button></div>' : ''}`;
+  } catch (err) {
+    $('mailDetail').innerHTML = '<div class="empty">' + safe(err.message) + '</div>';
+  }
+}
+
+async function markMailSeen(uid) {
+  try {
+    await api('/tenants/' + encodeURIComponent(tenant()) + '/mailbox/' + uid + '/seen', { method: 'POST' });
+    await loadMail(true);
+    await openMail(uid);
+  } catch (err) { showMessage('No se pudo marcar como leído: ' + err.message, 'error'); }
 }
 
 init();

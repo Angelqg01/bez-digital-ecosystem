@@ -60,7 +60,7 @@ function entornoDelPiloto() {
     TELEGRAM_BOT_TOKEN: '', TELEGRAM_CFO_BOT_TOKEN: '', TELEGRAM_CEO_BOT_TOKEN: '',
     TELEGRAM_DEVOPS_BOT_TOKEN: '', TELEGRAM_LEGAL_BOT_TOKEN: '', HITL_TELEGRAM_CHAT_ID: '',
     STRIPE_SECRET_KEY: '', STRIPE_WEBHOOK_SECRET: '', DISBURSEMENT_WALLET_PRIVATE_KEY: '',
-    SMTP_HOST: '', SMTP_USER: '', SMTP_PASS: '', RESEND_API_KEY: '',
+    SMTP_HOST: '', SMTP_USER: '', SMTP_PASS: '',
     ANTHROPIC_API_KEY: '', LINKEDIN_ACCESS_TOKEN: '', N8N_API_URL: '',
     // Los tiers los fija serviciosVivos() según lo que haya descargado en Ollama.
     TIER_FRONTIER_PROVIDER: process.env.TIER_FRONTIER_PROVIDER || '',

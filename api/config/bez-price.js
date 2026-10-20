@@ -53,4 +53,18 @@ function centimosUsdABezWei(centimos, env = process.env, decimales = DECIMALES_B
     return (microUsd * 10n ** BigInt(decimales)) / precioMicroUsd(env);
 }
 
-module.exports = { precioMicroUsd, precioUsd, centimosUsdABezWei, aMicroUsd, DECIMALES_BEZ, PRECIO_POR_DEFECTO };
+/**
+ * Fila de BEZ de token_price_cache → lo que se publica, SIEMPRE con el precio de
+ * configuración. La tabla aporta sólo variación y frescura, y sólo si su precio
+ * coincide con el configurado: si no (p. ej. la semilla de 0,10 de la 006, que
+ * estuvo meses publicándose), se marca como semilla, sin fecha.
+ */
+function bezPublicado(fila, env = process.env) {
+    const priceUSD = precioUsd(env);
+    const coincide = fila && Math.abs(parseFloat(fila.price_usd) - priceUSD) < 1e-9;
+    return coincide
+        ? { priceUSD, change24h: parseFloat(fila.change_24h || 0), updatedAt: fila.updated_at ?? null, seed: false }
+        : { priceUSD, change24h: 0, updatedAt: null, seed: true };
+}
+
+module.exports = { precioMicroUsd, precioUsd, centimosUsdABezWei, aMicroUsd, bezPublicado, DECIMALES_BEZ, PRECIO_POR_DEFECTO };

@@ -47,22 +47,47 @@ class SupportChatAgent extends BaseAgent {
     const kbContext = hits.map((h, i) => `[${i + 1}] ${h.title}: ${h.snippet || h.body}`).join('\n');
     const grounded = hits.length > 0;
 
-    const response = await this.think(
+    const r = await this.think(
       `Responde a la consulta del cliente de manera empática.\n\n` +
       `CONSULTA: "${query}"\n\n` +
       `CONOCIMIENTO DISPONIBLE:\n${kbContext || '(no hay artículos de conocimiento)'}\n\n` +
       `HISTORIAL DEL CLIENTE:\n${history || '(sin historial previo)'}\n\n` +
-      `Instrucciones: Si el conocimiento no es suficiente para responder la pregunta, di claramente que no dispones de esa información y que un agente humano lo revisará.`,
-      { useMemory: true }
+      `Instrucciones: Responde SOLO con lo que dice el conocimiento disponible; no inventes datos, precios ni direcciones. ` +
+      `Si el conocimiento no es suficiente, di claramente que no dispones de esa información y que una persona del equipo lo revisará. ` +
+      `No menciones productos, redes, cadenas, funciones ni nombres que no aparezcan literalmente en el conocimiento (por ejemplo, BEZ-Coin vive en Polygon: no inventes otra red). ` +
+      `Firma siempre como «El equipo de BeZhas»; nunca uses marcadores como [Nombre del Asesor] ni corchetes sin rellenar.`,
+      { useMemory: true, withMeta: true }
     );
+
+    // Con el modelo caído (sin crédito, sin clave…) el texto es un SIMULADO que incluye parte del
+    // prompt interno: jamás se le entrega a un cliente. Si la base de conocimiento tiene algo, se
+    // le da tal cual (extractivo, sin inventar); si no, se dice la verdad y se escala a una persona.
+    const modelDown = r.simulated || r.fallback;
+    let response = SupportChatAgent.limpiarMarcadores(r.text);
+    if (modelDown) {
+      response = hits.length
+        ? `Esto es lo que dice nuestra documentación sobre tu consulta:\n\n${hits[0].title}: ${String(hits[0].snippet || hits[0].body || '').slice(0, 700)}\n\nSi necesitas algo más concreto, una persona del equipo te ayudará.`
+        : 'Ahora mismo no puedo responder a tu consulta. Una persona del equipo la revisará y te contestará lo antes posible.';
+    }
 
     return {
       reply: response,
       hits: hits.map(h => ({ id: h.id, title: h.title, score: h.score })),
       grounded,
+      modelDown: Boolean(modelDown),
       status: 'ok',
     };
   }
 }
+
+/**
+ * Un modelo pequeño copia a veces la plantilla de la firma («[Nombre del Asesor]», «[Tu nombre]»).
+ * Un cliente no debe ver corchetes sin rellenar: se sustituyen por la firma real.
+ */
+SupportChatAgent.limpiarMarcadores = function limpiarMarcadores(texto = '') {
+  return String(texto)
+    .replace(/\[(?:nombre|name|tu nombre|su nombre|asesor|agente|firma|equipo)[^\]]{0,40}\]/gi, 'El equipo de BeZhas')
+    .replace(/(El equipo de BeZhas)(\s*\n?\s*\1)+/g, '$1');
+};
 
 module.exports = SupportChatAgent;

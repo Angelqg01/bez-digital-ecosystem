@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { TrendingUp, Droplets, Coins, ArrowRightLeft, Loader2 } from 'lucide-react';
 import { useFarmingPositions, farmDeposit, type FarmPosition } from '@/lib/hooks';
+import { sessionAddress } from '@/lib/api';
 import { farmDepositOnChain } from '@/lib/contracts';
 
 export default function FarmingPage() {
@@ -12,7 +13,7 @@ export default function FarmingPage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const address = typeof window !== 'undefined' ? localStorage.getItem('bez_wallet') : null;
+    const address = sessionAddress();
     const { data, isLoading, mutate } = useFarmingPositions(address);
     const positions: FarmPosition[] = data?.positions ?? [];
 

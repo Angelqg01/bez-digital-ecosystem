@@ -44,11 +44,10 @@ const TREASURY = (process.env.TREASURY_WALLET || '0x89c23890c742d710265dD61be789
 const pad32 = (addr) => '0x' + addr.toLowerCase().replace('0x', '').padStart(64, '0');
 const addrFromTopic = (topic) => ('0x' + topic.slice(26)).toLowerCase();
 
+// Precio de configuración (config/bez-price.js), nunca token_price_cache: con la
+// semilla de 0,10 de la 006 el vigilante casaba importes 13 veces menores.
 async function getBezPriceUSD() {
-    const price = await query(
-        "SELECT price_usd FROM token_price_cache WHERE symbol = 'BEZ' LIMIT 1"
-    ).catch(() => ({ rows: [] }));
-    return parseFloat(price.rows[0]?.price_usd || String(precioUsd()));
+    return precioUsd();
 }
 
 /** Oldest pending crypto/qr buy order of this sender that the amount covers. */

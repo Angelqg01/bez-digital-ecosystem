@@ -131,8 +131,10 @@ export class BeZhasClient {
     });
   }
 
-  async getPaymentTokenomics({ amountUSD = 100, priceUSD = 0.10 } = {}) {
-    const qs = new URLSearchParams({ amountUSD: String(amountUSD), priceUSD: String(priceUSD) });
+  // Sin priceUSD lo pone la API (config/bez-price.js, 0,0075 USD); el 0,10 por defecto era 13 veces el precio real.
+  async getPaymentTokenomics({ amountUSD = 100, priceUSD } = {}) {
+    const qs = new URLSearchParams({ amountUSD: String(amountUSD) });
+    if (priceUSD) qs.set('priceUSD', String(priceUSD));
     return this.gatewayFetch(`/payments/tokenomics?${qs}`);
   }
 

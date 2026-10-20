@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, id, parseEther, type InterfaceAbi } from 'ethers';
+import { BrowserProvider, Contract, id, parseEther, parseUnits, type InterfaceAbi } from 'ethers';
 import { apiFetch } from './api';
 
 type EthereumProvider = {
@@ -137,11 +137,18 @@ export async function swapOnChain(tokenIn: string, tokenOut: string, amountIn: s
     const owner = await signer.getAddress();
     const dexInfo = await getContractInfo('BeZhasDEX', false);
     const token = new Contract(tokenIn, ERC20_ABI, signer);
-    const value = parseEther(amountIn);
+    const tokenOutContract = new Contract(tokenOut, ERC20_ABI, signer);
+    // USDT y USDC en Polygon tienen 6 decimales: parseEther (18) multiplicaría
+    // el importe por 10^12. Se leen los decimales reales de cada token.
+    const [decimalsIn, decimalsOut] = await Promise.all([
+        token.decimals().then(Number),
+        tokenOutContract.decimals().then(Number),
+    ]);
+    const value = parseUnits(amountIn, decimalsIn);
     const allowance = await token.allowance(owner, dexInfo.address);
     if (allowance < value) await (await token.approve(dexInfo.address, value)).wait();
     const dex = await getWriteContract('BeZhasDEX');
-    const tx = await dex.swap(tokenIn, tokenOut, value, parseEther(minAmountOut || '0'));
+    const tx = await dex.swap(tokenIn, tokenOut, value, parseUnits(minAmountOut || '0', decimalsOut));
     return tx.wait();
 }
 

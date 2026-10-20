@@ -21,49 +21,28 @@ export function HeaderAuthButton() {
   const { token, user, openLoginModal, logout } = useAuth();
 
   if (token && user) {
+    // Una sola pastilla con el usuario y un botón de salir: antes eran tres piezas
+    // (usuario, rol en mayúsculas y un «Disconnect» rojo) para lo mismo.
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '6px 14px',
-          background: 'rgba(0, 240, 255, 0.08)',
-          border: '1px solid rgba(0, 240, 255, 0.3)',
-          borderRadius: '20px',
-          color: '#00f0ff',
-          fontSize: '12px',
-          fontWeight: 700,
-          boxShadow: '0 0 10px rgba(0, 240, 255, 0.1)'
-        }}>
-          <span style={{ fontSize: '14px' }}>👤</span>
-          <span>{user.username}</span>
-          <span style={{
-            fontSize: '10px',
-            background: 'linear-gradient(135deg, #a855f7, #6366f1)',
-            color: '#fff',
-            padding: '2px 8px',
-            borderRadius: '10px',
-            marginLeft: '4px',
-            fontWeight: 800,
-            textTransform: 'uppercase'
-          }}>{user.role || 'Usuario'}</span>
-        </div>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6, padding: '4px 4px 4px 12px',
+        background: 'rgba(0, 240, 255, 0.06)', border: '1px solid rgba(0, 240, 255, 0.25)',
+        borderRadius: 20, color: '#00f0ff', fontSize: 12, fontWeight: 700, maxWidth: 220,
+      }}>
+        <span title={user.role || undefined} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {user.username}
+        </span>
         <button
           onClick={logout}
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
           style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '20px',
-            color: '#ef4444',
-            padding: '6px 16px',
-            fontSize: '11px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, flex: 'none',
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%',
+            color: '#94a3b8', cursor: 'pointer', fontSize: 13,
           }}
         >
-          Disconnect
+          ⏻
         </button>
       </div>
     );
@@ -77,7 +56,7 @@ export function HeaderAuthButton() {
         border: 'none',
         borderRadius: '20px',
         color: '#000',
-        padding: '8px 20px',
+        padding: '7px 16px',
         fontSize: '12px',
         fontWeight: 800,
         cursor: 'pointer',
@@ -85,7 +64,7 @@ export function HeaderAuthButton() {
         transition: 'all 0.3s ease',
       }}
     >
-      🔑 Conectar / Registro
+      Conectar / Registro
     </button>
   );
 }
@@ -588,9 +567,14 @@ export const SSOProvider = ({ children }: { children: React.ReactNode }) => {
   // Login / sign-up with a Web3 wallet (SIWE, with demo fallback).
   const loginWithWallet = async (mode: 'login' | 'subscribe' = 'login') => {
     const session = await siweLogin({ statement: 'Inicia sesión en BeZhas DeFi con tu wallet.', mode });
+    // siweLogin cae a una sesión «demo» con un token que no firma nadie si la API
+    // no responde: con ella el panel se desbloqueaba y todo daba 401. Aquí no vale.
+    if (session.authMethod !== 'siwe') {
+      throw new Error('No se pudo verificar la firma con la API de BeZhas. Inténtalo de nuevo.');
+    }
     const walletUser = {
       username: shortAddress(session.address),
-      role: session.authMethod === 'siwe' ? 'Wallet Verified' : 'Wallet (Demo)',
+      role: 'Wallet Verified',
       walletAddress: session.address,
     };
     localStorage.setItem('bezhas-jwt', session.token);
@@ -615,7 +599,7 @@ export const SSOProvider = ({ children }: { children: React.ReactNode }) => {
   const closeLoginModal = () => setIsLoginModalOpen(false);
 
   return (
-    <AuthContext.Provider value={{ token, user, login, register, loginWithWallet, subscribeWithBEZPlan, logout, isLoginModalOpen, openLoginModal, closeLoginModal }}>
+    <AuthContext.Provider value={{ token, user, isAuthenticated: Boolean(token), apiBase: API_BASE, login, register, loginWithWallet, subscribeWithBEZPlan, logout, isLoginModalOpen, openLoginModal, closeLoginModal }}>
       <Suspense fallback={<></>}>
         <SSOHandler setToken={setToken} setUser={setUser} setIsLoading={setIsLoading} setModalOpen={setIsLoginModalOpen} />
       </Suspense>

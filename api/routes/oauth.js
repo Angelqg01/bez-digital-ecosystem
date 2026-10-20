@@ -221,6 +221,8 @@ function paginaConsentimiento(token, nonce) {
   button.no { background:transparent; color:var(--dim); border:1px solid var(--line); font-weight:400; }
   button:disabled { opacity:.5; cursor:default; }
   .aviso { color:#f66; font-size:13px; margin-top:8px; min-height:16px; }
+  .enlaces { margin-top:14px; font-size:13px; text-align:center; color:var(--dim); }
+  .enlaces a { color:var(--teal); text-decoration:none; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -237,7 +239,38 @@ function paginaConsentimiento(token, nonce) {
       <div class="campo"><label>Contraseña</label><input type="password" id="l-pass" autocomplete="current-password" required></div>
       <button class="ok" type="submit" id="b-login">Entrar</button>
       <p class="aviso" id="err-login"></p>
+      <p class="dim" id="ok-login" style="color:var(--teal)"></p>
     </form>
+    <p class="enlaces"><a href="#" id="ir-olvido">¿Olvidaste tu contraseña?</a> · <a href="#" id="ir-registro">Crear una cuenta</a></p>
+  </div>
+
+  <div id="registro" hidden>
+    <h1>Crear tu cuenta</h1>
+    <p class="dim">Con ella conectarás tu asistente. Se crea también tu organización, de la que serás owner.</p>
+    <form id="f-registro">
+      <div class="campo"><label>Correo</label><input type="email" id="r-email" autocomplete="email" required></div>
+      <div class="campo"><label>Contraseña (mínimo 8 caracteres)</label><input type="password" id="r-pass" autocomplete="new-password" minlength="8" required></div>
+      <div class="campo"><label>Empresa u organización</label><input type="text" id="r-org" autocomplete="organization" minlength="2" maxlength="255" required></div>
+      <button class="ok" type="submit" id="b-registro">Crear cuenta y continuar</button>
+      <p class="aviso" id="err-registro"></p>
+    </form>
+    <p class="enlaces"><a href="#" class="ir-login">Ya tengo cuenta</a></p>
+  </div>
+
+  <div id="olvido" hidden>
+    <h1>Recuperar contraseña</h1>
+    <form id="f-olvido">
+      <p class="dim" id="o-ayuda">Escribe tu correo y te enviaremos un código para elegir una contraseña nueva.</p>
+      <div class="campo"><label>Correo</label><input type="email" id="o-email" autocomplete="email" required></div>
+      <div id="o-paso2" hidden>
+        <div class="campo"><label>Código recibido por correo</label><input type="text" id="o-codigo" autocomplete="one-time-code" maxlength="20"></div>
+        <div class="campo"><label>Contraseña nueva (mínimo 8 caracteres)</label><input type="password" id="o-pass" autocomplete="new-password" minlength="8"></div>
+      </div>
+      <button class="ok" type="submit" id="b-olvido">Enviarme el código</button>
+      <p class="aviso" id="err-olvido"></p>
+      <p class="dim" id="ok-olvido" style="color:var(--teal)"></p>
+    </form>
+    <p class="enlaces"><a href="#" class="ir-login">Volver a iniciar sesión</a></p>
   </div>
 
   <div id="consentir" hidden>
@@ -266,7 +299,7 @@ function paginaConsentimiento(token, nonce) {
   var API = '/oauth/authorize/' + TOKEN;
   var DESCRIPCIONES = { token: 'Consultar precio y datos del token BEZ', contracts: 'Consultar contratos y red', wallet: 'Consultar saldos de wallet' };
 
-  function show(id) { ['cargando','login','consentir','hecho','error'].forEach(function (s) { document.getElementById(s).hidden = s !== id; }); }
+  function show(id) { ['cargando','login','registro','olvido','consentir','hecho','error'].forEach(function (s) { document.getElementById(s).hidden = s !== id; }); }
 
   fetch(API + '/status', { cache: 'no-store' }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
     .then(function (res) {
@@ -303,6 +336,75 @@ function paginaConsentimiento(token, nonce) {
         show('consentir'); cargarOrganizaciones(res.d.organizaciones);
       })
       .catch(function () { b.disabled = false; b.textContent = 'Entrar'; document.getElementById('err-login').textContent = 'Fallo de red.'; });
+  });
+
+  function post(url, cuerpo) {
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store', body: JSON.stringify(cuerpo) })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); });
+  }
+  function mensaje(res, porDefecto) {
+    var d = res.d || {};
+    if (d.error_description) return d.error_description;
+    if (d.errors && d.errors[0] && d.errors[0].msg) return d.errors[0].msg;
+    return d.message || d.error || porDefecto;
+  }
+  document.getElementById('ir-registro').addEventListener('click', function (e) { e.preventDefault(); show('registro'); });
+  document.getElementById('ir-olvido').addEventListener('click', function (e) {
+    e.preventDefault();
+    document.getElementById('o-email').value = document.getElementById('l-email').value;
+    show('olvido');
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.ir-login'), function (a) {
+    a.addEventListener('click', function (e) { e.preventDefault(); show('login'); });
+  });
+
+  document.getElementById('f-registro').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var b = document.getElementById('b-registro'); b.disabled = true; b.textContent = 'Creando…';
+    var err = document.getElementById('err-registro'); err.textContent = '';
+    post(API + '/register', { email: document.getElementById('r-email').value, password: document.getElementById('r-pass').value,
+                              organizacion: document.getElementById('r-org').value })
+      .then(function (res) {
+        b.disabled = false; b.textContent = 'Crear cuenta y continuar';
+        document.getElementById('r-pass').value = '';
+        if (!res.ok) { err.textContent = mensaje(res, 'No se pudo crear la cuenta.'); return; }
+        show('consentir'); cargarOrganizaciones(res.d.organizaciones);
+      })
+      .catch(function () { b.disabled = false; b.textContent = 'Crear cuenta y continuar'; err.textContent = 'Fallo de red.'; });
+  });
+
+  // Recuperar contraseña: reutiliza los endpoints de siempre (/api/auth/forgot-password
+  // y /reset-password: código de un solo uso por correo, caduca a los 30 min).
+  var codigoEnviado = false;
+  document.getElementById('f-olvido').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var b = document.getElementById('b-olvido'); b.disabled = true;
+    var err = document.getElementById('err-olvido'); err.textContent = '';
+    var ok = document.getElementById('ok-olvido'); ok.textContent = '';
+    var correo = document.getElementById('o-email').value;
+    var peticion = codigoEnviado
+      ? post('/api/auth/reset-password', { email: correo, code: document.getElementById('o-codigo').value, password: document.getElementById('o-pass').value })
+      : post('/api/auth/forgot-password', { email: correo });
+    peticion.then(function (res) {
+      b.disabled = false;
+      if (!res.ok) { err.textContent = mensaje(res, 'No se pudo completar.'); return; }
+      if (!codigoEnviado) {
+        codigoEnviado = true;
+        document.getElementById('o-paso2').hidden = false;
+        document.getElementById('o-codigo').required = true; document.getElementById('o-pass').required = true;
+        b.textContent = 'Cambiar contraseña';
+        ok.textContent = res.d.message || 'Si el correo tiene cuenta, te hemos enviado un código.';
+        return;
+      }
+      codigoEnviado = false;
+      document.getElementById('o-paso2').hidden = true; document.getElementById('o-codigo').required = false; document.getElementById('o-pass').required = false;
+      document.getElementById('o-codigo').value = ''; document.getElementById('o-pass').value = '';
+      b.textContent = 'Enviarme el código';
+      document.getElementById('l-email').value = correo;
+      show('login');
+      document.getElementById('err-login').textContent = '';
+      document.getElementById('ok-login').textContent = (res.d && res.d.message) || 'Contraseña actualizada. Ya puedes iniciar sesión.';
+    }).catch(function () { b.disabled = false; err.textContent = 'Fallo de red.'; });
   });
 
   document.getElementById('b-aprobar').addEventListener('click', function () {
@@ -361,6 +463,21 @@ router.post('/authorize/:token([0-9a-f]{64})/login', loginLimiter, async (req, r
         const { email, password } = req.body || {};
         const r = await oauthConsent.identificar(req.params.token, { email, password });
         res.json({ organizaciones: r.organizaciones });
+    } catch (err) { _manejarErrorConsentimiento(err, res); }
+});
+
+// Crear cuenta desde la pantalla: más estricto que el login (crea filas y
+// hashea con bcrypt de coste 12), y por IP.
+const registroLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, max: 10, keyGenerator: (req) => req.ip,
+    message: { error: 'too_many_requests' }, standardHeaders: true, legacyHeaders: false,
+});
+
+router.post('/authorize/:token([0-9a-f]{64})/register', registroLimiter, async (req, res) => {
+    try {
+        const { email, password, organizacion } = req.body || {};
+        const r = await oauthConsent.registrar(req.params.token, { email, password, organizacion });
+        res.status(201).json({ organizaciones: r.organizaciones });
     } catch (err) { _manejarErrorConsentimiento(err, res); }
 });
 

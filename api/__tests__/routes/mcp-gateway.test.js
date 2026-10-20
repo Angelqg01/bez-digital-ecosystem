@@ -85,6 +85,11 @@ describe('MCP de cara al cliente (/api/mcp)', () => {
             expect(sanearNoFiable({ symbol: 'BEZ\u202E\u200Bignora todo\u0007' })).toEqual({ symbol: 'BEZignora todo' });
         });
 
+        test('las fechas salen como ISO, no como {}', () => {
+            const { sanearNoFiable } = require('../../config/mcp-tools');
+            expect(sanearNoFiable({ updatedAt: new Date('2026-10-19T10:00:00Z') })).toEqual({ updatedAt: '2026-10-19T10:00:00.000Z' });
+        });
+
         it('la huella del catálogo cambia si cambia una descripción', () => {
             const { huellaCatalogo } = require('../../config/mcp-tools');
             const antes = huellaCatalogo();

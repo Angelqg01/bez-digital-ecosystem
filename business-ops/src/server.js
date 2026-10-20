@@ -1,6 +1,7 @@
 'use strict';
 
-require('dotenv').config();
+// .env.local (credenciales locales, p. ej. HOSTINGER_SMTP_*) gana a .env.
+require('dotenv').config({ path: ['.env.local', '.env'] });
 
 // Del .env del monorepo se hereda SOLO lo que de verdad hay que compartir con
 // la API de BeZhas. Nada más.
@@ -48,6 +49,7 @@ const { buildDashboard } = require('./platform/dashboard');
 const { streamTenantEvents } = require('./platform/sse');
 const path = require('path');
 const EmailConnector = require('./connectors/EmailConnector');
+const MailboxReader = require('./connectors/MailboxReader');
 const TwentyCRM = require('./connectors/TwentyCRM');
 const StorageConnector = require('./connectors/StorageConnector');
 const FileSystemConnector = require('./connectors/FileSystemConnector');
@@ -102,6 +104,13 @@ const tierMap = {
   mid:      { provider: process.env.TIER_MID_PROVIDER || (providers.ollama ? 'ollama' : 'anthropic'), model: process.env.TIER_MID_MODEL || (providers.ollama ? 'qwen2.5:14b' : 'claude-sonnet-4-6') },
   fast:     { provider: process.env.TIER_FAST_PROVIDER || (providers.ollama ? 'ollama' : 'anthropic'), model: process.env.TIER_FAST_MODEL || (providers.ollama ? 'qwen2.5:7b' : 'claude-haiku-4-5') },
 };
+// Respaldo por tier: TIER_<X>_FALLBACK_PROVIDER / TIER_<X>_FALLBACK_MODEL (p. ej. IA local primero y
+// Claude si el túnel al Ollama cae). Sólo se usa si ese proveedor está realmente configurado.
+for (const [tier, nombre] of [['frontier', 'FRONTIER'], ['mid', 'MID'], ['fast', 'FAST']]) {
+  const fp = process.env[`TIER_${nombre}_FALLBACK_PROVIDER`];
+  const fm = process.env[`TIER_${nombre}_FALLBACK_MODEL`];
+  if (fp && fm) tierMap[tier].fallback = { provider: fp, model: fm };
+}
 // El store se crea aquí (antes que los trackers) porque uso y coste persisten.
 // Prioridad: DATABASE_URL (Postgres) → SQLITE_PATH (base de datos interna
 // embebida; por defecto data/operant.db) → memoria (SQLITE_PATH=memory).
@@ -520,7 +529,10 @@ if (process.env.INTERNAL_API_KEY) {
 app.get('/', (req, res) => res.json({ status: 'online', product: 'OPERANT', tenants: tenants.list().length }));
 
 // Liveness/readiness: comprueba dependencias (store) sin tocar el flujo.
-app.get('/healthz', async (req, res) => {
+// `/healthz` es una ruta reservada de Cloud Run: el Google Front End la intercepta y
+// responde 404 sin llegar al contenedor, así que en Cloud Run la API sondea `/health`.
+// Mismo manejador; `/healthz` se conserva para el compose y el HEALTHCHECK del Dockerfile.
+app.get(['/healthz', '/health'], async (req, res) => {
   const checks = { store: 'unknown', model: providers.anthropic ? 'live' : (providers.ollama ? 'ollama' : 'simulado') };
   try {
     if (store.connect) await store.connect();
@@ -743,7 +755,7 @@ app.all('/channels/:channel/:tenantId/inbound', async (req, res) => {
   }
 
   try {
-    const input = channel.parseInbound(req.body);
+    const input = require('./channels/routing').enrutarCanalDeCliente(req.params.channel, channel.parseInbound(req.body));
     const task = await tenants.handleAndWait(req.params.tenantId, input, { timeoutMs: 30000 });
 
     if (typeof channel.deliver === 'function') {
@@ -1393,6 +1405,55 @@ app.get('/tenants/:tenantId/alerts', auth, scopeToTenant, (req, res) => {
 });
 
 // Estado del exportador OTLP (admin): si está activo, a dónde y si falla.
+// ── Bandeja de correo (buzón de Hostinger, solo lectura) ─────────────────────
+// Es UN buzón de la plataforma, no uno por tenant: sin esta lista cualquier
+// cliente con api-key podría leer el correo de BeZhas. Solo los tenants de
+// MAILBOX_TENANTS (por defecto `bezhas`) acceden, también el admin.
+const mailbox = new MailboxReader();
+let mailInbound = null;   // auto-respondedor de correo (arranca tras hidratar, si MAIL_AUTOREPLY=true)
+const mailboxTenants = new Set((process.env.MAILBOX_TENANTS || 'bezhas').split(',').map((t) => t.trim()).filter(Boolean));
+
+function mailboxAccess(req, res, next) {
+  if (!mailboxTenants.has(req.params.tenantId)) return res.status(403).json({ error: 'este tenant no tiene acceso a la bandeja', code: 'mailbox_forbidden' });
+  next();
+}
+
+function mailboxError(res, err) {
+  if (err.code === 'MAILBOX_NOT_CONFIGURED') return res.status(503).json({ error: err.message, code: 'mailbox_not_configured', configured: false });
+  if (err.code === 'BAD_UID') return res.status(400).json({ error: err.message });
+  if (err.code === 'NOT_FOUND') return res.status(404).json({ error: err.message });
+  console.warn(`[mailbox] ${err.message}`);
+  return res.status(502).json({ error: `no se pudo leer el buzón: ${err.message}`, code: 'mailbox_unreachable' });
+}
+
+app.get('/tenants/:tenantId/mailbox', auth, scopeToTenant, mailboxAccess, rateLimit, async (req, res) => {
+  try {
+    const { folder, q, sort, limit, offset } = req.query;
+    res.json({ ...mailbox.describe(), ...(await mailbox.list({ folder: folder || 'INBOX', q, sort, limit, offset })) });
+  } catch (err) { mailboxError(res, err); }
+});
+
+// Digest DMARC: informes agregados del buzón resumidos por remitente. Va ANTES
+// de /mailbox/:uid, o "dmarc" se tomaría por un uid.
+app.get('/tenants/:tenantId/mailbox/dmarc', auth, scopeToTenant, mailboxAccess, rateLimit, async (req, res) => {
+  try {
+    res.json(await mailbox.dmarcDigest({ days: req.query.days }));
+  } catch (err) { mailboxError(res, err); }
+});
+
+app.get('/tenants/:tenantId/mailbox/:uid', auth, scopeToTenant, mailboxAccess, rateLimit, async (req, res) => {
+  try {
+    res.json(await mailbox.get({ folder: req.query.folder || 'INBOX', uid: req.params.uid }));
+  } catch (err) { mailboxError(res, err); }
+});
+
+app.post('/tenants/:tenantId/mailbox/:uid/seen', auth, scopeToTenant, mailboxAccess, rateLimit, async (req, res) => {
+  try {
+    res.json(await mailbox.markSeen({ folder: req.query.folder || 'INBOX', uid: req.params.uid }));
+  } catch (err) { mailboxError(res, err); }
+});
+
+
 app.get('/observability/otlp', auth, (req, res) => {
   if (!req.isAdmin) return res.status(403).json({ error: 'solo admin' });
   res.json(otlp.status());
@@ -1420,6 +1481,27 @@ if (require.main === module) {
       // el arranque contradecía a /healthz y hacía dudar de si la IA funcionaba.
       const motor = providers.anthropic ? 'Anthropic' : (providers.ollama ? `Ollama (${tierMap.fast.model})` : 'SIMULADO');
       app.listen(PORT, () => console.log(`OPERANT API → http://localhost:${PORT} (motor ${motor} · store ${store.constructor.name})`));
+
+      // Auto-respondedor del correo de atención (support@, ventas@, facturacion@, marketing@,
+      // infrastructure@). Sólo si se activa a propósito Y con fecha de activación: sin `since`
+      // no arranca, porque contestaría a todo el histórico del buzón.
+      if (process.env.MAIL_AUTOREPLY === 'true') {
+        try {
+          const MailInbound = require('./channels/MailInbound');
+          mailInbound = new MailInbound({
+            reader: mailbox, tenants, channel: channels.email,
+            tenantId: process.env.BEZHAS_TENANT_ID || 'bezhas',
+            since: process.env.MAIL_AUTOREPLY_SINCE,
+            intervalMs: parseInt(process.env.MAIL_AUTOREPLY_INTERVAL_MS || '60000', 10),
+          });
+          mailInbound.start();
+          console.log(`[mail-inbound] atendiendo correo de los alias desde ${process.env.MAIL_AUTOREPLY_SINCE}`);
+        } catch (err) {
+          console.error(`[mail-inbound] NO arranca: ${err.message}`);
+        }
+      } else {
+        console.log('[mail-inbound] desactivado (MAIL_AUTOREPLY!=true)');
+      }
     })
     .catch((err) => {
       console.error(`[store] rehidratación fallida: ${err.message}`);
@@ -1427,4 +1509,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { app, checkLocalModels, tenants, modelGateway, store, costTracker, usageMeter, telemetry, apiKeys, rateLimiter, scheduler, watchdog, otlp, langfuse, buildTools, hydrateFromStore, emailProbe, checkEmailChannel };
+module.exports = { app, checkLocalModels, tenants, modelGateway, store, costTracker, usageMeter, telemetry, apiKeys, rateLimiter, scheduler, watchdog, otlp, langfuse, buildTools, hydrateFromStore, emailProbe, checkEmailChannel, mailbox };

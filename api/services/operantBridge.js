@@ -24,6 +24,40 @@ const logger = require('pino')({ level: 'info', name: 'operant-bridge' });
 
 const BASE_URL = (process.env.OPERANT_API_URL || 'http://localhost:3010').replace(/\/$/, '');
 const INTERNAL_KEY = process.env.OPERANT_INTERNAL_KEY || '';
+
+/**
+ * OPERANT en Cloud Run se despliega con `--no-allow-unauthenticated`, como el
+ * resto de backends privados: Cloud Run exige un ID token de Google cuyo
+ * audience sea su URL. Va en `X-Serverless-Authorization` y no en
+ * `Authorization` ni en `x-api-key`: Cloud Run lo valida y lo retira, y deja
+ * intacta la clave interna que OPERANT comprueba por su cuenta. En local
+ * (localhost, o una URL http) no hace nada. Falla abierto: si no se puede
+ * acuñar el token, la petición sale igualmente y Cloud Run responde 401, que
+ * aquí cuenta como servicio no disponible.
+ */
+let _idTokenClient = null;
+let _idTokenCache = { token: null, exp: 0 };
+async function cabeceraIdToken() {
+    let origin;
+    try { origin = new URL(BASE_URL); } catch { return {}; }
+    if (origin.protocol !== 'https:' || /^(localhost|127\.0\.0\.1)$/.test(origin.hostname)) return {};
+    if (_idTokenCache.token && _idTokenCache.exp > Date.now()) {
+        return { 'x-serverless-authorization': `Bearer ${_idTokenCache.token}` };
+    }
+    try {
+        const { GoogleAuth } = require('google-auth-library');
+        _idTokenClient = _idTokenClient || await new GoogleAuth().getIdTokenClient(origin.origin);
+        const headers = await _idTokenClient.getRequestHeaders();
+        const bearer = headers.Authorization || headers.authorization || '';
+        const token = bearer.replace(/^Bearer\s+/i, '');
+        if (!token) return {};
+        _idTokenCache = { token, exp: Date.now() + 45 * 60 * 1000 }; // dura ~1 h
+        return { 'x-serverless-authorization': `Bearer ${token}` };
+    } catch (err) {
+        logger.warn({ error: err.message }, 'No se pudo acuñar el ID token para OPERANT');
+        return {};
+    }
+}
 const TIMEOUT_MS = parseInt(process.env.OPERANT_TIMEOUT_MS || '20000', 10);
 const FAILURE_THRESHOLD = parseInt(process.env.OPERANT_FAILURE_THRESHOLD || '3', 10);
 const COOLDOWN_MS = parseInt(process.env.OPERANT_COOLDOWN_MS || '60000', 10);
@@ -59,7 +93,7 @@ function configured() {
     return Boolean(INTERNAL_KEY);
 }
 
-async function request(method, path, body) {
+async function request(method, path, body, opciones = {}) {
     if (!configured()) {
         throw new OperantUnavailableError('falta OPERANT_INTERNAL_KEY');
     }
@@ -68,7 +102,8 @@ async function request(method, path, body) {
     }
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeoutMs = opciones.timeoutMs || TIMEOUT_MS;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
         const res = await fetch(`${BASE_URL}${path}`, {
             method,
@@ -76,6 +111,8 @@ async function request(method, path, body) {
             headers: {
                 'content-type': 'application/json',
                 'x-api-key': INTERNAL_KEY,
+                ...(opciones.headers || {}),
+                ...(await cabeceraIdToken()),
             },
             body: body === undefined ? undefined : JSON.stringify(body),
         });
@@ -96,7 +133,7 @@ async function request(method, path, body) {
             openUntil = Date.now() + COOLDOWN_MS;
             logger.error({ failures, cooldownMs: COOLDOWN_MS }, 'Circuito OPERANT abierto');
         }
-        throw new OperantUnavailableError(err.name === 'AbortError' ? `timeout ${TIMEOUT_MS}ms` : err.message);
+        throw new OperantUnavailableError(err.name === 'AbortError' ? `timeout ${timeoutMs}ms` : err.message);
     } finally {
         clearTimeout(timer);
     }
@@ -113,9 +150,17 @@ function safeJson(text) {
 /** Salud del runtime (no abre circuito: es justo lo que se usa para sondearlo). */
 async function health() {
     try {
-        const data = await request('GET', '/healthz');
+        // `/health`, no `/healthz`: en Cloud Run ésta es una ruta reservada y devuelve 404 sin llegar a OPERANT.
+        const data = await request('GET', '/health');
         return { available: true, circuit: circuitState(), ...data };
     } catch (err) {
+        // OPERANT responde 503 con un cuerpo `status: degraded` cuando una dependencia
+        // (el correo, p. ej.) falla. Eso es un servicio VIVO con un canal caído, no un
+        // servicio caído: tratarlo como no disponible escondía todo OPERANT del panel
+        // por una contraseña de buzón mal puesta.
+        if (err instanceof OperantError && err.body && typeof err.body.status === 'string') {
+            return { available: true, degraded: true, circuit: circuitState(), ...err.body };
+        }
         return { available: false, circuit: circuitState(), reason: err.message };
     }
 }
@@ -180,12 +225,65 @@ function tenantUsage({ tenantId }) {
     return request('GET', `/bridge/tenants/${encodeURIComponent(tenantId)}/usage`);
 }
 
+/** Panel del tenant (KPIs, tareas, aprobaciones, cuota). Solo lectura. */
+function tenantDashboard({ tenantId }) {
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/dashboard`);
+}
+
+/** Lote de la bandeja del buzón de la plataforma (OPERANT lo lee por IMAP). Solo lectura. */
+function mailboxList({ tenantId, folder, q, sort, limit, offset }) {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries({ folder, q, sort, limit, offset })) {
+        if (v !== undefined && v !== '') qs.set(k, String(v));
+    }
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/mailbox?${qs}`);
+}
+
+/** Un correo completo, como texto plano. No lo marca como leído. */
+function mailboxGet({ tenantId, uid, folder }) {
+    const qs = folder ? `?folder=${encodeURIComponent(folder)}` : '';
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/mailbox/${encodeURIComponent(uid)}${qs}`);
+}
+
+/** Digest DMARC del buzón (informes agregados resumidos por remitente). Solo lectura. */
+function mailboxDmarc({ tenantId, days }) {
+    const qs = days ? `?days=${encodeURIComponent(days)}` : '';
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/mailbox/dmarc${qs}`);
+}
+
+/** Indexa (o reemplaza, por id) un artículo en la base de conocimiento del tenant. */
+function kbIngest({ tenantId, id, title, body, tags }) {
+    return request('POST', `/tenants/${encodeURIComponent(tenantId)}/kb`, { id, title, body, tags });
+}
+
+/** Estado del embudo de ventas: leads pendientes de procesar. Solo lectura. */
+function funnel({ tenantId }) {
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/funnel`);
+}
+
+/** Cola de publicaciones sociales programadas. Solo lectura. */
+function marketingQueue({ tenantId }) {
+    return request('GET', `/tenants/${encodeURIComponent(tenantId)}/marketing/queue`);
+}
+
+/**
+ * Reenvía a OPERANT un mensaje entrante de un canal (Telegram, correo…) tal como llegó.
+ * Los webhooks de los proveedores no pueden llamar a OPERANT directamente (es privado en
+ * Cloud Run): entran por la API, que verifica su secreto y los pasa por aquí con el ID token.
+ * `headers` lleva el secreto propio del canal, que OPERANT vuelve a comprobar.
+ */
+function forwardChannel({ channel, tenantId, body, headers }) {
+    return request('POST', `/channels/${encodeURIComponent(channel)}/${encodeURIComponent(tenantId)}/inbound`, body,
+        { headers, timeoutMs: 28000 });
+}
+
 module.exports = {
     OperantUnavailableError,
     OperantError,
     configured,
     circuitState,
     health,
+    forwardChannel,
     provisionTenant,
     dispatchTask,
     getTask,
@@ -195,5 +293,12 @@ module.exports = {
     auditVerify,
     auditMarkAnchored,
     tenantUsage,
+    tenantDashboard,
+    mailboxList,
+    mailboxGet,
+    mailboxDmarc,
+    kbIngest,
+    funnel,
+    marketingQueue,
     _resetCircuitForTests: () => { failures = 0; openUntil = 0; },
 };

@@ -21,7 +21,7 @@ import { useTokenInfo, useTreasuryOverview, useGovernanceProposals, useWalletBal
 const BEZ_DIRECT_SALE_URL = 'https://buy.stripe.com/14A5kD2A89Su4Vo3Mfew806';
 const BEZ_POLYGON_ADDRESS = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 const BEZ_POLYGONSCAN_URL = `https://polygonscan.com/token/${BEZ_POLYGON_ADDRESS}`;
-const BEZHAS_HOME_URL = process.env.NEXT_PUBLIC_BEZHAS_HOME_URL || 'http://localhost:5173';
+const BEZHAS_HOME_URL = process.env.NEXT_PUBLIC_BEZHAS_HOME_URL || 'https://www.bezhas.com';
 
 export default function DashboardPage() {
     const { data: token, isLoading: tokenLoading } = useTokenInfo();
@@ -36,9 +36,9 @@ export default function DashboardPage() {
         { label: 'Total Supply', value: token?.totalSupply ? `${Number(token.totalSupply).toLocaleString()} ${token.symbol}` : '—', icon: Coins },
         { label: 'Circulating Supply', value: token?.circulatingSupply ? `${Number(token.circulatingSupply).toLocaleString()} ${token.symbol}` : '—', icon: TrendingUp },
         { label: 'Active Proposals', value: String(activeProposals), icon: Vote },
-        { label: 'Treasury', value: treasury?.totalFunds ?? '—', icon: PieChart },
+        { label: 'BEZ en staking', value: treasury ? `${Number(treasury.totalStaked).toLocaleString()} BEZ` : '—', icon: PieChart },
         { label: 'Your BEZ Balance', value: walletBal?.balanceBEZ ? `${walletBal.balanceBEZ} BEZ` : '—', icon: Wallet },
-        { label: 'Token', value: token?.name ?? 'BEZCoinV2', icon: Coins },
+        { label: 'Token', value: token?.name ?? 'BEZ-Coin', icon: Coins },
     ];
 
     const quickActions = [

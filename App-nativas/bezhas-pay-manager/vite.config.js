@@ -11,7 +11,8 @@ const SHARED = path.resolve(__dirname, '..', '_shared')
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    dedupe: ['react', 'react-dom'],
+    // lucide-react: lo importa _shared/ai-chat (el chat de la plataforma) y _shared no tiene node_modules propio.
+    dedupe: ['react', 'react-dom', 'lucide-react'],
   },
   server: {
     fs: { allow: ['..', SHARED] },
