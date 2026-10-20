@@ -12,7 +12,7 @@ export default function FinancialPage() {
   const tvl = defi ? `$${(defi.tvl / 1_000_000).toFixed(1)}M` : '—';
   const tvlChange = tk ? `${tk.change24h >= 0 ? '↑' : '↓'} ${Math.abs(tk.change24h).toFixed(1)}% / 24h` : '—';
   const collateral = stk ? stk.activePositions.toLocaleString() : '—';
-  const apy = stk ? `${stk.apr.toFixed(2)}%` : '—';
+  const apy = typeof stk?.apr === 'number' ? `${stk.apr.toFixed(2)}%` : '—';
 
   return (
     <>

@@ -139,13 +139,14 @@ const nativeApps = [
   },
 ];
 
-// Apps secundarias del ecosistema con enlace directo a su propia App Nativa (subdominios bezhas.com).
+// Apps secundarias del ecosistema con enlace directo a su propia App Nativa (subdominios bezhas.com,
+// detrás del balanceador: lista SUBAPPS de deploy/gcp/config.env). Solo las que están en producción.
 // Para cambiar un destino, edita solo el campo `href` de la tarjeta correspondiente.
 const secondaryApps = [
   {
     name: 'BeZhas-Hub',
     status: 'Online',
-    href: 'https://bezhas-hub-o5xep6gbwq-ew.a.run.app',
+    href: 'https://hub.bezhas.com',
     icon: 'hub',
     label: 'Centro social y marketplace',
     desc: 'Portal consumer del ecosistema: perfiles, comunidad, comercio, contenido y experiencia VIP. La puerta de entrada publica a BeZhas.',
@@ -153,7 +154,7 @@ const secondaryApps = [
   {
     name: 'BeZhas-DeFi',
     status: 'Online',
-    href: 'https://bezhas-capital-o5xep6gbwq-ew.a.run.app/defi',
+    href: 'https://capital.bezhas.com/defi',
     icon: 'account_balance',
     label: 'Finanzas Web3',
     desc: 'Suite financiera descentralizada: staking, farming, bridge, wallet, DAO y liquidez conectadas al token BEZ.',
@@ -161,7 +162,7 @@ const secondaryApps = [
   {
     name: 'BZ PureScan',
     status: 'Online',
-    href: 'https://bezhas-purescan-o5xep6gbwq-ew.a.run.app',
+    href: 'https://purescan.bezhas.com',
     icon: 'document_scanner',
     label: 'IA, vision y trazabilidad',
     desc: 'Verificacion con IA y vision artificial: escaneo, firmas SIFT, Food Oracle y gemelos digitales de activos RWA inmutables.',
@@ -169,7 +170,7 @@ const secondaryApps = [
   {
     name: 'BEZ-Energy',
     status: 'Online',
-    href: 'https://bezhas-energy-o5xep6gbwq-ew.a.run.app',
+    href: 'https://energy.bezhas.com',
     icon: 'bolt',
     label: 'Energia y RWA verde',
     desc: 'Tokenizacion energetica: certificados CAE, creditos de carbono, oraculos ESG y mercados P2P de energia on-chain.',
@@ -177,10 +178,26 @@ const secondaryApps = [
   {
     name: 'BZ-CargoLink',
     status: 'Online',
-    href: 'https://bezhas-cargolink-o5xep6gbwq-ew.a.run.app',
+    href: 'https://cargolink.bezhas.com',
     icon: 'local_shipping',
     label: 'Logistica y aduanas',
     desc: 'Logistica y aduanas on-chain: tracking de cargas, NFTs de envio, escrow de entrega y despacho aduanero verificable.',
+  },
+  {
+    name: 'BEZ Wallet',
+    status: 'Online',
+    href: 'https://wallet.bezhas.com',
+    icon: 'account_balance_wallet',
+    label: 'Billetera no custodial',
+    desc: 'Billetera no custodial con cuentas inteligentes: las claves son del usuario, gas patrocinado por la empresa y guardianes para recuperar el acceso.',
+  },
+  {
+    name: 'BeZhas Pay',
+    status: 'Online',
+    href: 'https://pay.bezhas.com',
+    icon: 'point_of_sale',
+    label: 'Cobros y checkout',
+    desc: 'Cobros con paginas de pago alojadas, reembolsos y plugin para WordPress, con liquidacion en BEZ-Coin sobre Polygon.',
   },
 ];
 

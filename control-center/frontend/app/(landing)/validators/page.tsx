@@ -10,8 +10,8 @@ export default function ValidatorsPage() {
 
   const totalStaked = stk ? (stk.totalStaked / 1_000_000).toFixed(1) + 'M' : '—';
   const activeNodes = net?.validatorsActive?.toLocaleString() ?? '—';
-  const uptimeVal = net?.uptime?.toFixed(2) ?? '—';
-  const aprVal = stk ? stk.apr.toFixed(1) + '%' : '—';
+  const uptimeVal = typeof net?.uptime === 'number' ? net.uptime.toFixed(2) : '—';
+  const aprVal = typeof stk?.apr === 'number' ? stk.apr.toFixed(1) + '%' : '—';
 
   return (
     <>
