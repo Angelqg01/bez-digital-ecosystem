@@ -22,6 +22,7 @@ type VaultNote = {
     bytes: number;
     links: string[];
     preview: string;
+    clientVisible?: boolean;
 };
 
 type CanvasNode = {
@@ -167,6 +168,7 @@ export default function TabObsidian() {
     const [saving, setSaving] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [soloClientes, setSoloClientes] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -186,6 +188,9 @@ export default function TabObsidian() {
     useEffect(() => {
         load();
     }, [load]);
+
+    const visiblesClientes = useMemo(() => (data?.notes || []).filter((n) => n.clientVisible), [data]);
+    const notasListadas = soloClientes ? visiblesClientes : (data?.notes || []).slice(0, 9);
 
     const canvasNodes = useMemo(() => normalizeCanvas(data?.canvas.nodes || []), [data]);
     const canvasEdges = useMemo(() => buildMapEdges(data?.canvas.edges || [], canvasNodes), [data, canvasNodes]);
@@ -502,14 +507,32 @@ export default function TabObsidian() {
                                 <FileText size={22} />
                                 <h3 className="text-sm font-bold uppercase tracking-widest text-white">Notas del Vault</h3>
                             </div>
-                            <span className="text-[10px] uppercase tracking-widest text-gray-500">{data.vaultRoot}</span>
+                            <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest">
+                                <button onClick={() => setSoloClientes(false)} aria-pressed={!soloClientes}
+                                    className={`border px-3 py-1.5 ${!soloClientes ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-200' : 'border-white/10 text-gray-500 hover:text-gray-300'}`}>
+                                    Recientes
+                                </button>
+                                <button onClick={() => setSoloClientes(true)} aria-pressed={soloClientes}
+                                    className={`border px-3 py-1.5 ${soloClientes ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200' : 'border-white/10 text-gray-500 hover:text-gray-300'}`}>
+                                    Visibles para clientes · {visiblesClientes.length}
+                                </button>
+                            </div>
                         </div>
+                        {soloClientes && (
+                            <p className="mb-4 text-xs text-gray-500">
+                                Sólo su sección «Para clientes» llega al chat, al MCP y a OPERANT. Para publicar una nota: <code className="text-cyan-300">visibility: public</code>, esa sección,
+                                y regenerar <code className="text-cyan-300">api/services/knowledge/vault-public.json</code> (lo revisa el PR).
+                            </p>
+                        )}
                         <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-                            {data.notes.slice(0, 9).map((note) => (
+                            {notasListadas.map((note) => (
                                 <div key={note.path} className="border border-white/5 bg-black/30 p-4">
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="truncate text-sm font-bold text-white">{note.title}</div>
-                                        <span className="shrink-0 bg-white/5 px-2 py-1 text-[10px] uppercase text-gray-400">{note.type}</span>
+                                        <span className="flex shrink-0 items-center gap-1">
+                                            {note.clientVisible && <span className="bg-emerald-500/15 px-2 py-1 text-[10px] uppercase text-emerald-300">Cliente</span>}
+                                            <span className="bg-white/5 px-2 py-1 text-[10px] uppercase text-gray-400">{note.type}</span>
+                                        </span>
                                     </div>
                                     <div className="mt-1 truncate text-[10px] uppercase tracking-widest text-gray-500">{note.path}</div>
                                     <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-gray-400">{note.preview}</p>
