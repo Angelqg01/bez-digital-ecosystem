@@ -1,4 +1,5 @@
 const express = require('express');
+const { cadenaPorDefecto } = require('../config/chain-policy');
 const router = express.Router();
 const { query } = require('../db/pool');
 const { getBlockchainStats } = require('../services/contractService');
@@ -30,7 +31,7 @@ router.get('/platform', async (req, res) => {
     let gasPrice = null;
     try {
         const stats = await getBlockchainStats();
-        chainId = stats.chainId || 2708;
+        chainId = stats.chainId || cadenaPorDefecto();
         blockHeight = stats.blockNumber || null;
         gasPrice = stats.gasPrice || null;
     } catch (_) { /* chain offline */ }
@@ -58,7 +59,7 @@ router.get('/platform', async (req, res) => {
 
     res.json({
         network: {
-            chain_id: chainId || 2708,
+            chain_id: chainId || cadenaPorDefecto(),
             name: 'BeZhas L2',
             rpc_url: process.env.BEZHAS_L2_RPC_URL || 'http://localhost:8545',
             token: 'BEZ',

@@ -8,7 +8,7 @@ export default function RPCPage() {
   const { data } = usePublicStats();
   const net = data?.network;
 
-  const uptime = net ? `${net.uptime}%` : '—';
+  const uptime = typeof net?.uptime === 'number' ? `${net.uptime}%` : '—';
   const clusters = net?.validatorsActive?.toLocaleString() ?? '—';
 
   return (

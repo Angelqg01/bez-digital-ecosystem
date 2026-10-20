@@ -10,7 +10,7 @@ export default function NetworkPage() {
   const tps = net?.totalTransactions?.toLocaleString() ?? '—';
   const nodes = net?.validatorsActive?.toLocaleString() ?? '—';
   const status = net?.status === 'operational' ? 'OPERATIONAL' : (net?.status?.toUpperCase() || '—');
-  const uptime = net ? `${net.uptime}%` : '—';
+  const uptime = typeof net?.uptime === 'number' ? `${net.uptime}%` : '—';
 
   return (
     <>

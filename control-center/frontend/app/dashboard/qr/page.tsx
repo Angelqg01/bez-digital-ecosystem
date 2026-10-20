@@ -44,6 +44,14 @@ const STATUS_BADGES: Record<string, string> = {
     revoked: 'bg-red-100 text-red-700',
 };
 
+// BEZ vive en Polygon: explorer.bezhas.com no existe. Sólo se enlaza lo que Polygonscan puede mostrar
+// (hash de transacción o dirección); un código de envío como «SHIP-001» no tiene página.
+function enlaceExplorador(code: string): string | null {
+    if (/^0x[0-9a-fA-F]{64}$/.test(code)) return `https://polygonscan.com/tx/${code}`;
+    if (/^0x[0-9a-fA-F]{40}$/.test(code)) return `https://polygonscan.com/address/${code}`;
+    return null;
+}
+
 export default function QRPage() {
     const [filters, setFilters] = useState({ type: '', status: '' });
     const { user, openLoginModal } = useAuth() as any;
@@ -279,8 +287,8 @@ function QRCard({ qr, onRefresh }: { qr: QRCode; onRefresh: () => void }) {
                         className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-bezhas-accent hover:text-white transition-colors">
                         <Copy className="w-4 h-4" />
                     </button>
-                    {(qr.type === 'tracking' || qr.type === 'contract') && (
-                        <a href={`https://explorer.bezhas.com/tx/${qr.code}`} target="_blank" rel="noopener noreferrer"
+                    {(qr.type === 'tracking' || qr.type === 'contract') && enlaceExplorador(qr.code) && (
+                        <a href={enlaceExplorador(qr.code)!} target="_blank" rel="noopener noreferrer"
                            className="p-2 rounded-xl bg-blue-50 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors">
                             <Eye className="w-4 h-4" />
                         </a>

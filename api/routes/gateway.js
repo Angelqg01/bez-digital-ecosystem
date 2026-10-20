@@ -2296,9 +2296,11 @@ router.get('/network/stats', async (req, res) => {
                 validatorsActive: parseInt(validators.rows[0].active),
                 bridgeVolume: bridgeVol.rows[0].total,
                 totalTransactions: parseInt(txCount.rows[0].total),
-                chainId: 2708,
+                // Cadena real del despliegue (137 en producción). Antes 2708 fijo: la L2 propia no está en marcha.
+                chainId: cadenaPorDefecto(),
                 status: 'operational',
-                uptime: 99.99,
+                // Nadie mide la disponibilidad todavía: null en vez del 99,99 inventado (la web muestra «—»).
+                uptime: null,
             },
             token: {
                 priceUSD,
@@ -2311,7 +2313,8 @@ router.get('/network/stats', async (req, res) => {
             staking: {
                 totalStaked,
                 activePositions: parseInt(stakingAgg.rows[0].active_positions),
-                apr: 12.4, // base APR from staking contract config
+                // Sin contrato de staking leído en cadena no hay APR real: null en vez del 12,4 fijo.
+                apr: null,
             },
             defi: {
                 tvl: tvl * priceUSD, // TVL in USD

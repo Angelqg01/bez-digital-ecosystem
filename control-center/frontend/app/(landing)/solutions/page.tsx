@@ -12,7 +12,7 @@ export default function SolutionsPage() {
   const tvl = defi ? `$${(defi.tvl / 1_000_000).toFixed(2)}M` : '—';
   const nodesActive = net?.validatorsActive?.toLocaleString() ?? '—';
   const dailyTx = comm ? `${(comm.dailyTransactions / 1_000_000).toFixed(1)}M TX` : '—';
-  const uptime = net ? `${net.uptime}%` : '—';
+  const uptime = typeof net?.uptime === 'number' ? `${net.uptime}%` : '—';
 
   return (
     <>
