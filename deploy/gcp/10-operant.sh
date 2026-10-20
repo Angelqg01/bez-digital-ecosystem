@@ -196,4 +196,11 @@ gcloud run deploy "$SERVICE" \
 invocador "$SERVICE" "$SA"
 
 echo "✅ OPERANT desplegado: $(url_run "$SERVICE")"
-echo "   Ahora redespliega la API (./deploy/gcp/deploy.sh): trae OPERANT_API_URL y OPERANT_INTERNAL_KEY."
+# Sólo hace falta redesplegar la API si aún no conoce a OPERANT (primer despliegue o clave nueva).
+ENV_API=$(gcloud run services describe "$BACKEND_SERVICE" --region="$REGION" \
+  --format='value(spec.template.spec.containers[0].env)' 2>/dev/null || true)
+if [[ "$ENV_API" != *OPERANT_API_URL* || "$ENV_API" != *OPERANT_INTERNAL_KEY* ]]; then
+  echo "   Ahora redespliega la API (./deploy/gcp/deploy.sh): trae OPERANT_API_URL y OPERANT_INTERNAL_KEY."
+else
+  echo "   La API ya apunta a OPERANT: no hace falta redesplegarla."
+fi

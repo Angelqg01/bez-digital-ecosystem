@@ -53,7 +53,8 @@ class SupportChatAgent extends BaseAgent {
       `CONOCIMIENTO DISPONIBLE:\n${kbContext || '(no hay artículos de conocimiento)'}\n\n` +
       `HISTORIAL DEL CLIENTE:\n${history || '(sin historial previo)'}\n\n` +
       `Instrucciones: Responde SOLO con lo que dice el conocimiento disponible; no inventes datos, precios ni direcciones. ` +
-      `Si el conocimiento no es suficiente, di claramente que no dispones de esa información y que una persona del equipo lo revisará. ` +
+      `Si el conocimiento responde a la consulta, contesta y termina con la firma: no digas que alguien se pondrá en contacto ni que la consulta se revisará. ` +
+      `Solo si el conocimiento no es suficiente, di claramente que no dispones de esa información y que una persona del equipo lo revisará. ` +
       `No menciones productos, redes, cadenas, funciones ni nombres que no aparezcan literalmente en el conocimiento (por ejemplo, BEZ-Coin vive en Polygon: no inventes otra red). ` +
       `Firma siempre como «El equipo de BeZhas»; nunca uses marcadores como [Nombre del Asesor] ni corchetes sin rellenar.`,
       { useMemory: true, withMeta: true }
@@ -64,6 +65,8 @@ class SupportChatAgent extends BaseAgent {
     // le da tal cual (extractivo, sin inventar); si no, se dice la verdad y se escala a una persona.
     const modelDown = r.simulated || r.fallback;
     let response = SupportChatAgent.limpiarMarcadores(r.text);
+    // Con respuesta fundamentada no se escala a nadie: una promesa de contacto sería falsa.
+    if (grounded) response = SupportChatAgent.quitarPromesaContacto(response);
     if (modelDown) {
       response = hits.length
         ? `Esto es lo que dice nuestra documentación sobre tu consulta:\n\n${hits[0].title}: ${String(hits[0].snippet || hits[0].body || '').slice(0, 700)}\n\nSi necesitas algo más concreto, una persona del equipo te ayudará.`
@@ -88,6 +91,23 @@ SupportChatAgent.limpiarMarcadores = function limpiarMarcadores(texto = '') {
   return String(texto)
     .replace(/\[(?:nombre|name|tu nombre|su nombre|asesor|agente|firma|equipo)[^\]]{0,40}\]/gi, 'El equipo de BeZhas')
     .replace(/(El equipo de BeZhas)(\s*\n?\s*\1)+/g, '$1');
+};
+
+/**
+ * Quita las frases que prometen que alguien contactará al cliente («nos pondremos en contacto…
+ * a la brevedad»). Se aplica sólo a respuestas fundamentadas: en ese caso no se escala a una
+ * persona, así que la promesa no se cumpliría. Si quitarla dejara el texto vacío, se deja tal cual.
+ */
+const PROMESA_CONTACTO = /(?:nos pondremos en contacto|(?:le|te|les) contactaremos|nos comunicaremos con (?:usted|ustedes|contigo)|a la (?:mayor )?brevedad(?: posible)?)/i;
+SupportChatAgent.quitarPromesaContacto = function quitarPromesaContacto(texto = '') {
+  const original = String(texto);
+  const limpio = original
+    .split('\n')
+    .map((linea) => linea.split(/(?<=[.!?])[ \t]+/).filter((frase) => !PROMESA_CONTACTO.test(frase)).join(' ').trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return limpio || original;
 };
 
 module.exports = SupportChatAgent;

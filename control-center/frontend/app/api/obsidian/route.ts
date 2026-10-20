@@ -115,6 +115,17 @@ async function vaultExists() {
   }
 }
 
+// Misma regla que api/services/knowledge/vaultPublic.js: la nota llega a clientes (chat, MCP,
+// OPERANT) sólo si es `visibility: public`, está fuera de las carpetas internas y tiene la
+// sección «## Para clientes». Aquí sólo se marca; la exportación real la hace la API.
+const INTERNAL_FOLDERS = ['00-Episodic-Memory', '01-Self-Model', '02-Decisions', '07-Sources', '99-Inbox'];
+function isClientVisible(relativePath: string, content: string) {
+  if (!relativePath.endsWith('.md') || INTERNAL_FOLDERS.includes(relativePath.split('/')[0])) return false;
+  const fm = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm || !/^visibility:\s*["']?public["']?\s*$/im.test(fm[1])) return false;
+  return /^##\s+Para clientes\s*$/im.test(content);
+}
+
 async function buildSummary() {
   if (!READ_ONLY) await fs.mkdir(VAULT_ROOT, { recursive: true });
   const files = await walk();
@@ -128,6 +139,7 @@ async function buildSummary() {
       bytes: Buffer.byteLength(content),
       links: extractLinks(content),
       preview: preview(content),
+      clientVisible: isClientVisible(relativePath, content),
     };
   }));
 

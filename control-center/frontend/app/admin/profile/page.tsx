@@ -10,21 +10,19 @@ import TabEcosystem from './components/TabEcosystem';
 import TabIntelligence from './components/TabIntelligence';
 import TabGovernance from './components/TabGovernance';
 import TabSkills from './components/TabSkills';
-import TabObsidian from './components/TabObsidian';
-import TabBrainLive from './components/TabBrainLive';
+import TabBrain from './components/TabBrain';
 import TabWatchdog from './components/TabWatchdog';
 import TabOperant from './components/TabOperant';
 import TabPublicidad from './components/TabPublicidad';
 
-import { Shield, Landmark, Box, BrainCircuit, Scale, LogOut, Activity, BookOpen, Map, Radar, HeartPulse, Bot, Megaphone } from 'lucide-react';
+import { Shield, Landmark, Box, BrainCircuit, Scale, LogOut, Activity, BookOpen, Radar, HeartPulse, Bot, Megaphone } from 'lucide-react';
 
 const TABS = [
     { id: 'identity',    label: 'Identity & Security', icon: Shield,       desc: 'DID & Secrets' },
     { id: 'treasury',    label: 'Treasury & Web3',     icon: Landmark,     desc: 'Hot Wallets & MPC' },
     { id: 'ecosystem',   label: 'Ecosystem & RWA',     icon: Box,          desc: 'Factory & Oracle' },
     { id: 'intelligence',label: 'MCP Intelligence',    icon: BrainCircuit, desc: 'OpenClaw Brain' },
-    { id: 'obsidian',     label: 'Obsidian Map',       icon: Map,          desc: 'Vault & Feedback' },
-    { id: 'brainlive',   label: 'Brain Live',         icon: Radar,        desc: 'API Nodes & Usage' },
+    { id: 'brain',       label: 'Brain',              icon: Radar,        desc: 'Vault, conocimiento y red en vivo' },
     { id: 'watchdog',    label: 'Watchdog',            icon: HeartPulse,   desc: 'Apps Nativas & Sync ABI' },
     { id: 'operant',     label: 'OPERANT',             icon: Bot,          desc: 'Agentes IA & Bandeja' },
     { id: 'publicidad',  label: 'Publicidad',          icon: Megaphone,    desc: 'Google Ads & GA4' },
@@ -105,8 +103,7 @@ export default function HybridControlCenter() {
                         {activeTab === 'treasury'     && <TabTreasury />}
                         {activeTab === 'ecosystem'    && <TabEcosystem />}
                         {activeTab === 'intelligence' && <TabIntelligence />}
-                        {activeTab === 'obsidian'     && <TabObsidian />}
-                        {activeTab === 'brainlive'    && <TabBrainLive />}
+                        {activeTab === 'brain'        && <TabBrain />}
                         {activeTab === 'watchdog'     && <TabWatchdog />}
                         {activeTab === 'operant'      && <TabOperant />}
                         {activeTab === 'publicidad'   && <TabPublicidad />}
