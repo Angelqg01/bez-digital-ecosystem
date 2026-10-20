@@ -4,7 +4,10 @@ const { normalizar } = require('../../utils/textNormalize');
 const STOP = new Set(['de', 'la', 'el', 'en', 'y', 'a', 'los', 'las', 'un', 'una', 'que', 'es', 'se', 'por', 'con', 'para', 'del', 'al', 'the', 'of', 'and', 'to', 'is', 'in', 'a',
     // Palabras de pregunta y auxiliares: no distinguen un documento de otro y diluían la consulta («¿qué es… y en qué red está?»).
     'como', 'cual', 'cuales', 'cuanto', 'cuanta', 'cuantos', 'donde', 'cuando', 'quien', 'puedo', 'puede', 'pueden', 'hay', 'esta', 'estan',
-    'son', 'mi', 'mis', 'tu', 'tus', 'su', 'sus', 'me', 'te', 'lo', 'le', 'si', 'no', 'ni', 'sobre', 'entre', 'hasta', 'desde', 'muy', 'una', 'uno', 'unos', 'unas', 'ser', 'hace', 'hacer']);
+    'son', 'mi', 'mis', 'tu', 'tus', 'su', 'sus', 'me', 'te', 'lo', 'le', 'si', 'no', 'ni', 'sobre', 'entre', 'hasta', 'desde', 'muy', 'una', 'uno', 'unos', 'unas', 'ser', 'hace', 'hacer',
+    // Inglés: palabras de pregunta y auxiliares (el corpus está en español; ver INGLES más abajo).
+    'how', 'what', 'which', 'who', 'where', 'when', 'why', 'do', 'does', 'did', 'can', 'could', 'my', 'your', 'our', 'i', 'we', 'you',
+    'it', 'its', 'this', 'that', 'via', 'with', 'for', 'on', 'at', 'an', 'are', 'be', 'there', 'much', 'many', 'get', 'use', 'using']);
 
 /**
  * Raíz ligera para español: quita la «s» final y corta a 6 letras. Sin esto la búsqueda es literal y «¿cómo tokenizo…?»
@@ -28,11 +31,32 @@ const SINONIMOS = new Map([
     ['tarifa', 'precio'], ['tarifas', 'precio'], ['vale', 'precio'], ['valen', 'precio'], ['valor', 'precio'],
 ]);
 
+/**
+ * Glosario inglés → español. El conocimiento está escrito en español, así que «What does the Starter plan cost?» o
+ * «How do I connect my AI assistant via MCP?» no compartían ninguna palabra con su documento (fallaban en rag-eval).
+ * Como SINONIMOS, se aplica igual a documentos y consulta, y las palabras inglesas no aparecen en el corpus: sólo añade
+ * coincidencias para preguntas en inglés. Ojo con los nombres propios que son palabras inglesas (el plan «Business», la
+ * «Safe» de tesorería): mapearlos cambia el índice de los documentos que los nombran.
+ * Si se activa KNOWLEDGE_RETRIEVAL=fts, los tokens guardados en Postgres son los de la ingesta: tras cambiar este glosario
+ * hay que reindexar (volver a ingerir) para que los candidatos SQL coincidan.
+ */
+const INGLES = new Map([
+    ['cost', 'precio'], ['costs', 'precio'], ['price', 'precio'], ['prices', 'precio'], ['pricing', 'precio'], ['fee', 'precio'], ['fees', 'precio'],
+    ['connect', 'conectar'], ['connecting', 'conectar'], ['connection', 'conectar'], ['assistant', 'asistente'], ['ai', 'ia'],
+    ['buy', 'comprar'], ['buying', 'comprar'], ['purchase', 'comprar'], ['pay', 'pago'], ['payment', 'pago'], ['payments', 'pago'],
+    ['charge', 'cobro'], ['charges', 'cobro'], ['refund', 'reembolso'], ['refunds', 'reembolso'], ['invoice', 'factura'], ['invoices', 'factura'],
+    ['subscription', 'suscripcion'], ['subscriptions', 'suscripcion'], ['company', 'empresa'], ['companies', 'empresa'],
+    ['shipping', 'envio'], ['shipment', 'envio'], ['shipments', 'envio'], ['customs', 'aduana'], ['security', 'seguridad'],
+    ['energy', 'energia'], ['account', 'cuenta'], ['accounts', 'cuenta'], ['signup', 'registro'], ['register', 'registro'],
+    ['support', 'soporte'], ['help', 'soporte'], ['free', 'gratis'], ['tokenize', 'tokenizar'], ['tokenization', 'tokenizacion'],
+    ['asset', 'activo'], ['assets', 'activo'], ['contract', 'contrato'], ['contracts', 'contrato'], ['network', 'red'],
+]);
+
 function tokenize(text) {
     return normalizar(text)
         .split(/[^a-z0-9]+/)
         .filter((t) => t.length > 1 && !STOP.has(t))
-        .map((t) => raiz(SINONIMOS.get(t) || t));
+        .map((t) => raiz(SINONIMOS.get(t) || INGLES.get(t) || t));
 }
 
 /**

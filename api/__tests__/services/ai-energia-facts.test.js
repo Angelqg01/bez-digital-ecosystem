@@ -122,7 +122,8 @@ describe('R1: conocimiento de energía con el estado real', () => {
     });
     it('y dicen lo que NO está: telemetría simulada, driver pendiente, contratos sin confirmar, sin equivalencia kWh–BEZ', () => {
         expect(doc('bz_energia_telemetria')).toMatch(/pendiente/);
-        expect(doc('bz_energia_telemetria')).toMatch(/simulados/);
+        // El texto dice ahora «de demostración y está marcada como tal»: lo que importa es que lo admita.
+        expect(doc('bz_energia_telemetria')).toMatch(/simulad|de demostración/);
         expect(doc('bz_energia_cae')).toMatch(/no todos constan como desplegados/);
         expect(doc('bz_energia_cae')).toMatch(/No existe una equivalencia fija entre un kWh y un BEZ/);
         expect(doc('bz_energia_cae')).toMatch(/no hay rentabilidad garantizada/);
