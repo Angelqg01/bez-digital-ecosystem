@@ -34,7 +34,12 @@ function principalDeApp(app, plan) {
     return { userId: `app:${id}`, tenantId: `app:${id}`, roles: ['USER'], plan: String(plan || 'starter').toLowerCase(), appId: id };
 }
 
-async function buscarConocimiento({ app, plan, pregunta, limite = 4, knowledge = defecto }) {
+/**
+ * @param {boolean} [soloPropio] sólo el conocimiento privado del tenant, sin el público de BeZhas. Lo usa OPERANT para
+ *   los tenants de empresas cliente: su Soporte atiende a los clientes de esa empresa, a los que la documentación de
+ *   BeZhas no les sirve.
+ */
+async function buscarConocimiento({ app, plan, pregunta, limite = 4, soloPropio = false, knowledge = defecto }) {
     const principal = principalDeApp(app, plan);
     if (!principal) throw Object.assign(new Error('api-key no identificada'), { status: 401 });
     const q = String(pregunta || '').trim().slice(0, MAX_PREGUNTA);
@@ -42,7 +47,8 @@ async function buscarConocimiento({ app, plan, pregunta, limite = 4, knowledge =
     if (knowledge === defecto) await sembrar(knowledge);
 
     const k = Math.min(Math.max(1, Number(limite) || 4), 8);
-    const trozos = await knowledge.search(principal, q, { topK: k });
+    const encontrados = await knowledge.search(principal, q, { topK: soloPropio ? 8 : k });
+    const trozos = (soloPropio ? encontrados.filter((c) => c.tenant_id === principal.tenantId) : encontrados).slice(0, k);
     return {
         pregunta: q,
         aviso: AVISO,
