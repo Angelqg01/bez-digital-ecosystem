@@ -31,7 +31,18 @@ gcloud run jobs deploy bezhas-operant-kb \
   --set-secrets="DATABASE_URL=${SECRET_PREFIX}DATABASE_URL:latest,OPERANT_INTERNAL_KEY=${SECRET_PREFIX}OPERANT_INTERNAL_KEY:latest" \
   --max-retries=0 --task-timeout=600s --execute-now --wait --quiet
 echo "→ Resultado:"
-gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name="bezhas-operant-kb"' \
-  --limit 6 --freshness=15m --format='value(textPayload)' | grep -E "RESULT|ERR|corpus" || true
+# Sólo los registros de ESTA ejecución, y esperando a que lleguen: Cloud Logging tarda unos
+# segundos, y leer nada más acabar el job devolvía el resultado a medias (sin RESULT) o el
+# de una ejecución anterior.
+EJECUCION=$(gcloud run jobs executions list --job=bezhas-operant-kb --region="$REGION" \
+  --limit=1 --sort-by=~createTime --format='value(metadata.name)')
+FILTRO="resource.type=\"cloud_run_job\" AND resource.labels.job_name=\"bezhas-operant-kb\" AND labels.\"run.googleapis.com/execution_name\"=\"${EJECUCION}\""
+SALIDA=""
+for _ in $(seq 1 12); do
+  SALIDA=$(gcloud logging read "$FILTRO" --freshness=30m --order=asc --format='value(textPayload)' | grep -E "RESULT|ERR|corpus" || true)
+  grep -qE "RESULT|ERR" <<< "$SALIDA" && break
+  sleep 5
+done
+echo "${SALIDA:-  (sin registros todavía: gcloud logging read '$FILTRO')}"
 gcloud run jobs delete bezhas-operant-kb --region="$REGION" --quiet >/dev/null
 echo "✅ Listo: escribe al bot «¿Qué es BEZ-Coin?»."
