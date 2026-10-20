@@ -209,7 +209,7 @@ export const verticals: Vertical[] = [
                 <b>CarbonCreditToken</b> · ESGScoreOracle
             </>
         ),
-        href: 'https://bezhas-energy-o5xep6gbwq-ew.a.run.app',
+        href: 'https://energy.bezhas.com',
         icon: ico(<path d="M22 4 10 22h9l-2 14 13-19h-9z" strokeLinejoin="round" />),
     },
     {

@@ -162,24 +162,19 @@ const nativeApps = [
     },
 ];
 
-// Enlaces ONLINE reales de cada App Nativa ya desarrollada (subdominios bezhas.com).
-// Edita aqui para cambiar el destino de una App; las tarjetas abren en pestana nueva.
+// Enlaces reales de las App Nativas EN PRODUCCIÓN (subdominios bezhas.com detrás del balanceador, lista SUBAPPS de
+// deploy/gcp/config.env). Las que no están aquí (Gas Tank, Edge, Vision Scan, Prestige, Sphere, Genesis) son
+// prototipos con datos de ejemplo: su tarjeta dice «Próximamente» en vez de enlazar a un sitio que no existe.
 const NATIVE_APP_URLS: Record<string, string> = {
-    'BeZhas Hub': 'https://bezhas-hub-o5xep6gbwq-ew.a.run.app',
-    'BEZ Wallet': 'https://bezhas-wallet-o5xep6gbwq-ew.a.run.app',
-    'Gas Tank Manager': 'https://bezhas-gas-o5xep6gbwq-ew.a.run.app',
-    'Edge Node Manager': 'https://bezhas-edge-o5xep6gbwq-ew.a.run.app',
-    'BEZ Vision Scan': 'https://bezhas-vision-o5xep6gbwq-ew.a.run.app',
-    'BZ Capital': 'https://bezhas-capital-o5xep6gbwq-ew.a.run.app/defi',
-    'BZ Prestige': 'https://bezhas-prestige-o5xep6gbwq-ew.a.run.app',
-    'BZ CargoLink': 'https://bezhas-cargolink-o5xep6gbwq-ew.a.run.app',
-    'BeZhas Pay Manager': 'https://bezhas-pay-o5xep6gbwq-ew.a.run.app',
-    'BZ PureScan': 'https://bezhas-purescan-o5xep6gbwq-ew.a.run.app',
-    'BZ Sphere': 'https://bezhas-sphere-o5xep6gbwq-ew.a.run.app',
-    'BEZ Energy': 'https://bezhas-energy-o5xep6gbwq-ew.a.run.app',
-    'BZ Genesis': 'https://bezhas-genesis-o5xep6gbwq-ew.a.run.app',
+    'BeZhas Hub': 'https://hub.bezhas.com',
+    'BEZ Wallet': 'https://wallet.bezhas.com',
+    'BZ Capital': 'https://capital.bezhas.com/defi',
+    'BZ CargoLink': 'https://cargolink.bezhas.com',
+    'BeZhas Pay Manager': 'https://pay.bezhas.com',
+    'BZ PureScan': 'https://purescan.bezhas.com',
+    'BEZ Energy': 'https://energy.bezhas.com',
 };
-const nativeAppUrl = (name: string) => NATIVE_APP_URLS[name] || '#';
+const nativeAppUrl = (name: string): string | null => NATIVE_APP_URLS[name] || null;
 
 export default function DevelopersPage() {
     const [appsList, setAppsList] = useState(nativeApps);
@@ -456,14 +451,18 @@ export default function DevelopersPage() {
                                                 {app.gcpStatus || '200 OK'}
                                             </span>
                                         </div>
-                                        <a
-                                            href={nativeAppUrl(app.name)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs font-mono text-cyan-300 hover:text-cyan-200 transition-colors block truncate"
-                                        >
-                                            {nativeAppUrl(app.name).replace('https://', '')}
-                                        </a>
+                                        {nativeAppUrl(app.name) ? (
+                                            <a
+                                                href={nativeAppUrl(app.name)!}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs font-mono text-cyan-300 hover:text-cyan-200 transition-colors block truncate"
+                                            >
+                                                {nativeAppUrl(app.name)!.replace('https://', '')}
+                                            </a>
+                                        ) : (
+                                            <span className="text-xs font-mono text-slate-500 block truncate">Próximamente</span>
+                                        )}
                                     </div>
 
                                     {/* GitHub Folder Link */}
@@ -487,16 +486,25 @@ export default function DevelopersPage() {
 
                                 <div className="border-t border-white/10 pt-4">
                                     <p className="text-xs text-slate-400 leading-relaxed mb-4">{app.use}</p>
-                                    <a
-                                        href={nativeAppUrl(app.name)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        aria-label={`Abrir ${app.name}`}
-                                        className="w-full py-2.5 bg-primary/20 hover:bg-primary text-white rounded-lg text-xs font-bold tracking-widest uppercase transition-all duration-300 inline-flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(13,51,242,0.4)]"
-                                    >
-                                        <span>Abrir App</span>
-                                        <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">arrow_forward</span>
-                                    </a>
+                                    {nativeAppUrl(app.name) ? (
+                                        <a
+                                            href={nativeAppUrl(app.name)!}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label={`Abrir ${app.name}`}
+                                            className="w-full py-2.5 bg-primary/20 hover:bg-primary text-white rounded-lg text-xs font-bold tracking-widest uppercase transition-all duration-300 inline-flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(13,51,242,0.4)]"
+                                        >
+                                            <span>Abrir App</span>
+                                            <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">arrow_forward</span>
+                                        </a>
+                                    ) : (
+                                        <span
+                                            aria-disabled="true"
+                                            className="w-full py-2.5 bg-white/5 text-slate-500 rounded-lg text-xs font-bold tracking-widest uppercase inline-flex items-center justify-center gap-2 cursor-not-allowed"
+                                        >
+                                            Próximamente
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         ))}
