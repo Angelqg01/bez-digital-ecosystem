@@ -136,3 +136,28 @@ test('el cliente no ve marcadores sin rellenar como [Nombre del Asesor]', () => 
   assert.equal(SupportChatAgent.limpiarMarcadores('Atentamente, [Tu nombre]'), 'Atentamente, El equipo de BeZhas');
   assert.equal(SupportChatAgent.limpiarMarcadores('Sin marcadores [1] aquí'), 'Sin marcadores [1] aquí');
 });
+
+test('Soporte: con respuesta fundamentada no promete un contacto que no va a ocurrir', () => {
+  const SupportChatAgent = require('../src/agents/support/SupportChatAgent');
+  const quitar = SupportChatAgent.quitarPromesaContacto;
+  const respuesta = 'CargoLink conecta la logística.\n\nCada cambio dispara un webhook firmado.\n\n'
+    + 'Para más información detallada o para preguntas específicas, nos pondremos en contacto con usted a la brevedad posible. '
+    + 'Gracias por confiar en BeZhas. El equipo de BeZhas.';
+  assert.equal(quitar(respuesta), 'CargoLink conecta la logística.\n\nCada cambio dispara un webhook firmado.\n\nGracias por confiar en BeZhas. El equipo de BeZhas.');
+  assert.equal(quitar('Te contactaremos pronto.'), 'Te contactaremos pronto.', 'si no queda nada, no deja la respuesta vacía');
+  assert.equal(quitar('Sin promesas. El equipo de BeZhas'), 'Sin promesas. El equipo de BeZhas');
+});
+
+test('Soporte: la promesa sólo se quita si la respuesta está fundamentada', async () => {
+  const SupportChatAgent = require('../src/agents/support/SupportChatAgent');
+  const texto = 'Respuesta. Nos pondremos en contacto con usted a la brevedad.';
+  const crear = (hits) => {
+    const agente = new SupportChatAgent({ tenantId: 't', model: null, knowledgeBase: { search: async () => hits } });
+    agente.think = async () => ({ text: texto });
+    return agente;
+  };
+  const conHits = await crear([{ id: 'a', title: 'Doc', snippet: 'x' }]).run({ payload: { text: 'q' } });
+  assert.equal(conHits.reply, 'Respuesta.');
+  const sinHits = await crear([]).run({ payload: { text: 'q' } });
+  assert.equal(sinHits.reply, texto);
+});
