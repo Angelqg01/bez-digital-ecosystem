@@ -438,6 +438,7 @@ app.use('/api/mtfc', mtfcRoutes);
 // plan, cuota + pago por uso, y anclaje merkle de la auditoría en L2.
 app.use('/api/operant/channels', require('./routes/operant-channels')); // webhooks de Telegram → OPERANT (secreto propio, sin sesión)
 app.use('/api/newsletter', require('./routes/newsletter'));           // suscripción con doble confirmación
+app.use('/api/operant-knowledge', require('./routes/operant-knowledge')); // conocimiento para OPERANT (clave interna)
 app.use('/api/operant', operantRoutes);
 
 // ── Seguridad / Aegis ─────────────────────────────────────────────────────────

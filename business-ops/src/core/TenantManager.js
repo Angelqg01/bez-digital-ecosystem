@@ -7,6 +7,7 @@ const MemoryManager = require('../cognition/MemoryManager');
 const LearningEngine = require('../cognition/LearningEngine');
 const SystemOptimizer = require('../cognition/SystemOptimizer');
 const KnowledgeBase = require('../platform/KnowledgeBase');
+const { PlatformKnowledge, withPlatformKnowledge } = require('../platform/PlatformKnowledge');
 const LeadOutcomeTracker = require('../platform/LeadOutcomeTracker');
 const PolicyEngine = require('../guardrails/PolicyEngine');
 const AuditLog = require('../guardrails/AuditLog');
@@ -25,7 +26,7 @@ const { buildDepartments } = require('../agents');
  * Un fallo o fuga en un tenant nunca toca a otro.
  */
 class TenantManager {
-  constructor({ modelGateway, store, usageMeter, metrics, telemetry, hitlNotifier, plans, embedder, optimizerThresholds, hitlTimeoutMs = 0, hitlEscalateAfterMs = 0 } = {}) {
+  constructor({ modelGateway, store, usageMeter, metrics, telemetry, hitlNotifier, plans, embedder, optimizerThresholds, hitlTimeoutMs = 0, hitlEscalateAfterMs = 0, platformKnowledge } = {}) {
     this.modelGateway = modelGateway; // compartido, pero cada llamada lleva tenantId
     this.store = store;               // acceso a datos (Postgres) con scope por tenant
     this.usageMeter = usageMeter;     // cuotas por plan (opcional)
@@ -33,6 +34,8 @@ class TenantManager {
     this.telemetry = telemetry;       // observabilidad (opcional)
     this.hitlNotifier = hitlNotifier; // push de aprobaciones HITL (opcional)
     this.embedder = embedder;         // async (text)=>vector para RAG semántico (opcional)
+    // Conocimiento vigente de la API de BeZhas, filtrado por tenant (sólo activo con BEZHAS_API_URL e INTERNAL_API_KEY).
+    this.platformKnowledge = platformKnowledge || new PlatformKnowledge();
     this.hitlTimeoutMs = hitlTimeoutMs;             // 0 = sin timeout (espera indefinida)
     this.hitlEscalateAfterMs = hitlEscalateAfterMs; // 0 = sin escalado a un segundo canal
     this.plans = plans || require('../../config/plans.json');
@@ -130,7 +133,10 @@ class TenantManager {
       tenantId: cfg.tenantId,
       enabled: cfg.departments || ['sales', 'support'],
       model: this.modelGateway,
-      memory, guardrails, hitl, knowledgeBase, bus, business, doNotContact,
+      memory, guardrails, hitl, bus, business, doNotContact,
+      // Los agentes buscan en la KB del tenant + el Knowledge Plane de la API; la ingesta (/kb) sigue
+      // yendo sólo a la KB local (space.knowledgeBase).
+      knowledgeBase: withPlatformKnowledge(knowledgeBase, this.platformKnowledge, cfg.tenantId),
       store: this.store,
       tools: cfg.tools || {},
     });
