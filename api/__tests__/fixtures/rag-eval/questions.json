@@ -667,6 +667,72 @@
       "esperados": [
         "bz_energia_app"
       ]
+    },
+    {
+      "id": "s01",
+      "tipo": "subapps",
+      "q": "¿Qué hace CargoLink?",
+      "esperados": [
+        "vault_06_subapps_bz_cargolink"
+      ]
+    },
+    {
+      "id": "s02",
+      "tipo": "subapps",
+      "q": "¿Dónde está la wallet no custodial de BEZ?",
+      "esperados": [
+        "vault_06_subapps_bez_wallet"
+      ]
+    },
+    {
+      "id": "s03",
+      "tipo": "subapps",
+      "q": "¿Cómo certifico la calidad de un producto con un QR?",
+      "esperados": [
+        "vault_06_subapps_bz_purescan"
+      ]
+    },
+    {
+      "id": "s04",
+      "tipo": "subapps",
+      "q": "¿Está disponible BZ Prestige?",
+      "esperados": [
+        "vault_06_subapps_bz_prestige"
+      ]
+    },
+    {
+      "id": "s05",
+      "tipo": "subapps",
+      "q": "¿Hay un SDK para desarrolladores?",
+      "esperados": [
+        "vault_05_platform_sdk_bezhas"
+      ]
+    },
+    {
+      "id": "s06",
+      "tipo": "subapps",
+      "q": "¿Puedo poner un widget de cobros en mi web?",
+      "esperados": [
+        "vault_05_platform_sdk_bezhas",
+        "vault_06_subapps_bezhas_pay"
+      ]
+    },
+    {
+      "id": "s07",
+      "tipo": "subapps",
+      "q": "¿Dónde hago staking de BEZ?",
+      "esperados": [
+        "vault_06_subapps_bz_capital"
+      ]
+    },
+    {
+      "id": "s08",
+      "tipo": "subapps",
+      "q": "¿Tenéis algo para energía y certificados de ahorro?",
+      "esperados": [
+        "vault_06_subapps_bz_energy",
+        "bz_energia_app"
+      ]
     }
   ]
 }

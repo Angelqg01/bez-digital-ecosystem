@@ -6,6 +6,7 @@ cluster: "identidad-comunidad"
 repo_path: "App-nativas/BZ Prestige/"
 domain: "prestige.bezhas.com"
 tags: ["platform-map", "identidad-comunidad", "p2"]
+visibility: "public"
 ---
 
 # BZ Prestige
@@ -15,6 +16,10 @@ tags: ["platform-map", "identidad-comunidad", "p2"]
 Reputación y prestigio empresarial dentro del ecosistema (score verificable).
 
 **Ubicación:** `App-nativas/BZ Prestige/` · prestige.bezhas.com
+
+## Para clientes
+
+BZ Prestige medirá la reputación de cada empresa dentro del ecosistema con una puntuación comprobable en la cadena, basada en su historial de operaciones. Aún no está disponible al público.
 
 ## Conexiones
 
