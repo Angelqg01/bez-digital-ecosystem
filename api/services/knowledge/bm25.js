@@ -15,6 +15,9 @@ const STOP = new Set(['de', 'la', 'el', 'en', 'y', 'a', 'los', 'las', 'un', 'una
  * documentos y a la consulta, así que no cambia nada de lo que ya coincidía y sólo añade coincidencias.
  */
 function raiz(t) {
+    // Plural en «-es» tras consonante («planes», «redes»): fuera las dos letras, para que «planes» y «plan» compartan
+    // raíz. Antes «planes» quedaba en «plane» y «¿cuánto cuesta el plan…?» no tocaba el título «Planes y precios».
+    if (t.length >= 5 && /[^aeiou]es$/.test(t)) return t.slice(0, -2).slice(0, 6);
     if (t.length < 6) return t;
     return t.replace(/s$/, '').slice(0, 6);
 }
