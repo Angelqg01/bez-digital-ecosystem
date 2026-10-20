@@ -1,0 +1,98 @@
+[
+  {
+    "id": "vault_05_platform_sdk_bezhas",
+    "title": "SDK y Connect para desarrolladores",
+    "content": "Hay dos paquetes para desarrolladores. El SDK (@bezhas/sdk) da acceso multi-cadena a los contratos y módulos por sector, y cubre las SubApps del ecosistema. Connect (@bezhas/connect) permite incrustar en la web de una empresa los cobros de Pay y la logística de CargoLink con un widget que se añade con una etiqueta script. Para conectar una IA existe además el servidor MCP.",
+    "source": "vault:05-Platform/SDK-BeZhas.md"
+  },
+  {
+    "id": "vault_06_subapps_bez_wallet",
+    "title": "BEZ Wallet",
+    "content": "BEZ Wallet es la billetera no custodial de la plataforma: las claves son del usuario y nadie más las conoce ni las pide. Usa cuentas inteligentes, que permiten que el gas lo patrocine la empresa y añadir guardianes para recuperar el acceso. Sirve también para iniciar sesión y suscribirse firmando con la propia wallet.\n\nDisponible en https://wallet.bezhas.com.",
+    "source": "vault:06-SubApps/BEZ-Wallet.md"
+  },
+  {
+    "id": "vault_06_subapps_bezhas_hub",
+    "title": "Hub: centro de operaciones B2B",
+    "content": "Hub es el centro de operaciones B2B de la plataforma: cada empresa tiene su organización, sus sedes y sus miembros, y desde ahí gestiona las claves de API con permisos acotados y el consumo de su plan. Las entidades se identifican con su ID único, que comparten el resto de SubApps. Incluye un simulador logístico para probar flujos antes de operar con datos reales.\n\nDisponible en https://hub.bezhas.com.",
+    "source": "vault:06-SubApps/Bezhas-Hub.md"
+  },
+  {
+    "id": "vault_06_subapps_bezhas_id_nota",
+    "title": "ID: identidad única de cada empresa",
+    "content": "El ID es la identidad única de cada empresa o entidad en el ecosistema. La misma identidad sirve en Hub, CargoLink, Prestige y Genesis, de modo que no hay que darse de alta en cada SubApp. Las claves de acceso se emiten con permisos por rol: quien envía, quien transporta, quien recibe o quien paga actúan sobre el mismo expediente, cada uno con su permiso.",
+    "source": "vault:06-SubApps/BeZhas-ID-Nota.md"
+  },
+  {
+    "id": "vault_06_subapps_bezhas_pay",
+    "title": "Pay: cobros y checkout",
+    "content": "Pay es el gestor de cobros de la plataforma. Genera páginas de pago alojadas (checkout) que la empresa comparte con su cliente, admite reembolsos y ofrece un plugin para WordPress. La liquidación se hace en BEZ-Coin sobre Polygon. Desde la IA conectada por MCP se puede abrir una orden de cobro y consultar su estado, pero el pago lo hace siempre el cliente en la página de checkout.\n\nDisponible en https://pay.bezhas.com.",
+    "source": "vault:06-SubApps/BeZhas-Pay.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_capital",
+    "title": "BZ Capital",
+    "content": "BZ Capital agrupa las funciones DeFi: el mercado BEZ/USDC propio de la plataforma, el staking y el farming de BEZ. Cotizar un intercambio desde la IA conectada por MCP sólo calcula: ninguna operación mueve fondos sin la firma del usuario en su wallet.\n\nDisponible en https://capital.bezhas.com/defi.",
+    "source": "vault:06-SubApps/BZ-Capital.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_cargolink",
+    "title": "BZ CargoLink",
+    "content": "BZ CargoLink conecta la logística de la empresa con el resto del ecosistema. Cada envío es un único expediente identificado con su ID único por el que pasan remitente, transportista, destinatario y pagador, cada uno con su papel. Avisa a los sistemas de cada parte con notificaciones firmadas y puede retener el pago en BEZ (escrow) hasta que se cumple la entrega. Los permisos se conceden en el momento en que hacen falta.\n\nDisponible en https://cargolink.bezhas.com.",
+    "source": "vault:06-SubApps/BZ-CargoLink.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_edge_manager",
+    "title": "BZ Edge Manager",
+    "content": "BZ Edge Manager será el panel para gestionar los Edge Nodes de una empresa: alta, estado de salud y recompensas. Aún no está disponible al público; el alta del Edge Node se hace hoy desde el onboarding de la plataforma.",
+    "source": "vault:06-SubApps/BZ-Edge-Manager.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_energy",
+    "title": "BZ Energy",
+    "content": "BZ Energy es la SubApp de energía: una planta virtual (VPP) que recoge datos de contadores y equipos, los cruza con el precio del mercado eléctrico y registra en la cadena los certificados de ahorro energético. Está en fase piloto.\n\nDisponible en https://energy.bezhas.com.",
+    "source": "vault:06-SubApps/BZ-Energy.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_gas_tank",
+    "title": "BZ Gas Tank",
+    "content": "BZ Gas Tank permite a una empresa patrocinar el gas de las transacciones de sus usuarios, con recargas y límites por organización, para que sus clientes operen sin tener que comprar cripto para pagar comisiones. Aún no está disponible al público.",
+    "source": "vault:06-SubApps/BZ-Gas-Tank.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_genesis",
+    "title": "BZ Genesis",
+    "content": "BZ Genesis será el proceso de incorporación de nuevos socios al ecosistema: creación de su ID único y de su cuenta. Aún no está disponible al público.",
+    "source": "vault:06-SubApps/BZ-Genesis.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_prestige",
+    "title": "BZ Prestige",
+    "content": "BZ Prestige medirá la reputación de cada empresa dentro del ecosistema con una puntuación comprobable en la cadena, basada en su historial de operaciones. Aún no está disponible al público.",
+    "source": "vault:06-SubApps/BZ-Prestige.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_purescan",
+    "title": "BZ PureScan",
+    "content": "BZ PureScan certifica la trazabilidad y la calidad de un producto con un código QR que cualquiera puede comprobar en la cadena. Se integra con CargoLink para seguir el producto a lo largo del envío.\n\nDisponible en https://purescan.bezhas.com.",
+    "source": "vault:06-SubApps/BZ-PureScan.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_sphere",
+    "title": "BZ Sphere",
+    "content": "BZ Sphere será la red de socios ya validados, donde las empresas del ecosistema se encuentran y trabajan entre sí. Aún no está disponible al público.",
+    "source": "vault:06-SubApps/BZ-Sphere.md"
+  },
+  {
+    "id": "vault_06_subapps_bz_vision_scan",
+    "title": "BZ Vision Scan",
+    "content": "BZ Vision Scan revisará con IA la mercancía y los documentos de un envío y conectará el resultado con el flujo logístico de CargoLink y PureScan. Aún no está disponible al público.",
+    "source": "vault:06-SubApps/BZ-Vision-Scan.md"
+  },
+  {
+    "id": "vault_06_subapps_rwa_gemelos_digitales",
+    "title": "RWA Gemelos Digitales",
+    "content": "Los gemelos digitales representan activos reales en la cadena para seguirlos y financiarlos: seguimiento de buques, despacho aduanero, financiación portuaria, seguro marítimo, cadena de frío e inmobiliario. La tokenización de un activo real se puede preparar desde la IA conectada por MCP; la emisión la firma siempre una persona.",
+    "source": "vault:06-SubApps/RWA-Gemelos-Digitales.md"
+  }
+]

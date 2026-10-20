@@ -10,6 +10,7 @@
  */
 const crypto = require('crypto');
 const { textoPlanes, textoLimites } = require('./planFacts');
+const { documentosAdicionales } = require('./sources');
 
 const planes = textoPlanes();
 const limitesPorPlan = textoLimites();
@@ -233,7 +234,8 @@ const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 async function seedPublicKnowledge(service) {
     const admin = { userId: 'system', tenantId: 'system', roles: ['ADMIN', 'USER'], plan: 'enterprise_vip' };
     let added = 0;
-    for (const [id, title, content] of DOCS) {
+    // Textos fijos + catálogo del MCP + notas públicas del vault (sources.js).
+    for (const [id, title, content] of [...DOCS, ...documentosAdicionales()]) {
         const existing = await service.store.getDoc(id);
         if (existing && existing.checksum === `sha256:${sha(content)}`) continue;
         await service.ingest(admin, { id, title, content, classification: 'PUBLIC', global: true, source: 'platform_docs' });

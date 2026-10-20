@@ -7,6 +7,8 @@ repo_path: "App-nativas/Bezhas-Hub/"
 port: 5173
 domain: "hub.bezhas.com"
 tags: ["platform-map", "finanzas-pagos", "p0"]
+visibility: "public"
+public_title: "Hub: centro de operaciones B2B"
 ---
 
 # Bezhas Hub
@@ -16,6 +18,12 @@ tags: ["platform-map", "finanzas-pagos", "p0"]
 ERP B2B multi-tenant (org/site/membership), API keys con scope y metering, BeZhas_ID, 4 planes definitivos (config/plans.js única fuente), hot-wallet signing GCP KMS, simulador logístico 360°. Migraciones 012-014.
 
 **Ubicación:** `App-nativas/Bezhas-Hub/` · puerto :5173 · hub.bezhas.com
+
+## Para clientes
+
+Hub es el centro de operaciones B2B de la plataforma: cada empresa tiene su organización, sus sedes y sus miembros, y desde ahí gestiona las claves de API con permisos acotados y el consumo de su plan. Las entidades se identifican con su ID único, que comparten el resto de SubApps. Incluye un simulador logístico para probar flujos antes de operar con datos reales.
+
+Disponible en https://hub.bezhas.com.
 
 ## Conexiones
 
