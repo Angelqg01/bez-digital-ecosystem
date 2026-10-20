@@ -15,6 +15,7 @@ describe('evaluación del retrieval (BM25)', () => {
     });
     it('sin respuesta: o se abstiene o la coincidencia es débil (el chat lo avisa)', () => expect(r.abstencion_o_debil).toBe(1));
     it('preguntas de precio (cuesta, coste, tarifa, vale): recall 100 %', () => expect(r.por_tipo.precio.recall).toBe(1));
+    it('preguntas sobre las SubApps (notas públicas del vault): recall 100 %', () => expect(r.por_tipo.subapps.recall).toBe(1));
     it('las 11 preguntas del CTO energético (informe docs/audit/informe-energia): recall 100 %', () => expect(r.por_tipo.cto_energia.recall).toBe(1));
     it('«¿Cuánto cuestan los planes?» ya no sale como coincidencia débil (el chat decía «no estoy seguro»)', async () => {
         const { KnowledgeService, MemoryStore } = require('../../services/knowledge');

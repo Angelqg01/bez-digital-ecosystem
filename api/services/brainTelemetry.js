@@ -4,7 +4,7 @@
  * qué actor (agente/tenant/usuario API) usa qué función y cuánto BEZ mueve.
  * Nunca bloquea ni rompe la request: si el Brain está caído, se descarta.
  */
-const BRAIN_URL = process.env.OBSIDIAN_MCP_URL || 'http://obsidian-mcp:4007';
+const { BRAIN_URL, brainHeaders } = require('./brainClient');
 const ENABLED = process.env.BRAIN_TELEMETRY !== '0';
 
 // Colapsa IDs en la ruta para no explotar la cardinalidad del grafo
@@ -52,12 +52,15 @@ function sendBeacon(req, res) {
         // fire-and-forget; el AbortController evita fugas de sockets
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 1500);
-        fetch(`${BRAIN_URL}/telemetry/usage`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(event),
-            signal: controller.signal,
-        }).catch(() => {}).finally(() => clearTimeout(timer));
+        brainHeaders()
+            .then((auth) => fetch(`${BRAIN_URL}/telemetry/usage`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json', ...auth },
+                body: JSON.stringify(event),
+                signal: controller.signal,
+            }))
+            .catch(() => {})
+            .finally(() => clearTimeout(timer));
     } catch {
         // telemetría es best-effort: jamás afecta a la request
     }

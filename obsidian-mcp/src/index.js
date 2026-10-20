@@ -12,6 +12,7 @@ import { SemanticIndex } from './semanticIndex.js';
 import { consolidateEpisodes, vaultFingerprint, appendLog } from './brainOps.js';
 import { UsageTracker } from './usageTracker.js';
 import { BRAIN_UI_HTML } from './ui.js';
+import { resolveBrainKey, brainAuth, corsOrigins } from './auth.js';
 
 const app = express();
 const port = Number(process.env.MCP_PORT || process.env.OBSIDIAN_MCP_PORT || 4007);
@@ -19,7 +20,10 @@ const vaultRoot = path.resolve(process.env.OBSIDIAN_VAULT_PATH || '/vault');
 const maxBytes = Number(process.env.OBSIDIAN_MAX_NOTE_BYTES || 512_000);
 const builderPath = path.resolve(process.env.BEZHAS_CANVAS_BUILDER || path.join(process.cwd(), 'scripts', 'bezhasCanvasBuilder.cjs'));
 
-app.use(cors());
+const brainKey = resolveBrainKey();
+app.disable('x-powered-by');
+app.use(cors({ origin: corsOrigins(process.env, Boolean(brainKey)) }));
+app.use(brainAuth(brainKey));
 app.use(express.json({ limit: '1mb' }));
 
 const folders = {
@@ -480,7 +484,14 @@ app.get('/health', async (_req, res) => {
   }
 });
 
+// La UI integrada llama a /tools desde el navegador sin clave: sólo tiene
+// sentido con el Brain abierto (desarrollo). Con clave, el panel de
+// administración (/admin/profile → Brain Live) es la interfaz.
 app.get(['/', '/ui'], (_req, res) => {
+  if (brainKey) {
+    res.status(404).json({ success: false, error: 'UI integrada desactivada: usa el panel de administración' });
+    return;
+  }
   res.type('html').send(BRAIN_UI_HTML);
 });
 

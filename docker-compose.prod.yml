@@ -198,6 +198,9 @@ services:
   obsidian-mcp:
     ports: !override []
     restart: always
+    environment:
+      NODE_ENV: production
+      BRAIN_API_KEY: ${BRAIN_API_KEY:?Define BRAIN_API_KEY (openssl rand -hex 32) para el Brain}
     logging:
       driver: json-file
       options:
