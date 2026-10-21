@@ -80,6 +80,12 @@ overrides:
   mysql2: ^3.22.0
   postcss: ^8.5.18
   axios: ^1.18.0
+  'proxy-addr@^2': ^2.0.8
+  'shell-quote@^1': ^1.11.0
+  'handlebars@^4': ^4.7.10
+  # tinypool 1.x no tiene parche: el aviso pide >=2.1.2. vitest 3 la pide ^1,
+  # pero sólo usa la API común (Tinypool, run, destroy), que la 2 conserva.
+  'tinypool@<2.1.2': ^2.2.0
 
   # ─── Avisos SIN override, y no por descuido ────────────────────────────────
   #
