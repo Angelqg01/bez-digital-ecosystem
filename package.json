@@ -65,7 +65,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
     "@playwright/test": "^1.41.0",
     "concurrently": "^9.2.1",
     "ethers": "6.16.0",
