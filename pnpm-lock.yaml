@@ -41,8 +41,8 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0(@types/node@22.20.2)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       '@chainlink/contracts-ccip':
-        specifier: ^1.6.4
-        version: 1.6.4(@types/node@22.20.2)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+        specifier: ^2.0.0
+        version: 2.0.0(@types/node@22.20.2)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       '@openzeppelin/contracts':
         specifier: ^5.4.0
         version: 5.6.1
@@ -1271,8 +1271,11 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@chainlink/contracts-ccip@1.6.4':
-    resolution: {integrity: sha512-+kHHZJ4DtSd0mO6EIrPpK9UzEwVhMNR0wzbjuRDcn1UwX4wibnrEbY5RYuGOrTwmXPRoMFsDVeN47O5zgFg5cw==}
+  '@chainlink/ace@1.0.0':
+    resolution: {integrity: sha512-lamF+fabw5cyIQ+7PA5QkEl0GyHmmH3lc875jrspo9VxsxiKbMxDcRDGPEuubFQS3Zcx7H/Z80C72+Xm/FgeqA==}
+
+  '@chainlink/contracts-ccip@2.0.0':
+    resolution: {integrity: sha512-P0KvQtZSYC1LevMSS16jOOSsqZG4g0n/MJdcWGmE0Z5U01NVYd1MnTQJOBPsbu1NWR79DBXPXLvyr9tR5y+tiw==}
     engines: {node: '>=20', pnpm: '>=10'}
 
   '@chainlink/contracts@1.5.0':
@@ -2725,6 +2728,9 @@ packages:
 
   '@openzeppelin/contracts@5.1.0':
     resolution: {integrity: sha512-p1ULhl7BXzjjbha5aqst+QMLY+4/LCWADXOCsmLHRM77AqiPjnd9vvUN9sosUfhL9JGKpZ0TjEGxgvnizmWGSA==}
+
+  '@openzeppelin/contracts@5.3.0':
+    resolution: {integrity: sha512-zj/KGoW7zxWUE8qOI++rUM18v+VeLTTzKs/DJFkSzHpQFPD/jKKF0TrMxBfGLl3kpdELCNccvB3zmofSzm4nlA==}
 
   '@openzeppelin/contracts@5.6.1':
     resolution: {integrity: sha512-Ly6SlsVJ3mj+b18W3R8gNufB7dTICT105fJhodGAGgyC2oqnBAhqSiNDJ8V8DLY05cCz81GLI0CU5vNYA1EC/w==}
@@ -12169,14 +12175,14 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@chainlink/contracts-ccip@1.6.4(@types/node@22.20.2)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)':
+  '@chainlink/ace@1.0.0': {}
+
+  '@chainlink/contracts-ccip@2.0.0(@types/node@22.20.2)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)':
     dependencies:
+      '@chainlink/ace': 1.0.0
       '@chainlink/contracts': 1.5.0(@types/node@22.20.2)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
-      '@changesets/cli': 2.31.1(@types/node@22.20.2)
-      '@changesets/get-github-info': 0.6.0
       '@openzeppelin/contracts-4.8.3': '@openzeppelin/contracts@4.8.3'
-      '@openzeppelin/contracts-5.0.2': '@openzeppelin/contracts@5.0.2'
-      semver: 7.8.5
+      '@openzeppelin/contracts-5.3.0': '@openzeppelin/contracts@5.3.0'
     transitivePeerDependencies:
       - '@types/node'
       - bufferutil
@@ -13585,7 +13591,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.13
-      debug: 4.3.4
+      debug: 4.4.3(supports-color@5.5.0)
       pony-cause: 2.1.11
       semver: 7.8.5
       uuid: 9.0.1
@@ -13997,6 +14003,8 @@ snapshots:
   '@openzeppelin/contracts@5.0.2': {}
 
   '@openzeppelin/contracts@5.1.0': {}
+
+  '@openzeppelin/contracts@5.3.0': {}
 
   '@openzeppelin/contracts@5.6.1': {}
 

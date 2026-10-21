@@ -75,7 +75,7 @@
   "dependencies": {
     "@adraffy/ens-normalize": "^1.11.1",
     "@chainlink/contracts": "^1.5.0",
-    "@chainlink/contracts-ccip": "^1.6.4",
+    "@chainlink/contracts-ccip": "^2.0.0",
     "@openzeppelin/contracts": "^5.4.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
