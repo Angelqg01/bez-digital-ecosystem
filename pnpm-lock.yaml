@@ -99,8 +99,8 @@ importers:
         specifier: ^4.21.2
         version: 4.22.2
       express-rate-limit:
-        specifier: ^7.1.5
-        version: 7.5.1(express@4.22.2)
+        specifier: ^8.2.2
+        version: 8.7.1(express@4.22.2)
       express-validator:
         specifier: ^7.0.1
         version: 7.3.2
@@ -199,8 +199,8 @@ importers:
         specifier: ^7.0.0
         version: 7.0.0
       express-rate-limit:
-        specifier: ^7.1.5
-        version: 7.5.1(express@4.22.2)
+        specifier: ^8.2.2
+        version: 8.7.1(express@4.22.2)
       express-session:
         specifier: ^1.18.2
         version: 1.19.0
@@ -535,7 +535,7 @@ importers:
         version: 4.22.2
       express-rate-limit:
         specifier: ^8.2.2
-        version: 8.7.0(express@4.22.2)
+        version: 8.7.1(express@4.22.2)
       mongoose:
         specifier: ^8.24.1
         version: 8.24.4(gcp-metadata@5.3.0)
@@ -6512,14 +6512,8 @@ packages:
     resolution: {integrity: sha512-g8T6nhqq9L9AuwppymXa1rm6+A7xVUfkcEodXA+d2ILsM1uyoqSn83kpXE61v6JR2eFL8n878VyFDir1w2PuPw==}
     deprecated: use pino-http instead
 
-  express-rate-limit@7.5.1:
-    resolution: {integrity: sha512-7iN8iPMDzOMHPUYllBEsQdWVB6fPDMPqwjBaFrgr4Jgr/+okjvzAy+UHlYYL/Vs0OsOrMkwS6PJDkFlJwoxUnw==}
-    engines: {node: '>= 16'}
-    peerDependencies:
-      express: '>= 4.11'
-
-  express-rate-limit@8.7.0:
-    resolution: {integrity: sha512-hOwV7WOxXfjRpAM1DSJWZDXx3GhplwD8IfwuwvogD8i1Qnkgosw/H45s4ZnFAUHDAhPjlY9hLBvJhKmGMyY26g==}
+  express-rate-limit@8.7.1:
+    resolution: {integrity: sha512-2FXbqkygil3mZiXzEtM0IjE/UBmBNot0J1GEVrJT4JbrvwOSoEtqtO+wHbiMQELWe1eNvHoYRg2dkjOid+6JkA==}
     engines: {node: '>= 16'}
     peerDependencies:
       express: '>= 4.11'
@@ -7219,8 +7213,8 @@ packages:
     resolution: {integrity: sha512-ehuGcf94bQXhfagULNXrJdfnWO38v070jxSx/qE87Kjzmu2fU7ro5EFAb+OPituLqgfyuQaym5DlrNydW2sJ9A==}
     engines: {node: '>=12.22.0'}
 
-  ip-address@10.7.0:
-    resolution: {integrity: sha512-BGFsyJd5mpXp3rK6jIdADLNgpJUK1jnjzvYF8lK+VyDab9JAmqN0YOKDdP17HlgKb2+ehPgDc8EtnRLbGCAMhA==}
+  ip-address@10.7.4:
+    resolution: {integrity: sha512-DWBMKyeM25D70nrIiTkgQth59/G+naKOTep6huF9j+GmeK3DMD60Zvxg5d5qQnz+38AHgou6ean2LECX+lrKDg==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -13571,7 +13565,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.13
-      debug: 4.3.4
+      debug: 4.4.3(supports-color@5.5.0)
       pony-cause: 2.1.11
       semver: 7.8.5
       uuid: 9.0.1
@@ -13585,7 +13579,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.13
-      debug: 4.3.4
+      debug: 4.4.3(supports-color@5.5.0)
       pony-cause: 2.1.11
       semver: 7.8.5
       uuid: 9.0.1
@@ -13603,7 +13597,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.3.0
-      express-rate-limit: 8.7.0(express@5.3.0)
+      express-rate-limit: 8.7.1(express@5.3.0)
       hono: 4.13.13
       jose: 6.2.13
       json-schema-typed: 8.0.2
@@ -20079,23 +20073,19 @@ snapshots:
     dependencies:
       pino-http: 6.6.0
 
-  express-rate-limit@7.5.1(express@4.22.2):
-    dependencies:
-      express: 4.22.2
-
-  express-rate-limit@8.7.0(express@4.22.2):
+  express-rate-limit@8.7.1(express@4.22.2):
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
       express: 4.22.2
-      ip-address: 10.7.0
+      ip-address: 10.7.4
     transitivePeerDependencies:
       - supports-color
 
-  express-rate-limit@8.7.0(express@5.3.0):
+  express-rate-limit@8.7.1(express@5.3.0):
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
       express: 5.3.0
-      ip-address: 10.7.0
+      ip-address: 10.7.4
     transitivePeerDependencies:
       - supports-color
 
@@ -21033,7 +21023,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ip-address@10.7.0: {}
+  ip-address@10.7.4: {}
 
   ipaddr.js@1.9.1: {}
 
