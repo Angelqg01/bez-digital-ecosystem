@@ -97,6 +97,11 @@ export function useChatActions(api) {
         setPayError("");
         try {
             const res = await api.post(path, body);
+            if (res.data?.upgraded) {
+                // Mejora de plan en la suscripción existente: no hay página de pago, el cobro ya se hizo en Stripe.
+                setDialog({ type: "notice", title: "Plan mejorado", message: `Tu plan ahora es ${res.data.plan}. Los cambios se aplican en unos segundos.` });
+                return true;
+            }
             const url = res.data?.url;
             if (!isStripeCheckoutUrl(url)) { setPayError("El servidor devolvió una URL de pago no válida."); return false; }
             window.location.assign(url);
@@ -110,7 +115,24 @@ export function useChatActions(api) {
             setPaying(false);
         }
     }, [api]);
+    /** El chat devolvió 402: muestra qué hacer según el plan (suscribirse, mejorar o comprar créditos). */
+    const showCreditsExhausted = useCallback(async (info) => {
+        let list = [];
+        try {
+            const p = await api.get("/api/ai-workspace/plans");
+            list = Array.isArray(p.data?.plans) ? p.data.plans : [];
+            setCurrentPlan(String(p.data?.current || info?.plan || ""));
+        }
+        catch { /* sin planes: el diálogo ofrece al menos los packs */ }
+        setPlans(list);
+        setDialog({
+            type: "credits", kind: info?.kind === "upgrade" ? "upgrade" : "subscribe",
+            plan: String(info?.plan || ""), usage: info?.usage || null,
+            packs: Array.isArray(info?.packs) ? info.packs : [],
+        });
+    }, [api]);
+    const buyCredits = useCallback((packId) => pay("/api/checkout/credits", { packId }), [pay]);
     const checkoutPlan = useCallback((planId, cycle) => pay("/api/checkout/plan", { planId, cycle }), [pay]);
     const buyBez = useCallback((amountEur) => pay("/api/checkout/bez", { amountEur }), [pay]);
-    return { paying, payError, checkoutPlan, buyBez, catalog, dialog, busy, plans, currentPlan, docs, loadCatalog, request, requestById, go, close };
+    return { paying, payError, showCreditsExhausted, buyCredits, checkoutPlan, buyBez, catalog, dialog, busy, plans, currentPlan, docs, loadCatalog, request, requestById, go, close };
 }

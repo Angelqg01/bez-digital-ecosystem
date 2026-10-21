@@ -138,9 +138,9 @@ describe('planes y pagos por MCP (scope billing.checkout)', () => {
     const llamar = (token: string, name: string, args: unknown) => rpc(token, 'tools/call', { name, arguments: args });
     const texto = (r: request.Response) => JSON.parse(r.body.result.content[0].text);
 
-    it('billing.checkout expone solo las tres herramientas de plan/pago', async () => {
+    it('billing.checkout expone solo las herramientas de plan/pago', async () => {
         const r = await rpc(firmar({ scope: 'billing.checkout' }), 'tools/list').expect(200);
-        expect(nombres(r)).toEqual(['create_bez_checkout', 'create_plan_checkout', 'list_plans']);
+        expect(nombres(r)).toEqual(['create_bez_checkout', 'create_credits_checkout', 'create_plan_checkout', 'list_plans']);
     });
 
     it('sin el scope no hay herramientas de pago y no se pueden invocar', async () => {

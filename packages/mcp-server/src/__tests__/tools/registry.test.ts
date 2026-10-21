@@ -1,15 +1,15 @@
 /**
  * Unit tests: Tool Registry
- * Verifies all 23 MCP tools are registered correctly.
+ * Verifies all 24 MCP tools are registered correctly.
  */
 import { describe, it, expect } from 'vitest';
 import { createMockMcpServer } from '../helpers/mockMcpServer.js';
 import { registerTools } from '../../tools/index.js';
 
-const EXPECTED_TOOL_COUNT = 23;
+const EXPECTED_TOOL_COUNT = 24;
 
 describe('Tool Registry', () => {
-    it('should register all 23 MCP tools', () => {
+    it('should register all 24 MCP tools', () => {
         const { server, getToolNames } = createMockMcpServer();
         registerTools(server as any);
 
@@ -54,6 +54,7 @@ describe('Tool Registry', () => {
         expect(names).toContain('create_plan_checkout');
         expect(names).toContain('create_bez_checkout');
         expect(names).toContain('list_plans');
+        expect(names).toContain('create_credits_checkout');
         expect(names).toContain('check_payment_status');
         expect(names).toContain('get_wallet_balance');
         expect(names).toContain('initiate_crypto_payment');
@@ -61,7 +62,7 @@ describe('Tool Registry', () => {
         expect(names).toContain('sync_contacts');
     });
 
-    it('should call server.tool exactly 23 times', () => {
+    it('should call server.tool exactly 24 times', () => {
         const { server } = createMockMcpServer();
         registerTools(server as any);
 
@@ -92,7 +93,7 @@ describe('Tool Registry', () => {
  * reproduce el fallo.
  */
 describe('registro contra un McpServer real', () => {
-    it('registra las 23 herramientas sin que el SDK rechace ningún esquema', async () => {
+    it('registra las 24 herramientas sin que el SDK rechace ningún esquema', async () => {
         const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js');
         const server = new McpServer({ name: 'registry-test', version: '0.0.0' });
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { apiError, classifyLink, formatPrice, isSafeInternalPath, isStripeCheckoutUrl, TRUSTED_HOSTS } from './chatActions';
+import { apiError, classifyLink, formatPrice, isSafeInternalPath, isStripeCheckoutUrl, TRUSTED_HOSTS, upgradeOptions } from './chatActions';
 
 describe('isSafeInternalPath', () => {
     test.each(['/rwa', '/vip', '/docs/guia-1', '/rwa?tab=tokenize', '/dashboard/farming', '/dashboard/wallet#gov'])('acepta %s', (p) => {
@@ -62,5 +62,15 @@ describe('isStripeCheckoutUrl / formatPrice anual', () => {
     test('precio anual', () => {
         expect(formatPrice({ priceMonthly: 99, priceYearly: 990, currency: 'EUR' }, 'yearly')).toBe('990 EUR/año');
         expect(formatPrice({ priceMonthly: 99, currency: 'EUR' }, 'yearly')).toBe('99 EUR/mes');
+    });
+});
+
+describe('upgradeOptions', () => {
+    const plans = [{ id: 'starter', priceMonthly: 0 }, { id: 'creator', priceMonthly: 99, purchasable: true }, { id: 'business', priceMonthly: 499, purchasable: true }];
+    test('solo planes comprables con precio mayor que el actual', () => {
+        expect(upgradeOptions(plans, 'creator').map((p) => p.id)).toEqual(['business']);
+        expect(upgradeOptions(plans, 'starter').map((p) => p.id)).toEqual(['creator', 'business']);
+        expect(upgradeOptions(plans, 'business')).toEqual([]);
+        expect(upgradeOptions(undefined, 'x')).toEqual([]);
     });
 });

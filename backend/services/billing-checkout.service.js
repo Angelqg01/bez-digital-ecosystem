@@ -26,6 +26,8 @@
 const { SUBSCRIPTION_TIERS } = require('../config/tier.config');
 
 const SOURCE_PLAN = 'bezhas_plan';
+const { getPack } = require('../config/credit-packs');
+const SOURCE_CREDITS = 'bezhas_credits';
 const SOURCE_BEZ = 'bezhas_bez_purchase';
 const CYCLES = Object.freeze(['monthly', 'yearly']);
 const FREE_PLAN = 'FREE';
@@ -130,6 +132,13 @@ async function createPlanCheckout({ user, planId, cycle }) {
     const price = billing === 'yearly' ? tier.price.yearly : tier.price.monthly;
     if (!(Number(price) > 0)) throw err(400, 'INVALID_CYCLE', 'Ese plan no tiene ciclo anual');
 
+    // Quien ya tiene una suscripción activa no abre otra (se cobraría dos veces): mejora la existente.
+    const currentSub = user.stripe_subscription_id || user.stripeSubscriptionId;
+    const currentPlan = String(user.subscription || '').toLowerCase();
+    if (currentSub && currentPlan && currentPlan !== 'free' && currentPlan !== 'starter') {
+        return upgradeExistingSubscription({ userId, tier, billing, price, currentPlan, subscriptionId: currentSub });
+    }
+
     const origin = frontendOrigin();
     const currency = String(tier.price.currency || 'EUR').toLowerCase();
     const priceId = tier.price.stripePriceId && tier.price.stripePriceId[billing];
@@ -167,6 +176,72 @@ async function createPlanCheckout({ user, planId, cycle }) {
     const url = assertStripeUrl(session.url);
     auditEvent('CHECKOUT_PLAN_CREATED', 'info', { userId, plan: meta.bz_plan, cycle: billing, sessionId: session.id });
     return { sessionId: session.id, url, plan: meta.bz_plan, cycle: billing, amount: Number(price), currency: currency.toUpperCase() };
+}
+
+/** Mejora de plan en la misma suscripción de Stripe: se cobra la diferencia prorrateada al momento. Solo hacia un plan superior. */
+async function upgradeExistingSubscription({ userId, tier, billing, price, currentPlan, subscriptionId }) {
+    const rank = (id) => {
+        const t = Object.values(SUBSCRIPTION_TIERS).find((x) => String(x.id).toLowerCase() === id);
+        return t ? Number(t.price.monthly) : 0;
+    };
+    const target = String(tier.id).toLowerCase();
+    if (rank(target) <= rank(currentPlan)) {
+        throw err(409, 'ALREADY_SUBSCRIBED', 'Ya tienes ese plan o uno superior. Cambia o cancela desde la gestión de tu suscripción.');
+    }
+    const stripe = getStripe();
+    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    // La suscripción debe ser de esta persona y estar viva.
+    if (!sub || !sub.metadata || sub.metadata.bz_user_id !== userId || !['active', 'trialing', 'past_due'].includes(sub.status)) {
+        throw err(409, 'SUBSCRIPTION_NOT_ACTIVE', 'No encontramos una suscripción activa que mejorar.');
+    }
+    const item = sub.items && sub.items.data && sub.items.data[0];
+    if (!item) throw err(409, 'SUBSCRIPTION_NOT_ACTIVE', 'No encontramos una suscripción activa que mejorar.');
+    const currency = String(tier.price.currency || 'EUR').toLowerCase();
+    const meta = { ...sub.metadata, source: SOURCE_PLAN, bz_user_id: userId, bz_plan: target, bz_cycle: billing };
+    await stripe.subscriptions.update(subscriptionId, {
+        items: [{
+            id: item.id,
+            price_data: {
+                currency,
+                product: typeof item.price.product === 'string' ? item.price.product : item.price.product.id,
+                unit_amount: toCents(price),
+                recurring: { interval: billing === 'yearly' ? 'year' : 'month' },
+            },
+        }],
+        metadata: meta,
+        proration_behavior: 'always_invoice',     // cobra ya la diferencia
+        payment_behavior: 'error_if_incomplete',  // si el cobro falla, el plan no cambia
+    }, { idempotencyKey: `bz-upgrade-${userId}-${target}-${billing}-${Math.floor(Date.now() / 300000)}` });
+    // El plan se aplica en nuestra base al recibir customer.subscription.updated (o ahora, de forma idempotente).
+    await User().update(userId, { subscription: target.toUpperCase(), subscriptionBillingCycle: billing });
+    auditEvent('PLAN_UPGRADED', 'info', { userId, from: currentPlan, to: target, cycle: billing });
+    return { upgraded: true, plan: target, cycle: billing, amount: Number(price), currency: currency.toUpperCase() };
+}
+
+/** Compra de un pack de créditos de chat (EUR, pago único). El pack lo define el servidor. */
+async function createCreditsCheckout({ user, packId }) {
+    const userId = requireUser(user);
+    const pack = typeof packId === 'string' ? getPack(packId) : null;
+    if (!pack) throw err(400, 'INVALID_PACK', 'Pack de créditos no válido');
+    const origin = frontendOrigin();
+    const meta = { source: SOURCE_CREDITS, bz_user_id: userId, bz_pack: pack.id };
+    const params = {
+        mode: 'payment',
+        line_items: [{ quantity: 1, price_data: { currency: 'eur', unit_amount: toCents(pack.priceEur), product_data: { name: `BeZhas · ${pack.name}` } } }],
+        client_reference_id: userId,
+        metadata: meta,
+        payment_intent_data: { metadata: meta },
+        success_url: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}&kind=credits`,
+        cancel_url: `${origin}/home?checkout=cancelled`,
+    };
+    const customer = user.stripe_customer_id || user.stripeCustomerId;
+    if (customer) params.customer = customer;
+    else if (user.email) params.customer_email = user.email;
+    const idempotencyKey = `bz-credits-${userId}-${pack.id}-${Math.floor(Date.now() / 300000)}`;
+    const session = await getStripe().checkout.sessions.create(params, { idempotencyKey });
+    const url = assertStripeUrl(session.url);
+    auditEvent('CHECKOUT_CREDITS_CREATED', 'info', { userId, pack: pack.id, sessionId: session.id });
+    return { sessionId: session.id, url, pack: pack.id, credits: pack.credits, amount: pack.priceEur, currency: 'EUR' };
 }
 
 function validEurAmount(amountEur) {
@@ -239,7 +314,7 @@ async function getSessionForUser({ user, sessionId }) {
     // Una sesión ajena se responde como inexistente (no se confirma que exista).
     if (s.client_reference_id !== userId) throw err(404, 'SESSION_NOT_FOUND', 'Sesión de pago no encontrada');
     const m = s.metadata || {};
-    return { sessionId: s.id, status: s.status, paymentStatus: s.payment_status, kind: m.source === SOURCE_PLAN ? 'plan' : m.source === SOURCE_BEZ ? 'bez' : 'other', plan: m.bz_plan || null };
+    return { sessionId: s.id, status: s.status, paymentStatus: s.payment_status, kind: m.source === SOURCE_PLAN ? 'plan' : m.source === SOURCE_BEZ ? 'bez' : m.source === SOURCE_CREDITS ? 'credits' : 'other', plan: m.bz_plan || null };
 }
 
 // ─── Activación desde webhooks (ya verificados por la firma) ────────────────
@@ -290,6 +365,28 @@ async function activatePlanFromSession(session) {
     });
     auditEvent('CHECKOUT_PLAN_ACTIVATED', 'info', { userId, plan: key, cycle, sessionId: session.id, amount: (session.amount_total || 0) / 100 });
     return { handled: true, activated: true, userId, plan: key, cycle };
+}
+
+/** checkout.session.completed / async_payment_succeeded de un pack de créditos: suma el saldo una sola vez. */
+async function activateCreditsFromSession(session) {
+    const m = (session && session.metadata) || {};
+    if (m.source !== SOURCE_CREDITS || session.mode !== 'payment') return { handled: false };
+    if (session.payment_status !== 'paid') return { handled: true, granted: false, reason: 'pending_payment' };
+    const userId = String(m.bz_user_id || '');
+    const pack = getPack(m.bz_pack);
+    if (!userId || session.client_reference_id !== userId || !pack) {
+        auditEvent('CHECKOUT_CREDITS_REJECTED', 'critical', { sessionId: session.id, reason: !pack ? 'invalid_pack' : 'user_mismatch' });
+        return { handled: true, granted: false, error: 'Sesión de créditos no válida', permanent: true };
+    }
+    // Se comprueba lo realmente pagado contra el precio del pack: nunca se entregan créditos por un pago menor.
+    if (String(session.currency || '').toLowerCase() !== 'eur' || Number(session.amount_total) < toCents(pack.priceEur)) {
+        auditEvent('CHECKOUT_CREDITS_REJECTED', 'critical', { sessionId: session.id, reason: 'amount_mismatch' });
+        return { handled: true, granted: false, error: 'Importe pagado no coincide con el pack', permanent: true };
+    }
+    if (!(await User().findById(userId))) return { handled: true, granted: false, error: 'Usuario no encontrado', permanent: true };
+    const granted = await require('./ai-workspace/credits').getCreditService().grantPack(userId, session.id, pack);
+    if (granted) auditEvent('CREDITS_GRANTED', 'info', { userId, pack: pack.id, credits: pack.credits, sessionId: session.id });
+    return { handled: true, granted, userId, credits: pack.credits };
 }
 
 async function downgrade(user, reason) {
@@ -344,7 +441,9 @@ async function handleEvent(event) {
     switch (event.type) {
         case 'checkout.session.completed':
         case 'checkout.session.async_payment_succeeded':
-            return activatePlanFromSession(event.data.object);
+            return event.data.object && event.data.object.metadata && event.data.object.metadata.source === SOURCE_CREDITS
+                ? activateCreditsFromSession(event.data.object)
+                : activatePlanFromSession(event.data.object);
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted':
             return handleSubscriptionEvent(event);
@@ -358,8 +457,8 @@ async function handleEvent(event) {
 
 module.exports = {
     SOURCE_PLAN, SOURCE_BEZ, CYCLES,
-    listPlans, purchasablePlan, createPlanCheckout, createBezCheckout, createPortalSession, getSessionForUser,
+    listPlans, purchasablePlan, createPlanCheckout, createBezCheckout, createCreditsCheckout, createPortalSession, getSessionForUser,
     assertStripeUrl, validEurAmount, frontendOrigin,
-    activatePlanFromSession, handleSubscriptionEvent, handleInvoiceEvent, handleEvent,
+    activatePlanFromSession, activateCreditsFromSession, handleSubscriptionEvent, handleInvoiceEvent, handleEvent,
     _setStripeForTests,
 };

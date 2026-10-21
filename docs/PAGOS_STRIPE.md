@@ -32,3 +32,15 @@ Scope OAuth `billing.checkout` (hay que pedirlo explícitamente; por defecto sol
 `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `FRONTEND_URL`; opcionales `BEZ_PURCHASE_MIN_EUR`, `BEZ_PURCHASE_MAX_EUR`, `CHECKOUT_RATE_LIMIT`, `STRIPE_EXTRA_HOSTS`.
 Eventos de webhook a activar: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated|deleted`, `invoice.payment_succeeded|failed`.
 Migración: `backend/db/migrations/015_users_billing.sql`.
+
+## Créditos del chat (cuota, mejora de plan y packs)
+Cada mensaje del chat consume 1 crédito: primero la cuota del plan (`ai.dailyQueries` / `ai.monthlyQueries` de `config/tier.config.js`) y luego los créditos comprados. Sin saldo, el chat responde **402** `CREDITS_EXHAUSTED` con `kind`:
+- `subscribe` (sin plan de pago): el chat abre la ventana para suscribirse.
+- `upgrade` (con plan de pago): ofrece planes superiores o un pack de créditos.
+
+Si el modelo falla antes de responder, el crédito se devuelve. Los administradores no se miden.
+
+- `GET /api/ai-workspace/credits`: saldo y packs.
+- `POST /api/checkout/credits` `{ packId }` (`chat_100`, `chat_500`, `chat_2000`; precios en `config/credit-packs.js`): pago único en EUR; el webhook suma los créditos **una sola vez** y solo si lo pagado coincide con el pack.
+- `POST /api/checkout/plan` con una suscripción activa **mejora la existente** (cobra la diferencia prorrateada al momento; si el cobro falla, el plan no cambia). Mismo plan o inferior → 409. MCP: `create_credits_checkout`.
+- Migración `016_ai_credits.sql`. Variables: `AI_CREDITS_ENFORCE=false` (desactiva la medición), `AI_CREDITS_LIMIT_OVERRIDE` (solo pruebas/desarrollo), `AI_CREDITS_STORE=pg|memory`.

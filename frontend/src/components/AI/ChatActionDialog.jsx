@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowUpRight, FileText, Lock, ShieldCheck, X } from "lucide-react";
-import { formatPrice } from "../../lib/chatActions";
+import { formatPrice, upgradeOptions } from "../../lib/chatActions";
 /** Ventana emergente dentro del chat: confirma y lleva al enlace directo; el chat nunca ejecuta operaciones. */
-export function ChatActionDialog({ dialog, plans, currentPlan, docs, onGo, onClose, onUpgrade, onAskDoc, paying, payError, onCheckoutPlan, onBuyBez }) {
+export function ChatActionDialog({ dialog, plans, currentPlan, docs, onGo, onClose, onUpgrade, onAskDoc, paying, payError, onCheckoutPlan, onBuyBez, onBuyCredits }) {
     const ref = useRef(null);
     const [cycle, setCycle] = useState("monthly");
     const [amount, setAmount] = useState("25");
     useEffect(() => { ref.current?.focus(); }, [dialog]);
-    const title = dialog.type === "error" ? "No se pudo abrir" : dialog.type === "locked" ? "Función bloqueada" : dialog.action.title;
+    const title = dialog.type === "error" ? "No se pudo abrir" : dialog.type === "credits" ? "Te has quedado sin créditos de chat" : dialog.type === "notice" ? dialog.title :  dialog.type === "locked" ? "Función bloqueada" : dialog.action.title;
     const primary = "inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700";
     const secondary = "rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800";
     return (<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 p-4 backdrop-blur-[1px]" onClick={onClose}>
@@ -79,6 +79,42 @@ export function ChatActionDialog({ dialog, plans, currentPlan, docs, onGo, onClo
                             <button onClick={onClose} className={secondary}>Cerrar</button>
                         </div>
                     </>)}
+
+                {dialog.type === "notice" && (<>
+                        <p className="mb-4 text-sm text-gray-600 dark:text-gray-300" data-testid="notice-text">{dialog.message}</p>
+                        <button onClick={onClose} className={primary}>Entendido</button>
+                    </>)}
+
+                {dialog.type === "credits" && (() => {
+                    const options = dialog.kind === "upgrade" ? upgradeOptions(plans, currentPlan || dialog.plan) : plans.filter((p) => p.purchasable);
+                    return (<>
+                        <p className="mb-3 text-sm text-gray-600 dark:text-gray-300" data-testid="credits-message">
+                            {dialog.kind === "upgrade"
+                                ? "Has gastado los créditos de tu plan. Mejora de plan para tener más, o compra un pack de créditos."
+                                : "Has gastado tus mensajes gratuitos. Suscríbete a un plan para seguir chateando."}
+                        </p>
+                        {options.length > 0 && (<>
+                            <div className="mb-3 inline-flex rounded-lg border border-gray-200 p-0.5 text-xs dark:border-gray-700" role="group" aria-label="Periodo de facturación">
+                                {["monthly", "yearly"].map((c) => (<button key={c} type="button" onClick={() => setCycle(c)} aria-pressed={cycle === c} className={`rounded-md px-3 py-1 ${cycle === c ? "bg-indigo-600 text-white" : "text-gray-600 dark:text-gray-300"}`}>{c === "monthly" ? "Mensual" : "Anual"}</button>))}
+                            </div>
+                            <ul className="mb-4 space-y-2" data-testid="credits-plans">
+                                {options.map((p) => (<li key={p.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                                        <div className="flex items-center justify-between gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100"><span>{p.name}</span><span className="text-xs font-normal text-gray-500">{formatPrice(p, cycle)}</span></div>
+                                        {p.description && <p className="text-xs text-gray-500 dark:text-gray-400">{p.description}</p>}
+                                        <button type="button" disabled={paying} onClick={() => onCheckoutPlan(p.id, cycle)} data-testid={`subscribe-${p.id}`} className={`${primary} mt-2 w-full disabled:opacity-60`}>{paying ? "Procesando…" : dialog.kind === "upgrade" ? `Mejorar a ${p.name}` : `Suscribirme a ${p.name}`}</button>
+                                    </li>))}
+                            </ul>
+                        </>)}
+                        {dialog.kind === "upgrade" && dialog.packs.length > 0 && (<>
+                            <p className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">O compra más créditos (pago único)</p>
+                            <ul className="mb-4 space-y-2" data-testid="credits-packs">
+                                {dialog.packs.map((k) => (<li key={k.id}><button type="button" disabled={paying} onClick={() => onBuyCredits(k.id)} data-testid={`buy-pack-${k.id}`} className={`${secondary} flex w-full items-center justify-between disabled:opacity-60`}><span>{k.credits} créditos</span><span className="font-semibold">{k.priceEur} {k.currency}</span></button></li>))}
+                            </ul>
+                        </>)}
+                        {payError && <p role="alert" className="mb-3 text-xs text-red-600" data-testid="pay-error">{payError}</p>}
+                        <button onClick={onClose} className={secondary}>Ahora no</button>
+                    </>);
+                })()}
 
                 {dialog.type === "docs" && (<>
                         <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">Documentos a los que tienes acceso. Elige uno para preguntar sobre él en el chat.</p>
