@@ -1,0 +1,14 @@
+# Node
+node_modules/
+*.tgz
+
+# Python
+__pycache__/
+*.pyc
+
+# .NET
+bin/
+obj/
+
+# Java
+*.class
