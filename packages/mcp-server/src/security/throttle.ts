@@ -13,9 +13,9 @@
  * limitada. La protección era la misma, pero solo se podía comprobar
  * ejecutándola.
  */
-import type { Options } from 'express-rate-limit';
+import { ipKeyGenerator, type Options } from 'express-rate-limit';
 import type { Request, Response } from 'express';
-import { subjectFromRequest } from './auditLog.js';
+import { normalizeIp, subjectFromRequest } from './auditLog.js';
 
 export interface ThrottleOptions {
     /**
@@ -52,7 +52,14 @@ export function watchdogLimiter(limitPerMinute: number, options: ThrottleOptions
         standardHeaders: true,
         legacyHeaders: false,
         keyGenerator: (req: Request) => {
-            const subject = options.resolveSubject?.(req) ?? subjectFromRequest({ ip: req.ip });
+            // IPv6 por subred /56, no por dirección: si no, un cliente con su
+            // /64 rota de dirección y estrena cupo en cada petición.
+            // `subjectFromRequest` agrupa igual por dentro (ver `ipAddressKey`,
+            // idempotente); se hace explícito aquí para que la clave del
+            // limitador se vea basada en subred, y express-rate-limit lo
+            // reconozca al validar el `keyGenerator` al arrancar.
+            const subject =
+                options.resolveSubject?.(req) ?? subjectFromRequest({ ip: ipKeyGenerator(normalizeIp(req.ip)) });
             return options.global ? subject : `${subject}:${req.path}`;
         },
         handler: (_req: Request, res: Response) => {
@@ -63,4 +70,17 @@ export function watchdogLimiter(limitPerMinute: number, options: ThrottleOptions
             });
         },
     };
+}
+
+/**
+ * Saltos de proxy en los que confiar, a partir de `TRUST_PROXY_HOPS`.
+ *
+ * Solo se acepta un entero entre 0 y 5; cualquier otra cosa (vacío, `true`,
+ * texto, negativos) cae a 1. Nunca devuelve `true`: con `true` Express toma el
+ * primer valor de `X-Forwarded-For`, que lo escribe el cliente.
+ */
+export function trustProxyHops(raw: string | undefined): number {
+    if (raw === undefined || !/^\d$/.test(raw.trim())) return 1;
+    const hops = Number(raw.trim());
+    return hops <= 5 ? hops : 1;
 }

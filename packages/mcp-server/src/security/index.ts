@@ -4,6 +4,7 @@
 export {
     auditLog,
     AuditLog,
+    ipAddressKey,
     normalizeIp,
     subjectFromApiKey,
     subjectFromRequest,
@@ -24,4 +25,4 @@ export {
 export { extractAmountUSD, policy, riskOf, TOOL_RISK, type RiskTier } from './policy.js';
 export { rateLimiter, RateLimiter } from './rateLimiter.js';
 export { redact, scan, type Finding, type ScanResult } from './scanner.js';
-export { GLOBAL_LIMIT_PER_MINUTE, watchdogLimiter, type ThrottleOptions } from './throttle.js';
+export { GLOBAL_LIMIT_PER_MINUTE, trustProxyHops, watchdogLimiter, type ThrottleOptions } from './throttle.js';

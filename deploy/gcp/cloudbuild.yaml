@@ -165,6 +165,9 @@ steps:
           done < deploy/gcp/secrets.list
           (IFS=,; echo "$${out[*]}")
         }
+        # TRUST_PROXY_HOPS=2: igual que el backend. Con el ingress limitado al
+        # balanceador, X-Forwarded-For llega como «<cliente>, <balanceador>»;
+        # con 1 salto todo el tráfico caería en el cupo de la IP del balanceador.
         gcloud run deploy bezhas-intelligence \
           --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/bezhas-intelligence:${_TAG} \
           --region=${_REGION} \
@@ -174,7 +177,7 @@ steps:
           --min-instances=0 --max-instances=5 --concurrency=40 --timeout=300 \
           --execution-environment=gen2 \
           --labels=app=bezhas,component=mcp,commit=${_TAG} \
-          --set-env-vars=NODE_ENV=production,HTTP_PORT=8080,NETWORK_MODE=${_NETWORK_MODE},BACKEND_URL=${_API_URL},OAUTH_ISSUER=${_API_URL},MCP_PUBLIC_URL=${_MCP_URL} \
+          --set-env-vars=NODE_ENV=production,HTTP_PORT=8080,TRUST_PROXY_HOPS=2,NETWORK_MODE=${_NETWORK_MODE},BACKEND_URL=${_API_URL},OAUTH_ISSUER=${_API_URL},MCP_PUBLIC_URL=${_MCP_URL} \
           --set-secrets="$$(secretos_de mcp)"
 
   # Migraciones de PostgreSQL ANTES de desplegar el backend: si una falla, el
