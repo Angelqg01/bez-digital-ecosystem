@@ -20,17 +20,18 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Auto-approve patch and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: |
-          gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Auto-merge safe updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        # Sin aprobación previa: el repo no deja que Actions apruebe PRs
+        # («GitHub Actions is not permitted to approve pull requests») y main
+        # no exige revisiones, así que el paso sólo hacía fallar el job.
+        # --auto exige tener activado el auto-merge en el repo; si no lo está,
+        # se avisa en vez de fallar y la PR queda para fusión manual.
         run: |
+          if [ "$(gh api "repos/$GITHUB_REPOSITORY" --jq .allow_auto_merge)" != "true" ]; then
+            echo "::notice::Auto-merge desactivado en el repositorio; $PR_URL queda para fusión manual."
+            exit 0
+          fi
           gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
