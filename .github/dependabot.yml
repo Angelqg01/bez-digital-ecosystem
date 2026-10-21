@@ -16,11 +16,21 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    # Group updates to prevent PR spam
+    # Agrupa sólo minor y patch. Las mayores rompen APIs y llegan en PR propia,
+    # una por paquete: un grupo con 83 subidas mezclaba TypeScript 7, tipos de
+    # Node y Stripe nuevos y tumbaba seis jobs a la vez, sin forma de aislar cuál.
     groups:
       dependencies:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # typescript-eslint aún no soporta TS 7 y el job «ESLint Security Rules»
+      # muere al cargar el parser. Quitar cuando lo soporte (issue #10940).
+      - dependency-name: "typescript"
+        versions: [">=7"]
     versioning-strategy: increase-if-necessary
 
   # =========================================================================
