@@ -24,7 +24,7 @@
     "nodemailer": "^9.1.0",
     "bcryptjs": "^3.0.3",
     "mongoose": "^8.24.1",
-    "redis": "^4.6.10",
+    "redis": "^6.3.0",
     "winston": "^3.11.0",
     "compression": "^1.7.4",
     "swagger-ui-express": "^5.0.0",
