@@ -59,6 +59,9 @@ export default function SubscriptionDone() {
       <span className="hub-tag">Todo listo</span>
       <h2 style={{ fontSize: 26 }}>¡Plan {account?.plan?.name || 'Starter'} activo!</h2>
       <p>Tu BeZhas ID <span className="hub-mono" style={{ fontWeight: 700 }}>{account?.bezhasId}</span> ya funciona en todas las apps nativas de BeZhas con este plan.</p>
+      {account?.plan?.id === 'starter' && (
+        <p>Tienes <strong>15 días gratis</strong>: tu tarjeta está guardada y no se cobra nada durante la prueba. Después pagarás solo lo que uses de la API, el SDK y el MCP, y cada mes te compararemos tu consumo con los otros planes. <Link href="/cuenta" style={{ color: 'var(--accent)', fontWeight: 600 }}>Ver mi consumo</Link></p>
+      )}
       <div className="hub-hero-cta" style={{ marginTop: 6 }}>
         {returnTo ? (
           <>

@@ -11,14 +11,14 @@ export const metadata: Metadata = {
 const STEPS = [
   { title: 'Crea tu cuenta', body: 'Elige un usuario, tu email y una contraseña. En ese momento se genera tu BeZhas ID, con formato BZ-XXXXXXXXXX.' },
   { title: 'Confirma tu email', body: 'Te llegará un correo con un botón. Al pulsarlo confirmas que el email es tuyo; hasta entonces no se activa ningún plan.' },
-  { title: 'Elige tu plan', body: 'El botón del correo te lleva a la página de planes. Escoges el que necesitas y pagas con Stripe; Starter es gratis.' },
+  { title: 'Elige tu plan', body: 'El botón del correo te lleva a la página de planes. Escoges el que necesitas y pagas con Stripe. Starter empieza con 15 días gratis y después cobra solo por uso.' },
   { title: 'Vuelve a tu app', body: 'Tras el pago de Stripe te devolvemos a la app o plataforma de BeZhas donde estabas trabajando, con el plan ya activo.' },
 ];
 
 const FAQ = [
   { q: '¿Para qué sirve el BeZhas ID?', a: 'Es tu identidad única dentro de BeZhas: con el mismo usuario y contraseña entras en todas las apps nativas, y tu plan y tu historial te acompañan en cada una.' },
   { q: '¿Funciona fuera de BeZhas?', a: 'No. El BeZhas ID es solo para las apps nativas de BeZhas y para algunos partners seleccionados que se integran con nosotros. No es un inicio de sesión general de Internet.' },
-  { q: '¿Cuesta algo?', a: 'Crear el BeZhas ID es gratis. Solo pagas si eliges un plan de pago (Creator Pro, Business o Enterprise VIP); Starter es gratuito.' },
+  { q: '¿Cuesta algo?', a: 'Crear el BeZhas ID es gratis. Starter da 15 días gratis (te pedimos la tarjeta, sin cobro durante la prueba) y después pagas solo lo que uses de la API, el SDK y el MCP; cada mes te comparamos con los demás planes. Creator Pro, Business y Enterprise VIP tienen cuota fija.' },
   { q: '¿Y si no confirmo el email?', a: 'La cuenta queda creada, pero no puedes contratar un plan. El enlace caduca a las 24 horas; puedes pedir otro desde la página de planes.' },
   { q: '¿Puedo tener más de un BeZhas ID?', a: 'Cada persona o empresa tiene uno. Si entras con tu wallet, o con email y contraseña, es siempre la misma identidad.' },
 ];

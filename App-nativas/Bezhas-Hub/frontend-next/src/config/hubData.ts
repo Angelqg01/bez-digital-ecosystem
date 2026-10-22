@@ -100,10 +100,10 @@ export const PLANS: Plan[] = [
     price: '0 €',
     priceNote: '15 días gratis, después pago por uso',
     features: [
-      'Hub y Wallet incluidos',
-      '150 acciones de IA para empezar',
-      'API y SDK con consumo real',
-      'OPERANT: Ventas y Soporte en modo borrador',
+      '15 días gratis: pedimos tu tarjeta, pero no se cobra durante la prueba',
+      'Después pagas solo lo que uses de la API, el SDK y el MCP',
+      'Cada mes te comparamos tu consumo con los otros planes',
+      'Hub y Wallet incluidos; OPERANT en modo borrador',
     ],
   },
   {

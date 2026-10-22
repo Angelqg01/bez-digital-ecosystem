@@ -87,7 +87,7 @@ const PLANS: Plan[] = [
 const ID_STEPS = [
     { title: 'Crea tu cuenta', body: 'Usuario, email y contraseña. En ese momento se genera tu BeZhas ID (BZ-XXXXXXXXXX).' },
     { title: 'Confirma tu email', body: 'Te llega un correo con un botón. Hasta que lo confirmas no se activa ningún plan.' },
-    { title: 'Elige tu plan', body: 'El botón del correo te lleva a elegir plan y a pagar con Stripe. Starter es gratis.' },
+    { title: 'Elige tu plan', body: 'El botón del correo te lleva a elegir plan y a pagar con Stripe. Starter: 15 días gratis y luego pagas solo lo que uses.' },
     { title: 'Vuelve a tu app', body: 'Tras el pago volvemos a llevarte a la app o plataforma de BeZhas donde estabas.' },
 ];
 const HUB_REGISTRO = 'https://hub.bezhas.com/registro?return=' + encodeURIComponent('https://www.bezhas.com/precios');

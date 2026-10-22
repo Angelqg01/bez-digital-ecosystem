@@ -47,7 +47,7 @@ export default function AccountBanner() {
     <div className="hub-alert" data-kind="ok" role="status">
       {params.get('verified') ? 'Email confirmado. ' : ''}Hola{account.username ? ` ${account.username}` : ''} · tu BeZhas ID:{' '}
       <span className="hub-mono" style={{ fontWeight: 700 }}>{account.bezhasId}</span>
-      {account.plan ? <> · plan actual: <strong>{account.plan.name}</strong></> : ' · aún no tienes plan'}.{extra}
+      {account.plan ? <> · plan actual: <strong>{account.plan.name}</strong> (<Link href="/cuenta" style={{ textDecoration: 'underline' }}>ver mi consumo</Link>)</> : ' · aún no tienes plan'}.{extra}
     </div>
   );
 }

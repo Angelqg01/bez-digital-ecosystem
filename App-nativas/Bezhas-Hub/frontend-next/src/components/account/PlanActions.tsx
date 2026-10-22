@@ -23,13 +23,8 @@ export default function PlanActions({ planId, hasAnnual }: { planId: string; has
     setError(null);
     setBusy(billing);
     try {
-      if (planId === 'starter') {
-        await api('/api/billing/plan-free', { token, method: 'POST', body: {} });
-        router.push(`/suscripcion/listo?free=1${returnTo ? `&return=${encodeURIComponent(returnTo)}` : ''}`);
-        return;
-      }
       const r = await api<{ url: string }>('/api/billing/plan-checkout', { token, body: { planId, billing, ...(returnTo ? { returnTo } : {}) } });
-      window.location.href = r.url; // Stripe Checkout; al pagar vuelve a /suscripcion/listo
+      window.location.href = r.url; // Stripe Checkout (Starter: tarjeta y 15 días gratis); al terminar vuelve a /suscripcion/listo
     } catch (err) {
       const e = err as ApiError;
       setError(e.code === 'EMAIL_NOT_VERIFIED' ? 'Confirma primero tu email: te hemos enviado un enlace.' : e.message);
@@ -42,7 +37,7 @@ export default function PlanActions({ planId, hasAnnual }: { planId: string; has
   if (!token || !account) {
     return (
       <div style={{ marginTop: 'auto', display: 'grid', gap: 8, paddingTop: 10 }}>
-        <Link className="hub-btn hub-btn-primary" href={`/registro?${q.toString()}`}>{planId === 'starter' ? 'Empezar gratis' : 'Crear cuenta y contratar'}</Link>
+        <Link className="hub-btn hub-btn-primary" href={`/registro?${q.toString()}`}>{planId === 'starter' ? 'Probar 15 días gratis' : 'Crear cuenta y contratar'}</Link>
         <Link className="hub-btn hub-btn-ghost" href={`/entrar?${q.toString()}`}>Ya tengo cuenta</Link>
       </div>
     );
@@ -57,7 +52,7 @@ export default function PlanActions({ planId, hasAnnual }: { planId: string; has
       ) : (
         <>
           <button className="hub-btn hub-btn-primary" type="button" disabled={bloqueado || !!busy} onClick={() => contratar('monthly')}>
-            {busy === 'monthly' ? 'Un momento…' : planId === 'starter' ? 'Empezar gratis' : 'Contratar mensual'}
+            {busy === 'monthly' ? 'Un momento…' : planId === 'starter' ? 'Probar 15 días gratis' : 'Contratar mensual'}
           </button>
           {hasAnnual && (
             <button className="hub-btn hub-btn-ghost" type="button" disabled={bloqueado || !!busy} onClick={() => contratar('annual')}>
@@ -67,6 +62,9 @@ export default function PlanActions({ planId, hasAnnual }: { planId: string; has
         </>
       )}
       {bloqueado && <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>Confirma tu email para contratar.</p>}
+      {planId === 'starter' && !esActual && !bloqueado && (
+        <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>Pedimos tu tarjeta para empezar, pero no se cobra nada durante 15 días.</p>
+      )}
       {error && <p className="hub-alert" data-kind="error" role="alert">{error}</p>}
     </div>
   );

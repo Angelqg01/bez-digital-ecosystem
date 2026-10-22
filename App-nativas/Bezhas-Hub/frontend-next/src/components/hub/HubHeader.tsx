@@ -10,6 +10,7 @@ const NAV = [
   { href: '/apps', label: 'Apps nativas' },
   { href: '/bezhas-id', label: 'BeZhas ID' },
   { href: '/planes', label: 'Planes' },
+  { href: '/cuenta', label: 'Mi cuenta' },
   { href: '/developers', label: 'Developers' },
 ];
 
