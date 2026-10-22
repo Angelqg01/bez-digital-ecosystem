@@ -28,6 +28,7 @@ const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const { verifyAdminToken } = require('../middleware/admin.middleware');
 const orchestrator = require('../services/orchestrator.service');
+const { costContextFromRequest } = require('../services/cost-policy.service');
 const {
     watchdogRequest,
     watchdogResponse,
@@ -114,7 +115,7 @@ router.post('/execute', async (req, res) => {
     }
 
     try {
-        const result = await orchestrator.executeTool(tool, params);
+        const result = await orchestrator.executeTool(tool, params, costContextFromRequest(req));
         res.json({ success: true, result });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -141,7 +142,7 @@ router.post('/pipeline', async (req, res) => {
     }
 
     try {
-        const result = await orchestrator.executePipeline(steps);
+        const result = await orchestrator.executePipeline(steps, costContextFromRequest(req));
         res.json({ success: true, result });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -162,7 +163,7 @@ router.post('/parallel', async (req, res) => {
     }
 
     try {
-        const result = await orchestrator.executeParallel(tools);
+        const result = await orchestrator.executeParallel(tools, costContextFromRequest(req));
         res.json({ success: true, result });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -192,7 +193,7 @@ const shortcuts = [
 shortcuts.forEach(({ path: routePath, tool }) => {
     router.post(routePath, async (req, res) => {
         try {
-            const result = await orchestrator.executeTool(tool, req.body);
+            const result = await orchestrator.executeTool(tool, req.body, costContextFromRequest(req));
             res.json({ success: true, tool, result });
         } catch (err) {
             res.status(500).json({ success: false, tool, error: err.message });
