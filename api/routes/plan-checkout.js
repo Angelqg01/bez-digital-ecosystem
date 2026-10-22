@@ -4,12 +4,15 @@
  * routes/plan-checkout.js — contratar un plan desde el Hub (/api/billing).
  *
  *   GET  /account         estado de la cuenta: BeZhas ID, email verificado y plan vigente
- *   POST /plan-checkout   sesión de Stripe Checkout de un plan de pago; al pagar, vuelve a la app de origen
- *   POST /plan-free       activa Starter (sin pago)
+ *   GET  /usage           consumo del ciclo (API/SDK/MCP) y comparación con los otros planes (Starter)
+ *   POST /plan-checkout   sesión de Stripe Checkout: planes de pago y Starter (pago por uso, 15 días gratis con tarjeta)
  *
  * Requiere sesión y email confirmado (por eso existe la confirmación: el plan se cuelga de la cuenta del
  * titular verificado). El plan se activa por el webhook de Stripe de siempre (checkout.session.completed,
- * metadata.plan_id + client_reference_id = app de la cuenta); esta ruta nunca activa un plan de pago.
+ * metadata.plan_id + client_reference_id = app de la cuenta); esta ruta nunca activa un plan por sí sola.
+ *
+ * Starter ya no se activa sin tarjeta: Checkout recoge una tarjeta válida, no cobra nada durante los 15 días de
+ * prueba y, desde entonces, Stripe factura el consumo medido (gateway_usage_ledger → Billing Meter) cada ciclo.
  */
 const { Router } = require('express');
 const { body, validationResult } = require('express-validator');
@@ -19,11 +22,14 @@ const { authenticateToken } = require('../middleware/security');
 const { STRIPE_PAYMENT_LINKS } = require('../config/stripe-payment-links');
 const { getPlan } = require('../config/plans');
 const { safeReturnTo } = require('../lib/returnTo');
-const { ensureAccountApp, currentPlan, startFree } = require('../services/accountApp');
+const { ensureAccountApp, currentPlan } = require('../services/accountApp');
+const { cycleSummary } = require('../services/starterBilling');
+const { STARTER_TRIAL_DAYS } = require('../config/usage-pricing');
 const logger = require('../utils/logger');
 
 const router = Router();
 const PAID = ['creator_pro', 'business', 'enterprise_vip'];
+const CHECKOUT_PLANS = ['starter', ...PAID];
 const hubUrl = () => String(process.env.HUB_PUBLIC_URL || 'https://hub.bezhas.com').replace(/\/+$/, '');
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false, message: { error: 'Demasiados intentos. Espera unos minutos.' } });
 
@@ -69,7 +75,7 @@ const exigirVerificado = async (req, res) => {
 };
 
 router.post('/plan-checkout', limiter, authenticateToken, [
-    body('planId').isIn(PAID).withMessage('Plan no válido'),
+    body('planId').isIn(CHECKOUT_PLANS).withMessage('Plan no válido'),
     body('billing').optional().isIn(['monthly', 'annual']),
     body('returnTo').optional({ nullable: true }).isString(),
 ], async (req, res) => {
@@ -82,22 +88,31 @@ router.post('/plan-checkout', limiter, authenticateToken, [
         if (!stripe) return res.status(503).json({ error: 'Los pagos no están disponibles ahora mismo.', code: 'PAYMENTS_UNAVAILABLE' });
 
         const planId = req.body.planId;
-        const billing = req.body.billing === 'annual' ? 'annual' : 'monthly';
-        const priceId = STRIPE_PAYMENT_LINKS.plans[planId]?.[billing]?.priceId;
+        const starter = planId === 'starter';
+        const billing = !starter && req.body.billing === 'annual' ? 'annual' : 'monthly';
+        const priceId = starter
+            ? (process.env.STRIPE_STARTER_METERED_PRICE_ID || getPlan('starter')?.stripe?.meteredPriceId)
+            : STRIPE_PAYMENT_LINKS.plans[planId]?.[billing]?.priceId;
         if (!priceId || !getPlan(planId)) return res.status(400).json({ error: 'Plan no disponible' });
 
         const returnTo = safeReturnTo(req.body.returnTo);
         const appId = await ensureAccountApp(user);
         const q = returnTo ? `&return=${encodeURIComponent(returnTo)}` : '';
-        const meta = { plan_id: planId, billing, user_id: String(user.id), bezhas_id: user.bezhas_id || '' };
+        const meta = { plan_id: planId, billing: starter ? 'payg' : billing, user_id: String(user.id), bezhas_id: user.bezhas_id || '' };
 
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
-            line_items: [{ price: priceId, quantity: 1 }],
+            line_items: [starter ? { price: priceId } : { price: priceId, quantity: 1 }],
             client_reference_id: appId,
             customer_email: user.email,
             metadata: meta,
-            subscription_data: { metadata: meta },
+            // Starter: precio medido (sin cantidad), 15 días gratis y tarjeta obligatoria desde el alta. Si la prueba acaba
+            // sin un método de pago válido, la suscripción se cancela en vez de quedar «activa» sin cobrar.
+            ...(starter ? { payment_method_collection: 'always' } : {}),
+            subscription_data: {
+                metadata: meta,
+                ...(starter ? { trial_period_days: STARTER_TRIAL_DAYS, trial_settings: { end_behavior: { missing_payment_method: 'cancel' } } } : {}),
+            },
             automatic_tax: { enabled: true },
             billing_address_collection: 'required',
             tax_id_collection: { enabled: true },
@@ -111,15 +126,14 @@ router.post('/plan-checkout', limiter, authenticateToken, [
     }
 });
 
-router.post('/plan-free', limiter, authenticateToken, async (req, res) => {
+router.get('/usage', authenticateToken, async (req, res) => {
     try {
-        const user = await exigirVerificado(req, res);
-        if (!user) return;
-        await startFree(user);
-        res.json({ success: true, plan: await currentPlan(user.id) });
+        const user = await loadUser(req.user.userId);
+        if (!user) return res.status(401).json({ error: 'Sesión inválida' });
+        res.json({ success: true, ...(await cycleSummary(user.id, getStripe())), trialDays: STARTER_TRIAL_DAYS });
     } catch (e) {
-        logger.error({ error: e.message }, 'plan-free falló');
-        res.status(500).json({ error: 'No se pudo activar el plan' });
+        logger.error({ error: e.message }, 'usage falló');
+        res.status(500).json({ error: 'No se pudo leer el consumo' });
     }
 });
 

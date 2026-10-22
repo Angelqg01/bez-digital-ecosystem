@@ -38,6 +38,19 @@ it('checkout de un plan → registrarCompra', async () => {
     expect(planes.registrarCompra).toHaveBeenCalledWith(s, { eventId: 'evt_1' });
 });
 
+it('alta de Starter con prueba gratuita (payment_status no_payment_required) → registrarCompra, no se descarta', async () => {
+    const s = { id: 'cs_live_2', payment_status: 'no_payment_required', mode: 'subscription', metadata: { plan_id: 'starter', billing: 'payg' } };
+    expect((await enviar({ id: 'evt_5', type: 'checkout.session.completed', data: { object: s } })).status).toBe(200);
+    await esperar();
+    expect(planes.registrarCompra).toHaveBeenCalledWith(s, { eventId: 'evt_5' });
+});
+
+it('una sesión sin plan y sin pago sigue descartándose', async () => {
+    await enviar({ id: 'evt_6', type: 'checkout.session.completed', data: { object: { id: 'cs_3', payment_status: 'unpaid', metadata: {} } } });
+    await esperar();
+    expect(planes.registrarCompra).not.toHaveBeenCalled();
+});
+
 it.each([
     ['customer.subscription.deleted', true],
     ['customer.subscription.updated', false],

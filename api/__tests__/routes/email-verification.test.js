@@ -162,8 +162,8 @@ describe('POST /api/billing/plan-checkout', () => {
         expect(create.mock.calls[0][0].success_url).not.toMatch(/evil\.io/);
     });
 
-    it('rechaza planes que no son de pago y exige sesión', async () => {
-        expect((await pedir({ planId: 'starter' })).status).toBe(400);
+    it('rechaza planes que no existen y exige sesión', async () => {
+        expect((await pedir({ planId: 'gratis_total' })).status).toBe(400);
         expect((await request(app).post('/api/billing/plan-checkout').send({ planId: 'business' })).status).toBe(401);
     });
 });

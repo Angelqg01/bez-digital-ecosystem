@@ -61,15 +61,4 @@ async function currentPlan(userId) {
     return { id: rows[0].plan_id, name: getPlan(rows[0].plan_id)?.name || rows[0].plan_id, status: rows[0].status, renewsAt: rows[0].renews_at };
 }
 
-/** Starter no se paga por adelantado: se activa al confirmar el email. Idempotente y sin pisar un plan de pago. */
-async function startFree(user) {
-    const appId = await ensureAccountApp(user);
-    await query(
-        `INSERT INTO gateway_subscriptions (app_id, plan_id, status) VALUES ($1, 'starter', 'active')
-         ON CONFLICT (app_id) DO NOTHING`,
-        [appId]
-    );
-    return appId;
-}
-
-module.exports = { ensureAccountApp, findAccountApp, currentPlan, startFree };
+module.exports = { ensureAccountApp, findAccountApp, currentPlan };
