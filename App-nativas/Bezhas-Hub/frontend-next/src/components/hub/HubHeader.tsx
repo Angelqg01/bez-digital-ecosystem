@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Menu, Moon, Sun, X } from 'lucide-react';
-import { LINKS } from '../../config/hubData';
 
 const NAV = [
   { href: '/', label: 'Inicio' },
   { href: '/apps', label: 'Apps nativas' },
+  { href: '/bezhas-id', label: 'BeZhas ID' },
   { href: '/planes', label: 'Planes' },
   { href: '/developers', label: 'Developers' },
 ];
@@ -42,7 +42,7 @@ export default function HubHeader() {
           <button className="hub-icon-btn" onClick={toggleTheme} aria-label="Cambiar tema claro u oscuro">
             <Sun size={18} className="hub-sun" /><Moon size={18} className="hub-moon" />
           </button>
-          <a className="hub-btn hub-btn-primary hub-header-cta" href={LINKS.precios}>Contratar</a>
+          <Link className="hub-btn hub-btn-primary hub-header-cta" href="/registro">Crear mi BeZhas ID</Link>
           <button className="hub-icon-btn hub-burger" onClick={() => setOpen((v) => !v)} aria-label="Abrir menú" aria-expanded={open}>
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>

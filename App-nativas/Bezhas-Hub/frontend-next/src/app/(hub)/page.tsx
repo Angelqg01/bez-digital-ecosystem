@@ -2,7 +2,7 @@ import Link from 'next/link';
 import AppCard from '../../components/hub/AppCard';
 import Icon from '../../components/hub/Icon';
 import PlanGrid from '../../components/hub/PlanGrid';
-import { CONTRACTS, HUB_PILLARS, LINKS, LIVE_APPS, PLUGIN, POLYGONSCAN } from '../../config/hubData';
+import { CONTRACTS, HUB_PILLARS, LIVE_APPS, PLUGIN, POLYGONSCAN } from '../../config/hubData';
 import { appStatus } from '../../lib/status';
 
 export default async function HubHome() {
@@ -20,9 +20,9 @@ export default async function HubHome() {
             plan y entra a cada app nativa con el mismo BeZhas ID.
           </p>
           <div className="hub-hero-cta">
-            <a className="hub-btn hub-btn-primary" href={LINKS.precios}>Ver planes y contratar</a>
+            <Link className="hub-btn hub-btn-primary" href="/registro">Crear mi BeZhas ID</Link>
+            <Link className="hub-btn hub-btn-ghost" href="/bezhas-id">Qué es el BeZhas ID</Link>
             <Link className="hub-btn hub-btn-ghost" href="/apps">Explorar apps nativas</Link>
-            <Link className="hub-btn hub-btn-ghost" href="/developers">Plugin WordPress y API</Link>
           </div>
           <div className="hub-chips" aria-label="Datos de la plataforma">
             <span className="hub-chip">{online} de {LIVE_APPS.length} apps respondiendo ahora</span>
@@ -67,8 +67,11 @@ export default async function HubHome() {
         <div className="hub-wrap">
           <span className="hub-eyebrow">Planes</span>
           <h2 className="hub-h2">Contrata en minutos, sin llamadas previas</h2>
-          <p className="hub-lead">Cancela cuando quieras. Pagando con BEZ-Coin, un 20 % de descuento. Precios sin IVA.</p>
+          <p className="hub-lead">Crea tu BeZhas ID, confirma tu email y elige plan. Cancela cuando quieras. Pagando con BEZ-Coin, un 20 % de descuento. Precios sin IVA.</p>
           <PlanGrid />
+          <div className="hub-hero-cta">
+            <Link className="hub-btn hub-btn-primary" href="/planes">Elegir plan</Link>
+          </div>
         </div>
       </section>
 
