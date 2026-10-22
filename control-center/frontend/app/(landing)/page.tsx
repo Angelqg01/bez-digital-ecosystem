@@ -341,6 +341,7 @@ export default function Home() {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a
                 href="mailto:info.angelqg@gmail.com?subject=BeZhas%20—%20Solicitar%20demo"
+                data-ads-conversion="demo"
                 className="flex h-14 items-center justify-center rounded-lg bg-[#0d33f2] px-7 text-xs font-black uppercase tracking-[0.18em] !text-white shadow-[0_0_28px_rgba(13,51,242,0.36)] transition hover:translate-y-[-2px] hover:brightness-110"
               >
                 Solicitar demo
@@ -879,6 +880,7 @@ export default function Home() {
                   <a
                     className={`${s.btn} ${s.btnSolid}`}
                     href="mailto:info.angelqg@gmail.com?subject=BeZhas%20—%20Piloto%20empresarial"
+                    data-ads-conversion="piloto"
                   >
                     Solicitar un piloto <span className={s.arw}>→</span>
                   </a>

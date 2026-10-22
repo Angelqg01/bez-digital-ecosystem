@@ -37,6 +37,7 @@ const sidebarSections = [
   {
     title: 'Servicios',
     items: [
+      { path: '/precios', icon: 'sell', label: 'Planes y precios' },
       { path: '/enterprise', icon: 'business', label: 'Enterprise' },
       { path: '/payments', icon: 'payments', label: 'Pagos' },
       { path: '/financial', icon: 'account_balance', label: 'Financiero' },
@@ -47,7 +48,7 @@ const sidebarSections = [
     title: 'Contacto',
     items: [
       { path: '/support', icon: 'contact_support', label: 'Centro de ayuda' },
-      { path: 'mailto:info.bezcoin@bezhas.com', icon: 'mail', label: 'Email' },
+      { path: 'mailto:ventas@bezhas.com', icon: 'mail', label: 'Email' },
       { path: 'https://t.me/BeZhasBot', icon: 'send', label: 'Telegram' },
       { path: 'https://github.com/bezhas', icon: 'terminal', label: 'GitHub' },
     ],
@@ -60,6 +61,7 @@ const headerMenus: Record<string, { label: string; href: string; icon: string; d
     { label: 'Demo Read-Only', href: '/demo', icon: 'dashboard_customize', desc: 'Vista para clientes sin despliegue cloud' },
     { label: 'Soluciones', href: '/solutions', icon: 'settings_input_component', desc: 'Tokenización, DePIN, IA' },
     { label: 'Comercio', href: '/commerce', icon: 'shopping_cart', desc: 'Supply Chain & Logística' },
+    { label: 'Planes y precios', href: '/precios', icon: 'sell', desc: 'Contrata online en minutos' },
     { label: 'Enterprise', href: '/enterprise', icon: 'business', desc: 'Real Estate & Empresas' },
     { label: 'Pagos', href: '/payments', icon: 'payments', desc: 'Soluciones de Pago' },
     { label: 'Financiero', href: '/financial', icon: 'account_balance', desc: 'Servicios Financieros' },
