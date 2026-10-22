@@ -375,7 +375,6 @@ function OverviewTab({ prices, M, openBuyBez, openSubscription, openFarming, C }
           <div style={{ color:C.muted, fontSize:9, textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>🏗️ Smart Contracts</div>
           {[
             {l:'BEZ Token (Polygon)',v:'0xEcBa87…369f11A8',c:C.primary},
-            {l:'BEZ Token (BNB)',    v:'0x8a1e39…63a65b55',c:C.gold},
             {l:'QualityEscrow',      v:'0x3EfC42…E00e8a3',c:C.blue},
             {l:'Safe Wallet',        v:'0x3EfC42…E00e8a3',c:C.violet},
           ].map(c => (
