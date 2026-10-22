@@ -30,7 +30,16 @@ async function issue(userId, { returnTo = null } = {}) {
     return token;
 }
 
-/** @returns {Promise<{userId: string, returnTo: string|null}|null>} null si el token no existe, caducó o ya se usó */
+/** Cuánto tiempo después de usarlo sigue sirviendo el enlace del correo para volver a elegir plan (sin sesión nueva). */
+const REUSE_DAYS = 30;
+
+/**
+ * @returns {Promise<{userId: string, returnTo: string|null, first: boolean}|null>}
+ *   first=true: primer uso, acaba de verificarse el email (el llamante puede dar sesión).
+ *   first=false: el enlace ya se gastó pero el email está verificado: sirve para volver a /planes, nunca para dar
+ *   sesión (si no, quien reenvíe o robe el correo entraría a la cuenta una y otra vez).
+ *   null si no existe, caducó sin usarse o fue sustituido por otro y el email sigue sin verificar.
+ */
 async function consume(token) {
     if (!/^[0-9a-f]{64}$/.test(String(token || ''))) return null;
     const { rows } = await query(
@@ -39,9 +48,17 @@ async function consume(token) {
           RETURNING user_id, return_to`,
         [hash(token)]
     );
-    if (!rows.length) return null;
-    await query('UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()) WHERE id = $1', [rows[0].user_id]);
-    return { userId: rows[0].user_id, returnTo: rows[0].return_to };
+    if (rows.length) {
+        await query('UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()) WHERE id = $1', [rows[0].user_id]);
+        return { userId: rows[0].user_id, returnTo: rows[0].return_to, first: true };
+    }
+    const prev = await query(
+        `SELECT v.user_id, v.return_to
+           FROM email_verifications v JOIN users u ON u.id = v.user_id
+          WHERE v.token_hash = $1 AND v.used_at > NOW() - INTERVAL '${REUSE_DAYS} days' AND u.email_verified_at IS NOT NULL`,
+        [hash(token)]
+    );
+    return prev.rows.length ? { userId: prev.rows[0].user_id, returnTo: prev.rows[0].return_to, first: false } : null;
 }
 
 function link(token, returnTo) {

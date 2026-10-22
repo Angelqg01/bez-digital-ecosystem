@@ -320,6 +320,9 @@ router.post('/verify-email', resetLimiter, [
     try {
         const done = await verifications.consume(req.body.token);
         if (!done) return res.status(400).json({ error: 'Enlace no válido o caducado', code: 'INVALID_TOKEN' });
+        // Enlace ya usado con el email verificado: el botón del correo sigue llevando a elegir plan, pero sin
+        // sesión nueva; el Hub pide entrar con la contraseña.
+        if (!done.first) return res.json({ success: true, alreadyVerified: true, returnTo: safeReturnTo(done.returnTo) });
 
         const { rows } = await query(
             `SELECT id, wallet_address, primary_wallet_address, primary_smart_wallet_address,

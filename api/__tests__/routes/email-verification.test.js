@@ -86,6 +86,21 @@ describe('POST /api/auth/verify-email', () => {
         expect(res.body.returnTo).toBe('https://energy.bezhas.com/panel');
         expect(mockQuery.mock.calls.some(([sql]) => /UPDATE users SET email_verified_at/.test(sql))).toBe(true);
     });
+    it('un enlace ya usado, con el email verificado, sigue llevando a elegir plan pero sin dar sesión nueva', async () => {
+        db([[/SELECT v\.user_id, v\.return_to/, [{ user_id: 'u-1', return_to: 'https://energy.bezhas.com/panel' }]]]);
+        const res = await request(app).post('/api/auth/verify-email').send({ token: 'c'.repeat(64) });
+        expect(res.status).toBe(200);
+        expect(res.body.alreadyVerified).toBe(true);
+        expect(res.body.returnTo).toBe('https://energy.bezhas.com/panel');
+        expect(res.body.token).toBeUndefined();
+        expect(res.body.user).toBeUndefined();
+        // y no vuelve a gastar nada ni toca al usuario
+        expect(mockQuery.mock.calls.some(([sql]) => /UPDATE users/.test(sql))).toBe(false);
+    });
+    it('un enlace sustituido por otro con el email aún sin verificar no vale', async () => {
+        const res = await request(app).post('/api/auth/verify-email').send({ token: 'd'.repeat(64) });
+        expect(res.status).toBe(400);
+    });
     it('un enlace usado, caducado o inexistente → 400 sin sesión', async () => {
         const res = await request(app).post('/api/auth/verify-email').send({ token: 'b'.repeat(64) });
         expect(res.status).toBe(400);

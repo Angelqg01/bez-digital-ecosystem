@@ -15,6 +15,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
   const params = useSearchParams();
   const returnTo = safeReturnTo(params.get('return'));
   const plan = params.get('plan');
+  const yaConfirmado = params.get('verified') === '1';
   const qs = (extra: Record<string, string> = {}) => {
     const u = new URLSearchParams(extra);
     if (returnTo) u.set('return', returnTo);
@@ -99,6 +100,9 @@ export default function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <form className="hub-card hub-form" onSubmit={onSubmit} noValidate>
+      {mode === 'entrar' && yaConfirmado && (
+        <p className="hub-alert" data-kind="ok" role="status">Tu email ya está confirmado. Entra con tu contraseña para elegir plan.</p>
+      )}
       {returnTo && (
         <p className="hub-alert" data-kind="info">Al terminar volverás a <strong>{appLabel(returnTo)}</strong>.</p>
       )}

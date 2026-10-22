@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '../../lib/hubApi';
+import { ApiError, api } from '../../lib/hubApi';
 import { useUserStore } from '../../stores/userStore';
 
 export type Account = {
@@ -27,7 +27,9 @@ export function useAccount() {
       const r = await api<{ account: Account }>('/api/billing/account', { token });
       setAccount(r.account);
       return r.account;
-    } catch {
+    } catch (e) {
+      // Sesión caducada o inválida: se descarta para que la interfaz pida entrar en vez de ofrecer «crear cuenta» con un token muerto.
+      if (e instanceof ApiError && e.status === 401) useUserStore.getState().logout();
       setAccount(null);
       return null;
     } finally {
