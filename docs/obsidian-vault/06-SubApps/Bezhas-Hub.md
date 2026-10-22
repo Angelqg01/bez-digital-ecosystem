@@ -25,7 +25,7 @@ Hub es una de las apps nativas de BeZhas y el centro de operaciones B2B de la pl
 
 Disponible en https://hub.bezhas.com.
 
-También hay un plugin de WordPress y WooCommerce (versión 2.0.1, requiere PHP 8.2 o superior): trae el Hub a tu propio wp-admin para suscribirte a los planes, activar SubApps y cobrar con BeZhas-Pay. Se descarga en https://bezhas.com/downloads/bezhas-hub-2.0.1.zip y se instala en WordPress desde Plugins, Añadir nuevo, Subir plugin.
+También hay un plugin de WordPress y WooCommerce (versión 2.0.2, requiere PHP 8.2 o superior): trae el Hub a tu propio wp-admin para suscribirte a los planes, activar SubApps y cobrar con BeZhas-Pay. Se descarga en https://bezhas.com/downloads/bezhas-hub-2.0.2.zip y se instala en WordPress desde Plugins, Añadir nuevo, Subir plugin.
 
 ## Conexiones
 

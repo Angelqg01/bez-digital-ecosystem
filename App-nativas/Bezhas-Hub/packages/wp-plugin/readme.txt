@@ -3,7 +3,7 @@ Contributors: bezhas
 Tags: woocommerce, payments, blockchain, crypto, gateway, subscriptions
 Requires at least: 5.8
 Tested up to: 6.5
-Stable tag: 2.0.1
+Stable tag: 2.0.2
 Requires PHP: 8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -59,6 +59,9 @@ Sí. Se guarda en la base de datos de WordPress y solo se usa desde el servidor 
 
 == Changelog ==
 
+= 2.0.2 =
+* Seguridad: el pago público [bezhas_pay] solo acepta el importe y la moneda firmados por el shortcode (HMAC), lista de monedas EUR/USD/GBP y límite global de intentos
+
 = 2.0.1 =
 * Seguridad: requiere PHP 8.2 o superior. Actualiza PHP a 8.2.35, 8.3.36, 8.4.27 u 8.5.12 (parche de las vulnerabilidades críticas CVE-2026-109618 y CVE-2026-109619, «PHP2Shell»)
 
@@ -75,6 +78,9 @@ Sí. Se guarda en la base de datos de WordPress y solo se usa desde el servidor 
 * Initial release — WooCommerce payment gateway
 
 == Upgrade Notice ==
+
+= 2.0.2 =
+Cierra el abuso del endpoint público de pago. Tras actualizar, las páginas con caché deben regenerarse para que los botones lleven su firma.
 
 = 2.0.1 =
 Exige PHP 8.2+. Actualiza también PHP a una versión corregida (8.2.35, 8.3.36, 8.4.27 u 8.5.12) y reinicia PHP-FPM/Apache: hay una ejecución remota de código en curso (PHP2Shell).

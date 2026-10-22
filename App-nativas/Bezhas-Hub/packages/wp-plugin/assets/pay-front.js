@@ -13,8 +13,9 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': CFG.nonce },
       body: JSON.stringify({
-        amount: parseFloat(btn.getAttribute('data-amount') || '0'),
+        amount: btn.getAttribute('data-amount') || '0',
         currency: btn.getAttribute('data-currency') || 'EUR',
+        sig: btn.getAttribute('data-sig') || '',
       }),
     }).then(function (r) { return r.json(); }).then(function (d) {
       var url = d && (d.paymentUrl || d.url);

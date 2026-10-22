@@ -29,6 +29,19 @@ class BeZhas_REST {
         add_action('rest_api_init', [$this, 'routes']);
     }
 
+    /** Monedas aceptadas en el pago público. */
+    const CURRENCIES = ['EUR', 'USD', 'GBP'];
+
+    /** Importe en formato canónico («49.90») para firmarlo y compararlo. */
+    public static function canonical_amount($amount) {
+        return number_format((float) $amount, 2, '.', '');
+    }
+
+    /** Firma HMAC del importe y la moneda con las sales del sitio. */
+    public static function sign_amount($amount, $currency) {
+        return hash_hmac('sha256', $amount . '|' . strtoupper($currency), wp_salt('auth'));
+    }
+
     public function permission() {
         return current_user_can('manage_options');
     }
@@ -242,19 +255,27 @@ class BeZhas_REST {
         if (!BeZhas_Client::is_connected()) {
             return new WP_REST_Response(['success' => false, 'message' => 'Pago no disponible.'], 503);
         }
-        // Rate-limit por IP: máx. 10 intentos / minuto.
-        $ip  = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
-        $key = 'bezhas_pay_rl_' . md5($ip);
-        $hits = (int) get_transient($key);
-        if ($hits >= 10) {
+        // Rate-limit: máx. 10 intentos/minuto por IP y 60/minuto en total (tras un
+        // proxy REMOTE_ADDR puede ser siempre la misma IP, por eso el tope global).
+        $ip      = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
+        $keyIp   = 'bezhas_pay_rl_' . md5($ip);
+        $hitsIp  = (int) get_transient($keyIp);
+        $hitsAll = (int) get_transient('bezhas_pay_rl_all');
+        if ($hitsIp >= 10 || $hitsAll >= 60) {
             return new WP_REST_Response(['success' => false, 'message' => 'Demasiados intentos. Espera un momento.'], 429);
         }
-        set_transient($key, $hits + 1, MINUTE_IN_SECONDS);
+        set_transient($keyIp, $hitsIp + 1, MINUTE_IN_SECONDS);
+        set_transient('bezhas_pay_rl_all', $hitsAll + 1, MINUTE_IN_SECONDS);
 
-        $amount   = (float) $req->get_param('amount');
-        $currency = sanitize_text_field($req->get_param('currency') ?: 'EUR');
-        if ($amount <= 0 || $amount > 1000000) {
-            return new WP_REST_Response(['success' => false, 'message' => 'Importe inválido.'], 400);
+        $currency = strtoupper(sanitize_text_field((string) $req->get_param('currency')));
+        $amountS  = self::canonical_amount($req->get_param('amount'));
+        $sig      = sanitize_text_field((string) $req->get_param('sig'));
+        $amount   = (float) $amountS;
+        if (!in_array($currency, self::CURRENCIES, true) || $amount <= 0 || $amount > 1000000) {
+            return new WP_REST_Response(['success' => false, 'message' => 'Importe o moneda inválidos.'], 400);
+        }
+        if (!hash_equals(self::sign_amount($amountS, $currency), $sig)) {
+            return new WP_REST_Response(['success' => false, 'message' => 'Solicitud no autorizada.'], 403);
         }
         $res = BeZhas_Client::request('POST', '/api/payment/create', [
             'amount'   => $amount,
