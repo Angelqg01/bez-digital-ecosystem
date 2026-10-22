@@ -9,7 +9,7 @@ import styles from './mcp.module.css';
 const MCP_URL = 'https://mcp.bezhas.com/mcp';
 const MCP_ONBOARDING_URL = 'https://mcp.bezhas.com/mcp/onboarding';
 const MCP_ORIGIN = 'https://mcp.bezhas.com';
-const SALES_EMAIL = 'info.bezcoin@bezhas.com';
+const SALES_EMAIL = 'ventas@bezhas.com';
 
 type Plan = 'Starter' | 'Creator Pro' | 'Business' | 'Enterprise VIP';
 

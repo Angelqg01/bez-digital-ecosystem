@@ -379,6 +379,7 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', authRoutes);
 // Compra de BEZ con tarjeta desde el chat: sesión de Stripe con la wallet de la cuenta (el webhook retiene y entrega).
 app.use('/api/checkout', require('./routes/chat-checkout'));
+app.use('/api/billing', require('./routes/plan-checkout'));
 app.use('/api/user', userRoutes);
 app.use('/api/identity', identityRoutes);
 app.use('/api/organizations', organizationsRoutes);

@@ -153,7 +153,7 @@ const McpSdkDownloadTab = () => {
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-white">Plugin WordPress</h3>
-                        <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-0.5 rounded-full">v2.0.0 — Embedded Gateway</span>
+                        <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-0.5 rounded-full">v2.0.2 — Embedded Gateway</span>
                     </div>
                 </div>
 
@@ -172,14 +172,14 @@ const McpSdkDownloadTab = () => {
                 <div className="space-y-3">
                     <div className="bg-gray-900/60 rounded-lg p-3">
                         <p className="text-xs text-gray-500 mb-1">Instala el ZIP en WordPress → Plugins → Añadir nuevo → Subir:</p>
-                        <code className="text-sm text-green-400 font-mono">bezhas-hub-2.0.0.zip</code>
+                        <code className="text-sm text-green-400 font-mono">bezhas-hub-2.0.2.zip</code>
                     </div>
                     <a
-                        href="/api/downloads/bezhas-hub-wp.zip"
+                        href="https://www.bezhas.com/downloads/bezhas-hub-2.0.2.zip"
                         className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all flex items-center justify-center gap-2"
                     >
                         <DownloadIcon className="w-5 h-5" />
-                        Descargar Plugin WordPress v2.0.0
+                        Descargar Plugin WordPress v2.0.2 (PHP 8.2+)
                         <ExternalLinkIcon className="w-4 h-4" />
                     </a>
                 </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import BrainMap3D from './BrainMap3D';
 import {
     Activity,
     BrainCircuit,
@@ -43,22 +44,6 @@ type CanvasEdge = {
     toNode: string;
 };
 
-type MapNode = CanvasNode & {
-    left: number;
-    top: number;
-    w: number;
-    h: number;
-    cx: number;
-    cy: number;
-    accent: string;
-};
-
-type MapEdge = CanvasEdge & {
-    path: string;
-    accent: string;
-    delay: number;
-};
-
 type ObsidianSummary = {
     status: 'ok';
     vaultRoot: string;
@@ -90,78 +75,6 @@ type ObsidianSummary = {
     };
 };
 
-const NODE_ACCENTS: Record<string, string> = {
-    'bezhas-core': '#f8fafc',
-    director: '#60a5fa',
-    critic: '#f59e0b',
-    runtime: '#22d3ee',
-    obsidian: '#a78bfa',
-    memory: '#34d399',
-    blockchain: '#f43f5e',
-    aegis: '#10b981',
-    sectors: '#f97316',
-    telegram: '#38bdf8',
-    loop: '#e5e7eb',
-};
-
-const CANVAS_COLOR_ACCENTS: Record<string, string> = {
-    '0': '#94a3b8',
-    '1': '#f8fafc',
-    '2': '#60a5fa',
-    '3': '#f43f5e',
-    '4': '#34d399',
-    '5': '#f59e0b',
-    '6': '#a78bfa',
-};
-
-function getCanvasBounds(nodes: CanvasNode[]) {
-    const minX = Math.min(...nodes.map((node) => node.x));
-    const minY = Math.min(...nodes.map((node) => node.y));
-    const maxX = Math.max(...nodes.map((node) => node.x + node.width));
-    const maxY = Math.max(...nodes.map((node) => node.y + node.height));
-    const width = Math.max(maxX - minX, 1);
-    const height = Math.max(maxY - minY, 1);
-    return { minX, minY, width, height };
-}
-
-function normalizeCanvas(nodes: CanvasNode[]): MapNode[] {
-    if (!nodes.length) return [];
-    const bounds = getCanvasBounds(nodes);
-    return nodes.map((node) => ({
-        ...node,
-        left: ((node.x - bounds.minX) / bounds.width) * 100,
-        top: ((node.y - bounds.minY) / bounds.height) * 100,
-        w: (node.width / bounds.width) * 100,
-        h: (node.height / bounds.height) * 100,
-        cx: ((node.x + node.width / 2 - bounds.minX) / bounds.width) * 100,
-        cy: ((node.y + node.height / 2 - bounds.minY) / bounds.height) * 100,
-        accent: NODE_ACCENTS[node.id] || CANVAS_COLOR_ACCENTS[node.color || ''] || '#94a3b8',
-    }));
-}
-
-function buildMapEdges(edges: CanvasEdge[], nodes: MapNode[]): MapEdge[] {
-    const nodeById = new globalThis.Map(nodes.map((node) => [node.id, node]));
-    return edges.flatMap((edge, index) => {
-        const from = nodeById.get(edge.fromNode);
-        const to = nodeById.get(edge.toNode);
-        if (!from || !to) return [];
-        const dx = to.cx - from.cx;
-        const dy = to.cy - from.cy;
-        const distance = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
-        const bend = Math.min(Math.max(distance * 0.18, 5), 14) * (index % 2 === 0 ? 1 : -1);
-        const mx = (from.cx + to.cx) / 2;
-        const my = (from.cy + to.cy) / 2;
-        const nx = -dy / distance;
-        const ny = dx / distance;
-        return [{
-            ...edge,
-            path: `M ${from.cx} ${from.cy} Q ${mx + nx * bend} ${my + ny * bend} ${to.cx} ${to.cy}`,
-            accent: to.accent,
-            delay: index * 0.16,
-        }];
-    });
-}
-
 export default function TabObsidian() {
     const [data, setData] = useState<ObsidianSummary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -192,8 +105,6 @@ export default function TabObsidian() {
     const visiblesClientes = useMemo(() => (data?.notes || []).filter((n) => n.clientVisible), [data]);
     const notasListadas = soloClientes ? visiblesClientes : (data?.notes || []).slice(0, 9);
 
-    const canvasNodes = useMemo(() => normalizeCanvas(data?.canvas.nodes || []), [data]);
-    const canvasEdges = useMemo(() => buildMapEdges(data?.canvas.edges || [], canvasNodes), [data, canvasNodes]);
     const stats = useMemo(() => data ? [
         { label: 'Notas', value: data.counts.notes, Icon: FileText },
         { label: 'Episodios', value: data.counts.episodes, Icon: Activity },
@@ -340,112 +251,9 @@ export default function TabObsidian() {
                         ))}
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[1.35fr_0.9fr]">
-                        <section className="border border-white/10 bg-white/[0.03] p-5">
-                            <div className="mb-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3 text-cyan-300">
-                                    <MapIcon size={22} />
-                                    <h3 className="text-sm font-bold uppercase tracking-widest text-white">Mapa Blockchain Canvas</h3>
-                                </div>
-                                <span className="text-[10px] uppercase tracking-widest text-gray-500">{data.canvasPath}</span>
-                            </div>
-                            <div className="organic-map relative h-[620px] overflow-hidden border border-white/10 bg-[#070910]">
-                                <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:34px_34px]" />
-                                <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-cyan-300/20 to-transparent" />
-                                <div className="absolute inset-y-0 left-1/2 w-px bg-gradient-to-b from-transparent via-violet-300/20 to-transparent" />
-                                <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                    <defs>
-                                        <filter id="softGlow">
-                                            <feGaussianBlur stdDeviation="0.45" result="blur" />
-                                            <feMerge>
-                                                <feMergeNode in="blur" />
-                                                <feMergeNode in="SourceGraphic" />
-                                            </feMerge>
-                                        </filter>
-                                    </defs>
-                                    {canvasEdges.map((edge) => (
-                                        <g key={edge.id}>
-                                            <path
-                                                d={edge.path}
-                                                fill="none"
-                                                stroke="rgba(148,163,184,0.16)"
-                                                strokeWidth="0.42"
-                                                vectorEffect="non-scaling-stroke"
-                                            />
-                                            <path
-                                                className="flow-line"
-                                                d={edge.path}
-                                                fill="none"
-                                                stroke={edge.accent}
-                                                strokeLinecap="round"
-                                                strokeWidth="0.58"
-                                                style={{ animationDelay: `${edge.delay}s` }}
-                                                vectorEffect="non-scaling-stroke"
-                                                filter="url(#softGlow)"
-                                            />
-                                            <circle r="0.55" fill={edge.accent} opacity="0.9">
-                                                <animateMotion dur="5s" repeatCount="indefinite" begin={`${edge.delay}s`} path={edge.path} />
-                                            </circle>
-                                        </g>
-                                    ))}
-                                </svg>
-                                {canvasNodes.map((node) => (
-                                    <div
-                                        key={node.id}
-                                        className="map-node absolute overflow-hidden border bg-black/75 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur-sm"
-                                        style={{
-                                            left: `${node.left}%`,
-                                            top: `${node.top}%`,
-                                            width: `${Math.max(node.w, node.id === 'loop' ? 42 : 22)}%`,
-                                            minHeight: `${Math.max(node.h, 10)}%`,
-                                            borderColor: `${node.accent}55`,
-                                            boxShadow: `0 12px 30px rgba(0,0,0,0.35), 0 0 24px ${node.accent}18`,
-                                            animationDelay: `${canvasNodes.findIndex((item) => item.id === node.id) * 0.12}s`,
-                                        }}
-                                    >
-                                        <div className="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: node.accent }}>
-                                            <span className="h-1.5 w-1.5 shrink-0" style={{ backgroundColor: node.accent, boxShadow: `0 0 12px ${node.accent}` }} />
-                                            {node.id}
-                                        </div>
-                                        <div className="whitespace-pre-line text-[11px] leading-snug text-gray-300">{node.text || node.file}</div>
-                                    </div>
-                                ))}
-                                <div className="absolute bottom-4 left-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-widest text-gray-400">
-                                    {['percepcion', 'accion', 'evaluacion', 'memoria'].map((label) => (
-                                        <span key={label} className="border border-white/10 bg-black/40 px-2 py-1">{label}</span>
-                                    ))}
-                                </div>
-                            </div>
-                            <style jsx>{`
-                                .organic-map {
-                                    transform: translateZ(0);
-                                }
-                                .flow-line {
-                                    stroke-dasharray: 8 22;
-                                    animation: flowPulse 4.8s linear infinite;
-                                    opacity: 0.78;
-                                }
-                                .map-node {
-                                    animation: nodeBreath 5.6s ease-in-out infinite;
-                                    border-radius: 8px;
-                                }
-                                @keyframes flowPulse {
-                                    from { stroke-dashoffset: 32; opacity: 0.25; }
-                                    40% { opacity: 0.9; }
-                                    to { stroke-dashoffset: 0; opacity: 0.35; }
-                                }
-                                @keyframes nodeBreath {
-                                    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-                                    50% { transform: translate3d(0, -3px, 0) scale(1.012); }
-                                }
-                                @media (prefers-reduced-motion: reduce) {
-                                    .flow-line,
-                                    .map-node {
-                                        animation: none;
-                                    }
-                                }
-                            `}</style>
-                        </section>
+                    <BrainMap3D nodes={data.canvas.nodes} edges={data.canvas.edges} path={data.canvasPath} />
+
+                    <div className="grid grid-cols-1 gap-6">
 
                         <section className="space-y-6">
                             <div className="border border-white/10 bg-white/[0.03] p-5">

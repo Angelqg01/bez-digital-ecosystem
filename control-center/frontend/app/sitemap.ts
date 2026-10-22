@@ -9,6 +9,7 @@ const landingRoutes = [
     { path: '/solutions', priority: 0.9, changeFrequency: 'weekly' as const },
     { path: '/token', priority: 0.9, changeFrequency: 'weekly' as const },
     { path: '/network', priority: 0.8, changeFrequency: 'daily' as const },
+    { path: '/precios', priority: 0.9, changeFrequency: 'monthly' as const },
     { path: '/enterprise', priority: 0.8, changeFrequency: 'monthly' as const },
     { path: '/commerce', priority: 0.8, changeFrequency: 'monthly' as const },
     { path: '/payments', priority: 0.8, changeFrequency: 'monthly' as const },

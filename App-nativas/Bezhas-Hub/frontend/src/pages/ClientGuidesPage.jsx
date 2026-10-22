@@ -649,7 +649,7 @@ function WordPressTab() {
     <div className="space-y-6">
       <div className="bg-pink-900/20 border border-pink-800/40 rounded-xl p-4 mb-6">
         <p className="text-pink-300 text-sm">
-          <strong>Requisitos:</strong> WordPress 6.0+ &nbsp;|&nbsp; WooCommerce (opcional) &nbsp;|&nbsp; PHP 7.4+
+          <strong>Requisitos:</strong> WordPress 6.0+ &nbsp;|&nbsp; WooCommerce (opcional) &nbsp;|&nbsp; PHP 8.2+
         </p>
       </div>
 
@@ -657,9 +657,9 @@ function WordPressTab() {
         <p>Descarga el plugin desde el Hub y súbelo a WordPress.</p>
         <div className="bg-gray-900/70 border border-gray-700 rounded-lg p-4 space-y-2 text-sm text-gray-300">
           <p>1. Ir a: <code className="text-yellow-300">hub.bezhas.com/downloads</code></p>
-          <p>2. Click <strong>"WordPress Plugin v2.0.0"</strong></p>
+          <p>2. Click <strong>"WordPress Plugin v2.0.2"</strong></p>
           <p>3. WordPress Admin → <strong>Plugins</strong> → <strong>Add New</strong> → <strong>Upload Plugin</strong></p>
-          <p>4. Seleccionar <code className="text-yellow-300">bezhas-hub-v2.0.0.zip</code> → <strong>Install Now</strong></p>
+          <p>4. Seleccionar <code className="text-yellow-300">bezhas-hub-2.0.2.zip</code> → <strong>Install Now</strong></p>
           <p>5. Click <strong>Activate</strong></p>
         </div>
       </StepCard>
@@ -792,7 +792,7 @@ const VIDEO_SCRIPTS = [
     duration: '3 min',
     thumbnail: '🔌',
     sections: [
-      '00:00 — Descargar bezhas-hub-v2.0.0.zip',
+      '00:00 — Descargar bezhas-hub-2.0.2.zip',
       '00:30 — Instalar en WordPress Admin',
       '01:00 — Configurar API Key en Settings',
       '01:30 — Activar payment gateway en WooCommerce',

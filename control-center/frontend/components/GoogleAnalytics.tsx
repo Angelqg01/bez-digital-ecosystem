@@ -17,7 +17,7 @@
 
 import Script from 'next/script';
 import { useEffect, useState } from 'react';
-import { ADS_ID } from '@/lib/adsTag';
+import { ADS_ID, installAdsClickConversions } from '@/lib/adsTag';
 
 const COOKIE_CONSENT_KEY = 'bezhas_cookie_consent';
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -74,6 +74,9 @@ export default function GoogleAnalytics() {
         window.addEventListener('bezhas:consentUpdate', handler);
         return () => window.removeEventListener('bezhas:consentUpdate', handler);
     }, []);
+
+    // Conversiones de Google Ads por clic (Stripe, demo, piloto). Sin gtag es no-op.
+    useEffect(() => installAdsClickConversions(), []);
 
     // Update GA4 consent whenever it changes
     useEffect(() => {

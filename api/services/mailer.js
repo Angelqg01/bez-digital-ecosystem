@@ -23,14 +23,14 @@ function getTransporter() {
     return transporter;
 }
 
-async function sendMail({ to, subject, text }) {
+async function sendMail({ to, subject, text, html }) {
     if (!process.env.SMTP_HOST) {
         logger.warn({ to }, 'SMTP_HOST sin configurar: correo NO enviado');
         if (process.env.NODE_ENV !== 'production') logger.warn({ subject, text }, '[mailer] contenido (sólo fuera de producción)');
         return { sent: false, reason: 'smtp_not_configured' };
     }
     await getTransporter().sendMail({
-        from: process.env.SMTP_FROM || 'BeZhas <support@bezhas.com>', to, subject, text,
+        from: process.env.SMTP_FROM || 'BeZhas <support@bezhas.com>', to, subject, text, ...(html ? { html } : {}),
     });
     return { sent: true };
 }

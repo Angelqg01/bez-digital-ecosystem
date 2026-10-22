@@ -47,14 +47,17 @@ class BeZhas_Shortcode {
         wp_enqueue_script('bezhas-pay-front');
         wp_enqueue_style('bezhas-pay-front');
 
-        $amount   = esc_attr($atts['amount']);
-        $currency = esc_attr($atts['currency']);
+        $amount   = BeZhas_REST::canonical_amount($atts['amount']);
+        $currency = strtoupper(sanitize_text_field($atts['currency']));
         $label    = esc_html($atts['label']);
 
+        // Firma del importe y la moneda: el endpoint público solo acepta lo que
+        // el comerciante ha escrito en el shortcode, no lo que envíe el cliente.
         return sprintf(
-            '<button class="bezhas-pay-btn" data-amount="%s" data-currency="%s">%s</button>',
-            $amount,
-            $currency,
+            '<button class="bezhas-pay-btn" data-amount="%s" data-currency="%s" data-sig="%s">%s</button>',
+            esc_attr($amount),
+            esc_attr($currency),
+            esc_attr(BeZhas_REST::sign_amount($amount, $currency)),
             $label
         );
     }

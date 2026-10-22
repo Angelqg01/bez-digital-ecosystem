@@ -41,7 +41,12 @@ function findTgz(dir) {
 function findZip(dir) {
     if (!fs.existsSync(dir)) return null;
     const zips = fs.readdirSync(dir).filter(f => /^bezhas-hub-.*\.zip$/.test(f));
-    return zips.sort().reverse()[0] || null;
+    const ver = (f) => (f.match(/(\d+)\.(\d+)\.(\d+)/) || [0, 0, 0, 0]).slice(1).map(Number);
+    zips.sort((a, b) => {
+        const [x, y] = [ver(a), ver(b)];
+        return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
+    });
+    return zips[zips.length - 1] || null;
 }
 
 /**

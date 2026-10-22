@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-const WP_VERSION = '2.0.0';
-const DOWNLOAD_URL = '/api/downloads/bezhas-hub-wp.zip';
+const WP_VERSION = '2.0.2';
+const DOWNLOAD_URL = 'https://www.bezhas.com/downloads/bezhas-hub-2.0.2.zip';
 
 const FEATURES = [
     { icon: LayoutDashboard, color: '#10B981', label: 'Consola BeZ-Hub en wp-admin', desc: 'Panel completo del ecosistema incrustado en tu WordPress.' },
@@ -19,7 +19,7 @@ const FEATURES = [
 ];
 
 const STEPS = [
-    { n: '01', title: 'Descarga el ZIP', body: 'Pulsa el botón de descarga y guarda el archivo bezhas-hub-2.0.0.zip en tu equipo.' },
+    { n: '01', title: 'Descarga el ZIP', body: 'Pulsa el botón de descarga y guarda el archivo bezhas-hub-2.0.2.zip en tu equipo.' },
     { n: '02', title: 'Sube a WordPress', body: 'En tu dashboard: Plugins → Añadir nuevo → Subir plugin → Elige el ZIP → Instalar → Activar.' },
     { n: '03', title: 'Conecta tu API Key', body: 'Copia tu API Key de la pestaña "API Keys" y pégala en BeZhas Hub → Ajustes → API Key.' },
     { n: '04', title: 'Activa las Apps Nativas', body: 'Entra en BeZhas Hub → Consola → Apps Nativas y activa los módulos que necesites con un toggle.' },
@@ -72,7 +72,7 @@ export default function WordPressPluginTab() {
                     </div>
                     <a
                         href={DOWNLOAD_URL}
-                        download="bezhas-hub-2.0.0.zip"
+                        download="bezhas-hub-2.0.2.zip"
                         className="flex-shrink-0 flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-green-500/25 transition-all whitespace-nowrap"
                     >
                         <Download size={20} />
@@ -84,7 +84,7 @@ export default function WordPressPluginTab() {
                 <div className="relative mt-6 flex flex-wrap gap-3 text-xs">
                     {[
                         'WordPress 6.0+',
-                        'PHP 7.4+',
+                        'PHP 8.2+',
                         'WooCommerce 8+ (opcional)',
                         'API Key BeZhas Hub',
                         'Cuenta BeZhas activa',
@@ -126,7 +126,7 @@ export default function WordPressPluginTab() {
                         <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
                             <Download size={18} className="text-green-400" /> Descarga
                         </h3>
-                        <CopyBox label="Archivo" value="bezhas-hub-2.0.0.zip" accent="#10B981" />
+                        <CopyBox label="Archivo" value="bezhas-hub-2.0.2.zip" accent="#10B981" />
                         <div className="mt-3 space-y-2 text-xs text-gray-400">
                             <p className="flex items-center gap-2"><Check size={12} className="text-green-400 shrink-0" /> Directorio raíz: <code className="text-gray-300">bezhas-hub/</code></p>
                             <p className="flex items-center gap-2"><Check size={12} className="text-green-400 shrink-0" /> Sin builder — PHP vanilla + JS vanilla</p>
@@ -134,7 +134,7 @@ export default function WordPressPluginTab() {
                         </div>
                         <a
                             href={DOWNLOAD_URL}
-                            download="bezhas-hub-2.0.0.zip"
+                            download="bezhas-hub-2.0.2.zip"
                             className="mt-5 w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition-all"
                         >
                             <Download size={18} /> Descargar ZIP

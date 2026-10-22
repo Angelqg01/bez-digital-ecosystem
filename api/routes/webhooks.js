@@ -47,6 +47,7 @@ const crypto = require('crypto');
 const fxService = require('../services/fxService');
 const { query } = require('../db/pool');
 const planSubscriptions = require('../services/planSubscriptions');
+const starterBilling = require('../services/starterBilling');
 const { centimosUsdABezWei, precioUsd } = require('../config/bez-price');
 const retryQueue = require('../services/webhookRetryQueue');
 const ledger = require('../services/providerPaymentLedger');
@@ -597,7 +598,10 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
     case 'checkout.session.completed': {
       const session = event.data.object;
 
-      if (session.payment_status !== 'paid') {
+      // Un plan con prueba gratuita (Starter) termina Checkout con 'no_payment_required': la tarjeta ya está
+      // guardada y no hay nada que cobrar hoy. Es una alta válida, no un pago pendiente.
+      const altaSinCobro = !!session.metadata?.plan_id && session.payment_status === 'no_payment_required';
+      if (session.payment_status !== 'paid' && !altaSinCobro) {
         log.warn('Stripe', 'Session not fully paid — skipping', {
           sessionId: session.id,
           payment_status: session.payment_status,
@@ -752,6 +756,25 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
         await planSubscriptions.alCambiarSuscripcion(event.data.object, { borrada: event.type === 'customer.subscription.deleted' });
       } catch (err) {
         log.error('Stripe', 'No se pudo actualizar el plan de la suscripción', { subscriptionId: event.data.object?.id, error: err.message });
+      }
+      break;
+    }
+
+    case 'invoice.paid': {
+      // Fin de ciclo del plan Starter: correo con lo cobrado y la comparación con los otros planes.
+      try {
+        await starterBilling.alFacturar(event.data.object);
+      } catch (err) {
+        log.error('Stripe', 'No se pudo enviar el resumen de Starter', { invoiceId: event.data.object?.id, error: err.message });
+      }
+      break;
+    }
+
+    case 'customer.subscription.trial_will_end': {
+      try {
+        await starterBilling.alAcabarPrueba(event.data.object);
+      } catch (err) {
+        log.error('Stripe', 'No se pudo enviar el aviso de fin de prueba', { subscriptionId: event.data.object?.id, error: err.message });
       }
       break;
     }

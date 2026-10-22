@@ -116,7 +116,7 @@ export default {
       visual: `
         <div class="phone">
           <div class="bar">{{ico:globe}}<b>PLUGIN WORDPRESS</b><span class="rt">v2.0</span></div>
-          <div class="mini pop"><div class="h">{{ico:box}} bezhas-hub-2.0.0.zip</div><div class="s">Plugins → Añadir nuevo → Subir</div></div>
+          <div class="mini pop"><div class="h">{{ico:box}} bezhas-hub-2.0.2.zip</div><div class="s">Plugins → Añadir nuevo → Subir</div></div>
           <div class="mini pop d1 row"><span class="chip green">Consola embebida</span><span class="chip cyan">Planes en $BEZ</span></div>
           <div class="mini pop d2 float" style="text-align:center;color:var(--secondary)"><div class="h" style="justify-content:center">{{ico:zap}} [bezhas_pay amount="99"]</div></div>
         </div>`,

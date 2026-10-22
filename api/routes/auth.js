@@ -11,6 +11,8 @@ const { JWT_SECRET, JWT_ACCESS_TTL, JWT_ISSUER, JWT_AUDIENCE } = require('../con
 const { issueNonce, NONCE_TTL_SECONDS } = require('../utils/walletNonce');
 const walletService = require('../services/walletService');
 const { generateBezhasId } = require('../lib/bezhasId');
+const { safeReturnTo } = require('../lib/returnTo');
+const verifications = require('../services/emailVerification');
 
 const apiPQC = require('../lib/apiPQC');
 
@@ -127,11 +129,22 @@ router.post(['/fiat/register', '/register-email'], registerChecks, async (req, r
 
         const refreshed = await query(
             `SELECT id, wallet_address, primary_wallet_address, primary_smart_wallet_address,
-                    username, role, avatar_url, email, auth_type, custody_mode, bezhas_id, created_at
+                    username, role, avatar_url, email, email_verified_at, auth_type, custody_mode, bezhas_id, created_at
              FROM users WHERE id = $1`,
             [rows[0].id]
         );
         const user = refreshed.rows[0];
+
+        // Correo de confirmación (mejor esfuerzo: si el correo falla, la cuenta ya existe y se puede reenviar).
+        // Lleva un botón al Hub para elegir plan; `returnTo` es la app donde estaba el usuario (sólo dominios propios).
+        const returnTo = safeReturnTo(req.body.returnTo);
+        let emailVerification = { sent: false };
+        try {
+            const verifToken = await verifications.issue(user.id, { returnTo });
+            emailVerification = await verifications.send(user, verifToken, returnTo);
+        } catch (e) {
+            require('../utils/logger').warn({ userId: user.id, error: e.message }, 'Confirmación de email no emitida tras el registro');
+        }
         const token  = jwt.sign(
             { address: user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
             JWT_SECRET,
@@ -139,7 +152,7 @@ router.post(['/fiat/register', '/register-email'], registerChecks, async (req, r
         );
         const pqcSig = apiPQC.signToken(token);
 
-        res.status(201).json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' }, user, safeWallet });
+        res.status(201).json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' }, user, safeWallet, emailVerification });
     } catch (error) {
         if (error.code === '23505') {
             return res.status(409).json({ error: 'Email or wallet already registered' });
@@ -162,7 +175,7 @@ router.post(['/fiat/login', '/login-email'], loginChecks, async (req, res) => {
         const email = String(req.body.email).trim().toLowerCase();
         const { rows } = await query(
             `SELECT id, wallet_address, primary_wallet_address, primary_smart_wallet_address,
-                    username, role, avatar_url, email, auth_type, custody_mode, password_hash, bezhas_id, created_at
+                    username, role, avatar_url, email, email_verified_at, auth_type, custody_mode, password_hash, bezhas_id, created_at
              FROM users WHERE LOWER(email) = $1 LIMIT 1`,
             [email]
         );
@@ -294,6 +307,60 @@ router.post('/reset-password', resetLimiter, [
 });
 
 // ── Current profile wallet bootstrap for apps that only have a JWT ──
+
+// ── Confirmación de email ──
+// El enlace del correo lleva al Hub (/confirmar?token=…), que llama aquí. El token es de un solo uso y caduca a las
+// 24 h. Al confirmar se devuelve una sesión: quien demuestra controlar el email puede seguir a elegir plan sin
+// volver a escribir la contraseña.
+router.post('/verify-email', resetLimiter, [
+    body('token').isString().isLength({ min: 64, max: 64 }),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ error: 'Enlace no válido o caducado', code: 'INVALID_TOKEN' });
+    try {
+        const done = await verifications.consume(req.body.token);
+        if (!done) return res.status(400).json({ error: 'Enlace no válido o caducado', code: 'INVALID_TOKEN' });
+        // Enlace ya usado con el email verificado: el botón del correo sigue llevando a elegir plan, pero sin
+        // sesión nueva; el Hub pide entrar con la contraseña.
+        if (!done.first) return res.json({ success: true, alreadyVerified: true, returnTo: safeReturnTo(done.returnTo) });
+
+        const { rows } = await query(
+            `SELECT id, wallet_address, primary_wallet_address, primary_smart_wallet_address,
+                    username, role, avatar_url, email, email_verified_at, auth_type, custody_mode, bezhas_id, created_at
+             FROM users WHERE id = $1`,
+            [done.userId]
+        );
+        const user = rows[0];
+        const token = jwt.sign(
+            { address: user.primary_wallet_address || user.wallet_address, userId: user.id, role: user.role, auth_type: user.auth_type, bezhas_id: user.bezhas_id },
+            JWT_SECRET,
+            { expiresIn: JWT_ACCESS_TTL, issuer: JWT_ISSUER, audience: JWT_AUDIENCE }
+        );
+        const pqcSig = apiPQC.signToken(token);
+        res.json({ success: true, token, pqc: { ...pqcSig, alg: 'ML-DSA-65' }, user, returnTo: safeReturnTo(done.returnTo) });
+    } catch (e) {
+        res.status(500).json({ error: 'No se pudo confirmar el email' });
+    }
+});
+
+router.post('/resend-verification', resetLimiter, authenticateToken, async (req, res) => {
+    try {
+        const { rows } = await query(
+            'SELECT id, email, username, bezhas_id, email_verified_at FROM users WHERE id = $1 LIMIT 1',
+            [req.user.userId]
+        );
+        const user = rows[0];
+        if (!user || !user.email) return res.status(409).json({ error: 'Tu cuenta no tiene email', code: 'EMAIL_REQUIRED' });
+        if (user.email_verified_at) return res.json({ success: true, alreadyVerified: true });
+        const returnTo = safeReturnTo(req.body && req.body.returnTo);
+        const token = await verifications.issue(user.id, { returnTo });
+        const r = await verifications.send(user, token, returnTo);
+        res.json({ success: true, sent: r.sent });
+    } catch (e) {
+        res.status(500).json({ error: 'No se pudo reenviar el correo' });
+    }
+});
+
 router.post('/safe-wallet/ensure', authenticateToken, async (req, res) => {
     try {
         const safeWallet = await walletService.ensureFiatSafeWalletForUser(req.user.userId, req.body || {});

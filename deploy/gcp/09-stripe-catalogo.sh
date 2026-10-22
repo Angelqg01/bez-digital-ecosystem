@@ -157,7 +157,8 @@ if [[ -z "$WH" ]]; then
   nuevo=$(stripe POST /v1/webhook_endpoints --data-urlencode "url=$URL_WH" --data-urlencode "description=BeZhas api (www.bezhas.com)" \
     --data-urlencode "enabled_events[]=checkout.session.completed" --data-urlencode "enabled_events[]=payment_intent.payment_failed" \
     --data-urlencode "enabled_events[]=charge.refunded" --data-urlencode "enabled_events[]=charge.dispute.created" \
-    --data-urlencode "enabled_events[]=customer.subscription.updated" --data-urlencode "enabled_events[]=customer.subscription.deleted")
+    --data-urlencode "enabled_events[]=customer.subscription.updated" --data-urlencode "enabled_events[]=customer.subscription.deleted" \
+    --data-urlencode "enabled_events[]=invoice.paid" --data-urlencode "enabled_events[]=customer.subscription.trial_will_end")
   WH=$(jq -r '.id' <<< "$nuevo")
   poner STRIPE_WEBHOOK_SECRET "$(jq -r '.secret' <<< "$nuevo")"
   echo "   creado $WH; secreto guardado en $F (no se muestra)"

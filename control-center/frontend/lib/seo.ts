@@ -45,6 +45,12 @@ const PAGE_SEO: Record<string, PageSEO> = {
         path: '/network',
         keywords: ['blockchain network status', 'L2 validators', 'TPS', 'node health'],
     },
+    '/precios': {
+        title: 'Planes y precios | BeZhas',
+        description: 'Planes BeZhas para empresas: Starter gratis 15 días, Creator Pro 99 €/mes, Business 499 €/mes y Enterprise VIP. Conecta tu ERP con puertos, aduanas y bancos sobre una L2 empresarial.',
+        path: '/precios',
+        keywords: ['precios blockchain empresarial', 'SaaS logística blockchain', 'trazabilidad ERP', 'BeZhas planes'],
+    },
     '/enterprise': {
         title: 'Enterprise | Blockchain for Real Estate & Industry',
         description: 'BeZhas enterprise: tokenize real estate, industrial assets, and supply chains. Private B2B node setup, SLA support, and Stripe-powered gas billing.',
