@@ -148,7 +148,7 @@ const DOCS = [
         + 'depositar; las recompensas dependerán de la participación total y serán variables. Cada operación la firma tu wallet: el asistente no ejecuta '
         + 'transacciones. Nunca afirmes que una posición de staking existe sin comprobarlo on-chain.'],
     ['bz_apps', 'Apps del ecosistema BeZhas',
-        'El ecosistema son varias apps conectadas por SSO: Hub (centro social y marketplace), DeFi, Wallet (billetera de BEZ-Coin sobre la L2), Gas Tank Manager, '
+        'Las apps nativas de BeZhas (también llamadas SubApps o aplicaciones del ecosistema) son varias apps conectadas por SSO: Hub (centro de operaciones B2B de la empresa, con plugin para WordPress y WooCommerce), DeFi, Wallet (billetera de BEZ-Coin sobre la L2), Gas Tank Manager, '
         + 'Edge Node Manager, CargoLink (logística), PureScan (trazabilidad alimentaria con IA de visión y pasaportes digitales de producto), Energy (gestión '
         + 'energética e IoT) y Vision Scan. El Gas Tank (paymaster) abstrae el coste de gas de las transacciones corporativas: una empresa recarga con fiat '
         + '(Stripe), el importe se convierte en gas y se consulta el historial de consumo.'],

@@ -21,9 +21,11 @@ ERP B2B multi-tenant (org/site/membership), API keys con scope y metering, BeZha
 
 ## Para clientes
 
-Hub es el centro de operaciones B2B de la plataforma: cada empresa tiene su organización, sus sedes y sus miembros, y desde ahí gestiona las claves de API con permisos acotados y el consumo de su plan. Las entidades se identifican con su ID único, que comparten el resto de SubApps. Incluye un simulador logístico para probar flujos antes de operar con datos reales.
+Hub es una de las apps nativas de BeZhas y el centro de operaciones B2B de la plataforma: cada empresa tiene su organización, sus sedes y sus miembros, y desde ahí gestiona las claves de API con permisos acotados y el consumo de su plan. Las entidades se identifican con su ID único, que comparten el resto de SubApps. Incluye un simulador logístico para probar flujos antes de operar con datos reales.
 
 Disponible en https://hub.bezhas.com.
+
+También hay un plugin de WordPress y WooCommerce (versión 2.0.1, requiere PHP 8.2 o superior): trae el Hub a tu propio wp-admin para suscribirte a los planes, activar SubApps y cobrar con BeZhas-Pay. Se descarga en https://bezhas.com/downloads/bezhas-hub-2.0.1.zip y se instala en WordPress desde Plugins, Añadir nuevo, Subir plugin.
 
 ## Conexiones
 
