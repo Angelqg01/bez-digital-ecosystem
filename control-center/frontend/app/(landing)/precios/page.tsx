@@ -83,6 +83,15 @@ const PLANS: Plan[] = [
     },
 ];
 
+// Misma explicación que https://hub.bezhas.com/bezhas-id. Si cambia el flujo, cambiarla en las dos.
+const ID_STEPS = [
+    { title: 'Crea tu cuenta', body: 'Usuario, email y contraseña. En ese momento se genera tu BeZhas ID (BZ-XXXXXXXXXX).' },
+    { title: 'Confirma tu email', body: 'Te llega un correo con un botón. Hasta que lo confirmas no se activa ningún plan.' },
+    { title: 'Elige tu plan', body: 'El botón del correo te lleva a elegir plan y a pagar con Stripe. Starter es gratis.' },
+    { title: 'Vuelve a tu app', body: 'Tras el pago volvemos a llevarte a la app o plataforma de BeZhas donde estabas.' },
+];
+const HUB_REGISTRO = 'https://hub.bezhas.com/registro?return=' + encodeURIComponent('https://www.bezhas.com/precios');
+
 export default function PreciosPage() {
     return (
         <>
@@ -94,6 +103,38 @@ export default function PreciosPage() {
                     Conecta tu ERP con puertos, aduanas, bancos y socios verificados. Contrata hoy, sin llamadas previas;
                     cancela cuando quieras. Pagando con BEZ-Coin, un 20&nbsp;% de descuento.
                 </p>
+            </section>
+
+
+            <section className="pb-16 px-6 max-w-7xl mx-auto" id="cuenta-unica">
+                <div className="glass-panel border border-primary/20 rounded-xl p-8 md:p-12">
+                    <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary mb-3">Cuenta única · BeZhas ID</p>
+                    <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-tight max-w-3xl">
+                        Un solo BeZhas ID para <span className="text-primary">todas las apps nativas</span>
+                    </h2>
+                    <p className="text-on-surface-variant text-lg max-w-3xl mt-4">
+                        Cuando te registras y te suscribes a un plan recibes un BeZhas ID único: con él entras en cada app nativa de BeZhas
+                        sin volver a crear cuenta y tu plan funciona en todas. Es solo para las apps nativas (y algunos partners
+                        seleccionados), no un inicio de sesión general. Crearlo es gratis.
+                    </p>
+                    <ol className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-8">
+                        {ID_STEPS.map((st, i) => (
+                            <li key={st.title} className="border border-white/10 rounded-lg p-5">
+                                <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">Paso {i + 1}</span>
+                                <h3 className="text-lg font-bold mt-2">{st.title}</h3>
+                                <p className="text-sm text-on-surface-variant mt-2">{st.body}</p>
+                            </li>
+                        ))}
+                    </ol>
+                    <div className="flex flex-col sm:flex-row gap-3 mt-8">
+                        <a href={HUB_REGISTRO} className="bg-primary text-white px-8 py-4 font-bold uppercase tracking-widest text-xs text-center hover:translate-y-[-2px] transition-transform">
+                            Crear mi BeZhas ID
+                        </a>
+                        <a href="https://hub.bezhas.com/bezhas-id" className="glass-panel border border-white/10 text-white px-8 py-4 font-bold uppercase tracking-widest text-xs text-center hover:bg-white/10 transition-colors">
+                            Cómo funciona
+                        </a>
+                    </div>
+                </div>
             </section>
 
             <section className="pb-24 px-6 max-w-7xl mx-auto">
