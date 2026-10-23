@@ -1,5 +1,5 @@
 # ===== ETAPA 1: Build =====
-FROM node:18-alpine as build
+FROM node:22.23.4-alpine as build
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build
 
 # ===== ETAPA 2: Servir con Nginx =====
-FROM nginx:alpine
+FROM nginx:1.30-alpine
 
 # Copiar los archivos compilados desde la etapa de build
 COPY --from=build /app/dist /usr/share/nginx/html

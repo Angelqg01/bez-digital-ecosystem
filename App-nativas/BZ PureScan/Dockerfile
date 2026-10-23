@@ -1,5 +1,5 @@
 # ── Stage 1: Install + Build ─────────────────
-FROM node:22-alpine AS builder
+FROM node:22.23.4-alpine AS builder
 WORKDIR /app
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
@@ -9,7 +9,7 @@ COPY . .
 RUN node node_modules/vite/bin/vite.js build
 
 # ── Stage 2: Production image (nginx) ────────
-FROM nginx:1.27-alpine
+FROM nginx:1.30-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # SPA routing: all paths fall back to index.html

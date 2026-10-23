@@ -148,7 +148,7 @@ services:
 
   # ===== Nginx Load Balancer (Optional) =====
   nginx:
-    image: nginx:1.25-alpine
+    image: nginx:1.30-alpine
     restart: always
     ports:
       - "443:443"

@@ -1,2 +1,23 @@
+# Raíz de instalación propia. Esta SubApp no es del workspace de App-nativas/,
+# pero sin este fichero el despliegue tenía que instalar con --ignore-workspace,
+# y con ese flag pnpm ignora también los overrides de seguridad de abajo.
+packages:
+  - '.'
 allowBuilds:
   esbuild: true
+  sharp: false
+  unrs-resolver: false
+  '@parcel/watcher': false
+
+# Parches de seguridad (2026-10-23): mínimos por rama mayor (^, nunca >=)
+# para no cambiar la API que espera cada consumidor.
+overrides:
+  '@remix-run/router@1': '^1.23.3'
+  baseline-browser-mapping@2: '^2.11.0'
+  browserslist@4: '^4.28.7'
+  follow-redirects@1: '^1.16.1'
+  nanoid@3: '^3.3.18'
+  postcss@8: '^8.5.23'
+  react-router@6: '^6.30.4'
+  react-router-dom@6: '^6.30.6'
+  source-map-js@1: '^1.2.2'

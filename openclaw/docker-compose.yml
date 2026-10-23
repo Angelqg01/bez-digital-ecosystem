@@ -90,7 +90,7 @@ services:
 
   # ── Nginx — Proxy inverso con rate limiting ──────────────────
   nginx:
-    image: nginx:1.25-alpine
+    image: nginx:1.30-alpine
     container_name: bezhas-nginx
     restart: unless-stopped
     
