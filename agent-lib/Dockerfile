@@ -1,14 +1,14 @@
 # ── Stage 1: Install dependencies ────────────
 # Alpine, como el resto de servicios: en node:22-slim el binario de pnpm 11
 # no arranca (falta libatomic.so.1) y la imagen no llegaba a construirse.
-FROM node:22-alpine AS deps
+FROM node:22.23.4-alpine AS deps
 WORKDIR /app
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # ── Stage 2: Production image ────────────────
-FROM node:22-alpine
+FROM node:22.23.4-alpine
 WORKDIR /app
 RUN addgroup -S bezhas && adduser -S bezhas -G bezhas
 

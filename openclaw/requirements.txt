@@ -13,8 +13,8 @@ httpx>=0.27.0              # HTTP async para Gemini + DeepSeek
 # bitsandbytes proporciona INT4/INT8 para modelos HuggingFace
 # Q3_K_M en llama-cpp-python = equivalente 3-bit del paper TurboQuant
 bitsandbytes>=0.43.0       # Cuantización 4-bit NF4 (GPU)
-transformers>=4.44.0       # HuggingFace model loader
-accelerate>=0.33.0         # device_map="auto" + offloading
+transformers>=5.10.0       # HuggingFace model loader
+accelerate>=1.15.0         # device_map="auto" + offloading
 llama-cpp-python>=0.2.90   # Modelos GGUF locales (Q3_K_M = TurboQuant 3-bit)
 
 # ── Optimización adicional ─────────────────────────────────────
@@ -26,15 +26,15 @@ pandas>=2.2.0              # DataFrames para datos OHLCV
 numpy>=1.26.0              # Cálculos numéricos
 pandas-ta>=0.3.14b         # Indicadores técnicos (RSI, MACD, Bollinger, etc.)
 ccxt>=4.3.0                # Conexión a exchanges (Binance, Coinbase, Bybit...)
-web3>=6.20.0               # Interacción con contratos BeZhas en BNB/Polygon
-requests>=2.32.0           # HTTP sync para APIs REST
+web3>=7.15.0               # Interacción con contratos BeZhas en BNB/Polygon
+requests>=2.33.0           # HTTP sync para APIs REST
 
 # ── Async / Concurrencia ──────────────────────────────────────
-aiohttp>=3.10.0
+aiohttp>=3.14.4
 asyncio-throttle>=1.0.2
 
 # ── Utilidades ────────────────────────────────────────────────
-python-dotenv>=1.0.1       # Cargar .env con API keys
+python-dotenv>=1.2.2       # Cargar .env con API keys
 pydantic>=2.8.0            # Validación de datos
 tenacity>=8.5.0            # Retry logic con backoff exponencial
 structlog>=24.4.0          # Logging estructurado

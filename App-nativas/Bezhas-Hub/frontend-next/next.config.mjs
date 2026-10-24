@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // El lint (avisos de variables sin usar…) se ejecuta aparte (`pnpm lint`); no debe impedir publicar la app.
-    eslint: { ignoreDuringBuilds: true },
-
     // Transpile ESM-only packages (wagmi, viem, etc.)
     transpilePackages: ['@web3modal/wagmi', '@wagmi/connectors'],
 
@@ -45,7 +42,8 @@ const nextConfig = {
 
     // Allow images from external domains (PolygonScan, IPFS)
     images: {
-        domains: ['polygonscan.com', 'ipfs.io', 'gateway.pinata.cloud', 'bezhas.com'],
+        remotePatterns: ['polygonscan.com', 'ipfs.io', 'gateway.pinata.cloud', 'bezhas.com']
+            .map((hostname) => ({ protocol: 'https', hostname })),
     },
 };
 

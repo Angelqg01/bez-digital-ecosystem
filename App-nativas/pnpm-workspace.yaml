@@ -16,3 +16,22 @@ packages:
   - 'BZ Prestige'
 allowBuilds:
   esbuild: true
+
+# Parches de seguridad (2026-10-23): mínimos por rama mayor (^, nunca >=)
+# para no cambiar la API que espera cada consumidor.
+overrides:
+  '@remix-run/router@1': '^1.23.3'
+  baseline-browser-mapping@2: '^2.11.0'
+  brace-expansion@5: '^5.0.12'
+  browserslist@4: '^4.28.7'
+  compression@1: '^1.8.2'
+  morgan@1: '^1.12.1'
+  nanoid@3: '^3.3.18'
+  postcss@8: '^8.5.23'
+  proxy-addr@2: '^2.0.8'
+  qs@6: '^6.16.0'
+  react-router@6: '^6.30.4'
+  react-router-dom@6: '^6.30.6'
+  source-map-js@1: '^1.2.2'
+  turbo@2: '^2.9.14'
+  ws@8: '^8.21.0'

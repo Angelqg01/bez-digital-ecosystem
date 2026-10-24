@@ -3,20 +3,22 @@
 # ===================================================
 
 # ===== STAGE 1: Dependencies =====
-FROM node:22-alpine AS deps
+FROM node:22.23.4-alpine AS deps
 WORKDIR /app
 
 # Install pnpm
 RUN npm install -g pnpm@11
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+# pnpm-workspace.yaml lleva los overrides de seguridad registrados en el lockfile:
+# sin él, --frozen-lockfile aborta con ERR_PNPM_LOCKFILE_CONFIG_MISMATCH.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
 # ===== STAGE 2: Builder =====
-FROM node:22-alpine AS builder
+FROM node:22.23.4-alpine AS builder
 WORKDIR /app
 
 # Install pnpm
@@ -41,7 +43,7 @@ ENV NEXT_PUBLIC_API_URL=$VITE_API_URL \
 RUN pnpm run build
 
 # ===== STAGE 3: Production =====
-FROM node:22-alpine AS production
+FROM node:22.23.4-alpine AS production
 WORKDIR /app
 
 # Install curl for health checks

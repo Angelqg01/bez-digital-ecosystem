@@ -12,3 +12,6 @@ overrides:
   form-data@>=3.0.0 <3.0.4: '^3.0.4'
   # brace-expansion 5 < 5.0.9: DoS por expansión sin límite. Acotado a la rama 5.
   brace-expansion@5: '^5.0.9'
+  ip-address@10: '^10.7.4'
+  proxy-addr@2: '^2.0.8'
+  qs@6: '^6.16.0'

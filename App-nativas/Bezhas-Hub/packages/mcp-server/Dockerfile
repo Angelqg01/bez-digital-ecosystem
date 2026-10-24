@@ -1,4 +1,4 @@
-FROM node:20-slim AS builder
+FROM node:22.23.4-slim AS builder
 WORKDIR /app
 
 COPY package.json ./
@@ -10,7 +10,7 @@ COPY src/ ./src/
 RUN npx tsc
 
 # ── Production stage ──
-FROM node:20-slim
+FROM node:22.23.4-slim
 WORKDIR /app
 
 COPY --from=builder /app/dist ./dist
