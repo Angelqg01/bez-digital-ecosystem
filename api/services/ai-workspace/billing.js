@@ -7,7 +7,8 @@
  * (principal.appId, la app de plan más alto):
  *
  *   Creator Pro / Business / Enterprise VIP → consume 1 acción de IA de la cuota
- *     mensual del plan (config/plans.js: aiActions; null = ilimitadas). El coste
+ *     mensual del plan (config/plans.js: aiActions; null = ilimitadas), la misma
+ *     que gastan el gateway REST y el MCP (services/aiActionQuota.js). El coste
  *     real (tokens + cómputo) queda en gateway_usage_ledger para auditoría.
  *   Starter (pago por uso) → además se factura por su coste real + 25 %
  *     (config/usage-pricing.js) en créditos al medidor de Stripe; aiActions
@@ -21,6 +22,9 @@
  */
 const { getPlan } = require('../../config/plans');
 const { calculateCallCost } = require('../../config/usage-pricing');
+// El cupo aiActions es uno por app y mes, compartido con el gateway REST y el MCP
+// (services/aiActionQuota.js): mismo recuento y mismo candado.
+const { SQL_USADAS, clave: claveCupo } = require('../aiActionQuota');
 const logger = require('../../utils/logger');
 
 const ACCION = 'ai_chat';
@@ -64,12 +68,8 @@ function crearFacturacionChat({ db = null, reportar = null } = {}) {
 
     async function usadas(appId) {
         if (memoria) return [...filas.values()].filter((f) => f.appId === appId && f.at >= inicioMes()).length;
-        const { rows } = await db.query(
-            `SELECT COUNT(*)::int AS n FROM gateway_usage_ledger
-              WHERE app_id = $1 AND action = '${ACCION}' AND created_at >= date_trunc('month', NOW())`,
-            [appId]
-        );
-        return rows[0].n;
+        const { rows } = await db.query(SQL_USADAS, [appId]);
+        return Number(rows[0].n) || 0;
     }
 
     /** Reserva el mensaje contra la cuota del plan. Lanza ChatBillingError (402) si no procede. */
@@ -95,15 +95,11 @@ function crearFacturacionChat({ db = null, reportar = null } = {}) {
         try {
             await client.query('BEGIN');
             // Candado por app hasta el COMMIT: el recuento y la reserva son atómicos.
-            await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`ai_chat:${principal.appId}`]);
+            await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [claveCupo(principal.appId)]);
             let n = 0;
             if (Number.isFinite(limite)) {
-                const { rows } = await client.query(
-                    `SELECT COUNT(*)::int AS n FROM gateway_usage_ledger
-                      WHERE app_id = $1 AND action = '${ACCION}' AND created_at >= date_trunc('month', NOW())`,
-                    [principal.appId]
-                );
-                n = rows[0].n;
+                const { rows } = await client.query(SQL_USADAS, [principal.appId]);
+                n = Number(rows[0].n) || 0;
                 if (n >= limite) { await client.query('ROLLBACK'); throw cuotaAgotada(principal.plan, limite); }
             }
             const { rows } = await client.query(
