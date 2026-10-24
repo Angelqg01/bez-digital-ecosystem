@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
+import BetaNotice from '../components/BetaNotice';
 
 export default function Settings() {
   const [autoRecharge, setAutoRecharge] = useState(true);
   const [threshold, setThreshold] = useState('10');
   const [rechargeAmount, setRechargeAmount] = useState('50');
   const [alerts, setAlerts] = useState({ low: true, recharge: true, weekly: false, anomaly: true });
-  const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
-  };
 
   return (
     <div>
@@ -18,6 +14,8 @@ export default function Settings() {
         <h1 className="page-title">Settings</h1>
         <p className="page-subtitle">Configura auto-recarga, alertas y permisos del Gas Tank</p>
       </div>
+
+      <BetaNotice>Estos ajustes son una vista previa: todavía no se guardan ni se aplican.</BetaNotice>
 
       {/* Auto-Recharge Config */}
       <div className="card animate-in-d1" style={{ marginBottom: '1.5rem', maxWidth: '600px' }}>
@@ -135,9 +133,7 @@ export default function Settings() {
 
       {/* Save Button */}
       <div style={{ maxWidth: '600px' }}>
-        <button className="btn-primary" onClick={handleSave}>
-          {saved ? '✅ Settings Saved!' : 'Save Settings'}
-        </button>
+        <button className="btn-primary" disabled title="Disponible cuando el Gas Tank esté conectado">Save Settings</button>
       </div>
     </div>
   );

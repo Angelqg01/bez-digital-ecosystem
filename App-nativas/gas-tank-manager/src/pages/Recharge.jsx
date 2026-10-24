@@ -43,7 +43,7 @@ export default function Recharge() {
       <div>
         <div className="page-header animate-in">
           <h1 className="page-title">Checkout</h1>
-          <p className="page-subtitle">Pago seguro via Stripe — factura corporativa disponible</p>
+          <p className="page-subtitle">Factura corporativa disponible</p>
         </div>
         <div className="card animate-in-d1" style={{ maxWidth: 480, padding: '2rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -64,25 +64,9 @@ export default function Recharge() {
           </div>
 
           {payMethod === 'card' && (
-            <div>
-              <div className="form-group">
-                <label className="form-label">Card Number</label>
-                <input className="form-input" placeholder="4242 4242 4242 4242" />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Expiry</label>
-                  <input className="form-input" placeholder="MM / YY" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">CVC</label>
-                  <input className="form-input" placeholder="123" />
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Company Name (for invoice)</label>
-                <input className="form-input" placeholder="Your Company S.L." style={{ fontFamily: 'var(--font-body)' }} />
-              </div>
+            <div className="form-group">
+              <label className="form-label">Company Name (for invoice)</label>
+              <input className="form-input" placeholder="Your Company S.L." style={{ fontFamily: 'var(--font-body)' }} />
             </div>
           )}
 
@@ -90,10 +74,7 @@ export default function Recharge() {
             <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--bezhas-surface-2)', borderRadius: 'var(--radius-md)' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔷</div>
               <p style={{ color: 'var(--bezhas-text-secondary)', fontSize: '0.85rem' }}>
-                Send {(selected / 0.07).toFixed(0)} BEZ to the Gas Tank contract
-              </p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', marginTop: '0.5rem', color: 'var(--bezhas-text-muted)' }}>
-                0x5c9b...6fBAA (Gas Tank Contract)
+                El pago con BEZ aún no está disponible. Solicita la recarga y te indicamos cómo hacerla.
               </p>
             </div>
           )}
@@ -160,7 +141,7 @@ export default function Recharge() {
           Continue — ${selected}.00 →
         </button>
         <p style={{ fontSize: '0.75rem', color: 'var(--bezhas-text-muted)', textAlign: 'center', marginTop: '0.75rem' }}>
-          🔒 Secured by Stripe · Invoice available · IVA/VAT included
+          Factura disponible · IVA incluido
         </p>
       </div>
     </div>
