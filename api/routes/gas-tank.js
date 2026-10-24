@@ -5,12 +5,14 @@
  *   GET  /api/organizations/:orgId/gas-tank/balance
  *   GET  /api/organizations/:orgId/gas-tank/activity?limit=&before=
  *   POST /api/organizations/:orgId/gas-tank/recharge/checkout   { packageId } | { amountEur }
+ *   PATCH /api/organizations/:orgId/gas-tank/settings           { autoRecharge, thresholdEur, rechargeEur, monthlyCapEur }
  *
  * La recarga se acredita desde el webhook de Stripe (checkout.session.completed con
  * metadata.gas_tank_org_id → services/gasTank/recharge), nunca desde esta ruta.
  */
 const { Router } = require('express');
 const { body, query: q, validationResult } = require('express-validator');
+const { query } = require('../db/pool');
 const { authenticateToken, requireOrgRole } = require('../middleware/security');
 const cfg = require('../config/gas-tank');
 const ledger = require('../services/gasTank/ledger');
@@ -94,6 +96,42 @@ router.post('/:orgId/gas-tank/recharge/checkout', authenticateToken, requireOrgR
     } catch (error) {
         res.status(500).json({ error: 'No se pudo iniciar el pago', details: error.message });
     }
+});
+
+// ── Ajustes de auto-recarga (importes en EUR hacia fuera, créditos en la base) ──
+router.patch('/:orgId/gas-tank/settings', authenticateToken, requireOrgRole(...RECHARGERS), [
+    body('autoRecharge').optional().isBoolean(),
+    body('thresholdEur').optional().isFloat({ min: 0, max: cfg.MAX_RECHARGE_EUR }),
+    body('rechargeEur').optional().isFloat({ min: cfg.MIN_RECHARGE_EUR, max: cfg.MAX_RECHARGE_EUR }),
+    body('monthlyCapEur').optional({ nullable: true }).isFloat({ min: cfg.MIN_RECHARGE_EUR }),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    const { autoRecharge, thresholdEur, rechargeEur, monthlyCapEur } = req.body;
+    const orgId = req.params.orgId;
+
+    if (autoRecharge === true) {
+        const { rows } = await query(
+            'SELECT stripe_default_payment_method_id FROM organization_billing_profiles WHERE organization_id = $1', [orgId]
+        );
+        if (!rows[0]?.stripe_default_payment_method_id) {
+            return res.status(409).json({ error: 'Guarda un método de pago en Facturación antes de activar la auto-recarga' });
+        }
+    }
+    await ledger.ensureAccount(orgId);
+    const toCredits = (v) => (v === undefined ? undefined : v === null ? null : cfg.creditsForEur(Number(v)));
+    const vals = { auto: autoRecharge, thr: toCredits(thresholdEur), rec: toCredits(rechargeEur), cap: toCredits(monthlyCapEur) };
+    await query(
+        `UPDATE gas_tank_accounts SET
+            auto_recharge_enabled = COALESCE($2, auto_recharge_enabled),
+            threshold_credits     = COALESCE($3, threshold_credits),
+            recharge_credits      = COALESCE($4, recharge_credits),
+            monthly_cap_credits   = CASE WHEN $5::boolean THEN $6 ELSE monthly_cap_credits END,
+            updated_at = NOW()
+          WHERE organization_id = $1`,
+        [orgId, vals.auto ?? null, vals.thr ?? null, vals.rec ?? null, vals.cap !== undefined, vals.cap ?? null]
+    );
+    res.json({ success: true, ...(await ledger.getBalance(orgId)) });
 });
 
 module.exports = router;

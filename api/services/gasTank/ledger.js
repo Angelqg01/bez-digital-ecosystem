@@ -44,7 +44,7 @@ async function getBalance(orgId) {
     await ensureAccount(orgId);
     const { rows } = await db.query(
         `SELECT a.status, a.balance_credits::bigint AS balance, a.auto_recharge_enabled, a.threshold_credits::bigint AS threshold,
-                a.recharge_credits::bigint AS recharge, a.monthly_cap_credits::bigint AS monthly_cap,
+                a.recharge_credits::bigint AS recharge, a.monthly_cap_credits::bigint AS monthly_cap, a.last_auto_error,
                 COALESCE((SELECT SUM(max_cost_credits) FROM gas_tank_reservations
                            WHERE organization_id = a.organization_id AND status = 'reserved'), 0)::bigint AS reserved
            FROM gas_tank_accounts a WHERE a.organization_id = $1`,
@@ -57,6 +57,7 @@ async function getBalance(orgId) {
         reservedCredits: Number(r.reserved),
         autoRecharge: { enabled: r.auto_recharge_enabled, thresholdCredits: Number(r.threshold), rechargeCredits: Number(r.recharge) },
         monthlyCapCredits: r.monthly_cap == null ? null : Number(r.monthly_cap),
+        lastAutoError: r.last_auto_error || null,
     };
 }
 

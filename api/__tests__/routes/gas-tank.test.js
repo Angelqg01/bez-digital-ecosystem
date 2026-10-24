@@ -7,6 +7,8 @@ jest.mock('../../middleware/security', () => ({
     requireOrgRole: (...roles) => (req, res, next) =>
         (roles.includes(req.get('x-role')) ? next() : res.status(403).json({ error: 'Not a member of this organization' })),
 }));
+const mockQuery = jest.fn();
+jest.mock('../../db/pool', () => ({ query: (...a) => mockQuery(...a) }));
 const mockLedger = {
     ensureAccount: jest.fn().mockResolvedValue(),
     getBalance: jest.fn().mockResolvedValue({ status: 'active', balanceCredits: 2500, reservedCredits: 0 }),
@@ -21,7 +23,7 @@ app.use(express.json());
 app.use('/api/organizations', require('../../routes/gas-tank'));
 const base = '/api/organizations/org-1/gas-tank';
 
-beforeEach(() => { mockCreate.mockClear(); process.env.STRIPE_SECRET_KEY = 'sk_test_x'; });
+beforeEach(() => { mockQuery.mockReset(); mockCreate.mockClear(); process.env.STRIPE_SECRET_KEY = 'sk_test_x'; });
 
 test('un no-miembro recibe 403 en todo', async () => {
     expect((await request(app).get(`${base}/balance`)).status).toBe(403);
@@ -56,4 +58,31 @@ test('importes fuera de topes y paquetes desconocidos se rechazan sin llamar a S
 test('importe libre sin bono', async () => {
     const res = await request(app).post(`${base}/recharge/checkout`).set('x-role', 'admin').send({ amountEur: 30 });
     expect(res.body.credits).toBe(30000);
+});
+
+describe('PATCH settings', () => {
+    const h = { 'x-role': 'financial' };
+    test('no deja activar la auto-recarga sin método de pago guardado', async () => {
+        mockQuery.mockResolvedValueOnce({ rows: [{ stripe_default_payment_method_id: null }] });
+        const res = await request(app).patch(`${base}/settings`).set(h).send({ autoRecharge: true });
+        expect(res.status).toBe(409);
+        expect(mockQuery).toHaveBeenCalledTimes(1);
+    });
+
+    test('guarda umbral e importes convertidos a créditos y deja el tope sin tocar si no viene', async () => {
+        mockQuery.mockResolvedValueOnce({ rows: [{ stripe_default_payment_method_id: 'pm_1' }] }).mockResolvedValueOnce({ rows: [] });
+        const res = await request(app).patch(`${base}/settings`).set(h).send({ autoRecharge: true, thresholdEur: 10, rechargeEur: 50 });
+        expect(res.status).toBe(200);
+        const [sql, params] = mockQuery.mock.calls[1];
+        expect(sql).toContain('UPDATE gas_tank_accounts');
+        expect(params).toEqual(['org-1', true, 10000, 50000, false, null]);
+    });
+
+    test('monthlyCapEur null quita el tope; importes fuera de rango, 400; auditor, 403', async () => {
+        mockQuery.mockResolvedValue({ rows: [] });
+        await request(app).patch(`${base}/settings`).set(h).send({ monthlyCapEur: null });
+        expect(mockQuery.mock.calls[0][1]).toEqual(['org-1', null, null, null, true, null]);
+        expect((await request(app).patch(`${base}/settings`).set(h).send({ rechargeEur: 1 })).status).toBe(400);
+        expect((await request(app).patch(`${base}/settings`).set({ 'x-role': 'auditor' }).send({ autoRecharge: false })).status).toBe(403);
+    });
 });

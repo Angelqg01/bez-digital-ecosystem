@@ -44,9 +44,15 @@ export function useGasTank({ withActivity = false, withPackages = false } = {}) 
     window.location.assign(data.url);
   }, [call]);
 
+  const saveSettings = useCallback(async (body) => {
+    const data = await call('settings', { method: 'PATCH', body: JSON.stringify(body) });
+    setState((st) => ({ ...st, balance: { ...(st.balance || {}), ...data } }));
+    return data;
+  }, [call]);
+
   const reason = !token ? 'login' : !orgId ? 'organization' : null;
   const canRecharge = ['owner', 'admin', 'financial'].includes(activeOrganization?.my_role);
-  return { ...state, reason, orgName: activeOrganization?.name, canRecharge, refresh, checkout };
+  return { ...state, reason, orgName: activeOrganization?.name, canRecharge, refresh, checkout, saveSettings };
 }
 
 export const eur = (n) => `${(Number(n) || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;

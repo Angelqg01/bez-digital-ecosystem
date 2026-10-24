@@ -631,6 +631,7 @@ async function shutdown(signal) {
   // 4. Detener gas monitor daemon
   try {
     gasMonitor.stopDaemon?.();
+    require('./services/gasTank/autoRecharge').stopSweep();
     gcpLogger.info('[SHUTDOWN] Gas monitor stopped');
   } catch (_) { /* no crítico */ }
 
@@ -695,6 +696,7 @@ async function startServer() {
 
   // ── PASO 4: Gas monitor daemon ────────────────────────────────────────────────
   gasMonitor.startDaemon(60_000);
+  require('./services/gasTank/autoRecharge').startSweep();
   gcpLogger.info('[STARTUP] Gas monitor daemon started (60s interval)');
 
   // ── PASO 4a: Barrido de sesiones de onboarding ───────────────────────────────
