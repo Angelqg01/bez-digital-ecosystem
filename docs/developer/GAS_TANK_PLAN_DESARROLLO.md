@@ -318,11 +318,13 @@ Cada app se registra en `app_registry` con su `app_id`. La política de la organ
 
 **Criterio de aceptación:** una empresa de prueba recarga 50 € en modo test de Stripe, una app nativa ancla 10 documentos por relayer y el panel muestra los 10 cargos con su transacción y el saldo cuadra al céntimo.
 
+> **Hallazgo (2026-10-24) sobre el coste on-chain:** el `GasCharged` del paymaster NO es el cargo definitivo: el EntryPoint suma después el gas del propio `postOp` (≈ 7 % más en las pruebas). El conciliador (`reconciler.js`) debe liquidar la reserva con `UserOperationEvent.actualGasCost` del EntryPoint, que coincide exactamente con el descuento del depósito; si usara `GasCharged` cobraría de menos.
+
 > **Hallazgo (2026-10-24) sobre el `tx-signer`:** hoy sólo firma **transferencias ERC-20 desde la tesorería con 2 aprobaciones humanas EIP-712** (`verify.js` rechaza cualquier otra intención). No sirve ni para el relayer de la fase 1 ni para firmar UserOperations: exigir dos personas por cada patrocinio es inviable. Por eso (a) la fase 1 **mide** las operaciones que ya envían las claves de operador de la API (`gasTank/meter.js`), y (b) la fase 2 necesita una **clave de verificación del paymaster distinta, sin fondos** (solo firma `paymasterAndData`; el dinero está en el depósito del EntryPoint, que se rellena con aprobación), con topes propios en el firmante y fuera de la tesorería.
 
 ### Fase 2: paymaster ERC-4337 y tokenización patrocinada (3-4 semanas)
 - [x] `BeZhasVerifyingPaymaster` + `GasTankVault` en `smart-contracts/src/gas/` con 27 tests de Foundry (firma, ventana de validez, topes, suspensión, pausa, reuso de nonce, tope diario, fuzz). Pasan contra un EntryPoint simulado.
-- [ ] Integración con el **EntryPoint v0.8 real** en Anvil y simulación con las reglas ERC-7562 de un bundler. Pendiente de decidir la librería (`eth-infinitism/account-abstraction`): hoy el contrato usa un `IEntryPointV8.sol` mínimo propio con la estructura pública del estándar.
+- [x] Integración con el **EntryPoint v0.8 real** (`eth-infinitism/account-abstraction` v0.8.0, commit fijado): `smart-contracts/test-aa/`, 11 tests con `script/setup-aa-lib.sh` y `FOUNDRY_PROFILE=aa forge test`. Cubre una UserOp patrocinada de una cuenta sin ETH, firma/ventana/organización/pausa rechazadas por el EntryPoint real (AA32/AA33/AA34), nonce repetido, llamada revertida cobrada y el lote completo de tokenización (la bóveda aporta los 100 BEZ, el paymaster paga el gas, la fábrica cobra su comisión). Pendiente: simulación con las reglas ERC-7562 de un bundler.
 - [ ] Intención `paymaster.sign` en el `tx-signer` con topes propios.
 - [ ] `paymasterService.js` (ERC-7677) + `policy.js` + `reconciler.js`.
 - [ ] Despliegue en **Amoy**, con bundler de proveedor.

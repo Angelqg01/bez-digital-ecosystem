@@ -49,7 +49,9 @@ contract BeZhasVerifyingPaymaster is Ownable {
     event OrgSuspended(bytes32 indexed orgId, bool suspended);
     event PausedSet(bool paused);
     event MaxCostPerOpSet(uint256 maxCost);
-    /// @dev El conciliador off-chain liquida la reserva de `orgId` con `actualGasCost`.
+    /// @dev Identifica la organización de la UserOp y el coste que ve el paymaster en postOp. NO es el cargo definitivo:
+    ///      el EntryPoint suma después el gas del propio postOp. El conciliador debe liquidar la reserva de `orgId`
+    ///      con `UserOperationEvent.actualGasCost` del EntryPoint (verificado en test-aa/PaymasterEntryPoint.t.sol).
     event GasCharged(bytes32 indexed orgId, address indexed sender, uint256 actualGasCost, uint256 actualUserOpFeePerGas, PostOpMode mode);
 
     error NotEntryPoint();

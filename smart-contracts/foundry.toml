@@ -33,3 +33,21 @@ depth = 64
 fail_on_revert = false
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
+
+# ── Perfil `aa`: pruebas de integración del Gas Tank contra el EntryPoint v0.8 REAL ──────────────
+# La librería no se versiona (GPL-3.0): `script/setup-aa-lib.sh` la baja fijando el commit de v0.8.0.
+# Uso: FOUNDRY_PROFILE=aa forge test
+[profile.aa]
+src = "src/gas"
+test = "test-aa"
+libs = ["lib"]
+solc = "0.8.35"
+evm_version = "cancun"
+via_ir = true
+optimizer = true
+optimizer_runs = 1000000
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+    "account-abstraction/=lib/account-abstraction/contracts/",
+]
