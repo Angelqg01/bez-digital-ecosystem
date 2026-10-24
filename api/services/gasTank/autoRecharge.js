@@ -18,6 +18,7 @@
 const db = require('../../db/pool');
 const cfg = require('../../config/gas-tank');
 const ledger = require('./ledger');
+const events = require('./events');
 const { sendMail } = require('../mailer');
 const logger = require('../../utils/logger');
 
@@ -102,12 +103,14 @@ async function rechargeIfNeeded(orgId) {
         if (pi.status !== 'succeeded') throw new Error(`pago ${pi.status}`);
         const out = await ledger.credit(orgId, credits, { kind: 'recharge', externalRef: `auto:${pi.id}` });
         await db.query(`UPDATE gas_tank_accounts SET last_auto_error = NULL WHERE organization_id = $1`, [orgId]);
+        if (out.applied) await events.emitToOrg(orgId, 'gas.recharged', { credits, balanceCredits: out.balance, source: 'auto' });
         return { recharged: true, credits, ...out };
     } catch (err) {
         const motivo = String(err.message).slice(0, 300);
         await db.query(`UPDATE gas_tank_accounts SET last_auto_error = $2 WHERE organization_id = $1`, [orgId, motivo]);
         logger.warn({ orgId, motivo }, '[gasTank] recarga automática fallida');
         await notifyFailure(orgId, motivo);
+        await events.emitToOrg(orgId, 'gas.recharge_failed', { reason: motivo });
         return { recharged: false, error: motivo };
     }
 }

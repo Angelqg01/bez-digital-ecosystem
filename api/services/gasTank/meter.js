@@ -21,6 +21,7 @@ const crypto = require('crypto');
 const cfg = require('../../config/gas-tank');
 const ledger = require('./ledger');
 const prices = require('./prices');
+const events = require('./events');
 const logger = require('../../utils/logger');
 
 function gasTankError(code, status, message) {
@@ -37,7 +38,7 @@ async function meterOperation(
     send,
     deps = {}
 ) {
-    const { ledger: L = ledger, prices: P = prices } = deps;
+    const { ledger: L = ledger, prices: P = prices, events: E = events } = deps;
     if (!orgId || !opType) throw new Error('orgId y opType son obligatorios');
     if (!(maxGasLimit > 0) || !(maxGasPriceGwei > 0)) throw new Error('maxGasLimit y maxGasPriceGwei son obligatorios');
 
@@ -72,6 +73,20 @@ async function meterOperation(
         }
     }
 
+    // Avisa sólo al CRUZAR el umbral (antes de la operación estaba por encima, ahora por debajo), no en cada cargo.
+    async function avisarSaldoBajo(charged) {
+        if (!charged || !charged.charged) return;
+        try {
+            const b = await L.getBalance(orgId);
+            const { thresholdCredits } = b.autoRecharge;
+            if (b.balanceCredits < thresholdCredits && b.balanceCredits + charged.charged >= thresholdCredits) {
+                await E.emitToOrg(orgId, 'gas.low_balance', { balanceCredits: b.balanceCredits, thresholdCredits });
+            }
+        } catch (err) {
+            logger.warn({ err: err.message, orgId }, '[gasTank] aviso de saldo bajo no emitido');
+        }
+    }
+
     let out;
     try {
         out = await send();
@@ -86,6 +101,7 @@ async function meterOperation(
     }
 
     const charged = await liquidar(out && out.receipt);
+    await avisarSaldoBajo(charged);
     return { result: out, charged };
 }
 

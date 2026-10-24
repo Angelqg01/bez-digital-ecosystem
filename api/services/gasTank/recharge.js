@@ -9,6 +9,7 @@
 
 const cfg = require('../../config/gas-tank');
 const ledger = require('./ledger');
+const events = require('./events');
 
 function isGasTankSession(session) {
     return Boolean(session && session.metadata && session.metadata.gas_tank_org_id);
@@ -28,6 +29,9 @@ async function creditFromSession(session) {
     const pkg = declared && declared.eur === eur ? declared : null;
     const credits = cfg.rechargeCredits(eur, pkg);
     const out = await ledger.credit(orgId, credits, { kind: 'recharge', externalRef: `stripe:${session.id}` });
+    if (out.applied) {
+        await events.emitToOrg(orgId, 'gas.recharged', { credits, balanceCredits: out.balance, source: 'checkout' });
+    }
     return { orgId, credits, eur, ...out };
 }
 

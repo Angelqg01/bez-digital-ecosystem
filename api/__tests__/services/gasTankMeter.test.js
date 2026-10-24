@@ -25,7 +25,9 @@ maybe('gasTank/meter (Postgres real)', () => {
     });
     afterAll(async () => { await db.pool.end(); });
 
-    const run = (over, send) => meter.meterOperation({ orgId, ...base, ...over }, send, { prices });
+    const events = { emitToOrg: jest.fn().mockResolvedValue(1) };
+    beforeEach(() => events.emitToOrg.mockClear());
+    const run = (over, send) => meter.meterOperation({ orgId, ...base, ...over }, send, { prices, events });
     const okSend = (gasUsed, gwei) => async () => ({ receipt: { hash: '0xtx', gasUsed: BigInt(gasUsed), gasPrice: BigInt(gwei * 1e9) } });
 
     test('cobra el gas real (no el máximo) y deja el movimiento con su tx', async () => {
@@ -58,6 +60,16 @@ maybe('gasTank/meter (Postgres real)', () => {
         const { charged } = await run({ protocolFeeBez: 100 }, okSend(60000, 40));
         const real = Math.ceil(((60000 * 40e-9 * 0.4 + 100 * 0.0075) * 1.25) / 0.001);
         expect(charged.charged).toBe(real);
+    });
+
+    test('gas.low_balance se emite sólo al cruzar el umbral, no en cada cargo', async () => {
+        // umbral por defecto 10.000; cada operación cuesta 2 créditos → con 10.001 la primera cruza el umbral
+        await db.query(`UPDATE gas_tank_accounts SET balance_credits = 10001 WHERE organization_id = $1`, [orgId]);
+        await run({}, okSend(60000, 40));                        // 10.001 → 9.999: cruza
+        expect(events.emitToOrg).toHaveBeenCalledWith(orgId, 'gas.low_balance', expect.objectContaining({ thresholdCredits: 10000 }));
+        events.emitToOrg.mockClear();
+        await run({}, okSend(60000, 40));                        // ya estaba por debajo: no repite
+        expect(events.emitToOrg).not.toHaveBeenCalled();
     });
 
     test('el mismo opId no se mide dos veces', async () => {
