@@ -91,6 +91,7 @@ const organizationsRoutes = require('./routes/organizations');
 const organizationTechRoutes = require('./routes/organization-tech');
 const organizationBillingRoutes = require('./routes/organization-billing');
 const gasTankRoutes = require('./routes/gas-tank');
+const gasTankRpcRoutes = require('./routes/gas-tank-rpc');
 const aiWorkspaceRoutes = require('./routes/ai-workspace');
 const adminConfigRoutes = require('./routes/admin-config');
 const adminGovernanceRoutes = require('./routes/admin-governance');
@@ -386,6 +387,7 @@ app.use('/api/organizations', organizationsRoutes);
 app.use('/api/organizations', organizationTechRoutes);
 app.use('/api/organizations', organizationBillingRoutes);
 app.use('/api/organizations', gasTankRoutes);
+app.use('/api/rpc/paymaster', gasTankRpcRoutes);
 app.use('/api/ai-workspace/public', aiWorkspaceRoutes.publicRouter); // una pregunta gratis sin sesión
 app.use('/api/ai-workspace', aiWorkspaceRoutes);   // chat de la plataforma con RAG (sesión obligatoria)
 app.use('/api/nft-assets', require('./routes/nft-assets')); // subida de archivos para NFT: plan suscrito, sin ejecutables, sin lectura

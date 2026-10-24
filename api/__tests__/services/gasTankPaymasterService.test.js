@@ -95,10 +95,25 @@ maybe('gasTank paymasterService + policy + reconciler (Postgres real)', () => {
         expect(b.balanceCredits).toBe(100000 - out.maxCostCredits);
     });
 
-    test('la misma UserOp (cuenta+nonce) no se patrocina dos veces; otro nonce sí', async () => {
-        await svc.sponsorUserOp({ orgId, appId, userOp: plainCall(1n) }, deps);
-        await expect(svc.sponsorUserOp({ orgId, appId, userOp: plainCall(1n) }, deps)).rejects.toMatchObject({ code: 'ALREADY_SPONSORED' });
+    test('pedir el patrocinio otra vez (reintento de la wallet) rehace la reserva sin duplicarla; liquidada, ya no', async () => {
+        const first = await svc.sponsorUserOp({ orgId, appId, userOp: plainCall(1n) }, deps);
+        const again = await svc.sponsorUserOp({ orgId, appId, userOp: plainCall(1n) }, deps);
+        expect(again.maxCostCredits).toBe(first.maxCostCredits);
+        expect((await ledger.getBalance(orgId)).reservedCredits).toBe(first.maxCostCredits); // una sola reserva
         await expect(svc.sponsorUserOp({ orgId, appId, userOp: plainCall(2n) }, deps)).resolves.toBeTruthy();
+
+        await rec.settleFromEvent({ entryPoint: chain.entryPoint, chainId: 137, sender: SENDER, nonce: 1n, success: true, actualGasCost: 10n ** 15n, txHash: '0x1' });
+        await expect(svc.sponsorUserOp({ orgId, appId, userOp: plainCall(1n) }, deps)).rejects.toMatchObject({ code: 'ALREADY_SPONSORED' });
+    });
+
+    test('checkSponsorship valida política y saldo sin reservar nada', async () => {
+        await expect(svc.checkSponsorship({ orgId, appId, userOp: plainCall() }, deps)).resolves.toMatchObject({ ok: true });
+        expect((await ledger.getBalance(orgId)).reservedCredits).toBe(0);
+        await db.query(`UPDATE gas_tank_policies SET allowed_targets = '[]'::jsonb`);
+        await expect(svc.checkSponsorship({ orgId, appId, userOp: plainCall() }, deps)).rejects.toMatchObject({ code: 'TARGET_NOT_ALLOWED' });
+        await db.query('UPDATE gas_tank_accounts SET balance_credits = 0');
+        await db.query(`UPDATE gas_tank_policies SET allowed_targets = $1::jsonb`, [JSON.stringify([{ address: FACTORY, selectors: [TOKENIZE] }])]);
+        await expect(svc.checkSponsorship({ orgId, appId, userOp: plainCall() }, deps)).rejects.toMatchObject({ code: 'INSUFFICIENT_GAS_TANK' });
     });
 
     test.each([

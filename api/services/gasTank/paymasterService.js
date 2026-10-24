@@ -124,12 +124,21 @@ async function sponsorUserOp({ orgId, appId, userOp: rawOp }, deps = {}) {
 
     const key = userOp.reservationKey({ entryPoint: d.chain.entryPoint, chainId: d.chain.chainId, sender: op.sender, nonce: op.nonce });
     const validUntil = d.now() + SPONSOR_TTL_S;
-    const reservation = await d.ledger.reserve(orgId, maxCredits, {
+    const reserveArgs = {
         opHash: key, appId, sender: op.sender, ttlSeconds: SPONSOR_TTL_S + 120,
         meta: { polEur, feeBez: feeBez.toString(), feeCredits, gasOnlyCredits, maxCostWei: maxCostWei.toString() },
-    });
+    };
+    let reservation = await d.ledger.reserve(orgId, maxCredits, reserveArgs);
+    if (reservation && reservation.reused) {
+        // Una wallet puede pedir el patrocinio varias veces (reintentos, re-estimación): mientras la reserva siga
+        // abierta se rehace con los datos nuevos. Si ya se liquidó, esa cuenta+nonce está consumida.
+        if (reservation.status !== 'reserved') throw new SponsorError('ALREADY_SPONSORED', 409, 'Esta UserOp (misma cuenta y nonce) ya se patrocinó y liquidó');
+        await d.ledger.release(key);
+        reservation = await d.ledger.reserve(orgId, maxCredits, reserveArgs);
+        // Nunca se firma sin saldo realmente retirado: si la segunda reserva tampoco es nueva, algo va mal.
+        if (reservation && reservation.reused) throw new SponsorError('RESERVATION_CONFLICT', 409, 'No se pudo rehacer la reserva; reintenta');
+    }
     if (!reservation) throw new SponsorError('INSUFFICIENT_GAS_TANK', 402, 'El Gas Tank no tiene saldo suficiente para esta operación');
-    if (reservation.reused) throw new SponsorError('ALREADY_SPONSORED', 409, 'Esta UserOp (misma cuenta y nonce) ya tiene un patrocinio');
 
     try {
         const orgB32 = userOp.orgIdBytes32(orgId);
@@ -146,6 +155,24 @@ async function sponsorUserOp({ orgId, appId, userOp: rawOp }, deps = {}) {
     }
 }
 
+/** Fase "stub" de ERC-7677: valida la política sin reservar saldo (la wallet aún está estimando gas). */
+async function checkSponsorship({ orgId, appId, userOp: rawOp }, deps = {}) {
+    const d = resolveDeps(deps);
+    await assertAppBelongsToOrg(d, orgId, appId);
+    const op = userOp.normalize(rawOp);
+    const polEur = await d.prices.getPolEur();
+    const { requiredGas, maxFeePerGas } = userOp.maxCost(op);
+    const credits = cfg.operationCostCredits({ gasUsed: Math.max(1, Number(requiredGas)), gasPriceGwei: Math.max(1e-9, Number(maxFeePerGas) / 1e9), polEur });
+    await d.policy.evaluate({
+        orgId, op, maxCostCredits: credits,
+        chain: { chainId: d.chain.chainId, vault: d.chain.vault, bez: d.chain.bez, signerAddress: d.signer.address },
+    });
+    const b = await d.ledger.getBalance(orgId);
+    if (b.status !== 'active') throw new SponsorError('ACCOUNT_SUSPENDED', 403, 'La cuenta del Gas Tank está suspendida');
+    if (b.balanceCredits < credits) throw new SponsorError('INSUFFICIENT_GAS_TANK', 402, 'El Gas Tank no tiene saldo suficiente para esta operación');
+    return { ok: true, chain: d.chain };
+}
+
 async function releaseSponsorship({ orgId, userOp: rawOp }, deps = {}) {
     const d = resolveDeps(deps);
     const op = userOp.normalize(rawOp);
@@ -155,4 +182,4 @@ async function releaseSponsorship({ orgId, userOp: rawOp }, deps = {}) {
     return d.ledger.release(key);
 }
 
-module.exports = { issueFeeVoucher, sponsorUserOp, releaseSponsorship, chainConfig, SponsorError };
+module.exports = { issueFeeVoucher, sponsorUserOp, checkSponsorship, releaseSponsorship, chainConfig, SponsorError };

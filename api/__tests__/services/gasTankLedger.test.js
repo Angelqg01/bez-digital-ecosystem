@@ -96,6 +96,20 @@ maybe('gasTank/ledger (Postgres real)', () => {
         await expect(ledger.settle('0xf', 10)).rejects.toThrow(/liberada/);
     });
 
+    test('reservar de nuevo una operación liberada vuelve a retirar el saldo (no se queda sin reserva)', async () => {
+        await ledger.credit(orgId, 100);
+        await ledger.reserve(orgId, 40, { opHash: '0x20' });
+        await ledger.release('0x20');
+        const again = await ledger.reserve(orgId, 60, { opHash: '0x20', meta: { v: 2 } });
+        expect(again).toMatchObject({ status: 'reserved', reused: false, maxCredits: 60 });
+        expect(await ledger.getBalance(orgId)).toMatchObject({ balanceCredits: 40, reservedCredits: 60 });
+        expect((await ledger.getReservation('0x20')).meta).toEqual({ v: 2 });
+        // y sin saldo suficiente para la nueva cifra, no reactiva
+        await ledger.release('0x20');
+        expect(await ledger.reserve(orgId, 101, { opHash: '0x20' })).toBeNull();
+        expect((await ledger.getReservation('0x20')).status).toBe('released');
+    });
+
     test('releaseExpired libera las reservas vencidas', async () => {
         await ledger.credit(orgId, 100);
         await ledger.reserve(orgId, 50, { opHash: '0x10', ttlSeconds: 1 });

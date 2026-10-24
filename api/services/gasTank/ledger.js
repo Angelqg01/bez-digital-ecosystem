@@ -96,11 +96,13 @@ async function reserve(orgId, maxCredits, { opHash, appId = null, sender = null,
     if (!Number.isInteger(maxCredits) || maxCredits <= 0) throw new Error('maxCredits debe ser un entero positivo');
     await ensureAccount(orgId);
     return tx(async (c) => {
-        const prev = await c.query('SELECT organization_id, max_cost_credits, status FROM gas_tank_reservations WHERE op_hash = $1', [opHash]);
+        const prev = await c.query('SELECT organization_id, max_cost_credits, status FROM gas_tank_reservations WHERE op_hash = $1 FOR UPDATE', [opHash]);
+        const reactivate = prev.rows.length > 0 && prev.rows[0].status === 'released';
         if (prev.rows.length) {
             const p = prev.rows[0];
             if (p.organization_id !== orgId) throw new Error('opHash ya usado por otra organización');
-            return { opHash, maxCredits: Number(p.max_cost_credits), status: p.status, reused: true };
+            // Una reserva LIBERADA no cuenta como existente: el saldo ya se devolvió, así que hay que volver a retirarlo.
+            if (!reactivate) return { opHash, maxCredits: Number(p.max_cost_credits), status: p.status, reused: true };
         }
         const upd = await c.query(
             `UPDATE gas_tank_accounts SET balance_credits = balance_credits - $2, updated_at = NOW()
@@ -109,6 +111,15 @@ async function reserve(orgId, maxCredits, { opHash, appId = null, sender = null,
             [orgId, maxCredits]
         );
         if (!upd.rows.length) return null;
+        if (reactivate) {
+            await c.query(
+                `UPDATE gas_tank_reservations SET status = 'reserved', max_cost_credits = $2, app_id = $3, sender = $4,
+                        valid_until = NOW() + ($5 || ' seconds')::interval, meta = $6::jsonb, updated_at = NOW()
+                  WHERE op_hash = $1`,
+                [opHash, maxCredits, appId, sender, String(ttlSeconds), JSON.stringify(meta)]
+            );
+            return { opHash, maxCredits, status: 'reserved', reused: false };
+        }
         await c.query(
             `INSERT INTO gas_tank_reservations (op_hash, organization_id, app_id, sender, max_cost_credits, valid_until, meta)
              VALUES ($1, $2, $3, $4, $5, NOW() + ($6 || ' seconds')::interval, $7::jsonb)`,
