@@ -40,10 +40,23 @@ function chainConfig(env = process.env) {
 }
 
 function defaultSigner(env = process.env) {
-    if (!env.GAS_PAYMASTER_SIGNER_KEY) throw new SponsorError('NOT_CONFIGURED', 503, 'Falta GAS_PAYMASTER_SIGNER_KEY: el patrocinio no está configurado');
+    if (env.GAS_PAYMASTER_KMS_KEY) {
+        try { return require('./kmsSigner').createKmsSigner({ keyVersion: env.GAS_PAYMASTER_KMS_KEY }); }
+        catch (e) { throw new SponsorError('NOT_CONFIGURED', 503, `Firmante KMS no disponible: ${e.message}`); }
+    }
+    if (!env.GAS_PAYMASTER_SIGNER_KEY) {
+        throw new SponsorError('NOT_CONFIGURED', 503, 'Falta GAS_PAYMASTER_KMS_KEY (o GAS_PAYMASTER_SIGNER_KEY en desarrollo): el patrocinio no está configurado');
+    }
+    // Una clave en variable de entorno es el patrón que el proyecto prohíbe: en producción solo con aceptación explícita.
+    if (env.NODE_ENV === 'production' && env.GAS_PAYMASTER_ALLOW_ENV_KEY !== 'true') {
+        throw new SponsorError('NOT_CONFIGURED', 503, 'En producción el paymaster firma con KMS (GAS_PAYMASTER_KMS_KEY); una clave en el entorno requiere GAS_PAYMASTER_ALLOW_ENV_KEY=true');
+    }
     const w = new ethers.Wallet(env.GAS_PAYMASTER_SIGNER_KEY);
-    return { address: w.address, signMessage: (bytes) => w.signMessage(bytes) };
+    return { getAddress: async () => w.address, signMessage: (bytes) => w.signMessage(bytes) };
 }
+
+/** Dirección del firmante: acepta la interfaz nueva (getAddress, async) y la de los tests (address). */
+const signerAddress = async (signer) => (typeof signer.getAddress === 'function' ? signer.getAddress() : signer.address);
 
 // chain y signer se resuelven al usarse (si no se inyectan): importar el módulo no exige tener el patrocinio configurado.
 function resolveDeps(deps = {}) {
@@ -106,7 +119,7 @@ async function sponsorUserOp({ orgId, appId, userOp: rawOp }, deps = {}) {
     const gasOnlyCredits = cfg.operationCostCredits({ gasUsed: Number(requiredGas), gasPriceGwei: Number(maxFeePerGas) / 1e9, polEur });
     const { feeBez } = await d.policy.evaluate({
         orgId, op, maxCostCredits: gasOnlyCredits,
-        chain: { chainId: d.chain.chainId, vault: d.chain.vault, bez: d.chain.bez, signerAddress: d.signer.address },
+        chain: { chainId: d.chain.chainId, vault: d.chain.vault, bez: d.chain.bez, signerAddress: await signerAddress(d.signer) },
     });
 
     let feeCredits = 0;
@@ -165,7 +178,7 @@ async function checkSponsorship({ orgId, appId, userOp: rawOp }, deps = {}) {
     const credits = cfg.operationCostCredits({ gasUsed: Math.max(1, Number(requiredGas)), gasPriceGwei: Math.max(1e-9, Number(maxFeePerGas) / 1e9), polEur });
     await d.policy.evaluate({
         orgId, op, maxCostCredits: credits,
-        chain: { chainId: d.chain.chainId, vault: d.chain.vault, bez: d.chain.bez, signerAddress: d.signer.address },
+        chain: { chainId: d.chain.chainId, vault: d.chain.vault, bez: d.chain.bez, signerAddress: await signerAddress(d.signer) },
     });
     const b = await d.ledger.getBalance(orgId);
     if (b.status !== 'active') throw new SponsorError('ACCOUNT_SUSPENDED', 403, 'La cuenta del Gas Tank está suspendida');
@@ -182,4 +195,4 @@ async function releaseSponsorship({ orgId, userOp: rawOp }, deps = {}) {
     return d.ledger.release(key);
 }
 
-module.exports = { issueFeeVoucher, sponsorUserOp, checkSponsorship, releaseSponsorship, chainConfig, SponsorError };
+module.exports = { issueFeeVoucher, sponsorUserOp, checkSponsorship, releaseSponsorship, chainConfig, defaultSigner, SponsorError };
