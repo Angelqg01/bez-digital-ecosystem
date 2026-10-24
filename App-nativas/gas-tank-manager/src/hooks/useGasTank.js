@@ -52,7 +52,9 @@ export function useGasTank({ withActivity = false, withPackages = false } = {}) 
 
   const reason = !token ? 'login' : !orgId ? 'organization' : null;
   const canRecharge = ['owner', 'admin', 'financial'].includes(activeOrganization?.my_role);
-  return { ...state, reason, orgName: activeOrganization?.name, canRecharge, refresh, checkout, saveSettings };
+  // Qué se patrocina con el dinero de la organización lo deciden el propietario y los administradores (PUT /policy).
+  const canEditPolicy = ['owner', 'admin'].includes(activeOrganization?.my_role);
+  return { ...state, reason, orgName: activeOrganization?.name, canRecharge, canEditPolicy, refresh, checkout, saveSettings, call };
 }
 
 export const eur = (n) => `${(Number(n) || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;

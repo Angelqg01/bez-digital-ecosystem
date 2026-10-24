@@ -299,22 +299,22 @@ Cada app se registra en `app_registry` con su `app_id`. La política de la organ
 > Las duraciones son orientativas para una persona a tiempo completo con ayuda de IA. Ninguna fase despliega contratos en mainnet ni mueve fondos sin **confirmación explícita de Yoel**.
 
 ### Fase 0: higiene y seguridad (1-2 días) 🔴 inmediata
-- [ ] Desactivar la auto-recarga del `gasMonitor`: que sólo arranque con `GAS_MONITOR_AUTORECHARGE=true` y, mientras tanto, sólo mida y alerte. Corregir las unidades (saldo nativo = POL).
+- [x] Desactivar la auto-recarga del `gasMonitor`: que sólo arranque con `GAS_MONITOR_AUTORECHARGE=true` y, mientras tanto, sólo mida y alerte. Corregir las unidades (saldo nativo = POL).
 - [ ] Revisar en Cloud Logging si `[GasMonitor] Recarga exitosa` aparece en producción y, si aparece, con qué transacciones.
-- [ ] Quitar `blockchainService.js` (código muerto con funciones inexistentes) y los datos inventados del frontend. En su lugar, estados vacíos honestos con "Beta privada".
-- [ ] Sacar la dirección `0x5c9b...6fBAA` de `Recharge.jsx`.
+- [x] Quitar `blockchainService.js` (código muerto con funciones inexistentes) y los datos inventados del frontend. En su lugar, estados vacíos honestos con "Beta privada".
+- [x] Sacar la dirección `0x5c9b...6fBAA` de `Recharge.jsx`.
 - [ ] Actualizar CLAUDE.md: Polygon testnet = **Amoy (80002)** (Mumbai está retirada).
 
 **Criterio de aceptación:** ningún proceso de la API transfiere fondos de forma autónoma y la app no muestra cifras ficticias.
 
 ### Fase 1: ledger, recarga y panel real, sin patrocinio on-chain (2-3 semanas)
-- [ ] Migración `gas_tank_*` + `api/config/gas-tank.js` + tests de margen.
-- [ ] `ledger.js` (reserva, liquidación, liberación, idempotencia) con tests unitarios y de concurrencia.
-- [ ] Recarga por Stripe Checkout + webhook (`checkout.session.completed`) → `recharge` en el ledger. Auto-recarga off-session con `PaymentIntent` y tope mensual. Facturas.
+- [x] Migración `gas_tank_*` + `api/config/gas-tank.js` + tests de margen.
+- [x] `ledger.js` (reserva, liquidación, liberación, idempotencia) con tests unitarios y de concurrencia.
+- [x] Recarga por Stripe Checkout + webhook (`checkout.session.completed`) → `recharge` en el ledger. Auto-recarga off-session con `PaymentIntent` y tope mensual. *Facturas: las emite Stripe; falta enlazarlas desde el panel.*
 - [ ] Rutas `/gateway/v1/gas/{balance,activity,estimate,recharge/checkout}` + scope `gas`.
 - [ ] Modo **relayer** vía `tx-signer` para apps nativas (anclajes de CargoLink y PureScan): carga el coste real al tanque.
-- [ ] Frontend conectado: Dashboard, Recharge, Activity, Alerts, Members.
-- [ ] `treasuryWatch.js` (alertas) en lugar del `gasMonitor`.
+- [ ] Frontend conectado: Dashboard, Recharge, Activity (Analytics), Policies y Settings hechos; faltan Alerts y Members.
+- [x] `treasuryWatch.js` (alertas) en lugar del `gasMonitor`: arranca con la API y el `gasMonitor` antiguo ya no.
 
 **Criterio de aceptación:** una empresa de prueba recarga 50 € en modo test de Stripe, una app nativa ancla 10 documentos por relayer y el panel muestra los 10 cargos con su transacción y el saldo cuadra al céntimo.
 
@@ -328,11 +328,11 @@ Cada app se registra en `app_registry` con su `app_id`. La política de la organ
 - [ ] Intención `paymaster.sign` en el `tx-signer` con topes propios.
 - [x] `policy.js` + `paymasterService.js` + `reconciler.js` + `userOp.js` (migración 074, rutas `fee-voucher`, `sponsor` y `sponsor/release` por organización, 24 + 8 tests; hashes con vectores de oro fijados también en Foundry). El conciliador liquida con `UserOperationEvent.actualGasCost`, con el precio de POL y la comisión de BEZ fijados al reservar.
 - [x] Adaptador **ERC-7677** (`services/gasTank/erc7677.js`, `routes/gas-tank-rpc.js`): `POST /api/rpc/paymaster` (cabecera `x-api-key`) y `/api/rpc/paymaster/:appKey` (clave en la URL, para SDKs de wallets) con `pm_getPaymasterStubData` (valida política y saldo, sin reservar) y `pm_getPaymasterData` (firma y reserva). Acepta la UserOp desempaquetada v0.7/v0.8; la app necesita el scope `gas`. Un reintento de la wallet rehace la reserva en lugar de duplicarla.
-- [x] Firma por **Google Cloud KMS** (`services/gasTank/kmsSigner.js`, `GAS_PAYMASTER_KMS_KEY`): la dirección sale de la clave pública, s baja y `v` calculado, probado con un KMS simulado. En producción una clave en el entorno (`GAS_PAYMASTER_SIGNER_KEY`) se rechaza salvo `GAS_PAYMASTER_ALLOW_ENV_KEY=true`. **Falta añadir `@google-cloud/kms` a las dependencias del API** (se carga bajo demanda y, si no está, el patrocinio responde 503 explicándolo) y crear la clave (`EC_SIGN_SECP256K1_SHA256`) con su permiso `signerVerifier` para la cuenta de servicio del API.
+- [x] Firma por **Google Cloud KMS** (`services/gasTank/kmsSigner.js`, `GAS_PAYMASTER_KMS_KEY`): la dirección sale de la clave pública, s baja y `v` calculado, probado con un KMS simulado. En producción una clave en el entorno (`GAS_PAYMASTER_SIGNER_KEY`) se rechaza salvo `GAS_PAYMASTER_ALLOW_ENV_KEY=true`. `@google-cloud/kms` 6.2.1 ya está en las dependencias del API (con `@grpc/grpc-js` ≥ 1.14.5). **Falta crear la clave** (`EC_SIGN_SECP256K1_SHA256`, protección HSM) con su permiso `signerVerifier` para la cuenta de servicio del API, y fijar `GAS_PAYMASTER_KMS_KEY`.
 - [x] Límites de tasa del endpoint público: por IP (300/min) y por clave (120/min), antes de autenticar (`GAS_RPC_IP_RATE_LIMIT`, `GAS_RPC_KEY_RATE_LIMIT`).
 - [ ] Despliegue en **Amoy**, con bundler de proveedor. *Preparado y simulado; falta una clave de pruebas con POL de Amoy y un RPC alcanzable. Ver `GAS_TANK_DESPLIEGUE.md`.*
 - [ ] Hub/RWA: tokenización en un clic (lote Vault → approve → `tokenizeAsset`). BEZ Wallet: transferencias patrocinadas con `Simple7702Account`.
-- [ ] Panel: Policies (plantillas), Budgets, Apps (URL ERC-7677), Simulator.
+- [x] Panel **Policies** (`/policies` en gas.bezhas.com) sobre `GET/PUT /gas-tank/policy`, `POST /gas-tank/simulate` y `GET /gas-tank/apps` (`services/gasTank/policyAdmin.js`): plantillas de tokenización RWA (fábricas de activos e industrial, selector real de `tokenizeAsset`, comisión máx. 100 BEZ), contratos y funciones (selector o firma), presupuestos (tope por operación hasta 1.000 € y diario hasta 10.000 €), simulador sin reserva con los mismos motivos de rechazo que el patrocinio real, y la URL ERC-7677 de cada app. Solo owner/admin editan; exigir KYB no se puede quitar desde el panel, y el token BEZ, la bóveda, el EntryPoint y el paymaster no se aceptan como destino normal. Probado de punta a punta con la API local y un perfil de prueba.
 - [ ] **Revisión legal MiCA** del modelo de créditos y de la recarga con BEZ.
 - [ ] Auditoría externa de los contratos antes de mainnet.
 - [ ] Despliegue en **Polygon 137** (requiere confirmación). *Script `DeployGasTank.s.sol` listo y simulado en fork; bloqueado por la auditoría y por un multisig con umbral ≥ 2 como admin (el Safe actual es 1 de 3). Ver `GAS_TANK_DESPLIEGUE.md`.* deploy inicial en el EntryPoint con tope bajo. Actualizar `deployments/137.json`, sync-daemon y la tabla de contratos de CLAUDE.md.

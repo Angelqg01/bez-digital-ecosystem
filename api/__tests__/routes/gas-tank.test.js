@@ -17,6 +17,17 @@ const mockLedger = {
 jest.mock('../../services/gasTank/ledger', () => mockLedger);
 const mockSvc = { issueFeeVoucher: jest.fn(), sponsorUserOp: jest.fn(), releaseSponsorship: jest.fn() };
 jest.mock('../../services/gasTank/paymasterService', () => mockSvc);
+const mockPolicyAdmin = {
+    getPolicy: jest.fn().mockResolvedValue({ active: false, allowedTargets: [] }),
+    savePolicy: jest.fn(),
+    simulate: jest.fn().mockResolvedValue({ patrocinable: true, motivos: [] }),
+    listApps: jest.fn().mockResolvedValue([]),
+};
+jest.mock('../../services/gasTank/policyAdmin', () => {
+    const real = jest.requireActual('../../services/gasTank/policyAdmin');
+    return { ...mockPolicyAdmin, TEMPLATES: real.TEMPLATES, PolicyInputError: real.PolicyInputError,
+        MAX_COST_PER_OP_CREDITS: real.MAX_COST_PER_OP_CREDITS, MAX_DAILY_CAP_CREDITS: real.MAX_DAILY_CAP_CREDITS };
+});
 const mockCreate = jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.test/s1' });
 jest.mock('stripe', () => () => ({ checkout: { sessions: { create: (...a) => mockCreate(...a) } } }));
 
@@ -127,5 +138,38 @@ describe('patrocinio ERC-4337', () => {
         expect(res.status).toBe(200);
         expect(res.body.voucher).toMatchObject({ nonce: '0x1', amount: '5' });
         expect((await request(app).post(`${base}/sponsor/release`).set(h).send({})).status).toBe(400);
+    });
+});
+
+describe('política de patrocinio', () => {
+    const { PolicyInputError } = jest.requireActual('../../services/gasTank/policyAdmin');
+
+    test('cualquier miembro la ve, con las plantillas', async () => {
+        const res = await request(app).get(`${base}/policy`).set('x-role', 'auditor');
+        expect(res.status).toBe(200);
+        expect(res.body.templates.map((t) => t.id)).toEqual(expect.arrayContaining(['rwa-activos', 'rwa-industrial']));
+        expect(res.body.limits.maxCostCreditsPerOp).toBeGreaterThan(0);
+    });
+
+    test('solo owner y admin la cambian: un developer o un financiero no', async () => {
+        for (const rol of ['developer', 'operator', 'financial', 'auditor']) {
+            expect((await request(app).put(`${base}/policy`).set('x-role', rol).send({ active: false })).status).toBe(403);
+        }
+        mockPolicyAdmin.savePolicy.mockResolvedValueOnce({ active: false });
+        expect((await request(app).put(`${base}/policy`).set('x-role', 'admin').send({ active: false })).status).toBe(200);
+        expect(mockPolicyAdmin.savePolicy).toHaveBeenCalledWith('org-1', { active: false });
+    });
+
+    test('un dato inválido es 400 con el campo', async () => {
+        mockPolicyAdmin.savePolicy.mockRejectedValueOnce(new PolicyInputError('Dirección de contrato no válida', 'allowedTargets[0].address'));
+        const res = await request(app).put(`${base}/policy`).set('x-role', 'owner').send({ allowedTargets: [{ address: 'x' }] });
+        expect(res.status).toBe(400);
+        expect(res.body).toMatchObject({ code: 'INVALID_POLICY', field: 'allowedTargets[0].address' });
+    });
+
+    test('simular y listar apps está abierto a los miembros', async () => {
+        expect((await request(app).post(`${base}/simulate`).set('x-role', 'developer').send({ calls: [] })).status).toBe(200);
+        expect((await request(app).get(`${base}/apps`).set('x-role', 'operator')).status).toBe(200);
+        expect((await request(app).get(`${base}/apps`)).status).toBe(403);
     });
 });

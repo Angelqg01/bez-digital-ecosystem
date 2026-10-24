@@ -9,6 +9,10 @@
  *   POST /api/organizations/:orgId/gas-tank/sponsor             { appId, userOp }   → paymasterAndData firmado
  *   POST /api/organizations/:orgId/gas-tank/sponsor/release     { userOp }
  *   PATCH /api/organizations/:orgId/gas-tank/settings           { autoRecharge, thresholdEur, rechargeEur, monthlyCapEur }
+ *   GET  /api/organizations/:orgId/gas-tank/policy              política de patrocinio + plantillas
+ *   PUT  /api/organizations/:orgId/gas-tank/policy              { active, allowedTargets, maxCostCreditsPerOp, dailyCapCredits }
+ *   POST /api/organizations/:orgId/gas-tank/simulate            { calls: [{ target, selector }], gasUsed, gasPriceGwei, protocolFeeBez }
+ *   GET  /api/organizations/:orgId/gas-tank/apps                apps de la organización y su URL ERC-7677
  *
  * La recarga se acredita desde el webhook de Stripe (checkout.session.completed con
  * metadata.gas_tank_org_id → services/gasTank/recharge), nunca desde esta ruta.
@@ -20,12 +24,15 @@ const { authenticateToken, requireOrgRole } = require('../middleware/security');
 const cfg = require('../config/gas-tank');
 const ledger = require('../services/gasTank/ledger');
 const paymasterService = require('../services/gasTank/paymasterService');
+const policyAdmin = require('../services/gasTank/policyAdmin');
 
 const router = Router();
 
 const ANY_MEMBER = ['owner', 'admin', 'developer', 'auditor', 'financial', 'operator'];
 const RECHARGERS = ['owner', 'admin', 'financial'];
 const SPONSORS = ['owner', 'admin', 'developer', 'operator'];
+// Quién decide qué se patrocina con el dinero de la organización: no un developer ni un operador.
+const POLICY_EDITORS = ['owner', 'admin'];
 
 // Perezoso: ver usageBilling.js (sin STRIPE_SECRET_KEY no debe caer toda la API).
 let _stripe = null;
@@ -183,6 +190,42 @@ router.patch('/:orgId/gas-tank/settings', authenticateToken, requireOrgRole(...R
         [orgId, vals.auto ?? null, vals.thr ?? null, vals.rec ?? null, vals.cap !== undefined, vals.cap ?? null]
     );
     res.json({ success: true, ...(await ledger.getBalance(orgId)) });
+});
+
+// ── Política de patrocinio (panel: Políticas, Presupuestos, Simulador, Apps) ──
+const policyError = (res, err) => {
+    if (err instanceof policyAdmin.PolicyInputError) return res.status(400).json({ error: err.message, code: err.code, field: err.field });
+    return res.status(500).json({ error: 'No se pudo procesar la política' });
+};
+
+router.get('/:orgId/gas-tank/policy', authenticateToken, requireOrgRole(...ANY_MEMBER), async (req, res) => {
+    try {
+        res.json({
+            success: true,
+            policy: await policyAdmin.getPolicy(req.params.orgId),
+            templates: policyAdmin.TEMPLATES,
+            limits: { maxCostCreditsPerOp: policyAdmin.MAX_COST_PER_OP_CREDITS, maxDailyCapCredits: policyAdmin.MAX_DAILY_CAP_CREDITS },
+            eurPerCredit: cfg.EUR_PER_CREDIT,
+        });
+    } catch (err) { policyError(res, err); }
+});
+
+router.put('/:orgId/gas-tank/policy', authenticateToken, requireOrgRole(...POLICY_EDITORS), async (req, res) => {
+    try {
+        res.json({ success: true, policy: await policyAdmin.savePolicy(req.params.orgId, req.body || {}) });
+    } catch (err) { policyError(res, err); }
+});
+
+router.post('/:orgId/gas-tank/simulate', authenticateToken, requireOrgRole(...ANY_MEMBER), async (req, res) => {
+    try {
+        res.json({ success: true, ...(await policyAdmin.simulate(req.params.orgId, req.body || {})) });
+    } catch (err) { policyError(res, err); }
+});
+
+router.get('/:orgId/gas-tank/apps', authenticateToken, requireOrgRole(...ANY_MEMBER), async (req, res) => {
+    try {
+        res.json({ success: true, apps: await policyAdmin.listApps(req.params.orgId) });
+    } catch (err) { policyError(res, err); }
 });
 
 module.exports = router;
