@@ -45,9 +45,14 @@ contract PaymasterEntryPointTest is Test {
     uint256 signerPk = 0xA11CE;
     bytes32 constant ORG = keccak256("acme");
 
+    /// Gancho: las pruebas sobre un fork de Polygon usan el EntryPoint v0.8 que ya está desplegado allí.
+    function _deployEntryPoint() internal virtual returns (EntryPoint) {
+        return new EntryPoint();
+    }
+
     function setUp() public {
         vm.warp(1_800_000_000);
-        ep = new EntryPoint();
+        ep = _deployEntryPoint();
         SimpleAccountFactory f = new SimpleAccountFactory(IEntryPoint(address(ep)));
         vm.prank(address(ep.senderCreator())); // v0.8: la fábrica solo acepta al SenderCreator del EntryPoint
         account = f.createAccount(vm.addr(ownerPk), 0);

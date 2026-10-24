@@ -330,12 +330,12 @@ Cada app se registra en `app_registry` con su `app_id`. La política de la organ
 - [x] Adaptador **ERC-7677** (`services/gasTank/erc7677.js`, `routes/gas-tank-rpc.js`): `POST /api/rpc/paymaster` (cabecera `x-api-key`) y `/api/rpc/paymaster/:appKey` (clave en la URL, para SDKs de wallets) con `pm_getPaymasterStubData` (valida política y saldo, sin reservar) y `pm_getPaymasterData` (firma y reserva). Acepta la UserOp desempaquetada v0.7/v0.8; la app necesita el scope `gas`. Un reintento de la wallet rehace la reserva en lugar de duplicarla.
 - [x] Firma por **Google Cloud KMS** (`services/gasTank/kmsSigner.js`, `GAS_PAYMASTER_KMS_KEY`): la dirección sale de la clave pública, s baja y `v` calculado, probado con un KMS simulado. En producción una clave en el entorno (`GAS_PAYMASTER_SIGNER_KEY`) se rechaza salvo `GAS_PAYMASTER_ALLOW_ENV_KEY=true`. **Falta añadir `@google-cloud/kms` a las dependencias del API** (se carga bajo demanda y, si no está, el patrocinio responde 503 explicándolo) y crear la clave (`EC_SIGN_SECP256K1_SHA256`) con su permiso `signerVerifier` para la cuenta de servicio del API.
 - [x] Límites de tasa del endpoint público: por IP (300/min) y por clave (120/min), antes de autenticar (`GAS_RPC_IP_RATE_LIMIT`, `GAS_RPC_KEY_RATE_LIMIT`).
-- [ ] Despliegue en **Amoy**, con bundler de proveedor.
+- [ ] Despliegue en **Amoy**, con bundler de proveedor. *Preparado y simulado; falta una clave de pruebas con POL de Amoy y un RPC alcanzable. Ver `GAS_TANK_DESPLIEGUE.md`.*
 - [ ] Hub/RWA: tokenización en un clic (lote Vault → approve → `tokenizeAsset`). BEZ Wallet: transferencias patrocinadas con `Simple7702Account`.
 - [ ] Panel: Policies (plantillas), Budgets, Apps (URL ERC-7677), Simulator.
 - [ ] **Revisión legal MiCA** del modelo de créditos y de la recarga con BEZ.
 - [ ] Auditoría externa de los contratos antes de mainnet.
-- [ ] Despliegue en **Polygon 137** (requiere confirmación), deploy inicial en el EntryPoint con tope bajo. Actualizar `deployments/137.json`, sync-daemon y la tabla de contratos de CLAUDE.md.
+- [ ] Despliegue en **Polygon 137** (requiere confirmación). *Script `DeployGasTank.s.sol` listo y simulado en fork; bloqueado por la auditoría y por un multisig con umbral ≥ 2 como admin (el Safe actual es 1 de 3). Ver `GAS_TANK_DESPLIEGUE.md`.* deploy inicial en el EntryPoint con tope bajo. Actualizar `deployments/137.json`, sync-daemon y la tabla de contratos de CLAUDE.md.
 
 **Criterio de aceptación:** en Polygon, un usuario sin POL ni BEZ tokeniza un activo desde el Hub y el tanque de su empresa recibe un único cargo (gas + comisión + markup), conciliado con el `UserOperationEvent`.
 
