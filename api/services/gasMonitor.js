@@ -3,11 +3,28 @@ const { query } = require('../db/pool');
 const { getProvider, getSigner } = require('./contractService');
 const { sendBEZ } = require('./txService');
 
+/**
+ * OBSOLETO: ya no se arranca desde index.js; lo sustituye services/gasTank/treasuryWatch.js (sólo mide y avisa).
+ * Se conserva con su test mientras se retira el modelo antiguo de gas_balances/gas_tank_address.
+ *
+ * Mide el saldo NATIVO (POL en Polygon) de cada gas_tank_address y avisa si baja
+ * del umbral. Ese saldo no es BEZ: antes se comparaba y se registraba como BEZ.
+ *
+ * La recarga automática está APAGADA por defecto. Mueve fondos reales desde
+ * DEPLOYER_PRIVATE_KEY y este daemon corre en cada instancia de la API, así que
+ * sólo se activa a propósito con GAS_MONITOR_AUTORECHARGE=true. El diseño
+ * definitivo (rellenado aprobado vía tx-signer) está en
+ * docs/developer/GAS_TANK_PLAN_DESARROLLO.md.
+ */
 class GasMonitorService {
     constructor() {
-        this.MIN_GAS_THRESHOLD = ethers.parseEther("1.0"); // 1 BEZ limit
-        this.RECHARGE_AMOUNT_BEZ = 50;
+        this.MIN_NATIVE_THRESHOLD = ethers.parseEther("1.0"); // 1 POL
+        this.RECHARGE_AMOUNT_NATIVE = 50;
         this.isRunning = false;
+    }
+
+    get autoRechargeEnabled() {
+        return process.env.GAS_MONITOR_AUTORECHARGE === 'true';
     }
 
     /**
@@ -39,7 +56,8 @@ class GasMonitorService {
                 const balance = await provider.getBalance(enterprise.gas_tank_address);
                 const objBalance = parseFloat(ethers.formatEther(balance));
 
-                // Upsert balance in DB
+                // Upsert balance in DB. OJO: la columna se llama balance_bez pero guarda saldo nativo
+                // hasta que la migración de la fase 1 la sustituya.
                 const existing = await query(
                     'SELECT id FROM gas_balances WHERE enterprise_id = $1',
                     [enterprise.id]
@@ -56,13 +74,17 @@ class GasMonitorService {
                     );
                 }
 
-                console.log(`📊 [GasMonitor] Saldo de ${enterprise.name}: ${objBalance} BEZ`);
+                console.log(`📊 [GasMonitor] Saldo nativo de ${enterprise.name}: ${objBalance}`);
 
-                if (balance < this.MIN_GAS_THRESHOLD) {
-                    console.log(`⚠️ [GasMonitor] Gas bajo para ${enterprise.name} (${objBalance} < 1.0). Auto-Recarga...`);
+                if (balance < this.MIN_NATIVE_THRESHOLD) {
+                    if (!this.autoRechargeEnabled) {
+                        console.warn(`⚠️ [GasMonitor] Saldo bajo para ${enterprise.name} (${objBalance} < 1.0). Auto-recarga desactivada: sólo aviso.`);
+                        continue;
+                    }
+                    console.log(`⚠️ [GasMonitor] Saldo bajo para ${enterprise.name} (${objBalance} < 1.0). Auto-Recarga...`);
 
                     try {
-                        const record = await sendBEZ(enterprise.gas_tank_address, this.RECHARGE_AMOUNT_BEZ, {
+                        const record = await sendBEZ(enterprise.gas_tank_address, this.RECHARGE_AMOUNT_NATIVE, {
                             contract: 'GasTankRecharge',
                             method: 'autoRecharge',
                         });

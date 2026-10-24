@@ -47,6 +47,7 @@ const crypto = require('crypto');
 const fxService = require('../services/fxService');
 const { query } = require('../db/pool');
 const planSubscriptions = require('../services/planSubscriptions');
+const gasTankRecharge = require('../services/gasTank/recharge');
 const starterBilling = require('../services/starterBilling');
 const { centimosUsdABezWei, precioUsd } = require('../config/bez-price');
 const retryQueue = require('../services/webhookRetryQueue');
@@ -606,6 +607,17 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
           sessionId: session.id,
           payment_status: session.payment_status,
         });
+        break;
+      }
+
+      // Recarga del Gas Tank: acredita créditos a la organización (idempotente por sesión).
+      if (gasTankRecharge.isGasTankSession(session)) {
+        try {
+          const r = await gasTankRecharge.creditFromSession(session);
+          log.info('Stripe', 'Gas Tank recargado', { sessionId: session.id, orgId: r.orgId, credits: r.credits, applied: r.applied });
+        } catch (err) {
+          log.error('Stripe', 'Gas Tank recharge failed', { sessionId: session.id, error: err.message });
+        }
         break;
       }
 

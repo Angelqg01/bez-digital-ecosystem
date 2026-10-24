@@ -123,3 +123,6 @@ Billetera*
 *frases*recuperaci*
 *seed*phrase*
 *recovery*phrase*
+
+# Librería GPL-3.0 para las pruebas del perfil aa (se baja con smart-contracts/script/setup-aa-lib.sh)
+smart-contracts/lib/account-abstraction/

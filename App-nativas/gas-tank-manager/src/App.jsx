@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Recharge from './pages/Recharge';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import Policies from './pages/Policies';
 import { AuthProvider, useAuth, HeaderAuthButton, LockScreen } from './context/AuthProvider';
 import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 import { useLocation } from 'react-router-dom';
@@ -15,6 +16,7 @@ import { useSidebar, AppHeader, SidebarBackdrop } from '../../_shared/AppShell.j
 const NAV = [
   { path: '/', icon: '📊', label: 'Dashboard' },
   { path: '/recharge', icon: '💳', label: 'Recharge' },
+  { path: '/policies', icon: '🛡️', label: 'Policies' },
   { path: '/analytics', icon: '📈', label: 'Analytics' },
   { path: '/settings', icon: '⚙️', label: 'Settings' },
 ];
@@ -94,6 +96,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/recharge" element={<Recharge />} />
+            <Route path="/policies" element={<Policies />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
