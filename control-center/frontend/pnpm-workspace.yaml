@@ -46,6 +46,8 @@ overrides:
   ws: '^8.21.0'
   # source-map-js llega por next > postcss: DoS del bucle de eventos (GHSA-68fv-2mgg-jv7q).
   source-map-js: '^1.2.2'
+  # zod <4.6.6 (llega por @hookform/resolvers): aviso alto.
+  zod@4: '^4.6.6'
 
 # pnpm 11 convierte "hay builds ignorados" en error (ERR_PNPM_IGNORED_BUILDS), y
 # ese error aborta el `install` implícito que precede a CUALQUIER script: `pnpm
