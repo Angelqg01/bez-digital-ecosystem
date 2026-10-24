@@ -19,7 +19,8 @@ USER bezhas
 
 EXPOSE 3002
 
+# Puerto desde PORT: el compose lo pone a 4001 y el 3002 fijo daba siempre unhealthy.
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD node -e "fetch('http://localhost:3002/api/mcp/health').then(r=>{if(!r.ok) throw new Error('unhealthy');}).catch(()=>process.exit(1))"
+    CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3002)+'/api/mcp/health').then(r=>{if(!r.ok) throw new Error('unhealthy');}).catch(()=>process.exit(1))"
 
 CMD ["node", "server.js"]
