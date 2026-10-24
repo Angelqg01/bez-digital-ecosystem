@@ -1,6 +1,7 @@
 /**
  * Gas Tank — auto-recarga y ajustes contra un Postgres real (ver gasTankLedger.test.js).
- * Requiere además la migración 073 y una tabla organization_billing_profiles mínima (la crea el test).
+ * Requiere además la migración 073. Si no existe organization_billing_profiles (base mínima), el test crea una versión reducida;
+ * con el esquema completo (node db/migrate.js) usa la real.
  */
 const URL = process.env.GAS_TANK_TEST_DATABASE_URL;
 const maybe = URL ? describe : describe.skip;
@@ -28,7 +29,7 @@ maybe('gasTank/autoRecharge (Postgres real)', () => {
         mockPi.mockReset(); mockMail.mockClear();
         await db.query('TRUNCATE gas_tank_ledger, gas_tank_reservations, gas_tank_accounts, organization_billing_profiles, organizations CASCADE');
         orgId = (await db.query(`INSERT INTO organizations (name) VALUES ('Acme') RETURNING id`)).rows[0].id;
-        await db.query(`INSERT INTO organization_billing_profiles VALUES ($1, 'fin@acme.test', 'cus_1', 'pm_1')`, [orgId]);
+        await db.query(`INSERT INTO organization_billing_profiles (organization_id, billing_email, stripe_customer_id, stripe_default_payment_method_id) VALUES ($1, 'fin@acme.test', 'cus_1', 'pm_1')`, [orgId]);
         await ledger.ensureAccount(orgId);
         await db.query(`UPDATE gas_tank_accounts SET auto_recharge_enabled = TRUE, threshold_credits = 10000, recharge_credits = 50000 WHERE organization_id = $1`, [orgId]);
     });
