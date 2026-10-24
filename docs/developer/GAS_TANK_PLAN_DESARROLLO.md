@@ -321,7 +321,8 @@ Cada app se registra en `app_registry` con su `app_id`. La política de la organ
 > **Hallazgo (2026-10-24) sobre el `tx-signer`:** hoy sólo firma **transferencias ERC-20 desde la tesorería con 2 aprobaciones humanas EIP-712** (`verify.js` rechaza cualquier otra intención). No sirve ni para el relayer de la fase 1 ni para firmar UserOperations: exigir dos personas por cada patrocinio es inviable. Por eso (a) la fase 1 **mide** las operaciones que ya envían las claves de operador de la API (`gasTank/meter.js`), y (b) la fase 2 necesita una **clave de verificación del paymaster distinta, sin fondos** (solo firma `paymasterAndData`; el dinero está en el depósito del EntryPoint, que se rellena con aprobación), con topes propios en el firmante y fuera de la tesorería.
 
 ### Fase 2: paymaster ERC-4337 y tokenización patrocinada (3-4 semanas)
-- [ ] `BeZhasVerifyingPaymaster` + `GasTankVault` en Foundry, con fuzzing de límites y reglas ERC-7562. Tests de integración con EntryPoint v0.8 en Anvil.
+- [x] `BeZhasVerifyingPaymaster` + `GasTankVault` en `smart-contracts/src/gas/` con 27 tests de Foundry (firma, ventana de validez, topes, suspensión, pausa, reuso de nonce, tope diario, fuzz). Pasan contra un EntryPoint simulado.
+- [ ] Integración con el **EntryPoint v0.8 real** en Anvil y simulación con las reglas ERC-7562 de un bundler. Pendiente de decidir la librería (`eth-infinitism/account-abstraction`): hoy el contrato usa un `IEntryPointV8.sol` mínimo propio con la estructura pública del estándar.
 - [ ] Intención `paymaster.sign` en el `tx-signer` con topes propios.
 - [ ] `paymasterService.js` (ERC-7677) + `policy.js` + `reconciler.js`.
 - [ ] Despliegue en **Amoy**, con bundler de proveedor.
