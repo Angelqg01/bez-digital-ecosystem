@@ -630,6 +630,7 @@ async function shutdown(signal) {
   // 4. Detener gas monitor daemon
   try {
     require('./services/gasTank/treasuryWatch').stop();
+    require('./services/gasTank/reconciler').stop();
     require('./services/gasTank/autoRecharge').stopSweep();
     gcpLogger.info('[SHUTDOWN] Gas monitor stopped');
   } catch (_) { /* no crítico */ }
@@ -697,6 +698,8 @@ async function startServer() {
   // El gasMonitor antiguo ya no arranca: mezclaba unidades y enviaba fondos desde cada instancia.
   // Su sustituto sólo mide y avisa (services/gasTank/treasuryWatch.js).
   require('./services/gasTank/treasuryWatch').start();
+  // Conciliador del paymaster ERC-4337: solo arranca si el patrocinio está configurado (GAS_TANK_PAYMASTER…).
+  if (require('./services/gasTank/reconciler').start()) gcpLogger.info('[STARTUP] Gas Tank reconciler started (30s)');
   require('./services/gasTank/autoRecharge').startSweep();
   gcpLogger.info('[STARTUP] Gas treasury watch started (5 min, sólo avisa)');
 

@@ -326,7 +326,8 @@ Cada app se registra en `app_registry` con su `app_id`. La política de la organ
 - [x] `BeZhasVerifyingPaymaster` + `GasTankVault` en `smart-contracts/src/gas/` con 27 tests de Foundry (firma, ventana de validez, topes, suspensión, pausa, reuso de nonce, tope diario, fuzz). Pasan contra un EntryPoint simulado.
 - [x] Integración con el **EntryPoint v0.8 real** (`eth-infinitism/account-abstraction` v0.8.0, commit fijado): `smart-contracts/test-aa/`, 11 tests con `script/setup-aa-lib.sh` y `FOUNDRY_PROFILE=aa forge test`. Cubre una UserOp patrocinada de una cuenta sin ETH, firma/ventana/organización/pausa rechazadas por el EntryPoint real (AA32/AA33/AA34), nonce repetido, llamada revertida cobrada y el lote completo de tokenización (la bóveda aporta los 100 BEZ, el paymaster paga el gas, la fábrica cobra su comisión). Pendiente: simulación con las reglas ERC-7562 de un bundler.
 - [ ] Intención `paymaster.sign` en el `tx-signer` con topes propios.
-- [ ] `paymasterService.js` (ERC-7677) + `policy.js` + `reconciler.js`.
+- [x] `policy.js` + `paymasterService.js` + `reconciler.js` + `userOp.js` (migración 074, rutas `fee-voucher`, `sponsor` y `sponsor/release` por organización, 24 + 8 tests; hashes con vectores de oro fijados también en Foundry). El conciliador liquida con `UserOperationEvent.actualGasCost`, con el precio de POL y la comisión de BEZ fijados al reservar.
+- [ ] Adaptador **ERC-7677** (`pm_getPaymasterStubData`/`pm_getPaymasterData`) y formato desempaquetado de UserOp para wallets de terceros, más la firma por **KMS** (hoy la clave de verificación sale de `GAS_PAYMASTER_SIGNER_KEY`).
 - [ ] Despliegue en **Amoy**, con bundler de proveedor.
 - [ ] Hub/RWA: tokenización en un clic (lote Vault → approve → `tokenizeAsset`). BEZ Wallet: transferencias patrocinadas con `Simple7702Account`.
 - [ ] Panel: Policies (plantillas), Budgets, Apps (URL ERC-7677), Simulator.

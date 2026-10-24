@@ -15,6 +15,8 @@ const mockLedger = {
     activity: jest.fn().mockResolvedValue([{ id: 'x', kind: 'recharge', credits: 1000 }]),
 };
 jest.mock('../../services/gasTank/ledger', () => mockLedger);
+const mockSvc = { issueFeeVoucher: jest.fn(), sponsorUserOp: jest.fn(), releaseSponsorship: jest.fn() };
+jest.mock('../../services/gasTank/paymasterService', () => mockSvc);
 const mockCreate = jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.test/s1' });
 jest.mock('stripe', () => () => ({ checkout: { sessions: { create: (...a) => mockCreate(...a) } } }));
 
@@ -84,5 +86,46 @@ describe('PATCH settings', () => {
         expect(mockQuery.mock.calls[0][1]).toEqual(['org-1', null, null, null, true, null]);
         expect((await request(app).patch(`${base}/settings`).set(h).send({ rechargeEur: 1 })).status).toBe(400);
         expect((await request(app).patch(`${base}/settings`).set({ 'x-role': 'auditor' }).send({ autoRecharge: false })).status).toBe(403);
+    });
+});
+
+describe('patrocinio ERC-4337', () => {
+    const h = { 'x-role': 'developer' };
+    beforeEach(() => Object.values(mockSvc).forEach((f) => f.mockReset()));
+
+    test('sponsor: roles de desarrollo sí, auditor/financiero no; devuelve el paymasterAndData', async () => {
+        mockSvc.sponsorUserOp.mockResolvedValue({ paymasterAndData: '0xabc', maxCostWei: 10n ** 18n, maxCostCredits: 12 });
+        for (const role of ['auditor', 'financial']) {
+            expect((await request(app).post(`${base}/sponsor`).set({ 'x-role': role }).send({ appId: 'a', userOp: {} })).status).toBe(403);
+        }
+        const res = await request(app).post(`${base}/sponsor`).set(h).send({ appId: 'a', userOp: { sender: '0x1' } });
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject({ paymasterAndData: '0xabc', maxCostWei: '1000000000000000000', maxCostCredits: 12 });
+        expect(mockSvc.sponsorUserOp).toHaveBeenCalledWith({ orgId: 'org-1', appId: 'a', userOp: { sender: '0x1' } });
+    });
+
+    test('los errores del servicio conservan su estado (402, 403, 503) y los internos no filtran detalles', async () => {
+        const mk = (status, code, message) => Object.assign(new Error(message), { status, code });
+        mockSvc.sponsorUserOp.mockRejectedValueOnce(mk(402, 'INSUFFICIENT_GAS_TANK', 'sin saldo'));
+        expect((await request(app).post(`${base}/sponsor`).set(h).send({ appId: 'a', userOp: {} })).body).toMatchObject({ code: 'INSUFFICIENT_GAS_TANK' });
+        mockSvc.sponsorUserOp.mockRejectedValueOnce(mk(403, 'TARGET_NOT_ALLOWED', 'no permitido'));
+        expect((await request(app).post(`${base}/sponsor`).set(h).send({ appId: 'a', userOp: {} })).status).toBe(403);
+        mockSvc.sponsorUserOp.mockRejectedValueOnce(mk(503, 'NOT_CONFIGURED', 'Falta GAS_TANK_PAYMASTER'));
+        expect((await request(app).post(`${base}/sponsor`).set(h).send({ appId: 'a', userOp: {} })).status).toBe(503);
+        mockSvc.sponsorUserOp.mockRejectedValueOnce(new Error('connection to db:5432 refused'));
+        const res = await request(app).post(`${base}/sponsor`).set(h).send({ appId: 'a', userOp: {} });
+        expect(res.status).toBe(500);
+        expect(JSON.stringify(res.body)).not.toContain('5432');
+    });
+
+    test('fee-voucher valida el selector y el importe; release valida el cuerpo', async () => {
+        mockSvc.issueFeeVoucher.mockResolvedValue({ nonce: '0x1', amount: 5n });
+        const ok = { appId: 'a', sender: '0x1', target: '0x2', selector: '0x12345678', amountBez: 100 };
+        expect((await request(app).post(`${base}/fee-voucher`).set(h).send({ ...ok, selector: '0x12' })).status).toBe(400);
+        expect((await request(app).post(`${base}/fee-voucher`).set(h).send({ ...ok, amountBez: 0 })).status).toBe(400);
+        const res = await request(app).post(`${base}/fee-voucher`).set(h).send(ok);
+        expect(res.status).toBe(200);
+        expect(res.body.voucher).toMatchObject({ nonce: '0x1', amount: '5' });
+        expect((await request(app).post(`${base}/sponsor/release`).set(h).send({})).status).toBe(400);
     });
 });

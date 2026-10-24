@@ -5,6 +5,9 @@
  *   GET  /api/organizations/:orgId/gas-tank/balance
  *   GET  /api/organizations/:orgId/gas-tank/activity?limit=&before=
  *   POST /api/organizations/:orgId/gas-tank/recharge/checkout   { packageId } | { amountEur }
+ *   POST /api/organizations/:orgId/gas-tank/fee-voucher         { appId, sender, target, selector, amountBez }
+ *   POST /api/organizations/:orgId/gas-tank/sponsor             { appId, userOp }   → paymasterAndData firmado
+ *   POST /api/organizations/:orgId/gas-tank/sponsor/release     { userOp }
  *   PATCH /api/organizations/:orgId/gas-tank/settings           { autoRecharge, thresholdEur, rechargeEur, monthlyCapEur }
  *
  * La recarga se acredita desde el webhook de Stripe (checkout.session.completed con
@@ -16,11 +19,13 @@ const { query } = require('../db/pool');
 const { authenticateToken, requireOrgRole } = require('../middleware/security');
 const cfg = require('../config/gas-tank');
 const ledger = require('../services/gasTank/ledger');
+const paymasterService = require('../services/gasTank/paymasterService');
 
 const router = Router();
 
 const ANY_MEMBER = ['owner', 'admin', 'developer', 'auditor', 'financial', 'operator'];
 const RECHARGERS = ['owner', 'admin', 'financial'];
+const SPONSORS = ['owner', 'admin', 'developer', 'operator'];
 
 // Perezoso: ver usageBilling.js (sin STRIPE_SECRET_KEY no debe caer toda la API).
 let _stripe = null;
@@ -96,6 +101,52 @@ router.post('/:orgId/gas-tank/recharge/checkout', authenticateToken, requireOrgR
     } catch (error) {
         res.status(500).json({ error: 'No se pudo iniciar el pago', details: error.message });
     }
+});
+
+// ── Patrocinio de UserOperations (ERC-4337) ──
+// Los errores del servicio llevan code/status propios (política denegada 403, sin saldo 402, no configurado 503…).
+const sponsorError = (res, err) => {
+    const status = Number.isInteger(err.status) ? err.status : 500;
+    if (status >= 500 && status !== 503) return res.status(500).json({ error: 'No se pudo procesar el patrocinio' });
+    return res.status(status).json({ error: err.message, code: err.code });
+};
+const bigintSafe = (v) => JSON.parse(JSON.stringify(v, (_k, x) => (typeof x === 'bigint' ? x.toString() : x)));
+
+router.post('/:orgId/gas-tank/fee-voucher', authenticateToken, requireOrgRole(...SPONSORS), [
+    body('appId').isString().notEmpty(),
+    body('sender').isString(),
+    body('target').isString(),
+    body('selector').matches(/^0x[0-9a-fA-F]{8}$/),
+    body('amountBez').isFloat({ gt: 0 }),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    try {
+        const { appId, sender, target, selector, amountBez } = req.body;
+        res.json({ success: true, voucher: bigintSafe(await paymasterService.issueFeeVoucher({ orgId: req.params.orgId, appId, sender, target, selector, amountBez })) });
+    } catch (err) { sponsorError(res, err); }
+});
+
+router.post('/:orgId/gas-tank/sponsor', authenticateToken, requireOrgRole(...SPONSORS), [
+    body('appId').isString().notEmpty(),
+    body('userOp').isObject(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    try {
+        const out = await paymasterService.sponsorUserOp({ orgId: req.params.orgId, appId: req.body.appId, userOp: req.body.userOp });
+        res.json({ success: true, ...bigintSafe(out) });
+    } catch (err) { sponsorError(res, err); }
+});
+
+router.post('/:orgId/gas-tank/sponsor/release', authenticateToken, requireOrgRole(...SPONSORS), [
+    body('userOp').isObject(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    try {
+        res.json({ success: true, ...bigintSafe(await paymasterService.releaseSponsorship({ orgId: req.params.orgId, userOp: req.body.userOp })) });
+    } catch (err) { sponsorError(res, err); }
 });
 
 // ── Ajustes de auto-recarga (importes en EUR hacia fuera, créditos en la base) ──

@@ -8,6 +8,7 @@
  *   credit(orgId, credits, {...})         recarga/bono/ajuste; idempotente por externalRef
  *   reserve(orgId, maxCredits, {opHash})  retira el máximo de una operación; null si no hay saldo
  *   settle(opHash, actualCredits, {...})  cobra el coste real y devuelve el resto
+ *   getReservation(opHash)                reserva con su estado y metadatos
  *   release(opHash)                       devuelve una reserva entera (operación no enviada/caducada)
  *   releaseExpired()                      libera las reservas vencidas
  *   activity(orgId, {limit, before})      libro de movimientos
@@ -90,7 +91,7 @@ async function credit(orgId, credits, { kind = 'recharge', externalRef = null, a
 }
 
 /** Reserva el coste máximo de una operación. Devuelve null si la cuenta no puede cubrirla. */
-async function reserve(orgId, maxCredits, { opHash, appId = null, sender = null, ttlSeconds = 600 } = {}) {
+async function reserve(orgId, maxCredits, { opHash, appId = null, sender = null, ttlSeconds = 600, meta = {} } = {}) {
     if (!opHash) throw new Error('opHash obligatorio');
     if (!Number.isInteger(maxCredits) || maxCredits <= 0) throw new Error('maxCredits debe ser un entero positivo');
     await ensureAccount(orgId);
@@ -109,9 +110,9 @@ async function reserve(orgId, maxCredits, { opHash, appId = null, sender = null,
         );
         if (!upd.rows.length) return null;
         await c.query(
-            `INSERT INTO gas_tank_reservations (op_hash, organization_id, app_id, sender, max_cost_credits, valid_until)
-             VALUES ($1, $2, $3, $4, $5, NOW() + ($6 || ' seconds')::interval)`,
-            [opHash, orgId, appId, sender, maxCredits, String(ttlSeconds)]
+            `INSERT INTO gas_tank_reservations (op_hash, organization_id, app_id, sender, max_cost_credits, valid_until, meta)
+             VALUES ($1, $2, $3, $4, $5, NOW() + ($6 || ' seconds')::interval, $7::jsonb)`,
+            [opHash, orgId, appId, sender, maxCredits, String(ttlSeconds), JSON.stringify(meta)]
         );
         return { opHash, maxCredits, status: 'reserved', reused: false };
     });
@@ -142,6 +143,13 @@ async function settle(opHash, actualCredits, { txHash = null, chainId = null, us
         await c.query(`UPDATE gas_tank_reservations SET status = 'settled', updated_at = NOW() WHERE op_hash = $1`, [opHash]);
         return { charged: charge, refunded: back, capped: actualCredits > max };
     });
+}
+
+async function getReservation(opHash) {
+    const { rows } = await db.query(
+        `SELECT op_hash, organization_id, app_id, sender, max_cost_credits::bigint AS max_cost_credits, status, valid_until, meta
+           FROM gas_tank_reservations WHERE op_hash = $1`, [opHash]);
+    return rows[0] ? { ...rows[0], max_cost_credits: Number(rows[0].max_cost_credits) } : null;
 }
 
 async function release(opHash) {
@@ -178,4 +186,4 @@ async function activity(orgId, { limit = 50, before = null } = {}) {
     return rows.map((r) => ({ ...r, credits: Number(r.credits), balance_after: Number(r.balance_after) }));
 }
 
-module.exports = { ensureAccount, getBalance, credit, reserve, settle, release, releaseExpired, activity };
+module.exports = { ensureAccount, getBalance, credit, reserve, settle, release, releaseExpired, activity, getReservation };
