@@ -23,7 +23,7 @@ services:
   # Optional: add a local hardhat node container if you want to run Solidity tests inside compose.
   # This example uses the standard hardhat image via node and runs `pnpm exec hardhat node` on start.
   hardhat:
-    image: node:18
+    image: node:22.23.4
     working_dir: /usr/src/app
     volumes:
       - ./:/usr/src/app

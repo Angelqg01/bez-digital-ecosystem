@@ -9,5 +9,19 @@
 # api/, agent-lib/, control-center/frontend/ y scripts/ ya tenían el suyo;
 # sdk/ era el único que faltaba.
 
-# Sin `packages:`: sdk es un paquete suelto, no un monorepo.
-ignoredBuiltDependencies: []
+# `packages: ['.']` lo fija como raíz propia: sin él, pnpm 11 sigue subiendo al
+# pnpm-workspace.yaml de la raíz y responde "Already up to date" sin aplicar los
+# overrides de abajo. `ignoredBuiltDependencies` está deprecado en pnpm 11.
+packages:
+  - '.'
+
+# Parches de seguridad (2026-10-23): mínimos por rama mayor (^, nunca >=)
+# para no cambiar la API que espera cada consumidor.
+overrides:
+  axios@1: '^1.20.0'
+  baseline-browser-mapping@2: '^2.11.0'
+  browserslist@4: '^4.28.7'
+  fast-uri@3: '^3.1.8'
+  follow-redirects@1: '^1.16.1'
+  form-data@4: '^4.0.6'
+  ws@8: '^8.21.0'

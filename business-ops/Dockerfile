@@ -4,7 +4,7 @@
 # mínima y sin root. Node 22 porque pnpm@11 exige >=22.13.
 
 # ── Etapa 1: dependencias ─────────────────────────────────────────────────
-FROM node:22-alpine AS deps
+FROM node:22.23.4-alpine AS deps
 WORKDIR /app
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
@@ -13,7 +13,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # ── Etapa 2: imagen de ejecución ──────────────────────────────────────────
-FROM node:22-alpine
+FROM node:22.23.4-alpine
 WORKDIR /app
 RUN addgroup -S bezhas && adduser -S bezhas -G bezhas
 

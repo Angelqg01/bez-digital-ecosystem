@@ -1,5 +1,5 @@
 # BeZhas Aegis - FastAPI Dockerfile
-FROM python:3.11-slim
+FROM python:3.11.17-slim
 
 WORKDIR /app
 

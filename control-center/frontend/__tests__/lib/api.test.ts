@@ -95,7 +95,7 @@ describe('manejo de errores', () => {
     it('convierte un fallo de red en ApiError con status 0', async () => {
         fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
 
-        const error = await api.get('/lo-que-sea').catch((e) => e);
+        const error = (await api.get('/lo-que-sea').catch((e) => e)) as ApiError;
 
         expect(error).toBeInstanceOf(ApiError);
         expect(error.status).toBe(0);
@@ -107,7 +107,7 @@ describe('manejo de errores', () => {
             mockResponse({ ok: false, status: 404, body: { error: 'No existe' } }),
         );
 
-        const error = await api.get('/users/999').catch((e) => e);
+        const error = (await api.get('/users/999').catch((e) => e)) as ApiError;
 
         expect(error).toBeInstanceOf(ApiError);
         expect(error.status).toBe(404);
@@ -120,7 +120,7 @@ describe('manejo de errores', () => {
         (res.json as jest.Mock).mockRejectedValue(new SyntaxError('not json'));
         fetchMock.mockResolvedValue(res);
 
-        const error = await api.post('/pagos', {}).catch((e) => e);
+        const error = (await api.post('/pagos', {}).catch((e) => e)) as ApiError;
 
         expect(error.message).toBe('Internal Server Error (POST /pagos)');
         expect(error.data).toBeNull();
