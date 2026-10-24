@@ -318,6 +318,8 @@ Cada app se registra en `app_registry` con su `app_id`. La política de la organ
 
 **Criterio de aceptación:** una empresa de prueba recarga 50 € en modo test de Stripe, una app nativa ancla 10 documentos por relayer y el panel muestra los 10 cargos con su transacción y el saldo cuadra al céntimo.
 
+> **Hallazgo (2026-10-24) sobre el `tx-signer`:** hoy sólo firma **transferencias ERC-20 desde la tesorería con 2 aprobaciones humanas EIP-712** (`verify.js` rechaza cualquier otra intención). No sirve ni para el relayer de la fase 1 ni para firmar UserOperations: exigir dos personas por cada patrocinio es inviable. Por eso (a) la fase 1 **mide** las operaciones que ya envían las claves de operador de la API (`gasTank/meter.js`), y (b) la fase 2 necesita una **clave de verificación del paymaster distinta, sin fondos** (solo firma `paymasterAndData`; el dinero está en el depósito del EntryPoint, que se rellena con aprobación), con topes propios en el firmante y fuera de la tesorería.
+
 ### Fase 2: paymaster ERC-4337 y tokenización patrocinada (3-4 semanas)
 - [ ] `BeZhasVerifyingPaymaster` + `GasTankVault` en Foundry, con fuzzing de límites y reglas ERC-7562. Tests de integración con EntryPoint v0.8 en Anvil.
 - [ ] Intención `paymaster.sign` en el `tx-signer` con topes propios.
