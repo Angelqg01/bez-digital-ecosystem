@@ -40,6 +40,23 @@ jest.mock('../cache/redis', () => ({
     checkRateLimit: (...args) => mockCheckRateLimit(...args),
 }));
 
+// ─── Cupo mensual de acciones de IA ───
+// Por defecto deja pasar todo, como el limitador de Redis de arriba: el cupo real
+// (con su recuento en Postgres) se prueba en aiActionQuota.test.js y plan-limits.test.js.
+// Sin esto, cada escritura del gateway pediría una transacción que el mock de la
+// base no tiene y descolocaría los mockResolvedValueOnce de cada test.
+const mockCupoReservar = jest.fn().mockResolvedValue({ interna: true });
+const mockCupoAnular = jest.fn().mockResolvedValue(undefined);
+const mockCupoConsumo = jest.fn().mockResolvedValue({ used: 0, limit: null, resetsAt: '2099-01-01T00:00:00.000Z' });
+jest.mock('../services/aiActionQuota', () => ({
+    ...jest.requireActual('../services/aiActionQuota'),
+    cupoAcciones: () => ({
+        reservar: (...a) => mockCupoReservar(...a),
+        anular: (...a) => mockCupoAnular(...a),
+        consumo: (...a) => mockCupoConsumo(...a),
+    }),
+}));
+
 // ─── EventListener / GasMonitor mock ───
 jest.mock('../services/eventListener', () => ({ startListening: jest.fn().mockResolvedValue(true) }));
 jest.mock('../services/gasMonitor', () => ({ startDaemon: jest.fn() }));
@@ -156,6 +173,7 @@ function makeEnterpriseToken() {
 
 module.exports = {
     mockQuery, mockCacheGet, mockCacheSet, mockCacheDelete, mockPublish, mockCheckRateLimit,
+    mockCupoReservar, mockCupoAnular, mockCupoConsumo,
     mockContractService, mockTxService, mockWalletService, mockAegisService, mockAgentService, mockAxios,
     makeToken, makeAdminToken, makeEnterpriseToken,
 };

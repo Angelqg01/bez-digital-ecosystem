@@ -23,13 +23,15 @@ const { precioUsd, bezPublicado } = require('../config/bez-price');
 const { chainCall } = require('../utils/chainCall');
 const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
-const { authenticateGateway, requireScope, authenticateSSOToken } = require('../middleware/gateway-auth');
+const { requireScope, authenticateSSOToken } = require('../middleware/gateway-auth');
 const { requireAddressAccess, exigirTitularidadEnCuerpo } = require('../middleware/address-access');
 const { cadenaOResponder400, cadenaPorDefecto } = require('../config/chain-policy');
 const killSwitch = require('../services/killSwitch');
 const { resolverPlan } = require('../middleware/resolve-plan');
 const { buscarConocimiento } = require('../services/knowledge/search');
 const { meterUsage } = require('../middleware/gateway-metering');
+const { autenticarConPlan, autenticarSinCupo } = require('../middleware/plan-limits');
+const { cupoAcciones } = require('../services/aiActionQuota');
 const ssoService = require('../services/ssoService');
 const walletService = require('../services/walletService');
 const contractService = require('../services/contractService');
@@ -291,7 +293,7 @@ router.get('/sso/me', authenticateSSOToken, async (req, res) => {
 //  WALLET — Balance, transfers, history
 // ═══════════════════════════════════════════════════════════
 
-router.get('/wallet/balance/:address', authenticateGateway, requireScope('wallet'), requireAddressAccess(), async (req, res) => {
+router.get('/wallet/balance/:address', autenticarConPlan, requireScope('wallet'), requireAddressAccess(), async (req, res) => {
     try {
         const balance = await walletService.getBalance(req.params.address);
         res.json({ success: true, ...balance });
@@ -300,7 +302,7 @@ router.get('/wallet/balance/:address', authenticateGateway, requireScope('wallet
     }
 });
 
-router.get('/wallet/me', authenticateGateway, requireScope('wallet'), async (req, res) => {
+router.get('/wallet/me', autenticarConPlan, requireScope('wallet'), async (req, res) => {
     try {
         if (!req.user?.userId) {
             return res.status(400).json({ error: 'User JWT required for /wallet/me' });
@@ -314,7 +316,7 @@ router.get('/wallet/me', authenticateGateway, requireScope('wallet'), async (req
     }
 });
 
-router.get('/wallet/history/:address', authenticateGateway, requireScope('wallet'), requireAddressAccess(), async (req, res) => {
+router.get('/wallet/history/:address', autenticarConPlan, requireScope('wallet'), requireAddressAccess(), async (req, res) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 20, 100);
         const offset = parseInt(req.query.offset) || 0;
@@ -335,7 +337,7 @@ router.get('/wallet/history/:address', authenticateGateway, requireScope('wallet
 //  STAKING — Positions, stake, unstake, rewards
 // ═══════════════════════════════════════════════════════════
 
-router.get('/staking/positions/:address', authenticateGateway, requireScope('staking'), requireAddressAccess(), async (req, res) => {
+router.get('/staking/positions/:address', autenticarConPlan, requireScope('staking'), requireAddressAccess(), async (req, res) => {
     try {
         const chainId = cadenaOResponder400(res, req.query.chainId);
         if (chainId === null) return;
@@ -379,7 +381,7 @@ router.get('/staking/positions/:address', authenticateGateway, requireScope('sta
     }
 });
 
-router.post('/staking/stake', authenticateGateway, requireScope('staking'), [
+router.post('/staking/stake', autenticarConPlan, requireScope('staking'), [
     body('walletAddress').isEthereumAddress(),
     body('amount').isFloat({ min: 0.001 }),
 ], async (req, res) => {
@@ -442,7 +444,7 @@ router.post('/staking/stake', authenticateGateway, requireScope('staking'), [
     }
 });
 
-router.post('/staking/unstake', authenticateGateway, requireScope('staking'), [
+router.post('/staking/unstake', autenticarConPlan, requireScope('staking'), [
     body('positionId').optional().isString(),
     body('amount').optional().isFloat({ min: 0.001 }),
 ], async (req, res) => {
@@ -477,7 +479,7 @@ router.post('/staking/unstake', authenticateGateway, requireScope('staking'), [
 //  FARMING — LP positions
 // ═══════════════════════════════════════════════════════════
 
-router.get('/farming/positions/:address', authenticateGateway, requireScope('farming'), requireAddressAccess(), async (req, res) => {
+router.get('/farming/positions/:address', autenticarConPlan, requireScope('farming'), requireAddressAccess(), async (req, res) => {
     try {
         const poolId = Number.isFinite(parseInt(req.query.poolId)) ? parseInt(req.query.poolId) : 0;
         try {
@@ -517,7 +519,7 @@ router.get('/farming/positions/:address', authenticateGateway, requireScope('far
     }
 });
 
-router.post('/farming/deposit', authenticateGateway, requireScope('farming'), [
+router.post('/farming/deposit', autenticarConPlan, requireScope('farming'), [
     body('walletAddress').isEthereumAddress(),
     body('poolId').isInt({ min: 0 }),
     body('amount').isFloat({ min: 0.001 }),
@@ -569,7 +571,7 @@ router.post('/farming/deposit', authenticateGateway, requireScope('farming'), [
 //  GOVERNANCE — Proposals, voting
 // ═══════════════════════════════════════════════════════════
 
-router.get('/governance/proposals', authenticateGateway, requireScope('governance'), async (req, res) => {
+router.get('/governance/proposals', autenticarConPlan, requireScope('governance'), async (req, res) => {
     try {
         const status = req.query.status || 'active';
         const { rows } = await query(
@@ -586,7 +588,7 @@ router.get('/governance/proposals', authenticateGateway, requireScope('governanc
     }
 });
 
-router.post('/governance/vote', authenticateGateway, requireScope('governance'), [
+router.post('/governance/vote', autenticarConPlan, requireScope('governance'), [
     body('proposalId').isString().notEmpty(),
     body('walletAddress').isEthereumAddress(),
     body('vote').isIn(['for', 'against', 'abstain']),
@@ -633,7 +635,7 @@ router.post('/governance/vote', authenticateGateway, requireScope('governance'),
 //  BRIDGE — Cross-chain transfers
 // ═══════════════════════════════════════════════════════════
 
-router.get('/bridge/transfers/:address', authenticateGateway, requireScope('bridge'), requireAddressAccess(), async (req, res) => {
+router.get('/bridge/transfers/:address', autenticarConPlan, requireScope('bridge'), requireAddressAccess(), async (req, res) => {
     try {
         const { rows } = await query(
             `SELECT * FROM bridge_transfers
@@ -648,7 +650,7 @@ router.get('/bridge/transfers/:address', authenticateGateway, requireScope('brid
     }
 });
 
-router.post('/bridge/initiate', authenticateGateway, requireScope('bridge'), [
+router.post('/bridge/initiate', autenticarConPlan, requireScope('bridge'), [
     body('sender').isEthereumAddress(),
     body('recipient').isEthereumAddress(),
     body('fromChainId').isInt(),
@@ -674,7 +676,7 @@ router.post('/bridge/initiate', authenticateGateway, requireScope('bridge'), [
     }
 });
 
-router.get('/bridge/status/:transferId', authenticateGateway, requireScope('bridge'), async (req, res) => {
+router.get('/bridge/status/:transferId', autenticarConPlan, requireScope('bridge'), async (req, res) => {
     try {
         const { rows } = await query(
             'SELECT * FROM bridge_transfers WHERE id = $1',
@@ -690,7 +692,7 @@ router.get('/bridge/status/:transferId', authenticateGateway, requireScope('brid
 /**
  * GET /bridge/fees — Estimate bridge fees for a given transfer.
  */
-router.get('/bridge/fees', authenticateGateway, requireScope('bridge'), async (req, res) => {
+router.get('/bridge/fees', autenticarConPlan, requireScope('bridge'), async (req, res) => {
     try {
         const fromChainId = parseInt(req.query.from || req.query.fromChainId) || 0;
         const toChainId = parseInt(req.query.to || req.query.toChainId) || 0;
@@ -734,7 +736,7 @@ router.get('/bridge/fees', authenticateGateway, requireScope('bridge'), async (r
 /**
  * GET /bridge/stats — Aggregated bridge statistics (public).
  */
-router.get('/bridge/stats', authenticateGateway, requireScope('bridge'), async (req, res) => {
+router.get('/bridge/stats', autenticarConPlan, requireScope('bridge'), async (req, res) => {
     try {
         const [totals, chainBreakdown, recentCount] = await Promise.all([
             query(`SELECT COALESCE(SUM(amount), 0) as total_bridged, COUNT(*) as total_transfers
@@ -765,7 +767,7 @@ router.get('/bridge/stats', authenticateGateway, requireScope('bridge'), async (
 //  TREASURY — DAO funds overview
 // ═══════════════════════════════════════════════════════════
 
-router.get('/treasury/overview', authenticateGateway, requireScope('treasury'), async (req, res) => {
+router.get('/treasury/overview', autenticarConPlan, requireScope('treasury'), async (req, res) => {
     try {
         // Aggregate treasury data
         const stakingTotal = await query('SELECT COALESCE(SUM(amount_staked), 0) as total FROM staking_positions WHERE is_active = TRUE');
@@ -792,7 +794,7 @@ router.get('/treasury/overview', authenticateGateway, requireScope('treasury'), 
 //  TOKEN — Info, supply, balances
 // ═══════════════════════════════════════════════════════════
 
-router.get('/token/info', authenticateGateway, requireScope('token'), async (req, res) => {
+router.get('/token/info', autenticarConPlan, requireScope('token'), async (req, res) => {
     const chainId = cadenaOResponder400(res, req.query.chainId);
     if (chainId === null) return;
     const bezTokenName = resolveBEZToken(chainId);
@@ -825,7 +827,7 @@ router.get('/token/info', authenticateGateway, requireScope('token'), async (req
     }
 });
 
-router.post('/governance/propose', authenticateGateway, requireScope('governance'), [
+router.post('/governance/propose', autenticarConPlan, requireScope('governance'), [
     body('target').isEthereumAddress(),
     body('value').optional().isString(),
     body('calldata').optional().isString(),
@@ -856,7 +858,7 @@ router.post('/governance/propose', authenticateGateway, requireScope('governance
     }
 });
 
-router.post('/governance/queue', authenticateGateway, requireScope('governance'), [
+router.post('/governance/queue', autenticarConPlan, requireScope('governance'), [
     body('target').isEthereumAddress(),
     body('value').optional().isString(),
     body('calldata').optional().isString(),
@@ -888,7 +890,7 @@ router.post('/governance/queue', authenticateGateway, requireScope('governance')
     }
 });
 
-router.post('/governance/execute', authenticateGateway, requireScope('governance'), [
+router.post('/governance/execute', autenticarConPlan, requireScope('governance'), [
     body('target').isEthereumAddress(),
     body('value').optional().isString(),
     body('calldata').optional().isString(),
@@ -924,7 +926,7 @@ router.post('/governance/execute', authenticateGateway, requireScope('governance
 //  CONTRACTS — ABIs, addresses, read calls
 // ═══════════════════════════════════════════════════════════
 
-router.get('/contracts/list', authenticateGateway, requireScope('contracts'), async (req, res) => {
+router.get('/contracts/list', autenticarConPlan, requireScope('contracts'), async (req, res) => {
     try {
         const chainId = cadenaOResponder400(res, req.query.chainId);
         if (chainId === null) return;
@@ -954,7 +956,7 @@ router.get('/contracts/list', authenticateGateway, requireScope('contracts'), as
     }
 });
 
-router.get('/contracts/:name', authenticateGateway, requireScope('contracts'), async (req, res) => {
+router.get('/contracts/:name', autenticarConPlan, requireScope('contracts'), async (req, res) => {
     try {
         const chainId = cadenaOResponder400(res, req.query.chainId);
         if (chainId === null) return;
@@ -976,7 +978,7 @@ router.get('/contracts/:name', authenticateGateway, requireScope('contracts'), a
 //  DEX / TRADING — BEZ pairs, quotes, tx requests
 // ═══════════════════════════════════════════════════════════
 
-router.get('/dex/pool', authenticateGateway, requireScope('contracts'), [
+router.get('/dex/pool', autenticarConPlan, requireScope('contracts'), [
     body().custom(() => true),
 ], async (req, res) => {
     const { tokenA, tokenB } = req.query;
@@ -992,7 +994,7 @@ router.get('/dex/pool', authenticateGateway, requireScope('contracts'), [
     }
 });
 
-router.get('/dex/quote', authenticateGateway, requireScope('contracts'), async (req, res) => {
+router.get('/dex/quote', autenticarConPlan, requireScope('contracts'), async (req, res) => {
     const { tokenIn, tokenOut, amountIn } = req.query;
     if (!tokenIn || !tokenOut || !amountIn) {
         return res.status(400).json({ error: 'tokenIn, tokenOut and amountIn are required' });
@@ -1008,7 +1010,7 @@ router.get('/dex/quote', authenticateGateway, requireScope('contracts'), async (
     }
 });
 
-router.post('/dex/swap', authenticateGateway, requireScope('contracts'), [
+router.post('/dex/swap', autenticarConPlan, requireScope('contracts'), [
     body('tokenIn').isEthereumAddress(),
     body('tokenOut').isEthereumAddress(),
     body('amountIn').isFloat({ min: 0.000001 }),
@@ -1033,7 +1035,7 @@ router.post('/dex/swap', authenticateGateway, requireScope('contracts'), [
     }
 });
 
-router.post('/dex/add-liquidity', authenticateGateway, requireScope('contracts'), [
+router.post('/dex/add-liquidity', autenticarConPlan, requireScope('contracts'), [
     body('tokenA').isEthereumAddress(),
     body('tokenB').isEthereumAddress(),
     body('amountA').isFloat({ min: 0.000001 }),
@@ -1064,7 +1066,7 @@ router.post('/dex/add-liquidity', authenticateGateway, requireScope('contracts')
 //  APP MANAGEMENT — Registry (admin only)
 // ═══════════════════════════════════════════════════════════
 
-router.post('/apps/register', authenticateGateway, requireScope('admin'), [
+router.post('/apps/register', autenticarConPlan, requireScope('admin'), [
     body('appName').isLength({ min: 3, max: 100 }),
     body('scopes').isArray({ min: 1 }),
     body('tier').optional().isIn(['free', 'standard', 'premium', 'internal']),
@@ -1083,7 +1085,7 @@ router.post('/apps/register', authenticateGateway, requireScope('admin'), [
     }
 });
 
-router.get('/apps/list', authenticateGateway, requireScope('admin'), async (req, res) => {
+router.get('/apps/list', autenticarConPlan, requireScope('admin'), async (req, res) => {
     try {
         const { rows } = await query(
             'SELECT id, app_name, scopes, tier, rate_limit, is_active, created_at FROM app_registry ORDER BY app_name'
@@ -1098,7 +1100,7 @@ router.get('/apps/list', authenticateGateway, requireScope('admin'), async (req,
 //  PAYMENTS — Buy BEZ, send BezPay, history
 // ═══════════════════════════════════════════════════════════
 
-router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
+router.post('/payments/buy', autenticarConPlan, requireScope('wallet'), [
     body('walletAddress').optional().isEthereumAddress(),
     body('amountUSD').isFloat({ min: 1 }),
     body('paymentMethod').isIn(bezPayOrders.METODOS),
@@ -1145,7 +1147,7 @@ router.post('/payments/buy', authenticateGateway, requireScope('wallet'), [
  * Visible only to the app that created it (app_id) or, for JWT sessions,
  * to the wallet that owns it. Admin-scoped apps see everything.
  */
-router.get('/payments/:id(\\d+)', authenticateGateway, requireScope('wallet'), [
+router.get('/payments/:id(\\d+)', autenticarConPlan, requireScope('wallet'), [
     param('id').isInt({ min: 1 }),
 ], async (req, res) => {
     if (!validate(req, res)) return;
@@ -1164,7 +1166,7 @@ router.get('/payments/:id(\\d+)', authenticateGateway, requireScope('wallet'), [
     }
 });
 
-router.get('/payments/stripe-links', authenticateGateway, requireScope('wallet'), (_req, res) => {
+router.get('/payments/stripe-links', autenticarConPlan, requireScope('wallet'), (_req, res) => {
     res.json({
         success: true,
         provider: 'stripe_payment_link',
@@ -1172,7 +1174,7 @@ router.get('/payments/stripe-links', authenticateGateway, requireScope('wallet')
     });
 });
 
-router.get('/payments/bank-transfer-details', authenticateGateway, requireScope('wallet'), (_req, res) => {
+router.get('/payments/bank-transfer-details', autenticarConPlan, requireScope('wallet'), (_req, res) => {
     res.json({
         success: true,
         provider: 'bank_transfer',
@@ -1180,7 +1182,7 @@ router.get('/payments/bank-transfer-details', authenticateGateway, requireScope(
     });
 });
 
-router.get('/payments/tokenomics', authenticateGateway, requireScope('wallet'), (req, res) => {
+router.get('/payments/tokenomics', autenticarConPlan, requireScope('wallet'), (req, res) => {
     const amountUSD = req.query.amountUSD ? parseFloat(req.query.amountUSD) : 100;
     const priceUSD = req.query.priceUSD ? parseFloat(req.query.priceUSD) : precioUsd();
     res.json({
@@ -1195,7 +1197,7 @@ router.get('/payments/tokenomics', authenticateGateway, requireScope('wallet'), 
     });
 });
 
-router.post('/payments/sell', authenticateGateway, requireScope('wallet'), [
+router.post('/payments/sell', autenticarConPlan, requireScope('wallet'), [
     body('walletAddress').isEthereumAddress(),
     body('amountBEZ').isFloat({ min: 0.1 }),
     body('receiveMethod').isIn(['card', 'bank', 'crypto']),
@@ -1219,7 +1221,7 @@ router.post('/payments/sell', authenticateGateway, requireScope('wallet'), [
     }
 });
 
-router.post('/payments/send', authenticateGateway, requireScope('wallet'), [
+router.post('/payments/send', autenticarConPlan, requireScope('wallet'), [
     body('sender').isEthereumAddress(),
     body('recipient').isLength({ min: 3 }),
     body('amount').isFloat({ min: 0.001 }),
@@ -1245,7 +1247,7 @@ router.post('/payments/send', authenticateGateway, requireScope('wallet'), [
     }
 });
 
-router.get('/payments/history/:address', authenticateGateway, requireScope('wallet'), requireAddressAccess(), [
+router.get('/payments/history/:address', autenticarConPlan, requireScope('wallet'), requireAddressAccess(), [
     param('address').isEthereumAddress(),
 ], async (req, res) => {
     if (!validate(req, res)) return;
@@ -1477,7 +1479,7 @@ const knowledgeLimiter = rateLimit({
     keyGenerator: (req) => String(req.registeredApp?.id || req.ip),
     message: { error: 'Too many knowledge searches.', code: 'KNOWLEDGE_RATE_LIMIT' }, standardHeaders: true, legacyHeaders: false,
 });
-router.get('/knowledge/search', authenticateGateway, requireScope('token'), knowledgeLimiter, resolverPlan, async (req, res) => {
+router.get('/knowledge/search', autenticarConPlan, requireScope('token'), knowledgeLimiter, resolverPlan, async (req, res) => {
     try {
         res.json({ success: true, ...(await buscarConocimiento({ app: req.registeredApp, plan: req.plan, pregunta: req.query.q, limite: req.query.limit })) });
     } catch (err) {
@@ -1486,7 +1488,7 @@ router.get('/knowledge/search', authenticateGateway, requireScope('token'), know
     }
 });
 
-router.get('/token/price', authenticateGateway, requireScope('token'), async (req, res) => {
+router.get('/token/price', autenticarConPlan, requireScope('token'), async (req, res) => {
     try {
         // Check cached price first
         const cached = await query(
@@ -1537,7 +1539,7 @@ router.post('/payments/:id(\\d+)/refund', requirePaymentSettlementKey, [
 // ═══════════════════════════════════════════════════════════
 
 /** GET /kyc/status/:address — level + remaining headroom for a wallet. */
-router.get('/kyc/status/:address', authenticateGateway, requireScope('wallet'), requireAddressAccess(), [
+router.get('/kyc/status/:address', autenticarConPlan, requireScope('wallet'), requireAddressAccess(), [
     param('address').isEthereumAddress(),
 ], async (req, res) => {
     if (!validate(req, res)) return;
@@ -1815,7 +1817,7 @@ router.post('/nodes/register', async (req, res) => {
 });
 
 /** GET /nodes — los nodos de quien llama. Nunca devuelve tokens ni claves privadas. */
-router.get('/nodes', authenticateGateway, requireScope('contracts', 'wallet'), async (req, res) => {
+router.get('/nodes', autenticarConPlan, requireScope('contracts', 'wallet'), async (req, res) => {
     try {
         // authenticateGateway acepta también un JWT de usuario, y por esa vía no
         // hay `registeredApp`. Un nodo pertenece a una api-key, no a una sesión
@@ -1848,7 +1850,7 @@ router.get('/nodes', authenticateGateway, requireScope('contracts', 'wallet'), a
 // ═══════════════════════════════════════════════════════════
 
 /** GET /privacy/telemetry — qué se recoge, con qué base y hasta cuándo (art. 13). */
-router.get('/privacy/telemetry', authenticateGateway, async (req, res) => {
+router.get('/privacy/telemetry', autenticarSinCupo, async (req, res) => {
     try {
         if (!req.registeredApp?.id) {
             return res.status(400).json({ error: 'Se consulta con la api-key de la organización.' });
@@ -1881,7 +1883,7 @@ router.get('/privacy/telemetry', authenticateGateway, async (req, res) => {
 });
 
 /** POST /privacy/telemetry — oposición al tratamiento (art. 21). Efecto inmediato. */
-router.post('/privacy/telemetry', authenticateGateway, async (req, res) => {
+router.post('/privacy/telemetry', autenticarSinCupo, async (req, res) => {
     try {
         if (!req.registeredApp?.id) {
             return res.status(400).json({ error: 'Se configura con la api-key de la organización.' });
@@ -1899,7 +1901,7 @@ router.post('/privacy/telemetry', authenticateGateway, async (req, res) => {
 });
 
 /** GET /privacy/telemetry/export — derecho de acceso (art. 15). */
-router.get('/privacy/telemetry/export', authenticateGateway, async (req, res) => {
+router.get('/privacy/telemetry/export', autenticarSinCupo, async (req, res) => {
     try {
         if (!req.registeredApp?.id) {
             return res.status(400).json({ error: 'Se exporta con la api-key de la organización.' });
@@ -1921,7 +1923,7 @@ router.get('/privacy/telemetry/export', authenticateGateway, async (req, res) =>
  * permita identificarlo, así que no son suyos que suprimir. Callarlo sería
  * dejarle creer que borró algo que sigue ahí.
  */
-router.delete('/privacy/telemetry', authenticateGateway, async (req, res) => {
+router.delete('/privacy/telemetry', autenticarSinCupo, async (req, res) => {
     try {
         if (!req.registeredApp?.id) {
             return res.status(400).json({ error: 'Se suprime con la api-key de la organización.' });
@@ -1957,7 +1959,7 @@ const requireAppForWebhooks = (req, res, next) => {
  * POST /webhooks/register — subscribe a URL to payment events.
  * The signing secret is returned ONCE; store it to verify deliveries.
  */
-router.post('/webhooks/register', authenticateGateway, requireAppForWebhooks, [
+router.post('/webhooks/register', autenticarSinCupo, requireAppForWebhooks, [
     body('url').isURL({ protocols: ['https', 'http'], require_protocol: true }),
     body('events').optional().isArray({ min: 1, max: 10 }),
 ], async (req, res) => {
@@ -1986,7 +1988,7 @@ router.post('/webhooks/register', authenticateGateway, requireAppForWebhooks, [
 });
 
 /** GET /webhooks — list this app's webhooks (secrets never returned). */
-router.get('/webhooks', authenticateGateway, requireAppForWebhooks, async (req, res) => {
+router.get('/webhooks', autenticarSinCupo, requireAppForWebhooks, async (req, res) => {
     try {
         const { rows } = await query(
             `SELECT id, url, events, is_active, created_at
@@ -2001,7 +2003,7 @@ router.get('/webhooks', authenticateGateway, requireAppForWebhooks, async (req, 
 });
 
 /** GET /webhooks/deliveries — recent delivery attempts (incl. dead-letter). */
-router.get('/webhooks/deliveries', authenticateGateway, requireAppForWebhooks, async (req, res) => {
+router.get('/webhooks/deliveries', autenticarSinCupo, requireAppForWebhooks, async (req, res) => {
     try {
         const status = ['pending', 'delivered', 'dead'].includes(req.query.status) ? req.query.status : null;
         const { rows } = await query(
@@ -2021,7 +2023,7 @@ router.get('/webhooks/deliveries', authenticateGateway, requireAppForWebhooks, a
 });
 
 /** POST /webhooks/deliveries/:id/retry — re-queue a dead delivery. */
-router.post('/webhooks/deliveries/:id/retry', authenticateGateway, requireAppForWebhooks, [
+router.post('/webhooks/deliveries/:id/retry', autenticarSinCupo, requireAppForWebhooks, [
     param('id').isInt({ min: 1 }),
 ], async (req, res) => {
     if (!validate(req, res)) return;
@@ -2045,7 +2047,7 @@ router.post('/webhooks/deliveries/:id/retry', authenticateGateway, requireAppFor
 });
 
 /** DELETE /webhooks/:id — deactivate a webhook. */
-router.delete('/webhooks/:id', authenticateGateway, requireAppForWebhooks, [
+router.delete('/webhooks/:id', autenticarSinCupo, requireAppForWebhooks, [
     param('id').isInt({ min: 1 }),
 ], async (req, res) => {
     if (!validate(req, res)) return;
@@ -2097,7 +2099,7 @@ async function loadSubscription(appId) {
  * GET /subscription — Current plan + active SubApps (entitlements).
  * Shape matches Entitlements.fromApi in @bezhas/connect: { plan, subapps, ... }.
  */
-router.get('/subscription', authenticateGateway, requireRegisteredApp, async (req, res) => {
+router.get('/subscription', autenticarSinCupo, requireRegisteredApp, async (req, res) => {
     try {
         const sub = await loadSubscription(req.registeredApp.id);
         res.json({
@@ -2120,7 +2122,7 @@ router.get('/subscription', authenticateGateway, requireRegisteredApp, async (re
  * Same calculation as the Hub landing (config/plans.js is a mirror of the
  * canonical Hub config).
  */
-router.get('/subscription/quote', authenticateGateway, requireRegisteredApp, (req, res) => {
+router.get('/subscription/quote', autenticarSinCupo, requireRegisteredApp, (req, res) => {
     const planId = req.query.plan || req.query.planId;
     const annual = req.query.annual === '1' || req.query.annual === 'true';
     const payWithBez = req.query.payWithBez === '1' || req.query.payWithBez === 'true';
@@ -2150,7 +2152,7 @@ router.get('/subscription/quote', authenticateGateway, requireRegisteredApp, (re
  * POST /subscription/activate — Activate a SubApp (adds it to the bill +
  * entitlements). Idempotent.
  */
-router.post('/subscription/activate', authenticateGateway, requireRegisteredApp, [
+router.post('/subscription/activate', autenticarSinCupo, requireRegisteredApp, [
     body('subapp').isString().notEmpty(),
 ], async (req, res) => {
     if (!validate(req, res)) return;
@@ -2184,7 +2186,7 @@ router.post('/subscription/activate', authenticateGateway, requireRegisteredApp,
  * uso). Crea customer + suscripción Stripe con precio medido y 15 días de
  * prueba gratis. El consumo se factura por créditos API (usage-pricing.js).
  */
-router.post('/subscription/starter/subscribe', authenticateGateway, requireRegisteredApp, [
+router.post('/subscription/starter/subscribe', autenticarSinCupo, requireRegisteredApp, [
     body('email').isEmail(),
     body('name').optional().isString(),
 ], async (req, res) => {
@@ -2207,9 +2209,9 @@ router.post('/subscription/starter/subscribe', authenticateGateway, requireRegis
 });
 
 /**
- * GET /subscription/usage — Consumo del ciclo actual (ledger local).
+ * GET /subscription/usage — Consumo del ciclo actual (ledger local) y cupo de acciones de IA.
  */
-router.get('/subscription/usage', authenticateGateway, requireRegisteredApp, async (req, res) => {
+router.get('/subscription/usage', autenticarSinCupo, requireRegisteredApp, async (req, res) => {
     try {
         const { rows } = await query(
             `SELECT COUNT(*)::int AS calls, COALESCE(SUM(credits),0)::int AS credits,
@@ -2219,7 +2221,12 @@ router.get('/subscription/usage', authenticateGateway, requireRegisteredApp, asy
             [req.registeredApp.id]
         );
         const u = rows[0] || { calls: 0, credits: 0, billable_eur: 0 };
-        res.json({ success: true, period: 'current_month', calls: u.calls, credits: u.credits, billableEUR: Number(u.billable_eur) });
+        // Cupo de acciones de IA del plan (REST, MCP y chat juntos). limit null = ilimitado.
+        const aiActions = await cupoAcciones().consumo({ app: req.registeredApp, plan: req.plan });
+        res.json({
+            success: true, period: 'current_month', calls: u.calls, credits: u.credits, billableEUR: Number(u.billable_eur),
+            plan: req.plan, aiActions,
+        });
     } catch (error) {
         logger.error(error, 'Usage fetch failed');
         res.status(500).json({ error: 'Failed to fetch usage' });
@@ -2230,7 +2237,7 @@ router.get('/subscription/usage', authenticateGateway, requireRegisteredApp, asy
  * POST /subscription/deactivate — Deactivate a SubApp at the next cycle.
  * Core SubApps cannot be deactivated.
  */
-router.post('/subscription/deactivate', authenticateGateway, requireRegisteredApp, [
+router.post('/subscription/deactivate', autenticarSinCupo, requireRegisteredApp, [
     body('subapp').isString().notEmpty(),
 ], async (req, res) => {
     if (!validate(req, res)) return;

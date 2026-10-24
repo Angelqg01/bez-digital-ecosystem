@@ -17,7 +17,11 @@ const logger = require('../utils/logger');
 
 async function resolverPlan(req, _res, next) {
     let plan = PLAN_POR_DEFECTO;
-    if (req.registeredApp?.id) {
+    if (req.registeredApp && 'plan' in req.registeredApp) {
+        // middleware/gateway-auth.js ya lo leyó junto a la api-key (null = sin
+        // suscripción activa). Volver a consultarlo sería otra ida a la base por petición.
+        plan = req.registeredApp.plan || PLAN_POR_DEFECTO;
+    } else if (req.registeredApp?.id) {
         try {
             const { rows } = await query(
                 `SELECT plan_id FROM gateway_subscriptions
