@@ -72,6 +72,8 @@ const { orquestador } = require('../services/txOrchestrator');
 const bridge = require('../services/mcpGatewayBridge');
 const telemetry = require('../services/telemetryPipeline');
 const { recordUsage } = require('../services/usageBilling');
+const { cupoAcciones, AiQuotaError } = require('../services/aiActionQuota');
+const { SharedRateLimitStore } = require('../utils/sharedRateLimitStore');
 const logger = require('../utils/logger');
 
 const router = Router();
@@ -104,7 +106,11 @@ const mcpLimiter = rateLimit({
     // gastaría el cupo de un enterprise por el simple orden de los middlewares.
     max: (req) => req.entitlements?.limites?.mcpPorMinuto
         || parseInt(process.env.MCP_RATE_LIMIT_MAX, 10) || 120,
-    keyGenerator: (req) => req.headers['x-api-key'] || req.ip,
+    // Por id de la app, no por la cabecera: el contador vive en Redis y la api-key en
+    // claro no puede acabar como nombre de clave. Compartido entre instancias de
+    // Cloud Run (antes cada instancia daba el cupo entero).
+    keyGenerator: (req) => (req.registeredApp?.id ? `app:${req.registeredApp.id}` : req.ip),
+    store: new SharedRateLimitStore({ prefix: 'rl:mcp' }),
     message: { error: 'Too many MCP requests.', code: 'MCP_RATE_LIMIT' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -242,6 +248,31 @@ function construirServidor(app, plan, agente = null) {
                 };
             }
 
+            // Cupo mensual de acciones de IA (services/aiActionQuota.js), compartido con
+            // el REST y el chat. Se reserva ANTES de ejecutar y se devuelve si la
+            // herramienta falla o la política la deniega: lo que no se hace no cuenta.
+            // Las herramientas `gratuita` no gastan cupo.
+            let reserva = null;
+            if (!definicion.gratuita) {
+                try {
+                    reserva = await cupoAcciones().reservar({ app, plan });
+                } catch (err) {
+                    if (err instanceof AiQuotaError) {
+                        telemetry.registrar({
+                            appId: app.id, plan, canal: 'mcp', herramienta: tool.name,
+                            argumentos: args || {}, resultado: 'denegado', codigoError: err.code,
+                        }).catch(() => {});
+                        return {
+                            content: [{ type: 'text', text: `${err.message} El cupo se renueva el ${err.resetsAt.slice(0, 10)}.` }],
+                            isError: true,
+                        };
+                    }
+                    return resultadoError(tool.name, err, app.id);
+                }
+            }
+            const devolverCupo = () => cupoAcciones().anular(reserva)
+                .catch((e) => logger.warn({ appId: app.id, tool: tool.name, error: e.message }, 'No se pudo devolver la acción de IA'));
+
             // La telemetría se recoge DESPUÉS de resolver, nunca antes, y no se
             // espera a que se escriba: mejora el producto, no lo presta. Ver
             // services/telemetryPipeline.js — comprueba plan y oposición antes
@@ -282,6 +313,7 @@ function construirServidor(app, plan, agente = null) {
                 // vencidas es algo que el usuario tiene que saber y arreglar él.
                 const deDominio = ['TxError', 'CostEstimateError', 'BezPayError', 'TokenizationError', 'ErpNoEncontrado']
                     .includes(err?.name) && err.status < 500;
+                devolverCupo();
                 if (deDominio || ['ErpHttpError', 'TokenizationError'].includes(err?.name)) {
                     anotar('denegado', err.code);
                     return resultadoDato(tool.name, { error: err.message, code: err.code, detalles: err.detalles });

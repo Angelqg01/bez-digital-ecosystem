@@ -48,7 +48,8 @@ async function authenticateAgent(req, res, next, clave) {
             `SELECT a.agent_id, a.scopes AS agent_scopes, a.rails, a.per_tx_limit_eur, a.daily_limit_eur,
                     a.can_execute, a.status AS agent_status, a.expires_at,
                     r.id, r.app_name, r.scopes, r.tier, r.is_active,
-                    r.enterprise_id, r.authorized_addresses, r.address_access_mode
+                    r.enterprise_id, r.authorized_addresses, r.address_access_mode,
+                    (SELECT s.plan_id FROM gateway_subscriptions s WHERE s.app_id = r.id AND s.status = 'active' LIMIT 1) AS plan_id
                FROM app_agents a JOIN app_registry r ON r.id = a.app_id
               WHERE a.key_hash = encode(digest($1, 'sha256'), 'hex')`,
             [clave]
@@ -76,6 +77,7 @@ async function authenticateAgent(req, res, next, clave) {
             enterpriseId: f.enterprise_id || null,
             authorizedAddresses: f.authorized_addresses || [],
             addressAccessMode: f.address_access_mode || 'strict',
+            plan: f.plan_id || null,
             viaAgente: true,
         };
         req.agent = {
@@ -123,7 +125,8 @@ async function authenticateOAuthToken(req, res, next, token) {
 
         const { rows } = await query(
             `SELECT id, app_name, scopes, tier, is_active,
-                    enterprise_id, authorized_addresses, address_access_mode
+                    enterprise_id, authorized_addresses, address_access_mode,
+                    (SELECT s.plan_id FROM gateway_subscriptions s WHERE s.app_id = app_registry.id AND s.status = 'active' LIMIT 1) AS plan_id
                FROM app_registry WHERE id = $1`,
             [claims.sub]
         );
@@ -141,6 +144,7 @@ async function authenticateOAuthToken(req, res, next, token) {
             enterpriseId: app.enterprise_id || null,
             authorizedAddresses: app.authorized_addresses || [],
             addressAccessMode: app.address_access_mode || 'strict',
+            plan: app.plan_id || null,
             viaOAuth: true,
             oauthClientId: claims.client_id,
         };
@@ -174,7 +178,8 @@ async function authenticateApp(req, res, next) {
     try {
         const { rows } = await query(
             `SELECT id, app_name, scopes, tier, is_active,
-                    enterprise_id, authorized_addresses, address_access_mode
+                    enterprise_id, authorized_addresses, address_access_mode,
+                    (SELECT s.plan_id FROM gateway_subscriptions s WHERE s.app_id = app_registry.id AND s.status = 'active' LIMIT 1) AS plan_id
              FROM app_registry 
              WHERE api_key_hash = encode(digest($1, 'sha256'), 'hex')`,
             [apiKey]
@@ -202,6 +207,10 @@ async function authenticateApp(req, res, next) {
             // Si la columna no existe todavía (base sin migrar), se asume
             // 'strict': una migración pendiente no puede abrir un permiso.
             addressAccessMode: app.address_access_mode || 'strict',
+            // Plan contratado (suscripción activa), leído en la MISMA consulta: así
+            // resolverPlan no hace otra ida a la base en cada petición. null = sin
+            // suscripción activa → Starter.
+            plan: app.plan_id || null,
         };
         next();
     } catch (error) {

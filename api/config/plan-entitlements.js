@@ -18,7 +18,9 @@
  *   1. CATÁLOGO      — qué herramientas existen para ti.
  *   2. RAZONAMIENTO  — con qué calidad de modelo se resuelve tu petición.
  *   3. MERCADO       — cómo de fresco es el dato que recibes.
- *   4. LÍMITES       — cuántas llamadas por minuto.
+ *   4. LÍMITES       — cuántas llamadas por minuto (MCP y REST, por api-key y en
+ *                      contadores separados) y cuántas acciones de IA al mes
+ *                      (config/plans.js: aiActions; ver services/aiActionQuota.js).
  *   5. PRIVACIDAD    — qué se guarda de tu uso.
  *
  * ═══════════════════════════════════════════════════════════════════════════
@@ -80,7 +82,7 @@ const ENTITLEMENTS = {
             historico: false,
             oraclePorCadena: false,
         },
-        limites: { mcpPorMinuto: 30, erpPorMinuto: 0 },
+        limites: { mcpPorMinuto: 30, apiPorMinuto: 30, erpPorMinuto: 0 },
         privacidad: {
             regimen: 'telemetria_estandar',
             episodios: true,          // alimenta la mejora del servicio
@@ -104,7 +106,7 @@ const ENTITLEMENTS = {
             descripcion: 'Equilibrio entre profundidad y coste para el día a día.',
         },
         mercado: { retrasoSegundos: 0, historico: false, oraclePorCadena: false },
-        limites: { mcpPorMinuto: 120, erpPorMinuto: 0 },
+        limites: { mcpPorMinuto: 120, apiPorMinuto: 120, erpPorMinuto: 0 },
         privacidad: {
             regimen: 'telemetria_estandar',
             episodios: true,
@@ -130,7 +132,7 @@ const ENTITLEMENTS = {
             descripcion: 'Razonamiento profundo para flujos con varios pasos.',
         },
         mercado: { retrasoSegundos: 0, historico: true, oraclePorCadena: true },
-        limites: { mcpPorMinuto: 600, erpPorMinuto: 60 },
+        limites: { mcpPorMinuto: 600, apiPorMinuto: 600, erpPorMinuto: 60 },
         privacidad: {
             // Se vende como feature, así que tiene que ser cierto: para estos
             // inquilinos la capa de episodios NI SE ESCRIBE.
@@ -160,7 +162,7 @@ const ENTITLEMENTS = {
             descripcion: 'Razonamiento extendido y varios agentes en paralelo.',
         },
         mercado: { retrasoSegundos: 0, historico: true, oraclePorCadena: true, feedsDedicados: true },
-        limites: { mcpPorMinuto: 1200, erpPorMinuto: 240 },
+        limites: { mcpPorMinuto: 1200, apiPorMinuto: 1200, erpPorMinuto: 240 },
         privacidad: {
             regimen: 'zero_retention',
             episodios: false,
@@ -219,7 +221,7 @@ function describirPlan(planId) {
             historico: e.mercado.historico,
             oraclePorCadena: e.mercado.oraclePorCadena,
         },
-        limites: e.limites,
+        limites: { ...e.limites, accionesIaMes: plan ? plan.aiActions ?? null : 0 },
         privacidad: { regimen: e.privacidad.regimen, optOut: e.privacidad.optOut, nota: e.privacidad.nota },
         erpGestionado: e.erpGestionado,
         nodosDisponibles: e.nodos,

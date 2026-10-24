@@ -1,5 +1,6 @@
 const request = require('supertest');
-const { mockQuery } = require('../helpers');
+const { mockQuery, mockCupoReservar, mockCupoAnular } = require('../helpers');
+const { AiQuotaError } = require('../../services/aiActionQuota');
 
 // La medición se lanza sin esperar: con el pool real mockeado, sus consultas
 // podrían consumir respuestas encoladas por el test siguiente. Se aísla aquí.
@@ -9,8 +10,8 @@ const app = require('../../index');
 const { TOOLS, toolsParaScopes, getTool } = require('../../config/mcp-tools');
 
 /**
- * El registro devuelve la app cuando authenticateApp consulta por el hash, y
- * después `resolverPlan` consulta la suscripción.
+ * El registro devuelve la app, con su plan, cuando authenticateApp consulta por
+ * el hash.
  *
  * El plan por defecto de esta ayuda es business y NO starter a propósito: con
  * starter, media suite pasaría porque el plan deniega la herramienta y no
@@ -18,10 +19,11 @@ const { TOOLS, toolsParaScopes, getTool } = require('../../config/mcp-tools');
  * el límite del plan lo piden explícitamente.
  */
 function conApp(scopes, plan = 'business') {
+    // El plan llega en la misma fila que la app: authenticateApp lo lee con una
+    // subconsulta a gateway_subscriptions y resolverPlan ya no consulta aparte.
     mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 'app-1', app_name: 'cliente-test', scopes, tier: 'standard', is_active: true }],
+        rows: [{ id: 'app-1', app_name: 'cliente-test', scopes, tier: 'standard', is_active: true, plan_id: plan || null }],
     });
-    mockQuery.mockResolvedValueOnce({ rows: plan ? [{ plan_id: plan }] : [] });
 }
 
 const rpc = (key, metodo, params) => {
@@ -398,5 +400,55 @@ describe('MCP: caché de lecturas', () => {
         }
         expect(spy).toHaveBeenCalledTimes(1);
         spy.mockRestore();
+    });
+});
+
+describe('cupo mensual de acciones de IA en el MCP', () => {
+    const llamar = (plan, name, args = {}) => {
+        conApp(['token', 'wallet'], plan);
+        return rpc('k', 'tools/call', { name, arguments: args });
+    };
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockCupoReservar.mockResolvedValue({ appId: 'app-1', plan: 'starter', used: 1, limit: 150 });
+    });
+
+    it('cada tools/call reserva una acción del plan de la api-key', async () => {
+        const r = cuerpo(await llamar('creator_pro', 'bezhas_subscription'));
+        expect(r?.result?.isError).toBeFalsy();
+        expect(mockCupoReservar).toHaveBeenCalledWith({ app: expect.objectContaining({ id: 'app-1' }), plan: 'creator_pro' });
+        expect(mockCupoAnular).not.toHaveBeenCalled();
+    });
+
+    it('con el cupo agotado no ejecuta la herramienta y dice cuándo se renueva', async () => {
+        mockCupoReservar.mockRejectedValue(new AiQuotaError({ plan: 'starter', limit: 150, used: 150 }));
+        const spy = jest.spyOn(getTool('bezhas_subscription'), 'handler');
+        const r = cuerpo(await llamar('starter', 'bezhas_subscription'));
+        expect(r.result.isError).toBe(true);
+        expect(r.result.content[0].text).toMatch(/150 acciones de IA[\s\S]*se renueva el \d{4}-\d{2}-01/);
+        expect(spy).not.toHaveBeenCalled();
+        expect(mockRecordUsage).not.toHaveBeenCalled();
+        spy.mockRestore();
+    });
+
+    it('las herramientas gratuitas no gastan cupo', async () => {
+        await llamar('starter', 'bezhas_cost_estimate', { operaciones: [{ tipo: 'llamada_api' }] });
+        expect(mockCupoReservar).not.toHaveBeenCalled();
+    });
+
+    it('si la herramienta falla, la acción se devuelve', async () => {
+        const reserva = { appId: 'app-1', plan: 'starter', used: 4, limit: 150 };
+        mockCupoReservar.mockResolvedValue(reserva);
+        const spy = jest.spyOn(getTool('bezhas_subscription'), 'handler').mockRejectedValueOnce(new Error('boom'));
+        const r = cuerpo(await llamar('starter', 'bezhas_subscription'));
+        expect(r.result.isError).toBe(true);
+        expect(mockCupoAnular).toHaveBeenCalledWith(reserva);
+        spy.mockRestore();
+    });
+
+    it('lo que el plan deniega no llega a reservar', async () => {
+        await llamar('starter', 'bezhas_dex_pool');
+        expect(mockCupoReservar).not.toHaveBeenCalled();
     });
 });

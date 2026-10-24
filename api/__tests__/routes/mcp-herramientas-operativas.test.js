@@ -40,10 +40,10 @@ const { getTool } = require('../../config/mcp-tools');
 const rwa = require('../../services/rwaTokenization');
 
 function conApp(scopes, plan) {
+    // El plan va en la fila de la app (subconsulta de authenticateApp).
     mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 'app-1', app_name: 'cliente-test', scopes, tier: 'standard', is_active: true }],
+        rows: [{ id: 'app-1', app_name: 'cliente-test', scopes, tier: 'standard', is_active: true, plan_id: plan }],
     });
-    mockQuery.mockResolvedValueOnce({ rows: [{ plan_id: plan }] });
 }
 
 const rpc = (metodo, params) => request(app).post('/api/mcp')

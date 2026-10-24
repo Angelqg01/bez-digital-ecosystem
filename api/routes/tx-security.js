@@ -19,6 +19,7 @@ const rateLimit = require('express-rate-limit');
 
 const { authenticateGateway, requireScope } = require('../middleware/gateway-auth');
 const { resolverPlan } = require('../middleware/resolve-plan');
+const { cupoMensual } = require('../middleware/plan-limits');
 const { orquestador } = require('../services/txOrchestrator');
 const killSwitch = require('../services/killSwitch');
 const txApproval = require('../services/txApproval');
@@ -78,7 +79,10 @@ txRouter.use(authenticateGateway, exigirApiKey, resolverPlan, limitador);
 
 const SCOPES_DINERO = ['wallet', 'payments', 'treasury'];
 
-txRouter.post('/intents', requireScope(...SCOPES_DINERO), async (req, res) => {
+// Preparar una operación gasta una acción de IA del cupo mensual (como bezhas_tx_prepare en
+// el MCP). Aprobar, ejecutar, cancelar y gestionar destinos o agentes no: son decisiones
+// humanas sobre algo ya preparado, y bloquearlas con el cupo agotado dejaría operaciones a medias.
+txRouter.post('/intents', requireScope(...SCOPES_DINERO), cupoMensual, async (req, res) => {
     try {
         const intencion = await orquestador().crearIntencion({
             entrada: req.body,
