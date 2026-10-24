@@ -4,8 +4,10 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod --ignore-workspace
+# pnpm-workspace.yaml lleva los overrides de seguridad registrados en el lockfile:
+# sin él, --frozen-lockfile aborta con ERR_PNPM_LOCKFILE_CONFIG_MISMATCH.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --prod
 
 COPY src ./src
 COPY scripts ./scripts

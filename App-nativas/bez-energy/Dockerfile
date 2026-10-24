@@ -2,7 +2,9 @@
 FROM node:22.23.4-alpine AS builder
 WORKDIR /app
 RUN npm install -g pnpm
-COPY package.json pnpm-lock.yaml ./
+# pnpm-workspace.yaml lleva los overrides de seguridad registrados en el lockfile:
+# sin él, --frozen-lockfile aborta con ERR_PNPM_LOCKFILE_CONFIG_MISMATCH.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
 COPY . .
 # Vite bakes .env.production into the build (mode=production by default for `build`)
