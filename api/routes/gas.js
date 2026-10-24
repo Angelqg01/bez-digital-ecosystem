@@ -30,4 +30,9 @@ router.get('/balances', authenticateToken, requireRole('admin', 'enterprise'), a
     res.json({ balances: rows });
 });
 
+// ── Saldo de las wallets que pagan gas por BeZhas (sólo admin) ──
+router.get('/treasury', authenticateToken, requireRole('admin'), (req, res) => {
+    res.json({ wallets: require('../services/gasTank/treasuryWatch').status() });
+});
+
 module.exports = router;

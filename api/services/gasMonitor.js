@@ -4,6 +4,9 @@ const { getProvider, getSigner } = require('./contractService');
 const { sendBEZ } = require('./txService');
 
 /**
+ * OBSOLETO: ya no se arranca desde index.js; lo sustituye services/gasTank/treasuryWatch.js (sólo mide y avisa).
+ * Se conserva con su test mientras se retira el modelo antiguo de gas_balances/gas_tank_address.
+ *
  * Mide el saldo NATIVO (POL en Polygon) de cada gas_tank_address y avisa si baja
  * del umbral. Ese saldo no es BEZ: antes se comparaba y se registraba como BEZ.
  *

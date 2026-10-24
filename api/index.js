@@ -43,7 +43,6 @@ const { query, pool } = require('./db/pool');
 const { loadSecretsIntoEnv, logger: gcpLogger } = require('./services/gcpService');
 
 // ── Services (todos los requires en el top-level — nunca dentro de handlers) ──
-const gasMonitor = require('./services/gasMonitor');
 const aegisService = require('./services/aegisService');       // ← movido al top
 const { startListening } = require('./services/eventListener');
 const { startConsumer } = require('./services/eventConsumer');
@@ -630,7 +629,7 @@ async function shutdown(signal) {
 
   // 4. Detener gas monitor daemon
   try {
-    gasMonitor.stopDaemon?.();
+    require('./services/gasTank/treasuryWatch').stop();
     require('./services/gasTank/autoRecharge').stopSweep();
     gcpLogger.info('[SHUTDOWN] Gas monitor stopped');
   } catch (_) { /* no crítico */ }
@@ -695,9 +694,11 @@ async function startServer() {
     .catch(err => gcpLogger.warning('[STARTUP] Agent runtime error', { error: err.message }));
 
   // ── PASO 4: Gas monitor daemon ────────────────────────────────────────────────
-  gasMonitor.startDaemon(60_000);
+  // El gasMonitor antiguo ya no arranca: mezclaba unidades y enviaba fondos desde cada instancia.
+  // Su sustituto sólo mide y avisa (services/gasTank/treasuryWatch.js).
+  require('./services/gasTank/treasuryWatch').start();
   require('./services/gasTank/autoRecharge').startSweep();
-  gcpLogger.info('[STARTUP] Gas monitor daemon started (60s interval)');
+  gcpLogger.info('[STARTUP] Gas treasury watch started (5 min, sólo avisa)');
 
   // ── PASO 4a: Barrido de sesiones de onboarding ───────────────────────────────
   // Caduca lo vencido y borra la IP y el user-agent pasadas 24 h. Lo segundo no
