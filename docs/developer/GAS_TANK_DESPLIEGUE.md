@@ -1,6 +1,6 @@
 # Gas Tank: runbook de despliegue (Amoy y Polygon)
 
-> Estado a 2026-10-24: **preparado y simulado, NO desplegado.** Nada de lo de abajo se ha enviado a ninguna red.
+> Estado a 2026-10-26: **Amoy DESPLEGADO** (pruebas, ver abajo). **Polygon (137): preparado y simulado, NO desplegado.**
 > Contratos: `BeZhasVerifyingPaymaster` y `GasTankVault` (`smart-contracts/src/gas/`). Script: `smart-contracts/script/DeployGasTank.s.sol`.
 
 ## Qué se ha verificado sin desplegar
@@ -33,21 +33,35 @@ Fork de pruebas: `POLYGON_FORK_RPC=https://polygon-bor-rpc.publicnode.com FOUNDR
 Requisitos que no se cumplían en la máquina donde se preparó esto: una **clave de pruebas con POL de Amoy** (faucet) y un **RPC de Amoy
 alcanzable** (`rpc-amoy.polygon.technology` no resolvía desde allí; vale cualquier otro RPC de Amoy).
 
-BEZ solo existe en Polygon mainnet, así que en Amoy se usa un ERC-20 de pruebas cualquiera como `BEZ_TOKEN`.
+BEZ solo existe en Polygon mainnet. En Amoy, si no defines `BEZ_TOKEN`, el script despliega un `TestBEZ` (1.000.000 al admin); también puedes pasar un ERC-20 de pruebas tuyo. RPC de Amoy que respondían al preparar esto: `https://polygon-amoy-bor-rpc.publicnode.com` y `https://polygon-amoy.drpc.org`. Coste simulado: ≈ 0,09 POL de Amoy.
 
 ```bash
 cd smart-contracts
 export AMOY_RPC_URL=<rpc de Amoy>
-export BEZ_TOKEN=<ERC-20 de pruebas en Amoy>
+# export BEZ_TOKEN=<ERC-20 de pruebas>   # opcional en Amoy: si falta, se despliega un TestBEZ
 export GAS_TANK_SIGNER=<dirección de la clave de verificación de pruebas>
 export GAS_TANK_ADMIN=<tu dirección de pruebas>           # en 80002 se admite una EOA
 # 1) simulación
-forge script script/DeployGasTank.s.sol --rpc-url $AMOY_RPC_URL --sender <tu dirección>
+forge script script/DeployGasTank.s.sol --tc DeployGasTank --rpc-url $AMOY_RPC_URL --sender <tu dirección>
 # 2) despliegue (la clave NO va en el entorno: keystore de Foundry o Ledger)
-forge script script/DeployGasTank.s.sol --rpc-url $AMOY_RPC_URL --account <keystore> --broadcast
+forge script script/DeployGasTank.s.sol --tc DeployGasTank --rpc-url $AMOY_RPC_URL --account <keystore> --broadcast
 ```
 
-El script comprueba que el EntryPoint tenga código en la cadena; si el canónico no está en Amoy, falla en claro antes de enviar nada.
+El script comprueba que el EntryPoint tenga código en la cadena (el canónico v0.8 SÍ está en Amoy, 21.738 bytes).
+
+### Amoy: desplegado el 2026-10-26
+
+| Contrato | Dirección |
+|---|---|
+| TestBEZ (ERC-20 de pruebas) | `0x59CE469ACe6b8dD0B269ea0D24109C6a4E984Cae` |
+| GasTankVault | `0x6De23E979EAA6930C083a24a5e72f80536B93604` |
+| BeZhasVerifyingPaymaster | `0x6EfcefD2811895B9CcA9ab1232E5eB5007C5D71D` |
+
+Admin (EOA de pruebas): `0xf9004d210CeC5c6129067f3Fdca18dAc45384ee0`. Firmante: la clave KMS `0x80b8E2bff10623C65e3a000a3EC649b6767A5c7C`.
+Comprobado on-chain tras el despliegue: owner de ambos = admin, firmante registrado en ambos, EntryPoint v0.8 canónico, tope diario 1.000 BEZ, tope
+por UserOp 0,05 POL. Coste real: 0,0716 POL. Registro: `smart-contracts/deployments/gas-tank-80002.json`.
+
+Siguiente (admin EOA, solo Amoy): `script/ConfigureGasTank.s.sol` hace stake, depósito, regla de comisión y fondos de la bóveda en una sola ejecución.
 
 ## Polygon (137), producción
 
@@ -58,9 +72,9 @@ export BEZ_TOKEN=0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8
 export GAS_TANK_ADMIN=<multisig con umbral >= 2>
 export GAS_TANK_SIGNER=<dirección de la clave KMS>
 # 1) simulación (no envía nada)
-forge script script/DeployGasTank.s.sol --rpc-url $POLYGON_RPC_URL --sender <deployer>
+forge script script/DeployGasTank.s.sol --tc DeployGasTank --rpc-url $POLYGON_RPC_URL --sender <deployer>
 # 2) despliegue real, firmado por ti con keystore o Ledger
-forge script script/DeployGasTank.s.sol --rpc-url $POLYGON_RPC_URL --account <keystore> --broadcast --verify
+forge script script/DeployGasTank.s.sol --tc DeployGasTank --rpc-url $POLYGON_RPC_URL --account <keystore> --broadcast --verify
 ```
 
 ### Después del despliegue (lo firma el admin multisig)

@@ -3,9 +3,17 @@ pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {BeZhasVerifyingPaymaster} from "../src/gas/BeZhasVerifyingPaymaster.sol";
 import {GasTankVault} from "../src/gas/GasTankVault.sol";
 import {IEntryPointV8} from "../src/gas/IEntryPointV8.sol";
+
+/// Token de pruebas SOLO para Amoy (BEZ no existe allí): 1.000.000 al `holder`.
+contract TestBEZ is ERC20 {
+    constructor(address holder) ERC20("BeZhas Coin (Amoy test)", "BEZ") {
+        _mint(holder, 1_000_000 ether);
+    }
+}
 
 interface ISafeLike {
     function getThreshold() external view returns (uint256);
@@ -22,16 +30,16 @@ interface ISafeLike {
  * Variables (todas obligatorias salvo las marcadas):
  *   GAS_TANK_ADMIN                 owner de ambos contratos. Multisig; en Polygon (137) se exige contrato con umbral >= 2
  *   GAS_TANK_SIGNER                dirección de la clave de verificación (KMS), la que firma paymasterAndData y vouchers
- *   BEZ_TOKEN                      token BEZ de la cadena
+ *   BEZ_TOKEN                      token BEZ de la cadena. Solo en Amoy (80002) puede omitirse: se despliega un TestBEZ
  *   GAS_TANK_ENTRYPOINT            (opc.) por defecto el EntryPoint v0.8 canónico
  *   GAS_TANK_MAX_COST_PER_OP_WEI   (opc.) tope duro por UserOp del paymaster, por defecto 0,05 POL
  *   GAS_TANK_VAULT_DAILY_CAP       (opc.) tope diario de la bóveda en BEZ (wei), por defecto 1.000 BEZ
  *   GAS_TANK_ALLOW_WEAK_ADMIN      (opc.) "true" para permitir un admin EOA o con umbral 1 (SOLO pruebas)
  *
  * Simulación (sin enviar nada):
- *   forge script script/DeployGasTank.s.sol --rpc-url $POLYGON_RPC_URL --sender <deployer>
+ *   forge script script/DeployGasTank.s.sol --tc DeployGasTank --rpc-url $POLYGON_RPC_URL --sender <deployer>
  * Despliegue real:
- *   forge script script/DeployGasTank.s.sol --rpc-url $POLYGON_RPC_URL --account <keystore> --broadcast --verify
+ *   forge script script/DeployGasTank.s.sol --tc DeployGasTank --rpc-url $POLYGON_RPC_URL --account <keystore> --broadcast --verify
  */
 contract DeployGasTank is Script {
     address constant ENTRYPOINT_V08 = 0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108;
@@ -39,7 +47,7 @@ contract DeployGasTank is Script {
     function run() external returns (BeZhasVerifyingPaymaster paymaster, GasTankVault vault) {
         address admin = vm.envAddress("GAS_TANK_ADMIN");
         address signer = vm.envAddress("GAS_TANK_SIGNER");
-        address bez = vm.envAddress("BEZ_TOKEN");
+        address bez = vm.envOr("BEZ_TOKEN", address(0));
         address entryPoint = vm.envOr("GAS_TANK_ENTRYPOINT", ENTRYPOINT_V08);
         uint256 maxCostPerOp = vm.envOr("GAS_TANK_MAX_COST_PER_OP_WEI", uint256(0.05 ether));
         uint256 vaultDailyCap = vm.envOr("GAS_TANK_VAULT_DAILY_CAP", uint256(1000 ether));
@@ -47,7 +55,12 @@ contract DeployGasTank is Script {
 
         require(admin != address(0) && signer != address(0), "admin y signer obligatorios");
         require(entryPoint.code.length > 0, "EntryPoint sin codigo en esta cadena");
-        require(bez.code.length > 0, "BEZ sin codigo en esta cadena");
+        bool deployTestBez = bez == address(0);
+        if (deployTestBez) {
+            require(block.chainid == 80002, "BEZ_TOKEN es obligatorio fuera de Amoy");
+        } else {
+            require(bez.code.length > 0, "BEZ sin codigo en esta cadena");
+        }
         require(maxCostPerOp > 0 && vaultDailyCap > 0, "topes a cero");
         require(admin != signer, "el admin y la clave de verificacion deben ser distintos");
 
@@ -63,9 +76,10 @@ contract DeployGasTank is Script {
         console.log("admin (owner):", admin);
         console.log("signer:", signer);
         console.log("EntryPoint:", entryPoint);
-        console.log("BEZ:", bez);
+        console.log("BEZ:", deployTestBez ? address(0) : bez);
 
         vm.startBroadcast();
+        if (deployTestBez) bez = address(new TestBEZ(admin));
         paymaster = new BeZhasVerifyingPaymaster(IEntryPointV8(entryPoint), admin, signer, maxCostPerOp);
         vault = new GasTankVault(IERC20(bez), admin, signer, vaultDailyCap);
         vm.stopBroadcast();
@@ -76,6 +90,7 @@ contract DeployGasTank is Script {
         require(address(paymaster.entryPoint()) == entryPoint, "EntryPoint distinto");
         require(address(vault.bez()) == bez, "BEZ distinto");
 
+        if (deployTestBez) console.log("TestBEZ (solo Amoy):", bez);
         console.log("BeZhasVerifyingPaymaster:", address(paymaster));
         console.log("GasTankVault:", address(vault));
         console.log("");
