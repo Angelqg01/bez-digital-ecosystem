@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@babel/traverse": "^7.29.0",
+    "@google-cloud/kms": "~6.2.1",
     "@google-cloud/logging": "^11.1.0",
     "@google-cloud/pubsub": "^4.5.0",
     "@google-cloud/secret-manager": "^5.6.0",

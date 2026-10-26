@@ -1,0 +1,20 @@
+{
+  "chainId": 80002,
+  "network": "polygon-amoy",
+  "deployedAt": "2026-10-26",
+  "note": "Despliegue de PRUEBAS del Gas Tank. TestBEZ no es BEZ-Coin: es un ERC-20 de pruebas. El admin es una EOA de pruebas cuya clave se imprimió en una conversación: no usar en mainnet.",
+  "admin": "0xf9004d210CeC5c6129067f3Fdca18dAc45384ee0",
+  "signer": "0x80b8E2bff10623C65e3a000a3EC649b6767A5c7C",
+  "entryPoint": "0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108",
+  "contracts": {
+    "TestBEZ": "0x59CE469ACe6b8dD0B269ea0D24109C6a4E984Cae",
+    "GasTankVault": "0x6De23E979EAA6930C083a24a5e72f80536B93604",
+    "BeZhasVerifyingPaymaster": "0x6EfcefD2811895B9CcA9ab1232E5eB5007C5D71D"
+  },
+  "transactions": {
+    "TestBEZ": "0xda033319e34a9b211a9dbc967124e21940f4fcf1db763f81ceb9e69aa8254702",
+    "GasTankVault": "0x66afb21f02aee99abb517b1e9328f4d7e21b34ce5849a4a837574edde0128619",
+    "BeZhasVerifyingPaymaster": "0x9368899f5a753cabcac96af62c8b71e8b4cfd9e8cf266b15230fd9a8620d7def"
+  },
+  "startBlock": 51187189
+}
