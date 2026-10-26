@@ -297,7 +297,7 @@ function PackCard({
 
       {pack.bezAmount ? (
         <p className={`text-3xl font-bold font-mono mb-1 ${accentClasses.price}`}>
-          {pack.bezAmount.toLocaleString()} <span className="text-lg">BEZ</span>
+          {pack.bezAmount.toLocaleString('es-ES')} <span className="text-lg">BEZ</span>
         </p>
       ) : (
         <p className={`text-3xl font-bold font-mono mb-1 ${accentClasses.price}`}>Libre</p>

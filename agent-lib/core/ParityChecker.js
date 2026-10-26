@@ -118,7 +118,9 @@ class ParityChecker {
 
     #loadDeployments() {
         try {
-            const files = fs.readdirSync(DEPLOYMENTS_DIR).filter(f => f.endsWith('.json'));
+            // Solo <chainId>.json. Ficheros como validators-31337.json también declaran chainId 31337
+            // y, al leerse después, sustituían el despliegue real: BEZCoinV2/StakingPool salían "no desplegados".
+            const files = fs.readdirSync(DEPLOYMENTS_DIR).filter(f => /^\d+\.json$/.test(f));
             for (const file of files) {
                 const raw = fs.readFileSync(path.join(DEPLOYMENTS_DIR, file), 'utf-8');
                 const data = JSON.parse(raw);

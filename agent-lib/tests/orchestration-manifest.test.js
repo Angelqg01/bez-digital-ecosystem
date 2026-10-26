@@ -48,7 +48,7 @@ describe('Orchestration Manifest', () => {
 });
 
 describe('Orchestration Event Publisher', () => {
-  test('returns redis_unavailable without throwing when Redis is absent', async () => {
+  test('returns no_stream_backend without throwing when no stream backend is available', async () => {
     const publisher = new OrchestrationEventPublisher({
       memory: { client: null },
       manifest: new OrchestrationManifest(),
@@ -56,7 +56,7 @@ describe('Orchestration Event Publisher', () => {
 
     const result = await publisher.taskQueued({ id: 'task_1', type: 'growth:qualify' });
 
-    expect(result).toEqual({ published: false, reason: 'redis_unavailable' });
+    expect(result).toEqual({ published: false, reason: 'no_stream_backend' });
   });
 
   test('publishes to all stream and department stream', async () => {

@@ -441,6 +441,11 @@ services:
       # Sin nodo L2 propio desplegado en este alcance: apunta a un RPC público
       # de la red donde SÍ están los contratos (ver tabla de CLAUDE.md).
       NEXT_PUBLIC_RPC_URL: ${NEXT_PUBLIC_RPC_URL:-https://bsc-dataseed.binance.org}
+      # Las rutas del servidor de Next (p. ej. /api/monitor) llaman a la API por la red
+      # interna de Docker: NEXT_PUBLIC_API_URL es relativo (/api) y no sirve desde el servidor.
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://bezhas-api:3001/api}
+      # Solo en el servidor; la API lo exige para /api/monitor/overview (sin él, el War Room recibe 401).
+      MONITOR_ACCESS_TOKEN: ${MONITOR_ACCESS_TOKEN:-}
     ports:
       - "3000:3000"
     networks:

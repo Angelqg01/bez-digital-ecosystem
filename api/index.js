@@ -552,19 +552,23 @@ app.use((_req, res) => {
  */
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  gcpLogger.error('[GLOBAL_ERROR]', {
+  // Un 4xx es culpa del cliente (origen CORS no permitido, JSON mal formado, cuerpo demasiado grande):
+  // se registra como aviso y sin traza. Solo lo que acaba en 5xx es un error nuestro.
+  const status = Number.isInteger(err.status) && err.status >= 400 && err.status < 600 ? err.status : 500;
+  const clientError = status < 500;
+  gcpLogger[clientError ? 'warning' : 'error']('[GLOBAL_ERROR]', {
     message: err.message,
-    stack: IS_PROD ? undefined : err.stack,
+    stack: IS_PROD || clientError ? undefined : err.stack,
     requestId: req.id,
     method: req.method,
     url: req.originalUrl,
   });
 
-  // No filtrar el mensaje en desarrollo para facilitar debugging
-  res.status(err.status || 500).json({
-    error: 'Internal server error',
-    code: err.code || 'INTERNAL_ERROR',
-    message: !IS_PROD ? err.message : 'Something went wrong',
+  // No filtrar el mensaje de un 5xx en producción; el de un 4xx es seguro y ayuda al cliente.
+  res.status(status).json({
+    error: clientError ? 'Request rejected' : 'Internal server error',
+    code: err.code && typeof err.code === 'string' ? err.code : clientError ? 'BAD_REQUEST' : 'INTERNAL_ERROR',
+    message: !IS_PROD || clientError ? err.message : 'Something went wrong',
     requestId: req.id,
   });
 });

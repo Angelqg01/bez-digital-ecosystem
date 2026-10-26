@@ -185,6 +185,7 @@ function connect(opts = {}) {
     client = mqtt.connect(brokerUrl, { username, password, clientId, reconnectPeriod, connectTimeout: connectTimeoutMs });
 
     let settled = false;
+    let lastErrorReason = null;
     const timer = setTimeout(() => {
       if (!settled) {
         settled = true;
@@ -194,6 +195,7 @@ function connect(opts = {}) {
 
     client.on('connect', () => {
       connected = true;
+      lastErrorReason = null;
       client.subscribe(TELEMETRY_TOPIC, (err) => {
         if (err) logger.warn('[VPP] telemetry subscribe failed: %s', err.message);
         else logger.info('[VPP] subscribed to %s', TELEMETRY_TOPIC);
@@ -208,7 +210,11 @@ function connect(opts = {}) {
     client.on('reconnect', () => logger.info('[VPP] MQTT reconnecting...'));
     client.on('close', () => { connected = false; });
     client.on('error', (err) => {
-      logger.warn('[VPP] MQTT error: %s', err.message);
+      // Una conexión rechazada llega como AggregateError con message vacío: sin el código el log era
+      // "[VPP] MQTT error: " cada 5 s. Y mientras el motivo no cambie, solo se avisa la primera vez.
+      const reason = err.message || err.code || err.errors?.[0]?.code || err.name || 'error desconocido';
+      if (reason !== lastErrorReason) logger.warn('[VPP] MQTT error: %s (se silencian los repetidos hasta reconectar)', reason);
+      lastErrorReason = reason;
       if (!settled) {
         settled = true;
         clearTimeout(timer);
