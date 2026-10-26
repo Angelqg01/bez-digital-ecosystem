@@ -186,10 +186,19 @@ async function getContractAddress(contractName, chainId) {
     return rows[0].address;
 }
 
+// Un contrato sin dirección en esa cadena no es un fallo del servidor: el recurso aún no existe. Con status 503 y
+// código propio, las rutas responden «no disponible» en vez de un 500 genérico, y el cliente puede distinguirlo.
+function contractNotDeployed(contractName, chainId) {
+    return Object.assign(new Error(`Contract ${contractName} not deployed on chain ${chainId || 'default'}`), {
+        code: 'CONTRACT_NOT_DEPLOYED',
+        status: 503,
+    });
+}
+
 // ── Get contract instance (read-only) ──
 async function getContract(contractName, chainId) {
     const address = await getContractAddress(contractName, chainId);
-    if (!address) throw new Error(`Contract ${contractName} not deployed on chain ${chainId || 'default'}`);
+    if (!address) throw contractNotDeployed(contractName, chainId);
     const abi = loadABI(contractName);
     return new ethers.Contract(address, abi, getProvider());
 }
@@ -197,7 +206,7 @@ async function getContract(contractName, chainId) {
 // ── Get contract instance (with signer for writes) ──
 async function getSignedContract(contractName, chainId) {
     const address = await getContractAddress(contractName, chainId);
-    if (!address) throw new Error(`Contract ${contractName} not deployed on chain ${chainId || 'default'}`);
+    if (!address) throw contractNotDeployed(contractName, chainId);
     const abi = loadABI(contractName);
     return new ethers.Contract(address, abi, getSigner());
 }

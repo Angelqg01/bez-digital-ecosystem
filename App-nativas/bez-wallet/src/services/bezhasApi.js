@@ -67,7 +67,8 @@ export const VALIDATOR_REGISTRY_ABI = [
 
 export const CONTRACT_ADDRESSES = {
   BEZ_POLYGON: import.meta.env.VITE_BEZ_POLYGON || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
-  BEZ_BNB: import.meta.env.VITE_BEZ_BNB || '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55',
+  // BEZ no está desplegado en BNB Chain (0x8a1e…5b55 no tiene código, comprobado on-chain): vacío hasta que exista el bridge.
+  BEZ_BNB: import.meta.env.VITE_BEZ_BNB || '',
   STAKING: import.meta.env.VITE_STAKING_ADDR || '',
   VALIDATOR_REGISTRY: import.meta.env.VITE_VALIDATOR_ADDR || '',
   TREASURY_DAO: import.meta.env.VITE_TREASURY_ADDR || '0x89c23890c742d710265dD61be789C71dC8999b12',

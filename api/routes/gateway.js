@@ -1355,7 +1355,7 @@ const freshnessWindowS = () => {
 // `pending` con liquidez 0: es el estado real, y el consumidor ya sabe pintarlo
 // ("Pendiente de pool") sin inventarse una cotizacion que no existe.
 const BEZ_MARKETS = [
-    { chainId: 137, pool: 'QuickSwap V3', address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
+    { chainId: 137, pool: 'QuickSwap V2', address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
 ];
 
 const MARKET_STATUSES = new Set(['active', 'paused', 'pending']);

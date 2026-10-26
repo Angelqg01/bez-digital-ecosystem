@@ -62,14 +62,15 @@ export async function deploySmartWallet(ownerAddress, guardianAddress, dailyLimi
             dailyLimit: dailyLimitBEZ,
         };
     } catch (err) {
-        console.warn('[bez-wallet] SmartWallet deploy failed, returning mock:', err.message);
-        return {
-            txHash: '0x' + 'f'.repeat(64),
-            status: 'mock',
-            owner: ownerAddress,
-            dailyLimit: dailyLimitBEZ,
-            error: err.message,
-        };
+        // Antes devolvía un resultado «mock» con un txHash inventado (0xfff…): cualquier pantalla lo habría enseñado como
+        // si la wallet se hubiera creado. Un fallo es un fallo: se propaga con un código que la UI puede mostrar.
+        const unavailable = /not deployed|not available/i.test(err.message || '');
+        throw Object.assign(
+            new Error(unavailable
+                ? 'La Smart Wallet todavía no está disponible en esta red.'
+                : `No se pudo crear la Smart Wallet: ${err.message}`),
+            { code: unavailable ? 'CONTRACT_NOT_DEPLOYED' : 'DEPLOY_FAILED', cause: err },
+        );
     }
 }
 

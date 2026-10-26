@@ -38,12 +38,13 @@ function envApiBase() {
         import.meta.env.VITE_AUTH_API ||
         import.meta.env.VITE_HUB_API ||
         import.meta.env.VITE_API_URL ||
-        'https://api.bezhas.com'
+        // En desarrollo, la API local: sin esto `pnpm dev` hablaba con producción (login SIWE y pedidos incluidos).
+        (import.meta.env.DEV ? 'http://localhost:3001' : 'https://api.bezhas.com')
       );
     }
   } catch { /* not a module env */ }
   if (typeof process !== 'undefined' && process.env) {
-    return process.env.NEXT_PUBLIC_AUTH_API || process.env.NEXT_PUBLIC_API_URL || 'https://api.bezhas.com';
+    return process.env.NEXT_PUBLIC_AUTH_API || process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV !== 'production' ? 'http://localhost:3001' : 'https://api.bezhas.com');
   }
   return 'https://api.bezhas.com';
 }
@@ -130,7 +131,10 @@ export function getSession() {
   if (typeof localStorage === 'undefined') return null;
   try {
     const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const session = raw ? JSON.parse(raw) : null;
+    // Una sesión demo guardada por versiones anteriores ya no vale: no tiene servidor detrás.
+    if (session?.authMethod === 'demo' && !allowDemoAuth()) { clearSession(); return null; }
+    return session;
   } catch {
     return null;
   }
@@ -158,6 +162,55 @@ function apiRoot(apiBase) {
   return String(apiBase).replace(/\/api\/?$/, '').replace(/\/$/, '');
 }
 
+// ── Errores de autenticación con wallet ──────────────────────────────────────
+/**
+ * Fallo del inicio de sesión con wallet. `code`: USER_REJECTED | BACKEND_UNREACHABLE | HTTP | INVALID_RESPONSE.
+ * El mensaje es apto para enseñar al usuario tal cual.
+ */
+export class WalletAuthError extends Error {
+  constructor(message, { code = 'HTTP', status = null, cause = null } = {}) {
+    super(message);
+    this.name = 'WalletAuthError';
+    this.code = code;
+    this.status = status;
+    if (cause) this.cause = cause;
+  }
+}
+
+function httpMessage(status) {
+  if (status === 401) return 'La firma no es válida o el reto caducó. Inténtalo de nuevo.';
+  if (status === 403) return 'La API de BeZhas no permite iniciar sesión desde este sitio (origen no autorizado).';
+  if (status === 429) return 'Demasiados intentos. Espera un minuto y vuelve a probar.';
+  if (status >= 500) return `El servidor de BeZhas respondió con un error (${status}). Inténtalo en unos minutos.`;
+  return `No se pudo iniciar sesión (respuesta ${status}).`;
+}
+
+/** Normaliza cualquier fallo del flujo SIWE a un WalletAuthError. */
+function toWalletAuthError(err) {
+  if (err instanceof WalletAuthError) return err;
+  // EIP-1193: 4001 = el usuario rechazó la firma; ACTION_REJECTED es el equivalente de ethers.
+  if (err?.code === 4001 || err?.code === 'ACTION_REJECTED' || /user (rejected|denied)/i.test(err?.message || '')) {
+    return new WalletAuthError('Rechazaste la firma en la wallet.', { code: 'USER_REJECTED', cause: err });
+  }
+  // fetch sin respuesta: red caída, DNS, bloqueo de CORS o timeout.
+  if (err?.name === 'TypeError' || err?.name === 'AbortError' || err?.name === 'TimeoutError') {
+    return new WalletAuthError('No se pudo contactar con el servidor de BeZhas. Comprueba tu conexión.', { code: 'BACKEND_UNREACHABLE', cause: err });
+  }
+  return new WalletAuthError(err?.message || 'No se pudo iniciar sesión.', { code: 'INVALID_RESPONSE', cause: err });
+}
+
+/**
+ * La sesión DEMO (local, sin servidor) ya no se concede en silencio: antes cualquier fallo del backend, incluso un 403 o un 500,
+ * acababa en «wallet conectada» con un token falso. Solo se admite si se pide expresamente (`allowDemo: true` o
+ * VITE_ALLOW_DEMO_AUTH=true) y únicamente cuando el servidor no responde.
+ */
+function allowDemoAuth() {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) return import.meta.env.VITE_ALLOW_DEMO_AUTH === 'true';
+  } catch { /* no es un entorno de módulos Vite */ }
+  return typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_ALLOW_DEMO_AUTH === 'true';
+}
+
 /**
  * Full Sign-In With Ethereum flow against the real BeZhas JWT auth
  * (`GET /api/auth/nonce` → sign the server message → `POST /api/auth/login`).
@@ -173,6 +226,7 @@ export async function siweLogin({
   statement = 'Sign in with Ethereum to the BeZhas Ecosystem.',
   appOrigin = 'subapp',
   mode = 'login',
+  allowDemo = allowDemoAuth(),
 } = {}) {
   const { chainId } = await connectWallet();
   const eth = getInjected();
@@ -186,9 +240,9 @@ export async function siweLogin({
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(12000),
     });
-    if (!nonceRes.ok) throw new Error(`nonce ${nonceRes.status}`);
+    if (!nonceRes.ok) throw new WalletAuthError(httpMessage(nonceRes.status), { code: 'HTTP', status: nonceRes.status });
     const { message } = await nonceRes.json();
-    if (!message) throw new Error('nonce response missing message');
+    if (!message) throw new WalletAuthError('El servidor no devolvió el mensaje a firmar.', { code: 'INVALID_RESPONSE' });
 
     // 2. Sign the server message verbatim (backend extracts its nonce from it).
     const signature = await personalSign(rawAddress, message);
@@ -200,9 +254,9 @@ export async function siweLogin({
       body: JSON.stringify({ address, signature, message, appOrigin, mode }),
       signal: AbortSignal.timeout(12000),
     });
-    if (!loginRes.ok) throw new Error(`login ${loginRes.status}`);
+    if (!loginRes.ok) throw new WalletAuthError(httpMessage(loginRes.status), { code: 'HTTP', status: loginRes.status });
     const { token, user } = await loginRes.json();
-    if (!token) throw new Error('login response missing token');
+    if (!token) throw new WalletAuthError('El servidor no devolvió una sesión.', { code: 'INVALID_RESPONSE' });
 
     const session = {
       address, chainId: chainId || POLYGON_CHAIN_ID,
@@ -214,9 +268,10 @@ export async function siweLogin({
     saveSession(session);
     return session;
   } catch (err) {
-    // DEMO fallback — backend unreachable / not deployed. We still require a real
-    // wallet signature so the UX is genuine, but the session is local-only.
-    console.warn('[bezhas-wallet-auth] JWT auth backend unavailable, using DEMO session:', err.message);
+    const authError = toWalletAuthError(err);
+    // Sesión DEMO: solo si se pidió expresamente Y el servidor no respondió. Cualquier otro fallo se muestra al usuario.
+    if (!(allowDemo && authError.code === 'BACKEND_UNREACHABLE')) throw authError;
+    console.warn('[bezhas-wallet-auth] Backend no disponible, usando sesión DEMO (allowDemo):', err.message);
     const domain = typeof window !== 'undefined' ? window.location.host : 'app.bezhas.com';
     const uri = typeof window !== 'undefined' ? window.location.origin : `https://${domain}`;
     const nonce = Math.random().toString(36).slice(2);

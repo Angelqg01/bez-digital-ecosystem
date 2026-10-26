@@ -46,10 +46,15 @@ function envVar(name, fallback) {
   return fallback;
 }
 
+function isDevBuild() {
+  try { return typeof import.meta !== 'undefined' && !!import.meta.env && import.meta.env.DEV === true; } catch { return false; }
+}
+
 /** API core: login/registro fiat y wallet. */
 function coreApiBase() {
   return normalizeApiBase(
-    envVar('VITE_API_URL') || envVar('VITE_AUTH_API') || 'https://api.bezhas.com',
+    // En desarrollo, la API local: sin esto una SubApp sin VITE_API_URL ni proxy hablaba con producción desde `pnpm dev`.
+    envVar('VITE_API_URL') || envVar('VITE_AUTH_API') || (isDevBuild() ? 'http://localhost:3001' : 'https://api.bezhas.com'),
   );
 }
 

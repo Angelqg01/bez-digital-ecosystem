@@ -28,20 +28,20 @@ function getClient() {
 //  READ OPERATIONS
 // ═══════════════════════════════════════════
 
-/** Get Paymaster gas balance for a user */
-export const getGasBalance = async (address) => {
+/** Saldo de BEZ que una empresa tiene depositado en el Paymaster (view real: getEnterpriseBalance). */
+export const getGasBalance = async (enterprise) => {
   try {
-    return await getClient().read('Paymaster', 'getGasBalance', [address]);
+    return await getClient().read('Paymaster', 'getEnterpriseBalance', [enterprise]);
   } catch (err) {
     console.warn('Paymaster read failed:', err.message);
     return null;
   }
 };
 
-/** Check if an operation is gas-sponsored */
-export const isSponsoredOperation = async (operation, userAddress) => {
+/** ¿Patrocina la empresa el gas de este usuario? (mapping público isEnterpriseUser[empresa][usuario]) */
+export const isSponsoredOperation = async (enterprise, userAddress) => {
   try {
-    return await getClient().read('Paymaster', 'isSponsoredOperation', [operation, userAddress]);
+    return await getClient().read('Paymaster', 'isEnterpriseUser', [enterprise, userAddress]);
   } catch {
     return false;
   }
@@ -52,11 +52,14 @@ export const getBEZBalance = async (address) => {
   return getClient().getBEZBalance(address);
 };
 
-/** Get gas tank analytics from gateway */
-export const getGasAnalytics = async (token) => {
+/**
+ * Saldos de una dirección según el gateway (ruta real: GET /gateway/v1/wallet/balance/:address, con api-key o JWT).
+ * Antes llamaba a /gateway/v1/wallet/balance, que no existe (404) y siempre devolvía ceros.
+ */
+export const getGasAnalytics = async (token, address) => {
   try {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    const res = await fetch(`${apiUrl}/gateway/v1/wallet/balance`, {
+    const apiUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? '/api' : 'https://api.bezhas.com/api');
+    const res = await fetch(`${apiUrl}/gateway/v1/wallet/balance/${encodeURIComponent(address)}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error('Failed');

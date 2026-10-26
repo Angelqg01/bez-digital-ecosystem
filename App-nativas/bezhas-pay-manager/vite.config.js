@@ -15,6 +15,8 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'lucide-react'],
   },
   server: {
+    // API local en desarrollo (ver src/main.jsx): evita CORS y no habla con producción.
+    proxy: { '/api': { target: 'http://localhost:3001', changeOrigin: true } },
     fs: { allow: ['..', SHARED] },
   },
 })

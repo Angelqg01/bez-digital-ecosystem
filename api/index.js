@@ -718,6 +718,13 @@ async function startServer() {
     });
     gcpLogger.info('[STARTUP] BEZ settlement watcher started');
   }
+  // Mercado real de BEZ (par de QuickSwap) → token_market_cache → markets[] del oráculo público (opt-in).
+  if (process.env.BEZ_MARKET_WATCHER_ENABLED === 'true') {
+    require('./services/bezMarketWatcher').startWatcher({
+      intervalMs: parseInt(process.env.BEZ_MARKET_POLL_MS || '300000', 10),
+    });
+    gcpLogger.info('[STARTUP] BEZ market watcher started');
+  }
   if (process.env.PAYMENTS_WEBHOOKS_ENABLED === 'true') {
     const { startDispatcher } = require('./services/paymentWebhooks');
     startDispatcher(parseInt(process.env.WEBHOOK_DISPATCH_MS || '15000', 10));

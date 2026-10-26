@@ -34,7 +34,8 @@ const CHAINS = {
     },
     56: {
         rpc: process.env.BSC_MAINNET_RPC || 'https://bsc-dataseed.binance.org',
-        bez: process.env.BEZCOIN_BSC_ADDRESS || '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55',
+        // BEZ no está desplegado en BNB Chain (0x8a1e…5b55 no tiene código): sin BEZCOIN_BSC_ADDRESS la cadena 56 no se vigila.
+        bez: process.env.BEZCOIN_BSC_ADDRESS || null,
     },
 };
 
@@ -102,7 +103,7 @@ async function setCursor(chainId, block) {
  */
 async function scanOnce(chainId = 137, provider = null) {
     const chain = CHAINS[chainId];
-    if (!chain) throw new Error(`Unsupported chain for settlement watcher: ${chainId}`);
+    if (!chain || !chain.bez) throw new Error(`Unsupported chain for settlement watcher: ${chainId}`);
     provider = provider || new ethers.JsonRpcProvider(chain.rpc);
 
     const head = await provider.getBlockNumber();
