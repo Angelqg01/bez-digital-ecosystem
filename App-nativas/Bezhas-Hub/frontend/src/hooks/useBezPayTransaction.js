@@ -251,7 +251,7 @@ export function useBezPayTransaction() {
     // Polling cada 3s (fallback robusto sin depender del hook useWaitForTransactionReceipt)
     const RPC_URL = chainId === 137
       ? (import.meta.env.VITE_POLYGON_RPC_URL || 'https://polygon-bor.publicnode.com')
-      : 'https://rpc-amoy.polygon.technology';
+      : 'https://polygon-amoy-bor-rpc.publicnode.com';
 
     for (let attempt = 0; attempt < 40; attempt++) {  // Max 2 minutos
       await new Promise(r => setTimeout(r, 3000));

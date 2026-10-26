@@ -255,7 +255,7 @@ router.post('/subscribe/confirm', withApiKey, async (req, res) => {
         const rpcMap = {
             137: process.env.POLYGON_MAINNET_RPC || 'https://polygon-bor.publicnode.com',
             56: 'https://bsc-dataseed.binance.org/',
-            80002: process.env.POLYGON_AMOY_RPC || 'https://rpc-amoy.polygon.technology',
+            80002: process.env.POLYGON_AMOY_RPC || 'https://polygon-amoy-bor-rpc.publicnode.com',
         };
         const bezByChain = { 137: BEZ_TOKEN.polygon, 56: BEZ_TOKEN.bsc, 80002: process.env.BEZ_AMOY_ADDRESS };
         const bezAddress = bezByChain[chainId];

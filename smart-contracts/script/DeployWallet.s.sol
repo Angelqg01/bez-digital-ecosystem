@@ -8,6 +8,7 @@ import {WalletGuardian} from "../src/wallet/WalletGuardian.sol";
 import {SecurityModule} from "../src/wallet/SecurityModule.sol";
 import {MultiSigWallet} from "../src/wallet/MultiSigWallet.sol";
 import {IdentityRegistry} from "../src/IdentityRegistry.sol";
+import {BEZCoinV2} from "../src/tokens/BEZCoinV2.sol";
 
 /**
  * @title DeployWallet
@@ -26,7 +27,8 @@ import {IdentityRegistry} from "../src/IdentityRegistry.sol";
  * Variables:
  *   DEPLOYER_PRIVATE_KEY  (obligatoria salvo en Anvil)
  *   WALLET_ADMIN          dueño de Factory/Paymaster/Guardian/Security/Identity (por defecto, el deployer)
- *   BEZ_TOKEN             token del Paymaster (por defecto, BEZ en Polygon)
+ *   BEZ_TOKEN             token del Paymaster. Sin definir: en Polygon (137) usa el BEZ real; en cualquier otra red
+ *                         (Amoy, Anvil) despliega un BEZCoinV2 de PRUEBA, porque BEZ no existe fuera de Polygon
  *   GUARDIANS             lista separada por comas (por defecto, solo el admin; en mainnet usar 3 o más)
  *   GUARDIAN_THRESHOLD    por defecto 1 con un guardián, si no 2
  *   TIMELOCK_DELAY        segundos, entre 1 día y 30 días (por defecto 2 días)
@@ -43,7 +45,9 @@ contract DeployWallet is Script {
             : vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);
         address admin = vm.envOr("WALLET_ADMIN", deployer);
-        address bez = vm.envOr("BEZ_TOKEN", BEZ_POLYGON);
+        address bez = vm.envOr("BEZ_TOKEN", address(0));
+        bool deployTestToken = bez == address(0) && block.chainid != 137;
+        if (bez == address(0) && block.chainid == 137) bez = BEZ_POLYGON;
 
         address[] memory guardians = _list("GUARDIANS", admin);
         uint256 threshold = vm.envOr("GUARDIAN_THRESHOLD", guardians.length == 1 ? uint256(1) : uint256(2));
@@ -60,6 +64,7 @@ contract DeployWallet is Script {
         uint256 dailyLimit = vm.envOr("DEFAULT_DAILY_LIMIT", uint256(1000 ether));
 
         vm.startBroadcast(deployerKey);
+        if (deployTestToken) bez = address(new BEZCoinV2(admin));
         SmartWalletFactory factory = new SmartWalletFactory(admin, dailyLimit);
         Paymaster paymaster = new Paymaster(bez, admin);
         WalletGuardian guardian = new WalletGuardian(admin);
@@ -71,6 +76,7 @@ contract DeployWallet is Script {
         console.log("chainId            :", block.chainid);
         console.log("deployer           :", deployer);
         console.log("admin              :", admin);
+        console.log("BEZ (Paymaster)    :", bez, deployTestToken ? "(token de PRUEBA desplegado ahora)" : "");
         console.log("SmartWalletFactory :", address(factory));
         console.log("Paymaster          :", address(paymaster));
         console.log("WalletGuardian     :", address(guardian));

@@ -21,7 +21,7 @@ const logger = pino({ name: 'AIGateway' });
 // ─── Configuration ─────────────────────────────────────────
 const MCP_SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:8080';
 const BEZ_CONTRACT = '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
-const RPC_URL = process.env.POLYGON_RPC_URL || process.env.RPC_URL || 'https://rpc-amoy.polygon.technology';
+const RPC_URL = process.env.POLYGON_RPC_URL || process.env.RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com';
 const RELAYER_KEY = process.env.RELAYER_PRIVATE_KEY || '';
 
 // Cloud Run service-to-service authentication

@@ -34,7 +34,7 @@ export const SUPPORTED_CHAINS = {
     polygonAmoy: {
         id: 80002,
         name: 'Polygon Amoy Testnet',
-        rpcUrl: 'https://rpc-amoy.polygon.technology',
+        rpcUrl: 'https://polygon-amoy-bor-rpc.publicnode.com',
         blockExplorer: 'https://www.oklink.com/amoy'
     }
 };

@@ -34,7 +34,7 @@ const AmoyNetworkSwitcher = () => {
                             symbol: 'MATIC',
                             decimals: 18
                         },
-                        rpcUrls: ['https://rpc-amoy.polygon.technology'],
+                        rpcUrls: ['https://polygon-amoy-bor-rpc.publicnode.com'],
                         blockExplorerUrls: ['https://amoy.polygonscan.com']
                     }]
                 });

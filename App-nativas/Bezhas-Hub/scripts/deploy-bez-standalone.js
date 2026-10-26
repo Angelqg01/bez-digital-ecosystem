@@ -35,7 +35,7 @@ async function deployToken() {
     console.log("\n🚀 Deploying BEZ-Coin Token to Polygon Amoy Testnet...\n");
 
     // Configurar provider y wallet
-    const rpcUrl = process.env.AMOY_RPC_URL || process.env.POLYGON_AMOY_RPC || 'https://rpc-amoy.polygon.technology';
+    const rpcUrl = process.env.AMOY_RPC_URL || process.env.POLYGON_AMOY_RPC || 'https://polygon-amoy-bor-rpc.publicnode.com';
     const privateKey = process.env.PRIVATE_KEY;
 
     if (!privateKey) {

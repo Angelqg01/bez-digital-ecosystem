@@ -13,7 +13,7 @@ export const config = {
         mode: (process.env.NETWORK_MODE || 'amoy') as 'mainnet' | 'amoy' | 'localhost',
         rpc: {
             mainnet: process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com',
-            amoy: process.env.POLYGON_AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology',
+            amoy: process.env.POLYGON_AMOY_RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com',
             localhost: 'http://localhost:8545',
         },
         get activeRpc(): string {
