@@ -126,3 +126,6 @@ Billetera*
 
 # Librería GPL-3.0 para las pruebas del perfil aa (se baja con smart-contracts/script/setup-aa-lib.sh)
 smart-contracts/lib/account-abstraction/
+
+# Estado local de la prueba E2E del Gas Tank
+scripts/dev/.gas-tank-e2e-state.json

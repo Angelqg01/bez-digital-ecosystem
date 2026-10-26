@@ -63,6 +63,20 @@ por UserOp 0,05 POL. Coste real: 0,0716 POL. Registro: `smart-contracts/deployme
 
 Siguiente (admin EOA, solo Amoy): `script/ConfigureGasTank.s.sol` hace stake, depósito, regla de comisión y fondos de la bóveda en una sola ejecución.
 
+### Prueba de extremo a extremo (Amoy)
+
+`scripts/dev/gas-tank-amoy-e2e.cjs` + `smart-contracts/test-aa/AmoyE2E.s.sol` prueban todo el camino con la **clave KMS real**: organización
+y política en una Postgres LOCAL (el script se niega a escribir en otra), voucher de comisión, patrocinio firmado por KMS, cuenta nueva creada
+por el EntryPoint, lote voucher → approve → tokenizar, y liquidación en el Gas Tank con `UserOperationEvent.actualGasCost`. El admin hace de
+bundler (`handleOps` directo), así que no hace falta un bundler externo (tampoco prueba las reglas ERC-7562 de uno).
+
+Resultado de la prueba sobre un **fork local de Amoy** (2026-10-26): UserOp ejecutada, 1 activo tokenizado, la cuenta sin BEZ sobrante;
+cargo de 846 créditos = 8 de gas + 838 de comisión de 100 BEZ, con 10 devueltos de la reserva.
+
+Para repetirla en la Amoy real hacen falta ≈ 0,25 POL en el admin (despliegue del tokenizador y la fábrica de cuentas ≈ 0,11; depósito del paymaster
+≥ 0,06, porque `maxCost` de la UserOp es ≈ 0,04; y el gas del `handleOps`). Pasos: `DeployAmoyE2E` (admin), depósito, `prepare`, `SubmitHandleOps`
+con `--gas-estimate-multiplier 400` (sin él, AA95), `settle`.
+
 ## Polygon (137), producción
 
 ```bash
