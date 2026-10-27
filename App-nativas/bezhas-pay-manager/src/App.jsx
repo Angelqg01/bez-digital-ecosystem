@@ -16,9 +16,11 @@ const METODOS = [
   { id: 'bank', titulo: 'Transferencia SEPA', desc: 'IBAN y referencia para conciliar el pedido', icon: Landmark },
 ];
 
-const usd = (v) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD' }).format(v);
+// La transferencia SEPA va en EUR (la cuenta de cobro es en EUR); la tarjeta, en USD.
+const monedaDe = (metodo) => (metodo === 'bank' ? 'EUR' : 'USD');
+const dinero = (v, moneda = 'USD') => new Intl.NumberFormat('es-ES', { style: 'currency', currency: moneda }).format(v);
 // El precio semilla es 0,0075 USD: con 2 decimales salía «0,01 US$».
-const precioUsd = (v) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD', maximumFractionDigits: 6 }).format(v);
+const precioEn = (v, moneda = 'USD') => new Intl.NumberFormat('es-ES', { style: 'currency', currency: moneda, maximumFractionDigits: 6 }).format(v);
 const bez = (v) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(v);
 
 function idempotencyKey() {
@@ -54,6 +56,7 @@ function Comprar() {
   const [importe, setImporte] = useState('');
   const [metodo, setMetodo] = useState('card');
   const [precio, setPrecio] = useState(null);
+  const [eurUsd, setEurUsd] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [pedido, setPedido] = useState(null);
@@ -64,14 +67,21 @@ function Comprar() {
     gateway(apiBase, '/token/price', { headers: authHeaders() })
       .then((d) => { if (vivo && d.priceUSD > 0) setPrecio(d.priceUSD); })
       .catch(() => { if (vivo) setPrecio(null); });
+    // Cambio de referencia del BCE con el que la API cotiza los pedidos SEPA en EUR.
+    gateway(apiBase, '/payments/fx', { headers: authHeaders() })
+      .then((d) => { if (vivo && d.rate > 0) setEurUsd(d.rate); })
+      .catch(() => { if (vivo) setEurUsd(null); });
     return () => { vivo = false; };
   }, [token, apiBase, authHeaders]);
 
+  const moneda = monedaDe(metodo);
   const neto = parseFloat(importe);
   const valido = Number.isFinite(neto) && neto >= 1;
   // Comisión de plataforma del Gateway (config/tokenomics.js): 2,5 % sobre el neto.
   const comision = valido ? Math.round(neto * 0.025 * 100) / 100 : 0;
-  const recibes = useMemo(() => (valido && precio ? neto / precio : null), [valido, neto, precio]);
+  // Precio del BEZ en la moneda del pedido (la API lo publica en USD).
+  const precioMoneda = moneda === 'EUR' ? (precio && eurUsd ? precio / eurUsd : null) : precio;
+  const recibes = useMemo(() => (valido && precioMoneda ? neto / precioMoneda : null), [valido, neto, precioMoneda]);
 
   async function comprar() {
     if (!token) { openLoginModal(); return; }
@@ -83,7 +93,9 @@ function Comprar() {
       const orden = await gateway(apiBase, '/payments/buy', {
         method: 'POST',
         headers: { ...authHeaders(), 'Idempotency-Key': idempotencyKey() },
-        body: JSON.stringify({ amountUSD: neto, paymentMethod: metodo }),
+        body: JSON.stringify(moneda === 'EUR'
+          ? { amountEUR: neto, paymentMethod: metodo }
+          : { amountUSD: neto, paymentMethod: metodo }),
       });
       if (metodo === 'card' && orden.checkoutUrl) {
         window.location.href = orden.checkoutUrl;
@@ -110,7 +122,7 @@ function Comprar() {
         <p className="pay-subtitle">Compra BEZ-Coin con tarjeta o transferencia</p>
       </div>
 
-      <label className="pay-subtitle" htmlFor="importe" style={{ display: 'block', marginBottom: 6 }}>Importe (USD)</label>
+      <label className="pay-subtitle" htmlFor="importe" style={{ display: 'block', marginBottom: 6 }}>Importe ({moneda})</label>
       <input
         id="importe"
         type="number"
@@ -133,16 +145,22 @@ function Comprar() {
         </div>
         <div className="detail-row">
           <span>Precio</span>
-          <strong>{precio ? `1 BEZ = ${precioUsd(precio)}` : (token ? '—' : 'Inicia sesión para verlo')}</strong>
+          <strong>{precioMoneda ? `1 BEZ = ${precioEn(precioMoneda, moneda)}` : (token ? '—' : 'Inicia sesión para verlo')}</strong>
         </div>
         <div className="detail-row">
           <span>Comisión (2,5 %)</span>
-          <strong>{valido ? usd(comision) : '—'}</strong>
+          <strong>{valido ? dinero(comision, moneda) : '—'}</strong>
         </div>
         <div className="detail-row">
           <span>Total a pagar</span>
-          <strong>{valido ? usd(neto + comision) : '—'}</strong>
+          <strong>{valido ? dinero(neto + comision, moneda) : '—'}</strong>
         </div>
+        {moneda === 'EUR' && eurUsd && (
+          <div className="detail-row">
+            <span>Cambio (BCE)</span>
+            <strong>1 EUR = {eurUsd.toFixed(4)} USD</strong>
+          </div>
+        )}
         <div className="detail-row">
           <span>Red</span>
           <strong>Polygon (BEZ-Coin)</strong>
@@ -184,7 +202,7 @@ function Comprar() {
       {pedido && (
         <div className="receipt-card mt-6" style={{ border: '1px solid rgba(0,212,170,0.3)', borderRadius: 14, padding: 16 }}>
           <div className="detail-row"><span><CheckCircle size={14} className="inline-icon" /> Pedido</span><strong>#{pedido.paymentId} · pendiente de pago</strong></div>
-          <div className="detail-row"><span>Total</span><strong>{usd(pedido.amountUSD)}</strong></div>
+          <div className="detail-row"><span>Total</span><strong>{pedido.amountEUR != null ? dinero(pedido.amountEUR, 'EUR') : dinero(pedido.amountUSD)}</strong></div>
           {pedido.bankTransfer && (
             <>
               <div className="detail-row"><span>Beneficiario</span><strong>{pedido.bankTransfer.beneficiaryAlias}</strong></div>

@@ -135,7 +135,7 @@ function pageHtml(token, nonce) {
   function render(c) {
     if (c.status === 'completed') {
       show('done');
-      txt('d-detail', c.amountUSD + ' USD liquidados en BEZ.');
+      txt('d-detail', (c.amountEUR != null ? c.amountEUR.toFixed(2) + ' EUR' : c.amountUSD + ' USD') + ' liquidados en BEZ.');
       if (c.txHash) { document.getElementById('d-txbox').hidden = false; txt('d-tx', c.txHash); }
       clearInterval(timer);
       return;
@@ -152,7 +152,8 @@ function pageHtml(token, nonce) {
     }
     // pending / processing
     show('pending');
-    txt('p-amount', c.amountUSD + ' USD');
+    // Las órdenes SEPA en EUR muestran el importe exacto a transferir.
+    txt('p-amount', c.amountEUR != null ? c.amountEUR.toFixed(2) + ' EUR' : c.amountUSD + ' USD');
     if (c.onchain) {
       document.getElementById('p-onchain').hidden = false;
       txt('p-sub', 'Pago en $BEZ (red Polygon)');

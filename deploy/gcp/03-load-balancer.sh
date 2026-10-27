@@ -154,6 +154,15 @@ YAML
 gcloud compute url-maps import "$LB_NAME" --global --source="$MAPA" --quiet
 rm -f "$MAPA"
 
+# Con el comodín de Certificate Manager enganchado (03b-certificate-map.sh) el
+# proxy ya no usa certificados clásicos: no se crean ni se tocan.
+MAPA_CERTS=""
+existe gcloud compute target-https-proxies describe "${LB_NAME}-https" --global && \
+  MAPA_CERTS=$(gcloud compute target-https-proxies describe "${LB_NAME}-https" --global --format='value(certificateMap)')
+
+if [[ -n "$MAPA_CERTS" ]]; then
+  echo "→ Certificados: comodín de Certificate Manager (${MAPA_CERTS##*/}), nada que crear"
+else
 echo "→ Certificados gestionados por Google (uno por dominio)"
 # Uno por dominio, no uno con los cuatro: un certificado multidominio solo se
 # activa cuando Google valida TODOS sus dominios, así que basta con que uno
@@ -173,13 +182,16 @@ for nombre in "${CERTS[@]}"; do
     gcloud compute ssl-certificates create "$nombre" --global --domains="${DOMINIOS_CERT[$nombre]}"
 done
 LISTA_CERTS=$(IFS=,; echo "${CERTS[*]}")
+fi
 
 echo "→ Política TLS (mínimo TLS 1.2, perfil MODERN)"
 existe gcloud compute ssl-policies describe bezhas-tls || \
   gcloud compute ssl-policies create bezhas-tls --profile=MODERN --min-tls-version=1.2
 
 echo "→ Proxy y regla HTTPS"
-if existe gcloud compute target-https-proxies describe "${LB_NAME}-https" --global; then
+if [[ -n "$MAPA_CERTS" ]]; then
+  gcloud compute target-https-proxies update "${LB_NAME}-https" --global --ssl-policy=bezhas-tls >/dev/null
+elif existe gcloud compute target-https-proxies describe "${LB_NAME}-https" --global; then
   gcloud compute target-https-proxies update "${LB_NAME}-https" --global \
     --ssl-certificates="$LISTA_CERTS" --ssl-policy=bezhas-tls >/dev/null
 else

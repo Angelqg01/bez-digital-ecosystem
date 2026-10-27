@@ -55,6 +55,7 @@ const { PLANS, CORE_SUBAPPS, ACTIVATABLE_SUBAPPS, calculateSubscription } = requ
 const { settlePayment, refundPayment } = require('../services/paymentSettlement');
 const complianceGate = require('../services/complianceGate');
 const bezPayOrders = require('../services/bezPayOrders');
+const { getEurUsdRate } = require('../services/fxService');
 const paymentWebhooks = require('../services/paymentWebhooks');
 const logger = require('pino')({ level: 'info', name: 'gateway' });
 
@@ -1102,13 +1103,17 @@ router.get('/apps/list', autenticarConPlan, requireScope('admin'), async (req, r
 
 router.post('/payments/buy', autenticarConPlan, requireScope('wallet'), [
     body('walletAddress').optional().isEthereumAddress(),
-    body('amountUSD').isFloat({ min: 1 }),
+    // Importe en USD, o en EUR para transferencias SEPA (la cuenta de cobro es en EUR). Uno de los dos.
+    body('amountUSD').optional().isFloat({ min: 1 }),
+    body('amountEUR').optional().isFloat({ min: 1 }),
+    body().custom((b) => (b.amountUSD != null) !== (b.amountEUR != null))
+        .withMessage('Indica amountUSD o amountEUR (solo uno)'),
     body('paymentMethod').isIn(bezPayOrders.METODOS),
     body('stripeUseCase').optional().isString().isLength({ min: 2, max: 80 }),
     body('email').optional().isEmail(),
 ], async (req, res) => {
     if (!validate(req, res)) return;
-    const { amountUSD, paymentMethod, stripeUseCase, email } = req.body;
+    const { amountUSD, amountEUR, paymentMethod, stripeUseCase, email } = req.body;
     if (bloqueadoPorEmergencia(req, res, 'fiat_to_crypto')) return;
 
     // Idempotencia al estilo Stripe: misma clave → la orden original, nunca un
@@ -1127,14 +1132,15 @@ router.post('/payments/buy', autenticarConPlan, requireScope('wallet'), [
         // herramienta MCP bezhas_checkout_prepare.
         const orden = await bezPayOrders.crearOrden({
             appId: req.registeredApp?.id || null,
-            walletAddress, amountUSD, paymentMethod, stripeUseCase, email, idempotencyKey,
+            walletAddress, amountUSD, amountEUR: amountEUR ?? null, paymentMethod, stripeUseCase, email, idempotencyKey,
         });
         if (!orden.idempotent) {
-            logger.info({ walletAddress, amountUSD, paymentMethod, stripeUseCase: orden.stripeUseCase }, 'BEZ purchase initiated');
+            logger.info({ walletAddress, amountUSD: orden.amountUSD, amountEUR: orden.amountEUR, paymentMethod, stripeUseCase: orden.stripeUseCase }, 'BEZ purchase initiated');
         }
         res.json(orden);
     } catch (error) {
-        if (error instanceof bezPayOrders.BezPayError && error.status < 500) {
+        // 503 (sin tipo de cambio) también se explica: es temporal y el cliente puede reintentar.
+        if (error instanceof bezPayOrders.BezPayError && (error.status < 500 || error.status === 503)) {
             return res.status(error.status).json({ error: error.message, code: error.code, ...(error.detalles || {}) });
         }
         logger.error(error, 'Payment buy failed');
@@ -1180,6 +1186,18 @@ router.get('/payments/bank-transfer-details', autenticarConPlan, requireScope('w
         provider: 'bank_transfer',
         bankTransfer: BANK_TRANSFER_DETAILS,
     });
+});
+
+/** Cambio EUR→USD de referencia (BCE) con el que se cotizan las órdenes SEPA en EUR. */
+router.get('/payments/fx', autenticarConPlan, requireScope('wallet'), async (_req, res) => {
+    try {
+        const respaldo = parseFloat(process.env.EUR_USD_RATE);
+        const fx = await getEurUsdRate({ fallback: Number.isFinite(respaldo) ? respaldo : undefined });
+        res.json({ success: true, base: 'EUR', quote: 'USD', rate: fx.rate, source: fx.source, asOf: fx.asOf });
+    } catch (error) {
+        logger.warn(error, 'EUR/USD rate unavailable');
+        res.status(503).json({ error: 'EUR/USD rate unavailable', code: 'FX_UNAVAILABLE' });
+    }
 });
 
 router.get('/payments/tokenomics', autenticarConPlan, requireScope('wallet'), (req, res) => {
@@ -1620,6 +1638,8 @@ router.get('/checkout/:token([0-9a-f]{32})', async (req, res) => {
                 paymentId: order.id,
                 status: order.status,
                 amountUSD: parseFloat(order.amount_usd || '0'),
+                // Órdenes SEPA en EUR: el importe exacto que hay que transferir.
+                amountEUR: meta.fiat?.currency === 'EUR' ? meta.fiat.grossAmount : undefined,
                 method: order.payment_method,
                 provider: meta.provider || order.payment_method,
                 onchain: meta.provider === 'onchain'
