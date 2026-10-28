@@ -114,12 +114,15 @@ Los precios OMIE y ESIOS son reales. Hay 8 páginas en el frontend y más de 30 
 
 ### 2.2 Fases
 
-**Fase 0 · que producción no muestre datos inventados (3-4 días)**
-- [ ] Si la telemetría llega con `simulated: true`, mostrar «Sin equipos conectados · modo demostración» bien visible, o un estado vacío. No pintar cifras de planta.
-- [ ] Quitar el respaldo aleatorio de OMIE y ESIOS en producción: si el feed falla, mostrar «dato no disponible» con la hora del último dato bueno.
-- [ ] `GET /nodes` solo desde la base de datos.
-- [ ] Corregir el valor por defecto de `STAKING` y, sin la variable de entorno, desactivar las funciones que dependen de los contratos en lugar de usar direcciones `0x…01`.
-- [ ] Actualizar el documento de arquitectura (migración 023, estado real).
+**Fase 0 · que producción no muestre datos inventados (hecha el 2026-10-28)**
+- [x] Telemetría de demostración: ya llegaba marcada `simulated: true` y la app la señala con `SourceBadge` y la salida a «conectar planta» (Dashboard, SCADA, Aegis). Se mantiene para que la app sea navegable sin planta.
+- [x] OMIE y REE/ESIOS sin respaldo aleatorio: sin feed, 503 (`OMIE_UNAVAILABLE`, `GRID_UNAVAILABLE`), sin cachear el fallo; la app muestra «SIN DATOS».
+- [x] `/arbitrage/status` ya no inventa estado de carga ni precio: sin batería, `NO_BATTERY` con SoC y rendimiento `null`.
+- [x] `/demand-response`: sin ahorros aleatorios; nodos elegibles = cargas propias; la orden aprobada dice `dispatched: false`.
+- [x] `GET /nodes` ya salía de la BD con nodos propios; la demo solo aparece sin ellos y marcada.
+- [x] `ENERGY_CONTRACTS` sin direcciones de relleno ni la QualityEscrow como staking: `null` sin variable; auditoría «solo en BD»; Aegis `onchain_audit_coverage: not_deployed`.
+- [x] Documento de arquitectura actualizado (§1 y fase 3). Tests: `api/__tests__/routes/energy-no-fake-data.test.js`.
+- [ ] Pendiente para la fase 1: guardar «hora del último dato bueno» de OMIE para enseñarla cuando el feed caiga.
 
 **Fase 1 · piloto con un grupo electrógeno real (3-4 semanas)**
 - [x] **Decisión de Yoel (2026-10-27):** el piloto se hace sobre el grupo electrógeno más usado en España.
