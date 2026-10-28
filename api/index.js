@@ -100,6 +100,7 @@ const mcpGatewayRoutes = require('./routes/mcp-gateway');
 const mcpPublicRoutes = require('./routes/mcp-public');
 const { txRouter, securityRouter } = require('./routes/tx-security'); // ← operaciones con fondos + kill switch   // ← MCP de alta asistida (auth opcional)
 const webhookRoutes = require('./routes/webhooks');
+const kycWebhookRoutes = require('./routes/kycWebhooks');
 const energyRoutes = require('./routes/energy');          // ← VPP Energy Layer
 const mtfcRoutes = require('./routes/mtfc');
 const operantRoutes = require('./routes/operant');   // ← OPERANT (gestión empresarial autónoma)
@@ -230,6 +231,7 @@ app.use('/api/energy/demand-response', scadaLimiter);
 //  CRÍTICO: webhooks de Stripe requieren raw body → montar ANTES de express.json()
 // ═══════════════════════════════════════════════════════════════════════════════
 
+app.use('/api/webhooks/kyc', kycWebhookRoutes);   // raw body — firma de Didit sobre el cuerpo exacto
 app.use('/api/webhooks', webhookRoutes);          // raw body — DEBE ir antes de express.json()
 
 // MCP de alta asistida — DEBE ir antes de express.json() por la misma razón que

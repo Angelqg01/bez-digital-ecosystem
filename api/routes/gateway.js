@@ -54,6 +54,7 @@ const { calculateFeeBreakdown } = require('../config/tokenomics');
 const { PLANS, CORE_SUBAPPS, ACTIVATABLE_SUBAPPS, calculateSubscription } = require('../config/plans');
 const { settlePayment, refundPayment } = require('../services/paymentSettlement');
 const complianceGate = require('../services/complianceGate');
+const diditAdapter = require('../services/kyc/diditAdapter');
 const bezPayOrders = require('../services/bezPayOrders');
 const { getEurUsdRate } = require('../services/fxService');
 const paymentWebhooks = require('../services/paymentWebhooks');
@@ -1604,6 +1605,33 @@ router.post('/kyc/status', requirePaymentSettlementKey, [
     } catch (error) {
         logger.error(error, 'KYC level update failed');
         res.status(500).json({ error: 'Failed to update KYC level' });
+    }
+});
+
+/**
+ * POST /kyc/session — crea una sesión de verificación en Didit para la wallet
+ * y devuelve la URL donde el usuario completa el KYC. El resultado llega por
+ * el webhook /api/webhooks/kyc/didit, nunca por la respuesta de esta llamada.
+ */
+router.post('/kyc/session', autenticarConPlan, requireScope('wallet'), [
+    body('walletAddress').isEthereumAddress(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    const { walletAddress } = req.body;
+    if (!(await exigirTitularidadEnCuerpo(req, res, walletAddress))) return;
+
+    const workflowId = process.env.DIDIT_WORKFLOW_ID || '';
+    const callbackUrl = process.env.DIDIT_CALLBACK_URL || '';
+    if (!process.env.DIDIT_API_KEY || !workflowId || !callbackUrl) {
+        return res.status(503).json({ error: 'KYC provider not configured' });
+    }
+
+    try {
+        const session = await diditAdapter.createSession({ walletAddress, workflowId, callbackUrl });
+        res.json({ success: true, sessionId: session.sessionId, url: session.url });
+    } catch (error) {
+        logger.error({ error: error.message }, 'Didit session creation failed');
+        res.status(502).json({ error: 'KYC session could not be created' });
     }
 });
 
