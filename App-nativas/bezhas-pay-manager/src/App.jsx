@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { CreditCard, Landmark, ShieldCheck, ArrowRight, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
 import { HeaderAuthButton, useAuth } from '../../_shared/BezhasAuthProvider.jsx';
+import { fetchBezPrice } from './price.js';
 import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 
 // Compra de BEZ-Coin con fiat contra el Gateway (/payments/buy).
@@ -61,12 +62,17 @@ function Comprar() {
   const [error, setError] = useState('');
   const [pedido, setPedido] = useState(null);
 
+  // Precio de BEZ: oráculo público, así que se ve sin iniciar sesión (ver src/price.js).
   useEffect(() => {
-    if (!token) { setPrecio(null); return; }
+    const ctrl = new AbortController();
+    fetchBezPrice(apiBase, fetch, { signal: ctrl.signal }).then((p) => setPrecio(p ? p.priceUSD : null));
+    return () => ctrl.abort();
+  }, [apiBase]);
+
+  // El cambio EUR→USD sí exige sesión (scope wallet): solo hace falta para los pedidos SEPA en EUR.
+  useEffect(() => {
+    if (!token) return undefined;
     let vivo = true;
-    gateway(apiBase, '/token/price', { headers: authHeaders() })
-      .then((d) => { if (vivo && d.priceUSD > 0) setPrecio(d.priceUSD); })
-      .catch(() => { if (vivo) setPrecio(null); });
     // Cambio de referencia del BCE con el que la API cotiza los pedidos SEPA en EUR.
     gateway(apiBase, '/payments/fx', { headers: authHeaders() })
       .then((d) => { if (vivo && d.rate > 0) setEurUsd(d.rate); })
@@ -80,7 +86,8 @@ function Comprar() {
   // Comisión de plataforma del Gateway (config/tokenomics.js): 2,5 % sobre el neto.
   const comision = valido ? Math.round(neto * 0.025 * 100) / 100 : 0;
   // Precio del BEZ en la moneda del pedido (la API lo publica en USD).
-  const precioMoneda = moneda === 'EUR' ? (precio && eurUsd ? precio / eurUsd : null) : precio;
+  const cambio = token ? eurUsd : null; // sin sesión no hay cambio del BCE aunque quedara uno de una sesión anterior
+  const precioMoneda = moneda === 'EUR' ? (precio && cambio ? precio / cambio : null) : precio;
   const recibes = useMemo(() => (valido && precioMoneda ? neto / precioMoneda : null), [valido, neto, precioMoneda]);
 
   async function comprar() {
@@ -145,7 +152,10 @@ function Comprar() {
         </div>
         <div className="detail-row">
           <span>Precio</span>
-          <strong>{precioMoneda ? `1 BEZ = ${precioEn(precioMoneda, moneda)}` : (token ? '—' : 'Inicia sesión para verlo')}</strong>
+          <strong>{precioMoneda
+            ? `1 BEZ = ${precioEn(precioMoneda, moneda)}`
+            // Pedido en EUR sin sesión: aún no hay cambio del BCE, pero el precio en USD sí se puede enseñar.
+            : (precio ? `1 BEZ = ${precioEn(precio, 'USD')}` : '—')}</strong>
         </div>
         <div className="detail-row">
           <span>Comisión (2,5 %)</span>
@@ -155,10 +165,10 @@ function Comprar() {
           <span>Total a pagar</span>
           <strong>{valido ? dinero(neto + comision, moneda) : '—'}</strong>
         </div>
-        {moneda === 'EUR' && eurUsd && (
+        {moneda === 'EUR' && cambio && (
           <div className="detail-row">
             <span>Cambio (BCE)</span>
-            <strong>1 EUR = {eurUsd.toFixed(4)} USD</strong>
+            <strong>1 EUR = {cambio.toFixed(4)} USD</strong>
           </div>
         )}
         <div className="detail-row">
