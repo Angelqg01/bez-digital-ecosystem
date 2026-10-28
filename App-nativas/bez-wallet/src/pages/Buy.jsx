@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { C, Card, Btn, Input, Chip } from '../components/ui/DesignSystem';
 import { useAuth } from '../context/AuthProvider';
+import { fetchBezPrice } from '../../../_shared/bez-price.js';
 
 // Compra de BEZ-Coin con fiat contra el Gateway (/payments/buy).
 //
@@ -31,15 +32,12 @@ export default function Buy() {
   const [error, setError] = useState('');
   const [order, setOrder] = useState(null);
 
+  // Oráculo público: el precio se ve sin iniciar sesión (antes se pedía a /token/price, que exige api-key con plan).
   useEffect(() => {
-    if (!token) return undefined;
-    let alive = true;
-    fetch(`${apiBase}${GATEWAY}/token/price`, { headers: authHeaders() })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (alive && d?.priceUSD > 0) setPrice(d.priceUSD); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [token, apiBase, authHeaders]);
+    const ctrl = new AbortController();
+    fetchBezPrice(apiBase, fetch, { signal: ctrl.signal }).then((p) => setPrice(p ? p.priceUSD : null));
+    return () => ctrl.abort();
+  }, [apiBase]);
 
   const net = parseFloat(amount);
   const valid = Number.isFinite(net) && net >= 1;

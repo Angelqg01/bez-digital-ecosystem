@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchBezPrice, parseOraclePrice, ORACLE_PATH } from './price.js';
+import { fetchBezPrice, parseOraclePrice, monedaPedido, ORACLE_PATH } from './price.js';
 
 const ok = (body, status = 200) => async () => ({ ok: status < 400, status, json: async () => body });
 
@@ -39,4 +39,11 @@ test('error HTTP, red caída o cuerpo roto devuelven null', async () => {
   assert.equal(await fetchBezPrice('', async () => { throw new TypeError('fetch failed'); }), null);
   assert.equal(await fetchBezPrice('', async () => ({ ok: true, json: async () => { throw new SyntaxError('x'); } })), null);
   assert.equal(await fetchBezPrice('', ok({ price: 0 })), null);
+});
+
+test('SEPA va en EUR solo si la API admite EUR (hay cambio del BCE); si no, en USD', () => {
+  assert.equal(monedaPedido('bank', true), 'EUR');
+  assert.equal(monedaPedido('bank', false), 'USD', 'API anterior sin /payments/fx: rechazaría amountEUR');
+  assert.equal(monedaPedido('card', true), 'USD');
+  assert.equal(monedaPedido('card', false), 'USD');
 });

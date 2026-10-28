@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { CreditCard, Landmark, ShieldCheck, ArrowRight, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
 import { HeaderAuthButton, useAuth } from '../../_shared/BezhasAuthProvider.jsx';
-import { fetchBezPrice } from './price.js';
+import { fetchBezPrice, monedaPedido } from './price.js';
 import AIWorkspaceBar from '../../_shared/ai-chat/AIWorkspaceBar.jsx';
 
 // Compra de BEZ-Coin con fiat contra el Gateway (/payments/buy).
@@ -17,8 +17,7 @@ const METODOS = [
   { id: 'bank', titulo: 'Transferencia SEPA', desc: 'IBAN y referencia para conciliar el pedido', icon: Landmark },
 ];
 
-// La transferencia SEPA va en EUR (la cuenta de cobro es en EUR); la tarjeta, en USD.
-const monedaDe = (metodo) => (metodo === 'bank' ? 'EUR' : 'USD');
+// La transferencia SEPA va en EUR si la API lo admite (ver monedaPedido en price.js); la tarjeta, en USD.
 const dinero = (v, moneda = 'USD') => new Intl.NumberFormat('es-ES', { style: 'currency', currency: moneda }).format(v);
 // El precio semilla es 0,0075 USD: con 2 decimales salía «0,01 US$».
 const precioEn = (v, moneda = 'USD') => new Intl.NumberFormat('es-ES', { style: 'currency', currency: moneda, maximumFractionDigits: 6 }).format(v);
@@ -80,13 +79,13 @@ function Comprar() {
     return () => { vivo = false; };
   }, [token, apiBase, authHeaders]);
 
-  const moneda = monedaDe(metodo);
+  const cambio = token ? eurUsd : null; // sin sesión no hay cambio del BCE aunque quedara uno de una sesión anterior
+  const moneda = monedaPedido(metodo, cambio != null);
   const neto = parseFloat(importe);
   const valido = Number.isFinite(neto) && neto >= 1;
   // Comisión de plataforma del Gateway (config/tokenomics.js): 2,5 % sobre el neto.
   const comision = valido ? Math.round(neto * 0.025 * 100) / 100 : 0;
   // Precio del BEZ en la moneda del pedido (la API lo publica en USD).
-  const cambio = token ? eurUsd : null; // sin sesión no hay cambio del BCE aunque quedara uno de una sesión anterior
   const precioMoneda = moneda === 'EUR' ? (precio && cambio ? precio / cambio : null) : precio;
   const recibes = useMemo(() => (valido && precioMoneda ? neto / precioMoneda : null), [valido, neto, precioMoneda]);
 
