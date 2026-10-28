@@ -68,10 +68,10 @@ async function checkBuyAllowed(walletAddress, amountUSD) {
 async function setKycLevel({ walletAddress, level, provider = null, reference = null }) {
     const { rows } = await query(
         `INSERT INTO kyc_status (wallet_address, level, provider, reference, verified_at, updated_at)
-         VALUES ($1, $2, $3, $4, CASE WHEN $2 > 0 THEN NOW() ELSE NULL END, NOW())
+         VALUES ($1, $2::int, $3, $4, CASE WHEN $2::int > 0 THEN NOW() ELSE NULL END, NOW())
          ON CONFLICT (wallet_address) DO UPDATE
-         SET level = $2, provider = $3, reference = $4,
-             verified_at = CASE WHEN $2 > 0 THEN NOW() ELSE NULL END, updated_at = NOW()
+         SET level = $2::int, provider = $3, reference = $4,
+             verified_at = CASE WHEN $2::int > 0 THEN NOW() ELSE NULL END, updated_at = NOW()
          RETURNING wallet_address, level, provider, verified_at`,
         [walletAddress.toLowerCase(), level, provider, reference]
     );
