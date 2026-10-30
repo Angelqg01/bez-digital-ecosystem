@@ -135,7 +135,11 @@ services:
       RATE_LIMIT_MAX:   ${RATE_LIMIT_MAX:-2000}
       # Frontends locales (landing de Next y Hub de Vite): la API corre en modo producción y sólo admite *.bezhas.com por
       # defecto, así que sin esto el navegador no puede llamarla en desarrollo (el preflight devuelve 500).
-      CORS_EXTRA_ORIGINS: ${CORS_EXTRA_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      # Orígenes locales permitidos aunque la API corra en modo producción (en Docker): el frontend (3000), Vite (5173)
+      # y las SubApps con sus puertos de desarrollo: genesis 3004, wallet 3010, gas 3011, edge 3012, vision 3013,
+      # capital 3014, prestige 3015, cargolink 3016, pay/energy 3017, purescan 3018, sphere 3020. Sin ellos, los POST
+      # (login SIWE...) de una SubApp en desarrollo dan 403 por CORS.
+      CORS_EXTRA_ORIGINS: ${CORS_EXTRA_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:3004,http://localhost:3010,http://localhost:3011,http://localhost:3012,http://localhost:3013,http://localhost:3014,http://localhost:3015,http://localhost:3016,http://localhost:3017,http://localhost:3018,http://localhost:3020}
       # Pagos del chat (Stripe): a dónde vuelve el usuario. En desarrollo local es el Hub de Vite; en producción
       # se usa FRONTEND_URL / https://bezhas.com y un http://localhost allí se rechaza.
       CHAT_CHECKOUT_RETURN_BASE: ${CHAT_CHECKOUT_RETURN_BASE:-http://localhost:5173}
@@ -443,6 +447,11 @@ services:
       # Sin nodo L2 propio desplegado en este alcance: apunta a un RPC público
       # de la red donde SÍ están los contratos (ver tabla de CLAUDE.md).
       NEXT_PUBLIC_RPC_URL: ${NEXT_PUBLIC_RPC_URL:-https://bsc-dataseed.binance.org}
+      # Las rutas del servidor de Next (p. ej. /api/monitor) llaman a la API por la red
+      # interna de Docker: NEXT_PUBLIC_API_URL es relativo (/api) y no sirve desde el servidor.
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://bezhas-api:3001/api}
+      # Solo en el servidor; la API lo exige para /api/monitor/overview (sin él, el War Room recibe 401).
+      MONITOR_ACCESS_TOKEN: ${MONITOR_ACCESS_TOKEN:-}
     ports:
       - "3000:3000"
     networks:

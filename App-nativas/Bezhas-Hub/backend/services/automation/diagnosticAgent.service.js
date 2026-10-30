@@ -14,7 +14,7 @@ const skillAutomator = require('./skillAutomator.service');
 // 1. CONFIGURACIÓN DEL SISTEMA
 // ===================================
 
-const provider = new ethers.JsonRpcProvider(process.env.AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology');
+const provider = new ethers.JsonRpcProvider(process.env.AMOY_RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com');
 
 let tokenContract = null;
 if (process.env.BEZCOIN_CONTRACT_ADDRESS) {

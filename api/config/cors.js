@@ -48,7 +48,11 @@ function makeCorsOriginFn(opts = {}) {
     return function corsOrigin(origin, callback) {
         if (!origin) return callback(null, true);
         if (isAllowedOrigin(origin, opts)) return callback(null, true);
-        return callback(new Error(`Origen no permitido por CORS: ${origin}`));
+        // 403, no 500: es un rechazo del cliente, y como 500 contaminaba las métricas y los logs de error.
+        const err = new Error(`Origen no permitido por CORS: ${origin}`);
+        err.status = 403;
+        err.code = 'CORS_ORIGIN_DENIED';
+        return callback(err);
     };
 }
 

@@ -6,12 +6,17 @@ let agentRegistry;
 
 function loadAgentRegistryForJest() {
     const registryPath = path.resolve(__dirname, '../../core/AgentToolRegistry.js');
+    // AgentToolRegistry.js es un módulo ESM; Jest corre en CJS, así que se evalúa a mano: se quitan los
+    // imports (fs/path se inyectan en el sandbox), el cálculo de __dirname con import.meta y los `export`.
     const source = fs.readFileSync(registryPath, 'utf8')
+        .replace(/^import .*$/gm, '')
+        .replace(/^const __filename = .*$/m, '')
+        .replace(/^const __dirname = .*$/m, '')
         .replace('export const MCP_SERVERS =', 'const MCP_SERVERS =')
         .replace('export const AGENT_REGISTRY =', 'const AGENT_REGISTRY =')
         .replace('export class AgentToolRegistry', 'class AgentToolRegistry')
         .replace('export const agentRegistry =', 'const agentRegistry =');
-    const sandbox = { module: { exports: {} }, exports: {} };
+    const sandbox = { module: { exports: {} }, exports: {}, fs, path, __dirname: path.dirname(registryPath), console, process };
     vm.runInNewContext(`${source}\nmodule.exports = { MCP_SERVERS, AGENT_REGISTRY, AgentToolRegistry, agentRegistry };`, sandbox, {
         filename: registryPath,
     });

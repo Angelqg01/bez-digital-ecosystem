@@ -21,8 +21,8 @@ const polygonAmoy = {
     symbol: 'MATIC',
   },
   rpcUrls: {
-    default: { http: ['https://rpc-amoy.polygon.technology'] },
-    public: { http: ['https://rpc-amoy.polygon.technology'] }
+    default: { http: ['https://polygon-amoy-bor-rpc.publicnode.com'] },
+    public: { http: ['https://polygon-amoy-bor-rpc.publicnode.com'] }
   },
   blockExplorers: {
     default: {
@@ -80,7 +80,7 @@ export const config = createConfig({
       http('https://polygon-bor-rpc.publicnode.com', { timeout: 15_000, retryCount: 2 }),
       http('https://1rpc.io/matic', { timeout: 15_000, retryCount: 1 }),
     ]),
-    [polygonAmoy.id]: http('https://rpc-amoy.polygon.technology', {
+    [polygonAmoy.id]: http('https://polygon-amoy-bor-rpc.publicnode.com', {
       timeout: 10_000,
       retryCount: 1,
       retryDelay: 1000,

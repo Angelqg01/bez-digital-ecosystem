@@ -195,6 +195,34 @@ test('Generic genset gain map → power/fuel/rpm metrics', () => {
   assert.strictEqual(metrics.run_hours, 1234);
 });
 
+test('DSE GenComm map → suma de potencia trifásica y métricas del motor', () => {
+  const map = loadMap('registers.dse-gencomm.json');
+  const m = new Map();
+  m.set(772, 1);            // control_mode → ONLINE
+  m.set(1024, 380);         // oil_pressure_kpa
+  m.set(1025, 84);          // coolant_temp_c
+  m.set(1027, 71);          // fuel_level_pct
+  m.set(1029, 274);         // battery_voltage /10 → 27.4 V (24 V)
+  m.set(1030, 1500);        // engine_rpm
+  m.set(1031, 500);         // gen_frequency /10 → 50.0 Hz
+  set32(m, 1032, 2301);     // L1-N /10 → 230.1 V
+  set32(m, 1044, 1452);     // L1 /10 → 145.2 A
+  set32(m, 1052, 33000);    // L1 W
+  set32(m, 1054, 32500);    // L2 W
+  set32(m, 1056, 34500);    // L3 W
+
+  const { metrics, state } = decodeRegisters(m, map);
+  assert.strictEqual(state, 'ONLINE');
+  assert.strictEqual(metrics.output_kw, 100);
+  assert.strictEqual(metrics.voltage_v, 230.1);
+  assert.strictEqual(metrics.current_a, 145.2);
+  assert.strictEqual(metrics.grid_frequency, 50);
+  assert.strictEqual(metrics.rpm, 1500);
+  assert.strictEqual(metrics.fuel_pct, 71);
+  assert.strictEqual(metrics.oil_pressure_kpa, 380);
+  assert.strictEqual(metrics.battery_voltage_v, 27.4);
+});
+
 test('SunSpec model-chain walk finds inverter model base', () => {
   const { walkModels } = require('../scripts/sunspec-discover');
   const base = 40000;

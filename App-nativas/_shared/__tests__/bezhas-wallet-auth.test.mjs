@@ -158,30 +158,103 @@ test('siweLogin firma el mensaje que manda el servidor, no uno propio', async ()
   assert.deepEqual(globalThis.window.ethereum.signed.map(hexToUtf8), [SERVER_MESSAGE]);
 });
 
-test('siweLogin cae a sesión DEMO cuando el backend no responde, y la etiqueta', async () => {
+const rejects = async (fn, expected) => {
+  try { await fn(); } catch (e) {
+    assert.equal(e.name, 'WalletAuthError', `se esperaba WalletAuthError y llegó ${e.name}: ${e.message}`);
+    for (const [k, v] of Object.entries(expected)) assert.equal(e[k], v, `${k}`);
+    return e;
+  }
+  assert.fail('se esperaba un error y el login terminó bien');
+};
+
+function backend({ nonce = () => jsonResponse({ nonce: 'x', message: 'm' }), login = () => jsonResponse({ token: 't', user: {} }) } = {}) {
+  globalThis.fetch = async (url) => (String(url).includes('/api/auth/nonce') ? nonce() : login());
+}
+
+test('un 403 del login NO crea sesión demo: error claro y nada guardado', async () => {
+  // Regresión: antes cualquier fallo del backend (403 por CORS incluido) acababa en «wallet conectada» con un token falso.
   clearSession();
   globalThis.window.ethereum = makeWallet();
-  globalThis.fetch = async () => { throw new Error('ECONNREFUSED'); };
+  backend({ login: () => jsonResponse({ code: 'CORS_ORIGIN_DENIED' }, 403) });
 
-  const session = await siweLogin({ apiBase: 'http://localhost:3001' });
+  const e = await rejects(() => siweLogin({ apiBase: 'http://localhost:3001' }), { code: 'HTTP', status: 403 });
+  assert.match(e.message, /origen no autorizado/);
+  assert.equal(getSession(), null);
+  assert.equal(localStorage.getItem('bezhas-jwt'), null);
+});
+
+test('un 500 y un 401 también se muestran como error, no como demo', async () => {
+  for (const [status, texto] of [[500, /error \(500\)/], [401, /firma no es válida/], [429, /Demasiados intentos/]]) {
+    clearSession();
+    globalThis.window.ethereum = makeWallet();
+    backend({ login: () => jsonResponse({}, status) });
+    const e = await rejects(() => siweLogin({ apiBase: 'http://localhost:3001' }), { code: 'HTTP', status });
+    assert.match(e.message, texto);
+    assert.equal(getSession(), null);
+  }
+});
+
+test('si el usuario rechaza la firma, error USER_REJECTED y NO se le pide una segunda firma', async () => {
+  // Antes el fallback demo pedía otra firma justo después de rechazar la primera.
+  clearSession();
+  const wallet = makeWallet();
+  const original = wallet.request.bind(wallet);
+  wallet.request = async (args) => {
+    if (args.method === 'personal_sign') { wallet.signed.push(args.params[0]); throw Object.assign(new Error('User rejected the request.'), { code: 4001 }); }
+    return original(args);
+  };
+  globalThis.window.ethereum = wallet;
+  backend();
+
+  await rejects(() => siweLogin({ apiBase: 'http://localhost:3001' }), { code: 'USER_REJECTED' });
+  assert.equal(wallet.signed.length, 1, 'solo una petición de firma');
+  assert.equal(getSession(), null);
+});
+
+test('backend caído sin allowDemo: error BACKEND_UNREACHABLE, sin sesión', async () => {
+  clearSession();
+  globalThis.window.ethereum = makeWallet();
+  globalThis.fetch = async () => { throw new TypeError('fetch failed'); };
+
+  await rejects(() => siweLogin({ apiBase: 'http://localhost:3001' }), { code: 'BACKEND_UNREACHABLE' });
+  assert.equal(getSession(), null);
+});
+
+test('sesión DEMO solo con allowDemo explícito y con el backend caído, y queda etiquetada', async () => {
+  clearSession();
+  globalThis.window.ethereum = makeWallet();
+  globalThis.fetch = async () => { throw new TypeError('fetch failed'); };
+
+  const session = await siweLogin({ apiBase: 'http://localhost:3001', allowDemo: true });
 
   assert.equal(session.authMethod, 'demo');
   assert.ok(session.token.startsWith('demo-'), 'el token demo debe ser distinguible');
   assert.equal(session.address, ADDRESS);
-  // Sigue exigiendo una firma real: la UX es genuina aunque la sesión sea local.
   assert.equal(globalThis.window.ethereum.signed.length, 1);
+});
+
+test('allowDemo NO tapa un 403: el servidor respondió, así que no es «backend caído»', async () => {
+  clearSession();
+  globalThis.window.ethereum = makeWallet();
+  backend({ login: () => jsonResponse({}, 403) });
+  await rejects(() => siweLogin({ apiBase: 'http://localhost:3001', allowDemo: true }), { code: 'HTTP', status: 403 });
+  assert.equal(getSession(), null);
+});
+
+test('getSession descarta una sesión demo guardada por versiones anteriores', () => {
+  clearSession();
+  localStorage.setItem('bezhas_wallet_session', JSON.stringify({ address: ADDRESS, authMethod: 'demo', token: 'demo-abc' }));
+  assert.equal(getSession(), null);
+  assert.equal(localStorage.getItem('bezhas_wallet_session'), null);
 });
 
 test('siweLogin no acepta un login sin token como si fuera válido', async () => {
   clearSession();
   globalThis.window.ethereum = makeWallet();
-  globalThis.fetch = async (url) => {
-    if (String(url).includes('/api/auth/nonce')) return jsonResponse({ nonce: 'x', message: 'm' });
-    return jsonResponse({ success: true });  // respuesta 200 pero sin token
-  };
+  backend({ login: () => jsonResponse({ success: true }) }); // 200 sin token
 
-  const session = await siweLogin({ apiBase: 'http://localhost:3001' });
-  assert.equal(session.authMethod, 'demo', 'un 200 sin token no es una sesión real');
+  await rejects(() => siweLogin({ apiBase: 'http://localhost:3001' }), { code: 'INVALID_RESPONSE' });
+  assert.equal(getSession(), null);
 });
 
 test('shortAddress abrevia y tolera vacío', () => {

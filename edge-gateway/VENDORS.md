@@ -39,6 +39,12 @@ map. Add `registers.ingecon-sun.json` once the target unit's manual is available
 |---|---|---|---|---|
 | **BESS** | Pylontech / BYD / generic Modbus BMS | `registers.bess-modbus.json` | gain | ✅ verified-logic (decode + real-Modbus e2e) — provides the `soc_pct` the arbitrage agent needs |
 | **Genset** | DeepSea DSE / ComAp InteliGen | `registers.genset-modbus.json` | gain | ✅ verified-logic (decode test) |
+| **Genset (piloto)** | Controladores DSE 73xx/74xx/86xx (GenComm), los habituales en grupos Himoinsa, Genesal y otros del mercado español | `registers.dse-gencomm.json` | gain | 🧪 template⁷ (decode test, potencia trifásica sumada) |
+
+⁷ **DSE GenComm**: direcciones = página × 256 + offset (página 4 = instrumentación). El 772 y
+el 1029 coinciden con integraciones publicadas; el resto sigue la estructura GenComm y hay que
+confirmarlo con la tabla que DSE envía bajo petición (modelo + firmware). Los grupos con centralita
+propia de Himoinsa (CEM7/CEA7) necesitan su propio mapa: pedir la tabla Modbus a Himoinsa.
 
 > Batteries/gensets that ONLY speak CAN bus (not Modbus) need a `canBms` driver
 > (Linux `socketcan`) — planned; the Modbus path above covers the many BMS/controllers

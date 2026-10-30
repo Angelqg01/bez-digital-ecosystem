@@ -48,7 +48,8 @@ try {
 // BEZ token (moneda de settlement) — Polygon es la red recomendada.
 const BEZ_TOKEN = {
     polygon: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
-    bsc: '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55',
+    // 0x8a1e…5b55 no tiene código en BSC: BEZ solo existe en Polygon. Sin BEZ_BSC_ADDRESS la red 56 se rechaza (BAD_CHAIN).
+    bsc: process.env.BEZ_BSC_ADDRESS || null,
 };
 
 const PLUGIN_VERSION = process.env.BEZHAS_WP_PLUGIN_VERSION || '2.0.0';
@@ -254,7 +255,7 @@ router.post('/subscribe/confirm', withApiKey, async (req, res) => {
         const rpcMap = {
             137: process.env.POLYGON_MAINNET_RPC || 'https://polygon-bor.publicnode.com',
             56: 'https://bsc-dataseed.binance.org/',
-            80002: process.env.POLYGON_AMOY_RPC || 'https://rpc-amoy.polygon.technology',
+            80002: process.env.POLYGON_AMOY_RPC || 'https://polygon-amoy-bor-rpc.publicnode.com',
         };
         const bezByChain = { 137: BEZ_TOKEN.polygon, 56: BEZ_TOKEN.bsc, 80002: process.env.BEZ_AMOY_ADDRESS };
         const bezAddress = bezByChain[chainId];

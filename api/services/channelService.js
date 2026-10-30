@@ -15,6 +15,7 @@
  */
 const crypto = require('crypto');
 const { query } = require('../db/pool');
+const { safeFetch } = require('../utils/safeFetch');
 const { AUTH_BYPASS } = require('../config/secrets');
 const { cacheGet, cacheSet, cacheDelete, publish } = require('../cache/redis');
 
@@ -254,23 +255,16 @@ async function sendEmail(to, subject, body) {
     return `dev-email-${Date.now()}`;
 }
 
+// La URL es del usuario: sale por safeFetch (https, sólo IPs públicas).
 async function sendWebhook(url, payload) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source: 'bezhas', timestamp: new Date().toISOString(), ...payload }),
-            signal: controller.signal,
-        });
-
-        if (!res.ok) throw new Error(`Webhook returned ${res.status}`);
-        return `webhook-${res.status}-${Date.now()}`;
-    } finally {
-        clearTimeout(timeout);
-    }
+    const res = await safeFetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'bezhas', timestamp: new Date().toISOString(), ...payload }),
+        timeoutMs: 10000,
+    });
+    if (!res.ok) throw new Error(`Webhook returned ${res.status}`);
+    return `webhook-${res.status}-${Date.now()}`;
 }
 
 // ── Notification Dispatch (event-driven) ──
@@ -384,4 +378,6 @@ module.exports = {
     getNotificationPreferences,
     setNotificationPreference,
     getMessageHistory,
+    // Solo para tests: comprobar que el canal webhook sale por safeFetch.
+    _sendWebhook: sendWebhook,
 };

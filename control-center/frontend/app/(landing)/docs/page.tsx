@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { DOC_CATEGORIES, DOC_LIBRARY, getDocsByCategory } from '@/lib/docs-library';
+import SellThroughApi from '../_components/SellThroughApi';
 
 export default function DocsPage() {
     return (
@@ -87,6 +88,11 @@ export default function DocsPage() {
                         })}
                     </div>
                 </section>
+
+                {/* Vender a través de la API */}
+                <div className="mb-16">
+                    <SellThroughApi />
+                </div>
 
                 {/* Quick Start Cards */}
                 <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">

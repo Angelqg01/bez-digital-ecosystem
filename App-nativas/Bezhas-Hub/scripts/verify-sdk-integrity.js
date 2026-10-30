@@ -34,7 +34,7 @@ async function verifySDK() {
     console.log('3️⃣ Testing RPC Connectivity (Polygon Amoy)...');
     try {
         // We use the SDK's contract configuration to test connectivity
-        const amoyRpc = 'https://rpc-amoy.polygon.technology';
+        const amoyRpc = 'https://polygon-amoy-bor-rpc.publicnode.com';
         const provider = new ethers.JsonRpcProvider(amoyRpc);
         const blockNumber = await provider.getBlockNumber();
         console.log('✅ RPC is responsive. Current block:', blockNumber);

@@ -1,7 +1,7 @@
 const { ethers } = require('ethers');
 
 async function checkContract() {
-    const provider = new ethers.JsonRpcProvider('https://rpc-amoy.polygon.technology');
+    const provider = new ethers.JsonRpcProvider('https://polygon-amoy-bor-rpc.publicnode.com');
     const tokenAbi = [
         'function decimals() view returns (uint8)',
         'function symbol() view returns (string)',

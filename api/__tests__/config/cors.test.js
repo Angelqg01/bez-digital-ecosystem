@@ -111,4 +111,12 @@ describe('makeCorsOriginFn', () => {
         expect(err.message).toContain('evil.example.com');
         expect(allowed).toBeUndefined();
     });
+
+    it('el rechazo es un 403 con código propio, no un 500', () => {
+        const cb = jest.fn();
+        makeCorsOriginFn(PROD)('https://evil.example.com', cb);
+        const [err] = cb.mock.calls[0];
+        expect(err.status).toBe(403);
+        expect(err.code).toBe('CORS_ORIGIN_DENIED');
+    });
 });

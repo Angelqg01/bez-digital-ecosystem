@@ -86,7 +86,7 @@ const headerMenus: Record<string, { label: string; href: string; icon: string; d
   ],
   Contacto: [
     { label: 'Demo Clientes', href: '/demo', icon: 'dashboard_customize', desc: 'Ver plataforma sin GCP ni nodo real' },
-    { label: 'Email Comercial', href: 'mailto:info.angelqg@gmail.com', icon: 'mail', desc: 'Outreach, pilotos y partnerships' },
+    { label: 'Email Comercial', href: 'mailto:support@bezhas.com', icon: 'mail', desc: 'Outreach, pilotos y partnerships' },
     { label: 'Deck Enterprise', href: 'https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view', icon: 'slideshow', desc: 'Presentacion operativa BeZhas' },
     { label: 'Telegram Bot', href: 'https://t.me/BeZhasBot', icon: 'send', desc: 'Soporte 24/7 y comunidad' },
     { label: 'Política de Privacidad', href: '/privacy', icon: 'gavel', desc: 'RGPD, datos, cookies y permisos' },

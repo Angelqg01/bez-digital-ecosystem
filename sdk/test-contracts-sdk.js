@@ -96,7 +96,7 @@ const { ethers } = require('ethers');
 const { getContract } = require('@bezhas/sdk');
 
 // 1. Configurar provider
-const provider = new ethers.JsonRpcProvider('https://rpc-amoy.polygon.technology/');
+const provider = new ethers.JsonRpcProvider('https://polygon-amoy-bor-rpc.publicnode.com/');
 
 // 2. Obtener configuración del contrato
 const { address, abi } = getContract('LiquidityFarming', 'amoy');

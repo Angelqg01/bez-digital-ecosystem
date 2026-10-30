@@ -21,6 +21,14 @@ function validate(req, res) {
     return true;
 }
 
+// 503 si el contrato no está desplegado en la cadena (ver contractService); 500 para cualquier otro fallo.
+function sendError(res, error, message) {
+    if (error?.code === 'CONTRACT_NOT_DEPLOYED') {
+        return res.status(503).json({ error: message, code: error.code, details: error.message });
+    }
+    return res.status(500).json({ error: message, details: error.message });
+}
+
 // ═══════════════════════════════════════════════
 //  SMART WALLET (Account Abstraction)
 // ═══════════════════════════════════════════════
@@ -40,7 +48,7 @@ router.post('/create', authenticateToken, [
         );
         res.json({ success: true, ...result });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to create wallet', details: error.message });
+        sendError(res, error, 'Failed to create wallet');
     }
 });
 
@@ -50,7 +58,7 @@ router.get('/my-wallets', authenticateToken, async (req, res) => {
         const wallets = await walletService.getUserWallets(req.user.address);
         res.json({ wallets });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch wallets', details: error.message });
+        sendError(res, error, 'Failed to fetch wallets');
     }
 });
 
@@ -60,7 +68,7 @@ router.post('/ensure-primary', authenticateToken, async (req, res) => {
         const safeWallet = await walletService.ensureFiatSafeWalletForUser(req.user.userId, req.body || {});
         res.json({ success: true, safeWallet });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to ensure primary safe wallet', details: error.message });
+        sendError(res, error, 'Failed to ensure primary safe wallet');
     }
 });
 
@@ -72,7 +80,7 @@ router.get('/me', authenticateToken, async (req, res) => {
         const balance = await walletService.getBalance(address);
         res.json({ success: true, safeWallet, balance });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch safe wallet', details: error.message });
+        sendError(res, error, 'Failed to fetch safe wallet');
     }
 });
 
@@ -85,7 +93,7 @@ router.get('/info/:address', [
         const info = await walletService.getSmartWalletInfo(req.params.address);
         res.json(info);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch wallet info', details: error.message });
+        sendError(res, error, 'Failed to fetch wallet info');
     }
 });
 
@@ -98,7 +106,7 @@ router.get('/daily-limit/:address', [
         const remaining = await walletService.getRemainingDailyLimit(req.params.address);
         res.json({ remainingDailyLimit: remaining });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch daily limit', details: error.message });
+        sendError(res, error, 'Failed to fetch daily limit');
     }
 });
 
@@ -108,7 +116,7 @@ router.get('/portfolio', authenticateToken, async (req, res) => {
         const portfolio = await walletService.getWalletPortfolio(req.user.address);
         res.json(portfolio);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch portfolio', details: error.message });
+        sendError(res, error, 'Failed to fetch portfolio');
     }
 });
 
@@ -124,7 +132,7 @@ router.get('/multisig/:address', [
         const info = await walletService.getMultiSigInfo(req.params.address);
         res.json(info);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch multisig info', details: error.message });
+        sendError(res, error, 'Failed to fetch multisig info');
     }
 });
 
@@ -136,7 +144,7 @@ router.get('/multisig/:address/pending', [
         const pending = await walletService.getMultiSigPendingTxs(req.params.address);
         res.json({ pendingTransactions: pending });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch pending txs', details: error.message });
+        sendError(res, error, 'Failed to fetch pending txs');
     }
 });
 
@@ -152,7 +160,7 @@ router.get('/paymaster/:enterprise', authenticateToken, [
         const info = await walletService.getPaymasterEnterpriseInfo(req.params.enterprise);
         res.json(info);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch paymaster info', details: error.message });
+        sendError(res, error, 'Failed to fetch paymaster info');
     }
 });
 
@@ -165,7 +173,7 @@ router.get('/security/status', authenticateToken, async (req, res) => {
         const status = await walletService.getSecurityStatus();
         res.json(status);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch security status', details: error.message });
+        sendError(res, error, 'Failed to fetch security status');
     }
 });
 
@@ -178,7 +186,7 @@ router.get('/security/audit-log', authenticateToken, [
         const logs = await walletService.getRecentAuditLogs(count);
         res.json({ auditLogs: logs });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch audit logs', details: error.message });
+        sendError(res, error, 'Failed to fetch audit logs');
     }
 });
 
@@ -194,7 +202,7 @@ router.get('/guardians/:wallet', [
         const guardians = await walletService.getWalletGuardians(req.params.wallet);
         res.json({ guardians });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch guardians', details: error.message });
+        sendError(res, error, 'Failed to fetch guardians');
     }
 });
 
@@ -206,7 +214,7 @@ router.get('/guardian-score/:guardian', [
         const score = await walletService.getGuardianTrustScore(req.params.guardian);
         res.json({ guardian: req.params.guardian, trustScore: score });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch trust score', details: error.message });
+        sendError(res, error, 'Failed to fetch trust score');
     }
 });
 

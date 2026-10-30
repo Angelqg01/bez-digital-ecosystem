@@ -41,6 +41,8 @@ class GatewayClient {
         this.apps = this._createAppsClient();
         this.payments = this._createPaymentsClient();
         this.dex = this._createDEXClient();
+        this.bez = this._createBEZMarketClient();
+        this.rwa = this._createRWAClient();
     }
 
     // ── Internal HTTP ──────────────────────────────────────
@@ -251,6 +253,58 @@ class GatewayClient {
     }
 
     // ── Payments / BeZhas Pay ─────────────────────────────
+
+    // ── Mercado de BEZ (swap no custodio) ──────────────────
+    //
+    // Compra/venta de BEZ contra un pool de DEX. Devuelve transacciones SIN
+    // FIRMAR (approve + swap) para la wallet del cliente. Mientras BEZ no tenga
+    // pool, responde 503 DEX_NOT_CONFIGURED: comprar a BeZhas es payments.buyBEZ.
+
+    _createBEZMarketClient() {
+        return {
+            status: () => this._get('/bez/swap/status'),
+            quote: ({ side, amount }) => this._get('/bez/swap/quote', { lado: side, importe: String(amount) }),
+            prepareSwap: ({ side, amount, wallet, slippageBps, deadlineMinutes }) =>
+                this._post('/bez/swap/prepare', {
+                    lado: side, importe: String(amount), wallet,
+                    ...(slippageBps !== undefined ? { deslizamientoBps: slippageBps } : {}),
+                    ...(deadlineMinutes !== undefined ? { plazoMin: deadlineMinutes } : {}),
+                }),
+        };
+    }
+
+    // ── RWA: tokenización y venta primaria de fracciones ───
+    //
+    // Todo devuelve transacciones SIN FIRMAR. `factory` es 'activos' (por
+    // defecto) o 'industrial'. La venta primaria responde 503 SALE_NOT_DEPLOYED
+    // hasta que su contrato esté auditado y desplegado.
+
+    _createRWAClient() {
+        return {
+            prepareTokenization: ({ factory = 'activos', name, category, legalCID, imagesCID, supply, valuationUSD,
+                pricePerFractionBEZ, estimatedYieldPct, location }) =>
+                this._post('/rwa/tokenize/prepare', {
+                    fabrica: factory, nombre: name, categoria: category, cidDocumentacion: legalCID,
+                    ...(imagesCID ? { cidImagenes: imagesCID } : {}),
+                    fracciones: supply, valoracionUsd: valuationUSD, precioFraccionBez: String(pricePerFractionBEZ),
+                    rendimientoAnualPct: estimatedYieldPct, ubicacion: location,
+                }),
+            getAsset: ({ factory = 'activos', assetId }) =>
+                this._get(`/rwa/${encodeURIComponent(factory)}/assets/${encodeURIComponent(assetId)}`),
+            getCreatorAssets: ({ factory = 'activos', creator }) =>
+                this._get(`/rwa/${encodeURIComponent(factory)}/creators/${encodeURIComponent(creator)}`),
+            prepareTransfer: ({ factory = 'activos', assetId, from, to, amount }) =>
+                this._post('/rwa/transfer/prepare', { fabrica: factory, assetId, desde: from, hacia: to, cantidad: amount }),
+            getListing: ({ factory = 'activos', listingId }) =>
+                this._get(`/rwa/${encodeURIComponent(factory)}/sale/listings/${encodeURIComponent(listingId)}`),
+            prepareListing: ({ factory = 'activos', assetId, amount, pricePerFractionBEZ, seller }) =>
+                this._post('/rwa/sale/list/prepare', {
+                    fabrica: factory, assetId, cantidad: amount, precioFraccionBez: String(pricePerFractionBEZ), vendedor: seller,
+                }),
+            preparePurchase: ({ factory = 'activos', listingId, amount, buyer }) =>
+                this._post('/rwa/sale/buy/prepare', { fabrica: factory, listingId, cantidad: amount, comprador: buyer }),
+        };
+    }
 
     _createPaymentsClient() {
         return {

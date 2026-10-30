@@ -38,6 +38,7 @@ const contractService = require('../services/contractService');
 const { query } = require('../db/pool');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { validarDestinoPublico } = require('../utils/safeFetch');
 const { INTERNAL_API_KEY } = require('../config/secrets');
 
 /** Comparación en tiempo constante para secretos compartidos. */
@@ -54,7 +55,9 @@ const { calculateFeeBreakdown } = require('../config/tokenomics');
 const { PLANS, CORE_SUBAPPS, ACTIVATABLE_SUBAPPS, calculateSubscription } = require('../config/plans');
 const { settlePayment, refundPayment } = require('../services/paymentSettlement');
 const complianceGate = require('../services/complianceGate');
+const diditAdapter = require('../services/kyc/diditAdapter');
 const bezPayOrders = require('../services/bezPayOrders');
+const { getEurUsdRate } = require('../services/fxService');
 const paymentWebhooks = require('../services/paymentWebhooks');
 const logger = require('pino')({ level: 'info', name: 'gateway' });
 
@@ -1102,13 +1105,17 @@ router.get('/apps/list', autenticarConPlan, requireScope('admin'), async (req, r
 
 router.post('/payments/buy', autenticarConPlan, requireScope('wallet'), [
     body('walletAddress').optional().isEthereumAddress(),
-    body('amountUSD').isFloat({ min: 1 }),
+    // Importe en USD, o en EUR para transferencias SEPA (la cuenta de cobro es en EUR). Uno de los dos.
+    body('amountUSD').optional().isFloat({ min: 1 }),
+    body('amountEUR').optional().isFloat({ min: 1 }),
+    body().custom((b) => (b.amountUSD != null) !== (b.amountEUR != null))
+        .withMessage('Indica amountUSD o amountEUR (solo uno)'),
     body('paymentMethod').isIn(bezPayOrders.METODOS),
     body('stripeUseCase').optional().isString().isLength({ min: 2, max: 80 }),
     body('email').optional().isEmail(),
 ], async (req, res) => {
     if (!validate(req, res)) return;
-    const { amountUSD, paymentMethod, stripeUseCase, email } = req.body;
+    const { amountUSD, amountEUR, paymentMethod, stripeUseCase, email } = req.body;
     if (bloqueadoPorEmergencia(req, res, 'fiat_to_crypto')) return;
 
     // Idempotencia al estilo Stripe: misma clave → la orden original, nunca un
@@ -1127,14 +1134,15 @@ router.post('/payments/buy', autenticarConPlan, requireScope('wallet'), [
         // herramienta MCP bezhas_checkout_prepare.
         const orden = await bezPayOrders.crearOrden({
             appId: req.registeredApp?.id || null,
-            walletAddress, amountUSD, paymentMethod, stripeUseCase, email, idempotencyKey,
+            walletAddress, amountUSD, amountEUR: amountEUR ?? null, paymentMethod, stripeUseCase, email, idempotencyKey,
         });
         if (!orden.idempotent) {
-            logger.info({ walletAddress, amountUSD, paymentMethod, stripeUseCase: orden.stripeUseCase }, 'BEZ purchase initiated');
+            logger.info({ walletAddress, amountUSD: orden.amountUSD, amountEUR: orden.amountEUR, paymentMethod, stripeUseCase: orden.stripeUseCase }, 'BEZ purchase initiated');
         }
         res.json(orden);
     } catch (error) {
-        if (error instanceof bezPayOrders.BezPayError && error.status < 500) {
+        // 503 (sin tipo de cambio) también se explica: es temporal y el cliente puede reintentar.
+        if (error instanceof bezPayOrders.BezPayError && (error.status < 500 || error.status === 503)) {
             return res.status(error.status).json({ error: error.message, code: error.code, ...(error.detalles || {}) });
         }
         logger.error(error, 'Payment buy failed');
@@ -1180,6 +1188,18 @@ router.get('/payments/bank-transfer-details', autenticarConPlan, requireScope('w
         provider: 'bank_transfer',
         bankTransfer: BANK_TRANSFER_DETAILS,
     });
+});
+
+/** Cambio EUR→USD de referencia (BCE) con el que se cotizan las órdenes SEPA en EUR. */
+router.get('/payments/fx', autenticarConPlan, requireScope('wallet'), async (_req, res) => {
+    try {
+        const respaldo = parseFloat(process.env.EUR_USD_RATE);
+        const fx = await getEurUsdRate({ fallback: Number.isFinite(respaldo) ? respaldo : undefined });
+        res.json({ success: true, base: 'EUR', quote: 'USD', rate: fx.rate, source: fx.source, asOf: fx.asOf });
+    } catch (error) {
+        logger.warn(error, 'EUR/USD rate unavailable');
+        res.status(503).json({ error: 'EUR/USD rate unavailable', code: 'FX_UNAVAILABLE' });
+    }
 });
 
 router.get('/payments/tokenomics', autenticarConPlan, requireScope('wallet'), (req, res) => {
@@ -1355,7 +1375,7 @@ const freshnessWindowS = () => {
 // `pending` con liquidez 0: es el estado real, y el consumidor ya sabe pintarlo
 // ("Pendiente de pool") sin inventarse una cotizacion que no existe.
 const BEZ_MARKETS = [
-    { chainId: 137, pool: 'QuickSwap V3', address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
+    { chainId: 137, pool: 'QuickSwap V2', address: '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8' },
 ];
 
 const MARKET_STATUSES = new Set(['active', 'paused', 'pending']);
@@ -1589,6 +1609,33 @@ router.post('/kyc/status', requirePaymentSettlementKey, [
     }
 });
 
+/**
+ * POST /kyc/session — crea una sesión de verificación en Didit para la wallet
+ * y devuelve la URL donde el usuario completa el KYC. El resultado llega por
+ * el webhook /api/webhooks/kyc/didit, nunca por la respuesta de esta llamada.
+ */
+router.post('/kyc/session', autenticarConPlan, requireScope('wallet'), [
+    body('walletAddress').isEthereumAddress(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    const { walletAddress } = req.body;
+    if (!(await exigirTitularidadEnCuerpo(req, res, walletAddress))) return;
+
+    const workflowId = process.env.DIDIT_WORKFLOW_ID || '';
+    const callbackUrl = process.env.DIDIT_CALLBACK_URL || '';
+    if (!process.env.DIDIT_API_KEY || !workflowId || !callbackUrl) {
+        return res.status(503).json({ error: 'KYC provider not configured' });
+    }
+
+    try {
+        const session = await diditAdapter.createSession({ walletAddress, workflowId, callbackUrl });
+        res.json({ success: true, sessionId: session.sessionId, url: session.url });
+    } catch (error) {
+        logger.error({ error: error.message }, 'Didit session creation failed');
+        res.status(502).json({ error: 'KYC session could not be created' });
+    }
+});
+
 // ═══════════════════════════════════════════════════════════
 //  HOSTED CHECKOUT — public, token-scoped order status
 //  The bearer token (returned once at buy as hostedCheckoutUrl) is the only
@@ -1620,6 +1667,8 @@ router.get('/checkout/:token([0-9a-f]{32})', async (req, res) => {
                 paymentId: order.id,
                 status: order.status,
                 amountUSD: parseFloat(order.amount_usd || '0'),
+                // Órdenes SEPA en EUR: el importe exacto que hay que transferir.
+                amountEUR: meta.fiat?.currency === 'EUR' ? meta.fiat.grossAmount : undefined,
                 method: order.payment_method,
                 provider: meta.provider || order.payment_method,
                 onchain: meta.provider === 'onchain'
@@ -1960,10 +2009,15 @@ const requireAppForWebhooks = (req, res, next) => {
  * The signing secret is returned ONCE; store it to verify deliveries.
  */
 router.post('/webhooks/register', autenticarSinCupo, requireAppForWebhooks, [
-    body('url').isURL({ protocols: ['https', 'http'], require_protocol: true }),
+    body('url').isURL({ protocols: ['https'], require_protocol: true }),
     body('events').optional().isArray({ min: 1, max: 10 }),
 ], async (req, res) => {
     if (!validate(req, res)) return;
+    try {
+        await validarDestinoPublico(req.body.url);
+    } catch (err) {
+        return res.status(400).json({ error: err.message, code: err.code || 'DESTINATION_NOT_ALLOWED' });
+    }
     const events = (req.body.events || ['payment.settled']).map(String);
     const secret = paymentWebhooks.generateSecret();
     try {

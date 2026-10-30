@@ -14,6 +14,7 @@
 const { query } = require('../db/pool');
 const lifecycle = require('./cargoLinkLifecycle');
 const { encryptSecret, decryptSecret, maskSecret } = require('./secretVault');
+const { safeFetch, validarDestinoPublico, DestinoNoPermitido } = require('../utils/safeFetch');
 
 function httpError(message, status) {
   const error = new Error(message);
@@ -44,8 +45,13 @@ async function linkPos(req, body = {}) {
     throw httpError(`Role '${identity.role}' cannot link a POS (only pos/admin)`, 403);
   }
   const { baseUrl, provider = 'generic', ordersPath = '/orders', apiKey } = body;
-  if (!baseUrl || !/^https?:\/\//i.test(baseUrl)) {
-    throw httpError('baseUrl must start with http:// or https://', 400);
+  if (!baseUrl) throw httpError('baseUrl is required', 400);
+  // La URL del POS la elige el cliente y la llamamos desde el servidor: https y
+  // sólo IPs públicas (anti-SSRF). Se repite al sincronizar, vía safeFetch.
+  try {
+    await validarDestinoPublico(`${String(baseUrl).replace(/\/$/, '')}${ordersPath}`);
+  } catch (err) {
+    throw httpError(err.message, 400);
   }
 
   const { rows } = await query(
@@ -120,14 +126,18 @@ async function syncOrders(req) {
   }
   let orders;
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       headers: { ...(posApiKey ? { Authorization: `Bearer ${posApiKey}` } : {}) },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
+      maxBytes: 5_000_000,
     });
     if (!res.ok) throw httpError(`POS API ${res.status} at ${url}`, 502);
     const data = await res.json();
     orders = Array.isArray(data) ? data : (data.orders || data.data || []);
   } catch (err) {
+    if (err instanceof DestinoNoPermitido) {
+      throw httpError(`POS link not allowed: ${err.message} Re-link it with /v1/pos/link.`, 400);
+    }
     if (err.status) throw err;
     throw httpError(`POS API unreachable: ${err.message}`, 502);
   }

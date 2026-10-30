@@ -39,7 +39,7 @@ const CHAIN_CONFIG = {
     // Testnets
     80002: {
         name: 'Polygon Amoy',
-        rpcUrl: process.env.AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology',
+        rpcUrl: process.env.AMOY_RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com',
         explorer: 'https://amoy.polygonscan.com',
         nativeCurrency: 'MATIC',
         confirmations: 12,

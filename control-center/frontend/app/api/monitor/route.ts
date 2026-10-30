@@ -13,7 +13,11 @@ export const dynamic = 'force-dynamic';
  * It also keeps MONITOR_ACCESS_TOKEN server-side only: the token lives in
  * this process's env, never in a URL or a value the browser can read.
  */
-const API_INTERNAL_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Solo vale una URL absoluta: en Docker NEXT_PUBLIC_API_URL es '/api' (relativa al navegador) y un fetch del servidor
+// con ella falla. Se toma la primera absoluta; si no hay ninguna, la API local de desarrollo.
+const API_INTERNAL_URL =
+  [process.env.API_INTERNAL_URL, process.env.NEXT_PUBLIC_API_URL].find((u) => u && /^https?:\/\//.test(u)) ||
+  'http://localhost:3001/api';
 const MONITOR_ACCESS_TOKEN = process.env.MONITOR_ACCESS_TOKEN || null;
 
 export async function GET() {

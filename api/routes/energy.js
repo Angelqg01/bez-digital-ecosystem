@@ -119,13 +119,23 @@ const ARBITRAGE_THRESHOLD = {
   NEGATIVE_PRICE_ACTION: -5,   // €/MWh — precio negativo: cargar a máxima potencia
 };
 
-/** Contratos desplegados en BeZhas L2 relevantes para energía */
+/**
+ * Contratos de energía. Sin variable de entorno valen null: los contratos de
+ * smart-contracts/src/energy/ aún no están desplegados y una dirección inventada
+ * (antes 0x…01/02/03) hacía creer que había auditoría on-chain. STAKING tampoco
+ * tiene valor por defecto: el de antes era la QualityEscrow/Safe, no un StakingPoolV2.
+ */
 const ENERGY_CONTRACTS = {
-  VPP: process.env.CONTRACT_BEZHAS_VPP || '0x0000000000000000000000000000000000000001',
-  ORACLE: process.env.CONTRACT_ENERGY_ORACLE || '0x0000000000000000000000000000000000000002',
-  CAE_TOKEN: process.env.CONTRACT_ENERGY_CAE_TOKEN || '0x0000000000000000000000000000000000000003',
-  STAKING: process.env.CONTRACT_STAKING_POOL_V2 || '0x3EfC42095E8503d41Ad8001328FC23388E00e8a3',
+  VPP: process.env.CONTRACT_BEZHAS_VPP || null,
+  ORACLE: process.env.CONTRACT_ENERGY_ORACLE || null,
+  CAE_TOKEN: process.env.CONTRACT_ENERGY_CAE_TOKEN || null,
+  STAKING: process.env.CONTRACT_STAKING_POOL_V2 || null,
 };
+
+/** Texto de auditoría honesto: solo dice «registrado on-chain» si hay contrato. */
+const auditTrail = (contract, what) => (contract
+  ? `${what} — contract: ${contract}`
+  : `${what}: registro solo en la base de datos (contrato de energía aún no desplegado)`);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: Middleware de validación express-validator
@@ -240,32 +250,9 @@ const buildTelemetry = (nodeIdFilter = null) => {
   };
 };
 
-/**
- * Precio de mercado OMIE simulado.
- * EN PRODUCCIÓN → GET https://www.omie.es/es/file-download?parents%5B%5D=marginalpdbc&filename=marginalpdbc_<date>.1
- */
-const buildOmiePrice = () => {
-  const currentPrice = parseFloat((20 + Math.random() * 100).toFixed(2));
-  const prediction1h = parseFloat((currentPrice + (Math.random() * 20 - 10)).toFixed(2));
-  const prediction6h = parseFloat((currentPrice + (Math.random() * 40 - 20)).toFixed(2));
-
-  return {
-    timestamp: new Date().toISOString(),
-    price_eur_mwh: currentPrice,
-    unit: 'EUR/MWh',
-    market: 'OMIE Mercado Diario',
-    predictions: {
-      in_1h: { price: prediction1h, confidence: 0.92, model: 'XGBoost' },
-      in_6h: { price: prediction6h, confidence: 0.78, model: 'LightGBM' },
-    },
-    ai_recommendation: currentPrice < ARBITRAGE_THRESHOLD.CHARGE_BELOW_PRICE
-      ? 'CHARGE_BATTERY'
-      : currentPrice > ARBITRAGE_THRESHOLD.DISCHARGE_ABOVE_PRICE
-        ? 'DISCHARGE_SELL'
-        : 'HOLD',
-    signal_strength: currentPrice < 0 ? 'CRITICAL_CHARGE' : 'NORMAL',
-  };
-};
+// Los precios OMIE y los indicadores de REE no tienen respaldo inventado: si el
+// feed no responde, la ruta contesta 503 y la app pinta «SIN DATOS». Un precio
+// aleatorio con «confianza 0,92» parecía una predicción real.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PHYSICAL LAYER — Telemetría de Edge Nodes
@@ -480,13 +467,17 @@ router.get(
  */
 router.get('/market/omie', authenticateToken, async (req, res) => {
   try {
+    // Precio OMIE real (marginalpdbc). Sin él, 503: nunca un precio inventado (ni se cachea el fallo).
     const data = await withCache('omie', CACHE_TTL.OMIE_PRICE, async () => {
-      // Real OMIE day-ahead price (marginalpdbc) when reachable; else simulated.
       const live = await energyFeed.getOmiePrice();
-      return live ? { ...live, simulated: false } : { ...buildOmiePrice(), simulated: true, source: 'simulated' };
+      if (!live) throw Object.assign(new Error('OMIE feed unavailable'), { code: 'OMIE_UNAVAILABLE' });
+      return { ...live, simulated: false };
     });
     res.json(data);
   } catch (err) {
+    if (err.code === 'OMIE_UNAVAILABLE') {
+      return res.status(503).json({ error: 'Precio OMIE no disponible ahora mismo', code: 'OMIE_UNAVAILABLE' });
+    }
     logger.error('[ENERGY][OMIE]', err);
     res.status(500).json({ error: 'Failed to fetch OMIE market price', code: 'OMIE_ERROR' });
   }
@@ -501,30 +492,18 @@ router.get('/market/omie', authenticateToken, async (req, res) => {
 router.get('/market/esios', authenticateToken, async (req, res) => {
   try {
     const data = await withCache('esios', CACHE_TTL.ESIOS, async () => {
-      // Real ESIOS indicators when ESIOS_API_KEY is configured; else simulated.
       const ree = await energyFeed.getReeGrid();      // demanda y mix reales (apidatos.ree.es, sin clave)
       if (ree) return ree;
-      const live = await energyFeed.getEsiosIndicators();
+      const live = await energyFeed.getEsiosIndicators(); // ESIOS, con ESIOS_API_KEY
       if (live) return { ...live, simulated: false };
-      return {
-        timestamp: new Date().toISOString(),
-        source: 'simulated',
-        simulated: true,
-        demand_mw: parseFloat((28000 + Math.random() * 8000).toFixed(0)),
-        frequency_hz: parseFloat((49.95 + Math.random() * 0.1).toFixed(3)),
-        renewable_pct: parseFloat((55 + Math.random() * 30).toFixed(1)),
-        mix: {
-          solar_pct: parseFloat((15 + Math.random() * 20).toFixed(1)),
-          wind_pct: parseFloat((20 + Math.random() * 25).toFixed(1)),
-          hydro_pct: parseFloat((5 + Math.random() * 10).toFixed(1)),
-          nuclear_pct: parseFloat((18 + Math.random() * 5).toFixed(1)),
-          gas_pct: parseFloat((10 + Math.random() * 15).toFixed(1)),
-        },
-        grid_balance_mw: parseFloat((Math.random() * 200 - 100).toFixed(0)),
-      };
+      // Sin REE ni ESIOS: 503, nunca un mix inventado (ni se cachea el fallo).
+      throw Object.assign(new Error('REE/ESIOS feeds unavailable'), { code: 'GRID_UNAVAILABLE' });
     });
     res.json(data);
   } catch (err) {
+    if (err.code === 'GRID_UNAVAILABLE') {
+      return res.status(503).json({ error: 'Indicadores de la red no disponibles ahora mismo', code: 'GRID_UNAVAILABLE' });
+    }
     logger.error('[ENERGY][ESIOS]', err);
     res.status(500).json({ error: 'Failed to fetch ESIOS indicators', code: 'ESIOS_ERROR' });
   }
@@ -572,15 +551,16 @@ router.get('/arbitrage/status', authenticateToken, async (req, res) => {
     // Autonomous agent decision from real OMIE price + live battery telemetry (no dispatch).
     const decision = await energyArbitrage.runOnce({ dispatch: false });
 
-    let { strategy, powerKw, reason, priceEurMwh, socPct, nodeId, priceSource } = decision;
+    let { strategy, powerKw, reason } = decision;
+    const { priceEurMwh, socPct, nodeId, priceSource } = decision;
 
-    // Demo fallback: simulate SoC when no live battery telemetry is connected.
-    if (socPct == null) {
-      socPct = parseFloat((40 + Math.random() * 50).toFixed(1));
-      const sim = energyArbitrage.evaluate({ priceEurMwh: priceEurMwh ?? buildOmiePrice().price_eur_mwh, socPct });
-      strategy = sim.strategy; powerKw = sim.powerKw; reason = `${sim.reason} (simulated SoC)`;
-      if (priceEurMwh == null) priceEurMwh = buildOmiePrice().price_eur_mwh;
-      priceSource = priceSource === 'none' ? 'simulated' : priceSource;
+    // Sin batería conectada no hay estrategia que recomendar: antes se inventaba
+    // un SoC (y un precio, si faltaba) y se presentaba como decisión del agente.
+    const sinBateria = socPct == null;
+    if (sinBateria) {
+      strategy = 'NO_BATTERY';
+      powerKw = 0;
+      reason = 'No hay ninguna batería conectada con telemetría: el agente no tiene estado de carga sobre el que decidir.';
     }
 
     res.json({
@@ -593,7 +573,9 @@ router.get('/arbitrage/status', authenticateToken, async (req, res) => {
       price_source: priceSource,
       node_id: nodeId,
       thresholds: ARBITRAGE_THRESHOLD,
-      estimated_yield_eur: parseFloat(((priceEurMwh || 0) * 0.05 * socPct / 100).toFixed(2)),
+      estimated_yield_eur: sinBateria || priceEurMwh == null
+        ? null
+        : parseFloat((priceEurMwh * 0.05 * socPct / 100).toFixed(2)),
       next_evaluation: new Date(Date.now() + 5 * 60_000).toISOString(),
     });
   } catch (err) {
@@ -748,7 +730,7 @@ router.post(
         onchain_tx: onchain && onchain.ok ? onchain.hash : null,
         audit_trail: onchain && onchain.ok
           ? `Logged on-chain to BeZhasVPP.sol (tx ${onchain.hash})`
-          : `Audit pending — BeZhasVPP.sol contract: ${ENERGY_CONTRACTS.VPP}`,
+          : auditTrail(ENERGY_CONTRACTS.VPP, 'Comando SCADA pendiente de anclar on-chain'),
       });
     } catch (err) {
       logger.error(`[ENERGY][SCADA][${nodeId}]`, err);
@@ -863,14 +845,19 @@ router.post(
  */
 router.get('/demand-response', authenticateToken, async (req, res) => {
   try {
+    // Nodos elegibles = cargas controlables (LOAD) del propio titular. Ahorros e
+    // incentivos: aún no se liquidan, así que null (antes eran aleatorios).
+    const owner = req.user && req.user.bezhas_id;
+    const own = owner ? await energyNodes.listNodes(owner) : [];
     res.json({
       active: false,
       program: 'REE P48 Demand Response',
-      eligible_nodes: ['n5'],
+      eligible_nodes: own.filter((n) => n.type === NODE_TYPE.LOAD).map((n) => n.id),
       current_trigger: 'PRICE_THRESHOLD',
       threshold_eur_mwh: ARBITRAGE_THRESHOLD.DISCHARGE_ABOVE_PRICE,
-      savings_today_eur: parseFloat((Math.random() * 120).toFixed(2)),
-      incentive_pending_eur: parseFloat((Math.random() * 45).toFixed(2)),
+      savings_today_eur: null,
+      incentive_pending_eur: null,
+      settlement: 'not_available',
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch DR status', code: 'DR_ERROR' });
@@ -892,15 +879,19 @@ router.post(
     const { action, nodeIds, durationMin } = req.body;
     logger.info(`[ENERGY][DR] action=${action} nodes=${nodeIds} duration=${durationMin}min user=${req.user?.id}`);
 
+    // La orden queda aprobada (HITL) y registrada, pero aún no se envía a los
+    // equipos ni se liquida con REE: la respuesta lo dice en lugar de prometer un ahorro.
     res.json({
       success: true,
       action,
       nodeIds,
       durationMin,
-      activated_at: new Date().toISOString(),
+      approved_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + durationMin * 60_000).toISOString(),
-      expected_saving_eur: parseFloat((durationMin * 0.5).toFixed(2)),
-      audit_trail: `Logged to BeZhasVPP.sol — contract: ${ENERGY_CONTRACTS.VPP}`,
+      dispatched: false,
+      note: 'Orden aprobada y registrada; el envío a los equipos y la liquidación con REE aún no están conectados.',
+      expected_saving_eur: null,
+      audit_trail: auditTrail(ENERGY_CONTRACTS.VPP, 'Demand Response'),
     });
   }
 );
@@ -1172,13 +1163,14 @@ router.get('/compliance/aegis', authenticateToken, requireRole('admin'), async (
         telemetry_integrity: s.telemetry_integrity,
         events_evaluated_24h: s.events_evaluated,
         fail_rate_pct: s.fail_rate_pct,
-        onchain_audit_coverage: '100%',
+        // Sin EnergyOracle desplegado no hay anclaje on-chain: no se declara cobertura.
+        onchain_audit_coverage: ENERGY_CONTRACTS.ORACLE ? 'anchored' : 'not_deployed',
       },
       events_last_24h: events,
       certification: {
         issuer: 'BeZhas Aegis Security Layer',
         valid_until: new Date(Date.now() + 30 * 86_400_000).toISOString(),
-        blockchain_proof: `${ENERGY_CONTRACTS.ORACLE}`,
+        blockchain_proof: ENERGY_CONTRACTS.ORACLE,
       },
     });
   } catch (err) {

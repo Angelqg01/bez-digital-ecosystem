@@ -80,7 +80,11 @@ function decodeRegisters(regs, map) {
   // 3) Map scaled points onto canonical telemetry metrics.
   const metrics = {};
   for (const [metric, spec] of Object.entries(map.metrics || {})) {
-    let v = scaled[spec.point];
+    // `points` suma varios puntos (p. ej. potencia por fase de un grupo trifásico);
+    // si falta alguno, la métrica se omite en lugar de dar un total incompleto.
+    let v = Array.isArray(spec.points)
+      ? (spec.points.some((p) => scaled[p] == null) ? null : spec.points.reduce((s, p) => s + scaled[p], 0))
+      : scaled[spec.point];
     if (v == null) continue;
     if (spec.div) v = v / spec.div;
     if (spec.abs) v = Math.abs(v);

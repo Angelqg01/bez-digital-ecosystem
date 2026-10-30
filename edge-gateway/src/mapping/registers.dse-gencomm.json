@@ -1,0 +1,44 @@
+{
+  "vendor": "Deep Sea Electronics (DSE)",
+  "model": "Controladores de grupo electrógeno DSE 73xx/74xx/86xx (GenComm) — los más extendidos en los grupos que se venden en España",
+  "source": "Protocolo DSE GenComm: dirección = página × 256 + offset. Página 4 (1024) = instrumentación básica; página 3 (768) = estado. El 1029 (batería, ×0,1 V) y el 772 (modo de control) coinciden con integraciones publicadas. DSE entrega la tabla completa bajo petición indicando modelo y firmware: confirmar TODAS las direcciones con ese documento antes de producción.",
+  "encoding": "gain (engineering = raw / gain). 32-bit big-endian word order.",
+  "function": "holding",
+  "wordSwap": false,
+  "modbusDefaults": { "unitId": 10, "note": "DSE sale de fábrica con esclavo 10, 19200 baudios por RS-485; Modbus TCP en el puerto 502 con el módulo DSE855/DSE890 o en los modelos con Ethernet." },
+  "blocks": [
+    { "start": 772, "count": 1 },
+    { "start": 1024, "count": 34 }
+  ],
+  "points": [
+    { "name": "control_mode",     "address": 772,  "type": "uint16" },
+    { "name": "oil_pressure_kpa", "address": 1024, "type": "uint16", "gain": 1 },
+    { "name": "coolant_temp_c",   "address": 1025, "type": "int16",  "gain": 1 },
+    { "name": "fuel_level_pct",   "address": 1027, "type": "uint16", "gain": 1 },
+    { "name": "battery_voltage",  "address": 1029, "type": "uint16", "gain": 10 },
+    { "name": "engine_rpm",       "address": 1030, "type": "uint16", "gain": 1 },
+    { "name": "gen_frequency",    "address": 1031, "type": "uint16", "gain": 10 },
+    { "name": "gen_l1n_voltage",  "address": 1032, "type": "uint32", "gain": 10 },
+    { "name": "gen_l1_current",   "address": 1044, "type": "uint32", "gain": 10 },
+    { "name": "gen_l1_power_w",   "address": 1052, "type": "int32",  "gain": 1 },
+    { "name": "gen_l2_power_w",   "address": 1054, "type": "int32",  "gain": 1 },
+    { "name": "gen_l3_power_w",   "address": 1056, "type": "int32",  "gain": 1 }
+  ],
+  "metrics": {
+    "output_kw":         { "points": ["gen_l1_power_w", "gen_l2_power_w", "gen_l3_power_w"], "div": 1000, "round": 3 },
+    "voltage_v":         { "point": "gen_l1n_voltage",  "round": 1 },
+    "current_a":         { "point": "gen_l1_current",   "round": 1 },
+    "grid_frequency":    { "point": "gen_frequency",    "round": 2 },
+    "rpm":               { "point": "engine_rpm" },
+    "temp_c":            { "point": "coolant_temp_c",   "round": 1 },
+    "fuel_pct":          { "point": "fuel_level_pct",   "round": 0 },
+    "oil_pressure_kpa":  { "point": "oil_pressure_kpa" },
+    "battery_voltage_v": { "point": "battery_voltage",  "round": 1 }
+  },
+  "state": {
+    "point": "control_mode",
+    "default": "DEGRADED",
+    "map": { "0": "OFFLINE", "1": "ONLINE", "2": "ONLINE", "3": "ONLINE", "4": "DEGRADED" },
+    "note": "Modo de control GenComm (stop/auto/manual/test…): el significado de cada código depende del modelo; ajustarlo con la tabla de DSE."
+  }
+}

@@ -45,6 +45,7 @@ const net = require('net');
 const https = require('https');
 const http = require('http');
 const axios = require('axios');
+const { esIpPublica } = require('../../utils/safeFetch');
 
 /** Puertos admitidos. Un ERP publica en HTTPS; lo demás huele a red interna. */
 const PUERTOS_PERMITIDOS = new Set([443, 8443, 44300, 50000, 50001]);
@@ -79,33 +80,9 @@ class ErpHttpError extends Error {
  * escrito de otra forma. El texto engaña; la IP, no.
  */
 function esDireccionProhibida(ip) {
-    const version = net.isIP(ip);
-    if (version === 0) return true;              // no es una IP: no se arriesga
-
-    if (version === 4) {
-        const o = ip.split('.').map(Number);
-        if (o[0] === 0) return true;                                  // 0.0.0.0/8
-        if (o[0] === 10) return true;                                 // privada
-        if (o[0] === 127) return true;                                // loopback
-        if (o[0] === 169 && o[1] === 254) return true;                // link-local y metadatos
-        if (o[0] === 172 && o[1] >= 16 && o[1] <= 31) return true;    // privada
-        if (o[0] === 192 && o[1] === 168) return true;                // privada
-        if (o[0] === 192 && o[1] === 0 && o[2] === 0) return true;    // IETF
-        if (o[0] === 192 && o[1] === 0 && o[2] === 2) return true;    // documentación
-        if (o[0] === 100 && o[1] >= 64 && o[1] <= 127) return true;   // CGNAT
-        if (o[0] >= 224) return true;                                 // multicast y reservadas
-        return false;
-    }
-
-    const v6 = ip.toLowerCase();
-    if (v6 === '::' || v6 === '::1') return true;                     // sin especificar y loopback
-    if (v6.startsWith('fe80')) return true;                           // link-local
-    if (v6.startsWith('fc') || v6.startsWith('fd')) return true;      // unique local
-    if (v6.startsWith('ff')) return true;                             // multicast
-    // IPv4 embebida (::ffff:127.0.0.1): se comprueba la parte v4.
-    const embebida = v6.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (embebida) return esDireccionProhibida(embebida[1]);
-    return false;
+    // La lista de rangos vive en utils/safeFetch para que webhooks, POS y ERP
+    // bloqueen exactamente lo mismo. Lo que no es una IP se prohíbe también.
+    return !esIpPublica(ip);
 }
 
 /**

@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { query } = require('../db/pool');
+const { validarDestinoPublico } = require('../utils/safeFetch');
 const { resolveIdentity } = require('./cargoLinkLifecycle');
 const { isConfigured: onChainConfigured, getAddresses } = require('./cargoLinkOnChain');
 
@@ -172,11 +173,14 @@ async function handleOperation({ req, method, endpoint, payload }) {
 }
 
 async function registerWebhook(req, { url, events }) {
-  if (!url || !/^https?:\/\//i.test(url)) {
-    const error = new Error('Webhook URL must start with http:// or https://');
+  if (!url) {
+    const error = new Error('Webhook URL is required');
     error.status = 400;
     throw error;
   }
+  // https y sólo IPs públicas: sin esto la API haría POST a la red interna
+  // (metadatos de GCP, Redis, Cloud SQL) en nombre del cliente. Lanza 400.
+  await validarDestinoPublico(url);
   if (!Array.isArray(events) || events.length === 0) {
     const error = new Error('At least one webhook event is required');
     error.status = 400;

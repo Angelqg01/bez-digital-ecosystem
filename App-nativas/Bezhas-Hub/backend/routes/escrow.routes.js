@@ -6,7 +6,7 @@ const { ethers } = require('ethers');
 const crypto = require('crypto');
 
 // Blockchain configuration
-const PROVIDER_URL = process.env.POLYGON_RPC_URL || 'https://rpc-amoy.polygon.technology';
+const PROVIDER_URL = process.env.POLYGON_RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com';
 const CONTRACT_ADDRESS = process.env.QUALITY_ESCROW_ADDRESS;
 const BEZCOIN_ADDRESS = process.env.BEZCOIN_ADDRESS;
 

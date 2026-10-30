@@ -10,12 +10,16 @@
  * — exactly the format @bezhas/connect `webhooks.verify` checks, so an
  * integrator's endpoint verifies deliveries with the SDK out of the box.
  *
+ * La URL es del cliente: el envío va por utils/safeFetch (sólo https y sólo
+ * IPs públicas, comprobadas al conectar), nunca por fetch directo.
+ *
  * Retry policy: exponential backoff (BASE_BACKOFF_MS × 2^attempts, capped),
  * up to max_attempts, then the delivery is parked as 'dead' (dead-letter) and
  * visible via GET /webhooks/deliveries for manual replay.
  */
 const crypto = require('crypto');
 const { query } = require('../db/pool');
+const { safeFetch } = require('../utils/safeFetch');
 const logger = require('pino')({ level: 'info', name: 'payment-webhooks' });
 
 const BASE_BACKOFF_MS = parseInt(process.env.WEBHOOK_BACKOFF_BASE_MS || '30000', 10);   // 30s
@@ -68,7 +72,7 @@ async function emit(appId, eventName, data) {
  * Attempt one delivery. Exported for tests; processQueue drives it.
  * @returns {'delivered'|'retry'|'dead'}
  */
-async function attemptDelivery(delivery, hook, fetchImpl = fetch) {
+async function attemptDelivery(delivery, hook, fetchImpl = safeFetch) {
     const rawBody = JSON.stringify({ ...delivery.payload, deliveryId: delivery.id });
     let httpStatus = null;
     let error = null;
@@ -83,6 +87,7 @@ async function attemptDelivery(delivery, hook, fetchImpl = fetch) {
             },
             body: rawBody,
             signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+            timeoutMs: REQUEST_TIMEOUT_MS,
         });
         httpStatus = res.status;
         if (res.ok) {
@@ -115,7 +120,7 @@ async function attemptDelivery(delivery, hook, fetchImpl = fetch) {
 }
 
 /** Process due deliveries once. Returns per-status counters (for tests/metrics). */
-async function processQueue(fetchImpl = fetch) {
+async function processQueue(fetchImpl = safeFetch) {
     const { rows } = await query(
         `SELECT d.id, d.webhook_id, d.event_name, d.payload, d.attempts, d.max_attempts,
                 w.url, w.secret

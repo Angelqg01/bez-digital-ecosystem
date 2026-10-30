@@ -22,7 +22,7 @@ const BEZ_TO_EUR_RATE = 0.50; // Placeholder rate, should come from Oracle
 
 class RewardAutomationService {
     constructor() {
-        this.provider = new ethers.JsonRpcProvider(process.env.AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology');
+        this.provider = new ethers.JsonRpcProvider(process.env.AMOY_RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com');
 
         // Initialize Hot Wallet if key exists
         if (process.env.HOT_WALLET_PRIVATE_KEY) {

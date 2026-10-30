@@ -187,7 +187,7 @@ export default function BuyTokenPage() {
               <p className="text-white font-semibold mb-4">Contacta con nuestro equipo comercial</p>
               <div className="flex flex-wrap justify-center gap-3">
                 <a
-                  href="mailto:info.angelqg@gmail.com?subject=Compra BEZ-Coin Enterprise"
+                  href="mailto:support@bezhas.com?subject=Compra BEZ-Coin Enterprise"
                   className="px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-semibold transition-colors"
                 >
                   📧 Email comercial
@@ -297,7 +297,7 @@ function PackCard({
 
       {pack.bezAmount ? (
         <p className={`text-3xl font-bold font-mono mb-1 ${accentClasses.price}`}>
-          {pack.bezAmount.toLocaleString()} <span className="text-lg">BEZ</span>
+          {pack.bezAmount.toLocaleString('es-ES')} <span className="text-lg">BEZ</span>
         </p>
       ) : (
         <p className={`text-3xl font-bold font-mono mb-1 ${accentClasses.price}`}>Libre</p>

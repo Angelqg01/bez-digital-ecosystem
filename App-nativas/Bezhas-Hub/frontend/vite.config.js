@@ -144,8 +144,10 @@ export default defineConfig({
       // Removemos CSP para permitir que WalletConnect funcione sin restricciones
     },
     proxy: {
+      // Pantalla segura de alta (/o/<token>) que abre el cuestionario del chat.
+      '/o/': { target: process.env.VITE_API_PROXY || 'http://localhost:3001', changeOrigin: true, secure: false },
       '/api': {
-        target: 'http://localhost:3001',
+        target: process.env.VITE_API_PROXY || 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path,

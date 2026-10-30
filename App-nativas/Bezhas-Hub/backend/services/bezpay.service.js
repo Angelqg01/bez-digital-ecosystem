@@ -47,7 +47,7 @@ try {
 // ─── CONTRATOS ────────────────────────────────────────────────────────────────
 const ADDRS = {
   BEZ_POLYGON:  process.env.BEZCOIN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
-  BEZ_BNB:      '0x8a1e3930fde1f151471c368fdbb39f3f63a65b55',
+  BEZ_BNB:      process.env.BEZ_BSC_ADDRESS || null, // sin contrato BEZ en BSC (bridge pendiente)
   USDT_POLYGON: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
   USDC_POLYGON: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
   STAKING_POOL: process.env.VITE_STAKING_POOL_ADDRESS || '0x5c9bd3136fBAA3861DeAE71e689AD8792202c7Df',

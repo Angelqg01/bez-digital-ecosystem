@@ -5,6 +5,7 @@ const { query } = require('../db/pool');
 const { getBlockchainStats } = require('../services/contractService');
 const { authenticateToken } = require('../middleware/security');
 const { requireWebhookTier } = require('../middleware/webhook-tier-gate');
+const { safeFetch, validarDestinoPublico } = require('../utils/safeFetch');
 
 /**
  * GET /api/config/platform
@@ -141,9 +142,9 @@ router.post('/webhooks/setup', authenticateToken, requireWebhookTier, async (req
             return res.status(400).json({ error: 'url and sectors[] are required' });
         }
 
-        // Validate URL format
-        try { new URL(url); } catch {
-            return res.status(400).json({ error: 'Invalid webhook URL' });
+        // https y sólo IPs públicas: la URL es del cliente y la llama el servidor.
+        try { await validarDestinoPublico(url); } catch (err) {
+            return res.status(400).json({ error: err.message, code: err.code });
         }
 
         const addr = walletAddress || req.user.address;
@@ -189,8 +190,8 @@ router.post('/webhooks/test', authenticateToken, requireWebhookTier, async (req,
         return res.status(400).json({ error: 'url is required' });
     }
 
-    try { new URL(url); } catch {
-        return res.status(400).json({ error: 'Invalid webhook URL' });
+    try { await validarDestinoPublico(url); } catch (err) {
+        return res.status(400).json({ error: err.message, code: err.code });
     }
 
     try {
@@ -210,16 +211,12 @@ router.post('/webhooks/test', authenticateToken, requireWebhookTier, async (req,
             headers['X-BeZhas-Signature'] = `sha256=${sig}`;
         }
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-
-        const resp = await fetch(url, {
+        const resp = await safeFetch(url, {
             method: 'POST',
             headers,
             body: JSON.stringify(testPayload),
-            signal: controller.signal,
+            timeoutMs: 10000,
         });
-        clearTimeout(timeout);
 
         res.json({
             success: resp.ok,

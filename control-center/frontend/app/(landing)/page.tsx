@@ -89,7 +89,7 @@ const liveFeed = [
 
 const contactLinks = [
   { label: 'Demo clientes', href: '/demo', icon: 'dashboard_customize' },
-  { label: 'Email comercial', href: 'mailto:info.angelqg@gmail.com', icon: 'mail' },
+  { label: 'Email comercial', href: 'mailto:support@bezhas.com', icon: 'mail' },
   { label: 'Deck Enterprise', href: 'https://drive.google.com/file/d/10M3q1iUC_vbu8XaCvOGFKg6OYWuKrKQt/view', icon: 'slideshow' },
   { label: 'Telegram', href: 'https://t.me/BeZhasBot', icon: 'send' },
 ];
@@ -340,7 +340,7 @@ export default function Home() {
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a
-                href="mailto:info.angelqg@gmail.com?subject=BeZhas%20—%20Solicitar%20demo"
+                href="mailto:support@bezhas.com?subject=BeZhas%20—%20Solicitar%20demo"
                 data-ads-conversion="demo"
                 className="flex h-14 items-center justify-center rounded-lg bg-[#0d33f2] px-7 text-xs font-black uppercase tracking-[0.18em] !text-white shadow-[0_0_28px_rgba(13,51,242,0.36)] transition hover:translate-y-[-2px] hover:brightness-110"
               >
@@ -879,7 +879,7 @@ export default function Home() {
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 6 }}>
                   <a
                     className={`${s.btn} ${s.btnSolid}`}
-                    href="mailto:info.angelqg@gmail.com?subject=BeZhas%20—%20Piloto%20empresarial"
+                    href="mailto:support@bezhas.com?subject=BeZhas%20—%20Piloto%20empresarial"
                     data-ads-conversion="piloto"
                   >
                     Solicitar un piloto <span className={s.arw}>→</span>

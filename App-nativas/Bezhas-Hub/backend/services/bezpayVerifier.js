@@ -31,7 +31,7 @@ const MIN_CONFIRMATIONS = parseInt(process.env.BEZPAY_MIN_CONFIRMATIONS || '3', 
 
 const RPC_BY_CHAIN = {
   137:   () => process.env.POLYGON_RPC_URL || process.env.POLYGON_MAINNET_RPC || 'https://polygon-bor.publicnode.com',
-  80002: () => process.env.POLYGON_AMOY_RPC || 'https://rpc-amoy.polygon.technology',
+  80002: () => process.env.POLYGON_AMOY_RPC || 'https://polygon-amoy-bor-rpc.publicnode.com',
   56:    () => process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org',
   1:     () => process.env.ETH_RPC_URL || 'https://eth.llamarpc.com',
 };

@@ -85,6 +85,8 @@ const {
 const { DEPARTMENT_BY_ID } = require('./operant-services');
 const bezPayOrders = require('../services/bezPayOrders');
 const rwaTokenization = require('../services/rwaTokenization');
+const rwaMarket = require('../services/rwaMarket');
+const bezSwap = require('../services/bezSwap');
 const erpConnections = require('../services/erpConnections');
 const { NOMBRES: TIPOS_ERP } = require('../services/erp/canonical');
 const killSwitch = require('../services/killSwitch');
@@ -481,6 +483,127 @@ const TOOLS = [
             fracciones: args.fracciones, valoracionUsd: args.valoracion_usd,
             precioFraccionBez: args.precio_fraccion_bez, rendimientoAnualPct: args.rendimiento_anual_pct,
             cidDocumentacion: args.cid_documentacion, cidImagenes: args.cid_imagenes,
+        }),
+    },
+
+    // ── Activos tokenizados y venta primaria de fracciones ───────────────────
+    //
+    // Mismos servicios que /api/gateway/v1/rwa/* (routes/bez-markets.js). Lo de
+    // nivel 0 sólo lee datos públicos de un activo o de una oferta; lo que recibe
+    // wallets es nivel 1 y no consulta NADA sobre ellas: la compra no mira el KYC
+    // del comprador (lo hace el contrato), porque eso sería un dato sobre él.
+    // La transferencia simple de fracciones queda en la REST/SDK: el catálogo
+    // MCP no lleva nombres de movimiento (transfer, send…), ver su test.
+    {
+        name: 'bezhas_rwa_asset',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 0,
+        title: 'Ficha de un activo tokenizado',
+        description: 'Datos públicos de un activo del RWAFactory de BeZhas en Polygon: nombre, categoría, fracciones, '
+            + 'valoración, precio por fracción, rendimiento declarado, documentación (CID) y si exige KYC para comprar.',
+        inputSchema: {
+            fabrica: z.enum(Object.keys(rwaTokenization.FABRICAS)).optional().describe('activos (por defecto) o industrial'),
+            asset_id: z.number().int().positive().describe('assetId emitido por AssetTokenized'),
+        },
+        handler: async ({ args }) => rwaMarket.leerActivo({ fabrica: args.fabrica || 'activos', assetId: args.asset_id }),
+    },
+    {
+        name: 'bezhas_rwa_sale_listing',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 0,
+        title: 'Oferta de venta primaria',
+        description: 'Estado de una oferta de venta primaria de fracciones: activo, precio en BEZ, fracciones disponibles y si '
+            + 'sigue abierta. Si la venta primaria aún no está activa, lo dice.',
+        inputSchema: {
+            fabrica: z.enum(Object.keys(rwaTokenization.FABRICAS)).optional(),
+            listing_id: z.number().int().positive(),
+        },
+        handler: async ({ args }) => rwaMarket.leerOferta({ fabrica: args.fabrica || 'activos', listingId: args.listing_id }),
+    },
+    {
+        name: 'bezhas_rwa_sale_list_prepare',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 1,
+        recibeDestinatario: true,
+        title: 'Preparar la venta primaria de fracciones',
+        description: 'Para el creador de un activo: devuelve las dos transacciones sin firmar que abren su venta primaria en BEZ '
+            + '(autorizar al contrato de venta y publicar la oferta). Las fracciones no salen de su wallet hasta que alguien '
+            + 'compra. NO firma ni envía.',
+        inputSchema: {
+            fabrica: z.enum(Object.keys(rwaTokenization.FABRICAS)).optional(),
+            asset_id: z.number().int().positive(),
+            cantidad: z.number().int().positive().describe('Fracciones que se ponen a la venta'),
+            precio_fraccion_bez: z.string().regex(/^\d{1,12}(\.\d{1,18})?$/),
+            origen: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe('Wallet del creador del activo, que firma'),
+        },
+        handler: async ({ args }) => rwaMarket.prepararOferta({
+            fabrica: args.fabrica || 'activos', assetId: args.asset_id, cantidad: args.cantidad,
+            precioFraccionBez: args.precio_fraccion_bez, vendedor: args.origen,
+        }),
+    },
+    {
+        name: 'bezhas_rwa_sale_buy_prepare',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 1,
+        recibeDestinatario: true,
+        title: 'Preparar la compra de fracciones',
+        description: 'Devuelve las dos transacciones sin firmar para comprar fracciones de una oferta de venta primaria pagando '
+            + 'en BEZ: el BEZ va al emisor y las fracciones a la wallet compradora en la misma transacción. NO firma ni envía. '
+            + 'Inmuebles, hoteles, barcos y helicópteros exigen KYC verificado; si falta, la compra revierte.',
+        inputSchema: {
+            fabrica: z.enum(Object.keys(rwaTokenization.FABRICAS)).optional(),
+            listing_id: z.number().int().positive(),
+            cantidad: z.number().int().positive(),
+            destino: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe('Wallet compradora, que firma y recibe las fracciones'),
+        },
+        handler: async ({ args }) => rwaMarket.prepararCompra({
+            fabrica: args.fabrica || 'activos', listingId: args.listing_id, cantidad: args.cantidad,
+            comprador: args.destino, comprobarKyc: false,
+        }),
+    },
+
+    // ── Mercado de BEZ (swap no custodio) ────────────────────────────────────
+    //
+    // Compra y venta de BEZ contra un pool de DEX, firmadas por el cliente. Hoy
+    // BEZ no tiene pool: responden DEX_NOT_CONFIGURED hasta que se configure
+    // BEZ_DEX_ROUTER. Comprar BEZ a BeZhas es bezhas_checkout_prepare.
+    {
+        name: 'bezhas_bez_swap_quote',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 0,
+        title: 'Cotizar compra o venta de BEZ en el DEX',
+        description: 'Cuánto recibirías al comprar BEZ (pagando con la moneda de cotización, USDC por defecto) o al vender BEZ '
+            + 'en el pool del DEX configurado. Si BEZ aún no tiene mercado, lo dice y remite a BEZ-Pay para comprar.',
+        inputSchema: {
+            lado: z.enum(['compra', 'venta']),
+            importe: z.string().regex(/^\d{1,15}(\.\d{1,18})?$/).describe('Lo que entregas: USDC si compras, BEZ si vendes'),
+        },
+        handler: async ({ args }) => bezSwap.cotizar({ lado: args.lado, importe: args.importe }),
+    },
+    {
+        name: 'bezhas_bez_swap_prepare',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 1,
+        recibeDestinatario: true,
+        title: 'Preparar compra o venta de BEZ en el DEX',
+        description: 'Devuelve las dos transacciones sin firmar (autorizar y cambiar) para comprar o vender BEZ en el pool del '
+            + 'DEX, con un mínimo a recibir según el deslizamiento. NO firma ni mueve fondos: el cliente firma y el cambio ocurre '
+            + 'entre su wallet y el pool. Nunca inventes la wallet ni el importe.',
+        inputSchema: {
+            lado: z.enum(['compra', 'venta']),
+            importe: z.string().regex(/^\d{1,15}(\.\d{1,18})?$/),
+            destino: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe('Wallet que firma y recibe el resultado del cambio'),
+            deslizamiento_bps: z.number().int().min(1).max(500).optional().describe('Máximo aceptado, en puntos básicos (100 = 1 %)'),
+        },
+        handler: async ({ args }) => bezSwap.prepararSwap({
+            lado: args.lado, importe: args.importe, wallet: args.destino,
+            deslizamientoBps: args.deslizamiento_bps ?? 100,
         }),
     },
 

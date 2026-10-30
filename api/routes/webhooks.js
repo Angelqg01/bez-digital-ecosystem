@@ -102,7 +102,7 @@ const CONFIG = Object.freeze({
   // BEZ-Coin v1: vive SÓLO en Polygon (0xEcBa…11A8). En BSC no hay contrato BEZ.
   bezContractAddress: process.env.BEZ_TOKEN_ADDRESS ?? '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8',
   treasuryPk: process.env.BEZ_TREASURY_PK || process.env.ADMIN_PK || '',
-  rpcUrl: process.env.RPC_URL || 'https://rpc-amoy.polygon.technology',
+  rpcUrl: process.env.RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com',
   // FX: EUR→USD for European-region settlements. Explicit & configurable — never
   // a silent 1:1. Replace with a live oracle feed when available.
   eurUsdRate: parseFloat(process.env.EUR_USD_RATE || '1.08'),

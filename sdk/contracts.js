@@ -196,7 +196,7 @@ const CHAIN_CONFIGS = {
     80002: {
         name: 'Polygon Amoy',
         aliases: ['amoy', 'polygon-amoy'],
-        rpc: process.env.POLYGON_AMOY_RPC || 'https://rpc-amoy.polygon.technology',
+        rpc: process.env.POLYGON_AMOY_RPC || 'https://polygon-amoy-bor-rpc.publicnode.com',
         explorer: 'https://amoy.polygonscan.com',
         blockTime: 2,
         gasToken: 'MATIC',

@@ -209,7 +209,7 @@ module.exports = {
     blockchain: {
         // RPC URLs
         polygonMainnet: process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com',
-        polygonAmoy: process.env.AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology',
+        polygonAmoy: process.env.AMOY_RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com',
 
         // Gas settings
         defaultGasLimit: 100000,

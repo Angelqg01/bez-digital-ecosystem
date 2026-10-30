@@ -104,22 +104,20 @@ async function completePlatformExample() {
         // ========================================
         console.log('\n5️⃣ Tokenizing Real Estate...');
 
+        // La documentación legal tiene que estar ya en IPFS (CID).
         const asset = await bezhas.rwa.tokenizeAsset({
-            type: 'real_estate',
-            metadata: {
-                address: '123 Main Street',
-                city: 'New York',
-                state: 'NY',
-                zipCode: '10001',
-                sqft: 2000,
-                bedrooms: 3,
-                bathrooms: 2
-            },
-            value: 500000 // $500,000
+            name: 'Piso Calle Real 12',
+            category: 'inmueble',
+            legalCID: 'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG',
+            supply: 1000,
+            valuationUSD: 500000,
+            pricePerFractionBEZ: '50',
+            estimatedYieldPct: 6.5,
+            location: 'Algeciras, España',
         }, wallet);
 
         if (asset.success) {
-            console.log(`✅ Asset tokenized! Token ID: ${asset.tokenId}`);
+            console.log(`✅ Asset tokenized! Asset ID: ${asset.assetId}`);
             console.log(`   Transaction: ${asset.transactionHash}`);
         }
 

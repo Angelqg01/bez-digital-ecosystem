@@ -33,14 +33,22 @@ Este plan cubre **6 fases** para cerrar ese hueco, en orden de dependencia:
 ## 1. Estado actual — línea base honesta (qué es real vs mock)
 
 ### 🔴 Mock / simulado (a reemplazar)
-| Componente | Archivo | Naturaleza |
+
+> **Actualizado el 2026-10-28** (fase 0 del plan `docs/developer/PLAN_DESARROLLO_SUBAPPS_PAY_ENERGY_GAS_GENESIS.md`).
+> Lo que queda simulado está siempre **marcado** (`simulated: true` + `SourceBadge`) y solo se ve mientras el titular
+> no ha conectado ninguna planta. Lo que no se podía marcar se ha quitado.
+
+| Componente | Archivo | Estado |
 |---|---|---|
-| Telemetría de nodos (frontend) | [`src/api.js` → `mockTelemetry()`](../src/api.js) | `Math.random()` |
-| Telemetría de nodos (backend) | [`api/routes/energy.js` → `buildTelemetry()`](../../../api/routes/energy.js) | `Math.random()` |
-| Alertas del "AI Agent" | `api/routes/energy.js` `/alerts` | array hardcoded |
-| Demand Response, staking, Aegis report | `api/routes/energy.js` | respuestas fijas |
-| Etiquetas `MQTT/Modbus`, `CAN/MQTT` | telemetría | **decorativas**, no se habla el protocolo |
-| Direcciones de contratos energía | `ENERGY_CONTRACTS` | placeholders `0x0…01/02/03` |
+| Telemetría de demostración (backend) | `api/routes/energy.js` → `buildTelemetry()` | `Math.random()`, **marcada** `simulated: true`; desaparece en cuanto hay un nodo propio o MQTT |
+| Lista de nodos de demostración | `GET /nodes` | **marcada** `simulated: true`; con nodos propios solo devuelve los de la BD |
+| Telemetría de respaldo (frontend) | `src/api.js` → `mockTelemetry()` | solo en `vite dev` o con `VITE_ALLOW_SIMULATED_FALLBACK=true` |
+| ~~Precio OMIE / indicadores REE de respaldo~~ | `/market/omie`, `/market/esios` | **quitado**: sin feed → 503 y la app muestra «SIN DATOS» |
+| ~~SoC y precio inventados en el arbitraje~~ | `/arbitrage/status` | **quitado**: sin batería → `NO_BATTERY`, SoC y rendimiento `null` |
+| ~~Ahorros aleatorios de Demand Response~~ | `/demand-response` | **quitado**: `null` hasta que haya liquidación; nodos elegibles = cargas propias |
+| ~~Direcciones de contratos `0x…01/02/03`~~ y STAKING = QualityEscrow | `ENERGY_CONTRACTS` | **quitado**: `null` sin variable de entorno; la auditoría dice «solo en BD» y Aegis `onchain_audit_coverage: not_deployed` |
+| Orden de Demand Response | `POST /demand-response` | aprobada (HITL) y registrada, pero `dispatched: false`: aún no se envía a equipos ni se liquida con REE |
+| Etiquetas `MQTT/Modbus`, `CAN/MQTT` | telemetría de demo | decorativas en la demo; los nodos reales llevan su protocolo |
 
 ### 🟡 Real pero sin dispositivo conectado
 | Componente | Archivo | Estado |
@@ -249,9 +257,8 @@ contra un Postgres vivo para el e2e (no disponible en esta sesión).
 - **DoD:**
   - [x] Lógica capture→batch→flush→SQL + history/analytics testeada (8 tests, mock query).
   - [x] Broker invoca el sink en accept y reject (test wiring).
-  - [ ] **PENDIENTE (requiere Postgres):** `cd api && node db/migrate.js` (migración 023)
-        → reinicio del API conserva histórico; página Analytics muestra kWh reales.
-  - [ ] `GET /nodes` desde BD real (sigue hardcoded — sub-paso menor pendiente).
+  - [x] Migración 023 aplicada en el Cloud SQL de producción (las migraciones están al día hasta la 074).
+  - [x] `GET /nodes` desde la BD (`energyNodes.listNodes`); la lista de demostración solo sale, marcada, sin nodos propios.
 
 ### ✅ FASE 4 — Anclaje on-chain de telemetría firmada · CONSTRUIDA y VERIFICADA on-chain
 **Objetivo:** que el dato físico firmado tenga prueba inmutable en cadena.

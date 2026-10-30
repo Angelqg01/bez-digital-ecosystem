@@ -11,6 +11,7 @@ const { Router } = require('express');
 const { body, param, query: qv, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/security');
 const { query } = require('../db/pool');
+const { validarDestinoPublico } = require('../utils/safeFetch');
 const {
     registerChannel, verifyChannel, getUserChannels, removeChannel,
     sendMessage, notifyUser, getNotificationPreferences,
@@ -65,6 +66,12 @@ router.post('/', authenticateToken, [
 ], asyncRoute(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    if (req.body.channelType === 'webhook') {
+        try { await validarDestinoPublico(req.body.channelId); } catch (err) {
+            return res.status(400).json({ error: err.message, code: err.code });
+        }
+    }
 
     const userId = await resolveUserId(req.user.address);
     if (!userId) return res.status(404).json({ error: 'User not found' });
@@ -137,6 +144,12 @@ router.post('/send', authenticateToken, [
 
     if (!req.body.template && !req.body.body) {
         return res.status(400).json({ error: 'Either template or body is required' });
+    }
+
+    if (req.body.channelType === 'webhook') {
+        try { await validarDestinoPublico(req.body.recipient); } catch (err) {
+            return res.status(400).json({ error: err.message, code: err.code });
+        }
     }
 
     const userId = await resolveUserId(req.user.address);

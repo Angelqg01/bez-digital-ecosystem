@@ -22,6 +22,7 @@ const { getStripePaymentLink } = require('../config/stripe-payment-links');
 const { BANK_TRANSFER_DETAILS, buildBankTransferInstructions } = require('../config/bank-transfer-details');
 const { TOKENOMICS_FEE, calculateFeeBreakdown } = require('../config/tokenomics');
 const complianceGate = require('./complianceGate');
+const { getEurUsdRate } = require('./fxService');
 const { TREASURY: SETTLEMENT_TREASURY } = require('./bezSettlementWatcher');
 
 const PLATFORM_FEE_BPS = TOKENOMICS_FEE.platformFeeBps;
@@ -46,6 +47,47 @@ function siguienteAccion({ stripeLink, bankTransfer, onchain }) {
 }
 
 /**
+ * Cotiza en EUR una orden SEPA. La cuenta de cobro (ING) es en EUR, así que
+ * el cliente transfiere un importe exacto en EUR; internamente la orden sigue
+ * en USD (KYC, comisiones, precio del BEZ) al cambio de referencia del BCE,
+ * que queda guardado en la orden para la conciliación y la AEAT.
+ * Sin cambio disponible no se inventa uno: la orden no se crea.
+ */
+async function cotizarEur(amountEUR) {
+    const neto = Number(amountEUR);
+    const respaldo = parseFloat(process.env.EUR_USD_RATE);
+    let fx;
+    try {
+        fx = await getEurUsdRate({ fallback: Number.isFinite(respaldo) ? respaldo : undefined });
+    } catch (_) {
+        throw new BezPayError('No hay tipo de cambio EUR/USD disponible; inténtalo más tarde.', 'FX_UNAVAILABLE', 503);
+    }
+    const fee = Number(((neto * PLATFORM_FEE_BPS) / 10000).toFixed(2));
+    return {
+        currency: 'EUR',
+        netAmount: Number(neto.toFixed(2)),
+        fee,
+        grossAmount: Number((neto + fee).toFixed(2)),
+        eurUsd: fx.rate,
+        rateSource: fx.source,
+        rateAsOf: fx.asOf,
+        netAmountUSD: Number((neto * fx.rate).toFixed(2)),
+    };
+}
+
+/** Campos EUR de la respuesta (vacío si la orden no es en EUR). */
+function camposEur(fiat) {
+    if (!fiat || fiat.currency !== 'EUR') return {};
+    return { currency: 'EUR', amountEUR: fiat.grossAmount, netAmountEUR: fiat.netAmount, platformFeeEUR: fiat.fee, eurUsdRate: fiat.eurUsd };
+}
+
+/** Instrucciones SEPA; con orden en EUR llevan el importe exacto a transferir. */
+function instruccionesBanco(reference, fiat) {
+    const base = buildBankTransferInstructions(reference);
+    return fiat?.currency === 'EUR' ? { ...base, amount: fiat.grossAmount } : base;
+}
+
+/**
  * Rehace la respuesta desde la fila guardada: un reintento con la misma
  * clave de idempotencia devuelve LA MISMA orden, nunca un duplicado.
  */
@@ -63,10 +105,11 @@ function respuestaRepeticion(row) {
         status: row.status,
         provider: meta.provider || row.payment_method,
         checkoutUrl: stripeLink?.url,
-        bankTransfer: bankTransfer ? buildBankTransferInstructions(`BEZ-${row.id}`) : undefined,
+        bankTransfer: bankTransfer ? instruccionesBanco(`BEZ-${row.id}`, meta.fiat) : undefined,
         walletAddress: row.wallet_address,
         amountUSD: parseFloat(row.amount_usd),
         platformFeeUSD: parseFloat(row.platform_fee_usd),
+        ...camposEur(meta.fiat),
         platformFeeBps: PLATFORM_FEE_BPS,
         stripeUseCase: stripeLink?.id,
         stripeLabel: stripeLink?.label,
@@ -93,9 +136,12 @@ async function buscarPorIdempotencia(idempotencyKey) {
  * @throws {BezPayError} KYC_REQUIRED (403), IDEMPOTENCY_KEY_REUSED (409),
  *         INVALID_IDEMPOTENCY_KEY o INVALID_METHOD (400).
  */
-async function crearOrden({ appId = null, walletAddress, amountUSD, paymentMethod, stripeUseCase, email, idempotencyKey = null }) {
+async function crearOrden({ appId = null, walletAddress, amountUSD, amountEUR = null, paymentMethod, stripeUseCase, email, idempotencyKey = null }) {
     if (!METODOS.includes(paymentMethod)) {
         throw new BezPayError(`Método de pago no admitido. Admitidos: ${METODOS.join(', ')}.`, 'INVALID_METHOD');
+    }
+    if (amountEUR != null && paymentMethod !== 'bank') {
+        throw new BezPayError('amountEUR solo se admite con transferencia SEPA (paymentMethod: bank).', 'CURRENCY_NOT_SUPPORTED');
     }
     if (idempotencyKey && !IDEMPOTENCIA_RE.test(idempotencyKey)) {
         throw new BezPayError('Idempotency-Key must be 8-80 chars [A-Za-z0-9_-]', 'INVALID_IDEMPOTENCY_KEY');
@@ -110,6 +156,10 @@ async function crearOrden({ appId = null, walletAddress, amountUSD, paymentMetho
             return respuestaRepeticion(existente);
         }
     }
+
+    // Orden SEPA en EUR: a partir de aquí todo se calcula con su contravalor en USD.
+    const fiat = amountEUR != null ? await cotizarEur(amountEUR) : null;
+    if (fiat) amountUSD = fiat.netAmountUSD;
 
     // Gate KYC/MiCA: el volumen acumulado 12m de la wallet limita la compra.
     const kyc = await complianceGate.checkBuyAllowed(walletAddress, parseFloat(amountUSD));
@@ -159,7 +209,7 @@ async function crearOrden({ appId = null, walletAddress, amountUSD, paymentMetho
         note = JSON.stringify({
             provider: 'bank_transfer', paymentRail: BANK_TRANSFER_DETAILS.paymentRail,
             beneficiaryAlias: BANK_TRANSFER_DETAILS.beneficiaryAlias, iban: BANK_TRANSFER_DETAILS.iban,
-            bic: BANK_TRANSFER_DETAILS.bic, ...comunes,
+            bic: BANK_TRANSFER_DETAILS.bic, ...comunes, ...(fiat ? { fiat } : {}),
         });
     } else if (onchain) {
         note = JSON.stringify({ ...onchainInstructions, ...comunes });
@@ -198,12 +248,13 @@ async function crearOrden({ appId = null, walletAddress, amountUSD, paymentMetho
         status: 'pending',
         provider: stripeLink ? 'stripe_payment_link' : bankTransfer ? 'bank_transfer' : paymentMethod,
         checkoutUrl: stripeLink?.url,
-        bankTransfer: bankTransfer ? buildBankTransferInstructions(`BEZ-${fila.id}`) : undefined,
+        bankTransfer: bankTransfer ? instruccionesBanco(`BEZ-${fila.id}`, fiat) : undefined,
         onchain: onchainInstructions || undefined,
         walletAddress,
         amountUSD: grossAmountUSD,
         netAmountUSD: parseFloat(amountUSD),
         platformFeeUSD,
+        ...camposEur(fiat),
         platformFeeBps: PLATFORM_FEE_BPS,
         tokenomics: feeBreakdown.allocations,
         stripeUseCase: stripeLink?.id,
@@ -242,6 +293,7 @@ async function obtenerOrden({ id, appId = null, esAdmin = false, walletUsuario =
         amountUSD: parseFloat(order.amount_usd || '0'),
         amountBEZ: order.amount_bez,
         platformFeeUSD: parseFloat(order.platform_fee_usd || '0'),
+        ...camposEur(meta.fiat),
         paymentMethod: order.payment_method,
         provider: meta.provider || order.payment_method,
         txHash: order.tx_hash,

@@ -29,7 +29,7 @@ async function main() {
 console.log("\n🚀 Desplegando BEZ Token directo con ethers.js\n");
 
 // Configuración
-const RPC_URL = process.env.POLYGON_RPC_URL || "https://rpc-amoy.polygon.technology";
+const RPC_URL = process.env.POLYGON_RPC_URL || "https://polygon-amoy-bor-rpc.publicnode.com";
 const PRIVATE_KEY = process.env.PRIVATE_KEY || process.env.HOT_WALLET_PRIVATE_KEY;
 
 if (!PRIVATE_KEY) {

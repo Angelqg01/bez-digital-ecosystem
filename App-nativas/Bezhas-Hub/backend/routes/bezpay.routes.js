@@ -225,7 +225,7 @@ router.post('/verify-tx', rateLimit(30, 60_000), async (req, res) => {
     const { ethers } = require('ethers');
     const rpcMap = {
       137:   process.env.POLYGON_MAINNET_RPC || 'https://polygon-bor.publicnode.com',
-      80002: process.env.POLYGON_AMOY_RPC    || 'https://rpc-amoy.polygon.technology',
+      80002: process.env.POLYGON_AMOY_RPC    || 'https://polygon-amoy-bor-rpc.publicnode.com',
       56:    'https://bsc-dataseed.binance.org/',
       1:     'https://eth.llamarpc.com',
     };
