@@ -142,11 +142,9 @@ const BuyTokensPage = lazy(() => import('./pages/BuyTokensPage')); // Token Purc
 const BezPayPage = lazy(() => import('./pages/BezPayPage')); // NEW: BeZhas Pay System v2.0 full page
 
 // AI Guide Widget (Global)
-import BezhasGuideWidget from './components/AI/BezhasGuideWidget';
 import AIWorkspaceBar from './components/AI/AIWorkspaceBar';
 
 // Journey Overlay (Global)
-import JourneyOverlay from './components/common/JourneyOverlay';
 
 /**
  * @dev This component orchestrates data fetching based on the Web3 connection state.
@@ -210,14 +208,6 @@ const AppOrchestrator = () => {
  * @dev The root component that wraps the entire application with necessary context providers.
  */
 const Root = () => {
-  // TEMPORAL: Usuario mock para testing de roles del Agente IA
-  // TODO: Reemplazar con useAuth() cuando esté integrado el sistema de autenticación
-  const mockUser = {
-    name: "Test User",
-    // Cambiar entre: 'user', 'developer', 'admin' para probar diferentes personalidades
-    role: "developer"
-  };
-
   return (
     <ErrorBoundary>
       <ThemeProvider>
@@ -239,12 +229,6 @@ const Root = () => {
 
                     {/* BezPayModal — Modal global de pago BEZ (reemplaza todos los modales de pago) */}
                     <BezPayModal />
-
-                    {/* Journey Overlay - Guía explicativa para clientes/usuarios (Global y persistente) */}
-                    <JourneyOverlay />
-
-                    {/* AI Guide Widget - Global y persistente en todas las páginas */}
-                    <BezhasGuideWidget currentUser={mockUser} />
 
                     {/* Chat flotante con RAG seguro (login obligatorio, acciones y enlaces directos) - Global */}
                     <AIWorkspaceBar />
