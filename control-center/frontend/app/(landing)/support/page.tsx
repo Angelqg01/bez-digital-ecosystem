@@ -45,7 +45,7 @@ export default function SupportPage() {
                     </a>
 
                     {/* Email */}
-                    <a href="mailto:info.angelqg@gmail.com" className="glass-panel p-10 border border-white/5 rounded-xl group hover:border-primary/30 transition-all block">
+                    <a href="mailto:support@bezhas.com" className="glass-panel p-10 border border-white/5 rounded-xl group hover:border-primary/30 transition-all block">
                         <div className="flex items-start gap-6">
                             <div className="w-16 h-16 bg-white/5 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
                                 <span className="material-symbols-outlined text-primary text-3xl">email</span>
@@ -56,7 +56,7 @@ export default function SupportPage() {
                                     Contacta a nuestro equipo para pilotos, partnerships, integraciones o derivacion al decisor correcto.
                                 </p>
                                 <div className="bg-black/40 rounded-lg p-4 font-mono text-sm text-primary mb-6">
-                                    info.angelqg@gmail.com
+                                    support@bezhas.com
                                 </div>
                                 <span className="glass-panel border border-white/10 text-white px-8 py-3 font-bold italic tracking-widest uppercase text-sm inline-flex items-center gap-2 group-hover:bg-white/5 transition-all">
                                     ENVIAR EMAIL

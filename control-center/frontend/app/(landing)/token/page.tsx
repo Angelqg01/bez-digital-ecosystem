@@ -555,6 +555,23 @@ export default function TokenPage() {
                     </div>
                 </section>
 
+                {/* White Paper */}
+                <section className="mb-16">
+                    <div className="glass-panel p-8 border border-primary/20 rounded-xl grid gap-6 md:grid-cols-[1fr_auto] items-center">
+                        <div>
+                            <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-bold mb-3">Documentación</p>
+                            <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-3">White Paper <span className="text-primary">BEZ-Coin</span></h2>
+                            <p className="text-on-surface-variant leading-relaxed max-w-2xl">
+                                Resumen técnico del token BEZ-Coin: tesis, arquitectura, economía del token, gobernanza DAO, propuesta de valor y hoja de ruta.
+                            </p>
+                        </div>
+                        <a href="/downloads/BEZ-Coin-WhitePaper.pdf" download className="bg-primary text-white px-8 py-4 font-bold italic tracking-widest uppercase text-sm hover:shadow-[0_0_30px_rgba(13,51,242,0.4)] transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                            <span className="material-symbols-outlined text-lg">download</span>
+                            DESCARGAR PDF
+                        </a>
+                    </div>
+                </section>
+
                 {/* CTA */}
                 <section className="text-center py-16 relative">
                     <div className="absolute inset-0 bg-primary/5 -z-10"></div>

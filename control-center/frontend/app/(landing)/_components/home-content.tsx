@@ -437,7 +437,7 @@ export const resources: Resource[] = [
         type: 'Control pack',
         title: 'Protocolos verticales CTO/CISO',
         desc: 'Mapa de contratos, permisos, oraculos y estandar de despliegue por sector.',
-        href: 'mailto:info.angelqg@gmail.com?subject=BeZhas%20—%20Control%20pack%20CTO/CISO',
+        href: 'mailto:support@bezhas.com?subject=BeZhas%20—%20Control%20pack%20CTO/CISO',
         cta: 'Solicitar acceso',
     },
     {
