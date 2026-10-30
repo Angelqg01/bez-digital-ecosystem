@@ -174,6 +174,12 @@ Cinco decisiones que se toman **una vez** y ahorran todos los sustos:
 | `bezhas_checkout_prepare` | **cobro con BEZ-Pay**: abre una orden (tarjeta, SEPA o BEZ) y devuelve el enlace de pago. No cobra: paga el cliente. Creator Pro+ | `wallet` |
 | `bezhas_checkout_status` | estado de un cobro abierto por tu propia clave | `wallet` |
 | `bezhas_tokenize_prepare` | **tokenización de un activo real** en Polygon: devuelve aprobar + `tokenizeAsset` sin firmar. Lo firma tu wallet. `fabrica`: `activos` (por defecto) o `industrial` (clientes de Factory industrial). Creator Pro+ | `contracts` |
+| `bezhas_rwa_asset` | **ficha pública de un activo tokenizado**: categoría, fracciones, valoración, precio en BEZ, rendimiento declarado y si exige KYC. Creator Pro+ | `contracts` |
+| `bezhas_rwa_sale_listing` | **oferta de venta primaria** de fracciones: precio, disponibles y si sigue abierta. Responde `SALE_NOT_DEPLOYED` hasta que el contrato esté auditado y desplegado. Creator Pro+ | `contracts` |
+| `bezhas_rwa_sale_list_prepare` | **abrir la venta primaria** (sólo el creador del activo): aprobar + `list` sin firmar. Las fracciones no salen de su wallet hasta la compra. Creator Pro+ | `contracts` |
+| `bezhas_rwa_sale_buy_prepare` | **comprar fracciones** pagando en BEZ: aprobar + `buy` sin firmar; el BEZ va directo al emisor. Inmuebles, hoteles, barcos y helicópteros exigen KYC (lo comprueba el contrato). Creator Pro+ | `contracts` |
+| `bezhas_bez_swap_quote` | **cotizar compra o venta de BEZ** en el pool del DEX configurado. Mientras BEZ no tenga pool responde `DEX_NOT_CONFIGURED` y remite a BEZ-Pay. Creator Pro+ | `contracts` |
+| `bezhas_bez_swap_prepare` | **comprar o vender BEZ** en el DEX sin custodia: aprobar + swap sin firmar, con mínimo a recibir. Creator Pro+ | `contracts` |
 | `bezhas_erp_connections` · `bezhas_erp_documents` · `bezhas_erp_document` | **lectura de tu ERP** (SAP, Odoo, Dynamics, NetSuite): conexiones, búsqueda y lectura de documentos. Business+ | `contracts` |
 
 **Previstas en v2 (escritura, siempre con aprobación humana):**

@@ -79,6 +79,7 @@ const qrRoutes = require('./routes/qr');
 const documentRoutes = require('./routes/documents');
 const channelRoutes = require('./routes/channels');
 const gatewayRoutes = require('./routes/gateway');
+const bezMarketsRoutes = require('./routes/bez-markets');
 const cargoLinkRoutes = require('./routes/cargolink');
 const openclawRoutes = require('./routes/openclaw');
 const monitorRoutes = require('./routes/monitor');
@@ -463,6 +464,8 @@ app.use('/api/qr', qrRoutes);
 // aislado). Antes que el Gateway general para que /tx no caiga en sus rutas.
 app.use('/api/gateway/v1/tx', txRouter);
 app.use('/api/security', securityRouter);
+// Tokenización RWA, fracciones y swap de BEZ: sólo transacciones sin firmar.
+app.use('/api/gateway/v1', bezMarketsRoutes);
 app.use('/api/gateway/v1', gatewayRoutes);
 // MCP de cara al cliente. Misma autenticación por api-key y mismos scopes que
 // el Gateway REST, en el mismo proceso: un servicio aparte obligaría a

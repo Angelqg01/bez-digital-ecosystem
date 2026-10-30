@@ -314,7 +314,9 @@ function construirServidor(app, plan, agente = null) {
                 const deDominio = ['TxError', 'CostEstimateError', 'BezPayError', 'TokenizationError', 'ErpNoEncontrado']
                     .includes(err?.name) && err.status < 500;
                 devolverCupo();
-                if (deDominio || ['ErpHttpError', 'TokenizationError'].includes(err?.name)) {
+                // Swap y mercado RWA: también sus 503 (mercado sin abrir, venta sin
+                // desplegar, RPC caído) son algo que el usuario tiene que saber.
+                if (deDominio || ['ErpHttpError', 'TokenizationError', 'SwapError', 'RwaMarketError'].includes(err?.name)) {
                     anotar('denegado', err.code);
                     return resultadoDato(tool.name, { error: err.message, code: err.code, detalles: err.detalles });
                 }
