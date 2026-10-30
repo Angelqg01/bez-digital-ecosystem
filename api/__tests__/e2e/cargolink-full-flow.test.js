@@ -25,6 +25,12 @@ const request = require('supertest');
 // ─── Mock DB (same mock pool used by all cargolink services) ──────────────────
 const mockQuery = jest.fn();
 jest.mock('../../db/pool', () => ({ query: (...args) => mockQuery(...args) }));
+// Los webhooks salen por utils/safeFetch (anti-SSRF, resuelve DNS de verdad);
+// aquí se delega en global.fetch para observar las entregas sin red.
+jest.mock('../../utils/safeFetch', () => ({
+  ...jest.requireActual('../../utils/safeFetch'),
+  safeFetch: (...args) => global.fetch(...args),
+}));
 
 // ─── Mock Redis (not used by cargolink but imported transitively) ─────────────
 jest.mock('../../cache/redis', () => ({

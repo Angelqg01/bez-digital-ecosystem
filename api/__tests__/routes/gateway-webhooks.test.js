@@ -3,6 +3,7 @@
  */
 const request = require('supertest');
 const express = require('express');
+const dns = require('dns');
 const { mockQuery } = require('../helpers');
 
 const gatewayRoutes = require('../../routes/gateway');
@@ -19,7 +20,11 @@ describe('Gateway outbound webhooks', () => {
     beforeEach(() => {
         mockQuery.mockReset();
         mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+        // El registro resuelve el host (anti-SSRF): IP pública fija, sin red.
+        jest.spyOn(dns.promises, 'lookup').mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
     });
+
+    afterEach(() => jest.restoreAllMocks());
 
     it('exige API key (401 sin x-api-key)', async () => {
         const res = await request(app).get('/api/gateway/v1/webhooks');
@@ -42,6 +47,31 @@ describe('Gateway outbound webhooks', () => {
             const insert = mockQuery.mock.calls.find(c => String(c[0]).includes('INSERT INTO payment_webhooks'));
             expect(insert[1][0]).toBe(APP_ROW.id);
             expect(insert[1][2]).toBe(res.body.secret);
+        });
+
+        it.each([
+            ['http (sin TLS)', 'http://client.example/hook'],
+            ['metadatos de GCP', 'https://169.254.169.254/computeMetadata/v1/'],
+            ['loopback', 'https://localhost:6379/'],
+        ])('400 con destino no permitido: %s', async (_caso, url) => {
+            mockAppAuth();
+            const res = await request(app)
+                .post('/api/gateway/v1/webhooks/register')
+                .set('x-api-key', API_KEY)
+                .send({ url });
+            expect(res.status).toBe(400);
+            expect(mockQuery.mock.calls.some(c => String(c[0]).includes('INSERT INTO payment_webhooks'))).toBe(false);
+        });
+
+        it('400 si el host resuelve a una IP interna', async () => {
+            dns.promises.lookup.mockResolvedValue([{ address: '10.8.0.3', family: 4 }]);
+            mockAppAuth();
+            const res = await request(app)
+                .post('/api/gateway/v1/webhooks/register')
+                .set('x-api-key', API_KEY)
+                .send({ url: 'https://rebind.example/hook' });
+            expect(res.status).toBe(400);
+            expect(res.body.code).toBe('DESTINATION_NOT_ALLOWED');
         });
 
         it('400 con URL inválida', async () => {

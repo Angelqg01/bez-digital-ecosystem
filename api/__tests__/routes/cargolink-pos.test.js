@@ -1,6 +1,14 @@
 const express = require('express');
 const request = require('supertest');
+const dns = require('dns');
 const { mockQuery } = require('../helpers');
+
+// La sincronización sale por utils/safeFetch (anti-SSRF, resuelve DNS de verdad);
+// aquí se delega en global.fetch para observar la llamada sin red.
+jest.mock('../../utils/safeFetch', () => ({
+  ...jest.requireActual('../../utils/safeFetch'),
+  safeFetch: (...args) => global.fetch(...args),
+}));
 
 const cargoLinkRoutes = require('../../routes/cargolink');
 
@@ -20,6 +28,22 @@ describe('Routes: /api/cargolink POS connector', () => {
     jest.clearAllMocks();
     mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
     global.fetch = jest.fn();
+    // El enlace valida el host (anti-SSRF): IP pública fija, sin red.
+    jest.spyOn(dns.promises, 'lookup').mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
+  });
+
+  it.each([
+    ['http (sin TLS)', 'http://shop.acme.com', '/orders'],
+    ['metadatos de GCP', 'https://169.254.169.254', '/orders'],
+    ['credenciales vía ordersPath', 'https://shop.acme.com', '@10.0.0.5/orders'],
+  ])('rechaza enlazar un POS hacia la red interna: %s', async (_caso, baseUrl, ordersPath) => {
+    seedKey('pos');
+    const res = await request(createApp())
+      .post('/api/cargolink/v1/pos/link')
+      .set('Authorization', 'Bearer pos_key')
+      .send({ provider: 'shopify', baseUrl, ordersPath });
+    expect(res.status).toBe(400);
+    expect(mockQuery).not.toHaveBeenCalledWith(expect.stringContaining('INSERT INTO cargolink_pos_links'), expect.anything());
   });
 
   it('links a POS adapter and masks the API key in the response', async () => {

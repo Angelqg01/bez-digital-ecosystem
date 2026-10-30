@@ -38,6 +38,7 @@ const contractService = require('../services/contractService');
 const { query } = require('../db/pool');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { validarDestinoPublico } = require('../utils/safeFetch');
 const { INTERNAL_API_KEY } = require('../config/secrets');
 
 /** Comparación en tiempo constante para secretos compartidos. */
@@ -2008,10 +2009,15 @@ const requireAppForWebhooks = (req, res, next) => {
  * The signing secret is returned ONCE; store it to verify deliveries.
  */
 router.post('/webhooks/register', autenticarSinCupo, requireAppForWebhooks, [
-    body('url').isURL({ protocols: ['https', 'http'], require_protocol: true }),
+    body('url').isURL({ protocols: ['https'], require_protocol: true }),
     body('events').optional().isArray({ min: 1, max: 10 }),
 ], async (req, res) => {
     if (!validate(req, res)) return;
+    try {
+        await validarDestinoPublico(req.body.url);
+    } catch (err) {
+        return res.status(400).json({ error: err.message, code: err.code || 'DESTINATION_NOT_ALLOWED' });
+    }
     const events = (req.body.events || ['payment.settled']).map(String);
     const secret = paymentWebhooks.generateSecret();
     try {

@@ -2,6 +2,13 @@ const express = require('express');
 const request = require('supertest');
 const { mockQuery, makeAdminToken } = require('../helpers');
 
+// Los webhooks salen por utils/safeFetch (anti-SSRF, resuelve DNS de verdad);
+// aquí se delega en global.fetch para observar las entregas sin red.
+jest.mock('../../utils/safeFetch', () => ({
+  ...jest.requireActual('../../utils/safeFetch'),
+  safeFetch: (...args) => global.fetch(...args),
+}));
+
 const cargoLinkRoutes = require('../../routes/cargolink');
 
 function createApp() {

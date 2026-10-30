@@ -14,6 +14,7 @@
 
 const crypto = require('crypto');
 const { query } = require('../db/pool');
+const { safeFetch } = require('../utils/safeFetch');
 const { validateTransition } = require('./cargoLinkValidators');
 const { anchorTransition } = require('./cargoLinkOnChain');
 
@@ -355,7 +356,7 @@ async function fanoutWebhooks({ tx, eventName }) {
     const deliveryId = delivery.rows[0].id;
 
     try {
-      const res = await fetch(hook.url, {
+      const res = await safeFetch(hook.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -363,7 +364,7 @@ async function fanoutWebhooks({ tx, eventName }) {
           ...(signature ? { 'X-BeZhas-Signature': `sha256=${signature}` } : {}),
         },
         body: payload,
-        signal: AbortSignal.timeout(8000),
+        timeoutMs: 8000,
       });
       await query(
         `UPDATE cargolink_webhook_deliveries

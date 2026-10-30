@@ -1,5 +1,6 @@
 const express = require('express');
 const request = require('supertest');
+const dns = require('dns');
 const { mockQuery } = require('../helpers');
 
 const cargoLinkRoutes = require('../../routes/cargolink');
@@ -14,6 +15,8 @@ function createApp() {
 describe('Routes: /api/cargolink', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // El registro de webhooks resuelve el host (anti-SSRF): IP pública fija, sin red.
+    jest.spyOn(dns.promises, 'lookup').mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
     mockQuery.mockResolvedValue({
       rows: [{ id: 42, created_at: '2026-05-19T06:00:00.000Z' }],
       rowCount: 1,
@@ -91,5 +94,16 @@ describe('Routes: /api/cargolink', () => {
         expect.any(String),
       ]),
     );
+  });
+
+  it('rechaza registrar un webhook hacia la red interna (SSRF)', async () => {
+    for (const url of ['http://api.example.com/hook', 'https://169.254.169.254/computeMetadata/v1/']) {
+      const res = await request(createApp())
+        .post('/api/cargolink/v1/webhooks/register')
+        .set('Authorization', 'Bearer bz_test_key')
+        .send({ url, events: ['ON_CUSTOMS_CLEARED'] });
+      expect(res.status).toBe(400);
+    }
+    expect(mockQuery).not.toHaveBeenCalledWith(expect.stringContaining('INSERT INTO cargolink_webhooks'), expect.anything());
   });
 });
