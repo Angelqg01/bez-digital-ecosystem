@@ -1,11 +1,11 @@
 # ── Stage 1: Install dependencies ────────────
-FROM node:18-alpine AS deps
+FROM node:22.23.4-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm install --omit=dev && npm cache clean --force
 
 # ── Stage 2: Production image ────────────────
-FROM node:18-alpine
+FROM node:22.23.4-alpine
 WORKDIR /app
 
 RUN addgroup -S bezhas && adduser -S bezhas -G bezhas

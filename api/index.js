@@ -43,7 +43,6 @@ const { query, pool } = require('./db/pool');
 const { loadSecretsIntoEnv, logger: gcpLogger } = require('./services/gcpService');
 
 // ── Services (todos los requires en el top-level — nunca dentro de handlers) ──
-const gasMonitor = require('./services/gasMonitor');
 const aegisService = require('./services/aegisService');       // ← movido al top
 const { startListening } = require('./services/eventListener');
 const { startConsumer } = require('./services/eventConsumer');
@@ -92,6 +91,8 @@ const identityRoutes = require('./routes/identity');
 const organizationsRoutes = require('./routes/organizations');
 const organizationTechRoutes = require('./routes/organization-tech');
 const organizationBillingRoutes = require('./routes/organization-billing');
+const gasTankRoutes = require('./routes/gas-tank');
+const gasTankRpcRoutes = require('./routes/gas-tank-rpc');
 const aiWorkspaceRoutes = require('./routes/ai-workspace');
 const adminConfigRoutes = require('./routes/admin-config');
 const adminGovernanceRoutes = require('./routes/admin-governance');
@@ -388,6 +389,8 @@ app.use('/api/identity', identityRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/organizations', organizationTechRoutes);
 app.use('/api/organizations', organizationBillingRoutes);
+app.use('/api/organizations', gasTankRoutes);
+app.use('/api/rpc/paymaster', gasTankRpcRoutes);
 app.use('/api/ai-workspace/public', aiWorkspaceRoutes.publicRouter); // una pregunta gratis sin sesión
 app.use('/api/ai-workspace', aiWorkspaceRoutes);   // chat de la plataforma con RAG (sesión obligatoria)
 app.use('/api/nft-assets', require('./routes/nft-assets')); // subida de archivos para NFT: plan suscrito, sin ejecutables, sin lectura
@@ -639,7 +642,9 @@ async function shutdown(signal) {
 
   // 4. Detener gas monitor daemon
   try {
-    gasMonitor.stopDaemon?.();
+    require('./services/gasTank/treasuryWatch').stop();
+    require('./services/gasTank/reconciler').stop();
+    require('./services/gasTank/autoRecharge').stopSweep();
     gcpLogger.info('[SHUTDOWN] Gas monitor stopped');
   } catch (_) { /* no crítico */ }
 
@@ -703,8 +708,13 @@ async function startServer() {
     .catch(err => gcpLogger.warning('[STARTUP] Agent runtime error', { error: err.message }));
 
   // ── PASO 4: Gas monitor daemon ────────────────────────────────────────────────
-  gasMonitor.startDaemon(60_000);
-  gcpLogger.info('[STARTUP] Gas monitor daemon started (60s interval)');
+  // El gasMonitor antiguo ya no arranca: mezclaba unidades y enviaba fondos desde cada instancia.
+  // Su sustituto sólo mide y avisa (services/gasTank/treasuryWatch.js).
+  require('./services/gasTank/treasuryWatch').start();
+  // Conciliador del paymaster ERC-4337: solo arranca si el patrocinio está configurado (GAS_TANK_PAYMASTER…).
+  if (require('./services/gasTank/reconciler').start()) gcpLogger.info('[STARTUP] Gas Tank reconciler started (30s)');
+  require('./services/gasTank/autoRecharge').startSweep();
+  gcpLogger.info('[STARTUP] Gas treasury watch started (5 min, sólo avisa)');
 
   // ── PASO 4a: Barrido de sesiones de onboarding ───────────────────────────────
   // Caduca lo vencido y borra la IP y el user-agent pasadas 24 h. Lo segundo no

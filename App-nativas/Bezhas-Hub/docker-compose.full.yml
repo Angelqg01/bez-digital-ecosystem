@@ -211,7 +211,7 @@ services:
   # Nginx Reverse Proxy (Optional - for custom SSL)
   # ============================================
   nginx:
-    image: nginx:alpine
+    image: nginx:1.30-alpine
     container_name: bezhas-nginx
     restart: always
     ports:

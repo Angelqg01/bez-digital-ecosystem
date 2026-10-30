@@ -44,6 +44,7 @@ beforeEach(() => {
     mockQuery.mockReset();
     mockPublish.mockClear();
     gasMonitor.isRunning = false;
+    delete process.env.GAS_MONITOR_AUTORECHARGE;
 });
 
 // ═══════════════════════════════════════════════
@@ -83,7 +84,24 @@ describe('GasMonitor — balance scanning', () => {
         // Balance should be > 1 BEZ, so NO recharge
     });
 
-    test('auto-recharges when balance is below threshold', async () => {
+    test('does NOT send funds when balance is low and the flag is off', async () => {
+        const emptyWallet = ethers.Wallet.createRandom();
+        mockQuery
+            .mockResolvedValueOnce({
+                rows: [{ id: 4, name: 'NoFlagCorp', gas_tank_address: emptyWallet.address }],
+                rowCount: 1,
+            })
+            .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+            .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+        await gasMonitor.checkAndRechargeEnterpriseNodes();
+
+        expect(await anvil.provider.getBalance(emptyWallet.address)).toBe(0n);
+        expect(mockQuery.mock.calls.find(c => c[0].includes('INSERT INTO transactions'))).toBeUndefined();
+    });
+
+    test('auto-recharges when balance is below threshold and the flag is on', async () => {
+        process.env.GAS_MONITOR_AUTORECHARGE = 'true';
         // Create a fresh address with 0 balance
         const emptyWallet = ethers.Wallet.createRandom();
 

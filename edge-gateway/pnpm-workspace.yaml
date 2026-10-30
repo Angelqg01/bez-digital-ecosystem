@@ -1,0 +1,16 @@
+packages:
+  - '.'
+
+# Parches de seguridad (2026-10-23): mínimos por rama mayor (^, nunca >=)
+# para no cambiar la API que espera cada consumidor.
+overrides:
+  '@hono/node-server@1': '^1.19.15'
+  '@modelcontextprotocol/sdk@1': '^1.32.0'
+  axios@1: '^1.20.0'
+  fast-uri@3: '^3.1.8'
+  follow-redirects@1: '^1.16.1'
+  hono@4: '^4.13.11'
+  ip-address@10: '^10.7.4'
+  proxy-addr@2: '^2.0.8'
+  qs@6: '^6.16.0'
+  shell-quote@1: '^1.11.0'

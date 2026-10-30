@@ -21,16 +21,16 @@ overrides:
   fast-xml-builder: '^1.2.0'
   fast-xml-parser: '^5.8.0'
   ws: '^8.21.0'
-  qs: '^6.15.2'
-  follow-redirects: '^1.16.0'
+  qs: '^6.16.0'
+  follow-redirects: '^1.16.1'
   protobufjs: '^7.6.5'
-  '@grpc/grpc-js': '^1.14.4'
+  '@grpc/grpc-js': '^1.14.5'
   # Solo la rama 7: el aviso cubre <=7.29.0 y aqui hay instalado un 8.x que
   # ya esta sano. Sin acotar, el override lo degradaba de 8 a 7.
   '@babel/core@7': '^7.29.1'
   '@tootallnate/once': '^2.0.1'
-  body-parser: '^1.20.6'
-  ip-address: '^10.3.1'
+  body-parser: '^1.20.9'
+  ip-address: '^10.7.4'
 
   # brace-expansion va acotado POR MAJOR a proposito.
   #
@@ -43,9 +43,9 @@ overrides:
   #
   # El ReDoS esta parcheado en 1.1.12, 2.0.2 y 5.0.9, asi que cada rama se lleva
   # su version corregida y cada consumidor conserva la API que espera.
-  brace-expansion@1: '^1.1.12'
+  brace-expansion@1: '^1.1.21'
   brace-expansion@2: '^2.0.2'
-  brace-expansion@5: '^5.0.9'
+  brace-expansion@5: '^5.0.12'
 
   # js-yaml tambien por rama: la 3 y la 4 conviven (eslint arrastra una, los
   # clientes de google-cloud la otra) y la 4 no es compatible hacia atras.
@@ -63,3 +63,11 @@ overrides:
 
   # browserslist <=4.28.6: crecimiento de memoria sin límite y escritura en prototipo (dev).
   browserslist: '^4.28.7'
+  '@modelcontextprotocol/sdk@1': '^1.32.0'
+  compression@1: '^1.8.2'
+  fast-uri@3: '^3.1.8'
+  hono@4: '^4.13.11'
+  morgan@1: '^1.12.1'
+  proxy-addr@2: '^2.0.8'
+  # zod <4.6.6 (llega por @modelcontextprotocol/sdk): aviso alto.
+  zod@4: '^4.6.6'

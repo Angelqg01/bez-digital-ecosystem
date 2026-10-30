@@ -109,7 +109,9 @@ services:
     networks:
       - bezhas-net
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4007/health"]
+      # 127.0.0.1 y no localhost: en Alpine localhost resuelve antes a ::1 y el
+      # servidor escucha solo en 0.0.0.0, así que wget daba "connection refused".
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4007/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -474,6 +476,9 @@ services:
       PORT:              4001
       BEZHAS_API_URL:    http://bezhas-api:3001
       BEZHAS_API_KEY:    ${BEZHAS_API_KEY}
+      # server.js aborta sin ella ("FATAL: INTERNAL_API_KEY required") y la manda
+      # como x-internal-key a la API: tiene que ser la misma que la de bezhas-api.
+      INTERNAL_API_KEY:  ${OPERANT_ADMIN_KEY:?define OPERANT_ADMIN_KEY en .env}
       REDIS_URL:         redis://redis:6379
     ports:
       - "4001:4001"

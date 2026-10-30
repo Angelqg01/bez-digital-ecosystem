@@ -1,12 +1,12 @@
 # tx-signer — imagen mínima, sin root, sistema de ficheros de solo lectura en
 # compose (el único sitio escribible es el volumen /data).
-FROM node:22-alpine AS deps
+FROM node:22.23.4-alpine AS deps
 WORKDIR /app
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
-FROM node:22-alpine
+FROM node:22.23.4-alpine
 WORKDIR /app
 RUN addgroup -S signer && adduser -S signer -G signer \
     && mkdir -p /data && chown signer:signer /data
