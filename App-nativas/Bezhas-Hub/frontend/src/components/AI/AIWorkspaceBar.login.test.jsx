@@ -8,6 +8,7 @@ const { auth, wallet, cardProps } = vi.hoisted(() => ({
     cardProps: { current: null },
 }));
 
+vi.mock('../../lib/funnelEvents', () => ({ track: vi.fn() }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('wagmi', () => ({ useAccount: () => wallet }));
 vi.mock('react-markdown', () => ({ default: ({ children }) => <div>{children}</div> }));

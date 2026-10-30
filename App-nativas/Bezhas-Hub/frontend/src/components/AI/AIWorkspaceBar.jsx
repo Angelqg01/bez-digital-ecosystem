@@ -9,6 +9,11 @@ import { createSseParser } from "../../lib/sse";
 import { useChatActions } from "../../hooks/useChatActions";
 import { apiError, classifyLink, checkoutNotice } from "../../lib/chatActions";
 import ChatAuthCard from "./ChatAuthCard";
+import OnboardingQuestionnaire from "./OnboardingQuestionnaire";
+import ProactiveNudge from "./ProactiveNudge";
+import { useProactiveChat } from "../../hooks/useProactiveChat";
+import { track } from "../../lib/funnelEvents";
+import { scanSecrets, redactSecrets, describeFindings } from "../../lib/dlp";
 import { ChatActionCards, ChatActionsMenu } from "./ChatActionCards";
 import { ChatActionDialog } from "./ChatActionDialog";
 const MOCK_TOKEN = "siwe-session-mock-token"; // token simulado de sesiones antiguas (login SIWE previo): no es un JWT, hay que volver a iniciar sesión
@@ -45,6 +50,7 @@ export default function AIWorkspaceBar() {
     const [history, setHistory] = useState([]);
     const [copied, setCopied] = useState(null);
     const [showActions, setShowActions] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const chatActions = useChatActions(api);
     const textareaRef = useRef(null);
     const endRef = useRef(null);
@@ -63,6 +69,20 @@ export default function AIWorkspaceBar() {
     }, []);
     useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, loading, showAuth, open, showHistory]);
     const loggedIn = mounted && !!token && token !== MOCK_TOKEN;
+    // Aviso proactivo: nunca con el chat abierto, el cuestionario en marcha, la tarjeta de acceso, escribiendo o con sesión.
+    const proactive = useProactiveChat({ blocked: { chatOpen: open, onboarding: showOnboarding, authCard: showAuth, typing: input.trim().length > 0, loggedIn } });
+    const wasOpen = useRef(false);
+    useEffect(() => {
+        if (open && !wasOpen.current) track("chat_opened");
+        wasOpen.current = open;
+    }, [open]);
+    const acceptNudge = () => {
+        const cta = proactive.accept();
+        if (!cta) return;
+        setOpen(true);
+        if (cta.action === "onboarding") setShowOnboarding(true);
+        else if (cta.action === "ask") { setInput(cta.prompt || ""); setTimeout(() => textareaRef.current?.focus(), 0); }
+    };
     // Auto-grow del textarea (máx. ~6 líneas)
     useEffect(() => {
         const el = textareaRef.current;
@@ -79,6 +99,14 @@ export default function AIWorkspaceBar() {
             return;
         setOpen(true);
         setShowHistory(false);
+        // DLP: un secreto no sale del navegador. Se retira del cuadro y se avisa; nada llega al servidor ni al modelo.
+        const secretos = scanSecrets(message);
+        if (secretos.length > 0) {
+            pendingRef.current = "";
+            setInput(redactSecrets(message));
+            setMessages((m) => [...m, { role: "notice", content: `No he enviado el mensaje: contenía ${describeFindings(secretos)}. Nunca compartas contraseñas, claves ni datos bancarios por el chat; se introducen en la pantalla segura de BeZhas. He retirado el dato: revisa el texto y vuelve a enviarlo.` }]);
+            return;
+        }
         if (!loggedIn) {
             pendingRef.current = message;
             setShowAuth(true);
@@ -212,6 +240,9 @@ export default function AIWorkspaceBar() {
             const content = await file.text();
             if (content.length > MAX_UPLOAD_CHARS)
                 return notice("El archivo es demasiado grande (máx. 200.000 caracteres).");
+            const secretos = scanSecrets(content);
+            if (secretos.length > 0)
+                return notice(`«${file.name}» no se ha subido: contiene ${describeFindings(secretos)}. Quita esos datos y vuelve a intentarlo.`);
             const res = await api.post("/api/ai-workspace/knowledge", { title: file.name, content, classification: "INTERNAL" });
             notice(res.data.status === "quarantined"
                 ? `«${file.name}» no se ha indexado: contiene instrucciones sospechosas.`
@@ -260,7 +291,7 @@ export default function AIWorkspaceBar() {
                         </header>
 
                         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4" aria-live="polite">
-                            {showActions && loggedIn && !showHistory ? (<ChatActionsMenu actions={chatActions.catalog} onOpen={(a) => void chatActions.request(a)}/>) : showHistory && loggedIn ? (<div className="space-y-1">
+                            {showOnboarding ? (<OnboardingQuestionnaire onClose={() => setShowOnboarding(false)}/>) : showActions && loggedIn && !showHistory ? (<ChatActionsMenu actions={chatActions.catalog} onOpen={(a) => void chatActions.request(a)}/>) : showHistory && loggedIn ? (<div className="space-y-1">
                                     <p className="pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Conversaciones</p>
                                     {history.length === 0 && <p className="py-6 text-center text-sm text-gray-400">Todavía no hay conversaciones.</p>}
                                     {history.map((c) => (<div key={c.id} className="group flex items-center gap-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -274,6 +305,7 @@ export default function AIWorkspaceBar() {
                                     {messages.length === 0 && !showAuth && (<div className="py-6 text-center">
                                             <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">Pregúntame sobre BeZhas, pagos, staking, RWA o tu cuenta.</p>
                                             <div className="flex flex-wrap justify-center gap-2">
+                                                <button onClick={() => setShowOnboarding(true)} className="rounded-full border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">Configurar BeZhas para mi empresa</button>
                                                 {SUGGESTIONS.map((q) => (<button key={q} onClick={() => void send(q)} className="rounded-full border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">{q}</button>))}
                                             </div>
                                         </div>)}
@@ -304,6 +336,7 @@ export default function AIWorkspaceBar() {
                         {chatActions.dialog && (<ChatActionDialog dialog={chatActions.dialog} plans={chatActions.plans} currentPlan={chatActions.currentPlan} docs={chatActions.docs} paying={chatActions.paying} payError={chatActions.payError} onCheckoutPlan={chatActions.checkoutPlan} onBuyBez={chatActions.buyBez} onGo={(result) => chatActions.go(result)} onClose={chatActions.close} onUpgrade={(id) => chatActions.requestById(id)} onAskDoc={(title) => { chatActions.close(); setShowActions(false); setInput(`Resume el documento «${title}» y dime lo más importante.`); textareaRef.current?.focus(); }}/>)}
                     </section>)}
 
+                {!open && <ProactiveNudge nudge={proactive.nudge} onAccept={acceptNudge} onDismiss={proactive.dismiss}/>}
                 <form onSubmit={(e) => { e.preventDefault(); void send(input); }} className="flex items-end gap-1 rounded-3xl border border-gray-200 bg-white p-2 pl-2 shadow-xl focus-within:border-indigo-400 dark:border-gray-700 dark:bg-gray-900">
                     <input ref={fileRef} type="file" accept=".txt,.md,.markdown,.csv,.json" className="hidden" onChange={onFile}/>
                     <button type="button" onClick={() => fileRef.current?.click()} className="mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800" aria-label="Añadir un documento a mi conocimiento privado" title="Añadir documento (.txt, .md, .csv, .json)">
