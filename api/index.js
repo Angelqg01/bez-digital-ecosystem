@@ -487,6 +487,8 @@ app.use('/oauth', oauthRoutes.router);
 app.use('/api/erp', require('./routes/erp'));   // conexiones gestionadas con el ERP del cliente
 app.use('/c', require('./routes/checkout')); // hosted checkout (pay.bezhas.com/c/<token>)
 app.use('/o', require('./routes/onboarding-pages')); // alta guiada (onb.bezhas.com/o/<token>)
+app.use('/api/onboarding/guided', require('./routes/onboarding-guided')); // cuestionario del chat → alta segura
+app.use('/api/funnel', require('./routes/funnel-events')); // eventos anónimos del embudo del chat
 app.use('/api/cargolink', cargoLinkRoutes);
 
 // ── Enterprise lookup (interno — Edge Nodes / Nodos Empresariales) ────────────
