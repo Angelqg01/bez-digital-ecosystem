@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import styles from './mcp.module.css';
+import SellThroughApi from '../_components/SellThroughApi';
 
 // Endpoints públicos del MCP. Si cambia el dominio al desplegar (GCP), se
 // cambia SOLO aquí: todas las instrucciones y botones de copiar los leen.
@@ -791,6 +792,11 @@ export default function McpPage() {
                     </div>
                 </div>
             </section>
+
+            {/* ── Vender a través de la API / MCP ─────────────────── */}
+            <div className="mb-24">
+                <SellThroughApi />
+            </div>
 
             {/* ── Beneficios ──────────────────────────────────────── */}
             <section id="beneficios" className="mb-24 scroll-mt-40">

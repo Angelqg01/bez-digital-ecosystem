@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import SellThroughApi from '../_components/SellThroughApi';
 
 const nativeApps = [
     {
@@ -253,6 +254,10 @@ export default function DevelopersPage() {
                     </div>
                 </div>
             </section>
+            {/*  Vender a través de la API  */}
+            <div className="px-4 sm:px-8 pt-24 max-w-7xl mx-auto">
+                <SellThroughApi />
+            </div>
             {/*  Technical Bento Grid  */}
             <section id="sdk" className="px-8 py-24 max-w-7xl mx-auto">
                 <div className="flex items-end justify-between mb-16">
