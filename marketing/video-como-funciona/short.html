@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>BeZhas · Short</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;800&display=block" rel="stylesheet">
+<style>
+:root{--bg:#06080d;--line:#1d2635;--teal:#00D4AA;--gold:#FFD700;--pink:#FF6B9D;--txt:#e9eef5;--mut:#8a97aa}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);color:var(--txt);font-family:Inter,sans-serif}
+.orb{position:absolute;border-radius:50%;filter:blur(130px);opacity:.3}
+#grid{position:absolute;inset:-100px;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:90px 90px}
+/* Zona segura: arriba 230 px y abajo 380 px los tapa la interfaz de Reels/TikTok/Shorts */
+#scene{position:absolute;left:80px;right:80px;top:250px;height:1080px;display:flex;flex-direction:column;justify-content:center}
+#top{position:absolute;left:80px;right:80px;top:150px;display:flex;align-items:center;gap:20px}
+#bar{flex:1;height:6px;background:#ffffff14;border-radius:6px;overflow:hidden}
+#barin{height:100%;background:linear-gradient(90deg,var(--teal),var(--pink))}
+#brand{display:flex;align-items:center;gap:12px;font-family:Syne;font-weight:800;font-size:34px}
+#cap{position:absolute;left:70px;right:70px;top:1360px;text-align:center;font-family:Inter;font-weight:800;font-size:60px;line-height:1.18;text-shadow:0 4px 24px #000}
+#cap b{color:var(--teal)}
+.syne{font-family:Syne,sans-serif}.mono{font-family:'Space Mono',monospace}
+.h{font-family:Syne;font-weight:800;font-size:96px;line-height:1.05;margin-bottom:50px}
+.h em{font-style:normal;background:linear-gradient(90deg,var(--teal),var(--pink));-webkit-background-clip:text;color:transparent}
+.card{background:linear-gradient(180deg,#111826,#0b1018);border:1px solid var(--line);border-radius:30px}
+.pill{display:inline-block;padding:12px 26px;border-radius:999px;font-family:'Space Mono';font-size:28px;border:1px solid #00d4aa55;color:var(--teal);background:#00d4aa12}
+</style>
+</head>
+<body>
+<div id="grid"></div><div class="orb" id="o1" style="width:900px;height:900px;background:var(--teal)"></div><div class="orb" id="o2" style="width:800px;height:800px;background:var(--pink)"></div>
+<div id="top"><div id="brand"><span id="logo1"></span>BeZhas</div><div id="bar"><div id="barin"></div></div></div>
+<div id="scene"></div>
+<div id="cap"></div>
+<script>
+const LOGO=(s)=>`<svg width="${s}" height="${s}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#FF6B9D"/><path d="M50 2a48 48 0 0 1 0 96a24 24 0 0 1 0-48a24 24 0 0 0 0-48z" fill="#00D4AA"/><circle cx="50" cy="26" r="7" fill="#FF6B9D"/><circle cx="50" cy="74" r="7" fill="#00D4AA"/></svg>`;
+document.getElementById('logo1').innerHTML=LOGO(48);
+const ICON={'BeZhas Pay':'💳','CargoLink':'🚢','PureScan':'🔍','BEZ-Energy':'⚡','OPERANT':'🤖'};
+let TL=[],TOTAL=0,built=-1,LEAD=0.35,TAIL=0.45,BOT='Asistente · BeZhas MCP';
+const cl=(x)=>Math.max(0,Math.min(1,x)),ease=(x)=>1-Math.pow(1-cl(x),3);
+function setup(sc,dur,lang){if(lang==='en'){BOT='Assistant · BeZhas MCP';document.documentElement.lang='en'}let t=0;TL=sc.map(s=>{const d=dur[s.id]+LEAD+TAIL;const r={s,start:t,len:d,audio:dur[s.id]};t+=d;return r});TOTAL=t;return {total:t,lead:LEAD,tl:TL.map(r=>({id:r.s.id,start:r.start,len:r.len}))}}
+function at(r,w,i,n){const x=r.s.say.toLowerCase();const p=w?x.indexOf(w.toLowerCase()):-1;return p<0?LEAD+0.3+(i/n)*r.audio*0.8:LEAD+(p/x.length)*r.audio-0.15}
+const A=(d,c='')=>`class="in ${c}" data-d="${d.toFixed(2)}"`;
+const B={
+ hook(r){return `<div style="text-align:center"><div ${A(0)} id="spin" style="margin:0 auto 70px;width:260px">${LOGO(260)}</div><h1 ${A(0.15,'h')} style="font-size:112px">${r.s.title}</h1></div>`},
+ stack(r){return `<h2 ${A(0.1,'h')}>${r.s.title}</h2>${r.s.items.map((x,i)=>`<div ${A(at(r,null,i+1,4),'card')} style="padding:40px 44px;font-size:44px;font-weight:600;margin-bottom:28px">${x}</div>`).join('')}`},
+ apps(r){const it=r.s.items;return `<div style="position:relative;height:640px">${it.map((a,i)=>{const k=a[0].split(' ').pop().split('-').pop();return `<div class="app card" data-k="${at(r,k,i,it.length)}" data-n="${i}" style="position:absolute;inset:0;padding:70px 60px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;opacity:0"><div style="font-size:180px;margin-bottom:40px">${ICON[a[0]]||'◆'}</div><div class="syne" style="font-size:96px;font-weight:800;margin-bottom:24px">${a[0]}</div><div style="font-size:48px;color:var(--mut);line-height:1.25">${a[1]}</div></div>`}).join('')}</div><div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:50px">${it.map((a,i)=>`<span class="pill chip" data-n="${i}">${a[0]}</span>`).join('')}</div>`},
+ chat(r){const m=r.s.msgs;return `<div>${m.map((x,i)=>{const t0=LEAD+0.2+i*(r.audio*0.45);return `<div ${A(t0)} style="display:flex;justify-content:${x[0]=='u'?'flex-end':'flex-start'};margin-bottom:40px"><div ${x[0]=='a'?`class="type" data-d="${(t0+0.25).toFixed(2)}" data-full="${x[1]}"`:''} style="max-width:820px;padding:36px 44px;border-radius:36px;font-size:50px;line-height:1.3;${x[0]=='u'?'background:linear-gradient(135deg,#00d4aa3a,#00d4aa1a);border:1px solid #00d4aa66':'background:#121a27;border:1px solid var(--line)'}">${x[0]=='a'?`<span class="mono" style="color:var(--pink);font-size:26px;display:block;margin-bottom:10px">${BOT}</span><span class="tx"></span>`:x[1]}</div></div>`}).join('')}</div>`},
+ plans(r){const c=['#e9eef5','#00D4AA','#00D4AA','#FFD700'];return `${r.s.items.map((p,i)=>`<div ${A(0.15+i*(r.audio*0.55/4),'card')} style="display:flex;justify-content:space-between;align-items:center;gap:24px;padding:40px 44px;margin-bottom:26px;${i==3?'border-color:#ffd70088':''}"><span class="syne" style="font-size:46px;font-weight:800;line-height:1.05;max-width:380px">${p[0]}</span><span style="white-space:nowrap;text-align:right"><span class="syne" style="font-size:64px;font-weight:800;color:${c[i]}">${p[1]}</span><span class="mono" style="font-size:26px;color:var(--mut)"> ${p[2]}</span></span></div>`).join('')}<div ${A(at(r,r.s.say.includes('BEZ-Coin')?'bez-coin':null,3,4),'mono')} style="text-align:center;margin-top:30px;font-size:34px;color:var(--gold)">${r.s.foot}</div>`},
+ cta(r){return `<div style="text-align:center"><div ${A(0)} style="margin:0 auto 60px;width:220px">${LOGO(220)}</div><h1 ${A(0.15,'h')} style="font-size:118px">${r.s.title}</h1><div ${A(0.4)} style="font-size:50px;color:var(--mut);margin-bottom:60px">${r.s.sub}</div><div ${A(0.7,'card mono')} style="display:inline-block;padding:30px 60px;font-size:60px;color:var(--teal)">${r.s.link}</div></div>`},
+};
+function build(i){const r=TL[i];document.getElementById('scene').innerHTML=B[r.s.type](r);built=i;
+ // subtítulos cortos, de unas 4 palabras, al ritmo de la voz
+ const w=r.s.say.replace(/ (punto|dot) /g,'.').split(' ');const ch=[];for(let k=0;k<w.length;){let n=4;const seg=w.slice(k,k+n);ch.push(seg.join(' '));k+=n}
+ const tot=ch.reduce((a,b)=>a+b.length+1,0);let acc=0;r.caps=ch.map(x=>{const c={t:LEAD+acc/tot*r.audio,x};acc+=x.length+1;return c})}
+function render(T){let i=TL.findIndex(r=>T>=r.start&&T<r.start+r.len);if(i<0)i=TL.length-1;const r=TL[i],t=T-r.start;if(built!==i)build(i);
+ const sc=document.getElementById('scene');const f=Math.min(ease(t/0.25),ease((r.len-t)/0.25));sc.style.opacity=f;sc.style.transform=`scale(${0.97+0.03*f})`;
+ document.querySelectorAll('#scene .in').forEach(e=>{const p=ease((t-+e.dataset.d)/0.45);e.style.opacity=p;e.style.transform=`translateY(${(1-p)*50}px)`});
+ document.querySelectorAll('#scene .type').forEach(e=>{const s=e.dataset.full,n=Math.floor(cl((t-+e.dataset.d)/(s.length/45))*s.length);e.querySelector('.tx').textContent=s.slice(0,n)+(n>0&&n<s.length?'▍':'')});
+ const apps=[...document.querySelectorAll('#scene .app')];if(apps.length){let cur=0;apps.forEach((e,n)=>{if(t>=+e.dataset.k)cur=n});apps.forEach((e,n)=>{const k=+e.dataset.k;const p=n===cur?ease((t-k)/0.3):0;e.style.opacity=n===0&&t<k?ease(t/0.3):p;e.style.transform=`scale(${0.92+0.08*(n===cur?p:0)})`});document.querySelectorAll('#scene .chip').forEach(c=>{const on=+c.dataset.n===cur;c.style.background=on?'#00D4AA':'';c.style.color=on?'#06080d':''})}
+ const sp=document.getElementById('spin');if(sp)sp.style.transform=`rotate(${t*30}deg)`;
+ let c='';for(const x of r.caps)if(t>=x.t-0.05)c=x.x;const cp=document.getElementById('cap');cp.innerHTML=c.replace(/\b(BeZhas|BEZ-Coin|OPERANT|PureScan|CargoLink|Energy|Pay|Starter|Enterprise VIP|IA|AI)\b/g,'<b>$1</b>');cp.style.opacity=t<r.audio+LEAD+0.2?1:0;
+ document.getElementById('barin').style.width=(T/TOTAL*100)+'%';
+ const g=T*14;document.getElementById('grid').style.transform=`translate(${-(g%90)}px,${-(g%90)}px)`;
+ o1.style.left=(-300+250*Math.sin(T*0.2))+'px';o1.style.top=(100+300*Math.cos(T*0.15))+'px';o2.style.left=(400+200*Math.cos(T*0.18))+'px';o2.style.top=(1100+250*Math.sin(T*0.22))+'px';
+}
+window.setup=setup;window.render=render;
+</script>
+</body>
+</html>

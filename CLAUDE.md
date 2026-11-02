@@ -182,9 +182,11 @@ POLYGON\_MUMBAI: { chainId: 80001, rpc: 'https://rpc-mumbai.maticvigil.com' }
 - RAM: 128 GB  
 - OS: Windows 11 \+ WSL2 / Ubuntu
 
-> **Nota (2026-08-10):** la máquina de desarrollo actual es Fedora 44 y no tiene
-> driver NVIDIA cargado (`nvidia-smi` no responde), así que Ollama con GPU no
-> está operativo en ella. Si el servidor de la RTX 4090 pasa a Linux, usar
+> **Nota (2026-11-02):** la máquina de desarrollo (Fedora 44) tiene una RTX 5050
+> Laptop con el driver NVIDIA 615 cargado (`nvidia-smi` responde). Usarla para
+> render de vídeo y todo lo acelerable: `h264_nvenc` (el ffmpeg de Fedora no trae
+> libx264) y Chromium headless con ANGLE sobre EGL — ver
+> `marketing/video-como-funciona/pipeline/`. Si el servidor de la RTX 4090 pasa a Linux, usar
 > Ubuntu LTS: en Fedora el driver propietario y `nvidia-container-toolkit` con
 > Secure Boot dan bastante más guerra.
 

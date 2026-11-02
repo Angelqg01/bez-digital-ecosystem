@@ -1,0 +1,162 @@
+[
+  {"id":"intro","chapter":"BeZhas","type":"title",
+   "kicker":"Cómo funciona BeZhas",
+   "title":"Tu empresa es una isla.<br><em>BeZhas es el puerto común.</em>",
+   "sub":"Infraestructura blockchain e IA para empresas B2B",
+   "say":"Tu empresa es una isla. Proveedores, bancos, aduanas y clientes trabajan cada uno con su sistema, sus papeles y sus tiempos. BeZhas es el puerto común. Soy el responsable de marketing de BeZhas y en los próximos minutos te voy a enseñar cómo funciona toda la plataforma, cada aplicación, cada plan y lo que gana cada sector y cada cargo de tu empresa."},
+
+  {"id":"capas","chapter":"La plataforma","type":"layers",
+   "title":"Cuatro capas, una sola cuenta",
+   "items":[
+     {"icon":"⛓","name":"Blockchain","desc":"BEZ-Coin, ERC-20 en Polygon · contratos de pago, escrow, RWA y DAO"},
+     {"icon":"🧠","name":"Inteligencia artificial","desc":"OpenClaw orquesta varios modelos · conector MCP para tu propia IA"},
+     {"icon":"🧩","name":"SubApps","desc":"Hub, Wallet, Pay, DeFi, PureScan, Energy, CargoLink"},
+     {"icon":"🏢","name":"OPERANT","desc":"Agentes de IA por departamento, con auditoría anclada en cadena"}
+   ],
+   "say":"BeZhas se apoya en cuatro capas. Abajo, la blockchain: BEZ-Coin, nuestro token ERC-20 en Polygon, y los contratos de pagos, escrow, tokenización y gobernanza. Encima, la inteligencia artificial: OpenClaw coordina varios modelos y un conector MCP permite que tu propia IA trabaje con BeZhas. Después, las SubApps, una para cada necesidad. Y arriba, OPERANT, agentes de IA que trabajan por departamentos. Todo con una sola cuenta y una sola factura."},
+
+  {"id":"flujo","chapter":"Cómo empezar","type":"flow",
+   "title":"De cero a operando en cinco pasos",
+   "items":[
+     {"n":"1","name":"Alta","desc":"Cuenta de empresa y verificación de identidad"},
+     {"n":"2","name":"Plan","desc":"Starter, Creator Pro, Business o Enterprise VIP"},
+     {"n":"3","name":"Hub + Wallet","desc":"Incluidas en cualquier suscripción"},
+     {"n":"4","name":"Activa SubApps","desc":"Pay, CargoLink, Energy, PureScan, DeFi, OPERANT"},
+     {"n":"5","name":"Conecta","desc":"API, SDK o tu IA por MCP"}
+   ],
+   "say":"Empezar es sencillo. Uno: das de alta tu empresa y verificas la identidad. Dos: eliges un plan. Tres: el Hub y la Wallet vienen incluidos en cualquier suscripción. Cuatro: activas las SubApps que necesitas, solo esas. Y cinco: conectas BeZhas con tus sistemas por API o SDK, o directamente con tu asistente de IA a través del conector MCP."},
+
+  {"id":"planes","chapter":"Planes","type":"plans",
+   "title":"Un plan para cada etapa",
+   "items":[
+     {"name":"Starter","price":"0 €","per":"pago por uso","who":"Autónomos y startups","pts":["15 días gratis","150 acciones de IA","Razonamiento básico","Mercado diferido 15 min","30 llamadas/min"]},
+     {"name":"Creator Pro","price":"99 €","per":"/mes","who":"Pymes y creadores","pts":["1.500 acciones de IA","Razonamiento estándar","Mercado en tiempo real","120 llamadas/min","Cripto hasta 1.000 €/operación"]},
+     {"name":"Business","price":"499 €","per":"/mes","who":"Empresas en crecimiento","pts":["15.000 acciones de IA","Razonamiento avanzado","Histórico y oráculo por cadena","600 llamadas/min · ERP gestionado","Zero-retention · cripto a euros"]},
+     {"name":"Enterprise VIP","price":"2.499 €","per":"/mes","who":"Holdings e instituciones","pts":["Acciones de IA a medida","Razonamiento extendido multiagente","Feeds de mercado dedicados","1.200 llamadas/min · nodo dedicado","Euro a euro · residencia dedicada"]}
+   ],
+   "foot":"Precios sin IVA · −20 % pagando con BEZ-Coin · anual: 2 meses gratis",
+   "say":"Hay cuatro planes. Starter es gratis: quince días de prueba y después pagas solo lo que usas. Creator Pro, noventa y nueve euros al mes, para pymes y creadores: tiempo real y primeras operaciones con cripto. Business, cuatrocientos noventa y nueve euros: razonamiento avanzado, histórico de mercado, ERP gestionado y cero retención de datos. Y Enterprise VIP, dos mil cuatrocientos noventa y nueve euros, para holdings e instituciones, con agentes en paralelo, nodo dedicado y transferencias de euro a euro. Si pagas con BEZ-Coin, ahorras un veinte por ciento, y en anual tienes dos meses gratis."},
+
+  {"id":"limites","chapter":"Planes","type":"matrix",
+   "title":"Qué cambia de verdad al subir de plan",
+   "cols":["","Starter","Creator Pro","Business","Enterprise VIP"],
+   "rows":[
+     ["Cripto por operación","—","1.000 €","10.000 €","100.000 €"],
+     ["Aprobación humana desde","—","250 €","2.500 €","10.000 €"],
+     ["Cripto → euros","—","—","✓","✓"],
+     ["Euro → euro (SEPA)","—","—","—","✓"],
+     ["Doble aprobación desde","—","1.000 €","10.000 €","25.000 €"],
+     ["Privacidad","Telemetría","Desactivable","Zero-retention","Residencia dedicada"]
+   ],
+   "say":"Y no es solo un contador de uso. Cada plan abre carriles de dinero con techos claros. A partir de cierto importe hace falta la aprobación firmada de una persona, y por encima, de dos personas distintas. Así tu equipo opera rápido en el día a día y la dirección mantiene el control en las operaciones grandes."},
+
+  {"id":"hub","chapter":"SubApps","type":"app","name":"BeZhas-Hub","url":"hub.bezhas.com","label":"Centro social y marketplace","plan":"Incluida en todos los planes",
+   "pts":["Perfil de empresa verificado","Marketplace de servicios B2B","Comunidad, contenido y experiencia VIP"],
+   "ui":{"kpis":[["Socios verificados","1.284"],["Ofertas activas","312"],["Solicitudes hoy","47"]],"list":[["Transportes Algeciras S.L.","Logística · verificada"],["SolarTech Andalucía","Energía · verificada"],["Agro Sur Cooperativa","Agroalimentario · verificada"]],"chart":[3,5,4,7,6,8,9]},
+   "say":"Empezamos el recorrido por las SubApps. BeZhas-Hub es la puerta de entrada: el perfil verificado de tu empresa, un marketplace de servicios B2B y la comunidad del ecosistema. Aquí encuentras socios que ya han pasado verificación, en lugar de empezar de cero con cada proveedor."},
+
+  {"id":"wallet","chapter":"SubApps","type":"app","name":"BEZ Wallet","url":"wallet.bezhas.com","label":"Billetera no custodial","plan":"Incluida en todos los planes",
+   "pts":["Las claves son tuyas, no nuestras","Gas patrocinado por la empresa","Guardianes para recuperar el acceso"],
+   "ui":{"kpis":[["Saldo BEZ","48.250"],["Gas patrocinado","Activo"],["Guardianes","2 de 3"]],"list":[["Pago recibido","+ 1.200 BEZ"],["Comisión RWA","− 100 BEZ"],["Staking","+ 85 BEZ"]],"chart":[4,4,5,6,6,7,8]},
+   "say":"La BEZ Wallet también viene incluida. Es una billetera no custodial: las claves son de tu empresa, no nuestras. La empresa puede patrocinar el gas para que sus empleados no necesiten cripto para operar, y si alguien pierde el acceso, los guardianes que tú designes lo recuperan."},
+
+  {"id":"pay","chapter":"SubApps","type":"app","name":"BeZhas Pay","url":"pay.bezhas.com","label":"Cobros y checkout","plan":"Activable desde Starter",
+   "pts":["Páginas de pago alojadas y reembolsos","Plugin para WordPress","Tarjeta, SEPA y liquidación en BEZ sobre Polygon"],
+   "ui":{"kpis":[["Cobrado este mes","18.430 €"],["Pagos","214"],["Reembolsos","3"]],"list":[["Pedido #2041","Tarjeta · 349 €"],["Pedido #2040","SEPA · 1.250 €"],["Pedido #2039","BEZ · 980 €"]],"chart":[2,4,3,6,5,7,9]},
+   "say":"BeZhas Pay es tu caja registradora. Creas páginas de pago alojadas, gestionas reembolsos y, si vendes online, lo conectas con un plugin de WordPress. Tu cliente paga con tarjeta, con transferencia SEPA o con BEZ-Coin, y la liquidación queda registrada en Polygon."},
+
+  {"id":"defi","chapter":"SubApps","type":"app","name":"BeZhas-DeFi","url":"capital.bezhas.com/defi","label":"Finanzas Web3 y tesorería","plan":"Activable · recomendado Business",
+   "pts":["Staking y farming de BEZ","Bridge, liquidez y DAO","Swap de BEZ por API, SDK y MCP"],
+   "ui":{"kpis":[["En staking","120.000 BEZ"],["Propuestas DAO","4 abiertas"],["Pools","5 pares"]],"list":[["Propuesta #12","Votación abierta"],["Pool BEZ/USDC","Liquidez activa"],["Staking 12 meses","Bloqueado"]],"chart":[3,4,4,5,7,7,8]},
+   "aside":"El staking tiene riesgos. BEZ-Coin no es un producto de inversión.",
+   "say":"BeZhas-DeFi es la tesorería Web3 de tu empresa: staking y farming de BEZ, puente entre redes, liquidez y la DAO, donde las empresas votan las actualizaciones de la red. Y desde la API, el SDK o tu IA puedes cambiar BEZ sin salir de tus sistemas. El gasto en infraestructura pasa a ser un activo que participa en la red."},
+
+  {"id":"purescan","chapter":"SubApps","type":"app","name":"BZ PureScan","url":"purescan.bezhas.com","label":"IA, visión y trazabilidad","plan":"Activable desde Creator Pro",
+   "pts":["Escaneo con visión artificial y firmas SIFT","Food Oracle para calidad alimentaria","Gemelos digitales inmutables de activos"],
+   "ui":{"kpis":[["Escaneos hoy","862"],["Conformes","98,4 %"],["Gemelos digitales","1.020"]],"list":[["Lote AG-5521","Conforme · anclado"],["Lote AG-5520","Revisión manual"],["Equipo IND-77","Gemelo actualizado"]],"chart":[5,6,6,7,8,8,9]},
+   "say":"BZ PureScan pone ojos a tu cadena de suministro. La visión artificial escanea productos y documentos, el Food Oracle verifica la calidad alimentaria y cada activo puede tener un gemelo digital inmutable. Si alguien pregunta de dónde viene un lote, la respuesta ya está en la cadena."},
+
+  {"id":"energy","chapter":"SubApps","type":"app","name":"BEZ-Energy","url":"energy.bezhas.com","label":"Energía y RWA verde","plan":"Activable desde Creator Pro",
+   "pts":["Certificados CAE tokenizados","Créditos de carbono y oráculos ESG","Mercado P2P de energía on-chain"],
+   "ui":{"kpis":[["Energía certificada","412 MWh"],["CAE emitidos","38"],["CO₂ compensado","96 t"]],"list":[["CAE-2026-038","Emitido"],["Crédito CO₂ #77","Retirado"],["Oferta P2P","25 MWh disponible"]],"chart":[2,3,5,5,6,8,8]},
+   "say":"BEZ-Energy tokeniza la energía. Los certificados de ahorro energético, los créditos de carbono y los datos ESG se convierten en activos verificables, y las empresas pueden intercambiar energía entre ellas en un mercado P2P."},
+
+  {"id":"cargolink","chapter":"SubApps","type":"app","name":"BZ-CargoLink","url":"cargolink.bezhas.com","label":"Logística y aduanas","plan":"Activable desde Creator Pro",
+   "pts":["Seguimiento de cargas con NFT de envío","Escrow que libera el pago a la entrega","Despacho aduanero verificable"],
+   "ui":{"kpis":[["Envíos en ruta","63"],["En aduana","7"],["Escrow pendiente","41.200 €"]],"list":[["ALG → RTM · Cont. MSKU-01","En tránsito"],["TNG → ALG · Cont. CMAU-88","Despachado"],["ALG → VLC · Camión 14","Entregado · pago liberado"]],"chart":[4,5,7,6,8,7,9]},
+   "say":"BZ-CargoLink es logística y aduanas en cadena. Cada envío tiene su NFT con todo su historial, el pago queda en un escrow que se libera solo cuando la entrega se confirma, y el despacho aduanero se puede verificar sin perseguir papeles."},
+
+  {"id":"operant","chapter":"SubApps","type":"app","name":"OPERANT","url":"Gestión empresarial autónoma","label":"Agentes de IA por departamento","plan":"Módulo por plan",
+   "pts":["Ventas, Soporte, Finanzas, Legal, RRHH, Logística…","Del borrador a la autonomía gobernada por DAO","Cada acción auditada y anclada en cadena"],
+   "ui":{"kpis":[["Departamentos","8 de 8"],["Tareas este mes","1.437"],["Anclaje","Diario"]],"list":[["Ventas","12 propuestas enviadas"],["Soporte","88 tickets resueltos"],["Finanzas","Cierre mensual preparado"]],"chart":[3,5,6,6,7,9,9]},
+   "tiers":[["Starter","2 dptos · por uso"],["Creator Pro","+39 € · 4 dptos · 300 tareas"],["Business","+249 € · 8 dptos · 2.000 tareas"],["Enterprise VIP","+1.199 € · 10 dptos · 9.000 tareas"]],
+   "say":"Y OPERANT, la gestión empresarial autónoma. Son agentes de IA que trabajan por departamentos: ventas, soporte, finanzas, legal y más. En Starter preparan borradores; en Creator Pro te asisten; en Business trabajan de forma autónoma; y en Enterprise VIP su autonomía la gobierna la DAO. Cada acción queda auditada y anclada en la blockchain."},
+
+  {"id":"mcp","chapter":"Tu IA + BeZhas","type":"chat",
+   "title":"Tu IA ya sabe usar BeZhas",
+   "msgs":[
+     ["u","¿Cuántos envíos tengo retenidos en aduana y cuánto dinero hay en escrow?"],
+     ["a","Tienes 7 envíos en aduana. El escrow pendiente es de 41.200 €. ¿Te preparo el resumen para el equipo de operaciones?"],
+     ["u","Sí, y prepara el pago del contenedor CMAU-88."],
+     ["a","Pago preparado. Necesita tu firma: yo nunca firmo ni muevo fondos por mi cuenta."]
+   ],
+   "foot":"Claude · ChatGPT · Cursor · agente propio  →  mcp.bezhas.com",
+   "say":"Todo esto también funciona desde tu asistente de IA. Conectas Claude, ChatGPT, Cursor o tu propio agente al servidor MCP de BeZhas y le preguntas en lenguaje natural. Él consulta, resume y prepara operaciones. Pero nunca firma ni mueve fondos por su cuenta: eso lo hace siempre una persona."},
+
+  {"id":"s-log","chapter":"Por sector","type":"sector","name":"Logística y aduanas","apps":["CargoLink","Pay","PureScan"],"plan":"Business",
+   "steps":["El envío sale con su NFT y documentación","PureScan verifica la carga en origen","Aduana consulta el historial en cadena","Entrega confirmada: el escrow paga al transportista"],
+   "say":"Veamos cada sector. En logística y aduanas, el envío sale con su NFT, PureScan verifica la carga en origen, la aduana consulta el historial en la cadena y, al confirmarse la entrega, el escrow paga al transportista. Sin esperar facturas ni conciliaciones. Recomendamos Business por el volumen de llamadas y el paso de cripto a euros."},
+
+  {"id":"s-ene","chapter":"Por sector","type":"sector","name":"Energía","apps":["Energy","DeFi","OPERANT"],"plan":"Business",
+   "steps":["Los contadores registran la producción","Se emiten certificados CAE y créditos de carbono","Se venden en el mercado P2P o se retiran","El informe ESG sale firmado y verificable"],
+   "say":"En energía, la producción se registra, se emiten certificados de ahorro y créditos de carbono, se venden en el mercado P2P o se retiran, y el informe ESG sale verificable para el auditor."},
+
+  {"id":"s-agro","chapter":"Por sector","type":"sector","name":"Agroalimentario","apps":["PureScan","CargoLink","Hub"],"plan":"Creator Pro",
+   "steps":["Cada lote recibe su gemelo digital","El Food Oracle controla la calidad","El distribuidor escanea y ve el origen","Retirada selectiva en minutos, no en días"],
+   "say":"En agroalimentario, cada lote tiene su gemelo digital y el Food Oracle controla la calidad. El distribuidor escanea y ve el origen. Y si hay un problema, la retirada se hace solo sobre los lotes afectados. Una cooperativa puede empezar con Creator Pro."},
+
+  {"id":"s-rwa","chapter":"Por sector","type":"sector","name":"Inmobiliario y activos reales","apps":["RWA Factory","DeFi","Wallet"],"plan":"Enterprise VIP",
+   "steps":["Se tokeniza el activo en la RWA Factory","Se abre la venta primaria por fracciones","Los compradores firman desde su wallet","La gobernanza y los repartos quedan en cadena"],
+   "say":"En inmobiliario y activos reales, el activo se tokeniza en la RWA Factory, se abre una venta primaria por fracciones y los compradores firman desde su propia wallet. Para holdings y gestoras recomendamos Enterprise VIP, con euro a euro y doble aprobación."},
+
+  {"id":"s-fin","chapter":"Por sector","type":"sector","name":"Fintech y comercio","apps":["Pay","Wallet","DeFi"],"plan":"Creator Pro → Business",
+   "steps":["Checkout con tarjeta, SEPA o BEZ","Liquidación en Polygon en tiempo real","Reembolsos y conciliación automáticos","Conversión a euros desde Business"],
+   "say":"En fintech y comercio, el checkout acepta tarjeta, SEPA o BEZ, la liquidación es inmediata y los reembolsos se concilian solos. Se empieza en Creator Pro y se pasa a Business para convertir a euros."},
+
+  {"id":"s-ind","chapter":"Por sector","type":"sector","name":"Industria","apps":["PureScan","OPERANT","RWA Factory"],"plan":"Business",
+   "steps":["Gemelo digital de cada máquina y lote","Mantenimiento y compras con agentes OPERANT","Maquinaria tokenizada como garantía","Auditoría lista para clientes y bancos"],
+   "say":"Y en industria, cada máquina y cada lote tiene su gemelo digital, los agentes de OPERANT se ocupan de compras y mantenimiento, y la maquinaria tokenizada puede servir de garantía ante un banco."},
+
+  {"id":"r-ceo","chapter":"Por cargo","type":"role","name":"CEO","q":"¿Cómo crece mi empresa?",
+   "pts":["Red de socios ya verificados","Due diligence inmutable: fusiones en días, no meses","Voto en la DAO sobre el futuro de la red"],"kpi":["Plan","Business / Enterprise VIP"],
+   "say":"Ahora, por cargos. Al CEO, BeZhas le da una red de socios ya verificados, una due diligence inmutable que acorta las fusiones de meses a días, y voto en la DAO sobre el futuro de la red."},
+
+  {"id":"r-cfo","chapter":"Por cargo","type":"role","name":"CFO","q":"¿Dónde está mi dinero y quién lo mueve?",
+   "pts":["Liquidación en tiempo real, sin esperas bancarias","Techos y aprobaciones por importe","20 % de ahorro pagando con BEZ-Coin"],"kpi":["Plan","Business"],
+   "say":"Al director financiero, liquidación en tiempo real, techos y aprobaciones por importe para cada operación, y un veinte por ciento de ahorro si paga la suscripción con BEZ-Coin."},
+
+  {"id":"r-coo","chapter":"Por cargo","type":"role","name":"Director de Operaciones","q":"¿Qué está pasando ahora mismo?",
+   "pts":["Cada envío y lote trazado en cadena","Escrow que paga solo al entregar","Agentes OPERANT para el trabajo repetitivo"],"kpi":["Plan","Business"],
+   "say":"Al director de operaciones, cada envío y cada lote trazado, pagos que se liberan solos al entregar y agentes que se ocupan del trabajo repetitivo."},
+
+  {"id":"r-cto","chapter":"Por cargo","type":"role","name":"CTO","q":"¿Cuánto me cuesta integrarlo?",
+   "pts":["API REST, SDK y conector MCP","Hasta 1.200 llamadas por minuto","ERP gestionado y nodo dedicado"],"kpi":["Plan","Business / Enterprise VIP"],
+   "say":"Al CTO, una API, un SDK y un conector MCP documentados, hasta mil doscientas llamadas por minuto, ERP gestionado y, en Enterprise, nodo dedicado. Sin montar su propia blockchain."},
+
+  {"id":"r-leg","chapter":"Por cargo","type":"role","name":"Legal y Compliance","q":"¿Esto cumple la normativa?",
+   "pts":["Diseñado para MiCA, AEAT, SEPA y DAC8","Verificación de identidad y límites sin KYC","Zero-retention y la IA nunca firma"],"kpi":["Plan","Business / Enterprise VIP"],
+   "say":"Y a legal y compliance, una plataforma diseñada pensando en MiCA, la AEAT, SEPA y DAC8, con verificación de identidad, cero retención de datos desde Business y una regla que no se negocia: la IA nunca firma."},
+
+  {"id":"token","chapter":"BEZ-Coin","type":"token",
+   "title":"BEZ-Coin: combustible, no especulación",
+   "pts":["Paga el gas de las operaciones","Staking y voto en la DAO","−20 % en la suscripción","Se compra con tarjeta o SEPA en pay.bezhas.com"],
+   "addr":"Polygon · 0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+   "aside":"BEZ-Coin no es un producto de inversión.",
+   "say":"Todo lo mueve BEZ-Coin. No es especulación: es el combustible que paga el gas de las operaciones, da acceso al staking y al voto en la DAO, y abarata tu suscripción. Se compra con tarjeta o transferencia SEPA en BeZhas Pay. Como decimos a nuestros clientes: el token es la llave del club."},
+
+  {"id":"cta","chapter":"Empieza hoy","type":"cta",
+   "title":"Empieza gratis hoy",
+   "sub":"15 días de Starter · después, solo pagas lo que usas",
+   "links":["bezhas.com","mcp.bezhas.com","support@bezhas.com"],
+   "say":"Tu empresa no tiene por qué seguir siendo una isla. Empieza hoy gratis con Starter, conecta tu IA en mcp punto bezhas punto com y, cuando crezcas, BeZhas crece contigo. Te esperamos en bezhas punto com."}
+]
