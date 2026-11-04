@@ -1,0 +1,170 @@
+{
+  "seed": 2026,
+  "days": 91,
+  "actions": 1769,
+  "verdicts": {
+    "allowed": 907,
+    "requires_approval": 862,
+    "blocked": 0
+  },
+  "humanLoad": {
+    "approvalsTotal": 862,
+    "pctOfActions": 48.7,
+    "peakPerDay": 18,
+    "avgPerWorkday": 13.3,
+    "capacityPerDay": 40,
+    "daysOverCapacity": 0
+  },
+  "byCategory": {
+    "payment": 429,
+    "crypto_transfer": 142,
+    "crm": 629,
+    "outbound": 440,
+    "signature": 121,
+    "treasury_movement": 8
+  },
+  "payments": {
+    "count": 558,
+    "volumeUsd": 48152618,
+    "byRail": {
+      "SEPA": 158,
+      "SWIFT": 271,
+      "BEZ": 129
+    }
+  },
+  "aml": {
+    "screened": 558,
+    "low": 374,
+    "medium": 184,
+    "high": 0,
+    "byCountry": {
+      "Irán": "alto",
+      "Rusia": "alto",
+      "Bielorrusia": "alto",
+      "Myanmar": "alto",
+      "Venezuela": "alto"
+    }
+  },
+  "treasury": {
+    "start": 6700000,
+    "end": 4866122,
+    "criticalWeeks": 0,
+    "weekly": [
+      {
+        "week": 1,
+        "balanceUsd": 7510974,
+        "runwayMonths": 17.9,
+        "critical": false
+      },
+      {
+        "week": 2,
+        "balanceUsd": 8022047,
+        "runwayMonths": 19.1,
+        "critical": false
+      },
+      {
+        "week": 3,
+        "balanceUsd": 8748767,
+        "runwayMonths": 20.8,
+        "critical": false
+      },
+      {
+        "week": 4,
+        "balanceUsd": 9320675,
+        "runwayMonths": 22.2,
+        "critical": false
+      },
+      {
+        "week": 5,
+        "balanceUsd": 8213934,
+        "runwayMonths": 19.6,
+        "critical": false
+      },
+      {
+        "week": 6,
+        "balanceUsd": 7248063,
+        "runwayMonths": 17.3,
+        "critical": false
+      },
+      {
+        "week": 7,
+        "balanceUsd": 6581612,
+        "runwayMonths": 15.7,
+        "critical": false
+      },
+      {
+        "week": 8,
+        "balanceUsd": 6106233,
+        "runwayMonths": 14.5,
+        "critical": false
+      },
+      {
+        "week": 9,
+        "balanceUsd": 6082474,
+        "runwayMonths": 14.5,
+        "critical": false
+      },
+      {
+        "week": 10,
+        "balanceUsd": 5121907,
+        "runwayMonths": 12.2,
+        "critical": false
+      },
+      {
+        "week": 11,
+        "balanceUsd": 5204055,
+        "runwayMonths": 12.4,
+        "critical": false
+      },
+      {
+        "week": 12,
+        "balanceUsd": 4533668,
+        "runwayMonths": 10.8,
+        "critical": false
+      },
+      {
+        "week": 13,
+        "balanceUsd": 4866122,
+        "runwayMonths": 11.6,
+        "critical": false
+      }
+    ]
+  },
+  "defi": {
+    "alerts": [
+      {
+        "day": 41,
+        "type": "apy_crash",
+        "apy": 0.0223
+      },
+      {
+        "day": 62,
+        "type": "depeg",
+        "peg": 0.96
+      }
+    ],
+    "depegStartDay": 62,
+    "depegDetectedDay": 62,
+    "apyFirst": {
+      "day": 0,
+      "stable": 0.045,
+      "farm": 0.5974
+    },
+    "apyLast": {
+      "day": 90,
+      "stable": 0.0378,
+      "farm": 0.3302
+    }
+  },
+  "cold": {
+    "containers": 780,
+    "excursions": 4,
+    "claimsOpened": 2
+  },
+  "audit": {
+    "records": 1769,
+    "intact": true,
+    "tamperDetected": true,
+    "tamperAt": 884
+  }
+}
