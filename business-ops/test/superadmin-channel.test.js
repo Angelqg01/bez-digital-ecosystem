@@ -139,3 +139,21 @@ test('si la síntesis falla, el parte en texto ya salió y no se cae', async () 
   assert.equal(r.sent, true);
   assert.equal(sent.length, 1);
 });
+
+test('voz: transcribe por la URL del túnel de la IA local, y no por el Ollama de localhost', () => {
+  const voz = require('../src/platform/voice');
+  assert.equal(voz.fromEnv({ OLLAMA_URL: 'https://abc.trycloudflare.com', OLLAMA_API_KEY: 'k' }).canTranscribe, true);
+  assert.equal(voz.fromEnv({ WHISPER_URL: 'http://127.0.0.1:8765' }).canTranscribe, true);
+  assert.equal(voz.fromEnv({ OLLAMA_URL: 'http://localhost:11434' }).canTranscribe, false);
+  assert.equal(voz.fromEnv({}).canTranscribe, false);
+});
+
+test('voz: si el túnel no responde (portátil apagado) el SuperAdmin recibe un aviso, no silencio', async () => {
+  const sent = [];
+  const voice = mkVoice({ transcribe: async () => { throw new Error('fetch failed'); } });
+  const r = await sa.handleInbound({
+    update: { message: { chat: { id: 99 }, voice: { file_id: 'f1' } } }, tenantId: 't', space: mkSpace([]), chief: {},
+    send: async (m) => sent.push(m), store: mkStore(), voice, env: ENV, runDirective: async () => ({}) });
+  assert.equal(r.reason, 'error_transcripcion');
+  assert.match(sent[0].text, /No pude transcribir/);
+});

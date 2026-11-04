@@ -33,13 +33,16 @@ async function synthesize(text, { voice = process.env.VOICE_NAME || DEFAULT_VOIC
 }
 
 /** Transcribe con un servidor Whisper compatible con OpenAI. null si no está configurado. */
-async function transcribe(buffer, { url = process.env.WHISPER_URL, filename = 'nota.ogg', language = 'es' } = {}) {
+async function transcribe(buffer, { url = process.env.WHISPER_URL, apiKey = '', filename = 'nota.ogg', language = 'es' } = {}) {
   if (!url) return null;
   const form = new FormData();
   form.append('file', new Blob([buffer]), filename);
   form.append('model', process.env.WHISPER_MODEL || 'small');
   form.append('language', language);
-  const r = await fetch(`${url.replace(/\/$/, '')}/v1/audio/transcriptions`, { method: 'POST', body: form });
+  const r = await fetch(`${url.replace(/\/$/, '')}/v1/audio/transcriptions`, {
+    method: 'POST', body: form, signal: AbortSignal.timeout(60000),
+    ...(apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : {}),
+  });
   if (!r.ok) throw new Error(`whisper ${r.status}`);
   const j = await r.json();
   return String(j.text || '').trim();
@@ -71,11 +74,15 @@ function telegramVoiceSender(token) {
 /** Paquete de voz para el canal del SuperAdmin según el entorno. */
 function fromEnv(env = process.env) {
   const token = env.TELEGRAM_CEO_BOT_TOKEN || env.TELEGRAM_TOKEN_DIRECTOR || null;
+  // Whisper propio, o el de la pasarela que ya publica la IA local por el túnel (OLLAMA_URL + su clave).
+  // Con el portátil apagado el túnel no responde: la nota falla con un aviso y se pide el texto.
+  const url = env.WHISPER_URL || env.OLLAMA_URL || '';
+  const apiKey = env.WHISPER_API_KEY || (env.WHISPER_URL ? '' : env.OLLAMA_API_KEY) || '';
   return {
     repliesEnabled: env.VOICE_REPLIES === 'true',
-    canTranscribe: Boolean(env.WHISPER_URL),
+    canTranscribe: Boolean(url) && !/localhost:11434|127\.0\.0\.1:11434/.test(url),
     synthesize: (text) => synthesize(text),
-    transcribe: (buf) => transcribe(buf, { url: env.WHISPER_URL }),
+    transcribe: (buf) => transcribe(buf, { url, apiKey }),
     download: (fileId) => downloadTelegramFile(token, fileId),
     sendVoice: telegramVoiceSender(token),
   };

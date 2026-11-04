@@ -20,7 +20,11 @@ const PORT = parseInt(process.env.OLLAMA_GATE_PORT || '11436', 10);
 const TARGET = new URL(process.env.OLLAMA_TARGET || 'http://127.0.0.1:11434');
 const KEY = process.env.OLLAMA_GATE_KEY || '';
 const MAX_BODY = 1024 * 1024;
-const PERMITIDO = new Set(['POST /api/chat', 'POST /api/generate', 'POST /api/embeddings', 'GET /api/tags']);
+const MAX_AUDIO = 8 * 1024 * 1024; // nota de voz de Telegram
+// Whisper local (scripts/voice/whisper-server.py): transcripción de las notas de voz del SuperAdmin.
+const WHISPER = new URL(process.env.WHISPER_TARGET || 'http://127.0.0.1:8765');
+const RUTA_AUDIO = 'POST /v1/audio/transcriptions';
+const PERMITIDO = new Set(['POST /api/chat', 'POST /api/generate', 'POST /api/embeddings', 'GET /api/tags', RUTA_AUDIO]);
 
 const h = (v) => crypto.createHash('sha256').update(String(v)).digest();
 function autorizado(req) {
@@ -34,10 +38,12 @@ function crearServidor() {
     if (!autorizado(req)) { res.writeHead(401).end('unauthorized'); return; }
     if (!PERMITIDO.has(ruta)) { res.writeHead(403).end('forbidden'); return; }
 
+    const destino = ruta === RUTA_AUDIO ? WHISPER : TARGET;
+    const tope = ruta === RUTA_AUDIO ? MAX_AUDIO : MAX_BODY;
     let tam = 0;
-    req.on('data', (c) => { tam += c.length; if (tam > MAX_BODY) { req.destroy(); } });
+    req.on('data', (c) => { tam += c.length; if (tam > tope) { req.destroy(); } });
     const salida = http.request({
-      host: TARGET.hostname, port: TARGET.port || 80, method: req.method, path: req.url,
+      host: destino.hostname, port: destino.port || 80, method: req.method, path: req.url,
       headers: {
         'content-type': req.headers['content-type'] || 'application/json',
         ...(req.headers['content-length'] ? { 'content-length': req.headers['content-length'] } : {}),
