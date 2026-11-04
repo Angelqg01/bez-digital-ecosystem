@@ -60,12 +60,26 @@ function formatDigest({ digest, decisions = [], disagreements = [] }) {
   return parts.join('\n\n');
 }
 
+/** Nota de voz opcional: si falla, el texto ya salió; la voz nunca tumba el parte. */
+async function speak({ voice, to, text }) {
+  if (!voice?.repliesEnabled || !text) return false;
+  try {
+    const audio = await voice.synthesize(text);
+    await voice.sendVoice({ to, audio, caption: 'Dirección' });
+    return true;
+  } catch (err) {
+    console.warn(`[superadmin:voz] no se pudo enviar la nota de voz: ${err.message}`);
+    return false;
+  }
+}
+
 /** Envía el parte al chat del SuperAdmin. Sin chat configurado no envía (nunca a otro). */
-async function sendDigest({ chief, reports, send, tenantId, env = process.env }) {
+async function sendDigest({ chief, reports, send, tenantId, voice = null, env = process.env }) {
   const chatId = superAdminChat(env);
   if (!chatId) return { sent: false, reason: 'chat del SuperAdmin sin configurar (TELEGRAM_SUPERADMIN_CHAT_ID o TELEGRAM_CHAT_CEO)' };
   const out = await chief.run({ type: 'digest', payload: { reports } });
   await send({ tenantId, to: chatId, text: formatDigest(out) });
+  await speak({ voice, to: chatId, text: out.digest });
   return { sent: true, decisions: out.decisions.length, disagreements: out.disagreements.length };
 }
 
@@ -91,9 +105,9 @@ function reportsFromPending(pending = []) {
 const QUEUE_KEY = 'chief:queue';
 
 /** Parte diario: lee las aprobaciones pendientes, las guarda como cola y envía el parte. */
-async function runDigestJob({ tenantId, space, chief, send, store, env = process.env }) {
+async function runDigestJob({ tenantId, space, chief, send, store, voice = null, env = process.env }) {
   const reports = reportsFromPending(space.hitl.listPending(tenantId));
-  const res = await sendDigest({ chief, reports, send, tenantId, env });
+  const res = await sendDigest({ chief, reports, send, tenantId, voice, env });
   if (res.sent && store?.setFact) {
     const ids = reports.filter(r => ChiefOfStaffAgent.isPending(r.decision)).map(r => r.approvalId);
     await store.setFact({ tenantId, key: QUEUE_KEY, value: ids });
@@ -105,13 +119,34 @@ async function runDigestJob({ tenantId, space, chief, send, store, env = process
  * Mensaje entrante de Telegram. Devuelve { handled:false } si no es del SuperAdmin
  * (entonces sigue el flujo normal de cliente); si lo es, ejecuta y responde.
  */
-async function handleInbound({ update, tenantId, space, chief, send, store, runDirective, env = process.env }) {
+async function handleInbound({ update, tenantId, space, chief, send, store, runDirective, voice = null, env = process.env }) {
   const msg = update?.message || update?.edited_message;
   const chatId = msg?.chat?.id;
-  const text = (msg?.text || '').trim();
-  if (!msg || !text || !isSuperAdmin(chatId, env)) return { handled: false };
+  if (!msg || !isSuperAdmin(chatId, env)) return { handled: false };
 
-  const reply = (t) => send({ tenantId, to: chatId, text: t });
+  const reply = (t, { spoken = false } = {}) =>
+    send({ tenantId, to: chatId, text: t }).then(() => spoken ? speak({ voice, to: chatId, text: t }) : null);
+
+  // Nota de voz: se transcribe y sigue como si fuera texto. Sin transcriptor, se dice la verdad.
+  let text = (msg.text || '').trim();
+  let viaVoice = false;
+  if (!text && (msg.voice || msg.audio)) {
+    if (!voice?.canTranscribe) {
+      await reply('Recibí tu nota de voz, pero todavía no puedo transcribirla desde aquí. Escríbemelo por ahora.');
+      return { handled: true, ok: false, reason: 'sin_transcriptor' };
+    }
+    try {
+      const buf = await voice.download((msg.voice || msg.audio).file_id);
+      text = ((await voice.transcribe(buf)) || '').trim();
+    } catch (err) {
+      await reply(`No pude transcribir tu nota de voz (${err.message}). Escríbemelo, por favor.`);
+      return { handled: true, ok: false, reason: 'error_transcripcion' };
+    }
+    if (!text) { await reply('No entendí la nota de voz. ¿Puedes repetirla?'); return { handled: true, ok: false, reason: 'vacia' }; }
+    viaVoice = true;
+    await send({ tenantId, to: chatId, text: `🎙 Entendí: «${text}»` });
+  }
+  if (!text) return { handled: false };
 
   const decision = parseDecisionReply(text);
   if (decision) {
@@ -119,17 +154,17 @@ async function handleInbound({ update, tenantId, space, chief, send, store, runD
     const approvalId = queue[decision.index];
     if (!approvalId) { await reply('No tengo esa decisión en la cola. Pídeme el parte con "¿cómo vamos?".'); return { handled: true, ok: false }; }
     const ok = space.hitl.resolve(approvalId, decision.approved, 'Decisión del SuperAdmin vía Telegram');
-    await reply(ok ? `${decision.approved ? 'Aprobada' : 'Rechazada'} la decisión ${decision.index + 1}.` : 'Esa decisión ya no estaba pendiente.');
+    await reply(ok ? `${decision.approved ? 'Aprobada' : 'Rechazada'} la decisión ${decision.index + 1}.` : 'Esa decisión ya no estaba pendiente.', { spoken: viaVoice });
     return { handled: true, ok };
   }
 
   const d = parseDirective(text);
   if (d.department === 'chief') {
-    await sendDigest({ chief, reports: reportsFromPending(space.hitl.listPending(tenantId)), send, tenantId, env });
+    await sendDigest({ chief, reports: reportsFromPending(space.hitl.listPending(tenantId)), send, tenantId, voice: viaVoice ? voice : null, env });
     return { handled: true, ok: true, to: 'chief' };
   }
   const task = await runDirective({ text: d.text, department: d.department, channel: 'telegram' });
-  await reply(`${(PERSONAS[d.department] || {}).name || d.department}: ${task?.result?.summary || 'recibido, en curso.'}`);
+  await reply(`${(PERSONAS[d.department] || {}).name || d.department}: ${task?.result?.summary || 'recibido, en curso.'}`, { spoken: viaVoice });
   return { handled: true, ok: true, to: d.department };
 }
 

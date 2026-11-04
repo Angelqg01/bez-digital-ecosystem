@@ -25,6 +25,7 @@
     "imapflow": "^2.0.5",
     "jsonwebtoken": "^9.0.3",
     "mailparser": "^3.9.39",
+    "msedge-tts": "^2.1.1",
     "nodemailer": "~10.0.16",
     "pg": "^8.13.1"
   },

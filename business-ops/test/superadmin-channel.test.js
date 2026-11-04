@@ -91,3 +91,51 @@ test('sin chat propio usa TELEGRAM_CHAT_CEO y el propio manda si existe', () => 
   assert.equal(sa.isSuperAdmin(7, { TELEGRAM_CHAT_CEO: '7' }), true);
   assert.equal(sa.superAdminChat({}), null);
 });
+
+// ── Voz ──────────────────────────────────────────────────────────────────
+const mkVoice = (over = {}) => {
+  const spoken = [];
+  return { spoken, repliesEnabled: true, canTranscribe: true,
+    download: async () => Buffer.from('ogg'), transcribe: async () => '@ventas reserva Brickken',
+    synthesize: async (t) => Buffer.from(`audio:${t}`), sendVoice: async (m) => spoken.push(m), ...over };
+};
+
+test('una nota de voz se transcribe, se ejecuta como orden y se contesta también en voz', async () => {
+  const sent = []; let got; const voice = mkVoice();
+  const r = await sa.handleInbound({
+    update: { message: { chat: { id: 99 }, voice: { file_id: 'f1' } } }, tenantId: 't', space: mkSpace([]), chief: {},
+    send: async (m) => sent.push(m), store: mkStore(), voice, env: ENV,
+    runDirective: async (i) => { got = i; return { result: { summary: 'reservado' } }; },
+  });
+  assert.equal(r.to, 'sales');
+  assert.equal(got.text, 'reserva Brickken');
+  assert.match(sent[0].text, /Entendí: «@ventas reserva Brickken»/);
+  assert.equal(voice.spoken.length, 1);
+});
+
+test('sin transcriptor lo dice y no inventa la orden', async () => {
+  const sent = [];
+  const r = await sa.handleInbound({
+    update: { message: { chat: { id: 99 }, voice: { file_id: 'f1' } } }, tenantId: 't', space: mkSpace([]), chief: {},
+    send: async (m) => sent.push(m), store: mkStore(), voice: mkVoice({ canTranscribe: false }), env: ENV,
+    runDirective: async () => { throw new Error('no debe ejecutarse'); },
+  });
+  assert.equal(r.reason, 'sin_transcriptor');
+  assert.match(sent[0].text, /no puedo transcribirla/);
+});
+
+test('un audio de otro chat no es una orden', async () => {
+  const r = await sa.handleInbound({
+    update: { message: { chat: { id: 5 }, voice: { file_id: 'f1' } } }, tenantId: 't', space: mkSpace([]),
+    send: async () => {}, voice: mkVoice(), env: ENV });
+  assert.equal(r.handled, false);
+});
+
+test('si la síntesis falla, el parte en texto ya salió y no se cae', async () => {
+  const sent = [];
+  const chief = { run: async () => ({ digest: 'ok', decisions: [], disagreements: [] }) };
+  const voice = mkVoice({ synthesize: async () => { throw new Error('sin red'); } });
+  const r = await sa.sendDigest({ chief, reports: [], send: async (m) => sent.push(m), voice, env: ENV });
+  assert.equal(r.sent, true);
+  assert.equal(sent.length, 1);
+});
