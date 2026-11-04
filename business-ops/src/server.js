@@ -66,6 +66,7 @@ const expenseCategories = require('./platform/expenseCategories');
 const socialQueue = require('./platform/socialQueue');
 const BlockchainConnector = require('./connectors/BlockchainConnector');
 const BeZhasCoreConnector = require('./connectors/BeZhasCoreConnector');
+const TreasuryPositionsConnector = require('./connectors/TreasuryPositionsConnector');
 const RuntimeToolsConnector = require('./connectors/RuntimeToolsConnector');
 const SystemMonitor = require('./connectors/SystemMonitor');
 const CalendarConnector = require('./connectors/CalendarConnector');
@@ -386,6 +387,7 @@ function buildTools(tenantId) {
     stripe: new StripeConnector({ tenantId }),
     blockchain: new BlockchainConnector({ tenantId }),
     'bezhas-core': new BeZhasCoreConnector({ tenantId }),
+    'treasury-positions': new TreasuryPositionsConnector({ tenantId }),
     // Herramientas del runtime de BeZhas (validadores, puente L1<->L2, gas).
     // Entra como un conector más: el `method` es el nombre de la tool. Cada
     // invocación pasa por PolicyEngine/RedLines de este tenant ANTES de salir,

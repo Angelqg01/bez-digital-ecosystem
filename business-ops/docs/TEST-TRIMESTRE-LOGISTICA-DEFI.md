@@ -67,6 +67,14 @@ saldos) son supuestos; solo los de la tabla siguiente son públicos.
 - No hay datos on-chain reales de BEZ ni de pools; el farm/LP es un modelo de APY decreciente.
 
 ## Siguiente paso propuesto
-Cargar la lista de sanciones desde una fuente oficial; que `runwayMath` acepte
-saldos por divisa y exposición a stablecoins; y medir la latencia de aprobación
-en el escenario del depeg.
+Cargar la lista de sanciones desde una fuente oficial y medir la latencia de
+aprobación en el escenario del depeg.
+
+**Hecho:** el runway ya ve divisas y stablecoins. `TreasuryRunwayAgent` usa
+[`TreasuryPositionsConnector`](../src/connectors/TreasuryPositionsConnector.js):
+saldos de banco desde `data/treasury-positions.json` (ejemplo en
+[`config/treasury-positions.example.json`](../config/treasury-positions.example.json);
+los bancos no tienen API integrada, así que entran por fichero con fecha `asOf` y
+se marcan obsoletos pasadas 72 h), stablecoins on-chain por RPC (`POLYGON_RPC_URL`)
+y precios/tipos de cambio de open.er-api.com y CoinGecko, sin clave. Si el mercado
+cae o un saldo está obsoleto, el dato se marca no fiable y no dispara alertas.

@@ -1,0 +1,10 @@
+{
+  "_nota": "Copia a data/treasury-positions.json (en .gitignore) y pon saldos reales. Los de abajo son EJEMPLOS inventados. Actualiza asOf al exportar el saldo del banco.",
+  "positions": [
+    { "bank": "Dubai",     "asset": "AED",  "kind": "fiat",   "amount": 1200000, "asOf": "2026-11-03" },
+    { "bank": "Miami",     "asset": "USD",  "kind": "fiat",   "amount": 1800000, "asOf": "2026-11-03" },
+    { "bank": "Rotterdam", "asset": "EUR",  "kind": "fiat",   "amount": 2000000, "asOf": "2026-11-03" },
+    { "bank": "Algeciras", "asset": "EUR",  "kind": "fiat",   "amount": 1400000, "asOf": "2026-11-03" },
+    { "asset": "USDC", "kind": "stable", "source": "onchain", "chain": "polygon", "token": "0x0000000000000000000000000000000000000000", "address": "0x0000000000000000000000000000000000000000" }
+  ]
+}
