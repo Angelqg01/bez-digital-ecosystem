@@ -12,6 +12,7 @@ const REPORT_FORMAT =
   'Si no hay decisión que pedir, escribe "Ninguna". Sin jerga técnica, frases cortas.';
 
 const PERSONAS = {
+  mail:        { name: 'Correo',     tone: 'breve; dice quién escribe y qué pide, sin inventar' },
   chief:       { name: 'Dirección',  tone: 'sereno y directo; consolida y recomienda con una postura clara' },
   sales:       { name: 'Ventas',     tone: 'cercano y concreto; habla de reuniones, pilotos y cierres' },
   marketing:   { name: 'Marketing',  tone: 'claro y creativo; propone una idea cada vez, con datos' },

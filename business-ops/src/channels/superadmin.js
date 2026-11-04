@@ -104,9 +104,18 @@ function reportsFromPending(pending = []) {
 
 const QUEUE_KEY = 'chief:queue';
 
+/** Informes extra (p. ej. el correo): cada proveedor es async () => informe. Un fallo no tumba el parte. */
+async function collectExtra(extraReports = []) {
+  const out = [];
+  for (const fn of extraReports) {
+    try { const r = await fn(); if (r) out.push(r); } catch (err) { console.warn(`[superadmin:extra] ${err.message}`); }
+  }
+  return out;
+}
+
 /** Parte diario: lee las aprobaciones pendientes, las guarda como cola y envía el parte. */
-async function runDigestJob({ tenantId, space, chief, send, store, voice = null, env = process.env }) {
-  const reports = reportsFromPending(space.hitl.listPending(tenantId));
+async function runDigestJob({ tenantId, space, chief, send, store, voice = null, extraReports = [], env = process.env }) {
+  const reports = [...reportsFromPending(space.hitl.listPending(tenantId)), ...(await collectExtra(extraReports))];
   const res = await sendDigest({ chief, reports, send, tenantId, voice, env });
   if (res.sent && store?.setFact) {
     const ids = reports.filter(r => ChiefOfStaffAgent.isPending(r.decision)).map(r => r.approvalId);
@@ -119,7 +128,7 @@ async function runDigestJob({ tenantId, space, chief, send, store, voice = null,
  * Mensaje entrante de Telegram. Devuelve { handled:false } si no es del SuperAdmin
  * (entonces sigue el flujo normal de cliente); si lo es, ejecuta y responde.
  */
-async function handleInbound({ update, tenantId, space, chief, send, store, runDirective, voice = null, env = process.env }) {
+async function handleInbound({ update, tenantId, space, chief, send, store, runDirective, voice = null, extraReports = [], env = process.env }) {
   const msg = update?.message || update?.edited_message;
   const chatId = msg?.chat?.id;
   if (!msg || !isSuperAdmin(chatId, env)) return { handled: false };
@@ -160,7 +169,9 @@ async function handleInbound({ update, tenantId, space, chief, send, store, runD
 
   const d = parseDirective(text);
   if (d.department === 'chief') {
-    await sendDigest({ chief, reports: reportsFromPending(space.hitl.listPending(tenantId)), send, tenantId, voice: viaVoice ? voice : null, env });
+    const reports = [...reportsFromPending(space.hitl.listPending(tenantId)), ...(await collectExtra(extraReports))];
+    const res = await sendDigest({ chief, reports, send, tenantId, voice: viaVoice ? voice : null, env });
+    if (!res.sent) await reply(`No pude prepararte el parte: ${res.reason}`);
     return { handled: true, ok: true, to: 'chief' };
   }
   const task = await runDirective({ text: d.text, department: d.department, channel: 'telegram' });

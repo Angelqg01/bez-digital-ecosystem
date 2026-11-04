@@ -157,3 +157,36 @@ test('voz: si el túnel no responde (portátil apagado) el SuperAdmin recibe un 
   assert.equal(r.reason, 'error_transcripcion');
   assert.match(sent[0].text, /No pude transcribir/);
 });
+
+// ── Contexto de correo para Dirección ────────────────────────────────────
+const { mailReport } = require('../src/platform/chiefMail');
+const AHORA = Date.parse('2026-11-04T12:00:00Z');
+const buzon = (messages, over = {}) => ({ configured: true, list: async () => ({ messages }), ...over });
+
+test('el informe de correo cuenta personas, ignora avisos automáticos y nunca pide decisión', async () => {
+  const r = await mailReport(buzon([
+    { uid: 1, from: 'abraham@nauticops.com', fromName: 'Abraham', subject: 'Re: Blue Core', date: '2026-11-03T16:33:00Z', unread: true },
+    { uid: 2, from: 'noreply@email.meta.com', subject: 'aviso', date: '2026-11-04T08:00:00Z', unread: true },
+    { uid: 3, from: 'googlecloud@google.com', subject: 'ROI', date: '2026-11-04T08:46:00Z', unread: true },
+    { uid: 4, from: 'viejo@empresa.com', subject: 'antiguo', date: '2026-10-01T00:00:00Z', unread: true },
+  ]), { ahora: AHORA });
+  assert.equal(r.decision, 'Ninguna');
+  assert.match(r.done, /1 correo\(s\) de personas/);
+  assert.match(r.blocked, /Abraham: Re: Blue Core/);
+});
+
+test('buzón sin configurar o caído: lo dice, no inventa una bandeja vacía', async () => {
+  assert.match((await mailReport({ configured: false })).blocked, /no está configurado/);
+  const caido = await mailReport(buzon([], { list: async () => { throw new Error('IMAP caído'); } }));
+  assert.match(caido.blocked, /No pude leer el buzón: IMAP caído/);
+});
+
+test('el parte incluye el correo y un proveedor que falla no lo tumba', async () => {
+  const sent = [];
+  const chief = { run: async ({ payload }) => ({ digest: payload.reports.map(r => r.department).join(','), decisions: [], disagreements: [] }) };
+  await sa.runDigestJob({
+    tenantId: 't', space: mkSpace([]), chief, send: async (m) => sent.push(m), store: mkStore(), env: ENV,
+    extraReports: [async () => ({ department: 'mail', done: 'x', decision: 'Ninguna' }), async () => { throw new Error('boom'); }],
+  });
+  assert.match(sent[0].text, /mail/);
+});

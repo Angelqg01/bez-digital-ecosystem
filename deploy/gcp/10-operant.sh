@@ -160,6 +160,7 @@ if tiene_version "${P}OPERANT_TELEGRAM_CEO_BOT_TOKEN" && tiene_version "${P}OPER
       --role=roles/secretmanager.secretAccessor --quiet >/dev/null
   done
   SECRETOS+=",TELEGRAM_CEO_BOT_TOKEN=${P}OPERANT_TELEGRAM_CEO_BOT_TOKEN:latest,TELEGRAM_CHAT_CEO=${P}OPERANT_TELEGRAM_CEO_CHAT_ID:latest"
+  TELEGRAM_ENV+="~VOICE_REPLIES=true"   # Dirección también contesta en nota de voz
   TELEGRAM_CEO="activado"
 else
   TELEGRAM_CEO="desactivado (faltan ${P}OPERANT_TELEGRAM_CEO_BOT_TOKEN y ${P}OPERANT_TELEGRAM_CEO_CHAT_ID)"
