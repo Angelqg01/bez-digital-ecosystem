@@ -1,0 +1,127 @@
+'use strict';
+
+/**
+ * Canal del SuperAdmin por Telegram: el parte sale de Dirección (Chief of Staff)
+ * y las órdenes de Yoel entran con prefijo `@departamento`.
+ *
+ * Seguridad: solo cuenta lo que llega del chat TELEGRAM_SUPERADMIN_CHAT_ID. Un
+ * mensaje de cualquier otro chat nunca es una orden (iría a Soporte como cliente).
+ */
+
+const { PERSONAS } = require('../platform/personas');
+const ChiefOfStaffAgent = require('../agents/executive/ChiefOfStaffAgent');
+
+const ALIAS = {
+  ventas: 'sales', marketing: 'marketing', soporte: 'support', finanzas: 'finance',
+  legal: 'legal', personas: 'hr', rrhh: 'hr', operaciones: 'operations',
+  blockchain: 'blockchain', tesoreria: 'treasury', tesorería: 'treasury',
+  inversores: 'fundraising', direccion: 'chief', dirección: 'chief',
+};
+
+function isSuperAdmin(chatId, env = process.env) {
+  const id = env.TELEGRAM_SUPERADMIN_CHAT_ID;
+  return Boolean(id) && String(chatId) === String(id);
+}
+
+/** "@ventas Reserva Brickken" → { department:'sales', text:'Reserva Brickken' }. Sin prefijo → Dirección. */
+function parseDirective(text) {
+  const m = /^@([\p{L}]+)\s+([\s\S]+)$/u.exec(String(text || '').trim());
+  if (m) {
+    const department = ALIAS[m[1].toLowerCase()];
+    if (department) return { department, text: m[2].trim() };
+  }
+  return { department: 'chief', text: String(text || '').trim() };
+}
+
+/** Parte del Chief of Staff → texto de Telegram (con cola de decisiones numerada). */
+function formatDigest({ digest, decisions = [], disagreements = [] }) {
+  const parts = [`📋 ${PERSONAS.chief.name}\n\n${digest}`];
+  if (decisions.length) {
+    parts.push('Decisiones que necesito:\n' +
+      decisions.map((d, i) => `${i + 1}. ${d.voice}: ${d.decision}${d.risk ? ` (riesgo: ${d.risk})` : ''}`).join('\n'));
+  }
+  if (disagreements.length) {
+    parts.push('Desacuerdos:\n' + disagreements.map(d =>
+      `• ${d.subject}: ` + d.positions.map(p => `${p.department} → ${p.position}`).join(' / ')).join('\n'));
+  }
+  if (decisions.length) parts.push('Responde con "1 sí", "2 no" o "@departamento instrucción".');
+  return parts.join('\n\n');
+}
+
+/** Envía el parte al chat del SuperAdmin. Sin chat configurado no envía (nunca a otro). */
+async function sendDigest({ chief, reports, send, tenantId, env = process.env }) {
+  const chatId = env.TELEGRAM_SUPERADMIN_CHAT_ID;
+  if (!chatId) return { sent: false, reason: 'TELEGRAM_SUPERADMIN_CHAT_ID sin configurar' };
+  const out = await chief.run({ type: 'digest', payload: { reports } });
+  await send({ tenantId, to: chatId, text: formatDigest(out) });
+  return { sent: true, decisions: out.decisions.length, disagreements: out.disagreements.length };
+}
+
+/** "1 sí" / "2 no" → respuesta a la cola de decisiones. null si no lo es. */
+function parseDecisionReply(text) {
+  const m = /^(\d+)\s+(s[ií]|no)(?![\p{L}])/iu.exec(String(text || '').trim());
+  return m ? { index: Number(m[1]) - 1, approved: /^s/i.test(m[2]) } : null;
+}
+
+/** Aprobaciones HITL pendientes → un informe por aprobación (así "1 sí" apunta a una sola). */
+function reportsFromPending(pending = []) {
+  return pending
+    .filter(p => p.decidableAqui !== false)
+    .map(p => ({
+      department: String(p.agentId || '').split('.')[0] || 'operations',
+      done: '—', blocked: p.reason || '—',
+      decision: `Aprobar: ${typeof p.action === 'string' ? p.action : (p.action?.method || p.action?.tool || 'acción')}`,
+      risk: p.reason || null,
+      approvalId: p.approvalId,
+    }));
+}
+
+const QUEUE_KEY = 'chief:queue';
+
+/** Parte diario: lee las aprobaciones pendientes, las guarda como cola y envía el parte. */
+async function runDigestJob({ tenantId, space, chief, send, store, env = process.env }) {
+  const reports = reportsFromPending(space.hitl.listPending(tenantId));
+  const res = await sendDigest({ chief, reports, send, tenantId, env });
+  if (res.sent && store?.setFact) {
+    const ids = reports.filter(r => ChiefOfStaffAgent.isPending(r.decision)).map(r => r.approvalId);
+    await store.setFact({ tenantId, key: QUEUE_KEY, value: ids });
+  }
+  return res;
+}
+
+/**
+ * Mensaje entrante de Telegram. Devuelve { handled:false } si no es del SuperAdmin
+ * (entonces sigue el flujo normal de cliente); si lo es, ejecuta y responde.
+ */
+async function handleInbound({ update, tenantId, space, chief, send, store, runDirective, env = process.env }) {
+  const msg = update?.message || update?.edited_message;
+  const chatId = msg?.chat?.id;
+  const text = (msg?.text || '').trim();
+  if (!msg || !text || !isSuperAdmin(chatId, env)) return { handled: false };
+
+  const reply = (t) => send({ tenantId, to: chatId, text: t });
+
+  const decision = parseDecisionReply(text);
+  if (decision) {
+    const queue = (store?.getFact && await store.getFact({ tenantId, key: QUEUE_KEY })) || [];
+    const approvalId = queue[decision.index];
+    if (!approvalId) { await reply('No tengo esa decisión en la cola. Pídeme el parte con "¿cómo vamos?".'); return { handled: true, ok: false }; }
+    const ok = space.hitl.resolve(approvalId, decision.approved, 'Decisión del SuperAdmin vía Telegram');
+    await reply(ok ? `${decision.approved ? 'Aprobada' : 'Rechazada'} la decisión ${decision.index + 1}.` : 'Esa decisión ya no estaba pendiente.');
+    return { handled: true, ok };
+  }
+
+  const d = parseDirective(text);
+  if (d.department === 'chief') {
+    await sendDigest({ chief, reports: reportsFromPending(space.hitl.listPending(tenantId)), send, tenantId, env });
+    return { handled: true, ok: true, to: 'chief' };
+  }
+  const task = await runDirective({ text: d.text, department: d.department, channel: 'telegram' });
+  await reply(`${(PERSONAS[d.department] || {}).name || d.department}: ${task?.result?.summary || 'recibido, en curso.'}`);
+  return { handled: true, ok: true, to: d.department };
+}
+
+module.exports = {
+  isSuperAdmin, parseDirective, formatDigest, sendDigest, parseDecisionReply,
+  reportsFromPending, runDigestJob, handleInbound, ALIAS, QUEUE_KEY,
+};

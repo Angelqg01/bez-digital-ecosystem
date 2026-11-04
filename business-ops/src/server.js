@@ -165,10 +165,23 @@ const watchdog = new HealthWatchdog({ tenants, telemetry, usageMeter, notifier: 
 // La acción 'digest' genera el Digest del CEO sin que nadie lo pida.
 const { buildDigest, lastDigest } = require('./platform/digest');
 const digestDeps = { tenants, usageMeter, costTracker, supportMetrics, billing, plans, modelGateway, store };
+// Dirección (Chief of Staff): única voz hacia el SuperAdmin por Telegram. Ver channels/superadmin.js.
+const ChiefOfStaffAgent = require('./agents/executive/ChiefOfStaffAgent');
+const superadmin = require('./channels/superadmin');
+const chiefFor = (tenantId) => {
+  const s = tenants.get(tenantId);
+  return new ChiefOfStaffAgent({ tenantId, model: modelGateway, memory: s.memory, guardrails: s.guardrails, hitl: s.hitl, bus: s.bus, tools: {}, store });
+};
 const scheduler = new Scheduler({
   tenants, store,
   actions: {
     digest: (tenantId) => buildDigest(digestDeps, tenantId),
+    // Parte de Dirección por Telegram; sin TELEGRAM_SUPERADMIN_CHAT_ID no envía nada.
+    'chief-digest': async (tenantId) => {
+      const space = tenants.get(tenantId);
+      if (!space) return { skipped: 'tenant no encontrado' };
+      return superadmin.runDigestJob({ tenantId, space, chief: chiefFor(tenantId), send: transports.telegram, store });
+    },
     // Sin este trabajo el embudo solo corría si alguien pulsaba el botón: los
     // leads del formulario público se quedaban en cola indefinidamente.
     funnel: async (tenantId) => {
@@ -214,6 +227,14 @@ async function registerDefaultJobs(tenantId, departments = []) {
     description: 'Digest ejecutivo diario para el dueño del negocio',
     everyMs: DIA,
     action: 'digest',
+  });
+
+  // Parte de Dirección al SuperAdmin por Telegram (decisiones pendientes y desacuerdos).
+  await scheduler.addJob(tenantId, {
+    id: 'parte-direccion',
+    description: 'Parte diario de Dirección al SuperAdmin por Telegram',
+    everyMs: DIA,
+    action: 'chief-digest',
   });
 
   // Cierra el bucle de mejora continua: sin este trabajo, el LearningEngine
@@ -745,6 +766,24 @@ app.all('/channels/:channel/:tenantId/inbound', async (req, res) => {
         }
       }
       return res.json({ ok, callbackProcessed: true });
+    }
+  }
+
+  // Órdenes del SuperAdmin (solo desde TELEGRAM_SUPERADMIN_CHAT_ID): no pasan por Soporte.
+  if (req.params.channel === 'telegram') {
+    const space = tenants.get(req.params.tenantId);
+    if (space) {
+      try {
+        const r = await superadmin.handleInbound({
+          update: req.body, tenantId: req.params.tenantId, space, chief: chiefFor(req.params.tenantId),
+          send: transports.telegram, store,
+          runDirective: (input) => tenants.handleAndWait(req.params.tenantId, input, { timeoutMs: 30000 }),
+        });
+        if (r.handled) return res.json({ ok: true, superadmin: true, ...r });
+      } catch (err) {
+        console.warn(`[superadmin:${req.params.tenantId}] ${err.message}`);
+        return res.status(500).json({ error: 'error procesando la orden' });
+      }
     }
   }
 

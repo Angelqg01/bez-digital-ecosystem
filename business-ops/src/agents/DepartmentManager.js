@@ -1,6 +1,7 @@
 'use strict';
 
 const BaseAgent = require('./BaseAgent');
+const { voicePrompt } = require('../platform/personas');
 
 /**
  * DepartmentManager — agente de Nivel 2.
@@ -13,6 +14,8 @@ class DepartmentManager extends BaseAgent {
   constructor(ctx) {
     super({ ...ctx, tier: 'manager', modelTier: ctx.modelTier || 'frontier' });
     this.specialists = new Map(); // id -> agente
+    const voice = voicePrompt(this.department);
+    if (voice) this.systemPrompt = `${this.systemPrompt}\n\n${voice}`;
   }
 
   registerSpecialist(agent) {
