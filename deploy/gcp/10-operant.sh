@@ -152,6 +152,18 @@ if tiene_version "${P}OPERANT_TELEGRAM_BOT_TOKEN" && tiene_version "${P}OPERANT_
 else
   TELEGRAM="desactivado (falta ${P}OPERANT_TELEGRAM_BOT_TOKEN: ./deploy/gcp/12-operant-canales.sh)"
 fi
+# Canal del SuperAdmin: el bot del CEO + su chat. Entra por la MISMA ruta y el MISMO secreto de webhook
+# que el bot general (la API no distingue bots; OPERANT sólo trata como orden lo que viene del chat del CEO).
+if tiene_version "${P}OPERANT_TELEGRAM_CEO_BOT_TOKEN" && tiene_version "${P}OPERANT_TELEGRAM_CEO_CHAT_ID"; then
+  for sec in OPERANT_TELEGRAM_CEO_BOT_TOKEN OPERANT_TELEGRAM_CEO_CHAT_ID; do
+    gcloud secrets add-iam-policy-binding "${P}${sec}" --member="serviceAccount:${SA}" \
+      --role=roles/secretmanager.secretAccessor --quiet >/dev/null
+  done
+  SECRETOS+=",TELEGRAM_CEO_BOT_TOKEN=${P}OPERANT_TELEGRAM_CEO_BOT_TOKEN:latest,TELEGRAM_CHAT_CEO=${P}OPERANT_TELEGRAM_CEO_CHAT_ID:latest"
+  TELEGRAM_CEO="activado"
+else
+  TELEGRAM_CEO="desactivado (faltan ${P}OPERANT_TELEGRAM_CEO_BOT_TOKEN y ${P}OPERANT_TELEGRAM_CEO_CHAT_ID)"
+fi
 AUTORESPUESTA_ENV=""
 if [[ -n "$EXTRA_ENV" ]] && tiene_version "${P}OPERANT_MAIL_AUTOREPLY_SINCE"; then
   gcloud secrets add-iam-policy-binding "${P}OPERANT_MAIL_AUTOREPLY_SINCE" --member="serviceAccount:${SA}" \
@@ -181,7 +193,7 @@ if tiene_version "${P}OPERANT_OLLAMA_URL" && tiene_version "${P}OPERANT_OLLAMA_A
   MOTOR="IA LOCAL por túnel${MOTOR:+ (respaldo: $MOTOR)}"
 fi
 
-echo "→ Servicio ${SERVICE} (motor IA: ${MOTOR}; correo: ${CORREO}; Telegram: ${TELEGRAM}; auto-respuesta por correo: ${AUTORESPUESTA})"
+echo "→ Servicio ${SERVICE} (motor IA: ${MOTOR}; correo: ${CORREO}; Telegram: ${TELEGRAM}; bot CEO: ${TELEGRAM_CEO}; auto-respuesta por correo: ${AUTORESPUESTA})"
 gcloud run deploy "$SERVICE" \
   --image="$IMAGEN" --region="$REGION" --service-account="$SA" \
   --ingress=all --no-allow-unauthenticated \
