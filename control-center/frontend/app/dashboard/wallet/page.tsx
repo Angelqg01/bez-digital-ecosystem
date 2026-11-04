@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { trackEventOnce } from '@/lib/analyticsEvents';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -62,6 +63,11 @@ export default function WalletPage() {
 
     // ── Web3 Connection (on-chain) ──────────────────────────────────────
     const wallet = useWalletConnection();
+
+    // Embudo de captación: primera wallet conectada de la sesión (sin enviar la dirección).
+    useEffect(() => {
+        if (wallet.connected) trackEventOnce('wallet_connected');
+    }, [wallet.connected]);
     const { wallets: onChainWallets, loading: loadingOnChain, error: onChainError, refetch: refetchWallets } = useSmartWallets(wallet.address);
     const createWallet = useCreateSmartWallet(wallet.signer);
     const { balance: bezBalanceOnChain } = useBEZTokenBalance(wallet.address);

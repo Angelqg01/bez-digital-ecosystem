@@ -18,6 +18,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+import { trackEvent } from '@/lib/analyticsEvents';
+
 export const ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || 'AW-811626838';
 export const ADS_CONVERSION_LABEL =
     process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL || 'GplTCIibmIUBENbigYMD';
@@ -58,7 +60,12 @@ const CONVERSION_LINK_SELECTOR = [
 export function installAdsClickConversions(): () => void {
     const handler = (e: MouseEvent) => {
         const link = (e.target as Element | null)?.closest?.(CONVERSION_LINK_SELECTOR);
-        if (link) trackAdsConversion();
+        if (!link) return;
+        trackAdsConversion();
+        // Mismo clic, también como evento de GA4 (embudo en Analytics).
+        const href = link.getAttribute('href') || '';
+        const isPayment = href.startsWith('https://buy.stripe.com/') || href.startsWith('https://book.stripe.com/');
+        trackEvent(isPayment ? 'begin_checkout' : 'generate_lead');
     };
     document.addEventListener('click', handler, true);
     return () => document.removeEventListener('click', handler, true);

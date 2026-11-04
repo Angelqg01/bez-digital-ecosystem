@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { trackAdsConversion } from '@/lib/adsTag';
+import { trackEvent } from '@/lib/analyticsEvents';
 
 function RegisterPageContent() {
     const router = useRouter();
@@ -70,6 +71,7 @@ function RegisterPageContent() {
             document.cookie = `bezhas_token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
 
             trackAdsConversion({ newCustomer: true });
+            trackEvent('sign_up', { method: 'email' });
             router.push(returnUrl);
         } catch {
             setError('Error de conexión. Inténtalo de nuevo.');
