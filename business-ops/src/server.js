@@ -180,7 +180,7 @@ const scheduler = new Scheduler({
     'chief-digest': async (tenantId) => {
       const space = tenants.get(tenantId);
       if (!space) return { skipped: 'tenant no encontrado' };
-      return superadmin.runDigestJob({ tenantId, space, chief: chiefFor(tenantId), send: transports.telegram, store });
+      return superadmin.runDigestJob({ tenantId, space, chief: chiefFor(tenantId), send: superadmin.ceoSender(), store });
     },
     // Sin este trabajo el embudo solo corría si alguien pulsaba el botón: los
     // leads del formulario público se quedaban en cola indefinidamente.
@@ -776,7 +776,7 @@ app.all('/channels/:channel/:tenantId/inbound', async (req, res) => {
       try {
         const r = await superadmin.handleInbound({
           update: req.body, tenantId: req.params.tenantId, space, chief: chiefFor(req.params.tenantId),
-          send: transports.telegram, store,
+          send: superadmin.ceoSender(), store,
           runDirective: (input) => tenants.handleAndWait(req.params.tenantId, input, { timeoutMs: 30000 }),
         });
         if (r.handled) return res.json({ ok: true, superadmin: true, ...r });

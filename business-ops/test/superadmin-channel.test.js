@@ -84,3 +84,10 @@ test('@ventas ejecuta la orden en su departamento', async () => {
   assert.equal(got.text, 'Reserva Brickken');
   assert.match(sent[0].text, /Ventas: reservado/);
 });
+
+test('sin chat propio usa TELEGRAM_CHAT_CEO y el propio manda si existe', () => {
+  assert.equal(sa.superAdminChat({ TELEGRAM_CHAT_CEO: '7' }), '7');
+  assert.equal(sa.superAdminChat({ TELEGRAM_CHAT_CEO: '7', TELEGRAM_SUPERADMIN_CHAT_ID: '8' }), '8');
+  assert.equal(sa.isSuperAdmin(7, { TELEGRAM_CHAT_CEO: '7' }), true);
+  assert.equal(sa.superAdminChat({}), null);
+});

@@ -10,6 +10,7 @@
 
 const { PERSONAS } = require('../platform/personas');
 const ChiefOfStaffAgent = require('../agents/executive/ChiefOfStaffAgent');
+const { telegramSender } = require('./transports');
 
 const ALIAS = {
   ventas: 'sales', marketing: 'marketing', soporte: 'support', finanzas: 'finance',
@@ -18,8 +19,19 @@ const ALIAS = {
   inversores: 'fundraising', direccion: 'chief', dirección: 'chief',
 };
 
+/** Chat del SuperAdmin: el propio, o el del CEO (TELEGRAM_CHAT_CEO) que ya usa el resto de la plataforma. */
+function superAdminChat(env = process.env) {
+  return env.TELEGRAM_SUPERADMIN_CHAT_ID || env.TELEGRAM_CHAT_CEO || null;
+}
+
+/** Bot del CEO (el del director), no el bot general de cara al cliente. Sin token → simulado. */
+function ceoSender(env = process.env) {
+  const token = env.TELEGRAM_CEO_BOT_TOKEN || env.TELEGRAM_TOKEN_DIRECTOR || null;
+  return telegramSender(token);
+}
+
 function isSuperAdmin(chatId, env = process.env) {
-  const id = env.TELEGRAM_SUPERADMIN_CHAT_ID;
+  const id = superAdminChat(env);
   return Boolean(id) && String(chatId) === String(id);
 }
 
@@ -50,8 +62,8 @@ function formatDigest({ digest, decisions = [], disagreements = [] }) {
 
 /** Envía el parte al chat del SuperAdmin. Sin chat configurado no envía (nunca a otro). */
 async function sendDigest({ chief, reports, send, tenantId, env = process.env }) {
-  const chatId = env.TELEGRAM_SUPERADMIN_CHAT_ID;
-  if (!chatId) return { sent: false, reason: 'TELEGRAM_SUPERADMIN_CHAT_ID sin configurar' };
+  const chatId = superAdminChat(env);
+  if (!chatId) return { sent: false, reason: 'chat del SuperAdmin sin configurar (TELEGRAM_SUPERADMIN_CHAT_ID o TELEGRAM_CHAT_CEO)' };
   const out = await chief.run({ type: 'digest', payload: { reports } });
   await send({ tenantId, to: chatId, text: formatDigest(out) });
   return { sent: true, decisions: out.decisions.length, disagreements: out.disagreements.length };
@@ -122,6 +134,6 @@ async function handleInbound({ update, tenantId, space, chief, send, store, runD
 }
 
 module.exports = {
-  isSuperAdmin, parseDirective, formatDigest, sendDigest, parseDecisionReply,
+  superAdminChat, ceoSender, isSuperAdmin, parseDirective, formatDigest, sendDigest, parseDecisionReply,
   reportsFromPending, runDigestJob, handleInbound, ALIAS, QUEUE_KEY,
 };
