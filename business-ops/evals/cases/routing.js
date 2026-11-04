@@ -7,6 +7,10 @@
 const Orchestrator = require('../../src/core/Orchestrator');
 const { expect } = require('../world');
 
+// _classify lee this._learnedRoutes (rutas aprendidas en caliente). Las evals miden
+// SOLO las reglas base de palabras clave, así que se le da un contexto sin rutas aprendidas.
+const NO_LEARNED_ROUTES = { _learnedRoutes: [] };
+
 const CASES = [
   ['Quiero una demo y precio para 10 usuarios', 'sales'],
   ['Envíame una propuesta comercial', 'sales'],
@@ -41,14 +45,14 @@ module.exports = {
     ...CASES.map(([text, dept]) => ({
       name: `"${text.slice(0, 44)}" → ${dept}`,
       async check() {
-        const intent = await Orchestrator.prototype._classify.call(null, { text });
+        const intent = await Orchestrator.prototype._classify.call(NO_LEARNED_ROUTES, { text });
         expect(intent.department === dept, `esperaba ${dept}, obtuvo ${intent.department}`);
       },
     })),
     {
       name: 'un webhook con type/department explícitos se salta la clasificación por palabras clave',
       async check() {
-        const intent = await Orchestrator.prototype._classify.call(null, {
+        const intent = await Orchestrator.prototype._classify.call(NO_LEARNED_ROUTES, {
           text: 'esto no debería importar para la clasificación',
           type: 'finance:token-purchase', department: 'finance',
         });
