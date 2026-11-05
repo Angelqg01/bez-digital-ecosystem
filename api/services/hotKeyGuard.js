@@ -29,6 +29,8 @@ const logger = require('../utils/logger');
 const CLAVES_OPERADOR = [
     'DEPLOYER_PRIVATE_KEY', 'OPERATOR_PRIVATE_KEY', 'OPERANT_OPERATOR_KEY', 'CARGOLINK_OPERATOR_KEY',
     'L1_BATCHER_KEY', 'L1_WATCHER_KEY', 'VPP_OPERATOR_PK', 'SECURITY_ANCHOR_OPERATOR_KEY',
+    // API Marketplace: anclaje de recibos y alta de listings en MarketplaceSettlement. Sólo gas.
+    'MARKETPLACE_ANCHOR_KEY', 'MARKETPLACE_REGISTRAR_KEY',
 ];
 const CLAVES_MINTEO_ANTIGUO = ['BEZ_TREASURY_PK', 'ADMIN_PK', 'DISBURSEMENT_WALLET_PRIVATE_KEY'];
 

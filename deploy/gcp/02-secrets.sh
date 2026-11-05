@@ -82,7 +82,7 @@ unset visto
 
 # Wallets calientes: claves de verdad, y una por papel.
 declare -A wallet=()
-for k in OPERATOR_PRIVATE_KEY AGENT_PRIVATE_KEY EDGE_NODE_PRIVATE_KEY; do
+for k in OPERATOR_PRIVATE_KEY AGENT_PRIVATE_KEY EDGE_NODE_PRIVATE_KEY MARKETPLACE_ANCHOR_KEY MARKETPLACE_REGISTRAR_KEY; do
   val=$(v "$k"); [[ -z "$val" ]] && continue
   es_clave_priv "$val" || { errores+=("$k no es una clave privada (64 hex)"); continue; }
   n=$(norm_clave "$val")
@@ -92,10 +92,19 @@ for k in OPERATOR_PRIVATE_KEY AGENT_PRIVATE_KEY EDGE_NODE_PRIVATE_KEY; do
   if [[ -n "${wallet[$n]:-}" ]]; then errores+=("$k y ${wallet[$n]} son la misma wallet: una wallet dedicada por servicio"); else wallet[$n]=$k; fi
 done
 unset wallet
-for k in TREASURY_WALLET; do
+for k in TREASURY_WALLET TX_TREASURY_ADDRESS_137; do
   val=$(v "$k"); [[ -z "$val" ]] && continue
   [[ "$val" =~ ^0x[0-9a-fA-F]{40}$ ]] || errores+=("$k debe ser una DIRECCIÓN 0x… (40 hex), nunca una clave")
 done
+bt=$(v BEZPAY_TREASURY_APP_ID)
+[[ -n "$bt" && ! "$bt" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] && \
+  errores+=("BEZPAY_TREASURY_APP_ID debe ser el UUID de la app interna de tesorería en app_registry")
+for k in MARKETPLACE_RECEIPT_PRIVATE_KEY MARKETPLACE_RECEIPT_PUBLIC_KEY MARKETPLACE_MTLS_CERT MARKETPLACE_MTLS_KEY; do
+  val=$(v "$k"); [[ -z "$val" ]] && continue
+  printf '%s' "$val" | base64 -d 2>/dev/null | grep -q -- '-----BEGIN' || errores+=("$k debe ser un PEM en base64 de una línea (00-generar-env.sh lo genera)")
+done
+[[ -n "$(v MARKETPLACE_RECEIPT_PRIVATE_KEY)" && -z "$(v MARKETPLACE_RECEIPT_PUBLIC_KEY)" ]] && errores+=("MARKETPLACE_RECEIPT_PRIVATE_KEY sin su PUBLIC_KEY: los recibos darían 503")
+[[ -n "$(v MARKETPLACE_MTLS_CERT)" && -z "$(v MARKETPLACE_MTLS_KEY)" ]] && errores+=("MARKETPLACE_MTLS_CERT sin MARKETPLACE_MTLS_KEY")
 
 ph=$(v ADMIN_PASSWORD_HASH)
 [[ -n "$ph" && ! "$ph" =~ ^\$2[aby]\$[0-9]{2}\$ ]] && errores+=("ADMIN_PASSWORD_HASH no es un hash bcrypt (\$2a\$…): genéralo con 00-generar-env.sh, nunca pongas la contraseña en claro")

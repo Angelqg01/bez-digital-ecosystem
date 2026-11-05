@@ -10,7 +10,7 @@
  *                       recibo en Polygon, se exige el evento Paid del contrato correcto, del
  *                       listing correcto y con confirmaciones suficientes.
  *
- * Config: POLYGON_RPC_URL, MARKETPLACE_SETTLEMENT_ADDRESS, MARKETPLACE_REGISTRAR_KEY (sólo para
+ * Config: POLYGON_RPC_URL, MARKETPLACE_SETTLEMENT_ADDRESS (o deployments/137.json), MARKETPLACE_REGISTRAR_KEY (sólo para
  * registrar) y MARKETPLACE_MIN_CONFIRMATIONS (por defecto 30 bloques, ~1 min en Polygon).
  */
 
@@ -36,8 +36,19 @@ class SettlementError extends Error {
     }
 }
 
+function desplegada() {
+    try {
+        const d = JSON.parse(require('fs').readFileSync(
+            require('path').resolve(__dirname, '../../../smart-contracts/deployments/137.json'), 'utf8'));
+        return d?.marketplace?.MarketplaceSettlement || null;
+    } catch {
+        return null;
+    }
+}
+
+/** MARKETPLACE_SETTLEMENT_ADDRESS o, si no, `marketplace.MarketplaceSettlement` de deployments/137.json. */
 const direccion = () => {
-    const a = process.env.MARKETPLACE_SETTLEMENT_ADDRESS;
+    const a = process.env.MARKETPLACE_SETTLEMENT_ADDRESS || desplegada();
     return a && ethers.isAddress(a) ? ethers.getAddress(a) : null;
 };
 

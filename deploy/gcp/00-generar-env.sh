@@ -53,6 +53,34 @@ if ! tiene OAUTH_JWT_PRIVATE_KEY || ! tiene OAUTH_JWT_PUBLIC_KEY \
   poner OAUTH_JWT_PUBLIC_KEY  "$(base64 -w0 "$TMP/pub.pem")"
 fi
 
+# ── 2b. API Marketplace ────────────────────────────────────────────────────
+# Par ES256 de los recibos firmados (mismo formato que el de OAuth, otra clave:
+# una clave, un propósito).
+if [[ -z "$(valor MARKETPLACE_RECEIPT_PRIVATE_KEY)" || -z "$(valor MARKETPLACE_RECEIPT_PUBLIC_KEY)" ]]; then
+  openssl ecparam -name prime256v1 -genkey -noout 2>/dev/null \
+    | openssl pkcs8 -topk8 -nocrypt > "$TMP/mkt-priv.pem"
+  openssl ec -in "$TMP/mkt-priv.pem" -pubout > "$TMP/mkt-pub.pem" 2>/dev/null
+  sed -i '/^MARKETPLACE_RECEIPT_PRIVATE_KEY=/d; /^MARKETPLACE_RECEIPT_PUBLIC_KEY=/d' "$F"
+  poner MARKETPLACE_RECEIPT_PRIVATE_KEY "$(base64 -w0 "$TMP/mkt-priv.pem")"
+  poner MARKETPLACE_RECEIPT_PUBLIC_KEY  "$(base64 -w0 "$TMP/mkt-pub.pem")"
+fi
+# Certificado de cliente para mTLS hacia los proveedores: P-256, autofirmado,
+# 2 años. Los proveedores fijan su huella (15-marketplace.sh info la imprime).
+if [[ -z "$(valor MARKETPLACE_MTLS_CERT)" || -z "$(valor MARKETPLACE_MTLS_KEY)" ]]; then
+  openssl ecparam -name prime256v1 -genkey -noout 2>/dev/null \
+    | openssl pkcs8 -topk8 -nocrypt > "$TMP/mtls.key"
+  openssl req -new -x509 -key "$TMP/mtls.key" -out "$TMP/mtls.crt" -days 730 -sha256 \
+    -subj "/O=BeZhas/CN=marketplace-client.bezhas.com" \
+    -addext "extendedKeyUsage=clientAuth" 2>/dev/null
+  sed -i '/^MARKETPLACE_MTLS_CERT=/d; /^MARKETPLACE_MTLS_KEY=/d' "$F"
+  poner MARKETPLACE_MTLS_CERT "$(base64 -w0 "$TMP/mtls.crt")"
+  poner MARKETPLACE_MTLS_KEY  "$(base64 -w0 "$TMP/mtls.key")"
+fi
+# Wallets calientes dedicadas (sólo gas). 32 bytes al azar son una clave
+# secp256k1 válida salvo con probabilidad ~2^-128.
+poner MARKETPLACE_ANCHOR_KEY    "0x$(hex 32)"
+poner MARKETPLACE_REGISTRAR_KEY "0x$(hex 32)"
+
 # ── 3. Administrador del panel ─────────────────────────────────────────────
 poner ADMIN_USERNAME "admin"
 poner ADMIN_PASSWORD "$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)"

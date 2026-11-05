@@ -3,7 +3,8 @@
 > Estado: **pasos 1, 2, 4, 5 y 6 implementados** (2026-11-05, sin desplegar; migraciones
 > 076-079 sin aplicar en producción; proxy apagado salvo `MARKETPLACE_PROXY_ENABLED=true`;
 > TelemetryAnchor y MarketplaceSettlement sin desplegar en Polygon). El paso 3 (Stripe
-> Connect) espera el dictamen; mientras, el cobro va en BEZ por el paso 5. Diseño del 2026-10-30. Ver «Estado de implementación» al final.
+> Connect) espera el dictamen; mientras, el cobro va en BEZ por el paso 5.
+> Puesta en producción: [`docs/developer/MARKETPLACE_PRODUCCION.md`](developer/MARKETPLACE_PRODUCCION.md). Diseño del 2026-10-30. Ver «Estado de implementación» al final.
 > Origen: el plan "BeZhas API Marketplace — Plan de desarrollo, implementación y
 > cumplimiento UE / EE. UU." (Claude Docs). Este documento baja ese plan a tablas,
 > rutas y contratos sobre lo que ya existe en `api/`. Lo legal sigue pendiente del
