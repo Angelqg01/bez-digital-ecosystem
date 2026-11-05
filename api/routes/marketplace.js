@@ -35,6 +35,8 @@
  *     POST /admin/listings/:id/suspend    review|live → suspended
  *     POST /admin/listings/:id/grants     acceso piloto de un consumidor
  *     DELETE /admin/listings/:id/grants/:appId  lo retira
+ *     GET  /admin/anchor                  redes activas y anclas pendientes
+ *     POST /admin/anchor/run              cierra lotes y ancla en Polygon (y la L2 si hay nodo)
  *
  * BOLA: cada consulta de proveedor lleva `provider_app_id = <app llamante>` en
  * el WHERE. Un id ajeno devuelve 404, igual que uno que no existe.
@@ -57,6 +59,7 @@ const { checkRateLimit } = require('../cache/redis');
 const { contratoDe, ContratoIncumplido } = require('../services/marketplace/openapiContract');
 const breaker = require('../services/marketplace/circuitBreaker');
 const receipts = require('../services/marketplace/receipts');
+const anchor = require('../services/marketplace/anchor');
 const { encryptSecret, decryptSecret } = require('../services/secretVault');
 const {
     SCOPES, EDITABLE_STATUS, ADDRESS_RE,
@@ -277,6 +280,30 @@ admin.delete('/listings/:id/grants/:appId', async (req, res) => {
         res.json({ grant: rows[0] });
     } catch (err) {
         responderError(res, err, 'admin.revoke');
+    }
+});
+
+// Anclaje (paso 4). La pasada también la puede lanzar un job programado con
+// anchor.ejecutar(); desde aquí sirve para forzarla y para ver el estado.
+admin.get('/anchor', async (_req, res) => {
+    try {
+        const { rows } = await query(
+            `SELECT network, status, COUNT(*)::int AS n FROM marketplace_batch_anchors GROUP BY network, status`,
+        );
+        const sinLote = await query('SELECT COUNT(*)::int AS n FROM marketplace_calls WHERE batch_id IS NULL');
+        res.json({ networks: anchor.redesActivas(), anchors: rows, unbatchedCalls: sinLote.rows[0]?.n ?? 0 });
+    } catch (err) {
+        responderError(res, err, 'admin.anchor.status');
+    }
+});
+
+admin.post('/anchor/run', async (req, res) => {
+    try {
+        const resultado = await anchor.ejecutar();
+        logger.info({ admin: req.admin?.sub || req.admin?.email, ...resultado, anclas: resultado.anclas.length }, 'marketplace: pasada de anclaje');
+        res.json(resultado);
+    } catch (err) {
+        responderError(res, err, 'admin.anchor.run');
     }
 });
 
@@ -735,11 +762,9 @@ router.get('/receipts/:callId', recibo, async (req, res) => {
         // Sólo las dos partes de la llamada: el consumidor o el proveedor del listing.
         const { rows } = await query(
             `SELECT c.id, c.listing_id, c.consumer_app_id, c.at, c.http_status, c.req_hash, c.resp_hash,
-                    c.amount_cents, c.fee_cents, l.slug, l.pricing->>'currency' AS currency,
-                    b.id AS batch_id, b.merkle_root, b.tx_hash
+                    c.amount_cents, c.fee_cents, c.batch_id, l.slug, l.pricing->>'currency' AS currency
              FROM marketplace_calls c
              JOIN marketplace_listings l ON l.id = c.listing_id
-             LEFT JOIN marketplace_receipt_batches b ON b.id = c.batch_id
              WHERE c.id = $1 AND (c.consumer_app_id = $2 OR l.provider_app_id = $2)`,
             [req.params.callId, req.registeredApp.id],
         );
@@ -751,8 +776,9 @@ router.get('/receipts/:callId', recibo, async (req, res) => {
             signature: receipts.firmarRecibo(contenido),
             alg: 'ES256',
             kid: receipts.KID,
-            // La prueba de inclusión llega con el anclaje del paso 4.
-            anchor: fila.batch_id ? { batchId: fila.batch_id, merkleRoot: fila.merkle_root, txHash: fila.tx_hash } : null,
+            // null mientras la llamada no esté en un lote; con lote, la prueba de
+            // inclusión y el ancla en cada red (Polygon y, cuando tenga nodo, la L2).
+            anchor: fila.batch_id ? await anchor.pruebaDe(fila.batch_id, fila.id) : null,
         });
     } catch (err) {
         responderError(res, err, 'receipts.get');

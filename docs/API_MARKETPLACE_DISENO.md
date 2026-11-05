@@ -1,7 +1,8 @@
 # API Marketplace — esbozo técnico sobre el Gateway actual
 
-> Estado: **pasos 1 y 2 implementados** (2026-11-05, sin desplegar; migración 076 sin
-> aplicar en producción; proxy apagado salvo `MARKETPLACE_PROXY_ENABLED=true`). Diseño del 2026-10-30. Ver «Estado de implementación» al final.
+> Estado: **pasos 1, 2 y 4 implementados** (2026-11-05, sin desplegar; migraciones 076 y
+> 077 sin aplicar en producción; proxy apagado salvo `MARKETPLACE_PROXY_ENABLED=true`;
+> TelemetryAnchor aún sin desplegar en Polygon). Diseño del 2026-10-30. Ver «Estado de implementación» al final.
 > Origen: el plan "BeZhas API Marketplace — Plan de desarrollo, implementación y
 > cumplimiento UE / EE. UU." (Claude Docs). Este documento baja ese plan a tablas,
 > rutas y contratos sobre lo que ya existe en `api/`. Lo legal sigue pendiente del
@@ -221,7 +222,9 @@ falla si un tramo sale de [10 %, 20 %] o si supera el máximo del contrato.
 | --- | --- | --- |
 | 1 | **Hecho** (2026-11-05), sin desplegar | `api/db/migrations/076_marketplace.sql` · `api/config/marketplace.js` · `api/routes/marketplace.js` · tests en `api/__tests__/{config,routes}/marketplace.test.js` |
 | 2 | **Hecho** (2026-11-05), sin desplegar ni pentest | `api/services/marketplace/{openapiContract,circuitBreaker,receipts}.js` · proxy y recibos en `api/routes/marketplace.js` · tests en `api/__tests__/routes/marketplace-proxy.test.js` y `api/__tests__/services/marketplace-*.test.js` |
-| 3-6 | Pendiente | — |
+| 3 | Pendiente: dictamen UE (ver «Propuesta: cobro por BEZ-Pay») | — |
+| 4 | **Hecho** (2026-11-05), sin desplegar | `api/db/migrations/077_marketplace_anchors.sql` · `api/services/marketplace/anchor.js` · `smart-contracts/script/DeployTelemetryAnchor.s.sol` · tests en `api/__tests__/services/marketplace-anchor.test.js` |
+| 5-6 | Pendiente | — |
 
 Lo que hace el paso 1:
 
@@ -296,3 +299,58 @@ Limitaciones conocidas del paso 2, para el pentest y el piloto:
   el OpenAPI).
 - Antes de desplegar: crear el par EC P-256 de recibos en Secret Manager y
   declararlo en `deploy/gcp/secrets.list`.
+
+Lo que hace el paso 4 (anclaje en Polygon, con la L2 enlazada):
+
+- **Lotes**: `anchor.cerrarLotes()` agrupa por listing hasta 2.048 llamadas sin lote,
+  en orden `(at, id)`, en una transacción con `FOR UPDATE SKIP LOCKED`. La hoja es el
+  sha256 del **recibo canónico** completo, no sólo del id de llamada.
+- **Redes**: el mismo lote (misma raíz, clave `mkt:<listingId>`) se ancla en cada red
+  configurada, con una fila por red en `marketplace_batch_anchors`.
+  - **Polygon (137)**, la red de BEZ-Coin: es el ancla pública de hoy.
+    `POLYGON_RPC_URL` + `MARKETPLACE_ANCHOR_POLYGON_ADDRESS` (o
+    `supplychain.TelemetryAnchor` en `deployments/137.json`).
+  - **L2 (2708)**: entra sola en cuanto `BEZHAS_L2_RPC_URL` apunte a un nodo y haya
+    dirección. La prueba de inclusión de un recibo vale en las dos redes.
+  - Clave: `MARKETPLACE_ANCHOR_KEY`, hot wallet propia con `OPERATOR_ROLE` y sólo POL
+    para gas. Se comprueba el `chainId` del RPC antes de enviar.
+- **Reintentos sin pagar gas dos veces**: la tx se guarda como `sent` antes de esperar
+  la confirmación; la siguiente pasada consulta su recibo en vez de reenviar.
+- **Recibo**: `anchor` trae ahora la prueba (`leaf`, `proof`, `leafIndex`) y, por red,
+  `txHash`, `anchorIndex` y el enlace a Polygonscan. La prueba se recalcula desde la
+  base y se comprueba contra la raíz del lote: si una fila se alteró, `valid: false`
+  y no hay prueba. Se verifica on-chain con
+  `TelemetryAnchor.verify(anchorKey, anchorIndex, leaf, proof)`.
+- **Disparo**: `POST /admin/anchor/run` (y `GET /admin/anchor` para el estado). Para
+  producción falta un job programado que llame a `anchor.ejecutar()`.
+
+Para activarlo en producción (acciones deliberadas, no automáticas):
+
+1. Desplegar TelemetryAnchor en Polygon con `script/DeployTelemetryAnchor.s.sol`
+   (admin = multisig con umbral ≥ 2; el deployer renuncia a sus roles) y registrar la
+   dirección en `deployments/137.json` y en la tabla de contratos de `CLAUDE.md`.
+2. Crear `MARKETPLACE_ANCHOR_KEY` y `MARKETPLACE_ANCHOR_POLYGON_ADDRESS` en Secret
+   Manager y declararlos en `deploy/gcp/secrets.list`. Fondear la hot wallet con POL.
+3. Aplicar 076 y 077 con el job `bezhas-db-migrate`.
+
+## Propuesta: cobro por BEZ-Pay (2026-11-05, pendiente de dictamen)
+
+Propuesta de Yoel: cobrar el marketplace por BEZ-Pay, replicando el flujo de Stripe,
+con **custodia** de los fondos en BEZ-Coin o en una stablecoin.
+
+Choca con la premisa de este diseño («el dinero nunca pasa por cuentas de BeZhas») y
+con la política que ya aplica el código (`txPolicyEngine`,
+`UNLICENSED_THIRD_PARTY_FUNDS`):
+
+- Guardar BEZ o stablecoins de un consumidor hasta pagar al proveedor es
+  **custodia y transferencia de criptoactivos por cuenta de clientes**: bajo MiCA
+  exige autorización como CASP. Con una stablecoin (EMT), además, entran las reglas de
+  dinero electrónico y PSD2 en el tramo fiat.
+- Sin licencia, la variante defendible es la que ya prevé el paso 5:
+  `MarketplaceSettlement.sol`, en el que **el consumidor paga y el reparto
+  proveedor/comisión ocurre en la misma transacción**. BeZhas no puede mover saldos y
+  cada parte retira lo suyo. BEZ-Pay puede ser la interfaz de ese pago sin custodiar.
+
+Decisión: no se implementa custodia hasta el dictamen. Si el dictamen la permite (o
+BeZhas obtiene la autorización CASP), se diseña como paso aparte, con su propia
+revisión de `txPolicyEngine`.
