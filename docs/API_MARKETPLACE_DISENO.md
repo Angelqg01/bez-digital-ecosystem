@@ -1,8 +1,9 @@
 # API Marketplace — esbozo técnico sobre el Gateway actual
 
-> Estado: **pasos 1, 2 y 4 implementados** (2026-11-05, sin desplegar; migraciones 076 y
-> 077 sin aplicar en producción; proxy apagado salvo `MARKETPLACE_PROXY_ENABLED=true`;
-> TelemetryAnchor aún sin desplegar en Polygon). Diseño del 2026-10-30. Ver «Estado de implementación» al final.
+> Estado: **pasos 1, 2, 4, 5 y 6 implementados** (2026-11-05, sin desplegar; migraciones
+> 076-079 sin aplicar en producción; proxy apagado salvo `MARKETPLACE_PROXY_ENABLED=true`;
+> TelemetryAnchor y MarketplaceSettlement sin desplegar en Polygon). El paso 3 (Stripe
+> Connect) espera el dictamen; mientras, el cobro va en BEZ por el paso 5. Diseño del 2026-10-30. Ver «Estado de implementación» al final.
 > Origen: el plan "BeZhas API Marketplace — Plan de desarrollo, implementación y
 > cumplimiento UE / EE. UU." (Claude Docs). Este documento baja ese plan a tablas,
 > rutas y contratos sobre lo que ya existe en `api/`. Lo legal sigue pendiente del
@@ -224,7 +225,9 @@ falla si un tramo sale de [10 %, 20 %] o si supera el máximo del contrato.
 | 2 | **Hecho** (2026-11-05), sin desplegar ni pentest | `api/services/marketplace/{openapiContract,circuitBreaker,receipts}.js` · proxy y recibos en `api/routes/marketplace.js` · tests en `api/__tests__/routes/marketplace-proxy.test.js` y `api/__tests__/services/marketplace-*.test.js` |
 | 3 | Pendiente: dictamen UE (ver «Propuesta: cobro por BEZ-Pay») | — |
 | 4 | **Hecho** (2026-11-05), sin desplegar | `api/db/migrations/077_marketplace_anchors.sql` · `api/services/marketplace/anchor.js` · `smart-contracts/script/DeployTelemetryAnchor.s.sol` · tests en `api/__tests__/services/marketplace-anchor.test.js` |
-| 5-6 | Pendiente | — |
+| 5 | **Hecho** (2026-11-05), sin auditar ni desplegar | `smart-contracts/src/core/MarketplaceSettlement.sol` · `script/DeployMarketplaceSettlement.s.sol` · `test/core/MarketplaceSettlement.t.sol` · `api/db/migrations/078_marketplace_settlement.sql` · `api/services/marketplace/settlement.js` |
+| 6 | **Hecho** (2026-11-05), sin pentest de conectores | `api/db/migrations/079_marketplace_writes.sql` · proxy en `api/routes/marketplace.js` · mTLS y pin en `api/utils/safeFetch.js` |
+| — | Hot Wallet en `/admin/profile` (2026-11-05) | `api/routes/admin-hot-wallet.js` · `control-center/frontend/app/admin/profile/components/TabHotWallet.tsx` |
 
 Lo que hace el paso 1:
 
@@ -354,3 +357,76 @@ con la política que ya aplica el código (`txPolicyEngine`,
 Decisión: no se implementa custodia hasta el dictamen. Si el dictamen la permite (o
 BeZhas obtiene la autorización CASP), se diseña como paso aparte, con su propia
 revisión de `txPolicyEngine`.
+
+## Paso 5: pago en BEZ con MarketplaceSettlement (2026-11-05)
+
+Es la respuesta a «cobrar por BEZ-Pay» sin custodia: BEZ-Pay es la interfaz y el
+contrato es el que reparte.
+
+- **Contrato** `MarketplaceSettlement.sol`: `pay(listingId, maxPrice)` lo llama el
+  consumidor; en la misma transacción acredita `precio − comisión` al proveedor y la
+  comisión a `treasury`. Cada uno retira lo suyo con `withdraw()` (pull, CEI,
+  `nonReentrant`), también con el contrato en pausa.
+  - `treasury` y `maxFeeBps` (≤ 20 %) son `immutable`; el admin sólo puede **bajar** la
+    comisión. Ningún rol puede mover saldos ajenos.
+  - El REGISTRAR (backend) da de alta y desactiva listings; la cuenta de cobro y el precio
+    sólo los cambia el proveedor. `maxPrice` protege al consumidor de una subida entre
+    medias. Rechaza tokens con comisión por transferencia.
+  - 11 tests de Foundry, incluido un fuzz de 512 casos del invariante «lo debido = saldo
+    del contrato» y «proveedor + comisión = pagado».
+- **Wallets de BeZhas** en `DeployMarketplaceSettlement.s.sol`: token BEZ de Polygon,
+  `treasury` = Treasury DAO `0x89c2…9b12`, admin = multisig de los aprobadores de
+  tesorería (umbral ≥ 2, se comprueba en Polygon), REGISTRAR y PAUSER aparte. La Hot
+  Wallet no puede tener ningún rol: el script lo impide.
+- **API**:
+  - `POST /admin/listings/:id/onchain {price_bez}` registra un listing `live` con la
+    `payout_address` del proveedor (`MARKETPLACE_REGISTRAR_KEY`).
+  - `GET /catalog/:slug` devuelve `bezPayment` (contrato, `listingKey`, `priceWei`).
+  - `POST /catalog/:slug/purchase {txHash}`: lee el recibo en Polygon y exige el evento
+    `Paid` emitido **por ese contrato**, del listing correcto, con 30 confirmaciones
+    (`MARKETPLACE_MIN_CONFIRMATIONS`). El pagador tiene que ser una `authorized_addresses`
+    de la app, y cada `purchaseId` activa un solo acceso.
+- **Antes de mainnet**: las dos auditorías externas del plan, desplegar con el multisig y
+  configurar `MARKETPLACE_SETTLEMENT_ADDRESS` y `MARKETPLACE_REGISTRAR_KEY`.
+
+## Paso 6: listings con escritura (2026-11-05)
+
+- POST/PUT/PATCH/DELETE sólo en listings `writes = true`, con el scope
+  `marketplace:consume:write`.
+- **Cuerpo validado** contra el `requestBody` JSON del contrato (sin coerción ni campos no
+  declarados) y reenviado tal como se firmó. La firma HMAC incluye el cuerpo.
+- **mTLS obligatorio**: BeZhas presenta su certificado de cliente
+  (`MARKETPLACE_MTLS_CERT` / `_KEY`); sin él, 503 y no se reenvía nada. Opcionalmente, el
+  listing fija `upstream_spki_pin` (sha256 de la clave pública del servidor) y el proxy no
+  conecta con otra clave.
+- **Idempotencia** (`Idempotency-Key`, obligatoria): se guarda el hash de la clave y el
+  resultado, nunca el cuerpo.
+  - Repetir una escritura completada devuelve su recibo (`Idempotent-Replayed: true`), no
+    una segunda ejecución.
+  - Reusar la clave con otra petición da 422; una petición en curso, 409.
+  - Si el resultado es desconocido (timeout, red, 5xx, respuesta fuera de contrato), se
+    responde `UPSTREAM_OUTCOME_UNKNOWN` y se puede reintentar con la misma clave. El
+    proveedor recibe una `Idempotency-Key` opaca y estable para deduplicar.
+- Una respuesta 204 o vacía de una escritura es válida.
+
+## Hot Wallet en /admin/profile (2026-11-05)
+
+Pestaña «Hot Wallet», sólo para el SuperAdmin, sobre el orquestador de tesorería que ya
+existía (`txOrchestrator`, origen `bezhas_treasury`):
+
+- Muestra la Hot Wallet registrada (`0x52Df…044E`, o la de `TX_TREASURY_ADDRESS_137` si
+  el despliegue declara otra, y avisa si no coinciden), sus saldos en POL, BEZ, USDC y
+  USDT, los aprobadores de tesorería y el estado del kill switch.
+- **Firma de las wallets registradas**: las salidas se proponen en el panel y las firman
+  con MetaMask (EIP-712) las wallets dadas de alta en `tx_approvers` con rol `treasury`
+  global. La política exige ≥ 2 firmas y el `tx-signer` aislado las vuelve a comprobar
+  contra su propia lista. Una misma wallet no firma dos veces.
+- La clave de la Hot Wallet no pasa por la API: la custodia el `tx-signer` (KMS). Una
+  sesión SuperAdmin robada no saca fondos sin las firmas.
+- **Custodia**: la Hot Wallet custodia el dinero **propio** de BeZhas. Los cobros del
+  marketplace no pasan por ella: van por MarketplaceSettlement, y el panel sólo muestra,
+  en lectura, la comisión acumulada para la tesorería.
+- Necesita `BEZPAY_TREASURY_APP_ID` (la app interna de tesorería que ya usa BEZ-Pay) y
+  `POLYGON_RPC_URL`. Las 3 wallets de MetaMask se registran con
+  `POST /api/security/approvers` (clave interna, roles `["treasury"]`). Las direcciones
+  son datos de producción, no del repositorio.

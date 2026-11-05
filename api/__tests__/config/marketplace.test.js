@@ -91,3 +91,17 @@ describe('config/marketplace — requisitos y utilidades', () => {
         expect(tieneCategoriasEspeciales(['health'])).toBe(true);
     });
 });
+
+describe('config/marketplace — listings con escritura (paso 6)', () => {
+    it('un requestBody sin esquema JSON se rechaza', () => {
+        const openapi = { ...OPENAPI, paths: { '/o': { post: { requestBody: { content: { 'text/plain': {} } } } } } };
+        expect(errores(() => normalizarListing({ ...BASE, openapi, writes: true }))).toContain('application/json');
+    });
+
+    it('upstream_spki_pin: base64 de 44 caracteres o null', () => {
+        const pin = Buffer.alloc(32, 7).toString('base64');
+        expect(normalizarListing({ ...BASE, upstream_spki_pin: pin }).upstream_spki_pin).toBe(pin);
+        expect(normalizarListing({ ...BASE, upstream_spki_pin: null }).upstream_spki_pin).toBeNull();
+        expect(errores(() => normalizarListing({ ...BASE, upstream_spki_pin: 'abc' }))).toContain('upstream_spki_pin');
+    });
+});

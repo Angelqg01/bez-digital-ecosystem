@@ -47,6 +47,7 @@ const HTTP_METHODS = new Set(['get', 'put', 'post', 'delete', 'options', 'head',
 const MAX_OPENAPI_BYTES = 256 * 1024;
 
 const SLUG_RE = /^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])$/;
+const SPKI_PIN_RE = /^[A-Za-z0-9+/]{43}=$/;
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
 class ListingInvalido extends Error {
@@ -97,7 +98,13 @@ function revisarOpenApi(doc) {
         }
         if (!esObjeto(item)) continue;
         for (const clave of Object.keys(item)) {
-            if (HTTP_METHODS.has(clave)) metodos.add(clave);
+            if (!HTTP_METHODS.has(clave)) continue;
+            metodos.add(clave);
+            const op = item[clave];
+            // Un cuerpo sin esquema JSON no se puede validar antes de llegar al proveedor.
+            if (esObjeto(op?.requestBody) && !esObjeto(op.requestBody.content?.['application/json']?.schema)) {
+                errores.push(`${clave.toUpperCase()} ${ruta.slice(0, 80)}: el requestBody debe declarar un esquema application/json.`);
+            }
         }
     }
     if (metodos.size === 0) errores.push('openapi.paths no declara ninguna operación.');
@@ -155,6 +162,11 @@ function normalizarListing(body, { parcial = false } = {}) {
     if (presente('upstream_url')) {
         if (typeof b.upstream_url !== 'string' || b.upstream_url.length > 2048) errores.push('upstream_url es obligatoria.');
         else out.upstream_url = b.upstream_url;
+    }
+    if (b.upstream_spki_pin !== undefined) {
+        if (b.upstream_spki_pin !== null && !(typeof b.upstream_spki_pin === 'string' && SPKI_PIN_RE.test(b.upstream_spki_pin))) {
+            errores.push('upstream_spki_pin: sha256 en base64 (44 caracteres) de la clave pública del servidor, o null.');
+        } else out.upstream_spki_pin = b.upstream_spki_pin;
     }
     if (presente('pricing')) {
         const e = revisarPricing(b.pricing);
@@ -218,7 +230,7 @@ function tieneCategoriasEspeciales(cats = []) {
 
 module.exports = {
     SCOPES, LISTING_STATUS, EDITABLE_STATUS, PRICING_MODELS, CURRENCIES, INTERVALS,
-    DATA_CATEGORIES, MAX_AMOUNT_CENTS, MAX_OPENAPI_BYTES, SLUG_RE, ADDRESS_RE,
+    DATA_CATEGORIES, MAX_AMOUNT_CENTS, MAX_OPENAPI_BYTES, SLUG_RE, ADDRESS_RE, SPKI_PIN_RE,
     ListingInvalido, normalizarListing, revisarOpenApi, revisarPricing,
     requisitosPendientes, tieneCategoriasEspeciales, declaraEscritura,
 };

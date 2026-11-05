@@ -26,6 +26,8 @@
 const dns = require('dns');
 const net = require('net');
 const https = require('https');
+const tls = require('tls');
+const crypto = require('crypto');
 
 const BLOQUEADAS = new net.BlockList();
 for (const [red, prefijo] of [
@@ -122,7 +124,30 @@ function lookupPublico(hostname, opciones, callback) {
  * POST/GET a una URL de cliente. Interfaz mínima compatible con lo que usan los
  * despachadores de webhooks: `{ ok, status, text(), json() }`.
  */
-function safeFetch(url, { method = 'GET', headers = {}, body, timeoutMs = 10_000, maxBytes = 1_000_000 } = {}) {
+/**
+ * Opciones TLS (marketplace, listings con escritura):
+ *   cert / key  certificado de cliente de BeZhas (mTLS): el proveedor sabe que
+ *               la llamada viene de BeZhas aunque alguien robe su secreto HMAC.
+ *   spkiPin     sha256 en base64 de la clave pública del servidor del proveedor:
+ *               si su certificado cambia de clave sin avisar, no se conecta.
+ */
+function comprobarServidor(spkiPin) {
+    return (host, cert) => {
+        const err = tls.checkServerIdentity(host, cert);
+        if (err) return err;
+        if (spkiPin) {
+            const pin = crypto.createHash('sha256').update(cert.pubkey).digest('base64');
+            if (pin !== spkiPin) {
+                const e = new Error('El certificado del servidor no coincide con el pin del listing.');
+                e.code = 'TLS_PIN_MISMATCH';
+                return e;
+            }
+        }
+        return undefined;
+    };
+}
+
+function safeFetch(url, { method = 'GET', headers = {}, body, timeoutMs = 10_000, maxBytes = 1_000_000, tls: opcionesTls = null } = {}) {
     let u;
     try {
         u = validarUrl(url);
@@ -136,6 +161,12 @@ function safeFetch(url, { method = 'GET', headers = {}, body, timeoutMs = 10_000
             headers: body !== undefined ? { 'Content-Length': Buffer.byteLength(body), ...headers } : headers,
             lookup: lookupPublico,
             timeout: timeoutMs,
+            ...(opcionesTls ? {
+                ...(opcionesTls.cert && opcionesTls.key ? { cert: opcionesTls.cert, key: opcionesTls.key } : {}),
+                checkServerIdentity: comprobarServidor(opcionesTls.spkiPin || null),
+                // Sin agente compartido: un socket con el certificado de cliente no se reutiliza para otro destino.
+                agent: false,
+            } : {}),
         }, (res) => {
             const trozos = [];
             let recibidos = 0;
@@ -173,4 +204,5 @@ module.exports = {
     esIpPublica,
     DestinoNoPermitido,
     _lookupPublico: lookupPublico,
+    _comprobarServidor: comprobarServidor,
 };

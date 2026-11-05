@@ -134,6 +134,7 @@ BeZhas es un ecosistema blockchain empresarial B2B con:
 | `BeZhasPayment` | Procesador de pagos nativo |
 | `BeZhasVesting` | Vesting de tokens |
 | `BeZhasLiquidity` | LP Manager DeFi |
+| `MarketplaceSettlement` | Cobro en BEZ del API Marketplace sin custodia (pull payment). Sin desplegar ni auditar (2026-11-05). |
 
 ---
 

@@ -99,11 +99,14 @@ function compilarContrato(listing) {
     const doc = reescribirRefs(listing.openapi, base);
     const ajvPeticion = nuevoAjv({ coerceTypes: 'array', useDefaults: false });
     const ajvRespuesta = nuevoAjv({ removeAdditional: 'all' });
+    // Cuerpos de petición (paso 6): ni coerción ni recorte. Lo que no cumple, no sale.
+    const ajvCuerpo = nuevoAjv({});
     // Sin `openapi`/`info`/`paths`: sólo hacen falta las ramas a las que apuntan
     // las $ref. Va como un esquema más, con su $id.
     const raiz = { $id: base, components: doc.components || {} };
     ajvPeticion.addSchema(raiz);
     ajvRespuesta.addSchema(raiz);
+    ajvCuerpo.addSchema(raiz);
 
     const rutas = Object.entries(doc.paths || {})
         .filter(([, item]) => esObjeto(item))
@@ -138,7 +141,11 @@ function compilarContrato(listing) {
             const esquema = r?.content?.['application/json']?.schema;
             if (esObjeto(esquema)) respuestas[codigo] = ajvRespuesta.compile(esquema);
         }
-        const compilada = { params, respuestas, operationId: op.operationId || null };
+        const esquemaCuerpo = op.requestBody?.content?.['application/json']?.schema;
+        const cuerpo = op.requestBody
+            ? { requerido: op.requestBody.required === true, validar: esObjeto(esquemaCuerpo) ? ajvCuerpo.compile(esquemaCuerpo) : null }
+            : null;
+        const compilada = { params, respuestas, cuerpo, operationId: op.operationId || null };
         operaciones.set(clave, compilada);
         return compilada;
     }
@@ -149,7 +156,7 @@ function compilarContrato(listing) {
          * `consulta` el objeto de query de Express. Devuelve la ruta y la query
          * string que se reenvían (sólo con lo declarado).
          */
-        validarPeticion(metodo, rutaCruda, consulta = {}) {
+        validarPeticion(metodo, rutaCruda, consulta = {}, cuerpo = undefined) {
             const pedido = String(metodo).toLowerCase();
             const cruda = rutaCruda || '/';
             // Se casa la ruta SIN decodificar: así un %2F dentro de un parámetro
@@ -195,6 +202,17 @@ function compilarContrato(listing) {
                     continue;
                 }
                 if (p.en === 'query') for (const v of lista) query.append(p.nombre, v);
+            }
+            // Cuerpo: sólo JSON y sólo si la operación lo declara. `cuerpo` llega
+            // undefined cuando la petición no trae cuerpo (lo decide la ruta).
+            if (!op.cuerpo) {
+                if (cuerpo !== undefined) errores.push('La operación no declara cuerpo.');
+            } else if (cuerpo === undefined) {
+                if (op.cuerpo.requerido) errores.push('Falta el cuerpo de la petición.');
+            } else if (!op.cuerpo.validar) {
+                errores.push('La operación no declara un esquema JSON para el cuerpo.');
+            } else if (!op.cuerpo.validar(cuerpo)) {
+                errores.push(...(op.cuerpo.validar.errors || []).slice(0, 5).map((e) => `cuerpo${e.instancePath || ''} ${e.message}`));
             }
             if (errores.length) throw new ContratoIncumplido('INVALID_REQUEST', 'La petición no cumple el contrato.', 400, errores);
 

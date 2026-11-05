@@ -25,7 +25,9 @@
  *   Consumidor (api-key + marketplace:read | marketplace:consume)
  *     GET  /catalog                       listings en live
  *     GET  /catalog/:slug                 uno, con su OpenAPI apuntando al proxy
- *     GET|HEAD /call/:slug/*              el proxy (marketplace:consume)
+ *     ANY  /call/:slug/*                  el proxy (marketplace:consume; escribir exige además
+ *                                         marketplace:consume:write, Idempotency-Key y mTLS)
+ *     POST /catalog/:slug/purchase        activa el acceso con un pago en BEZ ya hecho (txHash)
  *     GET  /receipts/:callId              recibo firmado (consumidor o proveedor de la llamada)
  *     GET  /receipts/keys                 JWKS para verificar recibos (sin auth)
  *
@@ -35,6 +37,7 @@
  *     POST /admin/listings/:id/suspend    review|live → suspended
  *     POST /admin/listings/:id/grants     acceso piloto de un consumidor
  *     DELETE /admin/listings/:id/grants/:appId  lo retira
+ *     POST /admin/listings/:id/onchain    alta en MarketplaceSettlement (pago en BEZ, paso 5)
  *     GET  /admin/anchor                  redes activas y anclas pendientes
  *     POST /admin/anchor/run              cierra lotes y ancla en Polygon (y la L2 si hay nodo)
  *
@@ -60,6 +63,7 @@ const { contratoDe, ContratoIncumplido } = require('../services/marketplace/open
 const breaker = require('../services/marketplace/circuitBreaker');
 const receipts = require('../services/marketplace/receipts');
 const anchor = require('../services/marketplace/anchor');
+const settlement = require('../services/marketplace/settlement');
 const { encryptSecret, decryptSecret } = require('../services/secretVault');
 const {
     SCOPES, EDITABLE_STATUS, ADDRESS_RE,
@@ -77,7 +81,7 @@ const UPSTREAM_MAX_BYTES = 5 * 1024 * 1024;
 const RATE_LIMIT_PER_MIN = () => Math.max(parseInt(process.env.MARKETPLACE_RATE_LIMIT_PER_MIN, 10) || 60, 1);
 
 // Columnas que ve el proveedor. upstream_secret NUNCA sale de la base.
-const COLS_PROVEEDOR = `id, slug, title, summary, version, upstream_url, openapi, pricing,
+const COLS_PROVEEDOR = `id, slug, title, summary, version, upstream_url, upstream_spki_pin, openapi, pricing,
     data_categories, writes, status, review_note, reviewed_at,
     upstream_secret_rotated_at, created_at, updated_at`;
 
@@ -283,6 +287,40 @@ admin.delete('/listings/:id/grants/:appId', async (req, res) => {
     }
 });
 
+// Paso 5: alta del listing en MarketplaceSettlement. La wallet REGISTRAR sólo
+// puede dar de alta y desactivar: la cuenta de cobro es la payout_address del
+// proveedor y, una vez en el contrato, sólo el proveedor la cambia.
+admin.post('/listings/:id/onchain', async (req, res) => {
+    if (!idValido(req, res)) return;
+    try {
+        const { rows } = await query(
+            `SELECT l.id, l.status, p.payout_address, o.listing_id AS ya
+             FROM marketplace_listings l
+             JOIN marketplace_providers p ON p.app_id = l.provider_app_id
+             LEFT JOIN marketplace_onchain_listings o ON o.listing_id = l.id
+             WHERE l.id = $1`,
+            [req.params.id],
+        );
+        const l = rows[0];
+        if (!l) return res.status(404).json({ error: 'Listing no encontrado', code: 'LISTING_NOT_FOUND' });
+        if (l.status !== 'live') return res.status(409).json({ error: 'Sólo se registra on-chain un listing live', code: 'INVALID_STATUS' });
+        if (l.ya) return res.status(409).json({ error: 'El listing ya está en el contrato', code: 'ALREADY_ONCHAIN' });
+        if (!l.payout_address) return res.status(409).json({ error: 'El proveedor no tiene payout_address', code: 'PAYOUT_ADDRESS_MISSING' });
+
+        const r = await settlement.registrarListing({ listingId: l.id, provider: l.payout_address, precioBez: req.body?.price_bez });
+        await query(
+            `INSERT INTO marketplace_onchain_listings (listing_id, chain_id, contract, listing_key, provider, price_wei, tx_hash)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [l.id, r.chainId, r.contract, r.listingKey, l.payout_address.toLowerCase(), r.priceWei, r.txHash],
+        );
+        logger.info({ listingId: l.id, txHash: r.txHash, admin: req.admin?.sub || req.admin?.email }, 'marketplace: listing registrado on-chain');
+        res.status(201).json({ onchain: r });
+    } catch (err) {
+        if (err instanceof settlement.SettlementError) return res.status(err.status).json({ error: err.message, code: err.code });
+        responderError(res, err, 'admin.onchain');
+    }
+});
+
 // Anclaje (paso 4). La pasada también la puede lanzar un job programado con
 // anchor.ejecutar(); desde aquí sirve para forzarla y para ver el estado.
 admin.get('/anchor', async (_req, res) => {
@@ -415,13 +453,13 @@ router.post('/listings', publica, async (req, res) => {
         const { rows } = await query(
             `INSERT INTO marketplace_listings
                 (provider_app_id, slug, title, summary, version, upstream_url, upstream_secret,
-                 openapi, pricing, data_categories, writes)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                 openapi, pricing, data_categories, writes, upstream_spki_pin)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
              RETURNING ${COLS_PROVEEDOR}`,
             [
                 req.registeredApp.id, datos.slug, datos.title, datos.summary ?? null, datos.version,
                 datos.upstream_url, encryptSecret(secreto), datos.openapi, datos.pricing,
-                datos.data_categories, datos.writes,
+                datos.data_categories, datos.writes, datos.upstream_spki_pin ?? null,
             ],
         );
         res.status(201).json({
@@ -590,20 +628,98 @@ router.get('/catalog/:slug', lectura, async (req, res) => {
     try {
         const { rows } = await query(
             `SELECT l.slug, l.title, l.summary, l.version, l.pricing, l.data_categories, l.writes,
-                    l.openapi, p.legal_name AS provider_name
+                    l.openapi, p.legal_name AS provider_name,
+                    o.chain_id, o.contract, o.listing_key, o.price_wei
              FROM marketplace_listings l
              JOIN marketplace_providers p ON p.app_id = l.provider_app_id
+             LEFT JOIN marketplace_onchain_listings o ON o.listing_id = l.id
              WHERE l.slug = $1 AND l.status = 'live' AND p.status <> 'suspended'`,
             [slug],
         );
-        if (!rows[0]) return res.status(404).json({ error: 'Listing no encontrado', code: 'LISTING_NOT_FOUND' });
-        res.json({ listing: vistaCatalogo(rows[0], { conOpenapi: true }) });
+        const f = rows[0];
+        if (!f) return res.status(404).json({ error: 'Listing no encontrado', code: 'LISTING_NOT_FOUND' });
+        res.json({
+            listing: {
+                ...vistaCatalogo(f, { conOpenapi: true }),
+                // Para pagar en BEZ: approve(contract, priceWei) y pay(listingKey, priceWei) desde una
+                // wallet autorizada de la app; luego POST /catalog/:slug/purchase con el txHash.
+                bezPayment: f.contract
+                    ? { chainId: f.chain_id, contract: f.contract, listingKey: f.listing_key, priceWei: String(f.price_wei), token: 'BEZ' }
+                    : null,
+            },
+        });
     } catch (err) {
         responderError(res, err, 'catalog.get');
     }
 });
 
-// ── Proxy (paso 2: sólo lectura) ───────────────────────────────────────────
+// ── Proxy (lectura desde el paso 2; escritura con mTLS e idempotencia, paso 6) ─
+
+const METODOS_LECTURA = new Set(['GET', 'HEAD']);
+const METODOS_ESCRITURA = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const IDEM_RE = /^[A-Za-z0-9_.:-]{8,128}$/;
+
+function leerPem(valor) {
+    if (!valor) return null;
+    const v = valor.includes('-----BEGIN') ? valor : Buffer.from(valor, 'base64').toString('utf8');
+    return v.includes('-----BEGIN') ? v : null;
+}
+
+/** Certificado de cliente de BeZhas para mTLS. Sin él no se reenvía ninguna escritura. */
+function clienteMtls() {
+    const cert = leerPem(process.env.MARKETPLACE_MTLS_CERT);
+    const key = leerPem(process.env.MARKETPLACE_MTLS_KEY);
+    return cert && key ? { cert, key } : null;
+}
+
+/**
+ * Reserva la Idempotency-Key. Devuelve { seguir: true } si esta petición debe
+ * llegar al proveedor, o la respuesta que toca si no.
+ *
+ * Se puede volver a intentar con la MISMA clave y la MISMA petición cuando el
+ * resultado anterior fue desconocido (timeout, red, 5xx), un 4xx, o quedó «en
+ * vuelo» más de 2 minutos (el proceso murió). El proveedor recibe un id de
+ * idempotencia estable y es quien deduplica en su lado.
+ */
+async function reservarIdempotencia({ consumerId, listingId, keyHash, requestHash }) {
+    const { rows } = await query(
+        `INSERT INTO marketplace_idempotency (consumer_app_id, listing_id, key_hash, request_hash, status)
+         VALUES ($1, $2, $3, $4, 'in_progress')
+         ON CONFLICT (consumer_app_id, listing_id, key_hash) DO UPDATE
+            SET status = 'in_progress', request_hash = EXCLUDED.request_hash, http_status = NULL, call_id = NULL,
+                updated_at = NOW(), expires_at = NOW() + INTERVAL '24 hours'
+          WHERE marketplace_idempotency.expires_at < NOW()
+             OR (marketplace_idempotency.request_hash = EXCLUDED.request_hash
+                 AND (marketplace_idempotency.status IN ('unknown', 'failed')
+                      OR (marketplace_idempotency.status = 'in_progress'
+                          AND marketplace_idempotency.updated_at < NOW() - INTERVAL '2 minutes')))
+         RETURNING status`,
+        [consumerId, listingId, keyHash, requestHash],
+    );
+    if (rows[0]) return { seguir: true };
+
+    const previa = (await query(
+        `SELECT status, request_hash, http_status, call_id FROM marketplace_idempotency
+         WHERE consumer_app_id = $1 AND listing_id = $2 AND key_hash = $3`,
+        [consumerId, listingId, keyHash],
+    )).rows[0];
+    if (!previa) return { seguir: true }; // carrera con una expiración: se trata como nueva
+    if (previa.request_hash !== requestHash) {
+        return { status: 422, code: 'IDEMPOTENCY_KEY_REUSED', error: 'Esa Idempotency-Key ya se usó con otra petición.' };
+    }
+    if (previa.status === 'in_progress') {
+        return { status: 409, code: 'IDEMPOTENCY_IN_PROGRESS', error: 'La misma petición sigue en curso.', retryAfter: 5 };
+    }
+    return { replay: previa };
+}
+
+async function cerrarIdempotencia({ consumerId, listingId, keyHash }, status, { httpStatus = null, callId = null } = {}) {
+    await query(
+        `UPDATE marketplace_idempotency SET status = $4, http_status = $5, call_id = $6, updated_at = NOW()
+         WHERE consumer_app_id = $1 AND listing_id = $2 AND key_hash = $3`,
+        [consumerId, listingId, keyHash, status, httpStatus, callId],
+    ).catch((err) => logger.error({ err: err.message, listingId }, 'marketplace: no se pudo cerrar la idempotencia'));
+}
 
 function cortar(res, status, code, error, extra = {}) {
     return res.status(status).json({ error, code, ...extra });
@@ -614,17 +730,20 @@ async function proxy(req, res) {
         return cortar(res, 503, 'MARKETPLACE_PROXY_DISABLED', 'El proxy del marketplace no está abierto todavía.');
     }
     const metodo = req.method.toUpperCase();
-    if (metodo !== 'GET' && metodo !== 'HEAD') {
-        res.set('Allow', 'GET, HEAD');
-        return cortar(res, 405, 'READ_ONLY', 'El marketplace sólo admite llamadas de lectura por ahora.');
+    const escritura = METODOS_ESCRITURA.has(metodo);
+    if (!escritura && !METODOS_LECTURA.has(metodo)) {
+        res.set('Allow', 'GET, HEAD, POST, PUT, PATCH, DELETE');
+        return cortar(res, 405, 'METHOD_NOT_ALLOWED', 'Método no admitido por el marketplace.');
     }
     const slug = String(req.params.slug);
     if (!/^[a-z0-9-]{3,50}$/.test(slug)) return cortar(res, 404, 'LISTING_NOT_FOUND', 'Listing no encontrado');
     const consumerId = req.registeredApp.id;
 
+    let idem = null; // { consumerId, listingId, keyHash } mientras haya una reserva abierta
     try {
         const { rows } = await query(
-            `SELECT l.id, l.slug, l.upstream_url, l.upstream_secret, l.openapi, l.pricing, l.writes, l.updated_at
+            `SELECT l.id, l.slug, l.upstream_url, l.upstream_secret, l.upstream_spki_pin, l.openapi, l.pricing,
+                    l.writes, l.updated_at
              FROM marketplace_listings l
              JOIN marketplace_providers p ON p.app_id = l.provider_app_id
              WHERE l.slug = $1 AND l.status = 'live' AND p.status <> 'suspended'`,
@@ -632,8 +751,24 @@ async function proxy(req, res) {
         );
         const listing = rows[0];
         if (!listing) return cortar(res, 404, 'LISTING_NOT_FOUND', 'Listing no encontrado');
-        if (listing.writes) {
-            return cortar(res, 403, 'WRITE_LISTINGS_NOT_ENABLED', 'Los listings con escritura aún no están disponibles.');
+
+        let mtls = null;
+        let claveIdem = null;
+        if (escritura) {
+            if (!listing.writes) {
+                res.set('Allow', 'GET, HEAD');
+                return cortar(res, 405, 'READ_ONLY_LISTING', 'Este listing es de sólo lectura.');
+            }
+            const scopes = req.registeredApp.scopes || [];
+            if (!scopes.includes('admin') && !scopes.includes(SCOPES.CONSUME_WRITE)) {
+                return cortar(res, 403, 'WRITE_SCOPE_REQUIRED', `Escribir exige el scope ${SCOPES.CONSUME_WRITE}.`);
+            }
+            mtls = clienteMtls();
+            if (!mtls) return cortar(res, 503, 'MTLS_NOT_CONFIGURED', 'Las escrituras exigen mTLS y BeZhas no tiene certificado de cliente configurado.');
+            claveIdem = String(req.get('Idempotency-Key') || '');
+            if (!IDEM_RE.test(claveIdem)) {
+                return cortar(res, 400, 'IDEMPOTENCY_KEY_REQUIRED', 'Las escrituras exigen la cabecera Idempotency-Key (8-128 caracteres).');
+            }
         }
 
         const acceso = await query(
@@ -655,94 +790,150 @@ async function proxy(req, res) {
         const prefijo = `${req.baseUrl}/call/${slug}`;
         const rutaCruda = crudaCompleta.startsWith(prefijo) ? crudaCompleta.slice(prefijo.length) || '/' : '/';
 
+        const traeCuerpo = escritura && (Number(req.get('content-length') || 0) > 0 || Boolean(req.get('transfer-encoding')));
+        if (traeCuerpo && !req.is('application/json')) {
+            return cortar(res, 415, 'UNSUPPORTED_MEDIA_TYPE', 'El cuerpo debe ser application/json.');
+        }
+        const cuerpo = traeCuerpo ? req.body : undefined;
+
         const contrato = contratoDe(listing);
-        const peticion = contrato.validarPeticion(metodo, rutaCruda, req.query);
+        const peticion = contrato.validarPeticion(metodo, rutaCruda, req.query, cuerpo);
+
+        const rutaFirmada = `${peticion.rutaReenvio}${peticion.query}`;
+        // Se reenvía la serialización del cuerpo YA validado: lo firmado es exactamente lo que llega.
+        const cuerpoTexto = cuerpo === undefined ? '' : JSON.stringify(cuerpo);
+        const reqHash = receipts.sha256(`${metodo} ${rutaFirmada}\n${cuerpoTexto}`);
+
+        if (escritura) {
+            const ref = { consumerId, listingId: listing.id, keyHash: receipts.sha256(`${consumerId}:${claveIdem}`) };
+            const r = await reservarIdempotencia({ ...ref, requestHash: reqHash });
+            if (r.replay) {
+                // Ya se ejecutó: se devuelve su recibo, nunca una segunda ejecución.
+                if (r.replay.call_id) res.set('X-BeZhas-Receipt', r.replay.call_id);
+                res.set('Idempotent-Replayed', 'true');
+                return res.status(200).json({ replayed: true, upstreamStatus: r.replay.http_status, receipt: r.replay.call_id });
+            }
+            if (!r.seguir) {
+                if (r.retryAfter) res.set('Retry-After', String(r.retryAfter));
+                return cortar(res, r.status, r.code, r.error);
+            }
+            idem = ref;
+        }
 
         if (!breaker.permitir(listing.id)) {
+            if (idem) { await cerrarIdempotencia(idem, 'failed'); idem = null; }
             res.set('Retry-After', String(Math.ceil(breaker.ENFRIAMIENTO_MS / 1000)));
             return cortar(res, 503, 'UPSTREAM_CIRCUIT_OPEN', 'El proveedor no responde; reintenta en unos segundos.');
         }
 
-        const rutaFirmada = `${peticion.rutaReenvio}${peticion.query}`;
         const ts = String(Math.floor(Date.now() / 1000));
         const nonce = crypto.randomBytes(16).toString('hex');
         const url = `${listing.upstream_url.replace(/\/+$/, '')}${rutaFirmada}`;
+        const cabeceras = {
+            Accept: 'application/json',
+            'User-Agent': 'BeZhas-Marketplace/1',
+            'X-BeZhas-Timestamp': ts,
+            'X-BeZhas-Nonce': nonce,
+            'X-BeZhas-Listing': listing.slug,
+            'X-BeZhas-Consumer': receipts.consumidorOpaco(listing.id, consumerId),
+            [SIGNATURE_HEADER]: receipts.firmaUpstream(decryptSecret(listing.upstream_secret), {
+                ts, nonce, metodo, ruta: rutaFirmada, cuerpo: cuerpoTexto,
+            }),
+        };
+        if (escritura) {
+            // Estable para (consumidor, clave, listing) y opaca: el proveedor deduplica sin ver la clave original.
+            cabeceras['Idempotency-Key'] = receipts.sha256(`${listing.id}:${idem.keyHash}`);
+            if (cuerpo !== undefined) cabeceras['Content-Type'] = 'application/json';
+        }
 
         let respuesta;
         try {
             respuesta = await safeFetch(url, {
                 method: metodo,
-                headers: {
-                    Accept: 'application/json',
-                    'User-Agent': 'BeZhas-Marketplace/1',
-                    'X-BeZhas-Timestamp': ts,
-                    'X-BeZhas-Nonce': nonce,
-                    'X-BeZhas-Listing': listing.slug,
-                    'X-BeZhas-Consumer': receipts.consumidorOpaco(listing.id, consumerId),
-                    [SIGNATURE_HEADER]: receipts.firmaUpstream(decryptSecret(listing.upstream_secret), {
-                        ts, nonce, metodo, ruta: rutaFirmada,
-                    }),
-                },
+                headers: cabeceras,
+                ...(cuerpo !== undefined ? { body: cuerpoTexto } : {}),
                 timeoutMs: UPSTREAM_TIMEOUT_MS,
                 maxBytes: UPSTREAM_MAX_BYTES,
+                tls: escritura
+                    ? { ...mtls, spkiPin: listing.upstream_spki_pin || null }
+                    : (listing.upstream_spki_pin ? { spkiPin: listing.upstream_spki_pin } : null),
             });
         } catch (err) {
             breaker.fallo(listing.id);
             logger.warn({ listingId: listing.id, err: err.message }, 'marketplace: upstream inalcanzable');
+            if (idem) {
+                await cerrarIdempotencia(idem, 'unknown');
+                idem = null;
+                return cortar(res, 502, 'UPSTREAM_OUTCOME_UNKNOWN',
+                    'No se sabe si el proveedor ejecutó la escritura. Reintenta con la misma Idempotency-Key.');
+            }
             return cortar(res, 502, 'UPSTREAM_UNAVAILABLE', 'No se pudo contactar con el proveedor.');
         }
 
         if (respuesta.status >= 500) {
             breaker.fallo(listing.id);
+            if (idem) { await cerrarIdempotencia(idem, 'unknown', { httpStatus: respuesta.status }); idem = null; }
             return cortar(res, 502, 'UPSTREAM_ERROR', 'El proveedor devolvió un error.', { upstreamStatus: respuesta.status });
         }
         breaker.exito(listing.id);
         if (respuesta.status >= 300 && respuesta.status < 400) {
+            if (idem) { await cerrarIdempotencia(idem, 'failed', { httpStatus: respuesta.status }); idem = null; }
             return cortar(res, 502, 'UPSTREAM_REDIRECT', 'El proveedor intentó redirigir; no se siguen redirecciones.');
         }
         if (respuesta.status >= 400) {
             // Ni se factura ni se reenvía el cuerpo: podría llevar detalles
             // internos del proveedor que el contrato no declara.
+            if (idem) { await cerrarIdempotencia(idem, 'failed', { httpStatus: respuesta.status }); idem = null; }
             return cortar(res, respuesta.status, 'UPSTREAM_REJECTED', 'El proveedor rechazó la petición.');
         }
 
         let salida = '';
-        if (metodo === 'GET') {
+        const texto = metodo === 'HEAD' ? '' : await respuesta.text();
+        if (metodo !== 'HEAD' && !(escritura && (respuesta.status === 204 || texto.length === 0))) {
             const tipo = String(respuesta.headers?.['content-type'] || '');
-            if (!/^application\/(.+\+)?json\b/i.test(tipo)) {
-                return cortar(res, 502, 'UPSTREAM_NOT_JSON', 'El proveedor no respondió JSON.');
-            }
             let datos;
             try {
-                datos = await respuesta.json();
+                if (!/^application\/(.+\+)?json\b/i.test(tipo)) throw new Error('no JSON');
+                datos = JSON.parse(texto);
             } catch {
-                return cortar(res, 502, 'UPSTREAM_NOT_JSON', 'El proveedor respondió JSON mal formado.');
+                if (idem) { await cerrarIdempotencia(idem, 'unknown', { httpStatus: respuesta.status }); idem = null; }
+                return cortar(res, 502, 'UPSTREAM_NOT_JSON', 'El proveedor no respondió JSON válido.');
             }
-            const filtrados = contrato.validarRespuesta(peticion.metodoContrato, peticion.plantilla, respuesta.status, datos);
-            salida = JSON.stringify(filtrados);
+            try {
+                salida = JSON.stringify(contrato.validarRespuesta(peticion.metodoContrato, peticion.plantilla, respuesta.status, datos));
+            } catch (err) {
+                // La escritura pudo ejecutarse: resultado desconocido para el consumidor, que puede reintentar.
+                if (idem) { await cerrarIdempotencia(idem, 'unknown', { httpStatus: respuesta.status }); idem = null; }
+                throw err;
+            }
         }
 
         // La fila se escribe ANTES de responder para que el recibo exista en
-        // cuanto el consumidor lo pida. Paso 2: importe 0 (piloto sin cobro).
+        // cuanto el consumidor lo pida. Piloto: importe 0.
         const callId = crypto.randomUUID();
+        let conRecibo = false;
         try {
             await query(
                 `INSERT INTO marketplace_calls
                     (id, listing_id, consumer_app_id, http_status, req_hash, resp_hash, amount_cents, fee_cents)
                  VALUES ($1, $2, $3, $4, $5, $6, 0, 0)`,
-                [callId, listing.id, consumerId, respuesta.status,
-                    receipts.sha256(`${metodo} ${rutaFirmada}\n`), receipts.sha256(salida)],
+                [callId, listing.id, consumerId, respuesta.status, reqHash, receipts.sha256(salida)],
             );
             res.set('X-BeZhas-Receipt', callId);
+            conRecibo = true;
         } catch (err) {
-            // Sin cobro todavía, perder una fila no cuesta dinero: se responde
-            // igual, sin recibo. En el paso 3 esto pasa a fallar cerrado.
             logger.error({ listingId: listing.id, err: err.message }, 'marketplace: no se pudo registrar la llamada');
         }
+        if (idem) {
+            await cerrarIdempotencia(idem, 'completed', { httpStatus: respuesta.status, callId: conRecibo ? callId : null });
+            idem = null;
+        }
 
-        res.status(respuesta.status).type('application/json');
-        return metodo === 'HEAD' ? res.end() : res.send(salida);
+        if (metodo === 'HEAD' || (escritura && salida === '')) return res.status(respuesta.status).end();
+        return res.status(respuesta.status).type('application/json').send(salida);
     } catch (err) {
+        // Un fallo antes de contactar con el proveedor no deja una reserva colgada.
+        if (idem) await cerrarIdempotencia(idem, 'failed');
         if (err instanceof ContratoIncumplido) {
             return cortar(res, err.status, err.code, err.message, err.detalles ? { details: err.detalles } : {});
         }
@@ -752,6 +943,59 @@ async function proxy(req, res) {
 
 router.get('/call/:slug', consumo, proxy);
 router.all('/call/:slug/*', consumo, proxy);
+
+// ── Pago en BEZ (paso 5) ───────────────────────────────────────────────────
+
+router.post('/catalog/:slug/purchase', consumo, async (req, res) => {
+    const slug = String(req.params.slug);
+    if (!/^[a-z0-9-]{3,50}$/.test(slug)) return res.status(404).json({ error: 'Listing no encontrado', code: 'LISTING_NOT_FOUND' });
+    try {
+        const { rows } = await query(
+            `SELECT l.id FROM marketplace_listings l
+             JOIN marketplace_providers p ON p.app_id = l.provider_app_id
+             JOIN marketplace_onchain_listings o ON o.listing_id = l.id
+             WHERE l.slug = $1 AND l.status = 'live' AND p.status <> 'suspended'`,
+            [slug],
+        );
+        const listing = rows[0];
+        if (!listing) return res.status(404).json({ error: 'Listing no disponible para pago en BEZ', code: 'LISTING_NOT_FOUND' });
+
+        const pago = await settlement.verificarPago({ txHash: req.body?.txHash, listingId: listing.id });
+
+        // Quien manda el txHash debe ser quien pagó: si no, cualquiera podría
+        // activar su acceso con el pago de otro que ha visto en el explorador.
+        const propias = (req.registeredApp.authorizedAddresses || []).map((a) => String(a).toLowerCase());
+        if (!propias.includes(pago.payer)) {
+            return res.status(403).json({
+                error: 'El pagador no es una wallet autorizada de tu app.',
+                code: 'PAYER_NOT_AUTHORIZED',
+            });
+        }
+
+        const ins = await query(
+            `INSERT INTO marketplace_onchain_payments
+                (purchase_id, tx_hash, chain_id, listing_id, consumer_app_id, payer, price_wei, fee_wei, block_number)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             ON CONFLICT (purchase_id) DO NOTHING
+             RETURNING purchase_id`,
+            [pago.purchaseId, pago.txHash, pago.chainId, listing.id, req.registeredApp.id, pago.payer,
+                pago.priceWei, pago.feeWei, pago.blockNumber],
+        );
+        if (!ins.rows[0]) return res.status(409).json({ error: 'Ese pago ya activó un acceso', code: 'PAYMENT_ALREADY_USED' });
+
+        const sub = await query(
+            `INSERT INTO marketplace_subscriptions (consumer_app_id, listing_id, status)
+             VALUES ($1, $2, 'active')
+             ON CONFLICT (consumer_app_id, listing_id) DO UPDATE SET status = 'active', updated_at = NOW()
+             RETURNING consumer_app_id, listing_id, status`,
+            [req.registeredApp.id, listing.id],
+        );
+        res.status(201).json({ purchase: { purchaseId: pago.purchaseId, txHash: pago.txHash, priceWei: pago.priceWei }, subscription: sub.rows[0] });
+    } catch (err) {
+        if (err instanceof settlement.SettlementError) return res.status(err.status).json({ error: err.message, code: err.code });
+        responderError(res, err, 'catalog.purchase');
+    }
+});
 
 router.get('/receipts/:callId', recibo, async (req, res) => {
     if (!UUID_RE.test(req.params.callId)) return res.status(404).json({ error: 'Recibo no encontrado', code: 'RECEIPT_NOT_FOUND' });
