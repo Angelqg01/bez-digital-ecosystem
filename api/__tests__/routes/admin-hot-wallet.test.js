@@ -4,7 +4,7 @@
 const request = require('supertest');
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { mockQuery } = require('../helpers');
+const { mockQuery, mockCacheGet, mockCacheSet } = require('../helpers');
 const { JWT_SECRET } = require('../../config/secrets');
 
 const mockOrq = { crearIntencion: jest.fn(), obtener: jest.fn(), aprobar: jest.fn(), ejecutar: jest.fn(), cancelar: jest.fn() };
@@ -12,6 +12,7 @@ jest.mock('../../services/txOrchestrator', () => ({ orquestador: () => mockOrq }
 jest.mock('../../services/killSwitch', () => ({ estadoEfectivo: jest.fn().mockResolvedValue({ estado: 'NORMAL' }) }));
 
 const rutas = require('../../routes/admin-hot-wallet');
+const { ethers } = require('ethers');
 const app = express();
 app.use(express.json());
 app.use('/api/admin-hot-wallet', rutas);
@@ -107,5 +108,69 @@ describe('Hot Wallet (SuperAdmin)', () => {
         const res = await admin(request(app).get('/api/admin-hot-wallet/intents'));
         expect(res.status).toBe(503);
         expect(res.body.code).toBe('TREASURY_APP_NOT_CONFIGURED');
+    });
+
+    describe('Treasury & Web3: configuración compartida', () => {
+        beforeEach(() => { mockCacheGet.mockReset(); mockCacheSet.mockReset(); });
+
+        it('sin config guardada vigila el Safe registrado, no una cuenta de Anvil', async () => {
+            mockCacheGet.mockResolvedValue(null);
+            const res = await admin(request(app).get('/api/admin-hot-wallet'));
+            expect(res.body.config.safeWallet).toBe('0x3EfC42095E8503d41Ad8001328FC23388E00e8a3');
+            expect(JSON.stringify(res.body)).not.toContain('0x70997970');
+        });
+
+        it('PUT /config valida y guarda en la misma clave que /admin-config/treasury', async () => {
+            mockCacheGet.mockResolvedValue(null);
+            mockCacheSet.mockResolvedValue(true);
+            const safe = '0x' + '7'.repeat(40);
+            const res = await admin(request(app).put('/api/admin-hot-wallet/config')).send({ safeWallet: safe, dailyLimit: 250 });
+            expect(res.status).toBe(200);
+            expect(mockCacheSet).toHaveBeenCalledWith('admin:config:treasury', expect.objectContaining({ safeWallet: ethers.getAddress(safe), dailyLimit: 250 }));
+        });
+
+        it('PUT /config rechaza una dirección no válida y no guarda', async () => {
+            mockCacheGet.mockResolvedValue(null);
+            const res = await admin(request(app).put('/api/admin-hot-wallet/config')).send({ safeWallet: 'no-es-una-direccion' });
+            expect(res.status).toBe(400);
+            expect(mockCacheSet).not.toHaveBeenCalled();
+        });
+
+        it('PUT /config da 503 si Redis no guardó (antes fallaba en silencio)', async () => {
+            mockCacheGet.mockResolvedValue(null);
+            mockCacheSet.mockResolvedValue(false);
+            const res = await admin(request(app).put('/api/admin-hot-wallet/config')).send({ dailyLimit: 10 });
+            expect(res.status).toBe(503);
+        });
+    });
+
+    describe('diagnóstico cruzado', () => {
+        const HOT = '0x52Df82920CBAE522880dD7657e43d1A754eD044E';
+        const A = '0x' + '1'.repeat(40);
+        const B = '0x' + '2'.repeat(40);
+        const codes = (args) => rutas._diagnostico({ appConfigurada: true, hotConfigurada: true, ...args }).map((d) => d.code);
+
+        it('Safe 1-de-3 con la Hot Wallet de propietaria', () => {
+            const c = codes({ hot: HOT, aprobadores: [{ address: A, status: 'active' }, { address: B, status: 'active' }],
+                safe: { isSafe: true, threshold: 1, owners: [HOT, A, B] } });
+            expect(c).toEqual(expect.arrayContaining(['SAFE_THRESHOLD_1', 'HOT_WALLET_IS_SAFE_OWNER']));
+            expect(c).not.toContain('NOT_ENOUGH_APPROVERS');
+        });
+
+        it('la Hot Wallet como firmante es crítico', () => {
+            expect(codes({ hot: HOT, aprobadores: [{ address: HOT.toLowerCase(), status: 'active' }, { address: A, status: 'active' }], safe: null }))
+                .toContain('HOT_WALLET_IS_APPROVER');
+        });
+
+        it('avisa si la wallet de login es la Hot Wallet', () => {
+            expect(codes({ hot: HOT, loginWallet: HOT.toLowerCase(), aprobadores: [], safe: null })).toContain('HOT_WALLET_IS_LOGIN');
+        });
+
+        it('el estado objetivo no deja avisos críticos', () => {
+            const d = rutas._diagnostico({ hot: HOT, appConfigurada: true, hotConfigurada: true,
+                aprobadores: [{ address: A, status: 'active' }, { address: B, status: 'active' }],
+                safe: { isSafe: true, threshold: 2, owners: ['0x' + '9'.repeat(40), A, B] } });
+            expect(d.filter((x) => x.nivel === 'critico')).toEqual([]);
+        });
     });
 });

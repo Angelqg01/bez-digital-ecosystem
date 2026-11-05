@@ -5,8 +5,9 @@
  * Uses Redis for fast persistence.
  */
 const { Router } = require('express');
-const redisClient = require('../cache/redis').client;
+const { cacheGet, cacheSet } = require('../cache/redis');
 const { requireSuperAdmin } = require('../middleware/admin-auth');
+const treasuryConfig = require('../services/treasuryConfig');
 
 const router = Router();
 
@@ -16,33 +17,22 @@ const router = Router();
 // propio router, cualquier sitio donde se monte queda cerrado por defecto.
 router.use(requireSuperAdmin);
 
+// Antes leía `require('../cache/redis').client`, que no existe: nada se guardaba
+// y siempre se devolvían los valores por defecto. cacheGet/cacheSet son los
+// helpers reales del módulo (con su plazo y su «si Redis cae, se degrada»).
 async function getConfig(key, defaultVal) {
-    if (!redisClient) return defaultVal;
-    try {
-        const cached = await redisClient.get(`admin:config:${key}`);
-        if (cached) return JSON.parse(cached);
-    } catch { }
-    return defaultVal;
+    const cached = await cacheGet(`admin:config:${key}`);
+    return cached && typeof cached === 'object' ? cached : defaultVal;
 }
 
 async function setConfig(key, val) {
-    if (!redisClient) return null;
-    try {
-        await redisClient.set(`admin:config:${key}`, JSON.stringify(val));
-        return val;
-    } catch { }
-    return null;
+    return (await cacheSet(`admin:config:${key}`, val)) ? val : null;
 }
 
 // Config Defaults
 const DEFAULTS = {
-    treasury: {
-        loginWallet: '0x3EfC42095E8503d41Ad8001328FC23388E00e8a3',
-        hotWallet: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-        safeWallet: '',
-        dailyLimit: 100,
-        approvalThreshold: 500
-    },
+    // treasury: services/treasuryConfig.js (validada; la usa también /api/admin-hot-wallet).
+    treasury: treasuryConfig.DEFAULTS,
     ecosystem: {
         bridgeStatus: 'active',
         rwaProviders: ['Aave', 'Maker'],
@@ -70,6 +60,21 @@ const DEFAULTS = {
         memoryTTL: 86400
     }
 };
+
+// Tesorería: validada y compartida con la sección Treasury & Web3 (admin-hot-wallet).
+router.get('/treasury', async (_req, res) => {
+    res.json({ success: true, data: { ...(await treasuryConfig.leer()), ...treasuryConfig.delDespliegue() } });
+});
+
+router.post('/treasury', async (req, res) => {
+    try {
+        const { config, persistida } = await treasuryConfig.guardar(req.body || {});
+        res.status(persistida ? 200 : 503).json({ success: persistida, data: config, ...(persistida ? {} : { error: 'Redis no disponible: no se guardó.' }) });
+    } catch (err) {
+        if (err instanceof treasuryConfig.ConfigInvalida) return res.status(400).json({ error: err.message, code: err.code, details: err.errores });
+        res.status(500).json({ error: 'No se pudo guardar la configuración de tesorería' });
+    }
+});
 
 router.get('/:module', async (req, res) => {
     const mod = req.params.module;
