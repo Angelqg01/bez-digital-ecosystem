@@ -6,6 +6,7 @@ import Link from 'next/link';
 // Component Imports (To be created)
 import TabIdentity from './components/TabIdentity';
 import TabTreasury from './components/TabTreasury';
+import TabHotWallet from './components/TabHotWallet';
 import TabEcosystem from './components/TabEcosystem';
 import TabIntelligence from './components/TabIntelligence';
 import TabGovernance from './components/TabGovernance';
@@ -15,11 +16,12 @@ import TabWatchdog from './components/TabWatchdog';
 import TabOperant from './components/TabOperant';
 import TabPublicidad from './components/TabPublicidad';
 
-import { Shield, Landmark, Box, BrainCircuit, Scale, LogOut, Activity, BookOpen, Radar, HeartPulse, Bot, Megaphone } from 'lucide-react';
+import { Shield, Landmark, Wallet, Box, BrainCircuit, Scale, LogOut, Activity, BookOpen, Radar, HeartPulse, Bot, Megaphone } from 'lucide-react';
 
 const TABS = [
     { id: 'identity',    label: 'Identity & Security', icon: Shield,       desc: 'DID & Secrets' },
     { id: 'treasury',    label: 'Treasury & Web3',     icon: Landmark,     desc: 'Hot Wallets & MPC' },
+    { id: 'hotwallet',   label: 'Hot Wallet',          icon: Wallet,       desc: 'Fondos BeZhas · firma 2 de 3' },
     { id: 'ecosystem',   label: 'Ecosystem & RWA',     icon: Box,          desc: 'Factory & Oracle' },
     { id: 'intelligence',label: 'MCP Intelligence',    icon: BrainCircuit, desc: 'OpenClaw Brain' },
     { id: 'brain',       label: 'Brain',              icon: Radar,        desc: 'Vault, conocimiento y red en vivo' },
@@ -101,6 +103,7 @@ export default function HybridControlCenter() {
                     <div className="bg-[#05060a] border border-white/5 shadow-2xl p-8 h-full relative z-10">
                         {activeTab === 'identity'     && <TabIdentity />}
                         {activeTab === 'treasury'     && <TabTreasury />}
+                        {activeTab === 'hotwallet'    && <TabHotWallet />}
                         {activeTab === 'ecosystem'    && <TabEcosystem />}
                         {activeTab === 'intelligence' && <TabIntelligence />}
                         {activeTab === 'brain'        && <TabBrain />}

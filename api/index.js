@@ -96,6 +96,7 @@ const gasTankRoutes = require('./routes/gas-tank');
 const gasTankRpcRoutes = require('./routes/gas-tank-rpc');
 const aiWorkspaceRoutes = require('./routes/ai-workspace');
 const adminConfigRoutes = require('./routes/admin-config');
+const adminHotWalletRoutes = require('./routes/admin-hot-wallet');
 const adminGovernanceRoutes = require('./routes/admin-governance');
 const adminOperantRoutes = require('./routes/admin-operant');   // ← pestaña OPERANT del panel SuperAdmin (solo lectura)
 const adminConsoleRoutes = require('./routes/admin-console');   // ← API única del propietario + gas subvencionado
@@ -397,6 +398,8 @@ app.use('/api/ai-workspace', aiWorkspaceRoutes);   // chat de la plataforma con 
 app.use('/api/nft-assets', require('./routes/nft-assets')); // subida de archivos para NFT: plan suscrito, sin ejecutables, sin lectura
 app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin-config', adminConfigRoutes);
+// Hot Wallet de BeZhas (sólo SuperAdmin): interfaz sobre el orquestador de tesorería.
+app.use('/api/admin-hot-wallet', adminHotWalletRoutes);
 app.use('/api/admin/governance', adminGovernanceRoutes);
 app.use('/api/admin/console', adminConsoleRoutes);
 app.use('/api/admin/operant', adminOperantRoutes);
