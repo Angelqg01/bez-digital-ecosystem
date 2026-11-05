@@ -100,7 +100,10 @@ router.get('/', async (_req, res) => {
                  WHERE app_id IS NULL AND 'treasury' = ANY(roles)
                  ORDER BY created_at ASC`,
             ),
-            saldos(direccion).catch(() => null),
+            saldos(direccion || HOT_WALLET_REGISTRADA).catch((err) => {
+                logger.warn({ err: err.message }, 'hot wallet: no se pudieron leer los saldos');
+                return null;
+            }),
             killSwitch.estadoEfectivo({ appId: process.env.BEZPAY_TREASURY_APP_ID, rail: 'crypto_transfer' }).catch(() => ({ estado: 'UNKNOWN' })),
             settlement.comisionAcumulada().catch(() => null),
         ]);

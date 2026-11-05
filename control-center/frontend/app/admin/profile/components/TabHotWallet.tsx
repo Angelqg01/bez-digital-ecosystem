@@ -46,6 +46,11 @@ type Eth = { request: (a: { method: string; params?: unknown[] }) => Promise<unk
 const ethereum = (): Eth | null => (typeof window !== 'undefined' ? ((window as unknown as { ethereum?: Eth }).ethereum ?? null) : null);
 
 const corto = (a?: string | null) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—');
+// Saldo legible: miles separados y como mucho 4 decimales (formatEther devuelve hasta 18).
+const importe = (v: string) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n.toLocaleString('es-ES', { maximumFractionDigits: 4 }) : v;
+};
 const ESTADO_COLOR: Record<string, string> = {
     awaiting_approval: 'text-amber-400', approved: 'text-sky-400', executing: 'text-sky-400',
     broadcast: 'text-emerald-400', denied: 'text-red-400', rejected: 'text-red-400', failed: 'text-red-400',
@@ -226,7 +231,9 @@ export default function TabHotWallet() {
                             {(resumen.balances || [{ asset: 'Saldos', amount: null, error: 'sin POLYGON_RPC_URL' }]).map((b) => (
                                 <div key={b.asset} className="bg-black/30 border border-white/5 p-3">
                                     <div className="text-[10px] text-gray-500 uppercase tracking-widest">{b.asset}</div>
-                                    <div className="font-mono text-white text-sm">{b.amount ?? (b.error ? 'no disponible' : '—')}</div>
+                                    <div className="font-mono text-white text-sm break-all" title={b.amount ?? undefined}>
+                                        {b.amount !== null ? importe(b.amount) : (b.error ? 'no disponible' : '—')}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -247,12 +254,12 @@ export default function TabHotWallet() {
                         <ul className="space-y-2">
                             {resumen.approvers.length === 0 && <li className="text-xs text-gray-500">No hay wallets de tesorería registradas (POST /api/security/approvers con rol treasury).</li>}
                             {resumen.approvers.map((a) => (
-                                <li key={a.address} className="flex items-center justify-between bg-black/30 border border-white/5 px-3 py-2">
-                                    <div>
+                                <li key={a.address} className="flex items-center justify-between gap-3 bg-black/30 border border-white/5 px-3 py-2">
+                                    <div className="min-w-0">
                                         <div className="text-xs text-white">{a.label || 'Sin etiqueta'}</div>
-                                        <div className="font-mono text-[11px] text-gray-400">{a.address}</div>
+                                        <div className="font-mono text-[11px] text-gray-400 break-all">{a.address}</div>
                                     </div>
-                                    <span className={`text-[10px] uppercase tracking-widest ${a.status === 'active' ? 'text-emerald-400' : 'text-gray-500'}`}>{a.status}</span>
+                                    <span className={`shrink-0 text-[10px] uppercase tracking-widest ${a.status === 'active' ? 'text-emerald-400' : 'text-gray-500'}`}>{a.status}</span>
                                 </li>
                             ))}
                         </ul>

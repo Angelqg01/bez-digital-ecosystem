@@ -22,12 +22,31 @@ Hot Wallet, que es la clave más expuesta. Los scripts `DeployTelemetryAnchor` y
 `DeployMarketplaceSettlement` **se niegan** a usar este Safe como admin (simulado contra un
 fork de Polygon: `el multisig admin debe exigir al menos 2 firmas`).
 
-Qué hacer, desde la interfaz de Safe (app.safe.global), con una de las propietarias:
+**Decidido (2026-11-05):** umbral 2 y fuera la Hot Wallet. Firmantes de tesorería: `0x89c2`,
+`0xC0ec` y una wallet de firma nueva.
 
-1. **Subir el umbral a 2** (`changeThreshold(2)`).
-2. Recomendado: **sustituir la Hot Wallet** como propietaria por otra wallet de firma
-   (otra MetaMask o, mejor, una hardware wallet). Una clave caliente no debería poder firmar
-   como propietaria del multisig.
+Las propietarias `0x89c2` y `0xC0ec` **nunca han enviado una transacción** (nonce 0) y no
+tienen POL. Las 11 operaciones del Safe las firmó, con umbral 1, la Hot Wallet. Por eso cada
+paso lo firma una clave distinta: así se prueba que funciona **antes** de exigir 2 firmas.
+Subir el umbral sin haberlo probado puede bloquear el Safe para siempre.
+
+En app.safe.global (Polygon, Safe `0x3EfC…e8a3`):
+
+0. Desde la Hot Wallet, envía ~1 POL a `0x89c2` y otro a `0xC0ec` para el gas de ejecución.
+   Crea la wallet nueva (mejor hardware) y apunta su dirección.
+1. Conectado con **`0x89c2`**: Ajustes → Propietarios → *Reemplazar* `0x52Df…044E` por la
+   wallet nueva. Firma y ejecuta (sigue bastando 1 firma). Que lo firme `0x89c2` prueba su clave.
+2. Conectado con **`0xC0ec`**: Ajustes → *Umbral* → 2 de 3. Firma y ejecuta. Prueba la segunda clave.
+3. Comprueba en Safe que las propietarias son la nueva, `0x89c2` y `0xC0ec`, con umbral 2.
+4. Con la wallet nueva, firma un mensaje de prueba (Safe → firmar mensaje) para confirmar
+   que también funciona.
+
+Ensayado sobre un fork de Polygon con los mismos dos pasos, firmados por las mismas cuentas:
+`smart-contracts/script/ensayo-safe-propietarias.sh`. Repítelo con la dirección real:
+`NEW=0x… ./smart-contracts/script/ensayo-safe-propietarias.sh` (instrucciones en el script).
+
+Fuera de este cambio, la Hot Wallet sigue siendo `owner` de las dos RWAFactory de Polygon
+(tabla de contratos de `CLAUDE.md`). Conviene revisarlo aparte.
 
 ### 0.2 La rama
 
@@ -139,9 +158,10 @@ printf 'x-internal-key: %s\n' "$(grep ^INTERNAL_API_KEY= ~/bezhas-blockchain.env
   -d '{"address":"0x…","roles":["treasury"],"label":"MetaMask Yoel","createdBy":"Yoel"}'
 ```
 
-Las mismas direcciones van en `approvers` del `signer.json` del `tx-signer`, con
-`minApprovals: 2`. Es la segunda lista, que la API no puede tocar. No des de alta la Hot
-Wallet como aprobadora de sus propias salidas.
+Firmantes decididos: `0x89c2…9b12`, `0xC0ec…330A` y la wallet nueva (un `curl` por
+dirección). Las mismas tres van en `approvers` del `signer.json` del `tx-signer`, con
+`minApprovals: 2`. Es la segunda lista, que la API no puede tocar. La Hot Wallet no es
+aprobadora de sus propias salidas.
 
 ## 6. Anclaje y apertura
 
