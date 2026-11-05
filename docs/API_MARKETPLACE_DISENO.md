@@ -1,7 +1,7 @@
 # API Marketplace — esbozo técnico sobre el Gateway actual
 
-> Estado: **paso 1 implementado** (2026-11-05, sin desplegar; migración 076 sin aplicar
-> en producción). Diseño del 2026-10-30. Ver «Estado de implementación» al final.
+> Estado: **pasos 1 y 2 implementados** (2026-11-05, sin desplegar; migración 076 sin
+> aplicar en producción; proxy apagado salvo `MARKETPLACE_PROXY_ENABLED=true`). Diseño del 2026-10-30. Ver «Estado de implementación» al final.
 > Origen: el plan "BeZhas API Marketplace — Plan de desarrollo, implementación y
 > cumplimiento UE / EE. UU." (Claude Docs). Este documento baja ese plan a tablas,
 > rutas y contratos sobre lo que ya existe en `api/`. Lo legal sigue pendiente del
@@ -119,7 +119,8 @@ consumidor ──x-api-key──▶ gateway
   4. validar la petición contra listing.openapi (ajv)               → 400 sin tocar al proveedor
   5. safeFetch(upstream_url): sólo https, DNS resuelto y fijado, sin IP privada,
      timeout 10 s y respuesta máx. 5 MB                             (nuevo, ver Seguridad)
-     cabeceras: X-BeZhas-Signature (HMAC con upstream_secret sobre ts.nonce.body),
+     cabeceras: X-BeZhas-Signature (sha256=HMAC con upstream_secret sobre
+                ts.nonce.METHOD.ruta?query.body: firma también método y ruta),
                 X-BeZhas-Timestamp, X-BeZhas-Nonce, X-BeZhas-Consumer (id opaco)
   6. validar la respuesta contra el OpenAPI y quitar campos no declarados
   7. res.on('finish'): si 2xx → fila en marketplace_calls → meter event en Stripe
@@ -219,7 +220,8 @@ falla si un tramo sale de [10 %, 20 %] o si supera el máximo del contrato.
 | Paso | Estado | Dónde |
 | --- | --- | --- |
 | 1 | **Hecho** (2026-11-05), sin desplegar | `api/db/migrations/076_marketplace.sql` · `api/config/marketplace.js` · `api/routes/marketplace.js` · tests en `api/__tests__/{config,routes}/marketplace.test.js` |
-| 2-6 | Pendiente | — |
+| 2 | **Hecho** (2026-11-05), sin desplegar ni pentest | `api/services/marketplace/{openapiContract,circuitBreaker,receipts}.js` · proxy y recibos en `api/routes/marketplace.js` · tests en `api/__tests__/routes/marketplace-proxy.test.js` y `api/__tests__/services/marketplace-*.test.js` |
+| 3-6 | Pendiente | — |
 
 Lo que hace el paso 1:
 
@@ -250,5 +252,47 @@ Decisiones tomadas por defecto en el paso 1 (revisables):
 - El slug no se cambia tras crear el listing: es la ruta pública.
 - `health` y `biometric` (art. 9 RGPD) se señalan en la cola de revisión.
 
-Pendiente para el paso 2: proxy `/call/:slug/*` con firma HMAC, validación ajv
-(añadir `ajv` y `ajv-formats` a `api/package.json`), `marketplace_calls` y recibos.
+Lo que hace el paso 2:
+
+- **Proxy** `GET|HEAD /call/:slug/*` con `marketplace:consume`. Apagado salvo
+  `MARKETPLACE_PROXY_ENABLED=true`. Cualquier otro método da 405 y los listings con
+  `writes = true` dan 403 hasta el paso 6.
+- **Acceso piloto**: sin cobro todavía, sólo llaman los consumidores con una fila
+  `active` en `marketplace_subscriptions`, que concede o retira un admin
+  (`POST /admin/listings/:id/grants`, `DELETE …/grants/:appId`). En el paso 3 la
+  misma tabla pasa a llenarse desde Stripe.
+- **Contrato** (`openapiContract.js`, Ajv 2020 + ajv-formats, compilado y cacheado
+  por listing): la ruta se casa sin decodificar (un `%2F` no cambia de plantilla),
+  se rechazan `.`, `..`, barras y nulos en parámetros de ruta, y la ruta reenviada
+  se reconstruye desde la plantilla. Sólo viajan los parámetros de query
+  declarados. La respuesta debe ser JSON y cumplir el esquema de su código
+  (exacto, `2XX` o `default`); los campos no declarados se quitan. Si no cumple,
+  502 sin el cuerpo del proveedor.
+- **Al proveedor** viajan `X-BeZhas-Timestamp`, `X-BeZhas-Nonce`,
+  `X-BeZhas-Listing`, `X-BeZhas-Consumer` (`c_` + sha256 de listing y app: estable
+  por listing, inútil para cruzar listings) y la firma. Nunca la api-key del
+  consumidor. `safeFetch` con 10 s y 5 MB.
+- Un 4xx del proveedor se devuelve con su código pero **sin su cuerpo**; un 5xx o
+  un fallo de red da 502 y cuenta para el **circuit breaker** (5 fallos seguidos →
+  30 s abierto, luego una sonda). Límite de 60 llamadas/min por (consumidor,
+  listing), configurable con `MARKETPLACE_RATE_LIMIT_PER_MIN`.
+- **Registro**: cada 2xx escribe su fila en `marketplace_calls` antes de responder
+  (hash de `METHOD ruta?query` y de la respuesta enviada) con **importe 0**, y
+  devuelve `X-BeZhas-Receipt`. Si la escritura falla se responde sin recibo; en el
+  paso 3, con dinero, pasará a fallar cerrado.
+- **Recibos** `GET /receipts/:callId`, sólo para el consumidor o el proveedor de la
+  llamada: JWS ES256 con clave propia (`MARKETPLACE_RECEIPT_PRIVATE_KEY` y
+  `_PUBLIC_KEY`, PEM o PEM en base64), verificable con la JWKS pública de
+  `GET /receipts/keys`. En producción sin claves dan 503; no impiden arrancar la API.
+  `anchor` es `null` hasta el paso 4.
+
+Limitaciones conocidas del paso 2, para el pentest y el piloto:
+
+- Quitar campos no declarados (`removeAdditional: 'all'`) rompe los `allOf` que
+  reparten propiedades entre subesquemas: el contrato de respuesta debe declararlas
+  en un solo objeto.
+- El circuit breaker es por instancia de Cloud Run, no global.
+- El proxy no reenvía cabeceras de la petición del consumidor (ni las declaradas en
+  el OpenAPI).
+- Antes de desplegar: crear el par EC P-256 de recibos en Secret Manager y
+  declararlo en `deploy/gcp/secrets.list`.

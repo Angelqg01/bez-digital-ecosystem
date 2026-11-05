@@ -1,10 +1,13 @@
 /**
  * routes/marketplace.js — API Marketplace, paso 1 (docs/API_MARKETPLACE_DISENO.md).
  *
- * Proveedores y listings en borrador, catálogo de listings en `live` y revisión
- * manual. El proxy (`/call/:slug/*`), los recibos y el cobro llegan en los pasos
- * 2 y 3: hasta entonces un listing aprobado se ve en el catálogo pero no se
- * puede llamar.
+ * Paso 1: proveedores y listings en borrador, catálogo de listings en `live` y
+ * revisión manual.
+ * Paso 2: proxy de sólo lectura (`/call/:slug/*`) con el OpenAPI como contrato
+ * en los dos sentidos, registro de llamadas y recibos firmados. Hasta el paso 3
+ * (Stripe Connect) no se cobra: sólo llaman los consumidores con acceso piloto
+ * concedido por un admin, y cada llamada se apunta con importe 0. El proxy está
+ * apagado salvo MARKETPLACE_PROXY_ENABLED=true.
  *
  * Montado en /api/gateway/v1/marketplace, ANTES del router general del gateway.
  *
@@ -22,11 +25,16 @@
  *   Consumidor (api-key + marketplace:read | marketplace:consume)
  *     GET  /catalog                       listings en live
  *     GET  /catalog/:slug                 uno, con su OpenAPI apuntando al proxy
+ *     GET|HEAD /call/:slug/*              el proxy (marketplace:consume)
+ *     GET  /receipts/:callId              recibo firmado (consumidor o proveedor de la llamada)
+ *     GET  /receipts/keys                 JWKS para verificar recibos (sin auth)
  *
  *   Admin (sesión SuperAdmin, no api-key)
  *     GET  /admin/listings?status=review  cola de revisión
  *     POST /admin/listings/:id/approve    review → live (vuelve a comprobar requisitos)
  *     POST /admin/listings/:id/suspend    review|live → suspended
+ *     POST /admin/listings/:id/grants     acceso piloto de un consumidor
+ *     DELETE /admin/listings/:id/grants/:appId  lo retira
  *
  * BOLA: cada consulta de proveedor lleva `provider_app_id = <app llamante>` en
  * el WHERE. Un id ajeno devuelve 404, igual que uno que no existe.
@@ -44,8 +52,12 @@ const { Router } = require('express');
 const { authenticateApp, requireScope } = require('../middleware/gateway-auth');
 const { requireSuperAdmin } = require('../middleware/admin-auth');
 const { query } = require('../db/pool');
-const { validarDestinoPublico } = require('../utils/safeFetch');
-const { encryptSecret } = require('../services/secretVault');
+const { validarDestinoPublico, safeFetch } = require('../utils/safeFetch');
+const { checkRateLimit } = require('../cache/redis');
+const { contratoDe, ContratoIncumplido } = require('../services/marketplace/openapiContract');
+const breaker = require('../services/marketplace/circuitBreaker');
+const receipts = require('../services/marketplace/receipts');
+const { encryptSecret, decryptSecret } = require('../services/secretVault');
 const {
     SCOPES, EDITABLE_STATUS, ADDRESS_RE,
     ListingInvalido, normalizarListing, requisitosPendientes, tieneCategoriasEspeciales, declaraEscritura,
@@ -57,6 +69,9 @@ const router = Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PROXY_BASE = '/api/gateway/v1/marketplace/call';
 const SIGNATURE_HEADER = 'X-BeZhas-Signature';
+const UPSTREAM_TIMEOUT_MS = 10_000;
+const UPSTREAM_MAX_BYTES = 5 * 1024 * 1024;
+const RATE_LIMIT_PER_MIN = () => Math.max(parseInt(process.env.MARKETPLACE_RATE_LIMIT_PER_MIN, 10) || 60, 1);
 
 // Columnas que ve el proveedor. upstream_secret NUNCA sale de la base.
 const COLS_PROVEEDOR = `id, slug, title, summary, version, upstream_url, openapi, pricing,
@@ -224,7 +239,53 @@ admin.post('/listings/:id/suspend', async (req, res) => {
     }
 });
 
+// Acceso piloto (paso 2): sin cobro todavía, un admin decide quién llama a qué.
+// En el paso 3 lo sustituye la suscripción o el método de pago en la cuenta
+// Connect del proveedor, sobre la misma tabla.
+admin.post('/listings/:id/grants', async (req, res) => {
+    if (!idValido(req, res)) return;
+    const consumer = String(req.body?.consumer_app_id || '');
+    if (!UUID_RE.test(consumer)) return res.status(400).json({ error: 'consumer_app_id debe ser el UUID de una app.' });
+    try {
+        const { rows } = await query(
+            `INSERT INTO marketplace_subscriptions (consumer_app_id, listing_id, status)
+             VALUES ($1, $2, 'active')
+             ON CONFLICT (consumer_app_id, listing_id)
+             DO UPDATE SET status = 'active', updated_at = NOW()
+             RETURNING consumer_app_id, listing_id, status, updated_at`,
+            [consumer, req.params.id],
+        );
+        logger.info({ listingId: req.params.id, consumer, admin: req.admin?.sub || req.admin?.email }, 'marketplace: acceso piloto concedido');
+        res.status(201).json({ grant: rows[0] });
+    } catch (err) {
+        if (err?.code === '23503') return res.status(404).json({ error: 'Listing o app inexistente' });
+        responderError(res, err, 'admin.grant');
+    }
+});
+
+admin.delete('/listings/:id/grants/:appId', async (req, res) => {
+    if (!idValido(req, res)) return;
+    if (!UUID_RE.test(req.params.appId)) return res.status(404).json({ error: 'Acceso no encontrado' });
+    try {
+        const { rows } = await query(
+            `UPDATE marketplace_subscriptions SET status = 'canceled', updated_at = NOW()
+             WHERE consumer_app_id = $1 AND listing_id = $2 AND status <> 'canceled'
+             RETURNING consumer_app_id, listing_id, status`,
+            [req.params.appId, req.params.id],
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Acceso no encontrado' });
+        res.json({ grant: rows[0] });
+    } catch (err) {
+        responderError(res, err, 'admin.revoke');
+    }
+});
+
 router.use('/admin', admin);
+
+// Clave pública de los recibos: cualquiera debe poder verificar uno sin api-key.
+router.get('/receipts/keys', (_req, res) => {
+    res.set('Cache-Control', 'public, max-age=3600').json(receipts.jwks());
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  A partir de aquí, api-key del gateway.
@@ -234,6 +295,8 @@ router.use(authenticateApp);
 
 const publica = requireScope(SCOPES.PUBLISH);
 const lectura = requireScope(SCOPES.READ, SCOPES.CONSUME);
+const consumo = requireScope(SCOPES.CONSUME);
+const recibo = requireScope(SCOPES.READ, SCOPES.CONSUME, SCOPES.PUBLISH);
 
 // ── Proveedor ──────────────────────────────────────────────────────────────
 
@@ -510,6 +573,189 @@ router.get('/catalog/:slug', lectura, async (req, res) => {
         res.json({ listing: vistaCatalogo(rows[0], { conOpenapi: true }) });
     } catch (err) {
         responderError(res, err, 'catalog.get');
+    }
+});
+
+// ── Proxy (paso 2: sólo lectura) ───────────────────────────────────────────
+
+function cortar(res, status, code, error, extra = {}) {
+    return res.status(status).json({ error, code, ...extra });
+}
+
+async function proxy(req, res) {
+    if (process.env.MARKETPLACE_PROXY_ENABLED !== 'true') {
+        return cortar(res, 503, 'MARKETPLACE_PROXY_DISABLED', 'El proxy del marketplace no está abierto todavía.');
+    }
+    const metodo = req.method.toUpperCase();
+    if (metodo !== 'GET' && metodo !== 'HEAD') {
+        res.set('Allow', 'GET, HEAD');
+        return cortar(res, 405, 'READ_ONLY', 'El marketplace sólo admite llamadas de lectura por ahora.');
+    }
+    const slug = String(req.params.slug);
+    if (!/^[a-z0-9-]{3,50}$/.test(slug)) return cortar(res, 404, 'LISTING_NOT_FOUND', 'Listing no encontrado');
+    const consumerId = req.registeredApp.id;
+
+    try {
+        const { rows } = await query(
+            `SELECT l.id, l.slug, l.upstream_url, l.upstream_secret, l.openapi, l.pricing, l.writes, l.updated_at
+             FROM marketplace_listings l
+             JOIN marketplace_providers p ON p.app_id = l.provider_app_id
+             WHERE l.slug = $1 AND l.status = 'live' AND p.status <> 'suspended'`,
+            [slug],
+        );
+        const listing = rows[0];
+        if (!listing) return cortar(res, 404, 'LISTING_NOT_FOUND', 'Listing no encontrado');
+        if (listing.writes) {
+            return cortar(res, 403, 'WRITE_LISTINGS_NOT_ENABLED', 'Los listings con escritura aún no están disponibles.');
+        }
+
+        const acceso = await query(
+            `SELECT 1 FROM marketplace_subscriptions
+             WHERE consumer_app_id = $1 AND listing_id = $2 AND status = 'active'`,
+            [consumerId, listing.id],
+        );
+        if (!acceso.rows[0]) return cortar(res, 403, 'NOT_SUBSCRIBED', 'Tu app no tiene acceso a este listing.');
+
+        const limite = RATE_LIMIT_PER_MIN();
+        const rl = await checkRateLimit(`mkt:${listing.id}:${consumerId}`, limite, 60);
+        if (!rl.allowed) {
+            res.set('Retry-After', String(rl.resetInSec || 60));
+            return cortar(res, 429, 'RATE_LIMITED', `Máximo ${limite} llamadas por minuto a este listing.`);
+        }
+
+        // Ruta en bruto (sin decodificar) tras /call/<slug>.
+        const crudaCompleta = req.originalUrl.split('?')[0];
+        const prefijo = `${req.baseUrl}/call/${slug}`;
+        const rutaCruda = crudaCompleta.startsWith(prefijo) ? crudaCompleta.slice(prefijo.length) || '/' : '/';
+
+        const contrato = contratoDe(listing);
+        const peticion = contrato.validarPeticion(metodo, rutaCruda, req.query);
+
+        if (!breaker.permitir(listing.id)) {
+            res.set('Retry-After', String(Math.ceil(breaker.ENFRIAMIENTO_MS / 1000)));
+            return cortar(res, 503, 'UPSTREAM_CIRCUIT_OPEN', 'El proveedor no responde; reintenta en unos segundos.');
+        }
+
+        const rutaFirmada = `${peticion.rutaReenvio}${peticion.query}`;
+        const ts = String(Math.floor(Date.now() / 1000));
+        const nonce = crypto.randomBytes(16).toString('hex');
+        const url = `${listing.upstream_url.replace(/\/+$/, '')}${rutaFirmada}`;
+
+        let respuesta;
+        try {
+            respuesta = await safeFetch(url, {
+                method: metodo,
+                headers: {
+                    Accept: 'application/json',
+                    'User-Agent': 'BeZhas-Marketplace/1',
+                    'X-BeZhas-Timestamp': ts,
+                    'X-BeZhas-Nonce': nonce,
+                    'X-BeZhas-Listing': listing.slug,
+                    'X-BeZhas-Consumer': receipts.consumidorOpaco(listing.id, consumerId),
+                    [SIGNATURE_HEADER]: receipts.firmaUpstream(decryptSecret(listing.upstream_secret), {
+                        ts, nonce, metodo, ruta: rutaFirmada,
+                    }),
+                },
+                timeoutMs: UPSTREAM_TIMEOUT_MS,
+                maxBytes: UPSTREAM_MAX_BYTES,
+            });
+        } catch (err) {
+            breaker.fallo(listing.id);
+            logger.warn({ listingId: listing.id, err: err.message }, 'marketplace: upstream inalcanzable');
+            return cortar(res, 502, 'UPSTREAM_UNAVAILABLE', 'No se pudo contactar con el proveedor.');
+        }
+
+        if (respuesta.status >= 500) {
+            breaker.fallo(listing.id);
+            return cortar(res, 502, 'UPSTREAM_ERROR', 'El proveedor devolvió un error.', { upstreamStatus: respuesta.status });
+        }
+        breaker.exito(listing.id);
+        if (respuesta.status >= 300 && respuesta.status < 400) {
+            return cortar(res, 502, 'UPSTREAM_REDIRECT', 'El proveedor intentó redirigir; no se siguen redirecciones.');
+        }
+        if (respuesta.status >= 400) {
+            // Ni se factura ni se reenvía el cuerpo: podría llevar detalles
+            // internos del proveedor que el contrato no declara.
+            return cortar(res, respuesta.status, 'UPSTREAM_REJECTED', 'El proveedor rechazó la petición.');
+        }
+
+        let salida = '';
+        if (metodo === 'GET') {
+            const tipo = String(respuesta.headers?.['content-type'] || '');
+            if (!/^application\/(.+\+)?json\b/i.test(tipo)) {
+                return cortar(res, 502, 'UPSTREAM_NOT_JSON', 'El proveedor no respondió JSON.');
+            }
+            let datos;
+            try {
+                datos = await respuesta.json();
+            } catch {
+                return cortar(res, 502, 'UPSTREAM_NOT_JSON', 'El proveedor respondió JSON mal formado.');
+            }
+            const filtrados = contrato.validarRespuesta(peticion.metodoContrato, peticion.plantilla, respuesta.status, datos);
+            salida = JSON.stringify(filtrados);
+        }
+
+        // La fila se escribe ANTES de responder para que el recibo exista en
+        // cuanto el consumidor lo pida. Paso 2: importe 0 (piloto sin cobro).
+        const callId = crypto.randomUUID();
+        try {
+            await query(
+                `INSERT INTO marketplace_calls
+                    (id, listing_id, consumer_app_id, http_status, req_hash, resp_hash, amount_cents, fee_cents)
+                 VALUES ($1, $2, $3, $4, $5, $6, 0, 0)`,
+                [callId, listing.id, consumerId, respuesta.status,
+                    receipts.sha256(`${metodo} ${rutaFirmada}\n`), receipts.sha256(salida)],
+            );
+            res.set('X-BeZhas-Receipt', callId);
+        } catch (err) {
+            // Sin cobro todavía, perder una fila no cuesta dinero: se responde
+            // igual, sin recibo. En el paso 3 esto pasa a fallar cerrado.
+            logger.error({ listingId: listing.id, err: err.message }, 'marketplace: no se pudo registrar la llamada');
+        }
+
+        res.status(respuesta.status).type('application/json');
+        return metodo === 'HEAD' ? res.end() : res.send(salida);
+    } catch (err) {
+        if (err instanceof ContratoIncumplido) {
+            return cortar(res, err.status, err.code, err.message, err.detalles ? { details: err.detalles } : {});
+        }
+        return responderError(res, err, 'proxy');
+    }
+}
+
+router.get('/call/:slug', consumo, proxy);
+router.all('/call/:slug/*', consumo, proxy);
+
+router.get('/receipts/:callId', recibo, async (req, res) => {
+    if (!UUID_RE.test(req.params.callId)) return res.status(404).json({ error: 'Recibo no encontrado', code: 'RECEIPT_NOT_FOUND' });
+    if (!receipts.recibosDisponibles()) {
+        return res.status(503).json({ error: 'La firma de recibos no está configurada', code: 'RECEIPTS_UNAVAILABLE' });
+    }
+    try {
+        // Sólo las dos partes de la llamada: el consumidor o el proveedor del listing.
+        const { rows } = await query(
+            `SELECT c.id, c.listing_id, c.consumer_app_id, c.at, c.http_status, c.req_hash, c.resp_hash,
+                    c.amount_cents, c.fee_cents, l.slug, l.pricing->>'currency' AS currency,
+                    b.id AS batch_id, b.merkle_root, b.tx_hash
+             FROM marketplace_calls c
+             JOIN marketplace_listings l ON l.id = c.listing_id
+             LEFT JOIN marketplace_receipt_batches b ON b.id = c.batch_id
+             WHERE c.id = $1 AND (c.consumer_app_id = $2 OR l.provider_app_id = $2)`,
+            [req.params.callId, req.registeredApp.id],
+        );
+        const fila = rows[0];
+        if (!fila) return res.status(404).json({ error: 'Recibo no encontrado', code: 'RECEIPT_NOT_FOUND' });
+        const contenido = receipts.contenidoRecibo(fila);
+        res.json({
+            receipt: contenido,
+            signature: receipts.firmarRecibo(contenido),
+            alg: 'ES256',
+            kid: receipts.KID,
+            // La prueba de inclusión llega con el anclaje del paso 4.
+            anchor: fila.batch_id ? { batchId: fila.batch_id, merkleRoot: fila.merkle_root, txHash: fila.tx_hash } : null,
+        });
+    } catch (err) {
+        responderError(res, err, 'receipts.get');
     }
 });
 
