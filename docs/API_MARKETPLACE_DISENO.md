@@ -1,6 +1,7 @@
 # API Marketplace — esbozo técnico sobre el Gateway actual
 
-> Estado: **borrador de diseño, sin implementar** (2026-10-30).
+> Estado: **paso 1 implementado** (2026-11-05, sin desplegar; migración 076 sin aplicar
+> en producción). Diseño del 2026-10-30. Ver «Estado de implementación» al final.
 > Origen: el plan "BeZhas API Marketplace — Plan de desarrollo, implementación y
 > cumplimiento UE / EE. UU." (Claude Docs). Este documento baja ese plan a tablas,
 > rutas y contratos sobre lo que ya existe en `api/`. Lo legal sigue pendiente del
@@ -212,3 +213,42 @@ falla si un tramo sale de [10 %, 20 %] o si supera el máximo del contrato.
   cualquier app con KYB.
 - Entidad separada para la intermediación de datos (Data Governance Act): afecta a
   qué cuenta de Stripe es la plataforma **[dictamen]**.
+
+## Estado de implementación
+
+| Paso | Estado | Dónde |
+| --- | --- | --- |
+| 1 | **Hecho** (2026-11-05), sin desplegar | `api/db/migrations/076_marketplace.sql` · `api/config/marketplace.js` · `api/routes/marketplace.js` · tests en `api/__tests__/{config,routes}/marketplace.test.js` |
+| 2-6 | Pendiente | — |
+
+Lo que hace el paso 1:
+
+- Alta de proveedor (`POST /providers`, `GET`/`PATCH /providers/me`). El proveedor
+  sólo puede tocar nombre legal y `payout_address`; `kyb_status`,
+  `stripe_account_id` y `dpa_signed_at` los rellenarán Didit, Stripe Connect y la
+  firma del DPA, nunca la API del proveedor.
+- Listings: crear, listar, editar (sólo en `draft`/`review`; editar en `review`
+  vuelve a `draft`), enviar a revisión y rotar el secreto. `upstream_url` pasa por
+  `validarDestinoPublico`; el secreto (`mkts_…`) se guarda cifrado con
+  `secretVault` y se muestra una sola vez.
+- Validación de forma en `config/marketplace.js`: OpenAPI 3.1 estructural (≤ 256 KB,
+  rutas sin `..`), precio (`per_call` | `subscription` | `dataset`, EUR/USD,
+  céntimos enteros), categorías GDPR de una lista cerrada y coherencia de
+  `writes`: un OpenAPI con POST/PUT/DELETE exige `writes = true`.
+- Catálogo (`GET /catalog`, `GET /catalog/:slug`) con `marketplace:read` o
+  `marketplace:consume`: sólo `live`, sin `upstream_url`, y el `servers` del
+  OpenAPI se reescribe al proxy.
+- Revisión (`/admin/listings…`) con sesión SuperAdmin. Aprobar vuelve a comprobar
+  KYB, cuenta Connect y DPA, por si cambiaron desde el envío.
+- El router se monta antes de `bez-markets` y del gateway general, cuyos
+  `router.use()` globales atenderían también `/marketplace/*`.
+
+Decisiones tomadas por defecto en el paso 1 (revisables):
+
+- El catálogo exige api-key con scope; no es público (decisión abierta de arriba).
+- Las rutas de gestión no se miden como `api_call` del plan Starter.
+- El slug no se cambia tras crear el listing: es la ruta pública.
+- `health` y `biometric` (art. 9 RGPD) se señalan en la cola de revisión.
+
+Pendiente para el paso 2: proxy `/call/:slug/*` con firma HMAC, validación ajv
+(añadir `ajv` y `ajv-formats` a `api/package.json`), `marketplace_calls` y recibos.

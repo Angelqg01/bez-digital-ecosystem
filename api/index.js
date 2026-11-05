@@ -79,6 +79,7 @@ const documentRoutes = require('./routes/documents');
 const channelRoutes = require('./routes/channels');
 const gatewayRoutes = require('./routes/gateway');
 const bezMarketsRoutes = require('./routes/bez-markets');
+const marketplaceRoutes = require('./routes/marketplace');
 const cargoLinkRoutes = require('./routes/cargolink');
 const openclawRoutes = require('./routes/openclaw');
 const monitorRoutes = require('./routes/monitor');
@@ -467,6 +468,11 @@ app.use('/api/qr', qrRoutes);
 // aislado). Antes que el Gateway general para que /tx no caiga en sus rutas.
 app.use('/api/gateway/v1/tx', txRouter);
 app.use('/api/security', securityRouter);
+// API Marketplace (docs/API_MARKETPLACE_DISENO.md): antes de bez-markets y del
+// gateway general. Ambos llevan router.use() globales (medición, auth) que
+// atenderían también /marketplace/*, incluido /marketplace/admin, que va con
+// sesión SuperAdmin y no con api-key.
+app.use('/api/gateway/v1/marketplace', marketplaceRoutes);
 // Tokenización RWA, fracciones y swap de BEZ: sólo transacciones sin firmar.
 app.use('/api/gateway/v1', bezMarketsRoutes);
 app.use('/api/gateway/v1', gatewayRoutes);
