@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
-import { Play, RotateCcw, Maximize, Minimize, Scan, Info, Flame } from 'lucide-react';
+import { Play, Pause, RotateCcw, Maximize, Minimize, Scan, Info, Flame, ChevronUp, ChevronDown, Code2, X, FlaskConical, Settings2 } from 'lucide-react';
 import './simulator.css';
 
 import { SimulationStep, TransitMode, B_UID } from './engine/types';
@@ -13,6 +13,14 @@ import { BlockchainNodes } from './BlockchainNodes';
 import { TimelineProgressBar } from './TimelineProgressBar';
 import { ExplorerPanel, ExplorerLogEntry, SdkHistoryEntry } from './explorer/ExplorerPanel';
 import { sdkCallFor } from './engine/sdkMap';
+import { SdkCallCard } from './panels/SdkCallCard';
+import { EvidenceBlock } from './panels/EvidenceBlock';
+import { VehicleCard } from './panels/VehicleCard';
+import { SandboxPanel } from './panels/SandboxPanel';
+import {
+  SandboxSession, SandboxConfig, SandboxStepResult, loadSandboxConfig, saveSandboxConfig, checkTestEnvironment,
+} from './engine/sandbox';
+import { LOCATIONS } from './engine/types';
 import { RouteMap2D } from './scene/RouteMap2D';
 import { ValidatorNodesBar } from './explorer/ValidatorNodesBar';
 import { IoTTelemetryChart } from './panels/IoTTelemetryChart';
@@ -54,7 +62,38 @@ export default function LogisticsSimulator360() {
 
   const flow = useMemo(() => buildFlow360(mode), [mode]);
   // Se comprueba una vez: sin WebGL, <Canvas> lanza al montar y tumbaba la consola entera.
-  const webglAvailable = useMemo(() => isWebGLAvailable(), []);
+  // La vista 3D es la principal. Sólo si el navegador no puede crear WebGL
+  // (p. ej. el panel de navegador de la app de Claude) se muestra el mapa 2D,
+  // con un aviso para abrirla en Chrome/Firefox y un botón para reintentar.
+  const [webglAvailable, setWebglAvailable] = useState(() => isWebGLAvailable());
+  const retry3D = () => { const ok = isWebGLAvailable(); setWebglAvailable(ok); if (ok) setGlLost(false); };
+  // Parada seleccionada con un clic en la escena 3D.
+  const [selectedLocation, setSelectedLocation] = useState<number | null>(null);
+  // Cámara: «director» encuadra cada parada; «libre» la deja totalmente al usuario.
+  const [cameraMode, setCameraMode] = useState<'director' | 'free'>('director');
+  // Ficha del vehículo (clic sobre él en 3D). Es excluyente con la ficha de parada.
+  const [vehicleOpen, setVehicleOpen] = useState(false);
+  // Pausa: el bucle de la simulación espera mientras esté activa.
+  const [isPaused, setIsPaused] = useState(false);
+  const pausedRef = useRef(false);
+  useEffect(() => { pausedRef.current = isPaused; }, [isPaused]);
+  // Sandbox: cada etapa ejecuta su llamada real contra una API de PRUEBAS (engine/sandbox.ts).
+  const [sandboxOn, setSandboxOn] = useState(false);
+  const [sandboxCfg, setSandboxCfg] = useState<SandboxConfig>(() => loadSandboxConfig());
+  const [sandboxPanel, setSandboxPanel] = useState(false);
+  const [sandboxResults, setSandboxResults] = useState<Record<number, SandboxStepResult>>({});
+  const [liveBUid, setLiveBUid] = useState<string | null>(null);
+  const sandboxRef = useRef({ on: sandboxOn, cfg: sandboxCfg });
+  sandboxRef.current = { on: sandboxOn, cfg: sandboxCfg };
+  const sessionRef = useRef<SandboxSession | null>(null);
+  useEffect(() => { saveSandboxConfig(sandboxCfg); }, [sandboxCfg]);
+  // B-UID que se muestra: el real (Sandbox) o el de ejemplo (Demo).
+  const bUidShown = liveBUid ?? B_UID;
+  // HUD izquierdo plegable para dejar ver la escena.
+  // En pantallas estrechas arranca plegado: ocupa media escena.
+  const [hudCollapsed, setHudCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  // Explorer/SDK como panel inferior en pantallas estrechas (en lg+ es la barra lateral).
+  const [mobileExplorer, setMobileExplorer] = useState(false);
   // Si el navegador retira el contexto WebGL a mitad de sesión, se pasa al mapa 2D.
   const [glLost, setGlLost] = useState(false);
 
@@ -65,7 +104,8 @@ export default function LogisticsSimulator360() {
   useEffect(() => { speedRef.current = simulationSpeed; }, [simulationSpeed]);
   const runIdRef = useRef(0);
 
-  const isIdle = !isRunning && !isFinished;
+  const scrubbing = !isRunning && !isFinished && stepIndex > 0;
+  const isIdle = !isRunning && !isFinished && !scrubbing;
   const currentStep: SimulationStep = isIdle
     ? getDynamicStep(
         {
@@ -89,9 +129,26 @@ export default function LogisticsSimulator360() {
     });
   };
 
+  // Espera «ms» de simulación: se detiene mientras haya pausa y corta si hay reset.
+  const simSleep = async (ms: number, runId: number) => {
+    let left = ms;
+    while (left > 0) {
+      if (runIdRef.current !== runId) return;
+      const slice = Math.min(100, left);
+      await new Promise((res) => setTimeout(res, slice));
+      if (!pausedRef.current) left -= slice;
+    }
+  };
+
   const handleStart = async () => {
     if (isRunning) return;
     const runId = ++runIdRef.current;
+    setIsPaused(false);
+    setSandboxResults({});
+    setLiveBUid(null);
+    // Sólo se abre sesión si el Sandbox está activo Y la URL es un entorno de pruebas.
+    const sb = sandboxRef.current;
+    sessionRef.current = sb.on && checkTestEnvironment(sb.cfg.baseUrl).ok ? new SandboxSession(sb.cfg) : null;
     setIsRunning(true);
     setIsFinished(false);
     setIsBreached(false);
@@ -115,14 +172,21 @@ export default function LogisticsSimulator360() {
       addLog(`== [ETAPA ${step.id}/16 · ${step.phase === 'origin' ? 'ORIGEN' : step.phase === 'transit' ? 'TRÁNSITO' : 'DESTINO'}] ${step.bUidStage} — Validador: ${step.validator.name} ==`, 'info');
       addLog(step.msg, 'info');
 
-      await new Promise((res) => setTimeout(res, Math.floor(500 / speedRef.current)));
+      await simSleep(Math.floor(500 / speedRef.current), runId);
       if (runIdRef.current !== runId) return;
 
       const logType = step.activeNodes.includes('mcp') && step.activeNodes.length === 1 ? 'agent' : 'bc';
       addLog(step.bc, logType);
       const sdk = sdkCallFor(step.id, isBreachedRef.current && i >= BREACH_FROM_INDEX);
       if (sdk) {
-        addLog(`SDK ▸ ${sdk.method} /api/cargolink${sdk.path.replace(':bUid', B_UID)} · ${sdk.role === 'device' ? 'x-device-key' : `rol ${sdk.role}`}${sdk.contract ? ` → ${sdk.contract}` : ''}`, 'agent');
+        addLog(`SDK ▸ ${sdk.method} /api/cargolink${sdk.path.replace(':bUid', sessionRef.current?.bUid ?? B_UID)} · ${sdk.role === 'device' ? 'x-device-key' : `rol ${sdk.role}`}${sdk.contract ? ` → ${sdk.contract}` : ''}`, 'agent');
+      }
+      if (sessionRef.current) {
+        const res = await sessionRef.current.runStep(step.id, { breached: isBreachedRef.current && i >= BREACH_FROM_INDEX });
+        if (runIdRef.current !== runId) return;
+        setSandboxResults((prev) => ({ ...prev, [step.id]: res }));
+        if (sessionRef.current.bUid) setLiveBUid(sessionRef.current.bUid);
+        addLog(`SANDBOX ▸ etapa ${step.id} ${res.skipped ? 'saltada' : res.ok ? 'OK' : 'ERROR'}: ${res.calls.map((c) => `${c.method} ${c.path} ${c.status ?? ''} ${c.summary}`.replace(/\s+/g, ' ')).join(' | ')}`, 'agent');
       }
 
       // Sellar bloque de la etapa en la cadena del explorer
@@ -135,13 +199,13 @@ export default function LogisticsSimulator360() {
       if (step.validations.length > 0) {
         const delayPerValidation = Math.floor(adjustedTimeMs / step.validations.length);
         for (let v = 0; v < step.validations.length; v++) {
-          await new Promise((res) => setTimeout(res, delayPerValidation));
+          await simSleep(delayPerValidation, runId);
           if (runIdRef.current !== runId) return;
           const updatedStep = getDynamicStep(baseStep, selectedCargo, i, isBreachedRef.current);
           addLog(updatedStep.validations[v] || step.validations[v], 'bc');
         }
       } else {
-        await new Promise((res) => setTimeout(res, adjustedTimeMs));
+        await simSleep(adjustedTimeMs, runId);
       }
 
       setCompletedStepIds((prev) => [...prev, step.id]);
@@ -160,6 +224,9 @@ export default function LogisticsSimulator360() {
 
   const handleReset = () => {
     runIdRef.current++;
+    setIsPaused(false);
+    setSandboxResults({});
+    setLiveBUid(null);
     setIsRunning(false);
     setIsFinished(false);
     setIsBreached(false);
@@ -202,6 +269,39 @@ export default function LogisticsSimulator360() {
     }
   };
 
+  // Atajos: espacio (ejecutar/pausar), ←/→ (etapa, con la simulación parada),
+  // F (pantalla completa), C (cámara), Esc (cerrar fichas). Sólo cuando el
+  // simulador está en pantalla y no se está escribiendo en un campo.
+  const keyActionRef = useRef<(e: KeyboardEvent) => void>(() => undefined);
+  keyActionRef.current = (e: KeyboardEvent) => {
+    const el = e.target as HTMLElement;
+    if (el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.tagName === 'SELECT' || el?.isContentEditable) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const r = containerRef.current?.getBoundingClientRect();
+    if (!r || r.bottom < 80 || r.top > window.innerHeight - 80) return;
+    switch (e.key) {
+      case ' ':
+        e.preventDefault();
+        if (isRunning) setIsPaused((p) => !p); else handleStart();
+        break;
+      case 'ArrowRight':
+      case 'ArrowLeft':
+        if (isRunning) return;
+        e.preventDefault();
+        setStepIndex((i) => Math.max(0, Math.min(flow.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1))));
+        break;
+      case 'f': case 'F': toggleFullscreen(); break;
+      case 'c': case 'C': setCameraMode((m) => (m === 'director' ? 'free' : 'director')); break;
+      case 'Escape': setSelectedLocation(null); setVehicleOpen(false); setMobileExplorer(false); break;
+      default:
+    }
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => keyActionRef.current(e);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const nfts = useMemo(() => nftsForStep(completedStepIds), [completedStepIds]);
   const escrowEvents = useMemo(() => escrowEventsForStep(completedStepIds, isBreached), [completedStepIds, isBreached]);
   const confirmedDids = useMemo(
@@ -212,7 +312,7 @@ export default function LogisticsSimulator360() {
 
   // Llamadas reales de la API que corresponden a lo que se está simulando.
   const breachedAt = (i: number) => isBreached && i >= BREACH_FROM_INDEX;
-  const sdkCurrent = isRunning || isFinished ? sdkCallFor(currentStep.id, breachedAt(stepIndex)) : undefined;
+  const sdkCurrent = isRunning || isFinished || scrubbing ? sdkCallFor(currentStep.id, breachedAt(stepIndex)) : undefined;
   const sdkHistory = useMemo(
     () => flow
       .map((s, i) => ({ s, i }))
@@ -220,6 +320,30 @@ export default function LogisticsSimulator360() {
       .map(({ s, i }) => ({ stepId: s.id, label: s.bUidStage, call: sdkCallFor(s.id, isBreached && i >= BREACH_FROM_INDEX) }))
       .filter((h): h is SdkHistoryEntry => Boolean(h.call)),
     [flow, completedStepIds, isBreached]
+  );
+
+  const explorerPanel = (
+    <ExplorerPanel
+      blocks={blocks}
+      nfts={nfts}
+      escrowEvents={escrowEvents}
+      validators={VALIDATOR_LIST}
+      activeValidatorDid={activeValidatorDid}
+      confirmedDids={confirmedDids}
+      metrics={currentStep.metrics}
+      logs={logs}
+      isBreached={isBreached}
+      isFinished={isFinished}
+      sdk={{
+        current: sdkCurrent,
+        currentLabel: `${currentStep.id}/16 · ${currentStep.bUidStage}`,
+        bUid: bUidShown,
+        breached: breachedAt(stepIndex),
+        history: sdkHistory,
+        results: sandboxResults,
+        currentStepId: currentStep.id,
+      }}
+    />
   );
 
   // Sin WebGL (o si la escena 3D falla) se ve el recorrido en 2D, no un hueco.
@@ -233,6 +357,7 @@ export default function LogisticsSimulator360() {
       breachFromIndex={BREACH_FROM_INDEX}
       mode={mode}
       vehicle={isIdle ? 'camion' : currentStep.vehicle}
+      onRetry3D={retry3D}
     />
   );
 
@@ -243,6 +368,7 @@ export default function LogisticsSimulator360() {
   return (
     <div
       ref={containerRef}
+      data-immersive={isRunning && !isPaused ? 'true' : undefined}
       className="theme-island relative w-full h-[82vh] min-h-[620px] rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 text-zinc-100 font-sans"
     >
       {/* Capa 3D de fondo */}
@@ -265,15 +391,29 @@ export default function LogisticsSimulator360() {
                 telemetry={isRunning ? currentStep.telemetry : undefined}
                 mode={mode}
                 stepIndex={stepIndex}
-                isRunning={isRunning}
+                isRunning={isRunning || scrubbing}
                 isFinished={isFinished}
+                simSpeed={simulationSpeed}
+                stage={isIdle ? undefined : currentStep.bUidStage}
                 phase={isIdle ? undefined : currentStep.phase}
                 breachActive={isBreached && stepIndex >= BREACH_FROM_INDEX}
                 onContextLost={() => setGlLost(true)}
+                sdkBeacon={sdkCurrent ? { method: sdkCurrent.method, path: sdkCurrent.path, contract: sdkCurrent.contract } : undefined}
+                selectedLocation={selectedLocation}
+                onSelectLocation={(idx) => { setVehicleOpen(false); setSelectedLocation((cur) => (cur === idx ? null : idx)); }}
+                cameraMode={cameraMode}
+                onSelectVehicle={() => { setSelectedLocation(null); setVehicleOpen((o) => !o); }}
               />
             </Suspense>
           </Scene3DErrorBoundary>
         )}
+      </div>
+
+      {/* Anuncio para lectores de pantalla */}
+      <div className="sr-only" aria-live="polite">
+        {isRunning || isFinished
+          ? `Etapa ${currentStep.id} de 16: ${currentStep.bUidStage}, ${currentStep.validator?.name}.${isPaused ? ' En pausa.' : ''}${isFinished ? ' Simulación terminada.' : ''}`
+          : ''}
       </div>
 
       {/* Overlays */}
@@ -349,6 +489,17 @@ export default function LogisticsSimulator360() {
             >
               <Play size={12} /> Ejecutar 360°
             </button>
+            {isRunning && (
+              <button
+                onClick={() => setIsPaused((p) => !p)}
+                aria-pressed={isPaused}
+                title="Pausar / reanudar (espacio)"
+                className={`flex items-center gap-1.5 border px-2.5 py-1.5 rounded text-[9px] tracking-widest uppercase transition-colors
+                  ${isPaused ? 'bg-amber-500/20 border-amber-500/50 text-amber-200' : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300'}`}
+              >
+                {isPaused ? <><Play size={12} /> Reanudar</> : <><Pause size={12} /> Pausa</>}
+              </button>
+            )}
             <button
               onClick={handleReset}
               disabled={!isRunning && !isFinished && logs.length <= 1}
@@ -356,6 +507,22 @@ export default function LogisticsSimulator360() {
             >
               <RotateCcw size={12} /> Reset
             </button>
+            <div className="flex items-center rounded border border-zinc-800 bg-zinc-900 p-0.5 text-[9px] uppercase tracking-widest" role="group" aria-label="Modo de ejecución">
+              <button type="button" disabled={isRunning} aria-pressed={!sandboxOn} onClick={() => setSandboxOn(false)}
+                title="Demo: no hace ninguna llamada a la API"
+                className={`px-2 py-1 rounded ${!sandboxOn ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-200'} disabled:opacity-50`}>Demo</button>
+              <button type="button" disabled={isRunning} aria-pressed={sandboxOn}
+                onClick={() => { setSandboxOn(true); setSandboxPanel(true); }}
+                title="Sandbox: ejecuta las llamadas reales contra una API de pruebas"
+                className={`flex items-center gap-1 px-2 py-1 rounded ${sandboxOn ? 'bg-amber-500/25 text-amber-200' : 'text-zinc-500 hover:text-zinc-200'} disabled:opacity-50`}>
+                <FlaskConical size={10} /> Sandbox
+              </button>
+              {sandboxOn && (
+                <button type="button" onClick={() => setSandboxPanel((o) => !o)} aria-label="Configurar el Sandbox" className="px-1.5 py-1 text-amber-200 hover:text-white">
+                  <Settings2 size={11} />
+                </button>
+              )}
+            </div>
             <button
               onClick={toggleFullscreen}
               className="flex items-center justify-center p-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded transition-colors"
@@ -437,12 +604,17 @@ export default function LogisticsSimulator360() {
 
             {/* HUD izquierdo */}
             <div className="absolute top-[90px] left-4 flex flex-col gap-1.5 z-10 pointer-events-auto w-[230px]">
-              <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded text-[9px] border border-white/10 text-white uppercase tracking-widest flex justify-between items-center">
-                <span>B-UID</span> <span className="font-mono text-teal-400">{B_UID}</span>
+              <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded text-[9px] border border-white/10 text-white uppercase tracking-widest flex justify-between items-center gap-2">
+                <span>B-UID</span> <span className="font-mono text-teal-400 flex-1 text-right" title={liveBUid ? 'B-UID real creado en el Sandbox' : 'B-UID de ejemplo'}>{bUidShown}</span>
+                <button type="button" onClick={() => setHudCollapsed((c) => !c)} aria-expanded={!hudCollapsed}
+                  aria-label={hudCollapsed ? 'Desplegar panel de estado' : 'Plegar panel de estado'} className="text-zinc-400 hover:text-white">
+                  {hudCollapsed ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
+                </button>
               </span>
               <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded text-[9px] border border-white/10 text-white uppercase tracking-widest flex justify-between items-center">
                 <span>Lifecycle</span> <span className="font-mono text-emerald-400">{currentStep.bUidStage || 'IDLE'}</span>
               </span>
+              {!hudCollapsed && (<>
               <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded text-[9px] border border-blue-500/20 text-blue-400 uppercase tracking-widest flex justify-between items-center">
                 <span>Validador</span> <span className="font-mono text-blue-300">{isRunning ? currentStep.validator?.name : 'NONE'}</span>
               </span>
@@ -473,7 +645,65 @@ export default function LogisticsSimulator360() {
                   </span>
                 </div>
               )}
+              </>)}
             </div>
+
+            {/* Configuración del Sandbox */}
+            {sandboxPanel && (
+              <div className="absolute top-[90px] left-4 z-30 pointer-events-auto max-h-[calc(100%-200px)]">
+                <SandboxPanel config={sandboxCfg} onChange={setSandboxCfg} onClose={() => setSandboxPanel(false)} locked={isRunning} />
+              </div>
+            )}
+
+            {/* Modo de cámara (tecla C). Sólo con la vista 3D. */}
+            {webglAvailable && !glLost && (
+              <div className="absolute bottom-[150px] left-4 z-10 pointer-events-auto flex items-center gap-1 rounded-md border border-zinc-800 bg-black/70 backdrop-blur p-0.5 text-[9px] font-mono uppercase tracking-widest">
+                {(['director', 'free'] as const).map((m) => (
+                  <button key={m} type="button" onClick={() => setCameraMode(m)} aria-pressed={cameraMode === m}
+                    title={m === 'director' ? 'La cámara encuadra cada parada (C)' : 'Explora libremente con el ratón (C)'}
+                    className={`px-2 py-1 rounded ${cameraMode === m ? 'bg-teal-500/20 text-teal-200' : 'text-zinc-500 hover:text-zinc-200'}`}>
+                    {m === 'director' ? '🎬 Director' : '🖐 Libre'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Ficha del vehículo (clic sobre él en 3D) */}
+            {vehicleOpen && (isRunning || isFinished || scrubbing) && (
+              <div className="absolute top-[90px] right-4 z-20 pointer-events-auto max-h-[calc(100%-230px)] overflow-y-auto custom-scrollbar">
+                <VehicleCard step={currentStep} bUid={bUidShown} breached={breachedAt(stepIndex)} onClose={() => setVehicleOpen(false)} />
+              </div>
+            )}
+
+            {/* Ficha de la parada seleccionada en 3D: sus llamadas reales a la API de BeZhas */}
+            {selectedLocation !== null && LOCATIONS[selectedLocation] && (
+              <div className="absolute top-[90px] right-4 z-20 pointer-events-auto w-[310px] max-h-[calc(100%-230px)] overflow-y-auto custom-scrollbar rounded-lg border border-violet-500/30 bg-black/85 backdrop-blur-md shadow-2xl">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 sticky top-0 bg-black/90">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-violet-300">{LOCATIONS[selectedLocation].name}</span>
+                  <button type="button" onClick={() => setSelectedLocation(null)} aria-label="Cerrar ficha"
+                    className="text-zinc-500 hover:text-white text-xs px-1">✕</button>
+                </div>
+                <div className="p-2 flex flex-col gap-2">
+                  {flow.filter((st) => st.locationIndex === selectedLocation).map((st) => {
+                    const i = flow.indexOf(st);
+                    const call = sdkCallFor(st.id, breachedAt(i));
+                    return (
+                      <div key={st.id} className="flex flex-col gap-1">
+                        <span className="text-[9px] font-mono text-zinc-400">
+                          Etapa {st.id} · <span className="text-emerald-300">{st.bUidStage}</span> · {st.validator.name}
+                          {completedStepIds.includes(st.id) && <span className="text-teal-400"> · ✓</span>}
+                        </span>
+                        <SdkCallCard call={call} bUid={bUidShown} stepLabel={`${st.id}/16`} breached={breachedAt(i)} className="w-full" result={sandboxResults[st.id]} />
+                        <EvidenceBlock step={st} call={call} bUid={bUidShown} breached={breachedAt(i)} />
+                      </div>
+                    );
+                  })}
+                  {flow.every((st) => st.locationIndex !== selectedLocation) && (
+                    <p className="text-[10px] text-zinc-500 p-2">Esta parada no forma parte de la ruta {mode === 'sea' ? 'marítima' : 'aérea'}.</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Validadores DID */}
             <div className="absolute bottom-[110px] left-4 right-4 z-10 pointer-events-auto">
@@ -495,37 +725,34 @@ export default function LogisticsSimulator360() {
           {/* Sidebar derecho: Explorer + IoT */}
           <div className="pointer-events-auto w-[340px] h-full bg-black/95 backdrop-blur-md border-l border-teal-900/40 relative shadow-[-10px_0_25px_rgba(0,0,0,0.8)] flex-col z-20 hidden lg:flex">
             <div className="flex-1 min-h-0 p-2">
-              <ExplorerPanel
-                blocks={blocks}
-                nfts={nfts}
-                escrowEvents={escrowEvents}
-                validators={VALIDATOR_LIST}
-                activeValidatorDid={activeValidatorDid}
-                confirmedDids={confirmedDids}
-                metrics={currentStep.metrics}
-                logs={logs}
-                isBreached={isBreached}
-                isFinished={isFinished}
-                sdk={{
-                  current: sdkCurrent,
-                  currentLabel: `${currentStep.id}/16 · ${currentStep.bUidStage}`,
-                  bUid: B_UID,
-                  breached: breachedAt(stepIndex),
-                  history: sdkHistory,
-                }}
-              />
+              {explorerPanel}
             </div>
             <IoTTelemetryChart isRunning={isRunning} telemetry={currentStep.telemetry} />
           </div>
         </div>
       </div>
 
+      {/* Pantallas estrechas: el Explorer (con la pestaña SDK) como panel inferior */}
+      <button type="button" onClick={() => setMobileExplorer(true)}
+        className="lg:hidden absolute bottom-[118px] right-3 z-30 flex items-center gap-1.5 rounded-full border border-teal-500/40 bg-black/80 backdrop-blur px-3 py-1.5 text-[10px] uppercase tracking-widest text-teal-200 shadow-xl">
+        <Code2 size={12} /> SDK · Explorer
+      </button>
+      {mobileExplorer && (
+        <div className="lg:hidden absolute inset-x-0 bottom-0 z-40 h-[62%] flex flex-col rounded-t-2xl border-t border-teal-500/30 bg-black/95 backdrop-blur-md shadow-[0_-12px_30px_rgba(0,0,0,0.7)]">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
+            <span className="mx-auto h-1 w-10 rounded-full bg-zinc-700" aria-hidden="true" />
+            <button type="button" onClick={() => setMobileExplorer(false)} aria-label="Cerrar Explorer" className="absolute right-3 text-zinc-400 hover:text-white"><X size={14} /></button>
+          </div>
+          <div className="flex-1 min-h-0 p-2">{explorerPanel}</div>
+        </div>
+      )}
+
       {/* Ventanas flotantes */}
       {showCertificate && (
-        <CertificateModal onClose={() => setShowCertificate(false)} bUid={B_UID} isBreached={isBreached} containerRef={containerRef} />
+        <CertificateModal onClose={() => setShowCertificate(false)} bUid={bUidShown} isBreached={isBreached} containerRef={containerRef} />
       )}
       <AssetDigitalTwinPanel
-        bUid={B_UID}
+        bUid={bUidShown}
         isOpen={showDigitalTwin}
         onClose={() => setShowDigitalTwin(false)}
         isRunning={isRunning}

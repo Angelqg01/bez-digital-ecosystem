@@ -29,6 +29,10 @@ export interface SdkCall {
   webhook?: string;       // evento que reciben los suscriptores
   products: BezProduct[];
   note?: string;
+  /** Llamadas que la API exige ANTES de ésta (p. ej. avanzar a IN_TRANSIT antes de anclar la telemetría). */
+  before?: SdkCall[];
+  /** Motivo por el que el Sandbox no puede ejecutarla con las claves de prueba (se muestra tal cual). */
+  skipInSandbox?: string;
 }
 
 const BUID = ':bUid';
@@ -36,26 +40,26 @@ const BUID = ':bUid';
 export const SDK_BY_STEP: Record<number, SdkCall> = {
   1: {
     method: 'POST', path: '/v1/tx', role: 'pos',
-    body: { posRef: 'POS-9001', cargo: { value: 18500, items: [{ x: 6, y: 1.2, weight: 900 }] }, escrowAmount: 10000 },
+    body: { posRef: 'POS-9001', cargo: { value: 18500, weight: 900, items: [{ x: 6, y: 1.2, weight: 900 }] }, escrowAmountBez: 10000 },
     contract: 'SupplyTracker + DeliveryEscrow', fn: 'createShipment · createEscrow',
     products: ['CargoLink', 'BEZ-Pay Escrow'],
     note: 'Alta del B-UID. El escrow queda LOCKED hasta la entrega.',
   },
   2: {
     method: 'POST', path: '/v1/iot/devices', role: 'pos',
-    body: { deviceId: 'EDGE-8842', type: 'cold-chain', signerAddress: '<clave pública del Edge Node>' },
+    body: { deviceId: 'EDGE-8842', type: 'multi', bUid: BUID },
     products: ['Edge Node'],
     note: 'Registra el Edge Node y devuelve su device key; su telemetría llega firmada (anti-spoofing).',
   },
   3: {
     method: 'POST', path: '/v1/iot/telemetry', role: 'device',
-    body: { bUid: BUID, temperature: 5.2, humidity: 84, shock: 0.4, lat: 36.13, lng: -5.45, recordedAt: '<ISO>', signature: '<firma del dispositivo>' },
+    body: { bUid: BUID, temperature: 5.2, humidity: 84, shock: 0.4, lat: 36.13, lng: -5.45, recordedAt: '<ISO>' },
     products: ['Edge Node', 'Telemetry Anchor'],
     note: 'Lecturas firmadas por el dispositivo; las geocercas (POST /v1/geofences) vigilan el corredor.',
   },
   4: {
     method: 'POST', path: `/v1/tx/${BUID}/advance`, role: 'logistics',
-    body: { to: 'GATE_IN', payload: { warehouseCode: 'ZF-CAD-01', gate: 'G2' } },
+    body: { to: 'GATE_IN', payload: { warehouseCode: 'ZF-CAD-01', quantityKg: 900, gateRef: 'G2' } },
     contract: 'WarehouseManager', fn: 'receiveLot', webhook: 'ON_GATE_IN',
     products: ['CargoLink', 'Webhooks'],
   },
@@ -75,7 +79,7 @@ export const SDK_BY_STEP: Record<number, SdkCall> = {
   },
   7: {
     method: 'POST', path: `/v1/tx/${BUID}/inspection`, role: 'customs',
-    body: { kind: 'PHYSICAL', outcome: 'PASSED', findings: 'Precintos íntegros' },
+    body: { kind: 'SCAN', outcome: 'PASSED', findings: 'Precintos íntegros' },
     contract: 'CustomsClearanceOracle', fn: 'preClearanceValidation',
     products: ['Aduanas'],
     note: 'Inspección (TX010): no cambia la etapa del envío.',
@@ -89,7 +93,7 @@ export const SDK_BY_STEP: Record<number, SdkCall> = {
   },
   9: {
     method: 'POST', path: `/v1/tx/${BUID}/advance`, role: 'logistics',
-    body: { to: 'GATE_OUT', payload: { containerNo: 'MSCU1234565' } },
+    body: { to: 'GATE_OUT', payload: { carrierRef: 'TRK-4821-CAD', quantityKg: 900, gateRef: 'G5' } },
     contract: 'WarehouseManager', fn: 'consumeLot', webhook: 'ON_GATE_OUT',
     products: ['CargoLink', 'Webhooks'],
   },
@@ -103,19 +107,29 @@ export const SDK_BY_STEP: Record<number, SdkCall> = {
     method: 'POST', path: `/v1/iot/anchor/${BUID}`, role: 'logistics',
     contract: 'TelemetryAnchor', fn: 'anchorBatch',
     products: ['Telemetry Anchor'],
+    before: [{
+      method: 'POST', path: `/v1/tx/${BUID}/advance`, role: 'logistics',
+      body: { to: 'IN_TRANSIT', payload: { routeId: 'RT-ES-NL-01', carrier: 'MSC' } },
+      contract: 'SupplyTracker', fn: 'markInTransit', webhook: 'ON_IN_TRANSIT', products: ['CargoLink', 'Webhooks'],
+    }],
     note: 'Raíz Merkle del lote de lecturas; cualquier lectura se prueba con GET /v1/iot/proof.',
   },
   12: {
     method: 'POST', path: `/v1/tx/${BUID}/eta`, role: 'carrier',
-    body: { changeType: 'ETA', newEta: '<ISO>', newPort: 'NLRTM', reason: 'PORT_CONGESTION' },
+    body: { changeType: 'ETA_CHANGE', newEta: '<ISO>', newPort: 'NLRTM', reason: 'PORT_CONGESTION' },
     products: ['CargoLink'],
     note: 'Cambio de ETA/ruta (TX011) sin perder la integridad del histórico.',
   },
   13: {
     method: 'POST', path: `/v1/tx/${BUID}/transit/clear`, role: 'customs',
-    body: { country: 'NL', outcome: 'CLEARED', reference: 'MRN-26NL…' },
+    body: { country: 'ES', outcome: 'CLEARED', reference: 'MRN-26ES0001' },
     contract: 'TrackingToCustomsGateway', fn: 'completeCountryClearance',
     products: ['Tránsito multipaís', 'Aduanas'],
+    before: [{
+      method: 'POST', path: `/v1/tx/${BUID}/transit`, role: 'customs',
+      body: { cargoValue: 18500, hsCode: '0810', countries: ['ES', 'NL'] },
+      contract: 'TrackingToCustomsGateway', fn: 'createIntegratedShipment', products: ['Tránsito multipaís'],
+    }],
   },
   14: {
     method: 'GET', path: `/v1/logistics/route?bUid=${BUID}`, role: 'logistics',
@@ -126,24 +140,28 @@ export const SDK_BY_STEP: Record<number, SdkCall> = {
     method: 'POST', path: `/v1/tx/${BUID}/custody`, role: 'logistics',
     body: { toActor: 'BZ-FLOTA-UM', toRole: 'lastmile', reason: 'HANDOVER' },
     products: ['CargoLink'],
+    skipInSandbox: 'Sólo el custodio actual puede ceder la custodia (tras la etapa 5 es BZ-DEPOSITO-ZF): hace falta su propia clave.',
   },
   16: {
     method: 'POST', path: `/v1/tx/${BUID}/advance`, role: 'lastmile',
-    body: { to: 'DELIVERED', payload: { podSignature: '<firma receptor>', receivedBy: 'Distribuidor Final' } },
+    body: { to: 'DELIVERED', payload: { signatureHash: '0x…sha256 de la firma del receptor…', receivedBy: 'Distribuidor Final' } },
     contract: 'SupplyTracker + DeliveryEscrow', fn: 'confirmDelivery · validateAndRelease', webhook: 'ON_DELIVERY_PROOF',
     products: ['CargoLink', 'BEZ-Pay Escrow', 'Webhooks'],
     note: 'La entrega libera el escrow al vendedor.',
   },
 };
 
-// Con la cadena de frío rota, la incidencia la gradúa el Dispute Oracle y el
-// escrow pasa a DISPUTED: ya no se libera solo al entregar.
+// Con la cadena de frío rota: la API no tiene una incidencia «TEMPERATURE_BREACH»
+// (los tipos de /incidents son CARGO_DAMAGE, THEFT, DELAY…). La rotura entra por la
+// telemetría: una lectura fuera del rango del dispositivo (por defecto 2–8 °C) la
+// gradúa el Dispute Oracle (cargoDisputeOracle) y, si es moderada o crítica, el
+// escrow pasa a DISPUTED. Se consulta con GET /v1/disputes.
 export const SDK_BREACH: SdkCall = {
-  method: 'POST', path: `/v1/tx/${BUID}/incidents`, role: 'logistics',
-  body: { kind: 'TEMPERATURE_BREACH', severity: 'CRITICAL', description: 'Lecturas firmadas fuera de rango' },
-  products: ['Dispute Oracle', 'BEZ-Pay Escrow'],
-  note: 'Nivel 2-3: escrow LOCKED → DISPUTED con propuesta de reembolso. Se resuelve con POST /v1/disputes/:id/resolve.',
-};
+  method: 'POST', path: '/v1/iot/telemetry', role: 'device',
+  body: { bUid: BUID, temperature: 22.8, humidity: 95, recordedAt: '<ISO>' },
+  products: ['Edge Node', 'Dispute Oracle', 'BEZ-Pay Escrow'],
+  note: 'Lectura fuera de rango (22,8 °C, rango 2–8 °C): el Dispute Oracle abre una disputa (HOLD_ESCROW) y el escrow pasa a DISPUTED. Ver GET /v1/disputes; se resuelve con POST /v1/disputes/:id/resolve.',
+}
 
 export const L2_TESTNET_CHAIN_ID = 2708;
 

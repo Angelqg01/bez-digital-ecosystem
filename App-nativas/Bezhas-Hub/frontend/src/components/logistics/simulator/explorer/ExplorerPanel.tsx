@@ -4,6 +4,7 @@ import { SimBlock, NftItem, EscrowEvent } from '../engine/chain';
 import { Validator, StepMetrics, ESCROW_COLLATERAL_BEZ, TARIFF_BEZ, PAYOUT_BEZ } from '../engine/types';
 import { SdkCall } from '../engine/sdkMap';
 import { SdkCallCard } from '../panels/SdkCallCard';
+import { SandboxStepResult } from '../engine/sandbox';
 
 export interface SdkHistoryEntry {
   stepId: number;
@@ -17,6 +18,9 @@ export interface ExplorerSdkProps {
   bUid: string;
   breached: boolean;
   history: SdkHistoryEntry[];
+  /** Respuestas reales por etapa (modo Sandbox). */
+  results?: Record<number, SandboxStepResult>;
+  currentStepId?: number;
 }
 
 export interface ExplorerLogEntry {
@@ -101,7 +105,8 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
         {tab === 'sdk' && (
           <div className="flex flex-col gap-2 font-sans">
             {sdk.current ? (
-              <SdkCallCard call={sdk.current} bUid={sdk.bUid} stepLabel={sdk.currentLabel} breached={sdk.breached} className="w-full" />
+              <SdkCallCard call={sdk.current} bUid={sdk.bUid} stepLabel={sdk.currentLabel} breached={sdk.breached} className="w-full"
+                result={sdk.currentStepId !== undefined ? sdk.results?.[sdk.currentStepId] : undefined} />
             ) : (
               <div className="text-center py-6 text-zinc-500 text-[10px] leading-relaxed">
                 <Code2 size={16} className="mx-auto mb-2 opacity-40" />
@@ -117,6 +122,11 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
                     <span className="text-zinc-600 w-5 shrink-0">{h.stepId}</span>
                     <span className={h.call.method === 'GET' ? 'text-sky-300' : 'text-emerald-300'}>{h.call.method}</span>
                     <span className="text-zinc-300 truncate" title={h.call.path}>{h.call.path}</span>
+                    {sdk.results?.[h.stepId] && (
+                      <span className={`ml-auto shrink-0 ${sdk.results[h.stepId].skipped ? 'text-zinc-500' : sdk.results[h.stepId].ok ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {sdk.results[h.stepId].skipped ? '–' : sdk.results[h.stepId].ok ? '✔' : '✖'}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

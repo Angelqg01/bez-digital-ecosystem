@@ -16,7 +16,7 @@ desactivado para la vista 2D.
 |---|---|---|
 | `src/index.css` fuerza con `!important` **todo** `div/span/p/h*` a negro en modo claro y todo SVG a `fill/stroke: #000` | En tema claro el simulador (fondo negro) quedaba negro sobre negro: HUD vacío, paneles mudos, mapa 2D invisible. En tema oscuro, todo el texto gris: se perdían los colores teal/ámbar/rojo | Clase `.theme-island`: esas reglas globales ya no entran en el simulador ni en la intro. Mismo comportamiento en el resto del Hub |
 | Ejes del gráfico IoT sin formato | Etiquetas tipo `73.87440618` | `tickFormatter` entero |
-| Sin WebGL, hueco negro | — | Mapa 2D (`RouteMap2D`) y límite de errores de la escena |
+| Sin WebGL, hueco negro | — | La 3D es la vista principal; sin WebGL (p. ej. el panel de navegador de la app de Claude, que no lo tiene) se muestra el mapa 2D con aviso «abrir en Chrome/Firefox», copiar enlace y «Reintentar 3D» |
 | En el mapa 2D el vehículo tapaba la etiqueta de la parada | — | El vehículo va al lado contrario de la etiqueta |
 
 ### 1.2 Escena 3D (`scene/LogisticsScene3D.tsx`, 755 líneas)
@@ -85,27 +85,37 @@ El perfil de CPU con ×6 muestra que el 74 % del tiempo es trabajo nativo del na
 - [x] Suelo que recibe sombras + `<Grid>` infinita que se desvanece con la distancia.
 - [ ] **Pendiente:** modelos GLTF propios (terminal, grúa, buque, avión, camión) con Draco/KTX2. Requiere modelarlos; con ellos se fusiona la geometría y se cumple la meta de draw calls de la Fase 1.
 
-### Fase 3 — Animación (≈ 3 días)
-- [ ] **E4** Una `CatmullRomCurve3` por tramo (las mismas que dibuja `RoutesNetwork`); el vehículo avanza por `curve.getPointAt(t)` con orientación por la tangente y velocidad ligada a la de la simulación (1×/2×/5×).
-- [ ] Avión con arco real (despegue, crucero, aterrizaje) calculado sobre la longitud del tramo, no sobre una constante.
-- [ ] Transiciones de vehículo (camión → grúa → buque) con la grúa animando la carga del contenedor.
-- [ ] **E10** Rotura de frío: el contenedor pasa a rojo, partículas de escarcha que se disipan y pulso en la ruta; al resolverse el escrow, efecto en el nodo destino.
-- [ ] Timeline ↔ escena: al pulsar una etapa del timeline, la cámara y el vehículo saltan a ese punto (hoy sólo cambia el índice).
-- Librería: `maath/easing` (`damp3`, `dampQ`) en vez de `lerp` manual: amortiguación independiente del framerate. `maath` llega como dependencia de drei, pero con pnpm hay que declararla directa.
+### Fase 3 — Animación · ✅ hecha (2026-11-06)
+- [x] **E4** Una ruta compartida (`scene/routePath.ts`): las curvas que se dibujan son las mismas por las que avanza el vehículo, que se coloca por **distancia recorrida** sobre la ruta (frena al llegar a cada parada, rumbo por un punto algo más adelantado). Se acabó el trayecto en línea recta: el barco ya no cruza tierra. Medido con la GPU: en modo marítimo el barco pasa por z = 3 en todo el tramo internacional (la línea entre los dos puertos) y su altura máxima es 0,22.
+- [x] Avión con arco real: el tramo aéreo sube y baja con la propia geometría de la curva (medido: 0,65 → 0,89 → 2,68 → 4,45 → 4,48 → 2,76 → 0,97), con alabeo proporcional al giro. Ya no depende de una constante de 15 unidades.
+- [x] La velocidad del vehículo sigue la de la simulación (1×/2×/5×).
+- [x] **E10** Rotura de frío en la escena: el contenedor y la luz IoT del vehículo pasan a rojo y parpadean más rápido, **escarcha** instanciada que sube y se disipa, rutas en rojo. Al terminar: chip «ESCROW CONGELADO · DISPUTA» sobre el destino; sin rotura, onda expansiva verde y chip «ESCROW LIBERADO».
+- [x] Grúa del puerto: al estibar/embarcar (`STOWED`/`LOADED`) mueve un contenedor con ciclos de izado en vez de oscilar en vacío.
+- [x] Timeline ↔ escena: con la simulación parada, pulsar una etapa del timeline o usar ←/→ salta a ella: el vehículo recorre la ruta hasta esa parada, la cámara la encuadra y se muestran anillo, baliza y llamada SDK (estado «explorando»).
+- 10 tests nuevos (`scene/routePath.test.ts`): cada parada del flujo tiene su distancia, orden creciente, la ruta pasa por cada edificio (< 0,08), trayectoria continua, arco del avión vs. barco rasante y tramos sin hueco entre sí.
+- Pendiente de esta fase: `maath/easing` para amortiguar la cámara (hoy `lerp`), y la transición visual camión → grúa → buque más allá del izado.
 
-### Fase 4 — Interacción (≈ 3 días)
-- [ ] **E6** Cámara en dos modos: **Director** (sigue la etapa con `CameraControls` de drei y `setLookAt` animado) y **Libre** (se activa al tocar la escena; botón «Volver al director»).
-- [ ] **E7** Clic en un nodo → panel con: actor, estado B-UID, **llamada SDK de esa etapa** (`sdkMap.ts`), contrato y webhook, evidencias (hash, raíz Merkle de telemetría). Hover → resalte con `<Outlines>`.
-- [ ] Clic en el vehículo → telemetría en vivo del Edge Node (temperatura, humedad, impacto) y prueba Merkle simulada de una lectura (`GET /v1/iot/proof`).
-- [ ] Atajos: espacio (pausa), ←/→ (etapa), F (pantalla completa), C (modo cámara). `aria-live` con la etapa actual para lectores de pantalla.
-- [ ] **U1** Reordenar overlays: HUD plegable, validadores dentro del timeline, el aviso del asistente fuera del área del simulador.
-- [ ] **U2** Móvil: Explorer como *bottom sheet* con la pestaña SDK.
+### Fase 4 — Interacción · ✅ hecha (2026-11-06)
+- [x] **E6** Cámara **Director** (encuadra 3 s tras cada cambio de parada y suelta el control; si el usuario arrastra o hace zoom deja de dirigir hasta la siguiente parada) y **Libre** (sólo el usuario). Selector en la esquina inferior izquierda y tecla **C**.
+- [x] **E7** (parcial) Clic en un edificio → ficha con sus etapas, actor, estado B-UID y la **llamada SDK** de cada una (`sdkMap.ts`), contrato y webhook. Anillo que late en la parada en curso (rojo con rotura de frío), anillo violeta en la seleccionada y **baliza 3D** con la llamada y el contrato de la etapa en curso. Cada etapa de la ficha muestra su **evidencia**: `payload_hash` (sha256 del JSON canónico, como `cargolink_transitions`) y, en las etapas de telemetría (3 y 11), la **raíz Merkle** del lote de lecturas del Edge Node con una **prueba de inclusión verificada en el navegador** (Web Crypto) con el mismo algoritmo que `cargoTelemetryAnchor.js` y `TelemetryAnchor.verify`; un test compara ambas implementaciones bit a bit. Anillo claro al pasar el ratón por un edificio (más barato que `<Outlines>`, que exigiría duplicar cada malla). **Esc** cierra la ficha.
+- [x] Clic en el vehículo → **ficha del Edge Node** con temperatura, humedad e impacto y la **prueba de inclusión** de la última lectura frente a la raíz del lote (la misma que devolvería `GET /v1/iot/proof`), verificada en el navegador. El volumen de clic del vehículo tiene prioridad sobre el del edificio que lo envuelve.
+- [x] Atajos: **espacio** (ejecutar / pausar y reanudar), **←/→** (etapa, con la simulación parada), **F** (pantalla completa), **C** (cámara), **Esc** (cerrar fichas). Sólo actúan con el simulador en pantalla y sin escribir en un campo. Botón **Pausa/Reanudar** y `aria-live` con la etapa en curso para lectores de pantalla.
+- [x] **U1** HUD izquierdo plegable (arranca plegado en pantallas < 768 px). El aviso proactivo del asistente ya no aparece mientras la simulación corre (`data-immersive` + contexto `immersive` en `isBlockedContext`, con test).
+- [x] **U2** Móvil: botón «SDK · Explorer» que abre el Explorer (con la pestaña SDK) como panel inferior; en lg+ sigue siendo la barra lateral.
 
-### Fase 5 — Modo «sandbox real» (≈ 3 días, depende de la API)
-- [ ] Interruptor **Demo / Sandbox**. En Sandbox, cada etapa ejecuta de verdad la llamada de `sdkMap.ts` contra la API local o de pruebas con claves de rol de prueba (`scripts/dev/test-profile.sh`), y la escena avanza con la respuesta real (`transaction.status`, `anchor.txHash`, webhooks).
-- [ ] Sin claves, los endpoints de producto ya responden en **vista previa** (`mode: 'preview'`): el sandbox funciona también anónimo, sin escribir nada.
-- [ ] Mostrar el `txHash` real y enlazar al explorador de la L2 de pruebas (2708) cuando el anclaje esté configurado.
-- [ ] Cuando exista BON (`docs/BON_PROTOCOL_v0.1.md`), mostrar las firmas k-de-n de cada evento `SETTLEMENT`.
+**Medido tras la Fase 4** (RTX 5050, mismas condiciones): ≈ 188 draw calls por frame en marcha (174 tras las Fases 1-2, 216 el original). Los ~14 de más son baliza SDK, anillos de parada y línea guía. 60 fps con GPU; ≈ 24 fps con la CPU a ×6. Pendiente de la Fase 1 sigue siendo fusionar geometría para bajar de 100.
+
+**Tras la Fase 3** (mismas condiciones): ≈ 181 draw calls por frame en marcha (pico 255 en etapas con escarcha y grúa), 60 fps con GPU, ≈ 23 fps con la CPU a ×6.
+
+### Fase 5 — Modo «sandbox real» · ✅ hecha (2026-11-06)
+- [x] Interruptor **Demo / Sandbox** en la cabecera y panel de configuración (URL de la API de pruebas + 5 claves de rol). En Demo no se hace ninguna llamada. En Sandbox cada etapa ejecuta de verdad su llamada de `sdkMap.ts` y la simulación muestra la respuesta real (estado, ancla, error) en la tarjeta SDK, en el historial del Explorer y en el log; el HUD pasa a mostrar el **B-UID real**.
+- [x] Salvaguardas (`engine/sandbox.ts`): sólo entornos de prueba (localhost, `*.localhost`, `*.test` o un host `https` con una etiqueta staging/sandbox/dev/test/qa/preview; `api.bezhas.com` y cualquier otro se rechazan, con tests); claves sólo en `sessionStorage` (se borran al cerrar la pestaña) y nunca en logs; `posRef` y `deviceId` únicos por ejecución; el panel se bloquea mientras corre la simulación.
+- [x] Sin la clave de un rol, sus etapas se **saltan indicando el motivo**; si la etapa 1 falla, las demás no lanzan llamadas.
+- [x] Sin claves, los endpoints de producto ya responden en vista previa (`mode: 'preview'`).
+- [x] Verificado de punta a punta con la API actual (base de datos de pruebas aparte, ya borrada): el ciclo completo dejó `DELIVERED` con escrow `RELEASED`, 7 transiciones reales por rol, custodia, inspección, cambio de ETA, telemetría, anclaje Merkle y tránsito multipaís. Con rotura de frío: escrow `DISPUTED` con una disputa real (`HOLD_ESCROW`, «COLD_CHAIN_BREACH: temperature 22.8°C outside [2,8]»).
+- **El sandbox destapó errores del mapa SDK, ya corregidos:** tipo de dispositivo (`multi`, no `cold-chain`), tipo de inspección (`SCAN`), `changeType` (`ETA_CHANGE`), campos exigidos en GATE_IN/GATE_OUT/entrega (`quantityKg`, `carrierRef`, `signatureHash`), `escrowAmountBez` (no `escrowAmount`), la etapa 11 necesita avanzar a `IN_TRANSIT` antes de anclar, la 13 necesita crear antes el envío multipaís, y la rotura de frío **no** es una incidencia (`/incidents` no tiene ese tipo): entra por telemetría fuera de rango y la gradúa el Dispute Oracle.
+- [x] Test de contrato (`engine/sandbox.test.ts`): cada avance del mapa SDK pasa los **validadores reales de la API** (`cargoLinkValidators.js`). 29 tests nuevos.
+- Limitaciones conocidas: la etapa 15 (custodia final) se salta, porque sólo el custodio actual puede cederla y haría falta su propia clave; los anclajes salen `not_configured` mientras la API no tenga contratos configurados; el contenedor local `bezhas-api` lleva una imagen antigua (con los datos falsos de CargoLink) y hay que reconstruirla para usarlo como destino.
 
 ### Fase 6 — Actualización de stack (≈ 2–4 días, aislada)
 - [ ] React 19 + @react-three/fiber 9 + drei 10 (requieren React 19). Hacerlo en rama propia: el Hub entero está en React 18, así que afecta a más que al simulador.
@@ -129,7 +139,7 @@ El perfil de CPU con ×6 muestra que el 74 % del tiempo es trabajo nativo del na
 ## 5. Verificación
 
 - **Capturas automáticas**: script Playwright (Chromium con `--use-angle=gl-egl` y la NVIDIA, como el pipeline de vídeo) que abre `/developer-console → SDK Simulator`, ejecuta la simulación y guarda capturas en tema claro, oscuro y sin WebGL, además de fps y `gl.info.render.calls`. Está en `App-nativas/Bezhas-Hub/frontend/scripts/sim-capture.py`.
-- **Tests**: `vitest` de `engine/` (flujo, `sdkMap`); añadir tests de la curva de ruta (el vehículo nunca sale del tramo) en la Fase 3.
+- **Tests**: `vitest` de `engine/` (flujo, `sdkMap`) y `scene/routePath.test.ts` (la ruta del vehículo).
 - **Revisión visual**: antes/después en cada fase.
 
 ## 6. Orden recomendado

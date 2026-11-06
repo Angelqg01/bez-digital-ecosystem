@@ -43,6 +43,7 @@ interface RouteMap2DProps {
   breachFromIndex: number;
   mode: TransitMode;
   vehicle: VehicleType;
+  onRetry3D?: () => void;
 }
 
 interface Stop {
@@ -53,7 +54,11 @@ interface Stop {
   phase: SimulationStep['phase'];
 }
 
-export function RouteMap2D({ flow, stepIndex, isRunning, isFinished, isBreached, breachFromIndex, mode, vehicle }: RouteMap2DProps) {
+export function RouteMap2D({ flow, stepIndex, isRunning, isFinished, isBreached, breachFromIndex, mode, vehicle, onRetry3D }: RouteMap2DProps) {
+  const [copied, setCopied] = React.useState(false);
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* sin portapapeles */ }
+  };
   const stops = useMemo<Stop[]>(() => {
     const seq: Omit<Stop, 'x' | 'y'>[] = [];
     flow.forEach((s, i) => {
@@ -187,9 +192,23 @@ export function RouteMap2D({ flow, stepIndex, isRunning, isFinished, isBreached,
       </svg>
       </div>
 
-      <span className="absolute bottom-[180px] left-[250px] text-[9px] font-mono uppercase tracking-[0.25em] text-zinc-500 bg-black/50 border border-zinc-800 rounded px-2 py-1">
-        Vista 2D · WebGL no disponible
-      </span>
+      {/* La vista principal es la 3D: aquí sólo se llega sin WebGL. */}
+      <div className="absolute bottom-[180px] left-[250px] right-4 lg:right-[356px] flex justify-center pointer-events-auto">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-black/80 backdrop-blur px-3 py-2 text-[10px] text-zinc-300 shadow-xl">
+          <span className="text-amber-300 font-semibold uppercase tracking-[0.15em]">Vista 3D no disponible</span>
+          <span className="text-zinc-400">Este navegador no permite WebGL. Abre esta página en Chrome o Firefox para ver el gemelo digital 3D.</span>
+          <button type="button" onClick={copyLink}
+            className="px-2 py-1 rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200">
+            {copied ? 'Enlace copiado' : 'Copiar enlace'}
+          </button>
+          {onRetry3D && (
+            <button type="button" onClick={onRetry3D}
+              className="px-2 py-1 rounded border border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 text-teal-200">
+              Reintentar 3D
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

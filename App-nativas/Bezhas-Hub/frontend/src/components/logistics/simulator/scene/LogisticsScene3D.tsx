@@ -7,6 +7,7 @@ import {
 import { EffectComposer, Bloom, Vignette, SMAA } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { LOCATIONS, TransitMode, VehicleType, Telemetry, Phase } from '../engine/types';
+import { buildRoute } from './routePath';
 
 interface SceneProps {
   currentLocationIndex: number;
@@ -21,6 +22,17 @@ interface SceneProps {
   breachActive?: boolean;
   /** El navegador ha perdido el contexto WebGL: el contenedor cae al mapa 2D. */
   onContextLost?: () => void;
+  /** Llamada SDK de la etapa en curso, mostrada como baliza sobre la parada. */
+  sdkBeacon?: SdkBeaconData;
+  selectedLocation?: number | null;
+  onSelectLocation?: (idx: number) => void;
+  /** director: encuadra cada parada; free: la cámara es sólo del usuario. */
+  cameraMode?: 'director' | 'free';
+  onSelectVehicle?: () => void;
+  /** Velocidad de la simulación (1x/2x/5x): el vehículo avanza a ese ritmo. */
+  simSpeed?: number;
+  /** Etapa B-UID en curso (STOWED/LOADED → la grúa del puerto carga el contenedor). */
+  stage?: string;
 }
 
 // Etiquetas en WebGL (troika) en vez de <Html>: no se montan sobre el HUD, no
@@ -178,10 +190,11 @@ function CustomsNode({ position, name }: { position: [number, number, number]; n
   );
 }
 
-function PortNode({ position, name }: { position: [number, number, number]; name: string }) {
+function PortNode({ position, name, loading = false }: { position: [number, number, number]; name: string; loading?: boolean }) {
   const time = useRef(0);
   const arRef = useRef<THREE.Group>(null);
   const craneRef = useRef<THREE.Group>(null);
+  const hookRef = useRef<THREE.Group>(null);
 
   useFrame((_, delta) => {
     time.current += delta;
@@ -190,7 +203,13 @@ function PortNode({ position, name }: { position: [number, number, number]; name
       arRef.current.position.y = 3.2 + Math.sin(time.current * 2) * 0.1;
     }
     if (craneRef.current) {
-      craneRef.current.position.z = Math.sin(time.current * 0.5) * 0.5;
+      // En reposo oscila despacio; al cargar un contenedor se mueve con ciclos de izado y vuelve.
+      craneRef.current.position.z = loading ? Math.sin(time.current * 1.4) * 0.7 : Math.sin(time.current * 0.5) * 0.5;
+    }
+    if (hookRef.current) {
+      const lift = loading ? (0.5 + 0.5 * Math.sin(time.current * 1.4 + Math.PI / 2)) : 1;
+      hookRef.current.position.y = -0.4 - lift * 1.1;
+      hookRef.current.visible = loading;
     }
   });
 
@@ -218,6 +237,12 @@ function PortNode({ position, name }: { position: [number, number, number]; name
         <group ref={craneRef} position={[1.2, 2.6, 0]}>
           <Box args={[0.1, 1.5, 0.1]} position={[0, -0.75, 0]}><meshStandardMaterial color="#18181b" /></Box>
           <Box args={[0.8, 0.1, 0.4]} position={[0, -1.5, 0]}><meshStandardMaterial color="#f59e0b" /></Box>
+          {/* Contenedor izado: sólo mientras se carga */}
+          <group ref={hookRef} visible={false}>
+            <Box args={[0.7, 0.42, 0.34]} position={[0, -0.25, 0]} castShadow>
+              <meshStandardMaterial color="#10b981" emissive="#10b981" emissiveIntensity={0.35} roughness={0.5} />
+            </Box>
+          </group>
         </group>
       </group>
 
@@ -387,82 +412,159 @@ const SHIP_CONTAINERS: { pos: [number, number, number]; color: string }[] = [-0.
   ])
 );
 
-function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number, number, number]; type: VehicleType; telemetry?: Telemetry }) {
+// ── Efectos de estado ───────────────────────────────────────────────────────
+// Escarcha: partículas que se desprenden del contenedor cuando la cadena de frío
+// se rompe, suben y se disipan. Una sola malla instanciada.
+function FrostParticles({ count = 28 }: { count?: number }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const seeds = useMemo(() => Array.from({ length: count }, (_, i) => ({
+    a: (i * 2.399963) % (Math.PI * 2),      // ángulo áureo: reparto uniforme
+    r: 0.25 + ((i * 37) % 100) / 100 * 0.55,
+    ph: ((i * 53) % 100) / 100,
+    sp: 0.35 + ((i * 29) % 100) / 100 * 0.4,
+  })), [count]);
+  useFrame((state) => {
+    const m = ref.current;
+    if (!m) return;
+    const t = state.clock.elapsedTime;
+    seeds.forEach((p, i) => {
+      const life = (t * p.sp + p.ph) % 1;
+      dummy.position.set(Math.cos(p.a + t * 0.5) * p.r, 0.35 + life * 1.7, Math.sin(p.a + t * 0.5) * p.r);
+      dummy.scale.setScalar(Math.max(0.001, (1 - life) * (0.7 + 0.5 * Math.sin(life * Math.PI))));
+      dummy.updateMatrix();
+      m.setMatrixAt(i, dummy.matrix);
+    });
+    m.instanceMatrix.needsUpdate = true;
+  });
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, count]} frustumCulled={false}>
+      <icosahedronGeometry args={[0.07, 0]} />
+      <meshBasicMaterial color={new THREE.Color('#bae6fd').multiplyScalar(2.4)} toneMapped={false} />
+    </instancedMesh>
+  );
+}
+
+// Onda expansiva verde al liberarse el escrow en destino (sin rotura de frío).
+function ReleaseBurst({ position }: { position: [number, number, number] }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const t0 = useRef<number | null>(null);
+  const color = useMemo(() => new THREE.Color('#34d399').multiplyScalar(2.4), []);
+  useFrame((state) => {
+    const m = ref.current;
+    if (!m) return;
+    if (t0.current === null) t0.current = state.clock.elapsedTime;
+    const k = ((state.clock.elapsedTime - t0.current) % 2.4) / 2.4;
+    m.scale.setScalar(1 + k * 3.2);
+    (m.material as THREE.MeshBasicMaterial).opacity = (1 - k) * 0.85;
+  });
+  return (
+    <mesh ref={ref} position={[position[0], 0.18, position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[1.5, 1.62, 64]} />
+      <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.85} side={THREE.DoubleSide} />
+    </mesh>
+  );
+}
+
+// Desplazamiento vertical del modelo respecto a la ruta (la ruta va a y=0.06):
+// camión sobre el asfalto, barco al nivel del agua, avión sobre la pista.
+const BASE_Y: Record<VehicleType, number> = { camion: 0.14, buque: -0.06, avion: 0.59, none: 0 };
+const VEHICLE_SPEED = 3.0; // unidades de escena por segundo a velocidad 1x
+
+function Vehicle({ targetLocation, mode, type, telemetry, onSelect, simSpeed = 1, alert = false }: {
+  targetLocation: number;
+  mode: TransitMode;
+  type: VehicleType;
+  telemetry?: Telemetry;
+  onSelect?: () => void;
+  simSpeed?: number;
+  alert?: boolean;
+}) {
   const ref = useRef<THREE.Group>(null);
   const iotRef = useRef<THREE.Mesh>(null);
-  const targetVec = useMemo(() => new THREE.Vector3(), []);
-  const basePos = useRef<THREE.Vector3 | null>(null);
   const time = useRef(0);
-  // Reutilizados en cada frame: antes se creaban Vector3/Object3D nuevos 60 veces por segundo.
-  const tmp = useMemo(() => ({ dir: new THREE.Vector3(), look: new THREE.Vector3(), dummy: new THREE.Object3D() }), []);
+  const route = useMemo(() => buildRoute(mode), [mode]);
+  // Distancia recorrida sobre la ruta. Empieza en la parada actual (sin «volar» desde el origen).
+  const dist = useRef<number | null>(null);
+  const prevYaw = useRef(0);
+  // Reutilizados en cada frame: cero asignaciones.
+  const tmp = useMemo(() => ({
+    pos: new THREE.Vector3(), ahead: new THREE.Vector3(), dummy: new THREE.Object3D(),
+  }), []);
+  const alertColor = alert ? '#ef4444' : undefined;
 
   useFrame((state, delta) => {
     time.current += delta;
     if (iotRef.current && iotRef.current.material) {
-      (iotRef.current.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(time.current * 8) * 0.6;
+      (iotRef.current.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(time.current * (alert ? 16 : 8)) * 0.6;
+    }
+    const g = ref.current;
+    if (!g) return;
+
+    const goal = route.distanceOf(targetLocation) ?? 0;
+    if (dist.current === null) dist.current = goal;
+    const remaining = goal - dist.current;
+    const moving = Math.abs(remaining) > 0.02;
+
+    if (moving) {
+      // Sombras bajo demanda: sólo se recalculan mientras algo se mueve.
+      state.gl.shadowMap.needsUpdate = true;
+      // Frena al llegar (ease-out) para no clavarse en la parada.
+      const speed = VEHICLE_SPEED * simSpeed * Math.min(1, 0.35 + Math.abs(remaining) * 0.5);
+      const step = Math.min(Math.abs(remaining), speed * delta);
+      dist.current += Math.sign(remaining) * step;
+    } else {
+      dist.current = goal;
     }
 
-    if (ref.current) {
-      if (!basePos.current) {
-        basePos.current = new THREE.Vector3(...targetPosition);
-        ref.current.position.copy(basePos.current);
-      }
-      targetVec.set(...targetPosition);
+    const d = dist.current;
+    route.pointAt(d, tmp.pos);
+    // Rumbo: hacia un punto algo más adelante en la ruta (o atrás si el vehículo retrocede).
+    const dir = moving && remaining < 0 ? -1 : 1;
+    route.pointAt(d + dir * 0.35, tmp.ahead);
+    if (type !== 'avion') tmp.ahead.y = tmp.pos.y; // camión y barco no cabecean
 
-      const speed = 3.0;
-      const currentDist = basePos.current.distanceTo(targetVec);
+    if (tmp.ahead.distanceToSquared(tmp.pos) > 1e-8) {
+      tmp.dummy.position.copy(tmp.pos);
+      tmp.dummy.lookAt(tmp.ahead);
+      // Alabeo del avión proporcional al giro (derivada del rumbo).
+      const yaw = Math.atan2(tmp.ahead.x - tmp.pos.x, tmp.ahead.z - tmp.pos.z);
+      const dYaw = ((yaw - prevYaw.current + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+      prevYaw.current = yaw;
+      if (moving) g.quaternion.slerp(tmp.dummy.quaternion, Math.min(1, 7 * delta));
+      else g.quaternion.slerp(tmp.dummy.quaternion, Math.min(1, 2 * delta));
+      if (type === 'avion' && moving) g.rotateZ(-Math.max(-0.5, Math.min(0.5, dYaw * 8)) * 0.3);
+    }
 
-      if (currentDist > 0.05) {
-        // Sombras bajo demanda: sólo se recalculan mientras algo se mueve.
-        state.gl.shadowMap.needsUpdate = true;
-        const step = speed * delta;
-        const dir = tmp.dir.copy(targetVec).sub(basePos.current).normalize();
-        if (currentDist <= step) {
-          basePos.current.copy(targetVec);
-        } else {
-          basePos.current.add(dir.multiplyScalar(step));
-        }
-
-        const lookAtTarget = tmp.look.copy(targetVec);
-        lookAtTarget.y = basePos.current.y;
-        const dummy = tmp.dummy;
-        dummy.position.copy(basePos.current);
-        dummy.lookAt(lookAtTarget);
-        ref.current.quaternion.slerp(dummy.quaternion, 8 * delta);
-        ref.current.position.copy(basePos.current);
-
-        if (type === 'buque') {
-          ref.current.position.y += Math.sin(time.current * 2) * 0.05;
-          ref.current.rotation.z = Math.sin(time.current * 1.5) * 0.05;
-          ref.current.rotation.x = Math.sin(time.current * 1) * 0.02;
-        } else if (type === 'avion') {
-          const totalDist = 15.0;
-          const progress = Math.max(0, Math.min(1, 1 - currentDist / totalDist));
-          const arcHeight = Math.sin(progress * Math.PI) * 3.5;
-          ref.current.position.y += arcHeight + Math.sin(time.current * 3) * 0.08;
-          ref.current.rotation.z = Math.sin(time.current * 1.5) * 0.04;
-          ref.current.rotation.x = -Math.cos(progress * Math.PI) * 0.15;
-        } else {
-          ref.current.position.y += Math.abs(Math.sin(time.current * 10)) * 0.02;
-        }
-      } else {
-        ref.current.position.copy(basePos.current);
-        if (type === 'buque') {
-          ref.current.position.y += Math.sin(time.current * 1.5) * 0.03;
-          ref.current.rotation.z = Math.sin(time.current * 1.0) * 0.02;
-          ref.current.rotation.x = 0;
-        } else if (type === 'avion') {
-          ref.current.rotation.x = 0;
-          ref.current.rotation.z = 0;
-        }
-      }
+    g.position.copy(tmp.pos);
+    g.position.y += BASE_Y[type];
+    if (type === 'buque') {
+      // Cabeceo y vaivén del oleaje; más suave en puerto.
+      const k = moving ? 1 : 0.55;
+      g.position.y += Math.sin(time.current * 2) * 0.05 * k;
+      g.rotateZ(Math.sin(time.current * 1.5) * 0.05 * k);
+      g.rotateX(Math.sin(time.current) * 0.02 * k);
+    } else if (type === 'avion') {
+      g.position.y += Math.sin(time.current * 3) * 0.06 * (tmp.pos.y > 0.5 ? 1 : 0);
+    } else if (moving) {
+      g.position.y += Math.abs(Math.sin(time.current * 10)) * 0.02;
     }
   });
 
   if (type === 'none') return null;
 
   return (
-    <group ref={ref} position={targetPosition}>
+    <group ref={ref}
+      onClick={onSelect ? (e) => { e.stopPropagation(); onSelect(); } : undefined}
+      onPointerOver={onSelect ? (e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; } : undefined}
+      onPointerOut={onSelect ? () => { document.body.style.cursor = ''; } : undefined}>
+      {alert && <FrostParticles />}
+      {/* Volumen de clic más grande que el modelo (que es pequeño a escala 0.4) */}
+      {onSelect && (
+        <mesh position={[0, 0.6, 0]} visible={false} userData={{ vehicle: true }}>
+          <sphereGeometry args={[1.3, 10, 10]} />
+        </mesh>
+      )}
       {type === 'camion' ? (
         <group scale={0.4} rotation={[0, -Math.PI / 2, 0]}>
           <group position={[1.2, 0.5, 0]}>
@@ -485,10 +587,10 @@ function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number,
             </Cylinder>
           ))}
           <Box ref={iotRef as any} args={[0.15, 0.15, 0.15]} position={[-1.2, 1.5, 0]}>
-            <meshBasicMaterial color="#10b981" transparent />
+            <meshBasicMaterial color={alertColor ?? '#10b981'} transparent toneMapped={false} />
           </Box>
           <Box args={[0.85, 0.85, 0.85]} position={[-0.4, 0.8, 0]}>
-            <meshStandardMaterial color="#10b981" emissive="#10b981" emissiveIntensity={0.6} />
+            <meshStandardMaterial color={alertColor ?? '#10b981'} emissive={alertColor ?? '#10b981'} emissiveIntensity={alert ? 1.4 : 0.6} />
           </Box>
         </group>
       ) : type === 'avion' ? (
@@ -527,7 +629,7 @@ function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number,
             <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={0.6} />
           </Box>
           <Box ref={iotRef as any} args={[0.15, 0.15, 0.15]} position={[0, 1.1, 0.2]}>
-            <meshBasicMaterial color="#38bdf8" transparent />
+            <meshBasicMaterial color={alertColor ?? '#38bdf8'} transparent toneMapped={false} />
           </Box>
         </group>
       ) : (
@@ -574,7 +676,7 @@ function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number,
             </Instances>
           </group>
           <Box ref={iotRef as any} args={[0.2, 0.2, 0.2]} position={[-1.4, 2.3, 0]}>
-            <meshBasicMaterial color="#10b981" transparent />
+            <meshBasicMaterial color={alertColor ?? '#10b981'} transparent toneMapped={false} />
           </Box>
         </group>
       )}
@@ -654,23 +756,8 @@ function FlowParticles({ curve, state, count = 26 }: { curve: THREE.CatmullRomCu
 }
 
 function RoutesNetwork({ mode, states }: { mode: TransitMode; states: SegState[] }) {
-  const landIdx = mode === 'sea' ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4, 5, 11];
-  const transitIdx = mode === 'sea' ? [6, 7] : [11, 12];
-  const destIdx = mode === 'sea' ? [7, 8, 9, 10] : [12, 8, 9, 10];
-
-  const curves = useMemo(() => {
-    const mk = (idxs: number[], lift = 0) => {
-      const pts = idxs.map((i) => new THREE.Vector3(...LOCATIONS[i].position).setY(0.06));
-      if (lift && pts.length === 2) {
-        // Tramo internacional: arco (aéreo alto, marítimo rasante) en vez de línea recta.
-        const mid = pts[0].clone().lerp(pts[1], 0.5).setY(lift);
-        pts.splice(1, 0, mid);
-      }
-      return new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.2);
-    };
-    return [mk(landIdx), mk(transitIdx, mode === 'air' ? 4.5 : 0.25), mk(destIdx)];
-  }, [mode]);
-
+  // Las mismas curvas por las que avanza el vehículo (scene/routePath.ts).
+  const curves = useMemo(() => buildRoute(mode).curves, [mode]);
   const lines = useMemo(() => curves.map((c, i) => c.getPoints(i === 1 ? 80 : 160)), [curves]);
   const lineRefs = [useRef<any>(null), useRef<any>(null), useRef<any>(null)];
   useFrame((_, delta) => {
@@ -787,14 +874,112 @@ function ShadowInvalidator({ deps }: { deps: unknown[] }) {
   return null;
 }
 
-// Cámara directora: el target del orbit sigue suavemente a la localización activa
-function CameraDirector({ locationIndex, controlsRef }: { locationIndex: number; controlsRef: React.MutableRefObject<any> }) {
+// ── Parada actual y selección ───────────────────────────────────────────────
+// Anillo que late en la parada en curso (rojo con rotura de frío) y anillo
+// violeta en la parada que el usuario ha seleccionado con un clic.
+function StopRing({ position, color, pulse = true, radius = 2.35 }: { position: [number, number, number]; color: string; pulse?: boolean; radius?: number }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const c = useMemo(() => new THREE.Color(color).multiplyScalar(2.2), [color]);
+  useFrame((state) => {
+    if (!ref.current) return;
+    const k = pulse ? 1 + 0.06 * Math.sin(state.clock.elapsedTime * 3.2) : 1;
+    ref.current.scale.set(k, k, k);
+    (ref.current.material as THREE.MeshBasicMaterial).opacity = pulse ? 0.65 + 0.3 * Math.sin(state.clock.elapsedTime * 3.2) : 0.8;
+  });
+  return (
+    <mesh ref={ref} position={[position[0], 0.14, position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[radius - 0.12, radius, 64]} />
+      <meshBasicMaterial color={c} toneMapped={false} transparent opacity={0.8} side={THREE.DoubleSide} />
+    </mesh>
+  );
+}
+
+export interface SdkBeaconData {
+  method: 'GET' | 'POST';
+  path: string;
+  contract?: string;
+}
+
+// Baliza sobre la parada en curso con la llamada real de la API de BeZhas
+// que corresponde a la etapa (engine/sdkMap.ts) y el contrato que la ancla.
+function SdkBeacon({ position, data, broken }: { position: [number, number, number]; data: SdkBeaconData; broken: boolean }) {
+  const groupRef = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (groupRef.current) groupRef.current.position.y = 5.4 + Math.sin(state.clock.elapsedTime * 1.6) * 0.12;
+  });
+  const accent = broken ? '#fca5a5' : data.method === 'GET' ? '#7dd3fc' : '#6ee7b7';
+  const stem = useMemo(() => [new THREE.Vector3(0, 0.2, 0), new THREE.Vector3(0, 4.9, 0)], []);
+  return (
+    <group position={[position[0], 0, position[2]]}>
+      <Line points={stem} color={broken ? '#f87171' : '#2dd4bf'} lineWidth={1} transparent opacity={0.45} dashed dashSize={0.25} gapSize={0.2} />
+      <group ref={groupRef} position={[0, 5.4, 0]}>
+        <Billboard>
+          <Text fontSize={0.34} color={accent} anchorX="center" anchorY="bottom" outlineWidth={0.05} outlineColor="#020617"
+            maxWidth={14} textAlign="center">
+            {`${data.method} ${data.path}`}
+          </Text>
+          {data.contract && (
+            <Text position={[0, -0.12, 0]} fontSize={0.24} color="#c4b5fd" anchorX="center" anchorY="top" outlineWidth={0.04} outlineColor="#020617">
+              {`→ ${data.contract}`}
+            </Text>
+          )}
+        </Billboard>
+      </group>
+    </group>
+  );
+}
+
+// Envuelve una parada para hacerla clicable (cursor de mano y selección).
+// Incluye un volumen invisible que cubre edificio y pedestal: los pedestales
+// están instanciados fuera del grupo y, sin él, clicar la base no hacía nada.
+function Selectable({ idx, onSelect, onHover, children }: {
+  idx: number;
+  onSelect?: (idx: number) => void;
+  onHover?: (idx: number | null) => void;
+  children: React.ReactNode;
+}) {
+  if (!onSelect) return <>{children}</>;
+  const p = LOCATIONS[idx].position;
+  return (
+    <group
+      onClick={(e) => {
+        // El vehículo está dentro del volumen del edificio: si está en la línea de tiro, él manda.
+        if (e.intersections.some((i) => i.object.userData?.vehicle)) return;
+        e.stopPropagation(); onSelect(idx);
+      }}
+      onPointerOver={(e) => {
+        if (e.intersections.some((i) => i.object.userData?.vehicle)) return;
+        e.stopPropagation(); document.body.style.cursor = 'pointer'; onHover?.(idx);
+      }}
+      onPointerOut={() => { document.body.style.cursor = ''; onHover?.(null); }}
+    >
+      <mesh position={[p[0], 1.4, p[2]]} visible={false}>
+        <cylinderGeometry args={[1.9, 1.9, 3.6, 12]} />
+      </mesh>
+      {children}
+    </group>
+  );
+}
+
+// Cámara directora: tras cada cambio de parada encuadra durante unos segundos
+// y luego suelta el control. Si el usuario arrastra o hace zoom, deja de
+// dirigir hasta la siguiente parada (antes peleaba con el ratón en cada frame).
+function CameraDirector({ locationIndex, controlsRef, userControl, enabled }: {
+  locationIndex: number;
+  controlsRef: React.MutableRefObject<any>;
+  userControl: React.MutableRefObject<boolean>;
+  enabled: boolean;
+}) {
   const target = useMemo(() => new THREE.Vector3(), []);
+  const remaining = useRef(3);
+  // Al volver a «director» (o cambiar de parada) vuelve a encuadrar.
+  useEffect(() => { remaining.current = 3; userControl.current = false; }, [locationIndex, userControl, enabled]);
   useFrame((_, delta) => {
-    if (!controlsRef.current) return;
+    if (!enabled || !controlsRef.current || userControl.current || remaining.current <= 0) return;
+    remaining.current -= delta;
     const loc = LOCATIONS[locationIndex];
     target.set(loc.position[0], 0.5, loc.position[2]);
-    controlsRef.current.target.lerp(target, Math.min(1, delta * 1.2));
+    controlsRef.current.target.lerp(target, Math.min(1, delta * 1.6));
     controlsRef.current.update();
   });
   return null;
@@ -811,15 +996,20 @@ export const LogisticsScene3D: React.FC<SceneProps> = ({
   phase,
   breachActive = false,
   onContextLost,
+  sdkBeacon,
+  selectedLocation = null,
+  onSelectLocation,
+  cameraMode = 'director',
+  onSelectVehicle,
+  simSpeed = 1,
+  stage,
 }) => {
   const currentLoc = LOCATIONS[currentLocationIndex];
-  const vehicleTargetPosition: [number, number, number] = [
-    currentLoc.position[0],
-    currentLoc.type === 'port' ? 0.0 : currentLoc.type === 'airport' ? 0.65 : 0.2,
-    currentLoc.position[2],
-  ];
 
   const controlsRef = useRef<any>(null);
+  const userControl = useRef(false);
+  const [hovered, setHovered] = useState<number | null>(null);
+  useEffect(() => () => { document.body.style.cursor = ''; }, []);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Calidad adaptativa: el PerformanceMonitor baja la resolución (y apaga el
@@ -841,6 +1031,11 @@ export const LogisticsScene3D: React.FC<SceneProps> = ({
     return () => io.disconnect();
   }, []);
 
+  // La grúa del puerto actual carga mientras se estiba o embarca.
+  const loadingAt = (isRunning && (stage === 'STOWED' || stage === 'LOADED')) ? currentLocationIndex : -1;
+  const finalBreach = isFinished && breachActive;
+  const finalRelease = isFinished && !breachActive;
+
   const states = segmentStates(phase, isRunning || isFinished, isFinished, breachActive);
 
   return (
@@ -851,12 +1046,12 @@ export const LogisticsScene3D: React.FC<SceneProps> = ({
         frameloop={inView ? 'always' : 'never'}
         camera={{ position: [-14, 18, 24], fov: 45 }}
         gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
-        onCreated={({ gl, scene }) => {
+        onCreated={({ gl, scene, camera }) => {
           gl.toneMappingExposure = 1.1;
           // El navegador puede quitarnos el contexto (GPU reiniciada, demasiados contextos):
           // en vez de un lienzo negro, el simulador cae al mapa 2D.
           gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); onContextLost?.(); }, { once: true });
-          if (import.meta.env.DEV) Object.assign(window as any, { __bzSimGl: gl, __bzSimScene: scene });
+          if (import.meta.env.DEV) Object.assign(window as any, { __bzSimGl: gl, __bzSimScene: scene, __bzSimCamera: camera });
         }}
       >
         {monitorReady && <PerformanceMonitor
@@ -924,23 +1119,52 @@ export const LogisticsScene3D: React.FC<SceneProps> = ({
 
         {LOCATIONS.map((loc, idx) => {
           const props = { position: loc.position as [number, number, number], name: loc.name };
-          switch (loc.type) {
-            case 'factory': return <FactoryNode key={idx} {...props} />;
-            case 'warehouse': return <WarehouseNode key={idx} {...props} />;
-            case 'gate': return <GateNode key={idx} {...props} />;
-            case 'customs': return <CustomsNode key={idx} {...props} />;
-            case 'port': return <PortNode key={idx} {...props} />;
-            case 'airport': return <AirportNode key={idx} {...props} />;
-            case 'customer': return <CustomerNode key={idx} {...props} />;
-            default: return null;
-          }
+          const node = (() => {
+            switch (loc.type) {
+              case 'factory': return <FactoryNode {...props} />;
+              case 'warehouse': return <WarehouseNode {...props} />;
+              case 'gate': return <GateNode {...props} />;
+              case 'customs': return <CustomsNode {...props} />;
+              case 'port': return <PortNode {...props} loading={loadingAt === idx} />;
+              case 'airport': return <AirportNode {...props} />;
+              case 'customer': return <CustomerNode {...props} />;
+              default: return null;
+            }
+          })();
+          return <Selectable key={idx} idx={idx} onSelect={onSelectLocation} onHover={setHovered}>{node}</Selectable>;
         })}
 
+        {(isRunning || isFinished) && (
+          <StopRing position={currentLoc.position} color={breachActive ? '#f87171' : '#2dd4bf'} />
+        )}
+        {selectedLocation !== null && selectedLocation !== undefined && LOCATIONS[selectedLocation] && (
+          <StopRing position={LOCATIONS[selectedLocation].position} color="#a78bfa" pulse={false} radius={2.7} />
+        )}
+        {hovered !== null && hovered !== selectedLocation && LOCATIONS[hovered] && (
+          <StopRing position={LOCATIONS[hovered].position} color="#e4e4e7" pulse={false} radius={2.55} />
+        )}
+        {(isRunning || isFinished) && sdkBeacon && (
+          <SdkBeacon position={currentLoc.position} data={sdkBeacon} broken={breachActive} />
+        )}
+
         <SincronizedAirplane mode={mode} stepIndex={stepIndex} vehicleType={vehicleType} />
-        <Vehicle targetPosition={vehicleTargetPosition} type={vehicleType} telemetry={telemetry} />
+        <Vehicle targetLocation={currentLocationIndex} mode={mode} type={vehicleType} telemetry={telemetry}
+          simSpeed={simSpeed} alert={breachActive}
+          onSelect={isRunning || isFinished ? onSelectVehicle : undefined} />
+
+        {/* Estado final del escrow, sobre el destino */}
+        {finalRelease && <ReleaseBurst position={currentLoc.position} />}
+        {isFinished && (
+          <Chip
+            text={finalBreach ? 'ESCROW CONGELADO · DISPUTA' : 'ESCROW LIBERADO'}
+            color={finalBreach ? '#fca5a5' : '#6ee7b7'}
+            position={[currentLoc.position[0], 3.6, currentLoc.position[2]]}
+            size={0.26}
+          />
+        )}
 
         <ShadowInvalidator deps={[mode, stepIndex, vehicleType, currentLocationIndex]} />
-        <CameraDirector locationIndex={currentLocationIndex} controlsRef={controlsRef} />
+        <CameraDirector locationIndex={currentLocationIndex} controlsRef={controlsRef} userControl={userControl} enabled={cameraMode === 'director'} />
 
         <OrbitControls
           ref={controlsRef}
@@ -951,6 +1175,7 @@ export const LogisticsScene3D: React.FC<SceneProps> = ({
           enablePan={true}
           minDistance={8}
           maxDistance={65}
+          onStart={() => { userControl.current = true; }}
         />
 
         {/* Postproceso: bloom sólo en lo que supera 1.0 (rutas, luces de estado), viñeta y SMAA.

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Code2, Copy, Check, Link2, Webhook, ChevronDown, ChevronUp } from 'lucide-react';
 import { SdkCall, toCurl, L2_TESTNET_CHAIN_ID } from '../engine/sdkMap';
+import { SandboxStepResult } from '../engine/sandbox';
 
 const METHOD_STYLE: Record<SdkCall['method'], string> = {
   GET: 'text-sky-300 border-sky-500/40 bg-sky-500/10',
@@ -13,6 +14,8 @@ interface SdkCallCardProps {
   stepLabel: string;
   breached: boolean;
   className?: string;
+  /** Respuesta real de la API (modo Sandbox). */
+  result?: SandboxStepResult;
 }
 
 /**
@@ -20,7 +23,7 @@ interface SdkCallCardProps {
  * método, ruta, api-key de rol, contrato que la ancla, webhook y productos.
  * Es lo que convierte la animación en un simulador de SDK.
  */
-export function SdkCallCard({ call, bUid, stepLabel, breached, className = 'w-[300px]' }: SdkCallCardProps) {
+export function SdkCallCard({ call, bUid, stepLabel, breached, className = 'w-[300px]', result }: SdkCallCardProps) {
   const [open, setOpen] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -82,6 +85,23 @@ export function SdkCallCard({ call, bUid, stepLabel, breached, className = 'w-[3
           )}
 
           {call.note && <p className="text-zinc-400 leading-snug">{call.note}</p>}
+
+          {result && (
+            <div className={`rounded border p-2 font-mono text-[9px] flex flex-col gap-1 ${result.skipped ? 'border-zinc-700 bg-zinc-900/60' : result.ok ? 'border-emerald-500/30 bg-emerald-950/20' : 'border-red-500/40 bg-red-950/20'}`}>
+              <span className="uppercase tracking-widest text-[8px] text-zinc-500">
+                Sandbox · {result.skipped ? 'saltada' : result.ok ? 'respuesta real' : 'error de la API'}
+              </span>
+              {result.calls.map((c, i) => (
+                <span key={i} className="flex items-start gap-1.5 min-w-0">
+                  <span className={c.skipped ? 'text-zinc-500' : c.ok ? 'text-emerald-400' : 'text-red-400'}>{c.skipped ? '–' : c.ok ? '✔' : '✖'}</span>
+                  <span className="min-w-0">
+                    <span className="text-zinc-300 break-all">{c.method} {c.path}</span>
+                    <span className="block text-zinc-500">{c.label}{c.status ? ` · ${c.status}` : ''} · {c.summary}</span>
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="relative">
             <pre className="bg-zinc-950 border border-zinc-800 rounded p-2 pr-7 font-mono text-[9px] leading-relaxed text-zinc-300 whitespace-pre-wrap break-all max-h-32 overflow-auto">{curl}</pre>
