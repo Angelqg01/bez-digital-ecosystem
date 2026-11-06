@@ -1,0 +1,136 @@
+2|algeciras@mertramar.com|Mertramar Algeciras, SL.|Consignatarios
+2|shipsagency.algeciras@boluda.com.es|Miller y Cía, SA.|Consignatarios
+2|agency@nextmaritime.com|NEXT MARITIME SLU.|Consignatarios
+2|almoraima.rabasco@one-line.com|OCEAN NETWORK EXPRESS (SPAIN) S.A.|Consignatarios
+2|algeciras@correasur.com|OREY SHIPPING S.L.|Consignatarios
+2|m.jimenez@portferryservices.es|PORT FERRY SERVICES, SL|Consignatarios
+2|algeciras@romeugroup.com|Romeu y Compañía, SA.|Consignatarios
+2|agency@sannicolasmaritima.com|SAN NICOLAS MARÍTIMA SERVICES S.L.|Consignatarios
+2|sanyangeurope@gmail.com|Sanyang Europe S.L.|Consignatarios
+2|algeciras@simagencia.com|Soluciones Integrales Marítimas, SLU.|Consignatarios
+2|algeciras@totallogistic.es|Total Logistics Services, SL|Consignatarios
+2|info@tramarco.es|Transatlantica Marítima de Consignaciones S.L. (TRAMARCO)|Consignatarios
+2|info@tansbullalgeciras.com|Transbull Cádiz, SL.|Consignatarios
+2|molsur@transcoma.com|Transcoma Sur, SL.|Consignatarios
+2|opsesalg@universalmaritima.com|UNIVERSAL MARÍTIMA, S.L.|Consignatarios
+2|algeciras@suardiaz.com|Vapores Suardíaz Sur - Atlántico, SL.|Consignatarios
+2|comercial@aflsur.com|Almacenamiento de Frío y Logística del Sur, SL|Logística del Frío
+2|info.algeciras@americold.com|Americold Algeciras S.L|Logística del Frío
+2|algeciras@bernardinoabad.es|DALSE - Depósito Aduanero y Logístico Sur de Europa S.L.|Logística del Frío
+2|abadal@arrakis.es|A Ortega Algeciras S.L.|Transitarios y Agentes de Aduanas
+2|sevilla@aduanasmerino.com|ADUANAS MERINO SL|Transitarios y Agentes de Aduanas
+2|aduana@alminaconsultores.com|ALMINA ADUANAS & CONSULTORES, S.L.U.|Transitarios y Agentes de Aduanas
+2|fbueno@als-cs.com|ALS España Global Customs Solutions S.L.U.|Transitarios y Agentes de Aduanas
+2|comercial@ernestorey.es|Aduanas y Transportes Ernesto Rey, SL|Transitarios y Agentes de Aduanas
+2|import.alg@apaublete.com|Aduanas y Tránsitos Antonio Paublete S.L|Transitarios y Agentes de Aduanas
+2|administracion@interandaluza.com|Agencia Interandaluza S.L.|Transitarios y Agentes de Aduanas
+2|administracion@europamar.com|Agencia Marítima Punta Europa S.A.|Transitarios y Agentes de Aduanas
+2|info@paublete.com|Agencia Paublete SL|Transitarios y Agentes de Aduanas
+2|puerto@algeciraspuerto.com|Algeciras Puerto Import-Export S.L.U.|Transitarios y Agentes de Aduanas
+2|info@algetransit.com|Algetransit S.L.|Transitarios y Agentes de Aduanas
+3|coladualg@coacab.com|Antonio Varela Vento|Transitarios y Agentes de Aduanas
+3|information@arola.com|Arola Aduanas y Consignaciones S.L.|Transitarios y Agentes de Aduanas
+3|info@atlanticlogistic.es|Atlantic Logistic & Shipping S.L.|Transitarios y Agentes de Aduanas
+3|ayftrans@ayftransit.com|Ayftransit Levante S.L.|Transitarios y Agentes de Aduanas
+3|acc@barmapesca.es|Barma Pesca SL|Transitarios y Agentes de Aduanas
+3|jmgomez@bernardinoabad.com|Bernardino Abad Algeciras S.L.|Transitarios y Agentes de Aduanas
+3|iom@maritima.com|Cabeza Rivas, Francisco|Transitarios y Agentes de Aduanas
+3|cadiship@cadiship.com|Cadiship SL|Transitarios y Agentes de Aduanas
+3|ceutaexpress1@hotmail.com|Ceuta Express S.L.|Transitarios y Agentes de Aduanas
+3|comercial@cexsouto.com|Comercio Exterior Souto SL|Transitarios y Agentes de Aduanas
+3|jesus.fernandez@cotransa.com|Cotransa Andalucia S.A.|Transitarios y Agentes de Aduanas
+3|alrdammng@damco.com|DAMCO Spain|Transitarios y Agentes de Aduanas
+3|euroboxalge@euroboxspain.com|Euro Box España S.L.|Transitarios y Agentes de Aduanas
+3|aduanas@europeanservices.info|European Consigment Services|Transitarios y Agentes de Aduanas
+3|aduanas@fenixtransit.com|FENIX TRANSIT SL|Transitarios y Agentes de Aduanas
+3|gdar@gdar.es|GDAR – Gestión Depósitos y Aduanas de la Ribera|Transitarios y Agentes de Aduanas
+3|info@gonzalezgaggero.com|González Gaggero, S.L.|Transitarios y Agentes de Aduanas
+3|m.angeles@hermeortiz.com|Herme Ortiz S.L.|Transitarios y Agentes de Aduanas
+3|aduana@hispamaroc.com|Hispamaroc S.L.|Transitarios y Agentes de Aduanas
+3|aduanas@iriscargo.com|IRIS CARGO, S.L.|Transitarios y Agentes de Aduanas
+3|algeciras@ibertransit.com|Ibertransit|Transitarios y Agentes de Aduanas
+3|erodriguez@itssa.es|Integral Transport Service S.A.|Transitarios y Agentes de Aduanas
+3|rbr@intercargo.es|Intercargo Andalucía S.L.|Transitarios y Agentes de Aduanas
+3|onboardingchb.es@lns.maersk.com|Maersk Logistics & Services Spain Slu|Transitarios y Agentes de Aduanas
+3|e.jimenez.comercial@marterra.es|Marterra Transitaria S.L.|Transitarios y Agentes de Aduanas
+3|operations@naveport.net|Nave Port Algeciras S.L.|Transitarios y Agentes de Aduanas
+3|ines_rodriguez@nistics.com|Next Logistics XXI S.L.|Transitarios y Agentes de Aduanas
+3|apartida@partidalogistics.com|Partida Aduanas S.L.|Transitarios y Agentes de Aduanas
+3|jose.paez@paezaduanas.com|Páez Aduanas|Transitarios y Agentes de Aduanas
+3|francisco.bueno@es.rhenus.com|Rhenus Logistics S.A.U.|Transitarios y Agentes de Aduanas
+4|algeciras@sharelogistics.com|Share Logistics Spain|Transitarios y Agentes de Aduanas
+4|spainsur@spainsur-forwarders.com|Spainsur Forwarders SL|Transitarios y Agentes de Aduanas
+4|import.alg@transitainer.com|TRANSITAINER, S.A.|Transitarios y Agentes de Aduanas
+4|eduardodeluque@transito2000.com|Transito 2000 S.L.|Transitarios y Agentes de Aduanas
+4|aduana.algeciras@transportesnieves.com|Transportes Nieves|Transitarios y Agentes de Aduanas
+4|edeluque@ucclog.com|UCC LOGISTICS SPAIN SLU|Transitarios y Agentes de Aduanas
+4|agency@amportillo.com|Agencia Maritima Portillo|Agentes De Aduanas
+4|albides@albides.com|Albides Transitarios|Agentes De Aduanas
+4|shipping@altaircl.com|Altair Shipping Agencia Consignatarios|Agentes De Aduanas
+4|fdeaspe@aspesevilla.com|Aspe Sevilla|Agentes De Aduanas
+4|manuel.rosell@rosellsl.com|Carlos Rosell Pareja|Agentes De Aduanas
+4|agonzalez@cayco.es|Cayco|Agentes De Aduanas
+4|crisgur@crisgur.com|Cristina Gutierrez Rubio|Agentes De Aduanas
+4|aduanas@gaggerocadiz.com|Gonzalez Gaggero Cadiz|Agentes De Aduanas
+4|cadiz@lamaignere.com|Lamaignere Shipping|Agentes De Aduanas
+4|maritima@puertodecadiz.com|Maritima Bahia De Cadiz|Agentes De Aduanas
+4|cadiz@bcagency.net|Baleares Consignatarios|Consignatarios
+4|cadiz@bergelogistics.com|Berge Maritima / Condeminas|Consignatarios
+4|mgutierrez@concasa-cadiz.com|Cia Gaditana De Contenedores|Consignatarios
+4|info@cadiz.mdavila.com|Davila Agencias Y Servicios Portuarios|Consignatarios
+4|op.cad@ership.com|Ership Cadiz|Consignatarios
+4|cadiz@ibericamaritima.com|Iberica Maritima Zona Sur|Consignatarios
+4|info@intpss.com|International Ports And Shipping Services|Consignatarios
+4|mdt.cdz@gmail.com|Mdt Cadiz Shipping|Consignatarios
+4|spainprogesco@gmail.com|Progesco Consignaciones|Consignatarios
+4|cadiz@romeuycia.com|Romeu Y Cia|Consignatarios
+4|j.espejo.suratlantica@gmail.com|Sur Atlantica De Consignaciones|Consignatarios
+4|transbull.cadiz@transbullcadiz.com|Transbull Cadiz|Consignatarios
+4|tpc@tpcadiz.com|Terminal Polivalente Del Puerto De Cadiz|Estibadoras
+4|info.algeciras@apmterminals.com|APM Terminals Algeciras - Maersk España, SA|Estibadoras
+5|info@estiba-port.com|Estiba Port, S.L|Estibadoras
+5|espuba@gmail.com|Estibadora Puerto Bahía, SAU (ESPUBA)|Estibadoras
+5|agh@transbull.com|Fletamentos Cádiz S.L.|Estibadoras
+5|manuel@ecsbigprojects.com|Logistika 360 S.L.|Estibadoras
+5|peregar@peregar.com|Marítima Peregar, S.A.|Estibadoras
+5|info@staestibadora.com|STA Estibadora, SL|Estibadoras
+5|info@sppa.es|Servicios Portuarios Puerto de Algeciras S.L. (SPPA)|Estibadoras
+5|info@ttialgeciras.com|Total Terminal International Algeciras, S.A.|Estibadoras
+5|ccentersur@es.linde-gas.com|Abelló Linde|Grandes Industrias
+5|igarciad@acxgroup.com|Acerinox S.A.|Grandes Industrias
+5|cuestable@sevillana.grupoendesa.es|Endesa|Grandes Industrias
+5|administracion@altransa.com|Altransa, SA|Transporte Horizontal
+5|traficoac@autransasl.com|Autransa, SL|Transporte Horizontal
+5|info@ecs360logistics.com|Ecs 360, S.L.|Transporte Horizontal
+5|info@ematra.com|Ematra, S.L.|Transporte Horizontal
+5|contabilidad@gbcgrupo.es|GBC Containers, S.L.|Transporte Horizontal
+5|algeciras@newportlogistics.com|Newport Logistics and Trading 2018, S.L.|Transporte Horizontal
+5|regi.ramirez@ramir-e.com|RAMÍREZ DOLZ ALGECIRAS S.L.|Transporte Horizontal
+5|sjl_algeciras@sjl.es|San José y López, SL|Transporte Horizontal
+5|adinar@calsina-carre.com|TRANSPORTES CALSINA Y CARRÉ, S.L.|Transporte Horizontal
+5|administracion@tiansl.es|Transportes Intermodales Andaluces, S.L.|Transporte Horizontal
+5|transjulian@transjulian.net|Tránsitos Julián S.L|Transporte Horizontal
+5|gerencia@zurtrans.es|ZURTRANS DEL MILENIO, S.L.|Transporte Horizontal
+5|contabilidad@ocp-algeciras.com|ÓSCAR CARRASCO PADILLA S.L.|Transporte Horizontal
+5|office@albatros-shipping.com|Albatros Shipping SL|Provisionistas
+5|spain@bayport.eu|Bayport Global Supplies|Provisionistas
+5|bezabala@cherrytel.com|Bezabala S.A.|Provisionistas
+5|info@cannonline.com|Cannon Line|Provisionistas
+5|comercial@casapastor.es|Casa Pastor|Provisionistas
+5|comercial@giransales.com|GIRAN CORP., SL|Provisionistas
+6|admon@gys.es|Gabarras y Servicios S.A.|Provisionistas
+6|info@marmisur.com|Marmisur S.L.U.|Provisionistas
+6|algeciras@seapoole.com|Seapoole Marine Services SL|Provisionistas
+6|commercial@vanjusupplies.com|Vanju Global Supplies, SL|Provisionistas
+6|tech@wolmannsl.com|Wolfmann Brothers S.L.|Provisionistas
+6|bunker@cepsa.com|CEPSA|Suministradores de Combustible
+6|info@codessl.es|Combustibles del Estrecho, S.L.|Suministradores de Combustible
+6|safetyqa@ibaizabalms.com|Itsas Gas Bunker Supply, S.L.|Suministradores de Combustible
+6|mureloil@mureloil.com|MURELOIL S.A.U|Suministradores de Combustible
+6|bunkering@oliviaenergygroup.com|OLIVIA PETROLEUM SA|Suministradores de Combustible
+6|algecirascargo@peninsulapetroleum.com|Peninsula Petroleum, S.L.|Suministradores de Combustible
+6|sgarcia@vtshipping.com|Verenigde Tankrederij Spain, S.A.|Suministradores de Combustible
+6|sumismar@sumismar.com|Viguesa de Bombeos, S.L.|Suministradores de Combustible
+6|comercial@apba.es|Autoridad Portuaria Bahia Algeciras|Institucional
+6|info@camaracadiz.com|Camara De Comercio Cadiz|Institucional
+6|comercial@zonafrancacadiz.com|Consorcio Zona Franca Cadiz|Institucional

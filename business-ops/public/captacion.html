@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contacto · BeZhas</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --bg:#0b1220; --card:#111a2e; --line:#24324f; --txt:#e8eefc; --mut:#93a1c2; --acc:#00d4aa; --err:#ff6b8b; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f4f6fb; --card:#fff; --line:#d5dbea; --txt:#10192e; --mut:#56627f; --acc:#007f68; --err:#c0264a; } }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:16px; background:var(--bg); color:var(--txt); font:15px/1.45 system-ui,sans-serif; }
+  main { width:100%; max-width:460px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  h1 { margin:0 0 4px; font-size:20px; }
+  p.lead { margin:0 0 18px; color:var(--mut); font-size:13px; }
+  label { display:block; margin:12px 0 4px; font-size:12px; font-weight:600; color:var(--mut); }
+  input, textarea { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:transparent; color:inherit; font:inherit; }
+  input:focus, textarea:focus { outline:2px solid var(--acc); outline-offset:1px; }
+  textarea { min-height:84px; resize:vertical; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:420px) { .row { grid-template-columns:1fr; } }
+  .consent { display:flex; gap:8px; align-items:flex-start; margin-top:16px; font-size:12px; color:var(--mut); }
+  .consent input { width:auto; margin-top:2px; }
+  button { width:100%; margin-top:16px; padding:11px; border:0; border-radius:10px; background:var(--acc); color:#04120e; font:inherit; font-weight:700; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:wait; }
+  .msg { margin-top:12px; font-size:13px; text-align:center; min-height:1.2em; }
+  .msg.err { color:var(--err); } .msg.ok { color:var(--acc); }
+  .hp { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Hablemos</h1>
+  <p class="lead">Cuéntanos quién eres y qué necesitas; te respondemos por correo.</p>
+  <form id="f" novalidate>
+    <div class="hp" aria-hidden="true">
+      <label>Web<input name="website" tabindex="-1" autocomplete="off"></label>
+    </div>
+    <div class="row">
+      <div><label for="contact">Nombre</label><input id="contact" name="contact" maxlength="120" autocomplete="name"></div>
+      <div><label for="company">Empresa</label><input id="company" name="company" maxlength="120" autocomplete="organization"></div>
+    </div>
+    <label for="email">Email *</label>
+    <input id="email" name="email" type="email" maxlength="254" required autocomplete="email" autocapitalize="none" spellcheck="false">
+    <div class="row">
+      <div><label for="role">Cargo</label><input id="role" name="role" maxlength="120" autocomplete="organization-title"></div>
+      <div><label for="phone">Teléfono</label><input id="phone" name="phone" type="tel" maxlength="40" autocomplete="tel"></div>
+    </div>
+    <label for="message">¿Qué necesitas?</label>
+    <textarea id="message" name="message" maxlength="2000"></textarea>
+    <label class="consent">
+      <input id="consent" name="consent" type="checkbox" required>
+      <span>Acepto que BeZhas trate estos datos para responder a mi consulta y contactarme (RGPD, art. 6.1.a). Puedo retirar el consentimiento en cualquier momento.</span>
+    </label>
+    <button id="go" type="submit">Enviar</button>
+    <p id="msg" class="msg" role="status" aria-live="polite"></p>
+  </form>
+</main>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var tenant = q.get('t') || 'bezhas';
+  var api = (q.get('api') || '').replace(/\/+$/, ''); // vacío = mismo origen
+  var rendered = Date.now();
+  var f = document.getElementById('f'), go = document.getElementById('go'), msg = document.getElementById('msg');
+  var ERR = {
+    consent_required: 'Marca la casilla de consentimiento para continuar.',
+    email_required: 'Escribe tu email.',
+    email_invalid: 'Ese email no parece válido.',
+    identity_required: 'Indica tu nombre o el de tu empresa.',
+    rate_limited: 'Demasiados envíos seguidos. Prueba de nuevo en un minuto.'
+  };
+  function say(t, cls) { msg.textContent = t; msg.className = 'msg ' + (cls || ''); }
+
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (go.disabled) return;
+    var d = new FormData(f);
+    var body = {
+      website: d.get('website'),
+      renderedAt: rendered,
+      consent: document.getElementById('consent').checked,
+      utm_source: q.get('utm_source') || undefined,
+      utm_campaign: q.get('utm_campaign') || undefined
+    };
+    ['contact', 'company', 'email', 'role', 'phone', 'message'].forEach(function (k) { body[k] = (d.get(k) || '').trim(); });
+    if (!body.consent) { say(ERR.consent_required, 'err'); return; }
+    if (!body.email) { say(ERR.email_required, 'err'); return; }
+    if (!body.company && !body.contact) { say(ERR.identity_required, 'err'); return; }
+    go.disabled = true; say('Enviando…');
+    fetch(api + '/intake/' + encodeURIComponent(tenant), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
+    }).then(function (r) {
+      if (r.ok) { f.reset(); rendered = Date.now(); say('¡Recibido! Te escribiremos pronto.', 'ok'); }
+      else say(ERR[r.j.code] || (r.status === 404 ? 'Formulario no disponible.' : 'No se pudo enviar. Inténtalo de nuevo.'), 'err');
+    }).catch(function () { say('Sin conexión con el servidor. Inténtalo de nuevo.', 'err'); })
+      .then(function () { go.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>
