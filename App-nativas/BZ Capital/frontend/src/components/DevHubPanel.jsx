@@ -50,10 +50,10 @@ const ENDPOINTS = {
     { method: 'POST', path: '/v1/prestige/blacklist',    desc: 'Marca un artículo como robado (Kill-Switch).' },
   ],
   cargo: [
-    { method: 'POST', path: '/v1/customs/dispatch',     desc: 'Sincroniza manifiesto con ASYCUDA.' },
-    { method: 'POST', path: '/v1/shipping/stowage',     desc: 'Valida COG del contenedor en buque.' },
-    { method: 'GET',  path: '/v1/logistics/route',      desc: 'Coordenadas y métricas de última milla.' },
-    { method: 'POST', path: '/v1/audit/fingerprint',    desc: 'Registra hash fotogramétrico de carga en L2.' },
+    { method: 'POST', path: '/v1/customs/dispatch',     desc: 'Rol aduana: valida el manifiesto y avanza el B-UID a CUSTOMS_CLEARED (canal de riesgo BeZhas, no levante oficial).' },
+    { method: 'POST', path: '/v1/shipping/stowage',     desc: 'Rol naviera: calcula el centro de gravedad con items[{x,y,weight}] y avanza a STOWED.' },
+    { method: 'GET',  path: '/v1/logistics/route',      desc: 'Estado del B-UID, ETA comprometida, puerto actual y retrasos (?bUid=).' },
+    { method: 'POST', path: '/v1/audit/fingerprint',    desc: 'Registra la huella (hash) de una evidencia del B-UID, sin verificarla.' },
   ],
 }
 

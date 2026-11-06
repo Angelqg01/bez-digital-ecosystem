@@ -20,10 +20,16 @@ pnpm dev
 ```
 
 ## Módulos de API (sector: `cargo`)
-- `POST /v1/customs/dispatch` — Despacho aduanal
-- `POST /v1/shipping/stowage` — Validación de COG en buque
-- `GET  /v1/logistics/route`  — Tracking de última milla
-- `POST /v1/audit/fingerprint` — Hash de carga en L2
+Fachadas del ciclo de vida B-UID de la API de BeZhas (`/api/cargolink`, o
+`/api/cargolink` del gateway con `x-api-key` de rol). Todas exigen `bUid`
+(créalo antes con `POST /v1/tx`):
+
+- `POST /v1/customs/dispatch` — rol `customs`: valida el manifiesto y avanza a `CUSTOMS_CLEARED`. El canal es la preclasificación de riesgo de BeZhas, no el levante oficial (`customsAuthorization: null`).
+- `POST /v1/shipping/stowage` — rol `carrier`: centro de gravedad calculado a partir de `items[{x,y,weight}]` y avance a `STOWED`.
+- `GET  /v1/logistics/route?bUid=` — estado, ETA comprometida, puerto actual, retrasos y tránsito multipaís.
+- `POST /v1/audit/fingerprint` — registra la huella de una evidencia (`payloadHash`); no la verifica.
+
+El uso se mide (`billing.mode: METERED`) pero todavía no se cobra.
 
 ## Integración activada
 - `src/services/bezhasPlatform.js` actúa como gateway API/SDK/blockchain/billing local.

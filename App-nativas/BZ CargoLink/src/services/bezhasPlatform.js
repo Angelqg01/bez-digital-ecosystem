@@ -411,42 +411,53 @@ export const bezhasPlatform = {
   },
 }
 
+// Fallback local (VITE_ALLOW_LOCAL_FALLBACK): misma FORMA que la API real
+// (api/services/cargoLinkService.js) para que la UI no dependa de campos que
+// la API no devuelve, pero sin inventar datos. Lo que sólo la API sabe
+// —estado del B-UID, canal, centro de gravedad, ETA— va a null aquí.
 const buildEndpointResult = (endpoint, payload, block) => {
+  const bUid = payload.bUid || null
   switch (endpoint) {
     case '/v1/audit/fingerprint':
       return {
-        bUid: payload.bUid || 'BZ-LOG-ES-17148',
+        bUid,
         fingerprintHash: block.payloadHash,
-        integrity: 'VERIFIED',
-        mseDeviation: 4.2,
-        escrowState: 'FUNDS_LOCKED',
+        integrity: 'RECORDED_OFF_CHAIN',
+        escrowState: null,
+        simulated: true,
       }
     case '/v1/shipping/stowage':
-      return {
-        bUid: payload.bUid || 'BZ-LOG-ES-17148',
-        cog: payload.cog,
-        status: payload.cog?.x > 55 ? 'WARNING' : 'VERIFIED',
-        dNftState: 'STOWAGE_SYNCED',
-      }
+      return { bUid, status: null, cog: null, totalWeight: null, deviation: null, stowageStatus: null, warnings: [], simulated: true }
     case '/v1/customs/dispatch':
       return {
-        authorization: `BZ-ASY-${String(block.blockNumber).slice(-6)}`,
-        lane: 'GREEN_LANE',
-        standard: 'UBL_2_1',
-        oracle: 'CHAINLINK_FUNCTIONS',
+        bUid,
+        status: null,
+        lane: null,
+        laneSource: 'BEZHAS_RISK_RULES',
+        customsAuthorization: null,
+        oracle: null,
+        warnings: [],
+        simulated: true,
       }
     case '/v1/logistics/route':
     case '/v1/logistics/active-route':
       return {
-        routeId: payload.routeId || 'TRX-9921-X',
-        status: 'IN_TRANSIT',
-        progress: 82,
-        etaMinutes: 11,
+        bUid,
+        status: null,
+        lastTransition: null,
+        committedEta: null,
+        currentPort: null,
+        etaRevisions: 0,
+        totalDelayMinutes: 0,
+        transit: null,
+        escrowState: null,
+        simulated: true,
       }
     default:
       return {
         accepted: true,
         payloadHash: block.payloadHash,
+        simulated: true,
       }
   }
 }
