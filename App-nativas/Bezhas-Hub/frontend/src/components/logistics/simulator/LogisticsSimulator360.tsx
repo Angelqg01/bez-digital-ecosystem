@@ -18,6 +18,7 @@ import { AssetDigitalTwinPanel } from './panels/AssetDigitalTwinPanel';
 import { FoodOracleScanner } from './panels/FoodOracleScanner';
 import { CertificateModal } from './panels/CertificateModal';
 import { ManualVsAutonomous } from './intro/ManualVsAutonomous';
+import { isWebGLAvailable, Scene3DErrorBoundary, Scene3DUnavailable } from './scene/SceneFallback';
 
 // La escena 3D (three/R3F) se carga en diferido para no engordar el bundle inicial del Hub
 const LogisticsScene3D = React.lazy(() =>
@@ -50,6 +51,8 @@ export default function LogisticsSimulator360() {
   const [showCertificate, setShowCertificate] = useState(false);
 
   const flow = useMemo(() => buildFlow360(mode), [mode]);
+  // Se comprueba una vez: sin WebGL, <Canvas> lanza al montar y tumbaba la consola entera.
+  const webglAvailable = useMemo(() => isWebGLAvailable(), []);
 
   // Refs para leer estado actualizado dentro del bucle asíncrono
   const isBreachedRef = useRef(isBreached);
@@ -210,23 +213,29 @@ export default function LogisticsSimulator360() {
     >
       {/* Capa 3D de fondo */}
       <div className="absolute inset-0 z-0">
-        <Suspense
-          fallback={
-            <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-teal-400">
-              <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-400 rounded-full animate-spin" />
-              <span className="text-[10px] font-mono uppercase tracking-[0.3em]">Cargando gemelo digital 3D...</span>
-            </div>
-          }
-        >
-          <LogisticsScene3D
-            currentLocationIndex={currentStep.locationIndex}
-            vehicleType={isIdle ? 'camion' : currentStep.vehicle}
-            telemetry={isRunning ? currentStep.telemetry : undefined}
-            mode={mode}
-            stepIndex={stepIndex}
-            isRunning={isRunning}
-          />
-        </Suspense>
+        {!webglAvailable ? (
+          <Scene3DUnavailable />
+        ) : (
+          <Scene3DErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-teal-400">
+                  <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-400 rounded-full animate-spin" />
+                  <span className="text-[10px] font-mono uppercase tracking-[0.3em]">Cargando gemelo digital 3D...</span>
+                </div>
+              }
+            >
+              <LogisticsScene3D
+                currentLocationIndex={currentStep.locationIndex}
+                vehicleType={isIdle ? 'camion' : currentStep.vehicle}
+                telemetry={isRunning ? currentStep.telemetry : undefined}
+                mode={mode}
+                stepIndex={stepIndex}
+                isRunning={isRunning}
+              />
+            </Suspense>
+          </Scene3DErrorBoundary>
+        )}
       </div>
 
       {/* Overlays */}
