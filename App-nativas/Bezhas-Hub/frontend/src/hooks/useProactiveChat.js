@@ -68,7 +68,12 @@ export function useProactiveChat({ blocked }) {
                 // Si ya no se puede mostrar nada (aviso ya visto o cerrado), se deja de comprobar.
                 if (!canShow({ mode }).ok) return;
                 waited += 1;
-                const ctx = { ...blockedRef.current, hidden: document.visibilityState !== 'visible', automated };
+                const ctx = {
+                    ...blockedRef.current,
+                    hidden: document.visibilityState !== 'visible',
+                    automated,
+                    immersive: !!document.querySelector('[data-immersive="true"]'),
+                };
                 if (!isBlockedContext(ctx) && interestMet(rule, { interacted: interacted.current, scrollPct: scrollPct.current })) {
                     recordShown(mode);
                     shownRef.current = { rule, mode };

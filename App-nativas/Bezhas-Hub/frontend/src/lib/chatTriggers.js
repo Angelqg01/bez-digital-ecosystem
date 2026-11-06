@@ -131,9 +131,10 @@ export function registerVisit(mode, now = Date.now()) {
 
 export const visitsSoFar = (mode) => persistState(mode).visits || 0;
 
-/** Contexto que impide interrumpir. */
-export function isBlockedContext({ chatOpen, onboarding, authCard, typing, loggedIn, hidden, automated }) {
-    return !!(chatOpen || onboarding || authCard || typing || loggedIn || hidden || automated);
+/** Contexto que impide interrumpir. `immersive`: hay una experiencia a pantalla
+ *  (p. ej. el Simulador 360° en marcha) que el aviso taparía. */
+export function isBlockedContext({ chatOpen, onboarding, authCard, typing, loggedIn, hidden, automated, immersive }) {
+    return !!(chatOpen || onboarding || authCard || typing || loggedIn || hidden || automated || immersive);
 }
 
 /** ¿La señal de interés que pide la regla se ha cumplido? */

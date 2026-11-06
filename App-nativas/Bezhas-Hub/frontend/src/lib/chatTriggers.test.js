@@ -91,9 +91,9 @@ describe('frecuencia', () => {
 });
 
 describe('contexto que impide interrumpir', () => {
-    const libre = { chatOpen: false, onboarding: false, authCard: false, typing: false, loggedIn: false, hidden: false, automated: false };
+    const libre = { chatOpen: false, onboarding: false, authCard: false, typing: false, loggedIn: false, hidden: false, automated: false, immersive: false };
     it('libre por defecto', () => expect(isBlockedContext(libre)).toBe(false));
-    it.each(['chatOpen', 'onboarding', 'authCard', 'typing', 'loggedIn', 'hidden', 'automated'])('bloquea con %s', (k) => {
+    it.each(['chatOpen', 'onboarding', 'authCard', 'typing', 'loggedIn', 'hidden', 'automated', 'immersive'])('bloquea con %s', (k) => {
         expect(isBlockedContext({ ...libre, [k]: true })).toBe(true);
     });
 });
