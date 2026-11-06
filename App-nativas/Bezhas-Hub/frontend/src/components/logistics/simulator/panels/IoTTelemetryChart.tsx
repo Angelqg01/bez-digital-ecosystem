@@ -69,8 +69,8 @@ export const IoTTelemetryChart: React.FC<IoTTelemetryChartProps> = ({ isRunning,
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
             <XAxis dataKey="time" stroke="#064e3b" fontSize={8} tickLine={false} axisLine={false} />
-            <YAxis yAxisId="left" stroke="#38bdf8" fontSize={8} tickLine={false} axisLine={false} domain={['dataMin - 5', 'dataMax + 5']} />
-            <YAxis yAxisId="right" orientation="right" stroke="#22d3ee" fontSize={8} tickLine={false} axisLine={false} domain={['dataMin - 10', 'dataMax + 10']} />
+            <YAxis yAxisId="left" stroke="#38bdf8" fontSize={8} tickLine={false} axisLine={false} domain={['dataMin - 5', 'dataMax + 5']} tickFormatter={(v: number) => v.toFixed(0)} width={24} />
+            <YAxis yAxisId="right" orientation="right" stroke="#22d3ee" fontSize={8} tickLine={false} axisLine={false} domain={['dataMin - 10', 'dataMax + 10']} tickFormatter={(v: number) => v.toFixed(0)} width={24} />
             <Tooltip
               contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '4px', fontSize: '10px' }}
               itemStyle={{ color: '#22d3ee' }}

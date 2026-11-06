@@ -43,80 +43,83 @@ body.dark-mode {
 }
 
 /* ==================== TEXT COLOR MANAGEMENT ==================== */
+/* .theme-island: zonas de diseño propio (p. ej. el Simulador 360°, oscuro en
+   ambos temas) a las que no se aplican estos !important globales; si no,
+   el modo claro pinta su texto y sus SVG de negro sobre fondo negro. */
 /* Light mode: Textos negros */
-.light p,
-.light span,
-.light div,
-.light label,
-.light h1,
-.light h2,
-.light h3,
-.light h4,
-.light h5,
-.light h6 {
+.light p:not(.theme-island, .theme-island *),
+.light span:not(.theme-island, .theme-island *),
+.light div:not(.theme-island, .theme-island *),
+.light label:not(.theme-island, .theme-island *),
+.light h1:not(.theme-island, .theme-island *),
+.light h2:not(.theme-island, .theme-island *),
+.light h3:not(.theme-island, .theme-island *),
+.light h4:not(.theme-island, .theme-island *),
+.light h5:not(.theme-island, .theme-island *),
+.light h6:not(.theme-island, .theme-island *) {
   color: #000000 !important;
 }
 
-.light .text-inherit {
+.light .text-inherit:not(.theme-island, .theme-island *) {
   color: inherit !important;
 }
 
 /* Light mode: Forzar negro en todos los íconos y símbolos */
-.light svg,
-.light [role="img"],
-.light svg * {
+.light svg:not(.theme-island, .theme-island *),
+.light [role="img"]:not(.theme-island, .theme-island *),
+.light svg *:not(.theme-island, .theme-island *) {
   color: #000 !important;
   fill: #000 !important;
   stroke: #000 !important;
 }
 
 /* Dark mode: Textos gris claro */
-.dark p,
-.dark span,
-.dark div,
-.dark label,
-.dark h1,
-.dark h2,
-.dark h3,
-.dark h4,
-.dark h5,
-.dark h6 {
+.dark p:not(.theme-island, .theme-island *),
+.dark span:not(.theme-island, .theme-island *),
+.dark div:not(.theme-island, .theme-island *),
+.dark label:not(.theme-island, .theme-island *),
+.dark h1:not(.theme-island, .theme-island *),
+.dark h2:not(.theme-island, .theme-island *),
+.dark h3:not(.theme-island, .theme-island *),
+.dark h4:not(.theme-island, .theme-island *),
+.dark h5:not(.theme-island, .theme-island *),
+.dark h6:not(.theme-island, .theme-island *) {
   color: #D1D5DB !important;
 }
 
-.dark .text-inherit {
+.dark .text-inherit:not(.theme-island, .theme-island *) {
   color: inherit !important;
 }
 
 /* Excepciones para elementos con colores específicos */
-.light .text-primary,
-.light .text-accent,
-.light .text-success,
-.light .text-error,
-.light .text-warning,
-.light .text-info,
-.light [class*="text-blue"],
-.light [class*="text-pink"],
-.light [class*="text-purple"],
-.light [class*="text-green"],
-.light [class*="text-red"],
-.light [class*="text-yellow"],
-.light [class*="text-cyan"],
-.light [class*="text-indigo"],
-.dark .text-primary,
-.dark .text-accent,
-.dark .text-success,
-.dark .text-error,
-.dark .text-warning,
-.dark .text-info,
-.dark [class*="text-blue"],
-.dark [class*="text-pink"],
-.dark [class*="text-purple"],
-.dark [class*="text-green"],
-.dark [class*="text-red"],
-.dark [class*="text-yellow"],
-.dark [class*="text-cyan"],
-.dark [class*="text-indigo"] {
+.light .text-primary:not(.theme-island, .theme-island *),
+.light .text-accent:not(.theme-island, .theme-island *),
+.light .text-success:not(.theme-island, .theme-island *),
+.light .text-error:not(.theme-island, .theme-island *),
+.light .text-warning:not(.theme-island, .theme-island *),
+.light .text-info:not(.theme-island, .theme-island *),
+.light [class*="text-blue"]:not(.theme-island, .theme-island *),
+.light [class*="text-pink"]:not(.theme-island, .theme-island *),
+.light [class*="text-purple"]:not(.theme-island, .theme-island *),
+.light [class*="text-green"]:not(.theme-island, .theme-island *),
+.light [class*="text-red"]:not(.theme-island, .theme-island *),
+.light [class*="text-yellow"]:not(.theme-island, .theme-island *),
+.light [class*="text-cyan"]:not(.theme-island, .theme-island *),
+.light [class*="text-indigo"]:not(.theme-island, .theme-island *),
+.dark .text-primary:not(.theme-island, .theme-island *),
+.dark .text-accent:not(.theme-island, .theme-island *),
+.dark .text-success:not(.theme-island, .theme-island *),
+.dark .text-error:not(.theme-island, .theme-island *),
+.dark .text-warning:not(.theme-island, .theme-island *),
+.dark .text-info:not(.theme-island, .theme-island *),
+.dark [class*="text-blue"]:not(.theme-island, .theme-island *),
+.dark [class*="text-pink"]:not(.theme-island, .theme-island *),
+.dark [class*="text-purple"]:not(.theme-island, .theme-island *),
+.dark [class*="text-green"]:not(.theme-island, .theme-island *),
+.dark [class*="text-red"]:not(.theme-island, .theme-island *),
+.dark [class*="text-yellow"]:not(.theme-island, .theme-island *),
+.dark [class*="text-cyan"]:not(.theme-island, .theme-island *),
+.dark [class*="text-indigo"]:not(.theme-island, .theme-island *) {
   color: inherit !important;
 }
 

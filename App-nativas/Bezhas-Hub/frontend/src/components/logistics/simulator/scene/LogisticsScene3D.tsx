@@ -1,8 +1,12 @@
-import React, { useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Box, Cylinder, Line, Text } from '@react-three/drei';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import {
+  OrbitControls, Html, Box, Cylinder, Line, Text, Billboard, Grid,
+  Environment, Lightformer, PerformanceMonitor, Instances, Instance,
+} from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette, SMAA } from '@react-three/postprocessing';
 import * as THREE from 'three';
-import { LOCATIONS, TransitMode, VehicleType, Telemetry } from '../engine/types';
+import { LOCATIONS, TransitMode, VehicleType, Telemetry, Phase } from '../engine/types';
 
 interface SceneProps {
   currentLocationIndex: number;
@@ -11,35 +15,62 @@ interface SceneProps {
   mode: TransitMode;
   stepIndex?: number;
   isRunning?: boolean;
+  isFinished?: boolean;
+  phase?: Phase;
+  /** Rotura de frío activa en el tramo actual (tránsito/destino en rojo). */
+  breachActive?: boolean;
+  /** El navegador ha perdido el contexto WebGL: el contenedor cae al mapa 2D. */
+  onContextLost?: () => void;
 }
 
+// Etiquetas en WebGL (troika) en vez de <Html>: no se montan sobre el HUD, no
+// hacen layout del DOM en cada frame y respetan la profundidad de la escena.
 function NodeLabel({ name, offset = [0, 2.5, 0] }: { name: string; offset?: [number, number, number] }) {
   return (
-    <Html position={offset} center sprite zIndexRange={[40, 0]}>
-      <div className="bg-zinc-900/90 px-3 py-1 rounded shadow-md border border-zinc-700 text-zinc-300 text-[9px] uppercase font-bold tracking-widest whitespace-nowrap pointer-events-none">
-        {name}
-      </div>
-    </Html>
+    <Billboard position={offset}>
+      <Text fontSize={0.3} color="#e4e4e7" letterSpacing={0.1} anchorX="center" anchorY="middle"
+        outlineWidth={0.045} outlineColor="#09090b" outlineOpacity={0.9}>
+        {name.toUpperCase()}
+      </Text>
+    </Billboard>
   );
 }
 
-function Plinth({ color = '#3f3f46' }: { color?: string }) {
+function Chip({ text, color, position, size = 0.16 }: { text: string; color: string; position: [number, number, number]; size?: number }) {
   return (
-    <>
-      <Cylinder args={[2, 2.2, 0.4, 32]} position={[0, -0.2, 0]}>
-        <meshStandardMaterial color="#18181b" roughness={0.8} />
-      </Cylinder>
-      <Cylinder args={[1.8, 1.8, 0.1, 32]} position={[0, 0.05, 0]}>
-        <meshStandardMaterial color={color} roughness={0.6} />
-      </Cylinder>
-    </>
+    <Billboard position={position}>
+      <Text fontSize={size} color={color} letterSpacing={0.1} anchorX="center" anchorY="middle">
+        {text}
+      </Text>
+    </Billboard>
+  );
+}
+
+// Pedestales de todas las paradas en 2 draw calls (antes 2 por parada).
+const PLINTH_TOP: Partial<Record<string, string>> = { factory: '#3f3f46', customs: '#3f3f46' };
+function PlinthsInstanced() {
+  const nodes = LOCATIONS.filter((l) => l.type !== 'port');
+  return (
+    <group>
+      <Instances limit={nodes.length} receiveShadow>
+        <cylinderGeometry args={[2, 2.2, 0.4, 32]} />
+        <meshStandardMaterial color="#18181b" roughness={0.8} metalness={0.2} />
+        {nodes.map((l) => <Instance key={l.name} position={[l.position[0], -0.2, l.position[2]]} />)}
+      </Instances>
+      <Instances limit={nodes.length} receiveShadow>
+        <cylinderGeometry args={[1.8, 1.8, 0.1, 32]} />
+        <meshStandardMaterial roughness={0.6} metalness={0.25} />
+        {nodes.map((l) => (
+          <Instance key={l.name} position={[l.position[0], 0.05, l.position[2]]} color={PLINTH_TOP[l.type] ?? '#27272a'} />
+        ))}
+      </Instances>
+    </group>
   );
 }
 
 function FactoryNode({ position, name }: { position: [number, number, number]; name: string }) {
   return (
     <group position={position}>
-      <Plinth />
       <gridHelper args={[3, 10, '#52525b', '#27272a']} position={[0, 0.11, 0]} />
       <Box args={[1.8, 1.2, 1.4]} position={[0, 0.7, 0]} castShadow receiveShadow>
         <meshStandardMaterial color="#27272a" metalness={0.2} roughness={0.8} />
@@ -52,7 +83,7 @@ function FactoryNode({ position, name }: { position: [number, number, number]; n
       </Box>
       {[-0.5, 0.5].map((z, i) => (
         <group key={i} position={[-1.2, 0, z]}>
-          <Cylinder args={[0.2, 0.25, 2.5, 16]} position={[0, 1.25, 0]} castShadow>
+          <Cylinder args={[0.2, 0.25, 2.5, 16]} position={[0, 1.25, 0]}>
             <meshStandardMaterial color="#52525b" />
           </Cylinder>
           <Cylinder args={[0.15, 0.15, 0.2, 16]} position={[0, 2.6, 0]}>
@@ -68,7 +99,6 @@ function FactoryNode({ position, name }: { position: [number, number, number]; n
 function WarehouseNode({ position, name }: { position: [number, number, number]; name: string }) {
   return (
     <group position={position}>
-      <Plinth color="#27272a" />
       {/* Nave con techo curvo */}
       <Box args={[2.2, 1.0, 1.8]} position={[0, 0.6, 0]} castShadow receiveShadow>
         <meshStandardMaterial color="#334155" roughness={0.7} />
@@ -81,7 +111,7 @@ function WarehouseNode({ position, name }: { position: [number, number, number];
         <meshStandardMaterial color="#0d9488" emissive="#0d9488" emissiveIntensity={0.4} />
       </Box>
       {/* Unidad frigorífica */}
-      <Box args={[0.4, 0.4, 0.4]} position={[1.0, 1.3, -0.5]} castShadow>
+      <Box args={[0.4, 0.4, 0.4]} position={[1.0, 1.3, -0.5]}>
         <meshStandardMaterial color="#e2e8f0" metalness={0.3} />
       </Box>
       <NodeLabel name={name} offset={[0, 2.8, 0]} />
@@ -99,10 +129,9 @@ function GateNode({ position, name }: { position: [number, number, number]; name
   });
   return (
     <group position={position}>
-      <Plinth color="#27272a" />
       {/* Postes */}
       {[-1.4, 1.4].map((x, i) => (
-        <Box key={i} args={[0.3, 1.6, 0.3]} position={[x, 0.85, 0]} castShadow>
+        <Box key={i} args={[0.3, 1.6, 0.3]} position={[x, 0.85, 0]}>
           <meshStandardMaterial color="#f59e0b" metalness={0.4} />
         </Box>
       ))}
@@ -115,11 +144,7 @@ function GateNode({ position, name }: { position: [number, number, number]; name
       <Box args={[0.5, 0.7, 0.2]} position={[-1.4, 1.9, 0.3]}>
         <meshStandardMaterial color="#00d4aa" emissive="#00d4aa" emissiveIntensity={0.5} />
       </Box>
-      <Html position={[-1.4, 2.5, 0.3]} center sprite zIndexRange={[40, 0]}>
-        <div className="bg-teal-900/80 text-teal-300 px-1 py-0.5 rounded border border-teal-500/50 text-[6px] font-mono whitespace-nowrap pointer-events-none">
-          DID + RFID CHECK
-        </div>
-      </Html>
+      <Chip text="DID + RFID CHECK" color="#5eead4" position={[-1.4, 2.5, 0.3]} />
       <NodeLabel name={name} offset={[0, 3.2, 0]} />
     </group>
   );
@@ -128,7 +153,6 @@ function GateNode({ position, name }: { position: [number, number, number]; name
 function CustomsNode({ position, name }: { position: [number, number, number]; name: string }) {
   return (
     <group position={position}>
-      <Plinth />
       <Box args={[2.8, 0.2, 1.8]} position={[0, 1.8, 0]} castShadow>
         <meshStandardMaterial color="#1f2937" metalness={0.5} roughness={0.5} />
       </Box>
@@ -136,7 +160,7 @@ function CustomsNode({ position, name }: { position: [number, number, number]; n
         <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={0.4} />
       </Box>
       {[[-1.2, -0.7], [1.2, -0.7], [-1.2, 0.7], [1.2, 0.7]].map(([x, z], i) => (
-        <Box key={i} args={[0.2, 1.7, 0.2]} position={[x, 0.95, z]} castShadow>
+        <Box key={i} args={[0.2, 1.7, 0.2]} position={[x, 0.95, z]}>
           <meshStandardMaterial color="#4b5563" />
         </Box>
       ))}
@@ -182,14 +206,14 @@ function PortNode({ position, name }: { position: [number, number, number]; name
       {/* Grúa pórtico */}
       <group position={[0, 0.2, 0]}>
         {[[-0.8, -0.8], [0.8, -0.8], [-0.8, 0.8], [0.8, 0.8]].map(([x, z], i) => (
-          <Box key={i} args={[0.2, 2.5, 0.2]} position={[x, 1.25, z]} castShadow>
+          <Box key={i} args={[0.2, 2.5, 0.2]} position={[x, 1.25, z]}>
             <meshStandardMaterial color="#f59e0b" />
           </Box>
         ))}
         <Box args={[2.0, 0.2, 0.2]} position={[0, 2.6, -0.8]} castShadow><meshStandardMaterial color="#f59e0b" /></Box>
         <Box args={[2.0, 0.2, 0.2]} position={[0, 2.6, 0.8]} castShadow><meshStandardMaterial color="#f59e0b" /></Box>
-        <Box args={[0.2, 0.2, 2.0]} position={[-0.8, 2.6, 0]} castShadow><meshStandardMaterial color="#f59e0b" /></Box>
-        <Box args={[0.2, 0.2, 2.0]} position={[0.8, 2.6, 0]} castShadow><meshStandardMaterial color="#f59e0b" /></Box>
+        <Box args={[0.2, 0.2, 2.0]} position={[-0.8, 2.6, 0]}><meshStandardMaterial color="#f59e0b" /></Box>
+        <Box args={[0.2, 0.2, 2.0]} position={[0.8, 2.6, 0]}><meshStandardMaterial color="#f59e0b" /></Box>
         <Box args={[3.0, 0.3, 0.5]} position={[0.5, 2.8, 0]} castShadow><meshStandardMaterial color="#f59e0b" /></Box>
         <group ref={craneRef} position={[1.2, 2.6, 0]}>
           <Box args={[0.1, 1.5, 0.1]} position={[0, -0.75, 0]}><meshStandardMaterial color="#18181b" /></Box>
@@ -211,11 +235,7 @@ function PortNode({ position, name }: { position: [number, number, number]; name
         <Box args={[1.2, 1.2, 1.2]}>
           <meshBasicMaterial color="#38bdf8" wireframe transparent opacity={0.6} />
         </Box>
-        <Html position={[0, 0.8, 0]} center sprite zIndexRange={[40, 0]}>
-          <div className="bg-[#0c4a6e]/80 text-[#38bdf8] px-1.5 py-0.5 rounded border border-[#38bdf8]/50 text-[6px] font-mono tracking-widest whitespace-nowrap shadow-[0_0_8px_#38bdf8] pointer-events-none">
-            AR COG CALC
-          </div>
-        </Html>
+        <Chip text="AR COG CALC" color="#7dd3fc" position={[0, 0.85, 0]} />
       </group>
 
       <NodeLabel name={name} offset={[0, 4.5, 0]} />
@@ -234,7 +254,6 @@ function AirportNode({ position, name }: { position: [number, number, number]; n
 
   return (
     <group position={position}>
-      <Plinth color="#27272a" />
       <Box args={[3.2, 0.12, 1.2]} position={[0, 0.11, 0]}>
         <meshStandardMaterial color="#1f2937" roughness={0.9} />
       </Box>
@@ -255,7 +274,7 @@ function AirportNode({ position, name }: { position: [number, number, number]; n
           </mesh>
         ))}
       </group>
-      <Cylinder args={[0.2, 0.3, 1.5]} position={[-1.0, 0.8, -0.8]} castShadow>
+      <Cylinder args={[0.2, 0.3, 1.5]} position={[-1.0, 0.8, -0.8]}>
         <meshStandardMaterial color="#d4d4d8" />
       </Cylinder>
       <Cylinder args={[0.3, 0.2, 0.4]} position={[-1.0, 1.7, -0.8]}>
@@ -296,7 +315,6 @@ function AirportNode({ position, name }: { position: [number, number, number]; n
 function CustomerNode({ position, name }: { position: [number, number, number]; name: string }) {
   return (
     <group position={position}>
-      <Plinth color="#27272a" />
       <Box args={[2.2, 1.5, 2.2]} position={[0, 0.85, 0]} castShadow receiveShadow>
         <meshStandardMaterial color="#e4e4e7" roughness={0.9} />
       </Box>
@@ -308,17 +326,13 @@ function CustomerNode({ position, name }: { position: [number, number, number]; 
       </Box>
       <Box args={[0.6, 0.6, 0.1]} position={[-0.5, 0.4, 1.1]}><meshStandardMaterial color="#18181b" /></Box>
       <Box args={[0.6, 0.6, 0.1]} position={[0.5, 0.4, 1.1]}><meshStandardMaterial color="#18181b" /></Box>
-      <Box args={[0.2, 0.5, 0.2]} position={[1.2, 0.35, 1.2]} rotation={[0, -Math.PI / 4, 0]} castShadow>
+      <Box args={[0.2, 0.5, 0.2]} position={[1.2, 0.35, 1.2]} rotation={[0, -Math.PI / 4, 0]}>
         <meshStandardMaterial color="#18181b" />
       </Box>
       <Box args={[0.25, 0.3, 0.05]} position={[1.2, 0.65, 1.2]} rotation={[0, -Math.PI / 4, 0]}>
         <meshStandardMaterial color="#34d399" emissive="#34d399" emissiveIntensity={0.5} />
       </Box>
-      <Html position={[1.2, 1.0, 1.2]} center sprite zIndexRange={[40, 0]}>
-        <div className="bg-emerald-900/80 text-emerald-400 px-1 py-0.5 rounded border border-emerald-500/50 text-[5px] font-mono whitespace-nowrap shadow-[0_0_8px_#10b981] pointer-events-none">
-          VALIDATOR TERMINAL
-        </div>
-      </Html>
+      <Chip text="VALIDATOR TERMINAL" color="#6ee7b7" position={[1.2, 1.05, 1.2]} size={0.18} />
       <NodeLabel name={name} offset={[0, 2.5, 0]} />
     </group>
   );
@@ -365,14 +379,24 @@ function ZfPerimeter() {
   );
 }
 
+// 18 contenedores del buque en 1 draw call (antes 18, más otras 18 de sombra).
+const SHIP_CONTAINERS: { pos: [number, number, number]; color: string }[] = [-0.6, 0, 0.6].flatMap((x, xi) =>
+  [-0.4, 0, 0.4].flatMap((z, zi) => [
+    { pos: [x, 0, z] as [number, number, number], color: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][((xi + 1) * (zi + 2)) % 5] },
+    { pos: [x, 0.6, z] as [number, number, number], color: ['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ef4444'][((xi + 3) * (zi + 1)) % 5] },
+  ])
+);
+
 function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number, number, number]; type: VehicleType; telemetry?: Telemetry }) {
   const ref = useRef<THREE.Group>(null);
   const iotRef = useRef<THREE.Mesh>(null);
   const targetVec = useMemo(() => new THREE.Vector3(), []);
   const basePos = useRef<THREE.Vector3 | null>(null);
   const time = useRef(0);
+  // Reutilizados en cada frame: antes se creaban Vector3/Object3D nuevos 60 veces por segundo.
+  const tmp = useMemo(() => ({ dir: new THREE.Vector3(), look: new THREE.Vector3(), dummy: new THREE.Object3D() }), []);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     time.current += delta;
     if (iotRef.current && iotRef.current.material) {
       (iotRef.current.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(time.current * 8) * 0.6;
@@ -389,17 +413,19 @@ function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number,
       const currentDist = basePos.current.distanceTo(targetVec);
 
       if (currentDist > 0.05) {
+        // Sombras bajo demanda: sólo se recalculan mientras algo se mueve.
+        state.gl.shadowMap.needsUpdate = true;
         const step = speed * delta;
-        const dir = targetVec.clone().sub(basePos.current).normalize();
+        const dir = tmp.dir.copy(targetVec).sub(basePos.current).normalize();
         if (currentDist <= step) {
           basePos.current.copy(targetVec);
         } else {
           basePos.current.add(dir.multiplyScalar(step));
         }
 
-        const lookAtTarget = targetVec.clone();
+        const lookAtTarget = tmp.look.copy(targetVec);
         lookAtTarget.y = basePos.current.y;
-        const dummy = new THREE.Object3D();
+        const dummy = tmp.dummy;
         dummy.position.copy(basePos.current);
         dummy.lookAt(lookAtTarget);
         ref.current.quaternion.slerp(dummy.quaternion, 8 * delta);
@@ -454,7 +480,7 @@ function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number,
             <meshStandardMaterial color="#18181b" />
           </Box>
           {[1.2, -0.4, -1.0].map((x, i) => (
-            <Cylinder key={i} args={[0.2, 0.2, 0.9, 16]} position={[x, 0.2, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <Cylinder key={i} args={[0.2, 0.2, 0.9, 16]} position={[x, 0.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
               <meshStandardMaterial color="#09090b" roughness={0.9} />
             </Cylinder>
           ))}
@@ -533,7 +559,7 @@ function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number,
             <Cylinder args={[0.02, 0.05, 1.2, 8]} position={[0, 1.5, 0]}>
               <meshStandardMaterial color="#94a3b8" />
             </Cylinder>
-            <Cylinder args={[0.15, 0.2, 0.8, 16]} position={[-0.6, 0.4, 0]} castShadow>
+            <Cylinder args={[0.15, 0.2, 0.8, 16]} position={[-0.6, 0.4, 0]}>
               <meshStandardMaterial color="#3f3f46" />
             </Cylinder>
             <Cylinder args={[0.1, 0.1, 0.2, 16]} position={[-0.6, 0.9, 0]}>
@@ -541,20 +567,11 @@ function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number,
             </Cylinder>
           </group>
           <group position={[0.2, 1.2, 0]}>
-            {[-0.6, 0, 0.6].map((x, xi) =>
-              [-0.4, 0, 0.4].map((z, zi) => (
-                <Box key={`${xi}-${zi}`} args={[0.55, 0.6, 0.35]} position={[x, 0, z]} castShadow>
-                  <meshStandardMaterial color={['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][((xi + 1) * (zi + 2)) % 5]} />
-                </Box>
-              ))
-            )}
-            {[-0.6, 0, 0.6].map((x, xi) =>
-              [-0.4, 0, 0.4].map((z, zi) => (
-                <Box key={`l2-${xi}-${zi}`} args={[0.55, 0.6, 0.35]} position={[x, 0.6, z]} castShadow>
-                  <meshStandardMaterial color={['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ef4444'][((xi + 3) * (zi + 1)) % 5]} />
-                </Box>
-              ))
-            )}
+            <Instances limit={SHIP_CONTAINERS.length} castShadow>
+              <boxGeometry args={[0.55, 0.6, 0.35]} />
+              <meshStandardMaterial roughness={0.55} metalness={0.35} />
+              {SHIP_CONTAINERS.map((c, i) => <Instance key={i} position={c.pos} color={c.color} />)}
+            </Instances>
           </group>
           <Box ref={iotRef as any} args={[0.2, 0.2, 0.2]} position={[-1.4, 2.3, 0]}>
             <meshBasicMaterial color="#10b981" transparent />
@@ -563,7 +580,7 @@ function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number,
       )}
 
       {telemetry && (
-        <Html position={[0, type === 'buque' ? 3.0 : 2.0, 0]} center zIndexRange={[40, 0]}>
+        <Html position={[0, type === 'buque' ? 3.0 : 2.0, 0]} center zIndexRange={[5, 0]}>
           <div className="bg-black/80 backdrop-blur border border-emerald-500/30 p-1.5 rounded shadow-lg flex flex-col gap-0.5 text-center pointer-events-none w-[100px]">
             <span className="text-[7px] text-zinc-400 font-bold tracking-[0.2em] uppercase">{type} TELEMETRY</span>
             <div className="flex justify-between items-center text-[8px] font-mono mt-0.5">
@@ -581,58 +598,141 @@ function Vehicle({ targetPosition, type, telemetry }: { targetPosition: [number,
   );
 }
 
-function RoutesNetwork({ mode }: { mode: TransitMode }) {
+// ── Rutas ───────────────────────────────────────────────────────────────────
+// Cada tramo (origen, tránsito, destino) tiene un estado: pendiente (gris,
+// quieto), activo (fluye), completado (teal) o roto por rotura de frío (rojo).
+// El flujo son partículas instanciadas que recorren la curva: 1 draw call por
+// tramo, y brillan con el bloom porque su color supera 1.0 (toneMapped off).
+type SegState = 'pending' | 'active' | 'done' | 'broken';
+
+const SEG_COLOR: Record<SegState, string> = {
+  pending: '#3f3f46', active: '#5eead4', done: '#14b8a6', broken: '#f87171',
+};
+
+function segmentStates(phase: Phase | undefined, started: boolean, finished: boolean, broken: boolean): SegState[] {
+  const order: Phase[] = ['origin', 'transit', 'destination'];
+  const cur = phase ? order.indexOf(phase) : -1;
+  return order.map((_, i) => {
+    if (!started) return 'pending';
+    const done = finished || i < cur;
+    const active = !finished && i === cur;
+    if (broken && i >= 1 && (done || active)) return 'broken';
+    return done ? 'done' : active ? 'active' : 'pending';
+  });
+}
+
+function FlowParticles({ curve, state, count = 26 }: { curve: THREE.CatmullRomCurve3; state: SegState; count?: number }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const point = useMemo(() => new THREE.Vector3(), []);
+  const color = useMemo(() => new THREE.Color(SEG_COLOR[state]).multiplyScalar(state === 'pending' ? 0.6 : 2.4), [state]);
+  const t = useRef(0);
+
+  useFrame((_, delta) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const speed = state === 'active' ? 0.09 : state === 'pending' ? 0 : 0.035;
+    t.current = (t.current + delta * speed) % 1;
+    for (let i = 0; i < count; i++) {
+      const u = (i / count + t.current) % 1;
+      curve.getPointAt(u, point);
+      dummy.position.set(point.x, point.y + 0.08, point.z);
+      const s = state === 'active' ? 0.9 + 0.5 * Math.sin((u + t.current) * Math.PI * 8) : 0.75;
+      dummy.scale.setScalar(s);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, count]} frustumCulled={false}>
+      <sphereGeometry args={[0.09, 10, 10]} />
+      <meshBasicMaterial color={color} toneMapped={false} />
+    </instancedMesh>
+  );
+}
+
+function RoutesNetwork({ mode, states }: { mode: TransitMode; states: SegState[] }) {
   const landIdx = mode === 'sea' ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4, 5, 11];
   const transitIdx = mode === 'sea' ? [6, 7] : [11, 12];
   const destIdx = mode === 'sea' ? [7, 8, 9, 10] : [12, 8, 9, 10];
 
-  const mkPoints = (idxs: number[]) => idxs.map((i) => new THREE.Vector3(...LOCATIONS[i].position));
+  const curves = useMemo(() => {
+    const mk = (idxs: number[], lift = 0) => {
+      const pts = idxs.map((i) => new THREE.Vector3(...LOCATIONS[i].position).setY(0.06));
+      if (lift && pts.length === 2) {
+        // Tramo internacional: arco (aéreo alto, marítimo rasante) en vez de línea recta.
+        const mid = pts[0].clone().lerp(pts[1], 0.5).setY(lift);
+        pts.splice(1, 0, mid);
+      }
+      return new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.2);
+    };
+    return [mk(landIdx), mk(transitIdx, mode === 'air' ? 4.5 : 0.25), mk(destIdx)];
+  }, [mode]);
 
-  const landCurve = useMemo(() => new THREE.CatmullRomCurve3(mkPoints(landIdx), false, 'catmullrom', 0.2).getPoints(200), [mode]);
-  const transitCurve = useMemo(() => new THREE.CatmullRomCurve3(mkPoints(transitIdx), false, 'catmullrom', 0.2).getPoints(80), [mode]);
-  const destCurve = useMemo(() => new THREE.CatmullRomCurve3(mkPoints(destIdx), false, 'catmullrom', 0.2).getPoints(120), [mode]);
-
-  const l1 = useRef<any>(null);
-  const l2 = useRef<any>(null);
-  const l3 = useRef<any>(null);
+  const lines = useMemo(() => curves.map((c, i) => c.getPoints(i === 1 ? 80 : 160)), [curves]);
+  const lineRefs = [useRef<any>(null), useRef<any>(null), useRef<any>(null)];
   useFrame((_, delta) => {
-    [l1, l2, l3].forEach((r) => {
-      if (r.current && r.current.material) r.current.material.dashOffset -= delta * 1.5;
+    lineRefs.forEach((r, i) => {
+      if (r.current?.material && states[i] !== 'pending') r.current.material.dashOffset -= delta * (states[i] === 'active' ? 1.6 : 0.5);
     });
   });
 
   return (
     <group>
-      <Line ref={l1} points={landCurve} color="#00d4aa" lineWidth={2.5} dashed dashSize={1} gapSize={1} transparent opacity={0.6} />
-      <Line ref={l2} points={transitCurve} color={mode === 'sea' ? '#38bdf8' : '#f472b6'} lineWidth={2.5} dashed dashSize={1} gapSize={1} transparent opacity={0.6} />
-      <Line ref={l3} points={destCurve} color="#f59e0b" lineWidth={2.5} dashed dashSize={1} gapSize={1} transparent opacity={0.6} />
+      {lines.map((pts, i) => (
+        <Line key={`${mode}-${i}`} ref={lineRefs[i]} points={pts} color={SEG_COLOR[states[i]]}
+          lineWidth={states[i] === 'pending' ? 1.5 : 2.5} dashed dashSize={0.8} gapSize={0.6}
+          transparent opacity={states[i] === 'pending' ? 0.35 : 0.85} />
+      ))}
+      {curves.map((c, i) => <FlowParticles key={`${mode}-p${i}`} curve={c} state={states[i]} count={i === 1 ? 18 : 26} />)}
     </group>
   );
 }
 
+// ── Mar ─────────────────────────────────────────────────────────────────────
+// El oleaje se calcula en el vertex shader (antes: 2.145 vértices en CPU cada
+// frame) y con normales analíticas, así la luz y el entorno reaccionan a las olas.
+const WAVE_GLSL = /* glsl */ `
+  float bzWaveH(vec2 p, float t) {
+    return 0.15 * sin(p.x * 3.08 + t) + 0.10 * cos(p.y * 4.29 + 0.8 * t) + 0.08 * sin(p.x * 1.54 + p.y * 2.86 - 1.2 * t);
+  }
+  vec2 bzWaveD(vec2 p, float t) {
+    float c3 = 0.08 * cos(p.x * 1.54 + p.y * 2.86 - 1.2 * t);
+    return vec2(0.15 * 3.08 * cos(p.x * 3.08 + t) + 1.54 * c3,
+               -0.10 * 4.29 * sin(p.y * 4.29 + 0.8 * t) + 2.86 * c3);
+  }
+`;
+
 function Sea() {
-  const meshRef = useRef<THREE.Mesh>(null);
-  useFrame((state) => {
-    if (meshRef.current && meshRef.current.geometry) {
-      const positions = meshRef.current.geometry.attributes.position;
-      const time = state.clock.elapsedTime * 2;
-      for (let i = 0; i < positions.count; i++) {
-        const ix = i % 65;
-        const iy = Math.floor(i / 65);
-        const u = ix / 64;
-        const v = iy / 32;
-        const wave1 = Math.sin(u * 40 + time) * 0.15;
-        const wave2 = Math.cos(v * 30 + time * 0.8) * 0.1;
-        const wave3 = Math.sin(u * 20 + v * 20 - time * 1.2) * 0.08;
-        positions.setZ(i, wave1 + wave2 + wave3);
-      }
-      positions.needsUpdate = true;
-    }
-  });
+  const uniforms = useMemo(() => ({ uTime: { value: 0 } }), []);
+  const material = useMemo(() => {
+    const m = new THREE.MeshStandardMaterial({ color: '#0c4a6e', transparent: true, opacity: 0.82, roughness: 0.18, metalness: 0.55 });
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = uniforms.uTime;
+      shader.vertexShader = `uniform float uTime;\n${WAVE_GLSL}\n${shader.vertexShader}`
+        .replace('#include <beginnormal_vertex>', `
+          vec2 bzP = position.xy;
+          vec2 bzD = bzWaveD(bzP, uTime);
+          vec3 objectNormal = normalize(vec3(-bzD.x, -bzD.y, 1.0));
+          #ifdef USE_TANGENT
+            vec3 objectTangent = vec3(tangent.xyz);
+          #endif
+        `)
+        .replace('#include <begin_vertex>', `
+          vec3 transformed = vec3(position);
+          transformed.z += bzWaveH(bzP, uTime);
+        `);
+    };
+    return m;
+  }, [uniforms]);
+  useEffect(() => () => material.dispose(), [material]);
+  useFrame((state) => { uniforms.uTime.value = state.clock.elapsedTime * 2; });
+
   return (
-    <mesh ref={meshRef} position={[3.5, -0.4, 4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[13, 7, 64, 32]} />
-      <meshStandardMaterial color="#0369a1" transparent opacity={0.7} roughness={0.1} metalness={0.8} />
+    <mesh position={[3.5, -0.4, 4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={material}>
+      <planeGeometry args={[13, 7, 96, 48]} />
     </mesh>
   );
 }
@@ -676,6 +776,17 @@ function SincronizedAirplane({ mode, stepIndex, vehicleType }: { mode: TransitMo
   );
 }
 
+// Sombras bajo demanda: el mapa de sombras (≈40 mallas) ya no se redibuja en
+// cada frame, sólo al cambiar de etapa/modo o mientras se mueve el vehículo.
+function ShadowInvalidator({ deps }: { deps: unknown[] }) {
+  const gl = useThree((s) => s.gl);
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false;
+    gl.shadowMap.needsUpdate = true;
+  }, [gl, ...deps]);
+  return null;
+}
+
 // Cámara directora: el target del orbit sigue suavemente a la localización activa
 function CameraDirector({ locationIndex, controlsRef }: { locationIndex: number; controlsRef: React.MutableRefObject<any> }) {
   const target = useMemo(() => new THREE.Vector3(), []);
@@ -695,6 +806,11 @@ export const LogisticsScene3D: React.FC<SceneProps> = ({
   telemetry,
   mode,
   stepIndex,
+  isRunning = false,
+  isFinished = false,
+  phase,
+  breachActive = false,
+  onContextLost,
 }) => {
   const currentLoc = LOCATIONS[currentLocationIndex];
   const vehicleTargetPosition: [number, number, number] = [
@@ -704,52 +820,149 @@ export const LogisticsScene3D: React.FC<SceneProps> = ({
   ];
 
   const controlsRef = useRef<any>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Calidad adaptativa: el PerformanceMonitor baja la resolución (y apaga el
+  // postproceso) si el equipo no sostiene los fps, y la sube si sobra margen.
+  const maxDpr = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 1.75);
+  const minDpr = Math.min(1, maxDpr);
+  const [dpr, setDpr] = useState(maxDpr);
+  const [effects, setEffects] = useState(true);
+  const [monitorReady, setMonitorReady] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setMonitorReady(true), 4000); return () => clearTimeout(t); }, []);
+
+  // Sin pantalla, sin render: si la escena sale del viewport se para el bucle.
+  const [inView, setInView] = useState(true);
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.05 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const states = segmentStates(phase, isRunning || isFinished, isFinished, breachActive);
 
   return (
-    <Canvas shadows camera={{ position: [-14, 18, 24], fov: 45 }}>
-      <color attach="background" args={['#05050a']} />
-      <fog attach="fog" args={['#05050a', 25, 90]} />
-      <ambientLight intensity={0.45} />
-      <directionalLight position={[10, 25, 10]} intensity={1.6} color="#e2e8f0" castShadow />
-      <pointLight position={[-15, 10, -10]} intensity={2.0} color="#00d4aa" />
-      <pointLight position={[15, 8, 5]} intensity={1.2} color="#38bdf8" />
-      <pointLight position={[3, 6, 4]} intensity={0.8} color="#f59e0b" />
+    <div ref={wrapperRef} className="w-full h-full">
+      <Canvas
+        shadows
+        dpr={dpr}
+        frameloop={inView ? 'always' : 'never'}
+        camera={{ position: [-14, 18, 24], fov: 45 }}
+        gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
+        onCreated={({ gl, scene }) => {
+          gl.toneMappingExposure = 1.1;
+          // El navegador puede quitarnos el contexto (GPU reiniciada, demasiados contextos):
+          // en vez de un lienzo negro, el simulador cae al mapa 2D.
+          gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); onContextLost?.(); }, { once: true });
+          if (import.meta.env.DEV) Object.assign(window as any, { __bzSimGl: gl, __bzSimScene: scene });
+        }}
+      >
+        {monitorReady && <PerformanceMonitor
+          factor={1}
+          flipflops={6}
+          // Sólo reacciona a caídas reales (< 50 % del refresco), no a un tirón al cambiar de etapa.
+          bounds={(refresh) => [refresh * 0.5, refresh * 0.85]}
+          onChange={({ factor }) => setDpr(Math.round((minDpr + (maxDpr - minDpr) * factor) * 100) / 100)}
+          onFallback={() => setEffects(false)}
+        />}
 
-      <gridHelper args={[120, 120, '#3f3f46', '#18181b']} position={[0, -0.15, 0]} />
+        <color attach="background" args={['#05060b']} />
+        <fog attach="fog" args={['#05060b', 30, 95]} />
 
-      <ZfPerimeter />
-      <RoutesNetwork mode={mode} />
-      <Sea />
+        {/* Luz: entorno procedural (sin descargar HDRI) con focos de la marca + sol con sombras */}
+        <Environment resolution={256} frames={1} environmentIntensity={1.35}>
+          <Lightformer form="rect" intensity={2.2} color="#99f6e4" position={[-12, 10, -8]} scale={[18, 6, 1]} />
+          <Lightformer form="rect" intensity={1.6} color="#f9a8d4" position={[14, 8, 10]} scale={[14, 5, 1]} />
+          <Lightformer form="ring" intensity={2.5} color="#ffffff" position={[0, 18, 0]} scale={8} />
+          <Lightformer form="rect" intensity={0.6} color="#38bdf8" position={[0, 2, 20]} scale={[30, 3, 1]} />
+        </Environment>
+        <ambientLight intensity={0.35} />
+        <hemisphereLight args={['#bae6fd', '#0b1020', 0.9]} />
+        <directionalLight
+          position={[12, 26, 12]}
+          intensity={2.6}
+          color="#f1f5f9"
+          castShadow
+          shadow-mapSize={[2048, 2048]}
+          shadow-bias={-0.0004}
+          shadow-normalBias={0.02}
+          shadow-camera-left={-30}
+          shadow-camera-right={30}
+          shadow-camera-top={18}
+          shadow-camera-bottom={-18}
+          shadow-camera-near={1}
+          shadow-camera-far={70}
+        />
+        <pointLight position={[-15, 8, -6]} intensity={40} distance={34} color="#00d4aa" />
+        <pointLight position={[15, 7, 4]} intensity={30} distance={32} color="#38bdf8" />
 
-      {LOCATIONS.map((loc, idx) => {
-        const props = { position: loc.position as [number, number, number], name: loc.name };
-        switch (loc.type) {
-          case 'factory': return <FactoryNode key={idx} {...props} />;
-          case 'warehouse': return <WarehouseNode key={idx} {...props} />;
-          case 'gate': return <GateNode key={idx} {...props} />;
-          case 'customs': return <CustomsNode key={idx} {...props} />;
-          case 'port': return <PortNode key={idx} {...props} />;
-          case 'airport': return <AirportNode key={idx} {...props} />;
-          case 'customer': return <CustomerNode key={idx} {...props} />;
-          default: return null;
-        }
-      })}
+        {/* Suelo: recibe sombras y lleva una rejilla que se desvanece con la distancia */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.8, 0]} receiveShadow>
+          <planeGeometry args={[160, 160]} />
+          <meshStandardMaterial color="#0a0c13" roughness={0.92} metalness={0.05} />
+        </mesh>
+        <Grid
+          position={[0, -0.78, 0]}
+          args={[160, 160]}
+          cellSize={1}
+          cellThickness={0.5}
+          cellColor="#263241"
+          sectionSize={5}
+          sectionThickness={1}
+          sectionColor="#0f766e"
+          fadeDistance={70}
+          fadeStrength={1.2}
+          infiniteGrid
+        />
 
-      <SincronizedAirplane mode={mode} stepIndex={stepIndex} vehicleType={vehicleType} />
-      <Vehicle targetPosition={vehicleTargetPosition} type={vehicleType} telemetry={telemetry} />
+        <ZfPerimeter />
+        <RoutesNetwork mode={mode} states={states} />
+        <Sea />
+        <PlinthsInstanced />
 
-      <CameraDirector locationIndex={currentLocationIndex} controlsRef={controlsRef} />
+        {LOCATIONS.map((loc, idx) => {
+          const props = { position: loc.position as [number, number, number], name: loc.name };
+          switch (loc.type) {
+            case 'factory': return <FactoryNode key={idx} {...props} />;
+            case 'warehouse': return <WarehouseNode key={idx} {...props} />;
+            case 'gate': return <GateNode key={idx} {...props} />;
+            case 'customs': return <CustomsNode key={idx} {...props} />;
+            case 'port': return <PortNode key={idx} {...props} />;
+            case 'airport': return <AirportNode key={idx} {...props} />;
+            case 'customer': return <CustomerNode key={idx} {...props} />;
+            default: return null;
+          }
+        })}
 
-      <OrbitControls
-        ref={controlsRef}
-        makeDefault
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI / 2.2}
-        enableZoom={true}
-        enablePan={true}
-        minDistance={8}
-        maxDistance={65}
-      />
-    </Canvas>
+        <SincronizedAirplane mode={mode} stepIndex={stepIndex} vehicleType={vehicleType} />
+        <Vehicle targetPosition={vehicleTargetPosition} type={vehicleType} telemetry={telemetry} />
+
+        <ShadowInvalidator deps={[mode, stepIndex, vehicleType, currentLocationIndex]} />
+        <CameraDirector locationIndex={currentLocationIndex} controlsRef={controlsRef} />
+
+        <OrbitControls
+          ref={controlsRef}
+          makeDefault
+          minPolarAngle={0}
+          maxPolarAngle={Math.PI / 2.2}
+          enableZoom={true}
+          enablePan={true}
+          minDistance={8}
+          maxDistance={65}
+        />
+
+        {/* Postproceso: bloom sólo en lo que supera 1.0 (rutas, luces de estado), viñeta y SMAA.
+            Se apaga solo si el PerformanceMonitor detecta que el equipo no llega. */}
+        {effects && (
+          <EffectComposer multisampling={0}>
+            <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.2} intensity={0.85} radius={0.7} />
+            <Vignette offset={0.32} darkness={0.55} />
+            <SMAA />
+          </EffectComposer>
+        )}
+      </Canvas>
+    </div>
   );
 };

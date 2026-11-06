@@ -62,7 +62,7 @@ export const ManualVsAutonomous: React.FC<ManualVsAutonomousProps> = ({ onClose 
   ];
 
   return (
-    <div className="w-full p-6 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 text-slate-200">
+    <div className="theme-island w-full p-6 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 text-slate-200">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-slate-700 pb-5">
         <div>
           <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-400">

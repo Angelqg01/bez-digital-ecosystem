@@ -11,14 +11,16 @@ import { SimBlock, createBlock, GENESIS_HASH, nftsForStep, escrowEventsForStep }
 
 import { BlockchainNodes } from './BlockchainNodes';
 import { TimelineProgressBar } from './TimelineProgressBar';
-import { ExplorerPanel, ExplorerLogEntry } from './explorer/ExplorerPanel';
+import { ExplorerPanel, ExplorerLogEntry, SdkHistoryEntry } from './explorer/ExplorerPanel';
+import { sdkCallFor } from './engine/sdkMap';
+import { RouteMap2D } from './scene/RouteMap2D';
 import { ValidatorNodesBar } from './explorer/ValidatorNodesBar';
 import { IoTTelemetryChart } from './panels/IoTTelemetryChart';
 import { AssetDigitalTwinPanel } from './panels/AssetDigitalTwinPanel';
 import { FoodOracleScanner } from './panels/FoodOracleScanner';
 import { CertificateModal } from './panels/CertificateModal';
 import { ManualVsAutonomous } from './intro/ManualVsAutonomous';
-import { isWebGLAvailable, Scene3DErrorBoundary, Scene3DUnavailable } from './scene/SceneFallback';
+import { isWebGLAvailable, Scene3DErrorBoundary } from './scene/SceneFallback';
 
 // La escena 3D (three/R3F) se carga en diferido para no engordar el bundle inicial del Hub
 const LogisticsScene3D = React.lazy(() =>
@@ -53,6 +55,8 @@ export default function LogisticsSimulator360() {
   const flow = useMemo(() => buildFlow360(mode), [mode]);
   // Se comprueba una vez: sin WebGL, <Canvas> lanza al montar y tumbaba la consola entera.
   const webglAvailable = useMemo(() => isWebGLAvailable(), []);
+  // Si el navegador retira el contexto WebGL a mitad de sesión, se pasa al mapa 2D.
+  const [glLost, setGlLost] = useState(false);
 
   // Refs para leer estado actualizado dentro del bucle asíncrono
   const isBreachedRef = useRef(isBreached);
@@ -116,6 +120,10 @@ export default function LogisticsSimulator360() {
 
       const logType = step.activeNodes.includes('mcp') && step.activeNodes.length === 1 ? 'agent' : 'bc';
       addLog(step.bc, logType);
+      const sdk = sdkCallFor(step.id, isBreachedRef.current && i >= BREACH_FROM_INDEX);
+      if (sdk) {
+        addLog(`SDK ▸ ${sdk.method} /api/cargolink${sdk.path.replace(':bUid', B_UID)} · ${sdk.role === 'device' ? 'x-device-key' : `rol ${sdk.role}`}${sdk.contract ? ` → ${sdk.contract}` : ''}`, 'agent');
+      }
 
       // Sellar bloque de la etapa en la cadena del explorer
       setBlocks((prev) => [
@@ -202,6 +210,32 @@ export default function LogisticsSimulator360() {
   );
   const activeValidatorDid = isRunning ? currentStep.validator?.did : undefined;
 
+  // Llamadas reales de la API que corresponden a lo que se está simulando.
+  const breachedAt = (i: number) => isBreached && i >= BREACH_FROM_INDEX;
+  const sdkCurrent = isRunning || isFinished ? sdkCallFor(currentStep.id, breachedAt(stepIndex)) : undefined;
+  const sdkHistory = useMemo(
+    () => flow
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => completedStepIds.includes(s.id))
+      .map(({ s, i }) => ({ stepId: s.id, label: s.bUidStage, call: sdkCallFor(s.id, isBreached && i >= BREACH_FROM_INDEX) }))
+      .filter((h): h is SdkHistoryEntry => Boolean(h.call)),
+    [flow, completedStepIds, isBreached]
+  );
+
+  // Sin WebGL (o si la escena 3D falla) se ve el recorrido en 2D, no un hueco.
+  const routeMap2D = (
+    <RouteMap2D
+      flow={flow}
+      stepIndex={stepIndex}
+      isRunning={isRunning}
+      isFinished={isFinished}
+      isBreached={isBreached}
+      breachFromIndex={BREACH_FROM_INDEX}
+      mode={mode}
+      vehicle={isIdle ? 'camion' : currentStep.vehicle}
+    />
+  );
+
   if (showIntro) {
     return <ManualVsAutonomous onClose={() => setShowIntro(false)} />;
   }
@@ -209,14 +243,14 @@ export default function LogisticsSimulator360() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-[82vh] min-h-[620px] rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 text-zinc-100 font-sans"
+      className="theme-island relative w-full h-[82vh] min-h-[620px] rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 text-zinc-100 font-sans"
     >
       {/* Capa 3D de fondo */}
       <div className="absolute inset-0 z-0">
-        {!webglAvailable ? (
-          <Scene3DUnavailable />
+        {!webglAvailable || glLost ? (
+          routeMap2D
         ) : (
-          <Scene3DErrorBoundary>
+          <Scene3DErrorBoundary fallback={routeMap2D}>
             <Suspense
               fallback={
                 <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-teal-400">
@@ -232,6 +266,10 @@ export default function LogisticsSimulator360() {
                 mode={mode}
                 stepIndex={stepIndex}
                 isRunning={isRunning}
+                isFinished={isFinished}
+                phase={isIdle ? undefined : currentStep.phase}
+                breachActive={isBreached && stepIndex >= BREACH_FROM_INDEX}
+                onContextLost={() => setGlLost(true)}
               />
             </Suspense>
           </Scene3DErrorBoundary>
@@ -468,6 +506,13 @@ export default function LogisticsSimulator360() {
                 logs={logs}
                 isBreached={isBreached}
                 isFinished={isFinished}
+                sdk={{
+                  current: sdkCurrent,
+                  currentLabel: `${currentStep.id}/16 · ${currentStep.bUidStage}`,
+                  bUid: B_UID,
+                  breached: breachedAt(stepIndex),
+                  history: sdkHistory,
+                }}
               />
             </div>
             <IoTTelemetryChart isRunning={isRunning} telemetry={currentStep.telemetry} />

@@ -55,7 +55,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ onClose, bUi
             </div>
             <div>
               <div className="text-zinc-600 mb-1 uppercase tracking-widest text-[10px]">Token Standard</div>
-              <div className="text-white">ERC-721 (RWA BeZ) · Polygon L2</div>
+              <div className="text-white">ERC-721 (RWA BeZ) · BeZhas L2 (testnet 2708)</div>
             </div>
             <div>
               <div className="text-zinc-600 mb-1 uppercase tracking-widest text-[10px]">Emisor</div>

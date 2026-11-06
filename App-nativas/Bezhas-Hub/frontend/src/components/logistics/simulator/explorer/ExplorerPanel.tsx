@@ -1,7 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link2, Landmark, Award, Fingerprint, BarChart3, Terminal } from 'lucide-react';
+import { Link2, Landmark, Award, Fingerprint, BarChart3, Terminal, Code2 } from 'lucide-react';
 import { SimBlock, NftItem, EscrowEvent } from '../engine/chain';
 import { Validator, StepMetrics, ESCROW_COLLATERAL_BEZ, TARIFF_BEZ, PAYOUT_BEZ } from '../engine/types';
+import { SdkCall } from '../engine/sdkMap';
+import { SdkCallCard } from '../panels/SdkCallCard';
+
+export interface SdkHistoryEntry {
+  stepId: number;
+  label: string;
+  call: SdkCall;
+}
+
+export interface ExplorerSdkProps {
+  current?: SdkCall;
+  currentLabel: string;
+  bUid: string;
+  breached: boolean;
+  history: SdkHistoryEntry[];
+}
 
 export interface ExplorerLogEntry {
   id: string;
@@ -21,11 +37,13 @@ interface ExplorerPanelProps {
   logs: ExplorerLogEntry[];
   isBreached: boolean;
   isFinished: boolean;
+  sdk: ExplorerSdkProps;
 }
 
-type TabId = 'chain' | 'escrow' | 'nfts' | 'dids' | 'metrics' | 'logs';
+type TabId = 'sdk' | 'chain' | 'escrow' | 'nfts' | 'dids' | 'metrics' | 'logs';
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: 'sdk', label: 'SDK', icon: <Code2 size={10} /> },
   { id: 'chain', label: 'Cadena', icon: <Link2 size={10} /> },
   { id: 'escrow', label: 'Escrow', icon: <Landmark size={10} /> },
   { id: 'nfts', label: 'NFTs', icon: <Award size={10} /> },
@@ -36,9 +54,10 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 // Explorer multi-pestaña (Simulación 360°)
 export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
-  blocks, nfts, escrowEvents, validators, activeValidatorDid, confirmedDids, metrics, logs, isBreached, isFinished,
+  blocks, nfts, escrowEvents, validators, activeValidatorDid, confirmedDids, metrics, logs, isBreached, isFinished, sdk,
 }) => {
-  const [tab, setTab] = useState<TabId>('chain');
+  // Es un simulador de SDK: lo primero que se ve es la llamada real de cada etapa.
+  const [tab, setTab] = useState<TabId>('sdk');
   const chainScrollRef = useRef<HTMLDivElement>(null);
   const logScrollRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +97,33 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 custom-scrollbar min-h-0">
+        {/* SDK */}
+        {tab === 'sdk' && (
+          <div className="flex flex-col gap-2 font-sans">
+            {sdk.current ? (
+              <SdkCallCard call={sdk.current} bUid={sdk.bUid} stepLabel={sdk.currentLabel} breached={sdk.breached} className="w-full" />
+            ) : (
+              <div className="text-center py-6 text-zinc-500 text-[10px] leading-relaxed">
+                <Code2 size={16} className="mx-auto mb-2 opacity-40" />
+                Ejecuta la simulación: cada etapa muestra la llamada real a <code className="text-teal-300">/api/cargolink</code>,
+                la api-key de rol que exige y el contrato que la ancla.
+              </div>
+            )}
+            {sdk.history.length > 0 && (
+              <div className="flex flex-col gap-1 font-mono">
+                <span className="text-[8px] uppercase tracking-widest text-zinc-500 mt-1">Llamadas ejecutadas</span>
+                {sdk.history.slice().reverse().map((h) => (
+                  <div key={h.stepId} className="flex items-center gap-1.5 text-[9px] px-2 py-1 rounded border border-zinc-800 bg-zinc-950/60 min-w-0">
+                    <span className="text-zinc-600 w-5 shrink-0">{h.stepId}</span>
+                    <span className={h.call.method === 'GET' ? 'text-sky-300' : 'text-emerald-300'}>{h.call.method}</span>
+                    <span className="text-zinc-300 truncate" title={h.call.path}>{h.call.path}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* CADENA */}
         {tab === 'chain' && (
           <div ref={chainScrollRef} className="flex flex-col gap-1.5 h-full overflow-y-auto custom-scrollbar">
@@ -111,7 +157,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
         {tab === 'escrow' && (
           <div className="flex flex-col gap-2">
             <div className="text-center p-3 border border-teal-500/10 rounded">
-              <div className="text-[8px] text-zinc-500 uppercase tracking-widest mb-1">Balance en Escrow (Polygon L2)</div>
+              <div className="text-[8px] text-zinc-500 uppercase tracking-widest mb-1">Balance en DeliveryEscrow (BeZhas L2)</div>
               <div className={`text-xl font-bold ${isFinished && isBreached ? 'text-red-400 animate-pulse' : 'text-amber-400'}`}>
                 {escrowBalance.toLocaleString()} BEZ
               </div>

@@ -11,7 +11,7 @@ export const buildOriginSteps = (mode: TransitMode): SimulationStep[] => [
     timeMs: 3000,
     activeNodes: ['rwa', 'contract'],
     status: { rwa: 'TOKENIZADO', contract: `Escrow LOCKED`, mcp: 'MCP Oracle Sync', oraculo: 'DPP Minted' },
-    msg: 'Fábrica de Origen: Se digitaliza el lote físico agroalimentario como Activo del Mundo Real (RWA) mediante un Pasaporte Digital de Producto (DPP) tokenizado en un NFT BCM (ERC-721). Los tokens $BEZ colaterales se bloquean en el Smart Contract de Escrow en Polygon L2, asegurando la liquidez transaccional sin intermediarios.',
+    msg: 'Fábrica de Origen: Se digitaliza el lote físico agroalimentario como Activo del Mundo Real (RWA) mediante un Pasaporte Digital de Producto (DPP) tokenizado en un NFT BCM (ERC-721). Los tokens $BEZ colaterales se bloquean en el contrato DeliveryEscrow de BeZhas L2, asegurando la liquidez transaccional sin intermediarios.',
     bc: `TX L2: 0x5a2d...9b1f | MINT: BCM-NFT DPP | Escrow: lockedCollateral(${ESCROW_COLLATERAL_BEZ} BEZ)`,
     bUidStage: 'CREATED',
     actor: 'fabricante',
@@ -202,7 +202,7 @@ export const buildOriginSteps = (mode: TransitMode): SimulationStep[] => [
       ? { rwa: 'CARGA EN BUQUE', contract: 'e-BL Tokenized', mcp: 'DCSA Standard', oraculo: 'Custody -> Naviera' }
       : { rwa: 'CARGA AERONAVE', contract: 'e-AWB Tokenized', mcp: 'IATA Standard', oraculo: 'Custody -> Aerolínea' },
     msg: mode === 'sea'
-      ? 'Carga en Buque (Compañía Naviera): El contenedor se iza a bordo. El conocimiento de embarque digital (e-BL) se tokeniza como NFT interoperable (ERC-721) bajo estándar DCSA y la custodia se transfiere a la naviera. La póliza de seguro paramétrico de carga queda enlazada a los smart contracts de reaseguro en Polygon.'
+      ? 'Carga en Buque (Compañía Naviera): El contenedor se iza a bordo. El conocimiento de embarque digital (e-BL) se tokeniza como NFT interoperable (ERC-721) bajo estándar DCSA y la custodia se transfiere a la naviera. La póliza de seguro paramétrico de carga queda enlazada a contratos de reaseguro (escenario de demostración).'
       : 'Carga en Aeronave (Aerolínea): El ULD se embarca en el carguero. El e-AWB se tokeniza como NFT interoperable y la custodia se transfiere a la aerolínea, con póliza de seguro paramétrico aérea enlazada en la blockchain.',
     bc: mode === 'sea'
       ? 'TX L2: 0xef2c...92a1 | MINT: e-BL NFT (DCSA) | Custody: Depósito -> Naviera'
@@ -217,7 +217,7 @@ export const buildOriginSteps = (mode: TransitMode): SimulationStep[] => [
       ? [
           '[NAVIERA] e-BL electrónico tokenizado cumpliendo los estándares globales de la DCSA.',
           '[SMART CONTRACT] Traspaso de custodia y responsabilidad legal a la naviera registrado on-chain.',
-          '[TOKENIZACIÓN] Póliza de seguro paramétrico de carga enlazada a contratos de reaseguro en Polygon.',
+          '[TOKENIZACIÓN] Póliza de seguro paramétrico de carga enlazada a contratos de reaseguro (escenario de demostración).',
         ]
       : [
           '[AEROLÍNEA] e-AWB tokenizado cumpliendo estándares IATA de carga aérea.',

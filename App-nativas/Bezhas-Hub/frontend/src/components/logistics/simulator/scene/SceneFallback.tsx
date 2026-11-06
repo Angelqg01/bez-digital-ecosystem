@@ -48,7 +48,10 @@ type BoundaryState = { error: Error | null };
  * Captura fallos de la escena 3D (creación del contexto, pérdida de contexto al
  * montar, shaders) para que no suban al ErrorBoundary de la app.
  */
-export class Scene3DErrorBoundary extends React.Component<{ children: React.ReactNode }, BoundaryState> {
+export class Scene3DErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  BoundaryState
+> {
   state: BoundaryState = { error: null };
 
   static getDerivedStateFromError(error: Error): BoundaryState {
@@ -60,7 +63,7 @@ export class Scene3DErrorBoundary extends React.Component<{ children: React.Reac
   }
 
   render() {
-    if (this.state.error) return <Scene3DUnavailable reason={this.state.error.message} />;
+    if (this.state.error) return this.props.fallback ?? <Scene3DUnavailable reason={this.state.error.message} />;
     return this.props.children;
   }
 }
