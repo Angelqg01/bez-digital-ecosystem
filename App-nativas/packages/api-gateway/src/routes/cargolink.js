@@ -47,14 +47,10 @@ router.all('/v1/ingest/*', (_req, res) => {
 });
 
 router.all('/*', requireScope('subapp:enterprise'), async (req, res) => {
+  // Sin x-api-key se reenvía sin clave: los endpoints de producto responden en
+  // vista previa (mode 'preview', nada persistido) y el resto devuelve el 401
+  // de la propia API, que explica cómo obtener la clave.
   const apiKey = req.headers['x-api-key'];
-  if (!apiKey) {
-    return res.status(401).json({
-      success: false,
-      error: 'Missing CargoLink role key (x-api-key). Issue one with POST /api/cargolink/v1/keys.',
-      code: 'CARGOLINK_KEY_REQUIRED',
-    });
-  }
 
   // req.url conserva la ruta relativa al montaje y la query string.
   const url = `${HUB_API_URL}/api/cargolink${req.url}`;
@@ -65,7 +61,7 @@ router.all('/*', requireScope('subapp:enterprise'), async (req, res) => {
       method: req.method,
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
       },
       body: hasBody ? JSON.stringify(req.body || {}) : undefined,
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),

@@ -21,8 +21,11 @@ pnpm dev
 
 ## Módulos de API (sector: `cargo`)
 Fachadas del ciclo de vida B-UID de la API de BeZhas (`/api/cargolink`, o
-`/api/cargolink` del gateway con `x-api-key` de rol). Todas exigen `bUid`
-(créalo antes con `POST /v1/tx`):
+`/api/cargolink` del gateway con `x-api-key` de rol). Con api-key de rol y
+`bUid` (créalo antes con `POST /v1/tx`) aplican el ciclo de vida real. Sin
+alguno de los dos responden 200 en **vista previa** (`mode: 'preview'`,
+`persisted: false`): ejecutan el validador en seco, sin leer ni modificar
+ningún envío. Una clave inválida o un rol sin permiso siguen dando 401/403.
 
 - `POST /v1/customs/dispatch` — rol `customs`: valida el manifiesto y avanza a `CUSTOMS_CLEARED`. El canal es la preclasificación de riesgo de BeZhas, no el levante oficial (`customsAuthorization: null`).
 - `POST /v1/shipping/stowage` — rol `carrier`: centro de gravedad calculado a partir de `items[{x,y,weight}]` y avance a `STOWED`.

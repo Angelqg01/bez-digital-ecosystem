@@ -81,13 +81,36 @@ describe('Routes: /api/cargolink', () => {
     );
   });
 
-  it('customs/dispatch exige api-key: sin ella no toca la base (401)', async () => {
+  it('customs/dispatch sin api-key responde 200 en vista previa sin tocar ningún envío', async () => {
     seedDb({ tx: createdTx });
     const res = await request(createApp())
       .post('/api/cargolink/v1/customs/dispatch')
+      .send({ bUid: 'BZ-LOG-ABCDE', manifestId: 'MAN-1', declaredValue: 1200, hsCode: '9301' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.result).toMatchObject({
+      mode: 'preview',
+      persisted: false,
+      status: null,
+      lane: 'RED_LANE',
+      inspectionRequired: true,
+      customsAuthorization: null,
+      oracle: null,
+      valid: true,
+    });
+    expect(res.body.billing).toMatchObject({ mode: 'PREVIEW', chargedBez: 0 });
+    expect(res.body.blockchain.mode).toBe('preview');
+    expect(mockQuery).not.toHaveBeenCalledWith(expect.stringContaining('cargolink_transactions'), expect.anything());
+    expect(mockQuery).not.toHaveBeenCalledWith(expect.stringContaining('cargolink_api_keys'), expect.anything());
+  });
+
+  it('una api-key inválida sigue siendo 401 (no cae a vista previa)', async () => {
+    mockQuery.mockImplementation(async () => ({ rows: [], rowCount: 0 }));
+    const res = await request(createApp())
+      .post('/api/cargolink/v1/customs/dispatch')
+      .set('Authorization', 'Bearer revoked_or_unknown')
       .send({ bUid: 'BZ-LOG-ABCDE', manifestId: 'MAN-1', declaredValue: 1200 });
     expect(res.status).toBe(401);
-    expect(mockQuery).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE cargolink_transactions'), expect.anything());
   });
 
   it('customs/dispatch respeta el rol: una naviera no puede despachar (403)', async () => {
@@ -99,14 +122,35 @@ describe('Routes: /api/cargolink', () => {
     expect(res.status).toBe(403);
   });
 
-  it('exige bUid (400) en vez de rellenar uno de ejemplo', async () => {
+  it('sin bUid responde 200 en vista previa, sin bUid de ejemplo ni escritura de envíos', async () => {
     seedDb();
+    const hash = `0x${'a'.repeat(64)}`;
     const res = await request(createApp())
       .post('/api/cargolink/v1/audit/fingerprint')
       .set('Authorization', 'Bearer any_key')
-      .send({ payloadHash: `0x${'a'.repeat(64)}` });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/bUid is required/);
+      .send({ payloadHash: hash });
+    expect(res.status).toBe(200);
+    expect(res.body.result).toMatchObject({
+      mode: 'preview', persisted: false, bUid: null, fingerprintHash: hash, integrity: 'NOT_RECORDED',
+    });
+    expect(mockQuery).not.toHaveBeenCalledWith(expect.stringContaining('cargolink_transactions'), expect.anything());
+  });
+
+  it('stowage en vista previa informa de datos inválidos sin error (valid: false)', async () => {
+    seedDb();
+    const res = await request(createApp())
+      .post('/api/cargolink/v1/shipping/stowage')
+      .send({ cog: { x: 60 } });
+    expect(res.status).toBe(200);
+    expect(res.body.result).toMatchObject({ mode: 'preview', valid: false, cog: null });
+    expect(res.body.result.warnings[0]).toMatch(/positioned item/);
+  });
+
+  it('logistics/route en vista previa no revela el estado de ningún envío', async () => {
+    seedDb({ tx: { ...createdTx, status: 'IN_TRANSIT' } });
+    const res = await request(createApp()).get('/api/cargolink/v1/logistics/route?bUid=BZ-LOG-ABCDE');
+    expect(res.status).toBe(200);
+    expect(res.body.result).toMatchObject({ mode: 'preview', status: null, currentPort: null, escrowState: null });
   });
 
   it('shipping/stowage calcula el centro de gravedad a partir de los bultos', async () => {

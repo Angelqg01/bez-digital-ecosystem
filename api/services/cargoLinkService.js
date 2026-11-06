@@ -6,6 +6,7 @@ const { validarDestinoPublico } = require('../utils/safeFetch');
 const lifecycle = require('./cargoLinkLifecycle');
 const events = require('./cargoLinkEvents');
 const transit = require('./cargoLinkTransit');
+const { validateTransition } = require('./cargoLinkValidators');
 
 const { resolveIdentity } = lifecycle;
 const { isConfigured: onChainConfigured, getAddresses } = require('./cargoLinkOnChain');
@@ -144,21 +145,99 @@ async function auditFingerprint(req, payload) {
   };
 }
 
+// ── Vista previa (sin api-key o sin bUid) ────────────────────────────────
+//
+// Antes de conectarlos al ciclo de vida, estos endpoints respondían 200 a
+// cualquiera. Para no romper a quien los llame así, sin credencial o sin B-UID
+// se ejecuta el MISMO validador en seco: no se lee ni se escribe ningún envío,
+// no se disparan webhooks ni se ancla nada, y la respuesta lo dice
+// (mode 'preview', persisted false). Con api-key y bUid se usa el ciclo real;
+// una clave inválida o un rol sin permiso siguen siendo 401/403.
+
+const PREVIEW_NEXT_STEP = 'Send an x-api-key (role-scoped CargoLink key) and a bUid created with POST /v1/tx to apply this for real.';
+
+function previewEnvelope(payload, fields, validation) {
+  return {
+    anchor: { anchored: false, mode: 'preview' },
+    result: {
+      mode: 'preview',
+      persisted: false,
+      bUid: payload.bUid || null,
+      status: null,
+      ...fields,
+      valid: validation ? validation.valid : true,
+      warnings: validation ? validation.reasons : [],
+      nextStep: PREVIEW_NEXT_STEP,
+    },
+  };
+}
+
+function previewCustoms(payload) {
+  const v = validateTransition('CUSTOMS_CLEARED', {}, businessPayload(payload));
+  const r = v.result || {};
+  return previewEnvelope(payload, {
+    lane: r.lane || null,
+    laneSource: 'BEZHAS_RISK_RULES',
+    standard: r.standard || null,
+    hsCode: r.hsCode || null,
+    dutyEstimate: r.dutyEstimate ?? null,
+    inspectionRequired: Boolean(r.inspectionRequired),
+    customsAuthorization: null,
+    oracle: null,
+  }, v);
+}
+
+function previewStowage(payload) {
+  const v = validateTransition('STOWED', {}, businessPayload(payload));
+  const r = v.result || {};
+  return previewEnvelope(payload, {
+    cog: r.cog || null,
+    totalWeight: r.totalWeight ?? null,
+    deviation: r.deviation || null,
+    stowageStatus: r.status || null,
+  }, v);
+}
+
+function previewRoute(payload) {
+  // Sin credencial no se revela el estado de ningún envío.
+  return previewEnvelope(payload, {
+    lastTransition: null,
+    committedEta: null,
+    currentPort: null,
+    etaRevisions: 0,
+    totalDelayMinutes: 0,
+    slaBreaches: 0,
+    transit: null,
+    escrowState: null,
+  }, null);
+}
+
+function previewFingerprint(payload) {
+  if (payload.payloadHash && !HASH_RE.test(payload.payloadHash)) {
+    throw httpError('payloadHash must be a 0x-prefixed 32-byte hex string', 400);
+  }
+  return previewEnvelope(payload, {
+    fingerprintHash: payload.payloadHash || sha256(businessPayload(payload)),
+    integrity: 'NOT_RECORDED',
+    escrowState: null,
+  }, null);
+}
+
 const ENDPOINTS = {
   '/v1/customs/dispatch': {
-    method: 'POST', event: 'CustomsCleared', listPriceBez: 5, run: customsDispatch,
+    method: 'POST', event: 'CustomsCleared', listPriceBez: 5, run: customsDispatch, preview: previewCustoms,
   },
   '/v1/shipping/stowage': {
-    method: 'POST', event: 'StowageValidated', listPriceBez: 2, run: shippingStowage,
+    method: 'POST', event: 'StowageValidated', listPriceBez: 2, run: shippingStowage, preview: previewStowage,
   },
   '/v1/logistics/route': {
-    method: 'GET', event: 'RouteTelemetryRead', listPriceBez: 0.25, run: logisticsRoute,
+    method: 'GET', event: 'RouteTelemetryRead', listPriceBez: 0.25, run: logisticsRoute, preview: previewRoute,
   },
   '/v1/logistics/active-route': {
-    method: 'GET', event: 'RouteTelemetryRead', listPriceBez: 0.25, run: logisticsRoute,
+    method: 'GET', event: 'RouteTelemetryRead', listPriceBez: 0.25, run: logisticsRoute, preview: previewRoute,
   },
   '/v1/audit/fingerprint': {
-    method: 'POST', event: 'FingerprintAnchored', listPriceBez: 3, run: auditFingerprint,
+    method: 'POST', event: 'FingerprintAnchored', listPriceBez: 3, run: auditFingerprint, preview: previewFingerprint,
   },
 };
 
@@ -216,14 +295,17 @@ async function handleOperation({ req, method, endpoint, payload }) {
 
   const normalizedPayload = payload || {};
   const payloadHash = normalizedPayload.payloadHash || sha256(normalizedPayload);
-  const { result, anchor, deliveries = [] } = await definition.run(req, normalizedPayload);
+  const isPreview = !getApiKey(req) || !String(normalizedPayload.bUid || '').trim();
+  const { result, anchor, deliveries = [] } = isPreview
+    ? definition.preview(normalizedPayload)
+    : await definition.run(req, normalizedPayload);
 
   // No hay cobro real detrás: la tabla cargolink_events no la lee ningún
   // proceso de facturación. Se mide el uso y se informa del precio de lista,
   // sin afirmar que se haya descontado nada.
   const billing = {
-    mode: 'METERED',
-    listPriceBez: definition.listPriceBez,
+    mode: isPreview ? 'PREVIEW' : 'METERED',
+    listPriceBez: isPreview ? 0 : definition.listPriceBez,
     chargedBez: 0,
     status: 'not_charged',
     currency: 'BEZ',
