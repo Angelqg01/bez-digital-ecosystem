@@ -2,6 +2,7 @@
  * txService.js — Transaction submit, watch, and record service.
  */
 const { ethers } = require('ethers');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const { getProvider, getSigner } = require('./contractService');
 const { query } = require('../db/pool');
 const { publish, cacheSet } = require('../cache/redis');
@@ -35,7 +36,7 @@ async function watchTx(txHash, meta = {}) {
         contract: meta.contract || null,
         method: meta.method || null,
         status: receipt.status === 1 ? 'confirmed' : 'failed',
-        chainId: Number(receipt.chainId || process.env.BEZHAS_CHAIN_ID || 31337),
+        chainId: Number(receipt.chainId || cadenaDeServicio()),
         blockNumber: receipt.blockNumber,
         gasUsed: receipt.gasUsed.toString(),
     });
@@ -115,7 +116,7 @@ async function getTxByHash(txHash) {
             toAddress: receipt.to,
             value: '0',
             status: receipt.status === 1 ? 'confirmed' : 'failed',
-            chainId: Number(receipt.chainId || process.env.BEZHAS_CHAIN_ID || 31337),
+            chainId: Number(receipt.chainId || cadenaDeServicio()),
             blockNumber: receipt.blockNumber,
             gasUsed: receipt.gasUsed.toString(),
         });

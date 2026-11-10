@@ -10,6 +10,7 @@
  *   - Prometheus-compatible stats counter
  */
 const { getContract, getProvider, resetProvider, pingChain } = require('./contractService');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const { recordTx } = require('./txService');
 const { query } = require('../db/pool');
 const { publish, cacheSet } = require('../cache/redis');
@@ -221,7 +222,7 @@ async function indexBlockchainEvent({
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              ON CONFLICT (tx_hash, log_index) DO NOTHING`,
             [
-                parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+                cadenaDeServicio(),
                 contractName,
                 eventName,
                 eventType || 'generic',
@@ -360,7 +361,7 @@ async function subscribeAll() {
                         contract: 'BEZCoinV2',
                         method: 'Transfer',
                         status: 'confirmed',
-                        chainId: parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+                        chainId: cadenaDeServicio(),
                         blockNumber: event.log.blockNumber,
                     };
                     await recordTx(txData);
@@ -405,7 +406,7 @@ async function subscribeAll() {
                         contract: 'BeZhasLogisticsNFT',
                         method,
                         status: 'confirmed',
-                        chainId: parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+                        chainId: cadenaDeServicio(),
                         blockNumber: event.log.blockNumber,
                     };
                     await recordTx(txData);
@@ -437,7 +438,7 @@ async function subscribeAll() {
                         contract: 'QualityEscrow',
                         method: 'SensorDataRegistered',
                         status: 'confirmed',
-                        chainId: parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+                        chainId: cadenaDeServicio(),
                         blockNumber: event.log.blockNumber,
                     };
                     await indexBlockchainEvent({
@@ -479,7 +480,7 @@ async function subscribeAll() {
                         contract: 'StakingPool',
                         method: 'Staked',
                         status: 'confirmed',
-                        chainId: parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+                        chainId: cadenaDeServicio(),
                         blockNumber: event.log.blockNumber,
                     });
                     await publish('event:staking:staked', { user, amount: amount.toString() });
@@ -505,7 +506,7 @@ async function subscribeAll() {
                         contract: 'BeZhasBridgeL2',
                         method: 'DepositFinalized',
                         status: 'confirmed',
-                        chainId: parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+                        chainId: cadenaDeServicio(),
                         blockNumber: event.log.blockNumber,
                     };
                     await recordTx(txData);
@@ -534,7 +535,7 @@ async function subscribeAll() {
                         contract: 'BeZhasBridgeL2',
                         method: 'WithdrawalInitiated',
                         status: 'confirmed',
-                        chainId: parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+                        chainId: cadenaDeServicio(),
                         blockNumber: event.log.blockNumber,
                     };
                     await recordTx(txData);
@@ -561,7 +562,7 @@ async function subscribeAll() {
                         contract: 'LiquidityFarming',
                         method: 'Deposit',
                         status: 'confirmed',
-                        chainId: parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+                        chainId: cadenaDeServicio(),
                         blockNumber: event.log.blockNumber,
                     };
                     await recordTx(txData);
@@ -583,7 +584,7 @@ async function subscribeAll() {
                         contract: 'LiquidityFarming',
                         method: 'Claim',
                         status: 'confirmed',
-                        chainId: parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+                        chainId: cadenaDeServicio(),
                         blockNumber: event.log.blockNumber,
                     };
                     await recordTx(txData);

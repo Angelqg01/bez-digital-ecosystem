@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const { Router } = require('express');
 const cargoLinkService = require('../services/cargoLinkService');
 const lifecycle = require('../services/cargoLinkLifecycle');
@@ -34,7 +35,7 @@ router.get('/health', (_req, res) => {
     mode: 'api',
     blockchain: {
       rpcUrl: process.env.RPC_URL || process.env.BEZHAS_L2_RPC_URL || null,
-      chainId: Number(process.env.BEZHAS_CHAIN_ID || process.env.CHAIN_ID || 31337),
+      chainId: cadenaDeServicio(),
       contractsConfigured: Boolean(process.env.SUPPLY_TRACKER_ADDRESS || process.env.CUSTOMS_CLEARANCE_ORACLE_ADDRESS),
     },
     endpoints: Object.keys(cargoLinkService.ENDPOINTS),

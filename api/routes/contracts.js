@@ -2,6 +2,7 @@
  * routes/contracts.js — Deployed contract registry + blockchain info.
  */
 const { Router } = require('express');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const { query } = require('../db/pool');
 const { getAllAddresses, getBlockchainStats, getBEZTotalSupply } = require('../services/contractService');
 const { cacheGet, cacheSet } = require('../cache/redis');
@@ -10,7 +11,7 @@ const router = Router();
 
 // ── All deployed contracts by chain ──
 router.get('/', async (req, res) => {
-    const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+    const chainId = parseInt(req.query.chainId || cadenaDeServicio(), 10);
 
     if (req.query.flat === 'true') {
         const { rows } = await query(
@@ -27,7 +28,7 @@ router.get('/', async (req, res) => {
 // ── Single contract info ──
 router.get('/:name', async (req, res) => {
     const { name } = req.params;
-    const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+    const chainId = parseInt(req.query.chainId || cadenaDeServicio(), 10);
 
     const { rows } = await query(
         'SELECT * FROM contract_addresses WHERE name = $1 AND chain_id = $2',

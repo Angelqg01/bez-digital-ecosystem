@@ -15,6 +15,14 @@ const auditoria = require('../../services/securityAudit');
 const { getEntitlements } = require('../../config/plan-entitlements');
 
 describe('chain-policy', () => {
+    it('los servicios caen a la misma cadena que el Gateway', () => {
+        expect(cadenas.cadenaDeServicio({ NODE_ENV: 'production' })).toBe(137);
+        expect(cadenas.cadenaDeServicio({ NODE_ENV: 'test' })).toBe(31337);
+        expect(cadenas.cadenaDeServicio({ NODE_ENV: 'production', BEZHAS_CHAIN_ID: '2708' })).toBe(2708);
+        expect(cadenas.cadenaDeServicio({ NODE_ENV: 'production', CHAIN_ID: '80002' })).toBe(80002);
+        expect(cadenas.cadenaDeServicio({ NODE_ENV: 'production', BEZHAS_CHAIN_ID: 'no-es-un-numero' })).toBe(137);
+    });
+
     it('en producción sólo redes principales y Polygon por defecto', () => {
         const env = { NODE_ENV: 'production' };
         expect([...cadenas.cadenasPermitidas(env)].sort((a, b) => a - b)).toEqual([56, 137, 2708]);

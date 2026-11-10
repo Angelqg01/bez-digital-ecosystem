@@ -36,6 +36,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const fs = require('fs');
 const path = require('path');
 const { query } = require('../db/pool');
@@ -117,7 +118,7 @@ function toLeaf(auditHash) {
 function getAnchorAddress() {
     if (process.env.TELEMETRY_ANCHOR_ADDRESS) return process.env.TELEMETRY_ANCHOR_ADDRESS;
     try {
-        const chainId = process.env.BEZHAS_CHAIN_ID || process.env.CHAIN_ID || '2708';
+        const chainId = cadenaDeServicio();
         const data = JSON.parse(fs.readFileSync(
             path.resolve(__dirname, '../../smart-contracts/deployments', `${chainId}.json`), 'utf8'
         ));

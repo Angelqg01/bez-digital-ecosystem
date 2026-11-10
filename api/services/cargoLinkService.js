@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const { query } = require('../db/pool');
 const { validarDestinoPublico } = require('../utils/safeFetch');
 const lifecycle = require('./cargoLinkLifecycle');
@@ -255,7 +256,7 @@ function getApiKey(req) {
 }
 
 function buildBlockchainStatus(eventName, payloadHash, anchor) {
-  const chainId = Number(process.env.BEZHAS_CHAIN_ID || process.env.CHAIN_ID || 31337);
+  const chainId = cadenaDeServicio();
   const rpcUrl = process.env.RPC_URL || process.env.BEZHAS_L2_RPC_URL || null;
   const configured = onChainConfigured();
   const addresses = configured ? getAddresses() : null;

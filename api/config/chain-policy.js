@@ -88,8 +88,25 @@ function cadenasPermitidas(env = process.env) {
  * La 2708 sigue en la lista de permitidas para quien la pida de forma explícita.
  */
 function cadenaPorDefecto(env = process.env) {
-    if (env.BEZHAS_CHAIN_ID) return Number.parseInt(env.BEZHAS_CHAIN_ID, 10);
+    // Un valor que no es un entero positivo se ignora: antes devolvía NaN y la
+    // cadena «por defecto» dejaba de ser una cadena.
+    const n = Number.parseInt(env.BEZHAS_CHAIN_ID || '', 10);
+    if (Number.isInteger(n) && n > 0) return n;
     return esProduccion(env) ? 137 : 31337;
+}
+
+/**
+ * Cadena de los servicios que no atienden una petición (listeners, anclajes,
+ * lectura de deployments/<chainId>.json). Acepta también CHAIN_ID, que es como
+ * la nombran los scripts de CargoLink.
+ *
+ * Cada servicio tenía su propio `process.env.BEZHAS_CHAIN_ID || '31337'` (o
+ * '2708'): sin la variable, producción leía las direcciones de Anvil o de una
+ * red sin uso. Ahora todos caen al mismo valor que el Gateway.
+ */
+function cadenaDeServicio(env = process.env) {
+    const n = Number.parseInt(env.BEZHAS_CHAIN_ID || env.CHAIN_ID || '', 10);
+    return Number.isInteger(n) && n > 0 ? n : cadenaPorDefecto(env);
 }
 
 /**
@@ -143,5 +160,5 @@ function cadenaOResponder400(res, solicitada) {
 module.exports = {
     MAINNET, TESTNET, LOCAL,
     entorno, nombreRed, chainIdPorRed,
-    cadenasPermitidas, cadenaPorDefecto, resolverCadena, cadenaOResponder400,
+    cadenasPermitidas, cadenaPorDefecto, cadenaDeServicio, resolverCadena, cadenaOResponder400,
 };

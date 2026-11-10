@@ -44,6 +44,7 @@
  */
 
 const crypto = require('crypto');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const path = require('path');
 const fs = require('fs');
 const { ethers } = require('ethers');
@@ -155,7 +156,7 @@ function leafFor({ bUid, toStatus, actor, payloadHash, occurredAt }) {
 function getAnchorAddress() {
     if (process.env.TELEMETRY_ANCHOR_ADDRESS) return process.env.TELEMETRY_ANCHOR_ADDRESS;
     try {
-        const chainId = process.env.BEZHAS_CHAIN_ID || process.env.CHAIN_ID || '2708';
+        const chainId = cadenaDeServicio();
         const file = path.resolve(__dirname, '../../smart-contracts/deployments', `${chainId}.json`);
         const data = JSON.parse(fs.readFileSync(file, 'utf8'));
         // Las direcciones viven bajo sectors.supplychain; se acepta también la

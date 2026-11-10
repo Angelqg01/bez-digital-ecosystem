@@ -9,6 +9,7 @@
  * - WalletGuardian (Social Recovery Registry)
  */
 const { ethers } = require('ethers');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const { getContract, getSignedContract, getProvider, getBEZBalance } = require('./contractService');
 const { query } = require('../db/pool');
 const { cacheGet, cacheSet, cacheDelete } = require('../cache/redis');
@@ -67,7 +68,7 @@ async function createSmartWallet(ownerAddress, guardianAddress, dailyLimit, salt
             guardianAddress ? normalizeAddress(guardianAddress) : null,
             dailyLimit || 0,
             tx.hash,
-            Number(receipt.chainId || process.env.BEZHAS_CHAIN_ID || 2708),
+            Number(receipt.chainId || cadenaDeServicio()),
         ]
     );
 

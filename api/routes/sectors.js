@@ -2,6 +2,7 @@
  * routes/sectors.js — Sector overview (deployed contracts per sector).
  */
 const { Router } = require('express');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const { query } = require('../db/pool');
 const { cacheGet, cacheSet } = require('../cache/redis');
 const { requireSuperAdmin } = require('../middleware/admin-auth');
@@ -129,7 +130,7 @@ router.post('/rwa-factory-pause', requireSuperAdmin, async (req, res) => {
 // ── Contracts + transactions for a specific sector ──
 router.get('/:sector', async (req, res) => {
     const { sector } = req.params;
-    const chainId = parseInt(req.query.chainId || process.env.BEZHAS_CHAIN_ID || '31337');
+    const chainId = parseInt(req.query.chainId || cadenaDeServicio(), 10);
 
     const { rows: contracts } = await query(
         'SELECT id, name AS contract_name, category AS sector, address, chain_id, deployed_at FROM contract_addresses WHERE category = $1 AND chain_id = $2 ORDER BY name',

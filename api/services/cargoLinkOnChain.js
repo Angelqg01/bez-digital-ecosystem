@@ -19,6 +19,7 @@
  */
 
 const { ethers } = require('ethers');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const { chainCall } = require('../utils/chainCall');
 const path = require('path');
 const fs = require('fs');
@@ -64,7 +65,7 @@ function getAddresses() {
     };
   }
   try {
-    const chainId = process.env.BEZHAS_CHAIN_ID || process.env.CHAIN_ID || '2708';
+    const chainId = cadenaDeServicio();
     const data = JSON.parse(
       fs.readFileSync(path.resolve(__dirname, '../../smart-contracts/deployments', `${chainId}.json`), 'utf8')
     );

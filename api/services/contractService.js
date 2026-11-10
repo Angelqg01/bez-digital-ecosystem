@@ -5,6 +5,7 @@
  * typed contract instances for any deployed contract.
  */
 const { ethers } = require('ethers');
+const { cadenaDeServicio } = require('../config/chain-policy');
 const fs = require('fs');
 const path = require('path');
 const { query } = require('../db/pool');
@@ -37,7 +38,7 @@ const DEPLOYMENTS_DIR = path.join(SMART_CONTRACTS_DIR, 'deployments');
 let provider;
 function buildProvider() {
     const rpcUrl = process.env.BEZHAS_L2_RPC_URL || 'http://localhost:8545';
-    const chainId = parseInt(process.env.BEZHAS_CHAIN_ID || '31337', 10);
+    const chainId = cadenaDeServicio();
     const network = Number.isFinite(chainId) && chainId > 0
         ? new ethers.Network('bezhas-l2', BigInt(chainId))
         : undefined;
@@ -146,7 +147,7 @@ function findInDeploymentTree(node, contractName) {
 }
 
 function getDeploymentAddress(contractName, chainId) {
-    const cid = chainId || parseInt(process.env.BEZHAS_CHAIN_ID || '31337');
+    const cid = chainId || cadenaDeServicio();
     const deploymentPath = path.join(DEPLOYMENTS_DIR, `${cid}.json`);
     if (!fs.existsSync(deploymentPath)) return null;
 
@@ -156,7 +157,7 @@ function getDeploymentAddress(contractName, chainId) {
 
 // ── Get deployed address from DB ──
 async function getContractAddress(contractName, chainId) {
-    const cid = chainId || parseInt(process.env.BEZHAS_CHAIN_ID || '31337');
+    const cid = chainId || cadenaDeServicio();
     const cacheKey = `addr:${cid}:${contractName}`;
 
     const cached = await cacheGet(cacheKey);
@@ -248,7 +249,7 @@ async function getTokenInfo(contractName = 'BEZCoinV2', chainId) {
         decimals: Number(decimals),
         totalSupply: ethers.formatUnits(totalSupply, decimals),
         totalSupplyWei: totalSupply.toString(),
-        chainId: chainId || parseInt(process.env.BEZHAS_CHAIN_ID || '31337'),
+        chainId: chainId || cadenaDeServicio(),
     };
 }
 
@@ -348,7 +349,7 @@ async function getBlockchainStats() {
 
 // ── Load all deployed addresses for a chain ──
 async function getAllAddresses(chainId) {
-    const cid = chainId || parseInt(process.env.BEZHAS_CHAIN_ID || '31337');
+    const cid = chainId || cadenaDeServicio();
     const cacheKey = `addresses:${cid}`;
     const cached = await cacheGet(cacheKey);
     if (cached) return cached;
