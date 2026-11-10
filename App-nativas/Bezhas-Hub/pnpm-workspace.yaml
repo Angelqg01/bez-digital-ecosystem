@@ -23,13 +23,13 @@ blockExoticSubdeps: false
 # Fuerza versiones parcheadas de deps transitivas con CVEs (pnpm audit --prod).
 # Rangos ">=X" = mínimo seguro; pnpm resuelve a la última compatible.
 overrides:
-  '@hono/node-server': '>=1.19.10'
+  '@hono/node-server': '>=2.1.3'
   '@openzeppelin/contracts-upgradeable': '>=4.8.3'
   axios: '>=1.18.0'
   defu: '>=6.1.5'
   effect: '>=3.20.0'
   express-rate-limit: '>=8.2.2'
-  fast-uri: '>=4.1.3'
+  fast-uri: '>=4.2.3'
   form-data: '>=4.0.6'
   # Línea 1: unstorage espera h3 1.x; el rango abierto arrastraba 2.0.0-rc vulnerables.
   h3: '^1.15.6'
@@ -38,10 +38,10 @@ overrides:
   # Por rama: un override global forzaba la 10.x a quien pedía la 3 (API distinta).
   'minimatch@3': '^3.1.3'
   'minimatch@5': '^5.1.8'
-  'minimatch@9': '^9.0.7'
+  'minimatch@9': '^11.0.1'
   mongoose: '^8.24.1'
-  multer: '>=2.3.0'
-  nodemailer: '>=9.1.0'
+  multer: '>=2.5.0'
+  nodemailer: '>=10.1.4'
   # OJO: un override sin selector reemplaza el rango del dependiente por completo
   # (">=0.1.10" resolvía a 8.x y rompía express, cuyo router usa la API 0.1.x).
   # El selector "@<0.2" limita el parche del CVE ReDoS a la línea 0.1.
@@ -60,8 +60,7 @@ overrides:
   'nanoid@<4': '^3.3.18'
   'nanoid@>=4': '>=5.1.16'
   'picomatch@4': '^4.0.4'
-  'minimatch@10': '^10.2.3'
-  '@chainlink/contracts>@openzeppelin/contracts': '^4.9.6'
+  'minimatch@10': '^11.0.1'
   # Herramientas de desarrollo y build (misma rama mayor, sin saltos de API).
   'brace-expansion@1': '^1.1.12'
   'brace-expansion@2': '^2.1.4'
@@ -75,7 +74,7 @@ overrides:
   'immutable@4': '^4.3.9'
   'vitest@3': '^3.2.6'
   '@grpc/grpc-js@1': '^1.14.5'
-  '@hono/node-server@2': '^2.0.10'
+  '@hono/node-server@2': '^2.1.3'
   '@modelcontextprotocol/sdk@1': '^1.32.0'
   '@openzeppelin/contracts@4': '^4.9.6'
   '@remix-run/router@1': '^1.23.3'
@@ -87,7 +86,7 @@ overrides:
   compression@1: '^1.8.2'
   fast-copy@3: '^3.1.0'
   fflate@0: '^0.6.11'
-  follow-redirects@1: '^1.16.1'
+  follow-redirects@1: '^1.16.2'
   pbkdf2@3: '^3.1.7'
   proxy-addr@2: '^2.0.8'
   qs@6: '^6.16.0'
@@ -98,3 +97,35 @@ overrides:
   uuid@11: '^11.1.1'
   valibot@1: '^1.4.2'
   yaml@1: '^1.10.3'
+  # Auditoría 2026-11-10 (pnpm audit --prod): parches dentro de la misma rama mayor.
+  'body-parser@1': '^1.20.9'
+  'body-parser@2': '^2.4.0'
+  '@simplewebauthn/server@13': '^13.3.2'
+  # elliptic: el aviso (bajo) pide >=6.6.2, que no está publicada; la última es 6.6.1.
+  # uuid: el aviso cubre todo <11.1.1 y aquí llegan la 8 (node-cron) y la 9
+  # (natural y el propio backend). Igual que en api/: sólo se sube la rama vulnerable.
+  'uuid@<11.1.1': '^11.1.1'
+  # --- Saltos de versión mayor (2026-11-10), pedidos de forma explícita -----------
+  # zod <4.6.6 (alto). El backend y packages/mcp-server ya declaran la 4; esto
+  # arrastra a quien fija la 3: @reown/appkit-wallet (3.22.4 exacta) y los peers
+  # de abitype y @anthropic-ai/sdk, que admiten ^4. appkit-wallet sólo usa
+  # object/string/literal/array/record(k, v)/extend, iguales en la 4.
+  'zod@3': '^4.6.6'
+  # glob >=9 <=14.0.1 y minimatch >=7 <11.0.1 (moderados). La 10 llega por rimraf.
+  'glob@10': '^14.0.2'
+  'glob@13': '^14.0.2'
+  # @web3modal/wagmi@5.1.11 (deprecado) fija WalletConnect 2.16.1, que trae
+  # query-string > decode-uri-component 0.2.2 (alto) y @stablelib/ed25519 1.x.
+  # La 2.21.10 ya está en el árbol por @reown/appkit y no usa ninguno de los dos.
+  '@walletconnect/core@2.16.1': '2.21.10'
+  '@walletconnect/sign-client@2.16.1': '2.21.10'
+  '@walletconnect/types@2.16.1': '2.21.10'
+  '@walletconnect/utils@2.16.1': '2.21.10'
+  '@walletconnect/universal-provider@2.16.1': '2.21.10'
+  '@walletconnect/ethereum-provider@2.16.1': '2.21.10'
+  # @reown/appkit@1.8.1 fija la 2.21.7, la última que aún usa query-string.
+  '@walletconnect/core@2.21.7': '2.21.10'
+  '@walletconnect/sign-client@2.21.7': '2.21.10'
+  '@walletconnect/types@2.21.7': '2.21.10'
+  '@walletconnect/utils@2.21.7': '2.21.10'
+  '@walletconnect/universal-provider@2.21.7': '2.21.10'

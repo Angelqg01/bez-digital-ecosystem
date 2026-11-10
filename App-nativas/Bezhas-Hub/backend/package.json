@@ -52,7 +52,7 @@
     "express-validator": "^7.2.1",
     "form-data": "^4.0.5",
     "gcp-metadata": "^5.3.0",
-    "glob": "^13.0.0",
+    "glob": "^14.0.2",
     "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.8.2",
@@ -83,7 +83,7 @@
     "validator": "^13.11.0",
     "winston": "^3.19.0",
     "ws": "^8.14.2",
-    "zod": "^3.25.76"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@babel/traverse": "^7.29.0",

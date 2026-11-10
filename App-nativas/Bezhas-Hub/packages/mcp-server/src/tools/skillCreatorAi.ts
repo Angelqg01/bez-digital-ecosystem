@@ -56,7 +56,7 @@ export function registerSkillCreatorAi(server: McpServer): void {
             steps: z.array(z.object({
                 action: z.string(),
                 tool: z.string(),
-                params: z.record(z.unknown()).optional(),
+                params: z.record(z.string(), z.unknown()).optional(),
             })).optional(),
         },
         async ({ action, name, description, category, steps }) => {
