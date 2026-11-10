@@ -178,6 +178,49 @@ jobs:
             control-center/frontend/dist
 
   # ==========================================
+  # Backend del Hub (App-nativas/Bezhas-Hub/backend)
+  #
+  # Es el backend heredado, con más rutas que la api, y no pasaba por este CI:
+  # sus workflows viven en App-nativas/Bezhas-Hub/.github, donde GitHub no los
+  # ejecuta. Aquí corre lo que no necesita MongoDB ni Postgres: la política de
+  # secretos obligatorios (config/requiredSecret.js), el motor de conocimiento
+  # y la verificación de webhooks de BEZ-Pay. La batería completa sigue
+  # pendiente de un job con bases de datos de servicio.
+  # ==========================================
+  hub-backend:
+    name: Hub backend (tests sin base de datos)
+    runs-on: ubuntu-latest
+    needs: secret-scan
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Enable Corepack (pnpm from packageManager)
+        run: corepack enable
+
+      - name: Install Hub backend dependencies
+        working-directory: ./App-nativas/Bezhas-Hub
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter "./backend..."
+
+      - name: Run Hub backend tests (sin base de datos)
+        working-directory: ./App-nativas/Bezhas-Hub/backend
+        run: >-
+          pnpm exec jest --env=node
+          tests/requiredSecret.test.js
+          tests/knowledge
+          tests/rag.service.test.js
+          tests/bezpay.service.test.js
+          tests/bezpay-webhook-security.test.js
+        env:
+          NODE_ENV: test
+
+  # ==========================================
   # business-ops (OPERANT) — plano de operación de empresa
   #
   # Job aparte, y no un paso más del anterior, por dos motivos: necesita un

@@ -45,6 +45,11 @@ jobs:
             path: api
           - name: frontend
             path: control-center/frontend
+          # El Hub es el código con más superficie y no pasaba por ninguna
+          # auditoría: sus workflows propios están en App-nativas/Bezhas-Hub/.github,
+          # donde GitHub no los ejecuta.
+          - name: hub
+            path: App-nativas/Bezhas-Hub
 
     steps:
       - name: Checkout Code
