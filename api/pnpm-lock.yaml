@@ -10,7 +10,7 @@ overrides:
   fast-xml-parser: ^5.8.0
   ws: ^8.21.0
   qs: ^6.16.0
-  follow-redirects: ^1.16.1
+  follow-redirects: ^1.16.2
   protobufjs: ^7.6.5
   '@grpc/grpc-js': ^1.14.5
   '@babel/core@7': ^7.29.1
@@ -30,6 +30,7 @@ overrides:
   compression@1: ^1.8.2
   fast-uri@3: ^3.1.8
   hono@4: ^4.13.11
+  '@hono/node-server@2': ^2.1.3
   morgan@1: ^1.12.1
   proxy-addr@2: ^2.0.8
   zod@4: ^4.6.6
@@ -123,8 +124,8 @@ importers:
         specifier: ^1.4.5-lts.1
         version: 1.4.5-lts.2
       nodemailer:
-        specifier: ~10.0.16
-        version: 10.0.16
+        specifier: ~10.1.4
+        version: 10.1.7
       pg:
         specifier: ^8.13.1
         version: 8.20.0
@@ -574,8 +575,8 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hono/node-server@2.1.1':
-    resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
+  '@hono/node-server@2.1.6':
+    resolution: {integrity: sha512-p/KH9MnfNcsm3sR6x4lNgm5j+QN4Et8srKredl9DZfXiyZ1UQ3aQ2YVpFLbqktYN5JI+DB+VZFKM2PqE5hLKjQ==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4.13.11
@@ -1670,8 +1671,8 @@ packages:
   fn.name@1.1.0:
     resolution: {integrity: sha512-GRnmB5gPyJpAhTQdSZTSp9uaPSvl09KoYcMQtsB9rQoOmzs9dH6ffeccH+Z+cv6P68Hu5bC6JjRh4Ah/mHSNRw==}
 
-  follow-redirects@1.16.1:
-    resolution: {integrity: sha512-FNvFGzoMLWmE6Yj9spb/zjd7yiNCHiAW9/Tg9CXrQ8wuu32HtlJOwWO11OJafl5FfY3DxTdQ0vj42zU1kvv5jg==}
+  follow-redirects@1.16.3:
+    resolution: {integrity: sha512-toOSoqN6d51Wjf1aOFJYcoVv1aND9rj/CwjLU0Vz40oDuSpWDayCeKe4JpL5NL0WdFvoOOCI3BRo69HahjbR1A==}
     engines: {node: '>=4.0'}
     peerDependencies:
       debug: '*'
@@ -2500,8 +2501,8 @@ packages:
     resolution: {integrity: sha512-x0InOIyzgdk+eyaWaRJFH5snEtiImgBgblZ2CyPrLmqqcuMQkEvcDPHbzqbD8eDsSeJbVOjn+crzyzHaM4D+/A==}
     engines: {node: '>=18'}
 
-  nodemailer@10.0.16:
-    resolution: {integrity: sha512-VL9xKErxN+el77o8eBOuYKUPMyEx7F9hfnDCuiUKJRp9v3wnWMOudYgP/SWbwSHy8rUL4cylobuXtki1LpQS7A==}
+  nodemailer@10.1.7:
+    resolution: {integrity: sha512-OQa6FDln5fLttmqSbjDiRYvFDOFNrBqfiOwHPlEbURil3b+vPB1v8xpi+Sp46drzNDlsTnNsS502vthmz56r4w==}
     engines: {node: '>=20.0.0'}
 
   nodemon@3.1.14:
@@ -3908,7 +3909,7 @@ snapshots:
       protobufjs: 7.6.6
       yargs: 17.7.2
 
-  '@hono/node-server@2.1.1(hono@4.13.13)':
+  '@hono/node-server@2.1.6(hono@4.13.13)':
     dependencies:
       hono: 4.13.13
 
@@ -4121,7 +4122,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.32.1(zod@4.6.7)':
     dependencies:
-      '@hono/node-server': 2.1.1(hono@4.13.13)
+      '@hono/node-server': 2.1.6(hono@4.13.13)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -4465,7 +4466,7 @@ snapshots:
 
   axios@1.20.0:
     dependencies:
-      follow-redirects: 1.16.1
+      follow-redirects: 1.16.3
       form-data: 4.0.6
       https-proxy-agent: 5.0.1
       proxy-from-env: 2.1.0
@@ -5243,7 +5244,7 @@ snapshots:
 
   fn.name@1.1.0: {}
 
-  follow-redirects@1.16.1: {}
+  follow-redirects@1.16.3: {}
 
   form-data@2.5.6:
     dependencies:
@@ -6279,7 +6280,7 @@ snapshots:
 
   node-releases@2.0.56: {}
 
-  nodemailer@10.0.16: {}
+  nodemailer@10.1.7: {}
 
   nodemon@3.1.14:
     dependencies:
