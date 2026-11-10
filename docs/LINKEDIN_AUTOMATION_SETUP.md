@@ -28,7 +28,7 @@ LINKEDIN_REPORT_DIR=logs/linkedin
 1. Generate the authorization URL:
 
 ```bash
-npm run linkedin:oauth:url
+pnpm linkedin:oauth:url
 ```
 
 2. Open the URL, approve the app, and copy the `code` query parameter from the callback.
@@ -36,13 +36,13 @@ npm run linkedin:oauth:url
 3. Exchange the code:
 
 ```bash
-npm run linkedin:oauth:exchange -- --code YOUR_AUTHORIZATION_CODE
+pnpm linkedin:oauth:exchange --code YOUR_AUTHORIZATION_CODE
 ```
 
 4. Prefer saving the token automatically:
 
 ```bash
-npm run linkedin:oauth:exchange:write -- --code YOUR_AUTHORIZATION_CODE
+pnpm linkedin:oauth:exchange:write --code YOUR_AUTHORIZATION_CODE
 ```
 
 The command stores `LINKEDIN_ACCESS_TOKEN` in `.env` and does not print the token.
@@ -52,13 +52,13 @@ The command stores `LINKEDIN_ACCESS_TOKEN` in `.env` and does not print the toke
 Prospecting capability check:
 
 ```bash
-npm run linkedin:prospecting
+pnpm linkedin:prospecting
 ```
 
 Message capability check:
 
 ```bash
-npm run linkedin:messages
+pnpm linkedin:messages
 ```
 
 The runner writes JSON reports under `logs/linkedin`. It never assumes that LinkedIn people search, private messaging, or Sales Navigator automation is available. If the API does not grant a capability, the automation must create drafts and manual review tasks.

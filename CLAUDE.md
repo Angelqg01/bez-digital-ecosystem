@@ -51,61 +51,27 @@ BeZhas es un ecosistema blockchain empresarial B2B con:
 > marcase 3.849 ficheros como modificados por finales de línea y permisos.
 > No trabajar sobre el disco externo: se conserva sólo como copia de seguridad.
 
-/home/amaliacr/Documentos/BeZhas-Blockchain/
+Monorepo sin workspace raíz: cada módulo tiene su propio `pnpm-workspace.yaml`
+y lockfile y se instala por separado (`cd <módulo> && pnpm install`).
 
-│
+| Ruta | Qué es | Cómo se prueba |
+| :---- | :---- | :---- |
+| `smart-contracts/` | **Fuente de verdad on-chain.** Proyecto Foundry: `src/` (.sol), `script/` (despliegues), `deployments/<chainId>.json` (direcciones), `abi/` | `forge test -vvv` |
+| `api/` | Gateway y API principal (Express, Postgres, Redis). Punto de entrada `index.js`; migraciones en `db/migrations/`; tarifas y catálogos en `config/` | `pnpm test` |
+| `control-center/frontend/` | Web principal: Landing, panel y `/developers` (Next.js 16, React 19, Tailwind) | `pnpm test` · `pnpm build` |
+| `business-ops/` | OPERANT, agentes de gestión empresarial (:4000) | `pnpm test` · `pnpm run evals` |
+| `App-nativas/` | SubApps. `Bezhas-Hub/` (frontend Vite + React 18 y backend heredado), `BZ Capital`, `BZ PureScan`, `BZ CargoLink`, `bez-energy`, `bez-wallet`, `bezhas-pay-manager`… | por SubApp |
+| `agent-lib/` | Runtime de agentes: herramientas, comandos, permisos | `pnpm test` |
+| `sdk/` | `@bezhas/sdk`, SDK Web3 para clientes | `pnpm test` |
+| `tx-signer/` | Firmante aislado: verifica intención, política y aprobaciones EIP-712 antes de firmar | — |
+| `messaging-mcp/` · `obsidian-mcp/` · `ai-engine/` | Servidores MCP internos (Telegram y avisos, bóveda de notas, herramientas IA del SDK) | — |
+| `core/` · `openclaw/` · `aegis/` | Orquestador multi-LLM (OpenClaw), memoria en Redis, HITL y agentes por departamento | — |
+| `enterprise-node/` · `bezhas-edge-node/` · `edge-gateway/` | Nodo de la L2, nodo de integración y gateway de campo del VPP (Modbus/SunSpec) | — |
+| `deploy/gcp/` · `scripts/` | Despliegue en GCP (`config.env`, `secrets.list`, `deploy-subapps.sh`) y utilidades (`gcp-deploy.sh`, `sync-daemon.cjs`, `security/`) | — |
+| `docs/` | Documentación. **Vigente:** `developer/`, `runbooks/`, `security/`, `audit/`, `OPERANT_SUBAPP.md`. `archivo/` es histórico y no vigente (borradores de la L2 con OP Stack, notas de inversores): no citarlo; el RAG interno lo omite. Un documento que contradiga al código se mueve ahí con `git mv` | — |
+| `marketing/` · `SKILL/` · `plans/` · `reports/` | Material comercial, skills de agentes e informes; no es código de producto | — |
 
-├── BeZhas Blockchain\\              ← SOURCE OF TRUTH (contratos Solidity)
-
-│   ├── smart-contracts/src/        ← .sol files (Foundry project)
-
-│   ├── smart-contracts/abi/        ← ABIs compilados (forge build)
-
-│   ├── smart-contracts/deployments/← Addresses por chainId
-
-│   ├── smart-contracts/script/     ← Deploy scripts (Solidity)
-
-│   ├── core/                       ← Runtime JS modules (orchestrator, memory, etc.)
-
-│   └── index.js                    ← Bootstrap entry point
-
-│
-
-├── BeZhas Web\\bezhas-web3\\         ← Frontend React/Vite/Web3
-
-│   ├── src/
-
-│   │   ├── abis/                   ← ABIs sincronizados (NO editar manualmente)
-
-│   │   ├── contracts/              ← addresses.ts por red
-
-│   │   ├── hooks/                  ← Hooks Web3 (useBeZhasPayment, etc.)
-
-│   │   ├── components/             ← UI componentes
-
-│   │   └── config/chains.ts        ← Config redes
-
-│   └── sync.lock
-
-│
-
-├── OpenClaw\\                       ← Orquestador IA multi-LLM
-
-│   ├── src/
-
-│   │   ├── ConfigManager.js        ← Singleton 4-layer config \+ SHA-256
-
-│   │   ├── TokenManager.js         ← JWT auto-refresh in-memory
-
-│   │   ├── SkillRegistry.js        ← Hot-reload de skills
-
-│   │   └── providers/             ← Claude, Gemini, GPT-4o, DeepSeek, LLaMA
-
-│   └── docker-compose.yml
-
-│
-
-└── \[otros proyectos BeZhas\]
+`AGENTS.md` remite a este fichero: el contexto se mantiene sólo aquí.
 
 ---
 
@@ -140,13 +106,15 @@ BeZhas es un ecosistema blockchain empresarial B2B con:
 
 ## 🌐 REDES SOPORTADAS
 
-BSC\_MAINNET:    { chainId: 56,    rpc: 'https://bsc-dataseed.binance.org' }
+| Red | chainId | Uso |
+| :---- | :---- | :---- |
+| Polygon | 137 | Producción: BEZ-Coin y RWAFactory. RPC `https://polygon-bor-rpc.publicnode.com` |
+| BeZhas L2 | 2708 | Red propia, **sin uso en producción**. Existen el código (`BEZCoinV2.sol`), la configuración (`bezhas_testnet` en `foundry.toml`) y `deployments/2708.json`, pero BEZ-Coin sólo opera en Polygon (confirmado el 2026-11-10). No presentarla como red principal ni hablar de `wBEZ` |
+| Polygon Amoy | 80002 | Testnet de Polygon. Mumbai (80001) está apagada: no usarla |
+| BNB Chain | 56 / 97 | Sin contrato BEZ; reservado para el bridge pendiente |
+| Anvil | 31337 | Desarrollo local |
 
-BSC\_TESTNET:    { chainId: 97,    rpc: 'https://data-seed-prebsc-1-s1.binance.org:8545' }
-
-POLYGON:        { chainId: 137,   rpc: 'https://polygon-bor-rpc.publicnode.com' }
-
-POLYGON\_MUMBAI: { chainId: 80001, rpc: 'https://rpc-mumbai.maticvigil.com' }
+Fuente de verdad: `api/config/chain-policy.js` y `smart-contracts/deployments/`. La api usa Polygon (137) en producción, también si falta `BEZHAS_CHAIN_ID`. Resumen citable: `docs/reference/ESTADO_REDES_Y_TOKEN.md`.
 
 ---
 
@@ -220,6 +188,9 @@ Siempre especificar campos explícitos:
 
 ### Componentes clave
 
+El motor es Python (`openclaw/orchestrator.py`, `router.py`, `openclaw_engine.py`); la
+librería de configuración JS vive en `integrations/sync-openclaw/lib/`:
+
 - `ConfigManager.js` — Singleton, 4-layer config, SHA-256 checksums  
 - `TokenManager.js` — JWT auto-refresh, **in-memory only** (nunca a disco)  
 - `SkillRegistry.js` — Hot-reload de skills sin reinicio  
@@ -227,57 +198,41 @@ Siempre especificar campos explícitos:
 
 ---
 
-## 🔄 SYNC DAEMON (bezhas\_blockchain ↔ bezhas\_web3)
+## 🔄 SINCRONIZACIÓN DE ABIs (`scripts/sync-daemon.cjs`)
 
-### Cuándo ejecutar sync
+Lee los artefactos de Foundry (`smart-contracts/out/`) y las direcciones de
+`smart-contracts/deployments/` y los propaga a:
 
-SIEMPRE después de: compilar contratos, modificar ABIs, nuevo deploy, cambio de address.
+- `api/services/contractService.js`
+- `sdk/src/abi/`
+- `control-center/frontend/lib/abi/`
+- `agent-lib/config/contracts.json`
 
-\# Sync manual único
+Ejecutarlo SIEMPRE después de compilar contratos, cambiar un ABI, desplegar o
+cambiar una dirección:
 
-node sync-daemon.js \--once
+```bash
+cd smart-contracts && forge build
+cd .. && pnpm sync:abi          # una pasada
+pnpm sync:abi:watch             # modo vigilancia
+```
 
-\# Modo desarrollo (watch)
-
-node sync-daemon.js \--watch
-
-\# Validar sin copiar
-
-node sync-daemon.js \--dry-run
-
-\# Estado actual
-
-node sync-daemon.js \--status
-
-### Reglas de sync (NUNCA violar)
-
-1. Nunca sobreescribir ABI si hash MD5 no cambió  
-2. Mantener `.bak` del archivo anterior antes de sobreescribir  
-3. Loggear todo en `bezhas_web3/sync.log`  
-4. Pausar hot-reload de Vite solo si cambia una address
-
-### Hooks Web3 requeridos en bezhas\_web3/src/hooks/
-
-Si alguno no existe, crearlo automáticamente:
-
-- `useBeZhasPayment.js`  
-- `useStaking.js`  
-- `useFarming.js`  
-- `useDAO.js`  
-- `useTokenBalance.js`  
-- `useApproval.js`  
-- `useContractEvent.js`  
-- `useMultiChain.js`
+Los ABIs de destino NO se editan a mano. El script sólo reescribe un fichero si
+su hash cambia y deja el anterior como `.bak`; el registro queda en
+`scripts/status/sync.log`.
 
 ---
 
-## 💎 FRONTEND — bezhas-web3
+## 💎 FRONTEND
 
-### Stack
+Hay dos frontends, no uno:
 
-- React \+ Vite  
-- Web3/ethers.js  
-- Tailwind CSS  
+- **`control-center/frontend/`** — web principal (Next.js 16, React 19, Tailwind, ethers 6 + viem). Hooks en `hooks/`, ABIs en `lib/abi/`.
+- **`App-nativas/Bezhas-Hub/frontend/`** — Hub (Vite, React 18, wagmi + viem, Tailwind).
+
+### Stack común
+
+- Tailwind CSS · ethers.js / viem  
 - Fuentes: **Syne** (headings) \+ **Space Mono** (monospace/código)
 
 ### Design system
@@ -288,10 +243,9 @@ Si alguno no existe, crearlo automáticamente:
 
 ### Componentes clave existentes
 
-- `bezhas-pay-system.jsx` — Procesador de pagos principal  
-- `bezhas-universal-payments.jsx` — Hub SEPA/SWIFT \+ fiat \+ DeFi  
-- `BeZhasPaymentGateway.jsx` — UI de pagos  
-- `useBeZhasPayment.js` — Hook principal  
+- `App-nativas/Bezhas-Hub/bezhas-pay-system.jsx` — Procesador de pagos principal  
+- `integrations/sync-payments/BeZhasPaymentGateway.jsx` — UI de pagos  
+- `integrations/sync-payments/useBeZhasPayment.js` — Hook principal  
 - Dashboards RWA: ShipTrack, CustomsClear, RWA Cargo, Port Finance, Maritime Insurance, Cold Chain, Real Estate suite  
 - Master Agent Dashboard (6 archivos modulares)
 
@@ -421,6 +375,10 @@ forge build --sizes
 
 forge test -vvv
 
+\# Propagar ABIs y direcciones tras compilar o desplegar
+
+pnpm sync:abi
+
 \# Deploy local (Anvil)
 
 forge script script/DeployAll.s.sol --rpc-url http://localhost:8545 --broadcast
@@ -447,14 +405,13 @@ cd control-center/frontend && pnpm install && pnpm dev
 
 Cuando se crea un nuevo contrato o función:
 
-- [ ] Contrato `.sol` en `bezhas_blockchain/contracts/`  
-- [ ] `pnpm hardhat compile` exitoso  
-- [ ] ABI sincronizado a `bezhas_web3/src/abis/`  
-- [ ] Address añadida a `bezhas_web3/src/contracts/addresses.ts`  
-- [ ] Hook creado en `bezhas_web3/src/hooks/`  
+- [ ] Contrato `.sol` en `smart-contracts/src/` con su test en `smart-contracts/test/`  
+- [ ] `forge build --sizes` y `forge test -vvv` en verde  
+- [ ] Dirección añadida a `smart-contracts/deployments/<chainId>.json`  
+- [ ] `pnpm sync:abi` ejecutado (ABI en `api`, `sdk`, `control-center/frontend/lib/abi`)  
+- [ ] Hook o cliente actualizado en el frontend que lo use  
 - [ ] Componente UI actualizado/creado  
 - [ ] Tests de integración actualizados  
-- [ ] `sync.log` refleja los cambios  
 - [ ] Addresses actualizadas en este CLAUDE.md (sección contratos)
 
 ---

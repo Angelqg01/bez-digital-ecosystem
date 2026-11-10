@@ -426,7 +426,7 @@ Cada app se registra en `app_registry` con su `app_id`. La política de la organ
 - [ERC-4337 vs ERC-7702 vs AA nativa (eco.com, fuente secundaria)](https://eco.com/support/en/articles/15254047-erc-4337-vs-erc-7702-vs-native-aa-2026-standards-compared)
 
 **Documentos internos:**
-- `docs/La Arquitectura del_Corporate Gas_Tank.md`
+- `docs/archivo/l2-op-stack-2026-06/La Arquitectura del_Corporate Gas_Tank.md` (borrador original, archivado: el diseño vigente es este documento)
 - `plans/BEZHAS_SUBAPPS_PLAN.md` (APP 03)
 - `docs/developer/UNIFIED_BEZ_BILLING.md`
 - `docs/OPERANT_SUBAPP.md`

@@ -4,6 +4,13 @@
 **Versión:** 1.0  
 **Referencia de precio:** 1 BEZ = $0.10 USD
 
+> **Cómo leer este informe (nota del 2026-11-10).** Los parámetros de la columna
+> «DESPUÉS» son los que hay hoy en los contratos de `smart-contracts/src/`
+> (comprobados: `rewardPerPoint` 0,0075 BEZ, `MAX_REWARD_RATE` 1 BEZ/s, comisiones
+> del 1 % en `MicroLendingPool` e `InvoiceFactoring`). Las cifras en dólares son
+> **estimaciones** con un precio supuesto de 0,10 $ por BEZ y volúmenes hipotéticos:
+> no son ingresos reales ni una previsión, y no deben citarse como tales.
+
 ---
 
 ## Resumen Ejecutivo

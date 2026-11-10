@@ -53,7 +53,7 @@ quórum de operadores independientes.
 | Matriz de gravedad de incidencias que bloquea el escrow | `api/services/cargoDisputeOracle.js` | **Consume** BON: una alerta de temperatura certificada alimenta el veredicto. |
 | Eventos fuera del ciclo de vida (TX006 custodia, TX010 inspección, TX011 ETA/ruta) | `api/services/cargoLinkEvents.js`, `cargoLinkLifecycle.js` | Son tipos de evento adicionales (§4). |
 | Contratos con un solo firmante | `SupplyTracker`, `CustomsClearanceOracle`, `EvidenceVault`, `TelemetryAnchor`, `DeliveryEscrow` | **Consumen** BON: su `OPERATOR_ROLE`/`ORACLE_ROLE` pasa al contrato de BON (§6.4). |
-| Clave secp256k1 en HSM (Cloud KMS), ya creada para el paymaster | `docs/La Arquitectura del_Corporate Gas_Tank.md` | Es el patrón de **custodia de claves del operador 1** (BeZhas). |
+| Clave secp256k1 en HSM (Cloud KMS), ya creada para el paymaster | `docs/archivo/l2-op-stack-2026-06/La Arquitectura del_Corporate Gas_Tank.md` | Es el patrón de **custodia de claves del operador 1** (BeZhas). |
 
 Despliegues actuales: los oráculos de `src/supplychain`, `src/energy`,
 `src/finance` y `EvidenceVault` están en la **L2 de pruebas, chainId 2708**

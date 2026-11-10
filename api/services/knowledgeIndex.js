@@ -23,7 +23,9 @@ const K1 = 1.4;
 const B = 0.75;
 // Nombres que no se indexan nunca, por si alguien deja un volcado en docs/.
 const VETADOS = /secret|credential|password|seed|mnemonic|private[-_ ]?key|wallet[-_ ]?backup|\.env/i;
-const OMITIR_DIRS = new Set(['node_modules', '.git', 'obsidian-vault']);
+// `archivo` es material histórico que contradice al sistema actual (docs/archivo/README.md):
+// si se indexara, un agente lo citaría con la misma autoridad que un runbook vigente.
+const OMITIR_DIRS = new Set(['node_modules', '.git', 'obsidian-vault', 'archivo']);
 
 const VACIAS = new Set(['de', 'la', 'el', 'en', 'y', 'a', 'los', 'las', 'un', 'una', 'que', 'por', 'con', 'para', 'del',
     'se', 'es', 'al', 'lo', 'the', 'of', 'and', 'to', 'in', 'is', 'for', 'on', 'a', 'an', 'or']);
