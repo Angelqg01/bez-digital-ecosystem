@@ -10,17 +10,19 @@ const { ethers } = require('ethers');
 const axios = require('axios');
 const healthService = require('../services/health.service');
 
-// Simple key protection (optional, but good for semi-public diagnostic)
-// Use ?key=debug123 (or configure proper auth)
-const DIAGNOSTIC_KEY = process.env.DIAGNOSTIC_KEY || 'debug123';
+// En producción DIAGNOSTIC_KEY es obligatoria (antes valía 'debug123' si faltaba) y
+// sólo se acepta por cabecera: en la query acababa en los logs del balanceador.
+const crypto = require('crypto');
+const { secretoObligatorio } = require('../config/requiredSecret');
+const DIAGNOSTIC_KEY = secretoObligatorio('DIAGNOSTIC_KEY', { prohibidos: ['debug123'], minLength: 24 });
+const hash = (v) => crypto.createHash('sha256').update(String(v)).digest();
 
 const checkAuth = (req, res, next) => {
     // If running locally, bypass
     if (process.env.NODE_ENV !== 'production') return next();
 
-    // Check query param or header
-    const key = req.query.key || req.headers['x-diagnostic-key'];
-    if (key !== DIAGNOSTIC_KEY) {
+    const key = req.headers['x-diagnostic-key'];
+    if (!key || !crypto.timingSafeEqual(hash(key), hash(DIAGNOSTIC_KEY))) {
         return res.status(403).json({ error: 'Unauthorized diagnostic access' });
     }
     next();

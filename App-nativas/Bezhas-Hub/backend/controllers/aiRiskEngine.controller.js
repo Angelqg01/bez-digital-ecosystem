@@ -1,14 +1,21 @@
 const { ethers } = require('ethers');
 const asyncHandler = require('../middleware/async');
 const ErrorResponse = require('../utils/errorResponse');
+const { secretoObligatorio } = require('../config/requiredSecret');
 
 /**
  * AI Risk Engine Controller
  * Evalúa riesgos de transacciones y genera firmas criptográficas para el contrato BezLiquidityRamp
  */
 
-// Private key del signer (en producción debe estar en .env)
-const AI_SIGNER_PRIVATE_KEY = process.env.AI_SIGNER_PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000001';
+// Clave del firmante. En producción es obligatoria: antes, si faltaba, se firmaba
+// con la clave privada 0x…01, que es pública, y cualquiera podía producir una
+// firma que el contrato diese por buena. Fuera de producción se genera una al vuelo.
+const AI_SIGNER_PRIVATE_KEY = secretoObligatorio('AI_SIGNER_PRIVATE_KEY', {
+    prohibidos: ['0x0000000000000000000000000000000000000000000000000000000000000001'],
+    minLength: 64,
+    dev: () => ethers.Wallet.createRandom().privateKey,
+});
 const CONTRACT_ADDRESS = process.env.BEZ_LIQUIDITY_RAMP_ADDRESS || '0x0000000000000000000000000000000000000000';
 
 // Wallet del AI Signer

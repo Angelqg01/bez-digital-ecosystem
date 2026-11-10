@@ -1,6 +1,7 @@
 'use strict';
 
 const http = require('http');
+const { secretoObligatorio } = require('../config/requiredSecret');
 const https = require('https');
 const logger = require('../utils/logger');
 
@@ -61,8 +62,19 @@ class UnifiedAgentProxyService {
       process.env.BLOCKCHAIN_API_URL ||
       process.env.AGENT_RUNTIME_URL
     );
-    this.internalKey = process.env.INTERNAL_API_KEY || process.env.OPENCLAW_API_KEY || 'dev-internal-key';
     this.timeoutMs = Number(process.env.BEZHAS_AGENT_TIMEOUT_MS || 20000);
+  }
+
+  /**
+   * Clave interna hacia el Agent Runtime. Se resuelve al usarla: en producción,
+   * sin INTERNAL_API_KEY la llamada falla en vez de enviar 'dev-internal-key'.
+   */
+  get internalKey() {
+    return secretoObligatorio('INTERNAL_API_KEY', {
+      alternativas: ['OPENCLAW_API_KEY'],
+      prohibidos: ['dev-internal-key'],
+      dev: 'dev-internal-key',
+    });
   }
 
   async chat({ message, userId, walletAddress, agentId, context = {} }) {

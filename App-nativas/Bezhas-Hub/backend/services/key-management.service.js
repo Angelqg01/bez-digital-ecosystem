@@ -12,6 +12,7 @@
  */
 
 const crypto = require('crypto');
+const { secretoObligatorio } = require('../config/requiredSecret');
 const fs = require('fs').promises;
 const path = require('path');
 const { audit } = require('../middleware/auditLogger');
@@ -221,8 +222,14 @@ async function loadKeys() {
             console.log('No existing keys found, generating master key...');
             const { key, metadata } = generateKey('master', 'master');
 
-            // Guardar con password por defecto (CAMBIAR EN PRODUCCIÓN)
-            const defaultPassword = process.env.KEY_PASSWORD || 'CHANGE_ME_IN_PRODUCTION';
+            // En producción KEY_PASSWORD es obligatoria: la contraseña por defecto está en el
+            // repositorio y con ella se descifraría la clave maestra. El valor de desarrollo
+            // se conserva para no invalidar las claves locales ya generadas.
+            const defaultPassword = secretoObligatorio('KEY_PASSWORD', {
+                prohibidos: ['CHANGE_ME_IN_PRODUCTION'],
+                minLength: 24,
+                dev: 'CHANGE_ME_IN_PRODUCTION',
+            });
             await saveKey('master', defaultPassword);
 
             return { loaded: 1 };

@@ -11,6 +11,7 @@
  */
 
 const axios = require('axios');
+const { secretoObligatorio } = require('../../config/requiredSecret');
 const pino = require('pino');
 const eventBus = require('../events/EventBus');
 
@@ -250,7 +251,7 @@ class MachineLearningService {
                 timeout: this.timeout,
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-Key': process.env.ML_API_KEY || 'dev-key'
+                    'X-API-Key': secretoObligatorio('ML_API_KEY', { prohibidos: ['dev-key'], dev: 'dev-key' })
                 }
             }
         );

@@ -10,6 +10,15 @@
 
 const AdminJS = require('adminjs');
 const { buildAuthenticatedRouter } = require('@adminjs/express');
+const crypto = require('crypto');
+const { secretoObligatorio } = require('./requiredSecret');
+
+/** Comparación en tiempo constante, también con longitudes distintas. */
+const iguales = (a, b) => {
+    const ha = crypto.createHash('sha256').update(String(a)).digest();
+    const hb = crypto.createHash('sha256').update(String(b)).digest();
+    return crypto.timingSafeEqual(ha, hb);
+};
 
 /**
  * Configuración de autenticación para el panel de administración
@@ -17,9 +26,12 @@ const { buildAuthenticatedRouter } = require('@adminjs/express');
  */
 const authenticate = async (email, password) => {
     const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@bezhas.com';
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'BeZhas2024!Secure';
+    // Sin contraseña por defecto: la anterior estaba en el repositorio. En producción
+    // ADMIN_PASSWORD es obligatoria; fuera de ella, sin variable no entra nadie.
+    const ADMIN_PASSWORD = secretoObligatorio('ADMIN_PASSWORD', { prohibidos: ['BeZhas2024!Secure'], minLength: 16 });
+    if (!ADMIN_PASSWORD) return null;
 
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    if (email === ADMIN_EMAIL && iguales(password, ADMIN_PASSWORD)) {
         return {
             email: ADMIN_EMAIL,
             role: 'admin',
@@ -88,7 +100,11 @@ const createAdminPanel = () => {
     const admin = new AdminJS(adminOptions);
 
     // Configurar el router de Express con autenticación
-    const COOKIE_SECRET = process.env.COOKIE_SECRET || 'bezhas-super-secret-cookie-key-change-in-production';
+    const COOKIE_SECRET = secretoObligatorio('COOKIE_SECRET', {
+        prohibidos: ['bezhas-super-secret-cookie-key-change-in-production'],
+        minLength: 32,
+        dev: () => crypto.randomBytes(32).toString('hex'),
+    });
 
     const adminRouter = buildAuthenticatedRouter(
         admin,
