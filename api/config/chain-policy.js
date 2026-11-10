@@ -78,10 +78,18 @@ function cadenasPermitidas(env = process.env) {
     ]);
 }
 
-/** La L2 de BeZhas en producción; Anvil en desarrollo. Nunca 31337 en producción por omisión. */
+/**
+ * Polygon en producción; Anvil en desarrollo. Nunca 31337 en producción por omisión.
+ *
+ * Antes el valor de producción era 2708 (la L2 propia). BEZ-Coin sólo está en uso
+ * en Polygon (confirmado por Yoel el 2026-11-10) y el despliegue ya fija
+ * BEZHAS_CHAIN_ID=137 (deploy/gcp/cloudbuild.yaml): si esa variable se perdía, la
+ * api pasaba a construir transacciones para una red en la que no opera nadie.
+ * La 2708 sigue en la lista de permitidas para quien la pida de forma explícita.
+ */
 function cadenaPorDefecto(env = process.env) {
     if (env.BEZHAS_CHAIN_ID) return Number.parseInt(env.BEZHAS_CHAIN_ID, 10);
-    return esProduccion(env) ? 2708 : 31337;
+    return esProduccion(env) ? 137 : 31337;
 }
 
 /**

@@ -18,7 +18,11 @@ const VENTANA_DIAS = 30;
 const TOPE_HORA = () => Number(process.env.AI_FREE_QUESTIONS_PER_HOUR || 300);
 
 function claveDe(ip) {
-    const secreto = process.env.AI_FREE_QUESTION_SECRET || process.env.JWT_SECRET || 'dev-only-secret';
+    // En producción no hay valor por defecto: con un literal del repositorio, cualquiera
+    // podría calcular la clave de una IP y reconocerla en la tabla de preguntas gratis.
+    const secreto = process.env.AI_FREE_QUESTION_SECRET || process.env.JWT_SECRET
+        || (process.env.NODE_ENV === 'production' ? null : 'dev-only-secret');
+    if (!secreto) throw new Error('Falta AI_FREE_QUESTION_SECRET o JWT_SECRET en producción.');
     return crypto.createHmac('sha256', secreto).update(`ai-free:${String(ip || 'desconocida')}`).digest('hex');
 }
 

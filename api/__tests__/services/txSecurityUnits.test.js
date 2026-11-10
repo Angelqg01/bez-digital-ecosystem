@@ -15,10 +15,11 @@ const auditoria = require('../../services/securityAudit');
 const { getEntitlements } = require('../../config/plan-entitlements');
 
 describe('chain-policy', () => {
-    it('en producción sólo redes principales y la L2 por defecto', () => {
+    it('en producción sólo redes principales y Polygon por defecto', () => {
         const env = { NODE_ENV: 'production' };
         expect([...cadenas.cadenasPermitidas(env)].sort((a, b) => a - b)).toEqual([56, 137, 2708]);
-        expect(cadenas.resolverCadena(undefined, env)).toMatchObject({ ok: true, chainId: 2708 });
+        // Sin BEZHAS_CHAIN_ID, producción opera en Polygon: es donde está BEZ-Coin.
+        expect(cadenas.resolverCadena(undefined, env)).toMatchObject({ ok: true, chainId: 137 });
         expect(cadenas.resolverCadena('31337', env)).toMatchObject({ ok: false, code: 'CHAIN_NOT_ALLOWED' });
         expect(cadenas.resolverCadena('97', env)).toMatchObject({ ok: false, code: 'CHAIN_NOT_ALLOWED' });
     });
