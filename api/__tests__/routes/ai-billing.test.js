@@ -122,52 +122,20 @@ describe('Routes: /api/ai-billing', () => {
     //  AUTHENTICATED ENDPOINTS
     // ═══════════════════════════════════════════════
 
-    describe('POST /record-usage', () => {
-        it('records usage for authenticated user', async () => {
-            const token = makeToken();
-            const fakeInvoice = { apiCost: 0.028, commission: 0.0084, totalCost: 0.0364 };
-            mockBilling.recordUsage.mockResolvedValueOnce({ usageId: 42, invoice: fakeInvoice });
-
+    describe('POST /record-usage (retirada)', () => {
+        it('responde 410 y no toca el servicio, aunque el cuerpo sea válido', async () => {
             const res = await request(app)
                 .post('/api/ai-billing/record-usage')
-                .set('Authorization', `Bearer ${token}`)
-                .send({
-                    enterpriseAddress: VALID_ADDR,
-                    provider: 'claude',
-                    model: 'claude-3-5-haiku',
-                    inputTokens: 10000,
-                    outputTokens: 5000,
-                });
-            expect(res.status).toBe(200);
-            expect(res.body.usageId).toBe(42);
-            expect(res.body.invoice.totalCost).toBe(0.0364);
+                .set('Authorization', `Bearer ${makeToken()}`)
+                .send({ enterpriseAddress: VALID_ADDR, provider: 'claude', model: 'claude-4-opus', inputTokens: 1000, outputTokens: 500 });
+            expect(res.status).toBe(410);
+            expect(res.body.code).toBe('AI_BILLING_RETIRED');
+            expect(mockBilling.recordUsage).not.toHaveBeenCalled();
         });
 
         it('returns 401 without token', async () => {
-            const res = await request(app)
-                .post('/api/ai-billing/record-usage')
-                .send({ enterpriseAddress: VALID_ADDR, provider: 'claude', model: 'claude-4-opus', inputTokens: 1000, outputTokens: 500 });
+            const res = await request(app).post('/api/ai-billing/record-usage').send({ enterpriseAddress: VALID_ADDR, provider: 'claude', model: 'claude-4-opus', inputTokens: 1000, outputTokens: 500 });
             expect(res.status).toBe(401);
-        });
-
-        it('returns 400 for invalid enterprise address', async () => {
-            const token = makeToken();
-            const res = await request(app)
-                .post('/api/ai-billing/record-usage')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ enterpriseAddress: 'not-an-address', provider: 'claude', model: 'claude-4-opus', inputTokens: 1000, outputTokens: 500 });
-            expect(res.status).toBe(400);
-        });
-
-        it('returns 400 when monthly limit exceeded', async () => {
-            const token = makeToken();
-            mockBilling.recordUsage.mockRejectedValueOnce(new Error('Monthly limit exceeded'));
-            const res = await request(app)
-                .post('/api/ai-billing/record-usage')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ enterpriseAddress: VALID_ADDR, provider: 'claude', model: 'claude-4-opus', inputTokens: 1000, outputTokens: 500 });
-            expect(res.status).toBe(400);
-            expect(res.body.error).toContain('Monthly limit');
         });
     });
 
@@ -200,36 +168,20 @@ describe('Routes: /api/ai-billing', () => {
         });
     });
 
-    describe('POST /pay-invoice', () => {
-        it('pays an invoice', async () => {
-            const token = makeToken();
-            mockBilling.payInvoice.mockResolvedValueOnce({ invoiceId: 1, amountBez: '1000', status: 'paid' });
+    describe('POST /pay-invoice (retirada)', () => {
+        it('responde 410 y no toca el servicio, aunque el cuerpo sea válido', async () => {
             const res = await request(app)
                 .post('/api/ai-billing/pay-invoice')
-                .set('Authorization', `Bearer ${token}`)
+                .set('Authorization', `Bearer ${makeToken()}`)
                 .send({ invoiceId: 1, enterpriseAddress: VALID_ADDR });
-            expect(res.status).toBe(200);
-            expect(res.body.status).toBe('paid');
+            expect(res.status).toBe(410);
+            expect(res.body.code).toBe('AI_BILLING_RETIRED');
+            expect(mockBilling.payInvoice).not.toHaveBeenCalled();
         });
 
-        it('returns 400 for invalid invoiceId', async () => {
-            const token = makeToken();
-            const res = await request(app)
-                .post('/api/ai-billing/pay-invoice')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ invoiceId: -1, enterpriseAddress: VALID_ADDR });
-            expect(res.status).toBe(400);
-        });
-
-        it('returns 400 when invoice not found', async () => {
-            const token = makeToken();
-            mockBilling.payInvoice.mockRejectedValueOnce(new Error('Invoice not found or already paid'));
-            const res = await request(app)
-                .post('/api/ai-billing/pay-invoice')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ invoiceId: 999, enterpriseAddress: VALID_ADDR });
-            expect(res.status).toBe(400);
-            expect(res.body.error).toContain('Invoice not found');
+        it('returns 401 without token', async () => {
+            const res = await request(app).post('/api/ai-billing/pay-invoice').send({ invoiceId: 1, enterpriseAddress: VALID_ADDR });
+            expect(res.status).toBe(401);
         });
     });
 
@@ -246,15 +198,15 @@ describe('Routes: /api/ai-billing', () => {
     });
 
     describe('GET /subscription', () => {
-        it('returns current subscription', async () => {
+        it('una fila antigua de ai_subscriptions ya no eleva el nivel: nadie verificó ese cobro', async () => {
             const token = makeToken();
             mockBilling.getActiveSubscriptionTier.mockResolvedValueOnce('professional');
             const res = await request(app)
                 .get('/api/ai-billing/subscription')
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(200);
-            expect(res.body.tier).toBe('professional');
-            expect(res.body.discount).toBe(0.10);
+            expect(res.body.tier).toBe('free');
+            expect(mockBilling.getActiveSubscriptionTier).not.toHaveBeenCalled();
         });
 
         it('resuelve el plan de la organización para un usuario con id UUID (sin tocar ai_subscriptions)', async () => {
@@ -276,28 +228,20 @@ describe('Routes: /api/ai-billing', () => {
         });
     });
 
-    describe('POST /subscribe', () => {
-        it('purchases a subscription', async () => {
-            const token = makeToken();
-            mockBilling.purchaseSubscription.mockResolvedValueOnce({
-                subscriptionId: 7, tier: 'enterprise', priceUSD: 299.99, discount: '15%',
-            });
+    describe('POST /subscribe (retirada)', () => {
+        it('responde 410 y no toca el servicio, aunque el cuerpo sea válido', async () => {
             const res = await request(app)
                 .post('/api/ai-billing/subscribe')
-                .set('Authorization', `Bearer ${token}`)
+                .set('Authorization', `Bearer ${makeToken()}`)
                 .send({ tier: 'enterprise' });
-            expect(res.status).toBe(200);
-            expect(res.body.tier).toBe('enterprise');
-            expect(res.body.priceUSD).toBe(299.99);
+            expect(res.status).toBe(410);
+            expect(res.body.code).toBe('AI_BILLING_RETIRED');
+            expect(mockBilling.purchaseSubscription).not.toHaveBeenCalled();
         });
 
-        it('returns 400 for invalid tier', async () => {
-            const token = makeToken();
-            const res = await request(app)
-                .post('/api/ai-billing/subscribe')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ tier: 'platinum' });
-            expect(res.status).toBe(400);
+        it('returns 401 without token', async () => {
+            const res = await request(app).post('/api/ai-billing/subscribe').send({ tier: 'enterprise' });
+            expect(res.status).toBe(401);
         });
     });
 });

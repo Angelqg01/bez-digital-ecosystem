@@ -58,30 +58,32 @@ router.post('/estimate', [
 //  AUTHENTICATED — Usage & billing
 // ═══════════════════════════════════════════════
 
-router.post('/record-usage', authenticateToken, [
-    body('enterpriseAddress').isEthereumAddress().withMessage('Invalid enterprise address'),
-    body('provider').isIn(VALID_PROVIDERS),
-    body('model').isString().notEmpty(),
-    body('inputTokens').isInt({ gt: 0 }),
-    body('outputTokens').isInt({ min: 0 }),
-    body('execSeconds').optional().isInt({ min: 0 }),
-], async (req, res) => {
-    if (!validate(req, res)) return;
-    try {
-        const result = await billing.recordUsage({
-            userId: req.user.userId,
-            enterpriseAddress: req.body.enterpriseAddress,
-            provider: req.body.provider,
-            model: req.body.model,
-            inputTokens: req.body.inputTokens,
-            outputTokens: req.body.outputTokens,
-            execSeconds: req.body.execSeconds || 0,
-        });
-        res.json(result);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
+/*
+ * Rutas de escritura RETIRADAS (2026-11-12, revisión de seguridad H1, H2 y H4).
+ *
+ * Este módulo es el sistema de facturación de IA anterior al Gateway. Tres de
+ * sus rutas movían dinero sin comprobar nada:
+ *
+ *   POST /subscribe      daba el nivel que pidiera el cliente sin iniciar ni
+ *                        verificar ningún cobro.
+ *   POST /pay-invoice    marcaba la factura como pagada con sólo LEER un saldo
+ *                        del Paymaster: no transfería fondos ni pedía un recibo.
+ *   POST /record-usage   facturaba los tokens que declarase el navegador.
+ *
+ * Ningún cliente las usa (sólo se consume GET /subscription). El plan se
+ * contrata por Stripe Checkout y se activa desde su webhook verificado; el
+ * consumo lo mide el servidor que llama al modelo. Se responde 410 en lugar de
+ * borrar la ruta para que un cliente antiguo reciba un motivo y no un 404.
+ */
+function retirada(flujo) {
+    return (_req, res) => res.status(410).json({
+        error: 'Esta operación del sistema de facturación anterior está retirada.',
+        code: 'AI_BILLING_RETIRED',
+        use: flujo,
+    });
+}
+router.post('/record-usage', authenticateToken,
+    retirada('El consumo lo registra el servidor al ejecutar la llamada; no se declara desde el cliente.'));
 
 router.get('/invoices', authenticateToken, [
     qv('status').optional().isIn(['pending', 'paid', 'overdue', 'cancelled']),
@@ -95,18 +97,8 @@ router.get('/invoices', authenticateToken, [
     }
 });
 
-router.post('/pay-invoice', authenticateToken, [
-    body('invoiceId').isInt({ gt: 0 }),
-    body('enterpriseAddress').isEthereumAddress(),
-], async (req, res) => {
-    if (!validate(req, res)) return;
-    try {
-        const result = await billing.payInvoice(req.body.invoiceId, req.user.userId, req.body.enterpriseAddress);
-        res.json(result);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
+router.post('/pay-invoice', authenticateToken,
+    retirada('Las facturas se liquidan por Stripe; no existe pago por lectura de saldo.'));
 
 router.get('/stats', authenticateToken, async (req, res) => {
     try {
@@ -119,22 +111,17 @@ router.get('/stats', authenticateToken, async (req, res) => {
 
 // Plan de la plataforma (organización → app → gateway_subscriptions) → nivel que entienden las SubApps.
 const PLAN_A_TIER = { starter: 'starter', creator_pro: 'professional', business: 'professional', enterprise_vip: 'enterprise' };
-const TIER_RANK = VALID_TIERS;
 
 router.get('/subscription', authenticateToken, async (req, res) => {
     try {
-        // Antes sólo se miraba ai_subscriptions.user_id (INTEGER): con el id UUID real de la sesión la consulta
-        // fallaba para todos los usuarios y las SubApps degradaban siempre a 'free'. Ahora manda el plan de la
-        // organización y la tabla antigua sólo se consulta si el id es numérico.
+        // Manda el plan de la organización (gateway_subscriptions), que es el que se cobra.
         let tier = 'free';
         try {
             const principal = await resolverPrincipal(req.user);
             tier = PLAN_A_TIER[principal && principal.plan] || 'free';
         } catch (_) { /* sin plan resoluble: se queda en free */ }
-        if (/^\d+$/.test(String(req.user.userId))) {
-            const legacy = await billing.getActiveSubscriptionTier(req.user.userId);
-            if (TIER_RANK.indexOf(legacy) > TIER_RANK.indexOf(tier)) tier = legacy;
-        }
+        // La tabla antigua ai_subscriptions ya no se consulta: sus filas las escribía
+        // POST /subscribe sin cobro verificado, así que no prueban que nadie haya pagado.
         const meta = pricing.SUBSCRIPTION_TIERS[tier];
         res.json({ tier, ...meta });
     } catch (err) {
@@ -142,16 +129,7 @@ router.get('/subscription', authenticateToken, async (req, res) => {
     }
 });
 
-router.post('/subscribe', authenticateToken, [
-    body('tier').isIn(VALID_TIERS).withMessage('Invalid tier'),
-], async (req, res) => {
-    if (!validate(req, res)) return;
-    try {
-        const result = await billing.purchaseSubscription(req.user.userId, req.body.tier);
-        res.json(result);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
+router.post('/subscribe', authenticateToken,
+    retirada('POST /api/gateway/v1/subscription/checkout (Stripe Checkout). El plan se activa desde el webhook.'));
 
 module.exports = router;

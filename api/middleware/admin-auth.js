@@ -17,6 +17,7 @@
  */
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/secrets');
+const { isAllowedOrigin, parseExtraOrigins } = require('../config/cors');
 
 const ADMIN_ISSUER = 'bezhas-admin-auth';
 const ADMIN_COOKIE = 'bezhas_admin_token';
@@ -50,8 +51,39 @@ function verifyAdminToken(token) {
   }
 }
 
+const METODOS_SEGUROS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/**
+ * Defensa CSRF para la sesión por cookie. Un navegador envía la cabecera Origin
+ * en toda petición que no sea GET/HEAD; si viene y no es un origen nuestro, la
+ * petición la ha lanzado otra web con la cookie del administrador a cuestas.
+ *
+ * Sólo se aplica cuando la sesión viaja en la cookie: con Authorization el
+ * navegador no adjunta nada por su cuenta y no hay CSRF posible. Sin Origin
+ * (curl, scripts) se deja pasar: ahí no hay navegador que engañar.
+ *
+ * Se suma a SameSite=Lax, no lo sustituye. No se sube a Strict porque entonces
+ * el enlace de acceso que llega por correo abriría el panel sin sesión.
+ */
+function origenAjeno(req) {
+  if (METODOS_SEGUROS.has(req.method)) return false;
+  if (!req.cookies?.[ADMIN_COOKIE]) return false;
+  const origin = req.headers.origin;
+  if (!origin) return false;
+  return !isAllowedOrigin(origin, {
+    isProduction: process.env.NODE_ENV === 'production',
+    extraOrigins: parseExtraOrigins(process.env.CORS_EXTRA_ORIGINS),
+  });
+}
+
 /** Middleware Express: corta con 401 si no hay sesión SuperAdmin válida. */
 function requireSuperAdmin(req, res, next) {
+  if (origenAjeno(req)) {
+    return res.status(403).json({
+      error: 'Origen no permitido para una operación del panel',
+      code: 'ADMIN_ORIGIN_REJECTED',
+    });
+  }
   const decoded = verifyAdminToken(extractAdminToken(req));
   if (!decoded) {
     return res.status(401).json({

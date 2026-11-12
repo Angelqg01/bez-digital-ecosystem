@@ -29,7 +29,9 @@ services:
     ports:
       # Mismo caso que el Postgres de arriba: el 6379 del anfitrión lo ocupa el
       # Redis del proyecto operant. Dentro de la red sigue siendo el 6379.
-      - "${REDIS_HOST_PORT:-6380}:6379"
+      # Sólo en 127.0.0.1: Redis no lleva contraseña y publicado en 0.0.0.0
+      # quedaba al alcance de cualquier equipo de la red.
+      - "127.0.0.1:${REDIS_HOST_PORT:-6380}:6379"
     networks:
       - bezhas-net
     healthcheck:

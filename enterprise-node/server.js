@@ -23,10 +23,31 @@ if (process.env.NODE_ENV === 'production' && !process.env.API_KEY) {
 }
 
 // ── Auth middleware (API key for B2B endpoints) ──
+// La clave sólo se acepta por cabecera. Antes valía también `?api_key=`: una
+// credencial en la URL acaba en los logs del balanceador, en el historial y en
+// el Referer. Si llega por la query se rechaza de forma explícita para que el
+// cliente lo corrija en vez de seguir filtrándola.
+const crypto = require('crypto');
+const digest = (v) => crypto.createHash('sha256').update(String(v)).digest();
+
+function apiKeyFromHeaders(req) {
+  const auth = req.headers['authorization'];
+  if (typeof auth === 'string' && auth) return auth.replace(/^Bearer\s+/i, '');
+  const xKey = req.headers['x-api-key'];
+  return typeof xKey === 'string' && xKey ? xKey : null;
+}
+
 const requireAuth = (req, res, next) => {
-  const rawKey = req.headers['authorization'] || req.query.api_key;
-  const key = typeof rawKey === 'string' ? rawKey.replace(/^Bearer\s+/i, '') : rawKey;
-  if (!key || key !== process.env.API_KEY) {
+  if (req.query.api_key !== undefined) {
+    return res.status(400).json({
+      error: 'La API key no se acepta en la URL. Envíala en la cabecera Authorization: Bearer <key> o X-API-Key.',
+      code: 'API_KEY_IN_URL',
+    });
+  }
+  const key = apiKeyFromHeaders(req);
+  const expected = process.env.API_KEY;
+  // Comparación en tiempo constante (sobre el hash, para igualar longitudes).
+  if (!key || !expected || !crypto.timingSafeEqual(digest(key), digest(expected))) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
@@ -38,7 +59,7 @@ const ALLOWED_TIERS = ['professional', 'enterprise'];
 
 const requireWebhookTier = async (req, res, next) => {
   try {
-    const apiKey = req.headers['authorization'] || req.query.api_key;
+    const apiKey = apiKeyFromHeaders(req);
     const resp = await fetch(`${CONTROL_API}/api/enterprises/by-key`, {
       headers: {
         'Content-Type': 'application/json',

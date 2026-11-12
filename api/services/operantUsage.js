@@ -102,11 +102,23 @@ async function checkQuota({ appId, planId, department }) {
     }
 
     // Fuera de cuota → pago por uso. El plan Starter ya nace así.
-    if (planId === 'starter') {
-        return { allowed: true, billedAs: 'payg', used: usage.tasks, included, remaining };
-    }
-
+    //
+    // Antes Starter se autorizaba siempre, sin mirar si había a quién cobrar: la
+    // tarea se ejecutaba, el medidor de Stripe no encontraba customer y el
+    // consumo quedaba sólo en el ledger (revisión de seguridad H3). Ahora la
+    // forma de cobro se comprueba ANTES de gastar cómputo, igual que en el
+    // overage de los planes de pago.
     const customerId = await stripeCustomerOf(appId);
+    if (!customerId && planId === 'starter') {
+        return {
+            allowed: false,
+            billedAs: 'payg',
+            reason: 'El plan Starter es de pago por uso: hace falta una forma de cobro activa antes de ejecutar tareas.',
+            code: 'PAYMENT_METHOD_REQUIRED',
+            used: usage.tasks, included, remaining,
+            activate: 'POST /api/gateway/v1/subscription/starter/subscribe (habilita el medidor de consumo)',
+        };
+    }
     if (!customerId) {
         return {
             allowed: false,

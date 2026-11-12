@@ -16,7 +16,7 @@ Todos requieren:
 Authorization: TU_API_KEY
 ```
 
-Tambien se acepta `?api_key=TU_API_KEY`, aunque para produccion es mejor usar header.
+Tambien se acepta la cabecera `X-API-Key: TU_API_KEY`. La clave **no** se acepta en la URL (`?api_key=`): la peticion se rechaza con 400 para que no quede en logs ni en el historial.
 
 ## Eventos y contratos
 

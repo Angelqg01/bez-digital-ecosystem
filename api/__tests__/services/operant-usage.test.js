@@ -43,11 +43,24 @@ describe('checkQuota', () => {
         expect(q.remaining).toBe(PLAN_MATRIX.business.includedTasks - 10);
     });
 
-    test('Starter siempre es pago por uso: no tiene cuota que gastar', async () => {
-        mockQuery.mockResolvedValueOnce(usageRow({ tasks: 0 }));
+    test('Starter con forma de cobro: pago por uso, no tiene cuota que gastar', async () => {
+        mockQuery
+            .mockResolvedValueOnce(usageRow({ tasks: 0 }))
+            .mockResolvedValueOnce(customerRow('cus_starter'));
         const q = await checkQuota({ appId: 'a', planId: 'starter', department: 'sales' });
         expect(q.allowed).toBe(true);
         expect(q.billedAs).toBe('payg');
+        expect(q.customerId).toBe('cus_starter');
+    });
+
+    test('Starter sin forma de cobro: 402 antes de ejecutar nada', async () => {
+        mockQuery
+            .mockResolvedValueOnce(usageRow({ tasks: 0 }))
+            .mockResolvedValueOnce(customerRow(null));
+        const q = await checkQuota({ appId: 'a', planId: 'starter', department: 'sales' });
+        expect(q.allowed).toBe(false);
+        expect(q.code).toBe('PAYMENT_METHOD_REQUIRED');
+        expect(q.activate).toMatch(/starter\/subscribe/);
     });
 
     test('cuota agotada sin customer: 402, no se ejecuta ni se regala', async () => {
