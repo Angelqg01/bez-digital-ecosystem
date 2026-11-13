@@ -23,6 +23,9 @@ contract LiquidityFarming is Ownable, ReentrancyGuard {
         uint128 rewardDebt; // Deuda de recompensa (cálculo matemático estándar en dApps)
         uint64 lockEndTimestamp; // Timestamp donde finaliza el bloqueo (si hay)
         uint64 multiplier; // Multiplicador base activo (ej. 100 = 1x, 200 = 2x)
+        // Recompensa ya devengada (con el multiplicador de entonces) y aún no cobrada.
+        // Sin este campo, deposit() y withdraw() la borraban al recalcular rewardDebt.
+        uint256 pendingRewards;
     }
 
     // Info de la Pool
@@ -143,6 +146,19 @@ contract LiquidityFarming is Ownable, ReentrancyGuard {
         return 100; // Sin Boost (1x)
     }
 
+    /**
+     * @dev Pasa a `pendingRewards` lo devengado desde la última vez, con el
+     * multiplicador vigente. Hay que llamarlo ANTES de cambiar `amount` o
+     * `multiplier` y de recalcular `rewardDebt`: es lo que impide perder
+     * recompensas al depositar o retirar.
+     */
+    function _accrue(PoolInfo storage pool, UserInfo storage user) internal {
+        uint256 accrued = (uint256(user.amount) * pool.accBezPerShare / 1e12) - user.rewardDebt;
+        if (accrued > 0) {
+            user.pendingRewards += accrued * user.multiplier / 100;
+        }
+    }
+
     function deposit(uint256 _pid, uint256 _amount, uint256 _lockDays)
         public
         nonReentrant
@@ -151,6 +167,7 @@ contract LiquidityFarming is Ownable, ReentrancyGuard {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
+        _accrue(pool, user);
 
         // Pre-calculo de multiplicador basado en tiempo
         uint256 newMultiplier = _getLockMultiplier(_lockDays);
@@ -162,7 +179,7 @@ contract LiquidityFarming is Ownable, ReentrancyGuard {
                 block.timestamp + (_lockDays * 1 days) >= user.lockEndTimestamp,
                 "Cannot shorten lock"
             );
-            // No auto-claim, sólo actualiza rewards pendientes
+            // No auto-claim: lo devengado queda en pendingRewards (ver _accrue).
         } else {
             user.multiplier = uint64(newMultiplier);
         }
@@ -187,9 +204,10 @@ contract LiquidityFarming is Ownable, ReentrancyGuard {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        uint256 pending =
-            (user.amount * pool.accBezPerShare / 1e12) - user.rewardDebt;
-        pending = pending * user.multiplier / 100;
+        _accrue(pool, user);
+        user.rewardDebt = uint128(user.amount * pool.accBezPerShare / 1e12);
+
+        uint256 pending = user.pendingRewards;
         if (pending > 0) {
             // ── Daily emission cap ──
             uint256 today = block.number / 43200; // ~43200 blocks/day at 2s
@@ -197,13 +215,22 @@ contract LiquidityFarming is Ownable, ReentrancyGuard {
                 currentEpochDay = today;
                 epochDailyEmitted = 0;
             }
-            require(epochDailyEmitted + pending <= DAILY_EMISSION_CAP, "LF: daily cap reached");
-            epochDailyEmitted += pending;
-
-            _safeBezTransfer(msg.sender, pending);
-            emit Claim(msg.sender, _pid, pending);
+            // Se paga hasta donde llegue el tope del día y el resto se queda en
+            // pendingRewards. Antes revertía: quien acumulaba más del tope no
+            // podía cobrar nada, y depositar o retirar le borraba lo devengado.
+            uint256 availableToday = DAILY_EMISSION_CAP > epochDailyEmitted
+                ? DAILY_EMISSION_CAP - epochDailyEmitted
+                : 0;
+            uint256 payout = pending > availableToday ? availableToday : pending;
+            if (payout > 0) {
+                uint256 paid = _safeBezTransfer(msg.sender, payout);
+                // Sólo se descuenta lo que se pagó de verdad: si el contrato se
+                // quedó sin BEZ, la diferencia sigue siendo del usuario.
+                user.pendingRewards = pending - paid;
+                epochDailyEmitted += paid;
+                emit Claim(msg.sender, _pid, paid);
+            }
         }
-        user.rewardDebt = uint128(user.amount * pool.accBezPerShare / 1e12);
     }
 
     function withdraw(uint256 _pid, uint256 _amount) public nonReentrant {
@@ -218,8 +245,9 @@ contract LiquidityFarming is Ownable, ReentrancyGuard {
         }
 
         updatePool(_pid);
+        _accrue(pool, user);
 
-        // No auto-claim, sólo actualiza rewards pendientes
+        // No auto-claim: lo devengado queda en pendingRewards (ver _accrue).
 
         if (_amount > 0) {
             user.amount = uint128(user.amount - _amount);
@@ -242,6 +270,7 @@ contract LiquidityFarming is Ownable, ReentrancyGuard {
         require(amount > 0, "Nothing to withdraw");
         user.amount = 0;
         user.rewardDebt = 0;
+        user.pendingRewards = 0; // salida de emergencia: se renuncia a lo devengado
         user.lockEndTimestamp = 0;
         user.multiplier = 100;
         pool.lpToken.safeTransfer(msg.sender, amount);
@@ -266,16 +295,18 @@ contract LiquidityFarming is Ownable, ReentrancyGuard {
         }
         uint256 basePending =
             (user.amount * accBezPerShare / 1e12) - user.rewardDebt;
-        return basePending * user.multiplier / 100;
+        return user.pendingRewards + basePending * user.multiplier / 100;
     }
 
-    // Helper interno seguro
-    function _safeBezTransfer(address _to, uint256 _amount) internal {
+    // Helper interno seguro: paga como mucho el saldo del contrato y devuelve lo pagado.
+    function _safeBezTransfer(address _to, uint256 _amount)
+        internal
+        returns (uint256 paid)
+    {
         uint256 bezBal = bez.balanceOf(address(this));
-        if (_amount > bezBal) {
-            bez.transfer(_to, bezBal);
-        } else {
-            bez.transfer(_to, _amount);
+        paid = _amount > bezBal ? bezBal : _amount;
+        if (paid > 0) {
+            bez.safeTransfer(_to, paid);
         }
     }
 
