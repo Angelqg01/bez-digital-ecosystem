@@ -31,6 +31,8 @@ const CLAVES_OPERADOR = [
     'L1_BATCHER_KEY', 'L1_WATCHER_KEY', 'VPP_OPERATOR_PK', 'SECURITY_ANCHOR_OPERATOR_KEY',
     // API Marketplace: anclaje de recibos y alta de listings en MarketplaceSettlement. Sólo gas.
     'MARKETPLACE_ANCHOR_KEY', 'MARKETPLACE_REGISTRAR_KEY',
+    // Keeper del TWAP de BeZhasDEX (scripts/dex-keeper.js): llama a updateObservation, sólo gas.
+    'DEX_KEEPER_KEY',
 ];
 const CLAVES_MINTEO_ANTIGUO = ['BEZ_TREASURY_PK', 'ADMIN_PK', 'DISBURSEMENT_WALLET_PRIVATE_KEY'];
 
