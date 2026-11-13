@@ -264,4 +264,62 @@ contract PaymasterTest is Test {
         paymaster.whitelistContract(targetContract);
         vm.stopPrank();
     }
+
+    // ── SEC-08: una empresa desactivada puede recuperar su saldo ──
+    // withdraw() exigía que la empresa estuviera activa, así que desactivarla (decisión del owner)
+    // dejaba sus BEZ atrapados para siempre, aunque el contrato se presenta como no custodial.
+
+    function _depositFor(address who, uint256 amount) internal {
+        vm.startPrank(who);
+        bez.approve(address(paymaster), amount);
+        paymaster.deposit(amount);
+        vm.stopPrank();
+    }
+
+    function test_DeactivatedEnterpriseCanWithdrawItsBalance() public {
+        _registerAndSetup();
+        _depositFor(enterprise, 500 ether);
+
+        vm.prank(admin);
+        paymaster.deactivateEnterprise(enterprise);
+
+        uint256 before = bez.balanceOf(enterprise);
+        vm.prank(enterprise);
+        paymaster.withdraw(500 ether); // antes: revert "PM: not active enterprise"
+
+        assertEq(bez.balanceOf(enterprise) - before, 500 ether);
+        assertEq(paymaster.getEnterpriseBalance(enterprise), 0);
+    }
+
+    function test_DeactivatedEnterpriseStillCannotDepositOrBeSponsored() public {
+        _registerAndSetup();
+        _depositFor(enterprise, 100 ether);
+        vm.prank(admin);
+        paymaster.deactivateEnterprise(enterprise);
+
+        vm.prank(enterprise);
+        vm.expectRevert("PM: not active enterprise");
+        paymaster.deposit(1 ether);
+
+        vm.prank(relayer);
+        vm.expectRevert("PM: not active enterprise");
+        paymaster.sponsorGas(enterprise, user1, address(0), 1 ether);
+    }
+
+    function test_WithdrawStillCappedByTheBalanceAfterDeactivation() public {
+        _registerAndSetup();
+        _depositFor(enterprise, 50 ether);
+        vm.prank(admin);
+        paymaster.deactivateEnterprise(enterprise);
+
+        vm.prank(enterprise);
+        vm.expectRevert("PM: insufficient balance");
+        paymaster.withdraw(51 ether);
+    }
+
+    function test_UnregisteredAddressCannotWithdrawAnything() public {
+        vm.prank(attacker);
+        vm.expectRevert("PM: insufficient balance");
+        paymaster.withdraw(1);
+    }
 }

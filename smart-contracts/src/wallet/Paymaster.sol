@@ -112,7 +112,10 @@ contract Paymaster is Ownable, ReentrancyGuard {
         emit Deposited(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount) external nonReentrant onlyActiveEnterprise(msg.sender) {
+    /// @dev Sin `onlyActiveEnterprise` a propósito: el saldo es de la empresa. Desactivarla
+    /// (decisión del owner) le quita el patrocinio y los depósitos nuevos, pero NO puede
+    /// dejar sus BEZ atrapados: el contrato se presenta como no custodial.
+    function withdraw(uint256 amount) external nonReentrant {
         EnterpriseAccount storage acct = enterprises[msg.sender];
         require(acct.balance >= amount, "PM: insufficient balance");
         acct.balance -= amount;
