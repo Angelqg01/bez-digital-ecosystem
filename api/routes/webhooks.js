@@ -48,6 +48,7 @@ const fxService = require('../services/fxService');
 const { query } = require('../db/pool');
 const planSubscriptions = require('../services/planSubscriptions');
 const gasTankRecharge = require('../services/gasTank/recharge');
+const apiCredits = require('../services/apiCredits');
 const starterBilling = require('../services/starterBilling');
 const { centimosUsdABezWei, precioUsd } = require('../config/bez-price');
 const retryQueue = require('../services/webhookRetryQueue');
@@ -617,6 +618,19 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
           log.info('Stripe', 'Gas Tank recargado', { sessionId: session.id, orgId: r.orgId, credits: r.credits, applied: r.applied });
         } catch (err) {
           log.error('Stripe', 'Gas Tank recharge failed', { sessionId: session.id, error: err.message });
+        }
+        break;
+      }
+
+      // Recarga del saldo prepago de la API: abona el saldo a la app (idempotente
+      // por sesión). Va ANTES de los caminos de plan y de compra de BEZ: una
+      // recarga no es ni una cuota ni una compra de token.
+      if (apiCredits.esSesionDeSaldo(session)) {
+        try {
+          const r = await apiCredits.acreditarSesion(session);
+          log.info('Stripe', 'Saldo API recargado', { sessionId: session.id, appId: r.appId, credits: r.credits, applied: r.applied });
+        } catch (err) {
+          log.error('Stripe', 'Recarga de saldo API fallida', { sessionId: session.id, error: err.message });
         }
         break;
       }

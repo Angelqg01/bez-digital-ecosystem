@@ -2263,6 +2263,47 @@ router.post('/subscription/starter/subscribe', autenticarSinCupo, requireRegiste
 });
 
 /**
+ * GET /subscription/credits — Saldo prepago de la API (plan Starter): saldo,
+ * paquetes de recarga, modelos disponibles y últimos movimientos.
+ */
+router.get('/subscription/credits', autenticarSinCupo, requireRegisteredApp, async (req, res) => {
+    try {
+        const apiCredits = require('../services/apiCredits');
+        res.json({ success: true, plan: req.plan, ...(await apiCredits.resumen(req.registeredApp.id)) });
+    } catch (error) {
+        logger.error(error, 'Credits fetch failed');
+        res.status(500).json({ error: 'No se pudo leer el saldo', code: 'CREDITS_UNAVAILABLE' });
+    }
+});
+
+/**
+ * POST /subscription/credits/checkout — Recarga de saldo. Devuelve la URL de
+ * Stripe Checkout; el saldo se abona cuando el webhook confirma el cobro.
+ * Cuerpo: { packageId } (saldo_10 | saldo_25 | saldo_50 | saldo_100) o { amountEur }.
+ */
+router.post('/subscription/credits/checkout', autenticarSinCupo, requireRegisteredApp, [
+    body('packageId').optional().isString(),
+    body('amountEur').optional().isFloat({ gt: 0 }),
+    body('email').optional().isEmail(),
+], async (req, res) => {
+    if (!validate(req, res)) return;
+    const apiCredits = require('../services/apiCredits');
+    try {
+        const out = await apiCredits.crearCheckout({
+            appId: req.registeredApp.id,
+            packageId: req.body.packageId,
+            amountEur: req.body.amountEur,
+            email: req.body.email,
+        });
+        res.json({ success: true, url: out.url, eur: out.eur, credits: out.credits });
+    } catch (error) {
+        if (error instanceof apiCredits.CreditError) return res.status(error.status).json({ error: error.message, code: error.code });
+        logger.error(error, 'Credits checkout failed');
+        res.status(502).json({ error: 'No se pudo iniciar el pago', code: 'CHECKOUT_FAILED' });
+    }
+});
+
+/**
  * GET /subscription/usage — Consumo del ciclo actual (ledger local) y cupo de acciones de IA.
  */
 router.get('/subscription/usage', autenticarSinCupo, requireRegisteredApp, async (req, res) => {

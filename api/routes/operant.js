@@ -327,12 +327,46 @@ router.post('/tasks', authenticateGateway, requireSubApp('operant'), requireTena
         });
     }
 
+    // Cuenta prepago: se retira del saldo el doble del coste estimado ANTES de
+    // gastar cómputo (una tarea medida puede costar más que el perfil) y al
+    // terminar se devuelve lo que sobre. Sin saldo para la reserva, no se ejecuta.
+    let hold = null;
+    if (quota.prepaid) {
+        const apiCredits = require('../services/apiCredits');
+        hold = `operant:${require('crypto').randomUUID()}`;
+        let reserva;
+        try {
+            reserva = await apiCredits.reservar(appId, quota.estimatedCredits * 2, hold, { action: 'operant_task', department });
+        } catch (error) {
+            logger.error({ error: error.message }, 'Reserva de saldo fallida');
+            return res.status(503).json({ error: 'No se pudo reservar el saldo' });
+        }
+        if (!reserva) {
+            return res.status(402).json({
+                error: 'Saldo insuficiente para ejecutar la tarea. Recarga tu saldo de la API para continuar.',
+                code: 'INSUFFICIENT_CREDITS',
+                requiredCredits: quota.estimatedCredits * 2,
+                activate: 'POST /api/gateway/v1/subscription/credits/checkout (recarga de saldo)',
+            });
+        }
+    }
+    const liberarReserva = () => (hold
+        ? require('../services/apiCredits').liberar(appId, hold).catch((e) => logger.error({ error: e.message }, 'No se pudo devolver la reserva de saldo'))
+        : Promise.resolve());
+
     try {
-        const result = await operant.dispatchTask({
-            tenantId, department, input, context,
-            autonomy: req.operantTenant.autonomy,
-            async: req.body.async === true,
-        });
+        let result;
+        try {
+            result = await operant.dispatchTask({
+                tenantId, department, input, context,
+                autonomy: req.operantTenant.autonomy,
+                async: req.body.async === true,
+            });
+        } catch (error) {
+            // La tarea no se ejecutó: el saldo reservado vuelve entero.
+            await liberarReserva();
+            throw error;
+        }
 
         // Se apunta con los tokens REALES si OPERANT los reporta; si no, con el
         // perfil estimado del catálogo (que es el suelo, nunca por debajo del coste).
@@ -343,6 +377,7 @@ router.post('/tasks', authenticateGateway, requireSubApp('operant'), requireTena
             status: result.status || 'completed',
             auditHash: result.auditHash,
             usage: result.usage,
+            hold,
         });
 
         res.json({

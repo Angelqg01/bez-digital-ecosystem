@@ -102,6 +102,15 @@ async function recordUsage(appId, usage = {}) {
          JSON.stringify({ model: usage.model, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, ref: usage.ref })]
     ).catch((e) => console.error('[usageBilling] ledger insert failed:', e.message));
 
+    // Cuenta con saldo prepago: el consumo se descuenta del saldo y NO se manda al
+    // medidor de Stripe (si no, se cobraría dos veces). Una operación cara llega
+    // con su reserva (`hold`) ya hecha y aquí se liquida por el coste real.
+    const pre = await cobrarPrepago(appId, cost.credits, usage).catch((e) => {
+        console.error('[usageBilling] cobro prepago fallido:', e.message);
+        return null;
+    });
+    if (pre) return { ...cost, reported: false, prepaid: true, charged: pre.charged, balanceCredits: pre.balance };
+
     const { rows } = await query(
         `SELECT stripe_customer_id FROM gateway_subscriptions
          WHERE app_id = $1 AND plan_id = 'starter' AND status = 'active'`,
@@ -128,12 +137,35 @@ async function recordUsage(appId, usage = {}) {
 }
 
 /**
+ * Cobra del saldo prepago si la cuenta lo es. Devuelve null si no lo es (lo
+ * factura el medidor de Stripe, como hasta ahora).
+ * @param {{ref?: string, hold?: string, action?: string, model?: string}} usage
+ */
+async function cobrarPrepago(appId, credits, usage = {}) {
+    const apiCredits = require('./apiCredits');
+    const meta = { action: usage.action || 'api_call', ...(usage.model ? { model: usage.model } : {}) };
+    if (usage.hold) {
+        const r = await apiCredits.liquidar(appId, usage.hold, credits, meta);
+        return { charged: r.charged, balance: r.balance };
+    }
+    const r = await apiCredits.cobrar(appId, credits, usage.ref || null, meta);
+    return r.prepaid ? r : null;
+}
+
+/**
  * Reporta créditos ya calculados al Billing Meter de Stripe de una app Starter.
  * Para quien lleva su propio ledger (el chat de la plataforma reserva y liquida
  * su fila). Fail-open: si Stripe no responde, el ledger conserva el uso.
  * @returns {Promise<{reported: boolean, reason?: string}>}
  */
 async function reportarCreditos(appId, credits, ref) {
+    const pre = await cobrarPrepago(appId, credits, { ref, action: 'ai_chat' }).catch((e) => {
+        console.error('[usageBilling] cobro prepago fallido:', e.message);
+        return null;
+    });
+    // Cobrado del saldo: para quien llama cuenta como facturado.
+    if (pre) return { reported: true, prepaid: true, charged: pre.charged, balanceCredits: pre.balance };
+
     const { rows } = await query(
         `SELECT stripe_customer_id FROM gateway_subscriptions
          WHERE app_id = $1 AND plan_id = 'starter' AND status = 'active'`,

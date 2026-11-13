@@ -90,7 +90,38 @@ async function cupoMensual(req, res, next) {
     next();
 }
 
-const autenticarConPlan = [authenticateGateway, resolverPlan, limitePorMinutoApi, cupoMensual];
+/**
+ * Saldo prepago (plan Starter). Una cuenta que ha recargado alguna vez paga cada
+ * llamada de su saldo; con el saldo a cero la llamada no se sirve. No se aplica
+ * a la gestión de la cuenta (`autenticarSinCupo`): con el saldo agotado hay que
+ * poder consultar y recargar.
+ */
+async function saldoPrepago(req, res, next) {
+    const app = req.registeredApp;
+    if (!app || esInterna(app) || req.plan !== 'starter') return next();
+    let pre;
+    try {
+        pre = await require('../services/apiCredits').puedeGastar(app.id, 1, { plan: 'starter' });
+    } catch (err) {
+        // Sin poder leer el saldo no se corta el servicio: el consumo queda en el
+        // ledger y se cobra después. Cortar aquí tumbaría la API por un fallo de lectura.
+        logger.error({ appId: app.id, error: err.message }, 'No se pudo comprobar el saldo prepago');
+        return next();
+    }
+    if (pre.prepaid) res.setHeader('X-BeZhas-Credits-Balance', String(pre.balanceCredits));
+    if (!pre.ok) {
+        return res.status(402).json({
+            error: 'Te has quedado sin saldo. Recárgalo para seguir usando la API.',
+            code: 'INSUFFICIENT_CREDITS',
+            plan: req.plan,
+            balanceCredits: pre.balanceCredits,
+            recharge: 'POST /api/gateway/v1/subscription/credits/checkout',
+        });
+    }
+    next();
+}
+
+const autenticarConPlan = [authenticateGateway, resolverPlan, limitePorMinutoApi, saldoPrepago, cupoMensual];
 
 /**
  * Para la gestión de la propia cuenta (suscripción, webhooks, privacidad): límite por
@@ -99,4 +130,4 @@ const autenticarConPlan = [authenticateGateway, resolverPlan, limitePorMinutoApi
  */
 const autenticarSinCupo = [authenticateGateway, resolverPlan, limitePorMinutoApi];
 
-module.exports = { autenticarConPlan, autenticarSinCupo, limitePorMinutoApi, cupoMensual, cuerpoCupoAgotado };
+module.exports = { autenticarConPlan, autenticarSinCupo, limitePorMinutoApi, cupoMensual, saldoPrepago, cuerpoCupoAgotado };

@@ -108,6 +108,28 @@ async function checkQuota({ appId, planId, department }) {
     // consumo quedaba sólo en el ledger (revisión de seguridad H3). Ahora la
     // forma de cobro se comprueba ANTES de gastar cómputo, igual que en el
     // overage de los planes de pago.
+    // Saldo prepago (sólo Starter): tiene que cubrir el coste estimado de la tarea.
+    // La reserva en firme la hace la ruta justo antes de despachar.
+    if (planId === 'starter') {
+        const estimado = estimateTaskCost(department).credits;
+        const pre = await require('./apiCredits').puedeGastar(appId, estimado, { plan: 'starter' });
+        if (pre.prepaid) {
+            if (pre.ok) {
+                return { allowed: true, billedAs: 'payg', prepaid: true, estimatedCredits: estimado,
+                         used: usage.tasks, included, remaining };
+            }
+            return {
+                allowed: false,
+                billedAs: 'payg',
+                reason: 'Saldo insuficiente para ejecutar la tarea. Recarga tu saldo de la API para continuar.',
+                code: 'INSUFFICIENT_CREDITS',
+                used: usage.tasks, included, remaining,
+                balanceCredits: pre.balanceCredits, requiredCredits: estimado,
+                activate: 'POST /api/gateway/v1/subscription/credits/checkout (recarga de saldo)',
+            };
+        }
+    }
+
     const customerId = await stripeCustomerOf(appId);
     if (!customerId && planId === 'starter') {
         return {
@@ -186,6 +208,8 @@ async function recordTask(args) {
         outputTokens: cost.outputTokens,
         action: 'operant_task',
         ref: `operant:${taskId}`,
+        // Reserva de saldo prepago hecha por la ruta antes de despachar (si la hubo).
+        ...(args.hold ? { hold: args.hold } : {}),
     }).catch((e) => logger.error({ taskId, error: e.message }, 'No se pudo registrar el uso en el ledger'));
 
     // Overage de un plan de pago: `recordUsage` no lo reporta (solo mide

@@ -1,3 +1,12 @@
+// El saldo prepago tiene sus propios tests (apiCredits.test.js). Aquí la cuenta no
+// es prepago, para que su comprobación no consuma las respuestas simuladas de la
+// base de datos, que van en orden.
+jest.mock('../../services/apiCredits', () => ({
+    puedeGastar: jest.fn(async () => ({ prepaid: false, ok: true, balanceCredits: 0 })),
+    cobrar: jest.fn(async () => ({ prepaid: false })),
+    reservar: jest.fn(), liquidar: jest.fn(), liberar: jest.fn(),
+}));
+
 /**
  * Idempotency-Key en POST /payments/buy — un retry con la misma clave devuelve
  * la orden original (nunca duplica), estilo Stripe.

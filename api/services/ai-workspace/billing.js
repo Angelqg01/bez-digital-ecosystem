@@ -49,6 +49,9 @@ const esAdmin = (principal) => principal.roles.includes('ADMIN') || principal.ro
 function sinPlan() {
     return new ChatBillingError('Necesitas un plan para usar BeZhas AI. El plan Starter es de pago por uso y tiene 15 días de prueba.', 'PLAN_REQUIRED', { upgradeActionId: 'subscribe_plans' });
 }
+function sinSaldo() {
+    return new ChatBillingError('Te has quedado sin saldo. Recárgalo para seguir usando BeZhas AI.', 'INSUFFICIENT_CREDITS', { upgradeActionId: 'recharge_credits' });
+}
 function cuotaAgotada(plan, limite) {
     return new ChatBillingError(`Has usado las ${limite} acciones de IA de tu plan este mes. Mejora tu plan para seguir.`, 'QUOTA_EXCEEDED', { upgradeActionId: 'subscribe_plans', plan, limit: limite });
 }
@@ -57,8 +60,9 @@ function cuotaAgotada(plan, limite) {
  * @param {object} deps
  * @param {{query: Function, getClient: Function}} [deps.db]
  * @param {(appId: string, credits: number, ref: string) => Promise<{reported: boolean}>} [deps.reportar]
+ * @param {(appId: string) => Promise<{prepaid: boolean, ok: boolean}>} [deps.saldo] — saldo prepago de Starter
  */
-function crearFacturacionChat({ db = null, reportar = null } = {}) {
+function crearFacturacionChat({ db = null, reportar = null, saldo = null } = {}) {
     const memoria = !db;
     const filas = new Map(); // solo en memoria (tests)
     let seq = 0;
@@ -81,6 +85,13 @@ function crearFacturacionChat({ db = null, reportar = null } = {}) {
         }
         const limite = limiteDe(principal.plan);
         if (limite <= 0) throw sinPlan();
+        // Starter con saldo prepago: sin saldo no hay mensaje. Con el almacén en
+        // memoria (tests) sólo se comprueba si se inyecta `saldo`.
+        if (principal.plan === 'starter' && (saldo || !memoria)) {
+            const comprobar = saldo || ((id) => require('../apiCredits').puedeGastar(id, 1, { plan: 'starter' }));
+            const pre = await comprobar(principal.appId).catch(() => ({ prepaid: false, ok: true }));
+            if (pre.prepaid && !pre.ok) throw sinSaldo();
+        }
         const meta = { estado: 'reservada', userId: principal.userId, plan: principal.plan };
 
         if (memoria) {
