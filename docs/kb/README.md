@@ -28,4 +28,8 @@ revisado: 2026-11-13   # fecha de la última comprobación contra el código
   mencionar la fecha de revisión al citar.
 - Un documento que contradiga al código se corrige o se mueve a `archivo/`, no se deja como `vigente`.
 
-Etiquetados hoy: `reference/ESTADO_REDES_Y_TOKEN.md`, `runbooks/DEX-KEEPER.md`, `OPERANT_SUBAPP.md` y este.
+Etiquetado (2026-11-13): runbooks, `security/`, las guías de despliegue de `developer/` y los documentos
+de referencia, como `vigente`; `developer/PROJECT_STRUCTURE.md`, `CHANGES_HUB.md` y `DEVELOPMENT_PLAN.md`
+como `obsoleto` (citan rutas y proyectos que ya no existen). **El resto de `docs/` sigue sin etiquetar**:
+cada uno se etiqueta al comprobarlo contra el código, no en bloque. Hasta entonces no se activa
+`KNOWLEDGE_SOLO_ETIQUETADOS`.

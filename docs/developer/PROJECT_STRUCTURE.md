@@ -1,3 +1,8 @@
+---
+estado: obsoleto
+dominio: documentacion
+---
+
 # BeZhas Blockchain - Mapa del Repositorio
 
 > Ultima actualizacion: 2026-03-17

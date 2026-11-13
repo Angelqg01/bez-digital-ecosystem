@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: seguridad
+---
+
 # Capa de seguridad transaccional de BeZhas
 
 Implementa, adaptado a BeZhas (BSC, Polygon y la L2 2708, un VPS de Hostinger con

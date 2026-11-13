@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: despliegue
+---
+
 # Despliegue conjunto: API + SubApps (rama `feat/rag-endurecimiento`, PR 103)
 
 Orden obligatorio: **primero la API, después las SubApps**. Las SubApps nuevas llaman a rutas que la API anterior no tiene

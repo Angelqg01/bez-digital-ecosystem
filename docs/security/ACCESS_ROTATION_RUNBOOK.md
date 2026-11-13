@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: seguridad
+---
+
 # BeZhas Access Rotation Runbook
 
 Last updated: 2026-05-08

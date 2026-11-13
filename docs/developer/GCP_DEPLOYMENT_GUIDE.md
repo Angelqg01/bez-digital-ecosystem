@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: despliegue
+---
+
 # Guía de Despliegue en GCP (Google Cloud Platform) para BeZhas Blockchain
 
 > [!IMPORTANT]

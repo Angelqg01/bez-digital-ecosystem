@@ -1,3 +1,8 @@
+---
+estado: obsoleto
+dominio: frontend
+---
+
 # Cambios de Conexión: BeZhas-Web3 → BeZhas-Hub
 
 Este documento resume los cambios realizados en la infraestructura de **BeZhas-Blockchain** para reflejar el cambio de nombre y ubicación de la plataforma social, ahora denominada **BeZhas-Hub**.

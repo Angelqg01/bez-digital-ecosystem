@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: despliegue
+---
+
 # Gas Tank: runbook de despliegue (Amoy y Polygon)
 
 > Estado a 2026-10-24: **preparado y simulado, NO desplegado.** Nada de lo de abajo se ha enviado a ninguna red.

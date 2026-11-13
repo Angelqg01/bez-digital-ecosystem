@@ -1,3 +1,8 @@
+---
+estado: obsoleto
+dominio: documentacion
+---
+
 # Plan de Desarrollo BeZhas Blockchain
 # Fase 3 en adelante — Post-Expansión Multi-Sector
 > Creado: 2026-03-18 | Actualizado: 2026-04-06

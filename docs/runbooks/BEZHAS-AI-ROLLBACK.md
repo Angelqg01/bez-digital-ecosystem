@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: despliegue
+---
+
 # BeZhas AI — rollback e incidentes
 
 ## Rollback de la API (código)

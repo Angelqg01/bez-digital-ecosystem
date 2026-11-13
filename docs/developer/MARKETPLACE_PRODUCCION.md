@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: api
+---
+
 # API Marketplace y Hot Wallet: puesta en producción
 
 > 2026-11-05. Diseño y estado: [`docs/API_MARKETPLACE_DISENO.md`](../API_MARKETPLACE_DISENO.md).

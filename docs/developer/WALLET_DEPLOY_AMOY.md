@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: despliegue
+---
+
 # Despliegue de los contratos de wallet en Polygon Amoy (pruebas)
 
 > **Estado (2026-10-26):** preparado y simulado, **no desplegado**. En Polygon (137) tampoco están: sus 6 direcciones no tienen código,

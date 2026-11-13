@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: despliegue
+---
+
 # Guía de Despliegue en Hostinger VPS para BeZhas Blockchain
 
 > [!NOTE]

@@ -1,3 +1,8 @@
+---
+estado: vigente
+dominio: despliegue
+---
+
 # BeZhas AI (chat + RAG) — despliegue y operación
 
 Servicio: `bezhas-api` en Cloud Run (`us-central1`, proyecto `project-a2f60001-ecbb-49af-8c2` (`deploy/gcp/config.env`)). El chat, el RAG, el MCP y la subida de archivos NFT viven en esa misma API. Despliegue general: `./deploy/gcp/deploy.sh` (ver `docs/developer/GCP_DEPLOYMENT_GUIDE.md`).
