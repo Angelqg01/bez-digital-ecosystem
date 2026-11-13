@@ -137,12 +137,28 @@ contract StakingPool is Ownable, ReentrancyGuard {
                 currentEpochDay = today;
                 epochDailyEmitted = 0;
             }
-            require(epochDailyEmitted + boostedReward <= DAILY_EMISSION_CAP, "SP: daily cap reached");
-            epochDailyEmitted += boostedReward;
 
-            rewards[msg.sender] = 0;
-            bezToken.safeTransfer(msg.sender, boostedReward);
-            emit RewardPaid(msg.sender, boostedReward, boostBps);
+            // Se paga hasta donde llegue el tope del día y el resto queda en `rewards`.
+            // Antes revertía con "SP: daily cap reached": quien acumulaba más del tope
+            // no podía cobrar NUNCA (lo debido sólo crece), cualquiera podía agotar el
+            // día y bloquear a los demás, y exit() fallaba entero.
+            uint256 availableToday = DAILY_EMISSION_CAP > epochDailyEmitted
+                ? DAILY_EMISSION_CAP - epochDailyEmitted
+                : 0;
+            uint256 payout = boostedReward > availableToday ? availableToday : boostedReward;
+            if (payout == 0) return;
+
+            if (payout == boostedReward) {
+                rewards[msg.sender] = 0;
+            } else {
+                // Pago parcial: se descuenta la base equivalente, redondeando hacia
+                // arriba para no regalar nunca un wei de más.
+                uint256 baseUsed = (payout * 10000 + boostBps - 1) / boostBps;
+                rewards[msg.sender] = baseReward > baseUsed ? baseReward - baseUsed : 0;
+            }
+            epochDailyEmitted += payout;
+            bezToken.safeTransfer(msg.sender, payout);
+            emit RewardPaid(msg.sender, payout, boostBps);
         }
     }
 

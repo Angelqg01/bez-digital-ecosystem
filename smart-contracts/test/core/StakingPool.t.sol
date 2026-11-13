@@ -184,4 +184,83 @@ contract StakingPoolTest is Test {
         registry.registerValidator(name, amount);
         vm.stopPrank();
     }
+
+    // ── Tope diario de emisión (SEC-04) ──
+    // getReward() revertía si lo debido superaba DAILY_EMISSION_CAP (50.000 BEZ): quien
+    // acumulaba más no podía cobrar NUNCA (lo debido sólo crece) y exit() fallaba entero,
+    // dejando el principal sin poder salir por esa vía.
+
+    function _stakeWithBigRewards(address who, uint256 secondsPassed) internal {
+        vm.prank(admin);
+        staking.setRewardRate(1e18); // 1 BEZ/s, el máximo
+        vm.startPrank(who);
+        bez.approve(address(staking), STAKE_AMOUNT);
+        staking.stake(STAKE_AMOUNT);
+        vm.stopPrank();
+        vm.warp(block.timestamp + secondsPassed);
+    }
+
+    function test_ClaimAboveDailyCapPaysWhatFitsAndKeepsTheRest() public {
+        _stakeWithBigRewards(company2, 100_000); // ~100.000 BEZ devengados, tope 50.000
+        uint256 owed = staking.earnedBoosted(company2);
+        assertGt(owed, staking.DAILY_EMISSION_CAP());
+
+        uint256 before = bez.balanceOf(company2);
+        vm.prank(company2);
+        staking.getReward(); // antes: revert "SP: daily cap reached"
+        assertEq(bez.balanceOf(company2) - before, staking.DAILY_EMISSION_CAP());
+
+        // Lo que sobra sigue siendo suyo.
+        assertApproxEqAbs(staking.earnedBoosted(company2), owed - staking.DAILY_EMISSION_CAP(), 1e15);
+    }
+
+    function test_ExitReturnsThePrincipalEvenWhenRewardsExceedTheCap() public {
+        _stakeWithBigRewards(company2, 100_000);
+        uint256 before = bez.balanceOf(company2);
+
+        vm.prank(company2);
+        staking.exit(); // antes: revertía entero
+
+        assertEq(staking.balanceOf(company2), 0);
+        assertGe(bez.balanceOf(company2) - before, STAKE_AMOUNT, "no recupero el principal");
+    }
+
+    function test_TheRestIsClaimableTheNextDay() public {
+        _stakeWithBigRewards(company2, 100_000);
+        vm.prank(company2);
+        staking.getReward();
+        uint256 afterDay1 = bez.balanceOf(company2);
+
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(company2);
+        staking.getReward();
+        assertGt(bez.balanceOf(company2), afterDay1, "al dia siguiente no pudo cobrar el resto");
+    }
+
+    function test_ClaimWhenTheDayIsExhaustedPaysZeroAndDoesNotRevert() public {
+        _stakeWithBigRewards(company2, 100_000);
+        vm.prank(company2);
+        staking.getReward(); // agota el día
+
+        uint256 before = bez.balanceOf(company2);
+        vm.prank(company2);
+        staking.getReward(); // mismo día: nada que pagar, sin revert
+        assertEq(bez.balanceOf(company2), before);
+    }
+
+    function test_BoostedPartialPayoutNeverPaysMoreThanOwed() public {
+        // Un validador Platinum (boost) con recompensas por encima del tope.
+        _stakeWithBigRewards(company1, 60_000);
+        uint256 owed = staking.earnedBoosted(company1);
+        assertGt(owed, staking.DAILY_EMISSION_CAP());
+
+        uint256 start = bez.balanceOf(company1);
+        vm.prank(company1);
+        staking.getReward();
+        assertEq(bez.balanceOf(company1) - start, staking.DAILY_EMISSION_CAP());
+
+        // Lo pendiente + lo cobrado no supera lo devengado originalmente (con holgura de redondeo).
+        assertLe(staking.earnedBoosted(company1) + staking.DAILY_EMISSION_CAP(), owed + 1e15);
+        assertGe(staking.earnedBoosted(company1) + staking.DAILY_EMISSION_CAP() + 1e15, owed);
+    }
 }
