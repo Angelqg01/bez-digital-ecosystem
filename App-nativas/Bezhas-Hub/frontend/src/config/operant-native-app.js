@@ -45,8 +45,13 @@ export const OPERANT_DEPARTMENTS = [
  */
 const PLAN_ALIASES = { creator: 'creator_pro', enterprise: 'enterprise_vip' };
 
-/** Precio por tarea de cara al cliente (coste + margen ya aplicado). */
-export const OPERANT_TASK_PRICE_EUR = { frontier: 0.1969, mid: 0.1271 };
+/**
+ * Precio por tarea de cara al cliente (coste + margen ya aplicado). Espejo de
+ * `estimateTaskCost()` en api/config/operant-services.js: el test «el precio por tarea
+ * que se publica es el que factura el backend» falla si se separan. `mid` era 0,1271
+ * (Sonnet a $3/$15); con Sonnet 5 a $2/$10 es 0,0923.
+ */
+export const OPERANT_TASK_PRICE_EUR = { frontier: 0.1969, mid: 0.0923 };
 export const EUR_PER_CREDIT = 0.001;
 
 /**

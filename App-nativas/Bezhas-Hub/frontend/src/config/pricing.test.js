@@ -126,7 +126,7 @@ describe('config integrity', () => {
  * OPERANT rompe dos supuestos del calculador y por eso lleva tests propios:
  * su precio depende del plan, y no se puede comp con los slots gratis. El
  * segundo es el importante — antes de `alwaysBilled`, un Business con 3 slots
- * libres activaba OPERANT y la plataforma servía hasta 1.186 €/mes de cómputo
+ * libres activaba OPERANT y la plataforma servía hasta 1.019 €/mes de cómputo
  * facturando 0 €.
  */
 describe('OPERANT — módulo de coste variable', () => {

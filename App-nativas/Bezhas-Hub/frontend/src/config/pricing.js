@@ -37,22 +37,26 @@ export const BASE_PLANS = DEFINITIVE_PLANS.map((p) => ({
  * el plan) y cada tarea consume tokens de Claude y cómputo real. Un precio
  * plano obligaba a elegir entre ahogar a Creator Pro o regalar Enterprise.
  *
- * Cada precio se fijó dentro de una ventana con dos bordes duros, calculados
- * sobre `api/config/operant-services.js`:
+ * Los dos bordes con los que se fijó el precio, calculados sobre
+ * `api/config/operant-services.js`:
  *
  *   suelo = coste de servir la cuota entera (consumo 100%)
  *   techo = lo que costaría comprar esa misma cuota suelta, a pago por uso
  *
- *   plan            suelo      techo     precio   ahorro   margen 45% / 85% / 100%
- *   Creator Pro     36,14 €    45,11 €     39 €    −13,5%    58,3% / 21,2% /  7,3%
- *   Business       237,24 €   296,08 €    249 €    −15,9%    57,1% / 19,0% /  4,7%
- *   Enterprise    1.186,38 € 1.353,30 €  1.199 €    −11,4%    55,5% / 15,9% /  1,1%
+ * Recalculado el 2026-11-13 con los precios vigentes de Anthropic (Sonnet 5 a $2/$10;
+ * antes se usaba Sonnet a $3/$15):
  *
- * Por debajo del suelo la plataforma pierde con el cliente que más usa el
- * producto; por encima del techo al cliente le sale más barato no activarlo y
- * pagar por uso, con lo que el módulo no se vende. Los tres precios dejan
- * margen positivo INCLUSO si el cliente agota la cuota al 100%, que es el caso
- * que hunde a los productos de IA con precio plano.
+ *   plan            suelo      techo     precio   vs techo   margen 45% / 85% / 100%
+ *   Creator Pro     30,56 €    38,15 €     39 €    +2,2%    64,7% / 33,4% / 21,6%
+ *   Business       198,18 €   247,36 €    249 €    +0,7%    64,2% / 32,3% / 20,4%
+ *   Enterprise   1.018,98 € 1.144,50 €  1.199 €    +4,8%    61,8% / 27,8% / 15,0%
+ *
+ * DECISIÓN (2026-11-13): se mantienen los precios. Con el coste real quedan POR ENCIMA
+ * del techo, así que el módulo ya no se vende como un ahorro frente al pago por uso
+ * (la ficha de /be-vip sólo muestra ese ahorro cuando es positivo): se vende por la cuota
+ * fija y la previsibilidad. El suelo sí se respeta con margen positivo incluso si el
+ * cliente agota la cuota al 100 %, que es el caso que hunde a los productos de IA con
+ * precio plano.
  *
  * Si cambian las cuotas o los precios de Anthropic, recalcular: el suelo y el
  * techo se derivan de `worstCaseMonthlyCost()` y de `estimateTaskCost()`.
@@ -68,7 +72,7 @@ export const OPERANT_PRICE = { starter: 0, creator_pro: 39, business: 249, enter
  * `alwaysBilled`— nunca se comp con los slots gratis del plan ni entra en el
  *                 descuento por bundle. Es para módulos con coste marginal
  *                 real: regalar OPERANT en un plan con 3 slots libres es
- *                 regalar hasta 1.186 €/mes de cómputo.
+ *                 regalar hasta 1.019 €/mes de cómputo.
  */
 export const NATIVE_APP_ADDONS = [
   { id: 'hub',        name: 'BeZhas Hub',        price: 0,   core: true,  desc: 'Panel central, identidad y cuenta. Incluido siempre.' },

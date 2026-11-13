@@ -71,7 +71,7 @@ el trabajo interno, en Sonnet (`mid`).
 | Tier | Departamentos | Modelo | Llamadas IA | Coste real | Precio (+25 %) | Créditos |
 |---|---|---|---|---|---|---|
 | `frontier` | Ventas, Marketing, Fundraising | `claude-opus-4-8` | 3 | 0,1575 € | **0,1969 €** | 197 |
-| `mid` | los otros 7 | `claude-sonnet-5` | 2 | 0,1017 € | **0,1271 €** | 128 |
+| `mid` | los otros 7 | `claude-sonnet-5` | 2 | 0,0738 € | **0,0923 €** | 93 |
 
 Desglose de los 0,1575 € de una tarea frontier:
 
@@ -105,31 +105,41 @@ OPERANT es el único módulo del catálogo con coste marginal grande: su precio
 el precio va por plan (la cuota va por plan) y no es comp-able con los slots
 gratis del bundle.
 
-Cada precio está dentro de una ventana con dos bordes duros:
+Los dos bordes que se usaron para fijar el precio:
 
 - **suelo** = coste de servir la cuota entera (consumo 100 %)
 - **techo** = lo que costaría comprar esa misma cuota suelta a pago por uso
 
-| Plan | Suelo | Techo | Precio | Ahorro cliente | Margen @45 % | @85 % | @100 % |
-|---|---|---|---|---|---|---|---|
-| Creator Pro | 36,14 € | 45,11 € | **39 €** | −13,5 % | 58,3 % | 21,2 % | 7,3 % |
-| Business | 237,24 € | 296,08 € | **249 €** | −15,9 % | 57,1 % | 19,0 % | 4,7 % |
-| Enterprise VIP | 1.186,38 € | 1.353,30 € | **1.199 €** | −11,4 % | 55,5 % | 15,9 % | 1,1 % |
+Cifras recalculadas el 2026-11-13 con los precios vigentes de Anthropic (Sonnet 5 a
+$2/$10 y Opus 4.8 a $5/$25 por millón de tokens; antes se calculaban con Sonnet a
+$3/$15, por eso el precio por tarea mid publicado era 0,1271 € y el real es 0,0923 €):
 
-Por debajo del suelo se pierde dinero justo con el cliente que más usa el
-producto; por encima del techo al cliente le sale mejor no activarlo y pagar por
-uso, y el módulo no se vende. Los tres precios dejan margen positivo **incluso a
-consumo del 100 %**, que es el escenario que hunde a los productos de IA con
-precio plano.
+| Plan | Suelo | Techo | Precio | Precio frente al techo | Margen @45 % | @85 % | @100 % |
+|---|---|---|---|---|---|---|---|
+| Creator Pro | 30,56 € | 38,15 € | **39 €** | +2,2 % | 64,7 % | 33,4 % | 21,6 % |
+| Business | 198,18 € | 247,36 € | **249 €** | +0,7 % | 64,2 % | 32,3 % | 20,4 % |
+| Enterprise VIP | 1.018,98 € | 1.144,50 € | **1.199 €** | +4,8 % | 61,8 % | 27,8 % | 15,0 % |
+
+**Decisión (2026-11-13): se mantienen los precios 39 / 249 / 1.199 €.** Con el coste
+real, el precio del módulo queda entre un 0,7 % y un 4,8 % **por encima** de comprar la
+misma cuota suelta a pago por uso, así que el módulo **no se vende como un ahorro**: se
+vende por la cuota fija mensual y la previsibilidad de coste, y los márgenes son más
+holgados que los que se publicaban (7,3 % / 4,7 % / 1,1 % al 100 % de uso). La ficha de
+`/be-vip` sólo muestra «−X % frente a comprar las tareas sueltas» cuando ese ahorro es
+positivo, y hoy no lo es. Si se quisiera volver a vender como ahorro, las alternativas
+estudiadas eran bajar el precio (33 / 219 / 1.029 €) o subir la cuota incluida
+(≈ +18 %); no se han aplicado.
 
 ⚠️ **`alwaysBilled` no es opcional.** Antes de esa marca, el bundle comp-aba los
 N módulos más caros: un Business con 3 slots libres activaba OPERANT y la
-plataforma servía hasta 1.186 €/mes de cómputo facturando 0 €. Ver
+plataforma servía hasta 1.019 €/mes de cómputo facturando 0 €. Ver
 `App-nativas/Bezhas-Hub/frontend/src/config/pricing.js`.
 
 Guardas: `src/config/pricing.test.js` (comportamiento del calculador) y
-`src/config/operant-subapp.test.js` (el precio no se sale de la ventana, y el
-espejo público no se separa del catálogo del backend).
+`src/config/operant-native-app.test.js` (el precio cubre el coste con margen y el
+espejo público no se separa del catálogo del backend) y
+`api/__tests__/config/operant-pricing-docs.test.js` (las cifras de este documento y de
+CLAUDE.md son las que calcula el backend).
 
 ---
 
@@ -144,12 +154,13 @@ mix posible** (agotar el tope frontier y gastar el resto en mid):
 
 | Plan | Precio | Coste máximo | Margen |
 |---|---|---|---|
-| Creator Pro | 99 € | 36,14 € | **63,5 %** |
-| Business | 499 € | 237,24 € | **52,5 %** |
-| Enterprise VIP | 2.499 € | 1.186,38 € | **52,5 %** |
+| Creator Pro | 99 € | 30,56 € | **69,1 %** |
+| Business | 499 € | 198,18 € | **60,3 %** |
+| Enterprise VIP | 2.499 € | 1.018,98 € | **59,2 %** |
 
-Enterprise incluye 9.000 tareas y no 10.000 porque el anclaje continuo son 8.640
-tx/mes ≈ 104 €/mes: con 10.000 el margen caía por debajo del 50 %.
+Enterprise incluye 9.000 tareas. La cifra se fijó cuando una tarea mid costaba más: con
+los precios actuales, 10.000 tareas seguirían dejando ≈ 56 % de margen (el anclaje
+continuo son 8.640 tx/mes ≈ 104 €/mes). La cuota no se ha cambiado.
 
 ### Al agotar la cuota
 

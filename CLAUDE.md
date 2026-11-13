@@ -286,13 +286,14 @@ api-key del Gateway y BeZhas llama al puente interno `/bridge`.
 | Enterprise VIP | +1.199 €/mes | 10 | 9.000 | gobernada por DAO | continuo |
 
 Precio por tarea = (coste Claude + cómputo BeZhas) × 1,25 → 0,1969 € las
-*frontier* (Opus) y 0,1271 € las *mid* (Sonnet). 1 crédito = 0,001 €.
+*frontier* (Opus 4.8) y 0,0923 € las *mid* (Sonnet 5, $2/$10 por millón de tokens).
+1 crédito = 0,001 €.
 Al agotar la cuota se factura por créditos; sin customer de Stripe, 402.
 
 El precio del módulo va POR PLAN porque la cuota va por plan, y lleva
 `alwaysBilled`: nunca se comp con los slots gratis del bundle. Es el único
 módulo del catálogo con coste marginal grande — regalarlo en un plan con slots
-libres es servir hasta 1.186 €/mes de cómputo gratis.
+libres es servir hasta 1.019 €/mes de cómputo gratis.
 
 **Archivos clave:** `api/config/operant-services.js` (fuente de verdad del
 catálogo y la economía) · `api/routes/operant.js` · `api/services/operantUsage.js`

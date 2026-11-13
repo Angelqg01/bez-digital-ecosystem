@@ -110,17 +110,20 @@ function pick(p) {
 
 
 /**
- * El precio del módulo vive dentro de una ventana con dos bordes duros:
+ * El precio del módulo tiene que cubrir el coste de servir la cuota con margen.
  *
  *   suelo — coste de servir la cuota entera. Por debajo, la plataforma pierde
  *           dinero justo con el cliente que más usa el producto.
- *   techo — lo que costaría comprar esa cuota suelta a pago por uso. Por
- *           encima, al cliente le sale mejor no activar el módulo, y entonces
- *           el módulo no se vende.
  *
- * Un cambio de cuota, de tier de un departamento o de precio de Anthropic mueve
- * esos bordes. Estos tests son lo que impide que el precio se quede fuera sin
- * que nadie se entere hasta ver la factura.
+ * Hasta el 2026-11-13 había además un techo: el precio debía quedar al menos un 10 %
+ * por debajo de comprar la cuota suelta a pago por uso. Con el coste real de Sonnet 5
+ * ($2/$10) el precio publicado (39 / 249 / 1.199 €) queda por ENCIMA de ese techo y se
+ * decidió mantenerlo: el módulo se vende por la cuota fija, no por ahorro. Esa regla
+ * se sustituyó por la de más abajo, y la ficha sólo anuncia el ahorro si es positivo.
+ *
+ * Un cambio de cuota, de tier de un departamento o de precio de Anthropic mueve el
+ * suelo. Estos tests son lo que impide que el precio se quede fuera sin que nadie se
+ * entere hasta ver la factura.
  */
 describe.skipIf(!disponible)('OPERANT — el precio del módulo se mantiene en su ventana', () => {
     const dePago = ['creator_pro', 'business', 'enterprise_vip'];
@@ -130,9 +133,18 @@ describe.skipIf(!disponible)('OPERANT — el precio del módulo se mantiene en s
         expect(OPERANT_MODULE_PRICE_EUR[id]).toBeGreaterThan(suelo);
     });
 
-    it.each(dePago)('%s: activar el módulo sale más barato que comprar la cuota suelta', (id) => {
-        expect(OPERANT_MODULE_PRICE_EUR[id]).toBeLessThan(paygValueOf(id));
-        expect(savingsVsPayg(id)).toBeGreaterThanOrEqual(10);
+    it.each(dePago)('%s: margen positivo y holgado incluso al 100%% de la cuota', (id) => {
+        const suelo = canonical.worstCaseMonthlyCost(id).totalCostEUR;
+        const margen = 1 - suelo / OPERANT_MODULE_PRICE_EUR[id];
+        expect(margen).toBeGreaterThanOrEqual(0.10);
+    });
+
+    it.each(dePago)('%s: la ficha no anuncia un ahorro frente al pago por uso que no existe', (id) => {
+        // Si el precio supera el valor a pago por uso, el ahorro es negativo y la UI no lo muestra
+        // (OperantNativeApp.jsx sólo pinta «−X %» cuando es > 0). Este test fija esa coherencia.
+        const ahorro = savingsVsPayg(id);
+        const precioMenor = OPERANT_MODULE_PRICE_EUR[id] < paygValueOf(id);
+        expect(ahorro > 0).toBe(precioMenor);
     });
 
     it.each(dePago)('%s: margen holgado al consumo esperado (45%% de la cuota)', (id) => {
