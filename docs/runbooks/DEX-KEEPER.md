@@ -1,3 +1,9 @@
+---
+estado: vigente
+dominio: despliegue
+revisado: 2026-11-13
+---
+
 # Keeper del TWAP de BeZhasDEX
 
 **Estado (2026-11-13):** código listo y probado contra una cadena local; **sin desplegar** (BeZhasDEX

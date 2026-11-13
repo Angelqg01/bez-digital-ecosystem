@@ -1,3 +1,9 @@
+---
+estado: vigente
+dominio: contratos
+revisado: 2026-11-10
+---
+
 # Estado real de las redes y del token BEZ-Coin
 
 **Revisado:** 2026-11-10 · **Estado:** vigente · **Prevalece sobre** cualquier otro

@@ -27,6 +27,23 @@ const VETADOS = /secret|credential|password|seed|mnemonic|private[-_ ]?key|walle
 // si se indexara, un agente lo citaría con la misma autoridad que un runbook vigente.
 const OMITIR_DIRS = new Set(['node_modules', '.git', 'obsidian-vault', 'archivo']);
 
+// Metadatos opcionales al principio de un .md (docs/kb/README.md). Un documento con
+// `estado` distinto de `vigente` no se indexa; con KNOWLEDGE_SOLO_ETIQUETADOS=1 sólo se indexan
+// los que declaran `estado: vigente`, que es el modo del RAG de producción cuando docs/ esté etiquetado.
+const ESTADOS_NO_SERVIBLES = new Set(['borrador', 'obsoleto', 'archivado']);
+
+/** Separa el front-matter `---\nclave: valor\n---` del cuerpo. Sin él, meta = {}. */
+function leerMeta(texto) {
+    const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(texto);
+    if (!m) return { meta: {}, cuerpo: texto };
+    const meta = {};
+    for (const linea of m[1].split(/\r?\n/)) {
+        const kv = /^([A-Za-z_][\w-]*):\s*(.*?)\s*$/.exec(linea);
+        if (kv) meta[kv[1].toLowerCase()] = kv[2].replace(/^["']|["']$/g, '');
+    }
+    return { meta, cuerpo: texto.slice(m[0].length) };
+}
+
 const VACIAS = new Set(['de', 'la', 'el', 'en', 'y', 'a', 'los', 'las', 'un', 'una', 'que', 'por', 'con', 'para', 'del',
     'se', 'es', 'al', 'lo', 'the', 'of', 'and', 'to', 'in', 'is', 'for', 'on', 'a', 'an', 'or']);
 
@@ -102,7 +119,15 @@ function construir() {
             texto = fs.readFileSync(ruta, 'utf8');
         } catch { continue; }
         const rel = path.relative(RAIZ, ruta);
-        for (const t of trocear(texto)) trozos.push({ archivo: rel, titulo: t.titulo, texto: t.texto });
+        const { meta, cuerpo } = leerMeta(texto);
+        const estado = (meta.estado || '').toLowerCase();
+        if (ESTADOS_NO_SERVIBLES.has(estado)) continue;
+        if (process.env.KNOWLEDGE_SOLO_ETIQUETADOS === '1' && estado !== 'vigente') continue;
+        const extra = {};
+        if (estado) extra.estado = estado;
+        if (meta.dominio) extra.dominio = meta.dominio;
+        if (meta.revisado) extra.revisado = meta.revisado;
+        for (const t of trocear(cuerpo)) trozos.push({ archivo: rel, titulo: t.titulo, texto: t.texto, ...extra });
     }
     return indexar(trozos);
 }
@@ -146,6 +171,9 @@ function buscarEn(indice, consulta, limite = 5) {
             puntuacion: Math.round(score * 100) / 100,
             texto: d.texto.length > 900 ? `${d.texto.slice(0, 900)}…` : d.texto,
             ...(d.enlace ? { enlace: d.enlace } : {}),
+            ...(d.estado ? { estado: d.estado } : {}),
+            ...(d.dominio ? { dominio: d.dominio } : {}),
+            ...(d.revisado ? { revisado: d.revisado } : {}),
         })),
     };
 }
@@ -153,4 +181,4 @@ function buscarEn(indice, consulta, limite = 5) {
 /** Sólo para tests. */
 function reiniciar() { indice = null; construidoEn = 0; }
 
-module.exports = { buscar, buscarEn, indexar, reiniciar, tokens };
+module.exports = { buscar, buscarEn, indexar, reiniciar, tokens, leerMeta };

@@ -1,3 +1,9 @@
+---
+estado: vigente
+dominio: operant
+revisado: 2026-11-13
+---
+
 # OPERANT como SubApp de BeZhas
 
 OPERANT (gestión empresarial autónoma: 10 departamentos de agentes IA) se sirve
