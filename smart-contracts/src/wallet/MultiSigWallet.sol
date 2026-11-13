@@ -139,8 +139,10 @@ contract MultiSigWallet is ReentrancyGuard {
         uint256 value,
         bytes calldata data,
         string calldata description
-    ) external onlySigner notPaused returns (uint256 txId) {
+    ) external onlySigner returns (uint256 txId) {
         require(target != address(0), "MS: zero target");
+        // Pausada, sólo se admite proponer despausar: sin esta excepción nadie podría reabrirla.
+        require(!paused || _isUnpause(target, data), "MS: paused");
 
         uint256 executeAfter = 0;
         if (value > largeOpThreshold && largeOpThreshold > 0) {
@@ -191,11 +193,13 @@ contract MultiSigWallet is ReentrancyGuard {
         onlySigner
         txExists(txId)
         notExecuted(txId)
-        notPaused
         nonReentrant
     {
         Transaction storage txn = transactions[txId];
-        require(txn.confirmations >= required, "MS: not enough confirmations");
+        require(!paused || _isUnpause(txn.target, txn.data), "MS: paused");
+        // Sólo cuentan los votos de quienes SIGUEN siendo firmantes: antes, un firmante
+        // retirado seguía aportando su confirmación a las transacciones pendientes.
+        require(_validConfirmations(txId) >= required, "MS: not enough confirmations");
         
         if (txn.executeAfter > 0) {
             require(block.timestamp >= txn.executeAfter, "MS: timelock active");
@@ -219,7 +223,11 @@ contract MultiSigWallet is ReentrancyGuard {
         emit Paused(msg.sender);
     }
 
-    function unpause() external onlyAdmin {
+    /// @notice Despausar exige el quórum de la multisig (sólo se alcanza ejecutando una
+    /// transacción confirmada contra la propia wallet). Antes bastaba la clave del primer
+    /// firmante, único ADMIN: una sola clave anulaba la pausa pedida por otro firmante, y si
+    /// se perdía la wallet quedaba pausada para siempre. Pausar sigue siendo inmediato.
+    function unpause() external onlyWallet {
         paused = false;
         emit Unpaused(msg.sender);
     }
@@ -285,7 +293,7 @@ contract MultiSigWallet is ReentrancyGuard {
 
     function getConfirmationCount(uint256 txId) external view returns (uint256) {
         if (txId >= transactions.length) return 0;
-        return transactions[txId].confirmations;
+        return _validConfirmations(txId);
     }
 
     function isConfirmed(uint256 txId, address signer) external view returns (bool) {
@@ -317,6 +325,17 @@ contract MultiSigWallet is ReentrancyGuard {
     }
 
     // ─── Internos ─────────────────────────────────────────────────────
+
+    /// @dev Confirmaciones de firmantes actuales (acotado por MAX_SIGNERS).
+    function _validConfirmations(uint256 txId) internal view returns (uint256 n) {
+        for (uint256 i = 0; i < signers.length; i++) {
+            if (confirmations[txId][signers[i]]) n++;
+        }
+    }
+
+    function _isUnpause(address target, bytes memory data) internal view returns (bool) {
+        return target == address(this) && data.length == 4 && bytes4(data) == this.unpause.selector;
+    }
 
     function _confirm(uint256 txId) internal {
         require(!confirmations[txId][msg.sender], "MS: already confirmed");

@@ -207,19 +207,6 @@ contract MultiSigWalletTest is Test {
         msig.executeTransaction(0);
     }
 
-    function test_OnlyAdminCanUnpause() public {
-        vm.prank(admin);
-        msig.pause();
-        
-        vm.prank(signer2);
-        vm.expectRevert("MS: not admin");
-        msig.unpause();
-        
-        vm.prank(admin);
-        msig.unpause();
-        assertFalse(msig.paused());
-    }
-
     // ═══════════════════════════════════════════════════════════════════
     //  Governance (via multisig)
     // ═══════════════════════════════════════════════════════════════════
@@ -272,5 +259,104 @@ contract MultiSigWalletTest is Test {
         (bool ok,) = address(msig).call{value: 5 ether}("");
         assertTrue(ok);
         assertEq(address(msig).balance, before + 5 ether);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  SEC-07: despausar y retirar firmantes
+    // ═══════════════════════════════════════════════════════════════════
+
+    function _governance(bytes memory data, string memory why) internal returns (uint256 id) {
+        // admin propone (voto 1), signer2 confirma (voto 2) y se ejecuta.
+        vm.prank(admin);
+        msig.submitTransaction(address(msig), 0, data, why);
+        id = msig.getTransactionCount() - 1;
+        vm.prank(signer2);
+        msig.confirmTransaction(id);
+        vm.prank(admin);
+        msig.executeTransaction(id);
+    }
+
+    // Antes: unpause() era onlyAdmin y el único ADMIN es el primer firmante, así que UNA sola
+    // clave (admin) despausaba sin quórum aunque otro firmante hubiera pausado por una alerta,
+    // y si esa clave se perdía la wallet quedaba pausada para siempre.
+    function test_SingleAdminCannotUnpauseAlone() public {
+        vm.prank(signer2);
+        msig.pause(); // un firmante pausa ante una alerta
+
+        vm.prank(admin);
+        vm.expectRevert();
+        msig.unpause();
+        assertTrue(msig.paused(), "un solo firmante desbloqueo la wallet sin quorum");
+    }
+
+    function test_UnpauseNeedsTheQuorumEvenWhilePaused() public {
+        vm.prank(signer2);
+        msig.pause();
+
+        // Proponer, confirmar y ejecutar el unpause debe poder hacerse CON la wallet pausada,
+        // si no, nadie podría volver a abrirla.
+        bytes memory data = abi.encodeWithSelector(msig.unpause.selector);
+        vm.prank(admin);
+        msig.submitTransaction(address(msig), 0, data, "Unpause");
+        uint256 id = msig.getTransactionCount() - 1;
+
+        vm.prank(admin);
+        vm.expectRevert("MS: not enough confirmations");
+        msig.executeTransaction(id); // sólo hay 1 voto
+
+        vm.prank(signer3);
+        msig.confirmTransaction(id);
+        vm.prank(admin);
+        msig.executeTransaction(id);
+        assertFalse(msig.paused());
+    }
+
+    function test_PausedWalletStillRejectsEverythingElse() public {
+        vm.prank(signer2);
+        msig.pause();
+        vm.prank(admin);
+        vm.expectRevert("MS: paused");
+        msig.submitTransaction(target, 1 ether, "", "no deberia poder");
+    }
+
+    // Antes: removeSigner no tocaba los votos ya emitidos, así que un firmante retirado
+    // seguía aportando su confirmación a las transacciones pendientes.
+    function test_RemovedSignerVoteNoLongerCounts() public {
+        // T0: admin propone un pago y signer3 vota. Aún no se ejecuta.
+        vm.prank(admin);
+        msig.submitTransaction(target, 10 ether, "", "Pago pendiente");
+        vm.prank(signer3);
+        msig.confirmTransaction(0);
+        assertEq(msig.getConfirmationCount(0), 2);
+
+        // Se retira a signer3 por gobernanza (admin + signer2).
+        _governance(abi.encodeWithSelector(msig.removeSigner.selector, signer3), "Retirar signer3");
+        assertFalse(msig.isSigner(signer3));
+
+        // El pago ya sólo tiene el voto del admin: no debe ejecutarse.
+        vm.prank(admin);
+        vm.expectRevert("MS: not enough confirmations");
+        msig.executeTransaction(0);
+        assertEq(target.balance, 0);
+    }
+
+    function test_RemovedSignerCannotVoteAnymore() public {
+        _governance(abi.encodeWithSelector(msig.removeSigner.selector, signer3), "Retirar signer3");
+        vm.prank(admin);
+        msig.submitTransaction(target, 1 ether, "", "x");
+        vm.prank(signer3);
+        vm.expectRevert("MS: not signer");
+        msig.confirmTransaction(1);
+    }
+
+    function test_RemainingSignersCanStillReachQuorumAfterRemoval() public {
+        _governance(abi.encodeWithSelector(msig.removeSigner.selector, signer3), "Retirar signer3");
+        vm.prank(admin);
+        msig.submitTransaction(target, 5 ether, "", "Pago");
+        vm.prank(signer2);
+        msig.confirmTransaction(1);
+        vm.prank(admin);
+        msig.executeTransaction(1);
+        assertEq(target.balance, 5 ether);
     }
 }
