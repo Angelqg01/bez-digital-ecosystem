@@ -435,6 +435,12 @@ services:
     build:
       context: ./control-center/frontend
       dockerfile: Dockerfile
+      # Next.js incrusta NEXT_PUBLIC_* al COMPILAR, no al arrancar. Sin esto la imagen
+      # salía con el valor por defecto del Dockerfile (https://api.bezhas.com/api) y el
+      # panel local hablaba con la API de producción. El despliegue a GCP no pasa por
+      # aquí: usa deploy/gcp/cloudbuild.yaml con su propio --build-arg.
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
     container_name: bezhas-control-center
     restart: unless-stopped
     depends_on:
