@@ -51,11 +51,21 @@ const BEZHAS_DEX_ADDRESS =
     (tokenomics.priceOracle.bezhasDex && tokenomics.priceOracle.bezhasDex.address) ||
     '';
 
-// ABI mínima de BeZhasDEX (getPool devuelve el struct Pool)
+// ABI mínima de BeZhasDEX (getPool devuelve el struct Pool, que incluye lpToken)
 const BEZHAS_DEX_ABI = [
-    'function getPool(address tokenA, address tokenB) view returns (tuple(address token0, address token1, uint112 reserve0, uint112 reserve1, uint32 lastBlockTimestamp, uint256 totalLiquidity, bool exists) pool)',
-    'function getSpotPrice(address tokenIn, address tokenOut) view returns (uint256 price)'
+    'function getPool(address tokenA, address tokenB) view returns (tuple(address token0, address token1, uint112 reserve0, uint112 reserve1, uint32 lastBlockTimestamp, uint256 totalLiquidity, address lpToken, bool exists) pool)',
+    'function getSpotPrice(address tokenIn, address tokenOut) view returns (uint256 price)',
+    'function consultTwap(address tokenIn, address tokenOut) view returns (uint256 price)',
+    'function observations(bytes32 pairId) view returns (uint256 price0Cumulative, uint256 price1Cumulative, uint32 timestamp)',
+    'function pairId(address tokenA, address tokenB) pure returns (bytes32)'
 ];
+
+// El TWAP se calcula entre la última observación y ahora. Si nadie la renueva (updateObservation
+// la puede llamar cualquiera cada 30 min) la ventana crece y el precio se queda atrás: pasado este
+// límite se descarta y se usa la siguiente fuente.
+const DEX_TWAP_MAX_AGE_SECONDS = Number(process.env.BEZHAS_DEX_TWAP_MAX_AGE_SECONDS || 24 * 3600);
+// Diferencia spot/TWAP a partir de la cual se avisa de posible manipulación (sólo registro).
+const DEX_SPOT_DEVIATION_WARN = 0.5;
 
 // Provider
 const PROVIDER_URL = tokenomics.blockchain.polygonMainnet;
@@ -152,31 +162,54 @@ function priceFromReserves(reserve0, reserve1, bezIsToken0) {
 }
 
 /**
- * Obtiene el precio de BEZ/USD desde la POOL INTERNA (BeZhasDEX).
+ * Obtiene el precio de BEZ/USD desde la POOL INTERNA (BeZhasDEX), como TWAP.
+ *
+ * Antes leía las reservas del bloque actual: con un préstamo flash se movía el precio dentro
+ * de una transacción y el oráculo decidía cuánto BEZ se entregaba. El TWAP pondera por
+ * tiempo, así que una manipulación que dura un bloque pesa 0. Si el contrato no tiene
+ * observación, la ventana es corta o está caducada, la fuente falla y el oráculo pasa a la
+ * siguiente: NUNCA se usa el precio spot para mover dinero.
+ *
  * @returns {Promise<number>} Precio en USD por BEZ-Coin
  */
 async function getBezUsdPriceFromBeZhasDEX() {
     if (!BEZHAS_DEX_ADDRESS) throw new Error('BEZHAS_DEX_ADDRESS not configured');
 
     const dex = new ethers.Contract(BEZHAS_DEX_ADDRESS, BEZHAS_DEX_ABI, provider);
-    const pool = await dex.getPool(BEZ_TOKEN_ADDRESS, USDC_ADDRESS);
 
-    if (!pool.exists) throw new Error('BeZhasDEX pool BEZ/USDC does not exist');
-    const reserve0 = pool.reserve0;
-    const reserve1 = pool.reserve1;
-    if (reserve0 === 0n || reserve1 === 0n) throw new Error('BeZhasDEX pool has no liquidity');
+    // Revierte si no hay observación o la ventana es < 10 min (BeZhasDEX.MIN_TWAP_WINDOW).
+    const raw = await dex.consultTwap(BEZ_TOKEN_ADDRESS, USDC_ADDRESS);
+    if (raw === 0n) throw new Error('BeZhasDEX TWAP is zero');
 
-    const bezIsToken0 = pool.token0.toLowerCase() === BEZ_TOKEN_ADDRESS.toLowerCase();
-    const price = priceFromReserves(reserve0, reserve1, bezIsToken0);
+    // Observación caducada: el promedio sería de una ventana demasiado larga.
+    const id = await dex.pairId(BEZ_TOKEN_ADDRESS, USDC_ADDRESS);
+    const obs = await dex.observations(id);
+    const ageSeconds = Math.floor(Date.now() / 1000) - Number(obs.timestamp);
+    if (ageSeconds > DEX_TWAP_MAX_AGE_SECONDS) {
+        throw new Error(`BeZhasDEX TWAP observation is stale (${ageSeconds}s > ${DEX_TWAP_MAX_AGE_SECONDS}s): nobody called updateObservation`);
+    }
 
-    priceCache.reserves = {
-        reserve0: reserve0.toString(),
-        reserve1: reserve1.toString(),
-        bezIsToken0,
-        timestamp: new Date().toISOString()
-    };
+    // El DEX no normaliza decimales: raw = reservaUSDC(6 dec) * 1e18 / reservaBEZ(18 dec) para
+    // tokenIn=BEZ. USD por BEZ = raw / 1e18 * 10^(18-6) / ... = raw / 1e6.
+    const price = Number(raw) / 1e6;
 
-    logger.info({ price, source: 'bezhas-dex', pool: BEZHAS_DEX_ADDRESS }, 'BEZ/USD price fetched from BeZhasDEX (internal pool)');
+    // Sólo informativo: si el spot se aleja mucho del TWAP, alguien está moviendo la pool.
+    try {
+        const spotRaw = await dex.getSpotPrice(BEZ_TOKEN_ADDRESS, USDC_ADDRESS);
+        const spot = Number(spotRaw) / 1e6;
+        if (price > 0 && Math.abs(spot - price) / price > DEX_SPOT_DEVIATION_WARN) {
+            logger.warn({ twap: price, spot, pool: BEZHAS_DEX_ADDRESS }, 'BeZhasDEX spot price deviates from TWAP: possible manipulation (TWAP is used)');
+        }
+        const pool = await dex.getPool(BEZ_TOKEN_ADDRESS, USDC_ADDRESS);
+        priceCache.reserves = {
+            reserve0: pool.reserve0.toString(),
+            reserve1: pool.reserve1.toString(),
+            bezIsToken0: pool.token0.toLowerCase() === BEZ_TOKEN_ADDRESS.toLowerCase(),
+            timestamp: new Date().toISOString()
+        };
+    } catch (_) { /* los datos de apoyo no deben tumbar el precio */ }
+
+    logger.info({ price, source: 'bezhas-dex-twap', pool: BEZHAS_DEX_ADDRESS }, 'BEZ/USD TWAP fetched from BeZhasDEX (internal pool)');
     return price;
 }
 

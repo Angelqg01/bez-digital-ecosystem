@@ -217,6 +217,7 @@ jobs:
           tests/rag.service.test.js
           tests/bezpay.service.test.js
           tests/bezpay-webhook-security.test.js
+          tests/price-oracle-twap.test.js
         env:
           NODE_ENV: test
 
