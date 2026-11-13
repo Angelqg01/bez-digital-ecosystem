@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { classifyPath } from '@/lib/page-classification';
+import ClassificationStamp from '@/components/ClassificationStamp';
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -58,7 +60,9 @@ const DEV_ITEMS = [
 function SidebarLink({ href, label, icon: Icon, collapsed, active }: {
     href: string; label: string; icon: typeof LayoutDashboard; collapsed: boolean; active: boolean;
 }) {
-    const className = `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+    // Sello de clasificación (sólo rutas internas; los enlaces a herramientas locales no lo llevan).
+    const sello = href.startsWith('/') ? classifyPath(href) : null;
+    const className = `relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
         ${active
                     ? 'bg-bezhas-accent/10 text-bezhas-accent'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -87,7 +91,9 @@ function SidebarLink({ href, label, icon: Icon, collapsed, active }: {
             title={collapsed ? label : undefined}
         >
             <Icon className="w-5 h-5 shrink-0" />
-            {!collapsed && <span>{label}</span>}
+            {!collapsed && <span className="flex-1">{label}</span>}
+            {!collapsed && <ClassificationStamp {...(sello || {})} />}
+            {collapsed && <ClassificationStamp {...(sello || {})} compact />}
         </Link>
     );
 }

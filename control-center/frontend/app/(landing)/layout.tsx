@@ -5,6 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import ThemeToggle from '@/components/ThemeToggle';
+import ClassificationStamp from '@/components/ClassificationStamp';
+import { classifyPath } from '@/lib/page-classification';
 
 // ── Sidebar Navigation: Grouped by logical sections ──
 const sidebarSections = [
@@ -534,6 +536,7 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
                           {item.icon}
                         </span>
                         {isSidebarOpen && <span className="whitespace-nowrap">{item.label}</span>}
+                        {isSidebarOpen && item.path.startsWith('/') && <span className="ml-auto pl-2 normal-case tracking-normal not-italic"><ClassificationStamp {...(classifyPath(item.path) || {})} /></span>}
                       </div>
                     </Link>
                   );
@@ -550,6 +553,7 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
                       {item.icon}
                     </span>
                     {isSidebarOpen && <span className="whitespace-nowrap">{item.label}</span>}
+                        {isSidebarOpen && item.path.startsWith('/') && <span className="ml-auto pl-2 normal-case tracking-normal not-italic"><ClassificationStamp {...(classifyPath(item.path) || {})} /></span>}
                   </Link>
                 );
               })}

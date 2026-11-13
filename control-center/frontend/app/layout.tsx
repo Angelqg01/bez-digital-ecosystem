@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk, Syne, Archivo, JetBrains_Mono } from "next/font/g
 import "./globals.css";
 import Providers from "./providers";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import { PageStamp } from "@/components/ClassificationStamp";
 
 const inter = Inter({ subsets: ["latin"] });
 const spaceGrotesk = Space_Grotesk({
@@ -121,6 +122,8 @@ export default function RootLayout({
       <body className={inter.className} suppressHydrationWarning>
         <GoogleAnalytics />
         <Providers>{children}</Providers>
+        {/* Sello de clasificación de la página actual (borrador, no bloquea nada) */}
+        <PageStamp />
       </body>
     </html>
   );
