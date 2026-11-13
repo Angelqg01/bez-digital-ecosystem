@@ -24,6 +24,7 @@ const NAV_ITEMS = [
     { href: '/dashboard/transactions', label: 'Transacciones', icon: FileText },
     { href: '/dashboard/nfts', label: 'NFTs', icon: Boxes },
     { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
+    { href: '/dashboard/credits', label: 'Saldo API', icon: Wallet },
     { href: '/dashboard/gas', label: 'Gas Tanks', icon: Fuel },
     { href: '/dashboard/bridge', label: 'Bridge', icon: ArrowRightLeft },
     { href: '/dashboard/farming', label: 'Farming', icon: Sprout },

@@ -401,7 +401,7 @@ export default function AIWorkspaceBar() {
                                                 <div key={p.id} className={`rounded-xl border px-3 py-2 ${p.id === dialog.current ? 'border-cyan-300/50' : 'border-white/10'}`}>
                                                     <div className="flex items-baseline justify-between gap-2">
                                                         <span className="text-sm font-semibold">{p.name}{p.id === dialog.current && <span className="ml-2 text-[11px] text-cyan-300">tu plan</span>}</span>
-                                                        <span className="text-xs text-slate-300">{p.priceEUR ? `${p.priceEUR.toLocaleString('es-ES')} €/mes + IVA` : 'Pago por uso'}</span>
+                                                        <span className="text-xs text-slate-300">{p.priceEUR ? `${p.priceEUR.toLocaleString('es-ES')} €/mes + IVA` : 'Saldo prepago, sin cuota'}</span>
                                                     </div>
                                                     <p className="text-xs text-slate-500">{p.profile}{p.yearlyEUR ? ` · ${p.yearlyEUR.toLocaleString('es-ES')} €/año + IVA` : ''}</p>
                                                     {p.id !== dialog.current && (p.monthlyUrl || p.annualUrl) && (

@@ -240,7 +240,7 @@ const PLANS: {
         name: 'Starter',
         profile: 'Autónomos y startups',
         price: '0 €',
-        period: 'sin cuota · pago por uso',
+        period: 'sin cuota · saldo prepago',
         cta: { label: 'Empezar 15 días gratis', href: '/register' },
         features: [
             '5 herramientas de consulta, incluido el coste antes de actuar',
