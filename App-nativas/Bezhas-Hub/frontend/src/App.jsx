@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { createBrowserRouter, Outlet, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // --- Providers & Stores ---
@@ -261,7 +261,11 @@ const Root = () => {
 const AppLayout = () => {
   const { isConnected, isConnecting } = useAccount();
   const [showConnecting, setShowConnecting] = useState(true);
-  const location = window.location.pathname;
+  // useLocation y NO window.location.pathname: AppLayout no se vuelve a renderizar
+  // cuando sólo cambia la ruta hija, así que con window.location la rama (layout propio
+  // o MainLayout) quedaba fijada por la primera página visitada. Venir de /home y
+  // navegar a /metrics, /pay, /docs… dejaba esas páginas SIN sidebar.
+  const location = useLocation().pathname;
 
   useEffect(() => {
     // Reducir timeout a 1 segundo para carga más rápida

@@ -14,7 +14,8 @@ function formatTimeAgo(timestamp) {
 }
 
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, Sun, Moon, Wallet, ShoppingBag, LogIn, UserPlus, User, LogOut, Coins, Sparkles, ExternalLink, Globe, Eye, EyeOff, Shield, Crown } from 'lucide-react';
+import { Menu, Search, Bell, Sun, Moon, Wallet, ShoppingBag, LogIn, UserPlus, User, LogOut, Coins, Sparkles, ExternalLink, Globe, Eye, EyeOff, Shield, Crown } from 'lucide-react';
+import { useSidebar } from '../../state/sidebarStore';
 import { useAccount, useDisconnect, useBalance } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useTheme } from '../../context/ThemeContext';
@@ -88,6 +89,7 @@ const Header = () => {
 
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const { open: sidebarOpen, toggleOpen: toggleSidebar } = useSidebar();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [bezBalance, setBezBalance] = useState('0');
@@ -294,8 +296,19 @@ const Header = () => {
           }`}
       >
         <div className="flex justify-between items-center px-6 h-16">
-          {/* Left Section - Search */}
-          <div className="flex items-center gap-6 flex-1 max-w-2xl">
+          {/* Left Section - Menú (sólo móvil) y búsqueda */}
+          <div className="flex items-center gap-3 md:gap-6 flex-1 max-w-2xl">
+            {/* Abre y cierra el cajón del menú en móvil. Antes no existía: tras cerrar el
+                menú no había forma de volver a abrirlo. En escritorio el sidebar es fijo. */}
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="md:hidden p-2 -ml-2 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label={sidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
+              aria-expanded={sidebarOpen}
+            >
+              <Menu size={24} />
+            </button>
             <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-3 w-full max-w-xl transition-colors">
               <Search size={22} className="text-gray-500 dark:text-gray-400" />
               <input

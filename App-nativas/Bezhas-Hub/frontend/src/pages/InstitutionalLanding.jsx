@@ -342,7 +342,6 @@ export default function InstitutionalLanding() {
     else navigate(link);
   }, [navigate]);
   const demoMail = () => { window.location.href = 'mailto:info.bezcoin@bezhas.com?subject=Solicitud de demo institucional BeZhas'; };
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: C.bg, color: C.text, fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -362,7 +361,7 @@ export default function InstitutionalLanding() {
       `}</style>
 
       {/* Sidebar izquierdo heredado (mismo menú que el resto de la app) */}
-      <SidebarDrawer open={sidebarOpen} setOpen={setSidebarOpen} />
+      <SidebarDrawer />
 
       {/* Columna principal: Header sticky + contenido scrollable (sin menú feed móvil) */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">

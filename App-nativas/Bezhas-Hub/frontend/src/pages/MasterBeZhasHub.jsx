@@ -101,7 +101,6 @@ const PLANS = [
 
 export default function MasterBeZhasHub() {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const openService = (link, external) => {
     if (external) window.open(nativeAppUrl(link), '_blank', 'noopener,noreferrer');
@@ -111,7 +110,7 @@ export default function MasterBeZhasHub() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: C.bg, color: C.text, fontFamily: "'Inter', system-ui, sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');`}</style>
-      <SidebarDrawer open={sidebarOpen} setOpen={setSidebarOpen} />
+      <SidebarDrawer />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <Header />

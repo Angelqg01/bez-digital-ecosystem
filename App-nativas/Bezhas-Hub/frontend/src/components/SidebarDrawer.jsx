@@ -6,9 +6,14 @@ import { useBezCoin } from '../context/BezCoinContext';
 import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
 import { BezhasTokenAddress, BezhasTokenABI } from '../contract-config';
+import { useSidebar } from '../state/sidebarStore';
+import { classifyItem } from '../config/pageClassification';
+import ClassificationStamp from './ClassificationStamp';
 
-export default function SidebarDrawer({ open, setOpen }) {
-    const [collapsed, setCollapsed] = useState(false);
+// El estado (abierto en móvil, colapsado en escritorio) vive en state/sidebarStore:
+// es el mismo para todos los layouts, así que no hay que pasarlo por props.
+export default function SidebarDrawer() {
+    const { open, setOpen, collapsed, toggleCollapsed } = useSidebar();
     const categorizedItems = getCategorizedItems(sidebarNavItems);
     const { setShowBuyModal, balance: contextBalance, balanceVisible, toggleBalanceVisibility } = useBezCoin();
     const { address, isConnected } = useAccount();
@@ -68,7 +73,7 @@ export default function SidebarDrawer({ open, setOpen }) {
             <aside
                 className={`sidebar-transition bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen flex flex-col fixed top-0 left-0 z-40 transition-all duration-300 ${open ? 'translate-x-0' : '-translate-x-full'
                     } ${collapsed ? 'w-20' : 'w-64'
-                    } md:relative md:translate-x-0`}
+                    } md:relative md:translate-x-0 md:flex-shrink-0`}
             >
                 {/* Logo, Hamburguesa y Toggle dentro del Sidebar */}
                 <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200 dark:border-gray-800">
@@ -92,7 +97,7 @@ export default function SidebarDrawer({ open, setOpen }) {
 
                     {/* Botón Toggle Colapsar/Expandir (solo en desktop) */}
                     <button
-                        onClick={() => setCollapsed(!collapsed)}
+                        onClick={toggleCollapsed}
                         className="hidden md:block p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-300"
                         title={collapsed ? 'Expandir' : 'Colapsar'}
                         aria-label={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
@@ -118,7 +123,8 @@ export default function SidebarDrawer({ open, setOpen }) {
                                 {/* Category Items */}
                                 <ul className="space-y-1">
                                     {category.items.map(item => (
-                                        <li key={item.path}>
+                                        <li key={`${item.path}|${item.label}`} className="relative">
+                                            {/* key con la etiqueta: las apps sin publicar comparten path '#' */}
                                             {item.path.startsWith('http') ? (
                                                 <a
                                                     href={item.path}
@@ -138,6 +144,8 @@ export default function SidebarDrawer({ open, setOpen }) {
                                                     {!collapsed && (
                                                         <span className="flex-1 font-medium">{item.label}</span>
                                                     )}
+                                                    {!collapsed && <ClassificationStamp {...(classifyItem(item) || {})} />}
+                                                    {collapsed && <ClassificationStamp {...(classifyItem(item) || {})} compact />}
                                                     {!collapsed && (
                                                         <span className="text-xs text-gray-400 group-hover:text-purple-500">↗</span>
                                                     )}
@@ -164,6 +172,8 @@ export default function SidebarDrawer({ open, setOpen }) {
                                                     {!collapsed && (
                                                         <span className="flex-1 font-medium">{item.label}</span>
                                                     )}
+                                                    {!collapsed && <ClassificationStamp {...(classifyItem(item) || {})} />}
+                                                    {collapsed && <ClassificationStamp {...(classifyItem(item) || {})} compact />}
                                                 </NavLink>
                                             )}
                                         </li>
