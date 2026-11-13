@@ -57,11 +57,18 @@ contract SmartWallet is ReentrancyGuard {
     RecoveryRequest public activeRecovery;
 
     // ─── Sessions (gasless con delegación temporal) ───────────────────
+    // Una sesión sólo puede hacer lo que su alcance permite. `spendLimit` mide moneda
+    // nativa (msg.value), NO tokens: por eso el alcance es lo que protege los tokens.
+    //   allowedTarget == address(0)  → sesión NATIVA: sólo envía ETH/MATIC, sin calldata.
+    //   allowedTarget != address(0)  → sesión ACOTADA: sólo puede llamar a ese contrato y a
+    //                                  esa función (allowedSelector), nada más.
     struct Session {
         address sessionKey;
         uint256 validUntil;
         uint256 spendLimit;
         uint256 spent;
+        address allowedTarget;
+        bytes4 allowedSelector;
     }
     mapping(address => Session) public sessions;
 
@@ -186,11 +193,36 @@ contract SmartWallet is ReentrancyGuard {
     //  SESIONES (delegación temporal gasless)
     // ═══════════════════════════════════════════════════════════════════
 
+    /// @notice Sesión NATIVA: la clave sólo puede enviar moneda nativa (sin calldata), hasta `spendLimit`.
     function createSession(
         address sessionKey,
         uint256 validUntil,
         uint256 spendLimit
     ) external onlyOwner {
+        _createSession(sessionKey, validUntil, spendLimit, address(0), bytes4(0));
+    }
+
+    /// @notice Sesión ACOTADA: la clave sólo puede llamar a `allowedTarget.allowedSelector(...)`.
+    function createScopedSession(
+        address sessionKey,
+        uint256 validUntil,
+        uint256 spendLimit,
+        address allowedTarget,
+        bytes4 allowedSelector
+    ) external onlyOwner {
+        require(allowedTarget != address(0), "SW: zero allowed target");
+        require(allowedTarget != address(this), "SW: session cannot target wallet");
+        require(allowedSelector != bytes4(0), "SW: zero selector");
+        _createSession(sessionKey, validUntil, spendLimit, allowedTarget, allowedSelector);
+    }
+
+    function _createSession(
+        address sessionKey,
+        uint256 validUntil,
+        uint256 spendLimit,
+        address allowedTarget,
+        bytes4 allowedSelector
+    ) internal {
         require(sessionKey != address(0), "SW: zero session key");
         require(validUntil > block.timestamp, "SW: expired session");
         require(validUntil <= block.timestamp + 30 days, "SW: session too long");
@@ -199,7 +231,9 @@ contract SmartWallet is ReentrancyGuard {
             sessionKey: sessionKey,
             validUntil: validUntil,
             spendLimit: spendLimit,
-            spent: 0
+            spent: 0,
+            allowedTarget: allowedTarget,
+            allowedSelector: allowedSelector
         });
         emit SessionCreated(sessionKey, validUntil, spendLimit);
     }
@@ -213,7 +247,16 @@ contract SmartWallet is ReentrancyGuard {
         require(session.sessionKey == msg.sender, "SW: not session key");
         require(block.timestamp <= session.validUntil, "SW: session expired");
         require(session.spent + value <= session.spendLimit, "SW: session limit");
-        
+        // Alcance. Sin esto, una session key llamaba a token.transfer(atacante, todo) con
+        // value = 0 y vaciaba los tokens sin tocar el límite (que sólo mide moneda nativa).
+        require(target != address(this), "SW: session cannot target wallet");
+        if (session.allowedTarget == address(0)) {
+            require(data.length == 0, "SW: native session only");
+        } else {
+            require(target == session.allowedTarget, "SW: target not allowed");
+            require(data.length >= 4 && bytes4(data[:4]) == session.allowedSelector, "SW: selector not allowed");
+        }
+
         session.spent += value;
         _checkDailyLimit(value);
         bytes memory result = _call(target, value, data);

@@ -4,6 +4,12 @@ pragma solidity ^0.8.20;
 import {Test, console} from "forge-std/Test.sol";
 import {SmartWallet} from "../src/wallet/SmartWallet.sol";
 import {SmartWalletFactory} from "../src/wallet/SmartWalletFactory.sol";
+import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+
+contract SessionMockToken is ERC20 {
+    constructor() ERC20("Mock", "MCK") {}
+    function mint(address to, uint256 amount) external { _mint(to, amount); }
+}
 
 contract SmartWalletTest is Test {
     SmartWallet public wallet;
@@ -216,11 +222,13 @@ contract SmartWalletTest is Test {
         vm.prank(owner);
         wallet.createSession(sessionUser, block.timestamp + 1 days, 10 ether);
         
-        (address key, uint256 validUntil, uint256 limit, uint256 spent) = wallet.sessions(sessionUser);
+        (address key, uint256 validUntil, uint256 limit, uint256 spent, address allowedTarget, bytes4 allowedSelector) = wallet.sessions(sessionUser);
         assertEq(key, sessionUser);
         assertGt(validUntil, block.timestamp);
         assertEq(limit, 10 ether);
         assertEq(spent, 0);
+        assertEq(allowedTarget, address(0), "la sesion simple es nativa");
+        assertEq(allowedSelector, bytes4(0));
     }
 
     function test_SessionExecution() public {
@@ -393,5 +401,103 @@ contract SmartWalletTest is Test {
 
     function _toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Alcance de las sesiones (SEC-05)
+    //  executeBySession sólo comprobaba session.spent + value <= spendLimit, que mide
+    //  moneda nativa. Una session key podía llamar a token.transfer(atacante, todo) con
+    //  value = 0 y vaciar los tokens de la wallet sin gastar ni un wei del límite.
+    // ═══════════════════════════════════════════════════════════════════
+
+    function _tokenInWallet(uint256 amount) internal returns (SessionMockToken token) {
+        token = new SessionMockToken();
+        token.mint(address(wallet), amount);
+    }
+
+    function test_SessionCannotDrainErc20() public {
+        SessionMockToken token = _tokenInWallet(1_000 ether);
+        vm.prank(owner);
+        wallet.createSession(sessionUser, block.timestamp + 1 days, 10 ether);
+
+        vm.prank(sessionUser);
+        vm.expectRevert();
+        wallet.executeBySession(address(token), 0, abi.encodeCall(token.transfer, (attacker, 1_000 ether)));
+
+        assertEq(token.balanceOf(address(wallet)), 1_000 ether, "la session key vacio los tokens");
+        assertEq(token.balanceOf(attacker), 0);
+    }
+
+    function test_SessionCannotApproveErc20() public {
+        SessionMockToken token = _tokenInWallet(1_000 ether);
+        vm.prank(owner);
+        wallet.createSession(sessionUser, block.timestamp + 1 days, 10 ether);
+
+        vm.prank(sessionUser);
+        vm.expectRevert();
+        wallet.executeBySession(address(token), 0, abi.encodeCall(token.approve, (attacker, type(uint256).max)));
+        assertEq(token.allowance(address(wallet), attacker), 0);
+    }
+
+    function test_SessionCannotCallTheWalletItself() public {
+        vm.prank(owner);
+        wallet.createSession(sessionUser, block.timestamp + 1 days, 10 ether);
+
+        vm.prank(sessionUser);
+        vm.expectRevert();
+        wallet.executeBySession(address(wallet), 0, abi.encodeWithSignature("lockWallet()"));
+    }
+
+    function test_NativeSessionStillSendsEth() public {
+        vm.prank(owner);
+        wallet.createSession(sessionUser, block.timestamp + 1 days, 10 ether);
+        vm.prank(sessionUser);
+        wallet.executeBySession(target, 1 ether, "");
+        assertEq(target.balance, 1 ether);
+    }
+
+    function test_ScopedSessionAllowsOnlyItsTargetAndSelector() public {
+        SessionMockToken token = _tokenInWallet(1_000 ether);
+        vm.prank(owner);
+        wallet.createScopedSession(sessionUser, block.timestamp + 1 days, 0, address(token), token.transfer.selector);
+
+        // Lo que se le concedió: transfer en ese token.
+        vm.prank(sessionUser);
+        wallet.executeBySession(address(token), 0, abi.encodeCall(token.transfer, (target, 10 ether)));
+        assertEq(token.balanceOf(target), 10 ether);
+
+        // Otra función del mismo token: no.
+        vm.prank(sessionUser);
+        vm.expectRevert("SW: selector not allowed");
+        wallet.executeBySession(address(token), 0, abi.encodeCall(token.approve, (attacker, 1 ether)));
+
+        // Otro contrato: no.
+        SessionMockToken otro = _tokenInWallet(1 ether);
+        vm.prank(sessionUser);
+        vm.expectRevert("SW: target not allowed");
+        wallet.executeBySession(address(otro), 0, abi.encodeCall(otro.transfer, (attacker, 1 ether)));
+
+        // Sin calldata (llamada vacía al token): tampoco.
+        vm.prank(sessionUser);
+        vm.expectRevert("SW: selector not allowed");
+        wallet.executeBySession(address(token), 0, "");
+
+        // Y enviar moneda nativa excede su límite (0).
+        vm.prank(sessionUser);
+        vm.expectRevert("SW: session limit");
+        wallet.executeBySession(address(token), 1 ether, abi.encodeCall(token.transfer, (target, 1 ether)));
+    }
+
+    function test_ScopedSessionCannotBeCreatedForTheWalletItself() public {
+        vm.prank(owner);
+        vm.expectRevert("SW: session cannot target wallet");
+        wallet.createScopedSession(sessionUser, block.timestamp + 1 days, 0, address(wallet), wallet.lockWallet.selector);
+    }
+
+    function test_OnlyOwnerCreatesScopedSessions() public {
+        SessionMockToken token = _tokenInWallet(1 ether);
+        vm.prank(attacker);
+        vm.expectRevert();
+        wallet.createScopedSession(attacker, block.timestamp + 1 days, 0, address(token), token.transfer.selector);
     }
 }
