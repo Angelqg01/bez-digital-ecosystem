@@ -280,4 +280,116 @@ contract BeZhasDEXTest is Test {
             z = 1;
         }
     }
+
+    // ===================================================================
+    //  TWAP (SEC-06): getSpotPrice se manipula con un préstamo flash; el TWAP no
+    // ===================================================================
+
+    function _baselinePrice() internal view returns (uint256) {
+        return (SEED_USDC * 1e18) / SEED_BEZ; // precio spot inicial de BEZ en USDC (sin normalizar decimales)
+    }
+
+    function _whaleSwapUsdcForBez(uint256 usdcIn) internal {
+        address whale = makeAddr("whale");
+        usdc.mintTo(whale, usdcIn);
+        vm.startPrank(whale);
+        usdc.approve(address(dex), usdcIn);
+        dex.swap(address(usdc), address(bez), usdcIn, 0);
+        vm.stopPrank();
+    }
+
+    function test_TWAP_NoObservationReverts() public {
+        _createAndSeed();
+        vm.expectRevert(BeZhasDEX.NoObservation.selector);
+        dex.consultTwap(address(bez), address(usdc));
+    }
+
+    function test_TWAP_WindowTooShortReverts() public {
+        _createAndSeed();
+        dex.updateObservation(address(bez), address(usdc));
+        vm.warp(block.timestamp + 5 minutes);
+        vm.expectRevert(BeZhasDEX.TwapWindowTooShort.selector);
+        dex.consultTwap(address(bez), address(usdc));
+    }
+
+    function test_TWAP_EqualsTheSpotPriceWhenNothingMoves() public {
+        _createAndSeed();
+        dex.updateObservation(address(bez), address(usdc));
+        vm.warp(block.timestamp + 1 hours);
+        assertEq(dex.consultTwap(address(bez), address(usdc)), _baselinePrice());
+        // y en sentido inverso
+        assertEq(dex.consultTwap(address(usdc), address(bez)), dex.getSpotPrice(address(usdc), address(bez)));
+    }
+
+    function test_TWAP_ResistsAFlashManipulationInsideOneBlock() public {
+        _createAndSeed();
+        dex.updateObservation(address(bez), address(usdc));
+        vm.warp(block.timestamp + 1 hours);
+
+        uint256 spotBefore = dex.getSpotPrice(address(bez), address(usdc));
+        _whaleSwapUsdcForBez(500_000e6); // 10x las reservas en USDC: el precio spot se dispara
+
+        uint256 spotAfter = dex.getSpotPrice(address(bez), address(usdc));
+        assertGt(spotAfter, spotBefore * 50, "la manipulacion deberia mover mucho el precio spot");
+
+        // En el MISMO bloque, el TWAP no se entera: el precio manipulado ha durado 0 segundos.
+        assertEq(dex.consultTwap(address(bez), address(usdc)), spotBefore, "el TWAP se dejo manipular");
+    }
+
+    function test_TWAP_AManipulationHeldBrieflyMovesItOnlyInProportion() public {
+        _createAndSeed();
+        dex.updateObservation(address(bez), address(usdc));
+        vm.warp(block.timestamp + 59 minutes);
+        _whaleSwapUsdcForBez(500_000e6);
+        vm.warp(block.timestamp + 1 minutes); // el precio manipulado dura 1 minuto de 60
+
+        uint256 twap = dex.consultTwap(address(bez), address(usdc));
+        uint256 spotNow = dex.getSpotPrice(address(bez), address(usdc));
+        uint256 base = _baselinePrice();
+        // media = (59·base + 1·spotNow) / 60
+        assertApproxEqRel(twap, (59 * base + spotNow) / 60, 1e15);
+        assertLt(twap, base * 3, "un minuto de manipulacion movio el TWAP como si fuera la hora entera");
+        assertGt(spotNow, base * 50);
+    }
+
+    function test_TWAP_AccumulatesAcrossLiquidityChanges() public {
+        _createAndSeed();
+        dex.updateObservation(address(bez), address(usdc));
+        vm.warp(block.timestamp + 30 minutes);
+
+        // Un LP añade liquidez en proporción: el precio no cambia, y el acumulador sigue creciendo.
+        vm.startPrank(lp);
+        bez.approve(address(dex), 100_000e18);
+        usdc.approve(address(dex), 5_000e6);
+        dex.addLiquidity(address(bez), address(usdc), 100_000e18, 5_000e6, 0);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 30 minutes);
+        assertEq(dex.consultTwap(address(bez), address(usdc)), _baselinePrice());
+    }
+
+    function test_TWAP_ObservationCannotBeResetBeforeThePeriod() public {
+        _createAndSeed();
+        dex.updateObservation(address(bez), address(usdc));
+        vm.warp(block.timestamp + 29 minutes);
+        // Si se pudiera reiniciar, un atacante forzaría una ventana corta justo tras manipular.
+        vm.expectRevert(BeZhasDEX.ObservationTooRecent.selector);
+        dex.updateObservation(address(bez), address(usdc));
+
+        vm.warp(block.timestamp + 1 minutes);
+        dex.updateObservation(address(bez), address(usdc)); // ya se puede
+    }
+
+    function test_TWAP_RevertsOnAnUnknownPool() public {
+        vm.expectRevert(BeZhasDEX.PoolNotFound.selector);
+        dex.updateObservation(address(bez), address(usdc));
+        vm.expectRevert(BeZhasDEX.PoolNotFound.selector);
+        dex.consultTwap(address(bez), address(usdc));
+    }
+
+    function test_TWAP_NeedsLiquidityToObserve() public {
+        dex.createPool(address(bez), address(usdc));
+        vm.expectRevert(BeZhasDEX.InsufficientLiquidity.selector);
+        dex.updateObservation(address(bez), address(usdc));
+    }
 }
