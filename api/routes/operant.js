@@ -312,9 +312,11 @@ router.post('/tasks', authenticateGateway, requireSubApp('operant'), requireTena
         });
     }
 
+    // Comprobar la cuota Y reservar la plaza, de forma atómica: con sólo comprobarla, N peticiones
+    // simultáneas veían todas «queda 1» y se ejecutaban las N.
     let quota;
     try {
-        quota = await operantUsage.checkQuota({ appId, planId, department });
+        quota = await operantUsage.reserveTask({ appId, tenantId, planId, department });
     } catch (error) {
         logger.error({ error: error.message }, 'Comprobación de cuota fallida');
         return res.status(503).json({ error: 'No se pudo comprobar la cuota' });
@@ -339,9 +341,11 @@ router.post('/tasks', authenticateGateway, requireSubApp('operant'), requireTena
             reserva = await apiCredits.reservar(appId, quota.estimatedCredits * 2, hold, { action: 'operant_task', department });
         } catch (error) {
             logger.error({ error: error.message }, 'Reserva de saldo fallida');
+            await operantUsage.releaseReservation(appId, quota.reservationId).catch(() => {});
             return res.status(503).json({ error: 'No se pudo reservar el saldo' });
         }
         if (!reserva) {
+            await operantUsage.releaseReservation(appId, quota.reservationId).catch(() => {});
             return res.status(402).json({
                 error: 'Saldo insuficiente para ejecutar la tarea. Recarga tu saldo de la API para continuar.',
                 code: 'INSUFFICIENT_CREDITS',
@@ -363,8 +367,9 @@ router.post('/tasks', authenticateGateway, requireSubApp('operant'), requireTena
                 async: req.body.async === true,
             });
         } catch (error) {
-            // La tarea no se ejecutó: el saldo reservado vuelve entero.
+            // La tarea no se ejecutó: el saldo reservado y la plaza de la cuota vuelven enteros.
             await liberarReserva();
+            await operantUsage.releaseReservation(appId, quota.reservationId).catch((e) => logger.error({ error: e.message }, 'No se pudo devolver la plaza de la cuota'));
             throw error;
         }
 
@@ -378,6 +383,7 @@ router.post('/tasks', authenticateGateway, requireSubApp('operant'), requireTena
             auditHash: result.auditHash,
             usage: result.usage,
             hold,
+            reservationId: quota.reservationId,
         });
 
         res.json({

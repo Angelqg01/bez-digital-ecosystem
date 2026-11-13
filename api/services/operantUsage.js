@@ -24,7 +24,8 @@
 
 'use strict';
 
-const { query } = require('../db/pool');
+const { query, getClient } = require('../db/pool');
+const { randomUUID } = require('crypto');
 const { recordUsage, METER_EVENT_NAME } = require('./usageBilling');
 const { estimateTaskCost, PLAN_MATRIX, DEPARTMENT_BY_ID } = require('../config/operant-services');
 const logger = require('pino')({ level: 'info', name: 'operant-usage' });
@@ -37,9 +38,16 @@ function getStripe() {
     return _stripe;
 }
 
+/**
+ * Una reserva (`status = 'reserved'`, ver reserveTask) cuenta como tarea mientras está viva. Si el
+ * proceso murió antes de registrar la tarea, deja de contar a los 15 min: no se queda plaza
+ * ocupada para siempre.
+ */
+const RESERVA_TTL_MIN = 15;
+
 /** Consumo del ciclo actual (mes natural) de una app. */
-async function currentPeriodUsage(appId) {
-    const { rows } = await query(
+async function currentPeriodUsage(appId, q = query) {
+    const { rows } = await q(
         `SELECT COUNT(*)::int AS tasks,
                 COUNT(*) FILTER (WHERE tier = 'frontier')::int AS frontier_tasks,
                 COUNT(*) FILTER (WHERE billed_as = 'payg')::int AS payg_tasks,
@@ -49,7 +57,8 @@ async function currentPeriodUsage(appId) {
                 COALESCE(SUM(raw_cost_eur), 0)::numeric AS raw_cost_eur,
                 COALESCE(SUM(ai_actions), 0)::int AS ai_actions
            FROM operant_tasks
-          WHERE app_id = $1 AND created_at >= date_trunc('month', NOW())`,
+          WHERE app_id = $1 AND created_at >= date_trunc('month', NOW())
+            AND (status <> 'reserved' OR created_at > NOW() - INTERVAL '${RESERVA_TTL_MIN} minutes')`,
         [appId]
     );
     const u = rows[0];
@@ -66,8 +75,8 @@ async function currentPeriodUsage(appId) {
 }
 
 /** ¿Tiene la app un customer de Stripe al que poder facturar el overage? */
-async function stripeCustomerOf(appId) {
-    const { rows } = await query(
+async function stripeCustomerOf(appId, q = query) {
+    const { rows } = await q(
         `SELECT stripe_customer_id FROM gateway_subscriptions
           WHERE app_id = $1 AND status = 'active'`,
         [appId]
@@ -83,10 +92,10 @@ async function stripeCustomerOf(appId) {
  * @returns {{allowed:boolean, billedAs:'quota'|'payg', reason?:string,
  *            used:number, included:number|null, remaining:number|null}}
  */
-async function checkQuota({ appId, planId, department }) {
+async function checkQuota({ appId, planId, department }, q = query) {
     const plan = PLAN_MATRIX[planId] || PLAN_MATRIX.starter;
     const dept = DEPARTMENT_BY_ID[department];
-    const usage = await currentPeriodUsage(appId);
+    const usage = await currentPeriodUsage(appId, q);
 
     const included = plan.includedTasks;
     const remaining = included === null ? null : Math.max(0, included - usage.tasks);
@@ -130,7 +139,7 @@ async function checkQuota({ appId, planId, department }) {
         }
     }
 
-    const customerId = await stripeCustomerOf(appId);
+    const customerId = await stripeCustomerOf(appId, q);
     if (!customerId && planId === 'starter') {
         return {
             allowed: false,
@@ -158,6 +167,61 @@ async function checkQuota({ appId, planId, department }) {
 }
 
 /**
+ * Comprueba la cuota Y RESERVA la plaza, de forma atómica.
+ *
+ * `checkQuota` sola no basta: lee el uso, la tarea tarda decenas de segundos y sólo se registra al
+ * terminar, así que N peticiones simultáneas veían todas «queda 1» y se ejecutaban las N (con 1
+ * plaza libre y 10 peticiones, las 10 pasaban como incluidas en la cuota). Aquí el recuento y la
+ * reserva ocurren bajo un candado por app dentro de una transacción: la segunda petición espera,
+ * ve ya la reserva de la primera y recibe pago por uso o 402.
+ *
+ * La reserva es una fila provisional de operant_tasks (`status = 'reserved'`) con el nivel y el
+ * modo de cobro decididos. recordTask la completa; releaseReservation la borra si la tarea falla.
+ *
+ * @returns {Promise<object>} lo mismo que checkQuota y, si `allowed`, `reservationId`.
+ */
+async function reserveTask({ appId, tenantId, planId, department }) {
+    const client = await getClient();
+    try {
+        await client.query('BEGIN');
+        await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`operant-quota:${appId}`]);
+        const q = (text, params) => client.query(text, params);
+
+        // Las reservas abandonadas (proceso caído) se limpian aquí, ya con el candado.
+        await q(`DELETE FROM operant_tasks WHERE app_id = $1 AND status = 'reserved'
+                    AND created_at <= NOW() - INTERVAL '${RESERVA_TTL_MIN} minutes'`, [appId]);
+
+        const quota = await checkQuota({ appId, planId, department }, q);
+        if (!quota.allowed) {
+            await client.query('ROLLBACK');
+            return quota;
+        }
+
+        const dept = DEPARTMENT_BY_ID[department];
+        const reservationId = `reserved:${randomUUID()}`;
+        await q(
+            `INSERT INTO operant_tasks (app_id, tenant_id, task_id, department, tier, billed_as, status)
+             VALUES ($1, $2, $3, $4, $5, $6, 'reserved')`,
+            [appId, tenantId || 'unknown', reservationId, department, dept?.tier || 'mid', quota.billedAs]
+        );
+        await client.query('COMMIT');
+        return { ...quota, reservationId };
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+/** Devuelve la plaza reservada: la tarea no llegó a ejecutarse. Idempotente. */
+async function releaseReservation(appId, reservationId) {
+    if (!reservationId) return;
+    await query(`DELETE FROM operant_tasks WHERE app_id = $1 AND task_id = $2 AND status = 'reserved'`,
+        [appId, reservationId]);
+}
+
+/**
  * Registra una tarea ejecutada: detalle, ledger de facturación y — si es
  * overage de un plan de pago — evento en el medidor de Stripe.
  *
@@ -166,7 +230,7 @@ async function checkQuota({ appId, planId, department }) {
  *          auditHash?:string, usage?:{inputTokens:number, outputTokens:number, specialists:number}}} args
  */
 async function recordTask(args) {
-    const { appId, tenantId, taskId, department, planId, billedAs, status = 'completed', auditHash } = args;
+    const { appId, tenantId, taskId, department, planId, billedAs, status = 'completed', auditHash, reservationId } = args;
     const reported = args.usage || {};
 
     // Los tokens reportados solo se usan si OPERANT los pudo atribuir a ESTA
@@ -185,21 +249,46 @@ async function recordTask(args) {
         specialists: reported.specialists,
     });
 
-    await query(
-        `INSERT INTO operant_tasks
-           (app_id, tenant_id, task_id, department, tier, model, input_tokens, output_tokens,
-            ai_actions, credits, billable_eur, raw_cost_eur, billed_as, status, audit_hash)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-         ON CONFLICT (app_id, task_id) DO NOTHING`,
-        [appId, tenantId, taskId, department, cost.tier, cost.model,
+    const valores = [appId, tenantId, taskId, department, cost.tier, cost.model,
          cost.inputTokens, cost.outputTokens, cost.aiActions, cost.credits,
          cost.billableEUR, cost.rawCostEUR, billedAs,
          // Queda escrito si el coste salió de tokens medidos o del perfil
          // estimado: sin eso, una reclamación de factura no se puede resolver
          // mirando la fila.
          measured ? status : `${status}:estimated`,
-         auditHash ? String(auditHash).replace(/^0x/, '') : null]
-    );
+         auditHash ? String(auditHash).replace(/^0x/, '') : null];
+
+    // Si la tarea llegó con una plaza reservada (reserveTask), esa misma fila se completa: no se
+    // inserta una segunda (se contaría dos veces) ni se pierde la reserva.
+    let completada = false;
+    if (reservationId) {
+        try {
+            const r = await query(
+                `UPDATE operant_tasks
+                    SET tenant_id = $2, task_id = $3, department = $4, tier = $5, model = $6, input_tokens = $7, output_tokens = $8,
+                        ai_actions = $9, credits = $10, billable_eur = $11, raw_cost_eur = $12, billed_as = $13,
+                        status = $14, audit_hash = $15
+                  WHERE app_id = $1 AND task_id = $16 AND status = 'reserved'`,
+                [appId, tenantId, ...valores.slice(2), reservationId]
+            );
+            completada = (r.rowCount || 0) > 0;
+        } catch (err) {
+            // Ya existía una fila con ese task_id (reintento): se descarta la reserva.
+            if (err.code !== '23505') throw err;
+            await releaseReservation(appId, reservationId);
+            completada = true;
+        }
+    }
+    if (!completada) {
+        await query(
+            `INSERT INTO operant_tasks
+               (app_id, tenant_id, task_id, department, tier, model, input_tokens, output_tokens,
+                ai_actions, credits, billable_eur, raw_cost_eur, billed_as, status, audit_hash)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+             ON CONFLICT (app_id, task_id) DO NOTHING`,
+            valores
+        );
+    }
 
     // Ledger común del Gateway (auditoría + medidor de Stripe en Starter).
     await recordUsage(appId, {
@@ -252,6 +341,7 @@ async function usageSummary({ appId, planId }) {
         `SELECT department, COUNT(*)::int AS tasks, COALESCE(SUM(credits),0)::int AS credits
            FROM operant_tasks
           WHERE app_id = $1 AND created_at >= date_trunc('month', NOW())
+            AND (status <> 'reserved' OR created_at > NOW() - INTERVAL '${RESERVA_TTL_MIN} minutes')
           GROUP BY department ORDER BY tasks DESC`,
         [appId]
     );
@@ -284,6 +374,8 @@ async function usageSummary({ appId, planId }) {
 module.exports = {
     currentPeriodUsage,
     checkQuota,
+    reserveTask,
+    releaseReservation,
     recordTask,
     usageSummary,
 };
