@@ -1,0 +1,93 @@
+{
+  "title": "Property tokenization with BeZhas",
+  "voice": "en-US-ChristopherNeural",
+  "tail_s": 1.2,
+  "legal": "Demonstration environment. Assets, amounts and returns are examples; returns are declared by the issuer and not guaranteed. Not financial advice or an offer of securities.",
+  "legal_es": "Entorno de demostración. Activos, importes y rentabilidades de ejemplo; las rentabilidades las declara el emisor y no están garantizadas. No es asesoramiento financiero ni una oferta de valores.",
+  "scenes": [
+    {
+      "id": "T01", "title": "Hook", "kind": "graphic", "intensity": 0.35,
+      "say": ["One building. Ten thousand pieces.", "And the rent, shared among everyone who owns them."],
+      "sub": ["Un edificio. Diez mil fracciones.", "Y la renta, repartida entre todos los que las poseen."],
+      "short": ["One building. Ten thousand pieces.", "And the rent, shared among everyone who owns them."]
+    },
+    {
+      "id": "T02", "title": "The problem", "kind": "graphic", "intensity": 0.5,
+      "say": ["Investing in property takes a lot of capital, and selling means letting go of the whole asset.", "For a developer, raising money means waiting for a bank, or for one big investor."],
+      "sub": ["Invertir en inmuebles exige mucho capital, y vender significa desprenderse del activo entero.", "Para el promotor, financiarse es esperar a un banco o a un gran inversor."]
+    },
+    {
+      "id": "T03", "title": "The idea", "kind": "graphic", "intensity": 0.65,
+      "say": ["Tokenizing means representing rights over an asset as digital fractions.", "In BeZhas they live on the Polygon network, and BeZhas never holds them: every operation is signed by your own wallet.", "What rights a fraction gives is set by the legal structure of each offering."],
+      "sub": ["Tokenizar es representar derechos sobre un activo como fracciones digitales.", "En BeZhas viven en la red Polygon, y BeZhas nunca las custodia: cada operación la firma tu propia wallet.", "Qué derechos da una fracción lo define la estructura legal de cada oferta."],
+      "short": ["Tokenizing means representing rights over an asset as digital fractions.", "BeZhas never holds them: every operation is signed by your own wallet."],
+      "short_sub": ["Tokenizar es representar derechos sobre un activo como fracciones digitales.", "BeZhas nunca las custodia: cada operación la firma tu propia wallet."]
+    },
+    {
+      "id": "T04", "title": "Step 1 · Asset type", "kind": "screen", "session": "hub", "intensity": 0.7,
+      "say": ["Step one: choose the type of asset.", "Buildings, hotels, commercial units, and also boats, vehicles or luxury objects."],
+      "sub": ["Paso uno: elige el tipo de activo.", "Inmuebles, hoteles, locales comerciales, y también barcos, vehículos u objetos de lujo."]
+    },
+    {
+      "id": "T05", "title": "Step 2 · Details", "kind": "screen", "session": "hub", "intensity": 0.7,
+      "say": ["Step two: the asset's details.", "Name, address, surface, and the total valuation, which the issuer declares.", "Here, a Madrid penthouse valued at one million two hundred thousand dollars."],
+      "sub": ["Paso dos: los datos del activo.", "Nombre, dirección, superficie y la valoración total, que la declara el emisor.", "Aquí, un ático en Madrid valorado en un millón doscientos mil dólares."]
+    },
+    {
+      "id": "T06", "title": "Step 3 · Fractioning", "kind": "screen", "session": "hub", "intensity": 0.8,
+      "say": ["Step three: fractioning.", "You choose how many fractions to create, and BeZhas suggests the price that matches the valuation, at the current BEZ price of zero point zero zero seven five dollars.", "Ten thousand fractions, one hundred and twenty dollars each.", "You also state an estimated yield: a declared figure, not a guarantee.", "And the tokenization fee is fixed: one hundred BEZ, less than one dollar."],
+      "sub": ["Paso tres: fraccionar.", "Eliges cuántas fracciones crear, y BeZhas sugiere el precio que cuadra con la valoración, al precio actual del BEZ de 0,0075 dólares.", "Diez mil fracciones, ciento veinte dólares cada una.", "También indicas un rendimiento estimado: una cifra declarada, no una garantía.", "Y la tarifa de tokenización es fija: cien BEZ, menos de un dólar."],
+      "short": ["Choose how many fractions to create, and BeZhas suggests the price that matches the valuation.", "Ten thousand fractions, one hundred and twenty dollars each.", "The tokenization fee is fixed: one hundred BEZ, less than one dollar."],
+      "short_sub": ["Eliges cuántas fracciones crear, y BeZhas sugiere el precio que cuadra con la valoración.", "Diez mil fracciones, ciento veinte dólares cada una.", "La tarifa de tokenización es fija: cien BEZ, menos de un dólar."]
+    },
+    {
+      "id": "T07", "title": "Step 4 · Documents and signature", "kind": "screen", "session": "hub", "intensity": 0.85,
+      "say": ["Step four: the legal documents.", "They are stored on IPFS, and their fingerprint is recorded with the asset.", "You sign with your wallet, and the asset exists: ten thousand fractions, in your wallet."],
+      "sub": ["Paso cuatro: la documentación legal.", "Se guarda en IPFS y su huella queda registrada con el activo.", "Firmas con tu wallet y el activo existe: diez mil fracciones, en tu wallet."]
+    },
+    {
+      "id": "T08", "title": "Compliance", "kind": "graphic", "intensity": 0.5,
+      "say": ["A tokenized property does not skip the law.", "The legal structure of each offering, the owning company, the jurisdiction and the eligible investors, is defined with your advisor.", "And for buildings, hotels and boats, buying fractions requires verified KYC."],
+      "sub": ["Un inmueble tokenizado no se salta la ley.", "La estructura legal de cada oferta, la sociedad propietaria, la jurisdicción y los inversores admitidos, se define con tu asesor.", "Y en inmuebles, hoteles y barcos, comprar fracciones exige KYC verificado."]
+    },
+    {
+      "id": "T09", "title": "Selling fractions", "kind": "screen", "session": "venta", "intensity": 0.8,
+      "say": ["To sell, you publish an offer: quantity and price.", "Your fractions don't leave your wallet until someone buys.", "The investor approves the payment and buys: in the same operation, the BEZ go to the issuer, minus a fee, and the fractions go to the investor."],
+      "sub": ["Para vender, publicas una oferta: cantidad y precio.", "Tus fracciones no salen de tu wallet hasta que alguien compra.", "El inversor aprueba el pago y compra: en la misma operación, los BEZ van al emisor, menos una comisión, y las fracciones, al inversor."],
+      "parts": [0.4, 0.6],
+      "short": ["To sell, you publish an offer: quantity and price.", "The investor buys, and in the same operation the BEZ go to the issuer and the fractions to the investor."],
+      "short_sub": ["Para vender, publicas una oferta: cantidad y precio.", "El inversor compra y, en la misma operación, los BEZ van al emisor y las fracciones al inversor."]
+    },
+    {
+      "id": "T10", "title": "Distributing rent", "kind": "screen", "session": "rentas_emisor", "intensity": 0.85,
+      "say": ["Now, the return.", "When the asset earns income, a rent or a coupon, the issuer deposits it.", "BeZhas works out who held fractions at the snapshot block, and splits it pro rata.", "You see the summary before signing: holders, fee and total."],
+      "sub": ["Ahora, la rentabilidad.", "Cuando el activo genera ingresos, un alquiler o un cupón, el emisor los deposita.", "BeZhas calcula quién tenía fracciones en el bloque de corte y lo reparte a prorrata.", "Ves el resumen antes de firmar: titulares, comisión y total."]
+    },
+    {
+      "id": "T11", "title": "Collecting profits", "kind": "screen", "session": "rentas_titular", "intensity": 0.95,
+      "say": ["And the investor collects.", "They see how much each distribution gives them, and take it with one click: the money goes straight to their wallet.", "It can't be collected twice, and anything unclaimed in time goes back to the issuer."],
+      "sub": ["Y el inversor cobra.", "Ve cuánto le corresponde en cada reparto y lo recoge con un clic: el dinero va directo a su wallet.", "No se puede cobrar dos veces, y lo que nadie reclama a tiempo vuelve al emisor."],
+      "short": ["And the investor collects, with one click: the money goes straight to their wallet.", "It can't be collected twice."],
+      "short_sub": ["Y el inversor cobra con un clic: el dinero va directo a su wallet.", "No se puede cobrar dos veces."]
+    },
+    {
+      "id": "T12", "title": "Tokenize with your AI (MCP)", "kind": "graphic", "intensity": 0.9,
+      "say": ["And you don't even need our screens.", "With the BeZhas MCP, your favorite AI assistant can prepare the whole tokenization.", "You describe the property, it calls the tool, and you get two transactions, ready to sign.", "It never signs for you: your wallet does. Available on Creator Pro plans and above."],
+      "sub": ["Y ni siquiera necesitas nuestras pantallas.", "Con el MCP de BeZhas, tu asistente de IA favorito puede preparar toda la tokenización.", "Describes el inmueble, llama a la herramienta y obtienes dos transacciones listas para firmar.", "Nunca firma por ti: lo hace tu wallet. Disponible en los planes Creator Pro y superiores."],
+      "short": ["With the BeZhas MCP, your favorite AI assistant can prepare the whole tokenization.", "You describe the property, and you get two transactions, ready to sign."],
+      "short_sub": ["Con el MCP de BeZhas, tu asistente de IA favorito puede preparar toda la tokenización.", "Describes el inmueble y obtienes dos transacciones listas para firmar."]
+    },
+    {
+      "id": "T13", "title": "Verifiable on-chain", "kind": "graphic", "intensity": 0.6,
+      "say": ["Everything stays on the chain: tokenization, offers, purchases, distributions.", "No custody by BeZhas, KYC where it's needed, and a statement anyone can verify."],
+      "sub": ["Todo queda en la cadena: tokenización, ofertas, compras, repartos.", "Sin custodia de BeZhas, con KYC donde hace falta, y con un justificante que cualquiera puede verificar."]
+    },
+    {
+      "id": "T14", "title": "Call to action", "kind": "graphic", "intensity": 1.0,
+      "say": ["Tokenize, fraction, sell, distribute.", "Your property, open to more investors.", "Visit bezhas dot com, connect the BeZhas MCP to your favorite AI, and start tokenizing today."],
+      "sub": ["Tokeniza, fracciona, vende, reparte.", "Tu propiedad, abierta a más inversores.", "Visita bezhas.com, conecta el MCP de BeZhas a tu IA favorita y empieza a tokenizar hoy."],
+      "short": ["Tokenize, fraction, sell, distribute.", "Visit bezhas dot com, connect the BeZhas MCP to your favorite AI, and start tokenizing today."],
+      "short_sub": ["Tokeniza, fracciona, vende, reparte.", "Visita bezhas.com, conecta el MCP de BeZhas a tu IA favorita y empieza a tokenizar hoy."]
+    }
+  ]
+}

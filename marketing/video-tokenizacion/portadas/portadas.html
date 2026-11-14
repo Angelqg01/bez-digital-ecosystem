@@ -1,0 +1,71 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Portadas</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@700&display=swap');
+:root{--bg:#070b14;--card:#0e1626;--line:#1c2a42;--teal:#00D4AA;--gold:#FFD700;--pink:#FF6B9D;--mute:#9fb4c7}
+*{box-sizing:border-box;margin:0}
+html,body{width:1280px;height:720px;overflow:hidden;background:var(--bg);font-family:'Syne',system-ui,sans-serif;color:#fff}
+.c{position:absolute;inset:0;overflow:hidden;background:radial-gradient(800px 520px at 82% -10%,rgba(0,212,170,.28),transparent 60%),radial-gradient(700px 480px at 4% 110%,rgba(255,107,157,.26),transparent 60%),var(--bg)}
+.c:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse at 50% 45%,#000 25%,transparent 75%)}
+.brand{position:absolute;left:48px;top:40px;display:flex;align-items:center;gap:14px;font-weight:800;font-size:30px}
+.mark{width:42px;height:42px;border-radius:50%;background:conic-gradient(from 210deg,var(--teal),var(--pink),var(--teal));position:relative;box-shadow:0 0 26px rgba(0,212,170,.55)}
+.mark:after{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--bg)}
+.demo{position:absolute;right:44px;top:46px;padding:7px 16px;border-radius:999px;border:1.5px solid rgba(255,107,157,.7);background:rgba(255,107,157,.14);color:#ff9fbf;font:700 15px 'Space Mono',monospace;letter-spacing:2px}
+.h{position:absolute;left:48px;font-weight:800;letter-spacing:-2px;line-height:.98}
+.g{background:linear-gradient(100deg,var(--teal),var(--gold) 60%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{position:absolute;left:50px;font:700 30px 'Space Mono',monospace;color:var(--mute)}
+.pill{display:inline-block;padding:10px 22px;border-radius:999px;font:700 24px 'Space Mono',monospace;border:2px solid}
+.t{border-color:var(--teal);color:var(--teal)}.go{border-color:var(--gold);color:var(--gold)}.p{border-color:var(--pink);color:#ff9fbf}
+/* A: edificio de fracciones */
+.bld{position:absolute;right:56px;top:170px;width:400px;height:400px;display:grid;grid-template-columns:repeat(10,1fr);gap:7px}
+.bld i{border-radius:7px;background:#16405a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.bld i.a{background:var(--teal)}.bld i.b{background:var(--gold)}.bld i.d{background:var(--pink)}.bld i.w{background:#2a8fb0}
+/* B: tarjeta de cobro */
+.card{position:absolute;right:48px;top:150px;width:430px;border-radius:30px;background:var(--card);border:1.5px solid var(--line);padding:30px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.card small{font:700 17px 'Space Mono',monospace;color:var(--mute);letter-spacing:2px;text-transform:uppercase}
+.card .big{font:700 66px 'Space Mono',monospace;letter-spacing:-2px;margin:10px 0 6px;white-space:nowrap}
+.btnc{margin-top:20px;padding:18px;border-radius:20px;background:linear-gradient(100deg,var(--teal),#2f8cff);font-weight:800;font-size:25px;white-space:nowrap;text-align:center;color:#04121a}
+.bars{display:flex;gap:10px;align-items:flex-end;height:110px;margin-top:20px}.bars i{flex:1;border-radius:8px 8px 3px 3px;background:linear-gradient(var(--gold),#a88700)}
+/* C: IA */
+.chat{position:absolute;right:48px;top:140px;width:470px;display:flex;flex-direction:column;gap:18px}
+.bub{padding:18px 22px;border-radius:22px;font:600 22px/1.35 'Syne',sans-serif}
+.u{background:#16324a;align-self:flex-end;border-bottom-right-radius:6px}
+.tool{align-self:flex-start;padding:13px 20px;border-radius:14px;background:rgba(255,215,0,.12);border:2px solid rgba(255,215,0,.6);font:700 21px 'Space Mono',monospace;color:var(--gold)}
+.a{background:rgba(255,255,255,.06);border:1.5px solid var(--line);border-bottom-left-radius:6px}
+.sign{display:flex;align-items:center;gap:12px;padding:16px 22px;border-radius:18px;background:rgba(0,212,170,.12);border:2px solid rgba(0,212,170,.6);font-weight:800;font-size:24px}
+</style></head><body>
+<div id="root"></div>
+<script>
+const v=new URLSearchParams(location.search).get('v')||'a';
+const r=document.getElementById('root');
+const base='<div class="brand"><div class="mark"></div>BeZhas</div><div class="demo">DEMO</div>';
+let h='';
+if(v==='a'){
+  let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const cells=Array.from({length:100},()=>{const x=rnd();return x<.14?'a':x<.26?'b':x<.34?'d':x<.62?'w':''}).map(c=>`<i class="${c}"></i>`).join('');
+  h=`<div class="c">${base}
+   <div class="h" style="top:140px;font-size:82px">Tokeniza<br><span class="g">tu<br>inmueble</span></div>
+   <div class="sub" style="top:432px;font-size:27px">10.000 fracciones.<br>Una renta compartida.</div>
+   <div style="position:absolute;left:48px;bottom:56px;display:flex;gap:14px"><span class="pill t">PASO A PASO</span><span class="pill go">POLYGON</span></div>
+   <div class="bld">${cells}</div></div>`;
+}
+if(v==='b'){
+  h=`<div class="c">${base}
+   <div class="h" style="top:140px;font-size:80px">Fracciona.<br><span class="g">Reparte<br>rentas.</span></div>
+   <div class="sub" style="top:468px;font-size:25px">Cada titular cobra lo suyo,<br>con un clic.</div>
+   <div style="position:absolute;left:48px;bottom:56px;display:flex;gap:14px"><span class="pill t">SIN CUSTODIA</span><span class="pill p">KYC DONDE HACE FALTA</span></div>
+   <div class="card"><small>Reparto #1 · ejemplo</small><div class="big g">3.750 <span style="font-size:30px">USDC</span></div><small>tu parte</small>
+     <div class="bars"><i style="height:35%"></i><i style="height:55%"></i><i style="height:45%"></i><i style="height:80%"></i><i style="height:100%"></i></div>
+     <div class="btnc">Cobrar mi parte</div></div></div>`;
+}
+if(v==='c'){
+  h=`<div class="c">${base}
+   <div class="h" style="top:140px;font-size:84px">Tokeniza<br>con<br><span class="g">tu IA</span></div>
+   <div class="sub" style="top:468px;font-size:24px">Conecta el MCP de BeZhas<br>a tu asistente favorito.</div>
+   <div style="position:absolute;left:48px;bottom:56px;display:flex;gap:14px"><span class="pill go">MCP</span><span class="pill t">TÚ FIRMAS</span></div>
+   <div class="chat"><div class="bub u">Tokeniza mi ático de Madrid: 10.000 fracciones, valorado en 1,2 M$.</div>
+     <div class="tool">⚙ bezhas_tokenize_prepare</div>
+     <div class="bub a">Listo: <b>2 transacciones</b> preparadas para firmar.</div>
+     <div class="sign">🔐 Firma tu wallet. BeZhas nunca firma.</div></div></div>`;
+}
+r.innerHTML=h;document.fonts.ready.then(()=>{document.title='ready'});
+</script></body></html>

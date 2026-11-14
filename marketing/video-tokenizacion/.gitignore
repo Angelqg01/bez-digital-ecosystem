@@ -1,0 +1,6 @@
+# Generados por la tubería (pipeline/): clips, audio, música y vídeos finales
+out/
+audio/
+audio-short/
+*.wav
+__pycache__/

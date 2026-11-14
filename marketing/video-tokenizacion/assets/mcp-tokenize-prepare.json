@@ -1,0 +1,48 @@
+{
+  "tool": "bezhas_tokenize_prepare",
+  "plan": "creator_pro",
+  "scope": "contracts",
+  "respuesta": {
+    "red": {
+      "chainId": 137,
+      "nombre": "Polygon"
+    },
+    "fabrica": {
+      "id": "activos",
+      "nombre": "Activos reales (inmuebles, vehículos, objetos)"
+    },
+    "contrato": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "comisionBez": "100.0",
+    "activo": {
+      "nombre": "Penthouse Madrid Centro",
+      "categoria": "inmueble",
+      "ubicacion": "Calle Mayor 1, Madrid, España",
+      "fracciones": 10000,
+      "valoracionUsd": 1200000,
+      "precioFraccionBez": "16000",
+      "rendimientoAnualPct": 5,
+      "capitalTotalBez": "160000000.0",
+      "valorFraccionUsd": 120
+    },
+    "transacciones": [
+      {
+        "paso": 1,
+        "descripcion": "Autorizar al contrato de tokenización a cobrar la comisión de 100.0 BEZ.",
+        "to": "0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8",
+        "value": "0",
+        "chainId": 137,
+        "data": "0x095ea7b30000000000000000000000005fbdb2315678afecb367f032d93f642f64180aa30000000000000000000000000000000000000000000000056bc75e2d63100000"
+      },
+      {
+        "paso": 2,
+        "descripcion": "Crear el activo tokenizado (emite el evento AssetTokenized con su assetId).",
+        "to": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "value": "0",
+        "chainId": 137,
+        "data": "0xa4797b7700000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000027100000000000000000000000000000000000000000000000000000000000124f800000000000000000000000000000000000000000000003635c9adc5dea00000000000000000000000000000000000000000000000000000000000000000001f400000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000001750656e74686f757365204d61647269642043656e74726f000000000000000000000000000000000000000000000000000000000000000000000000000000003b62616679626569676479727a74357366703775646d37687537367568377932366e6633656675796c71616266336f636c67747179353566627a646900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e43616c6c65204d61796f7220312c204d61647269642c2045737061c3b1610000"
+      }
+    ],
+    "siguientePaso": "Firma las dos transacciones, en orden, con la wallet del titular del activo en Polygon. La wallet necesita la comisión en BEZ y algo de POL para el gas. Ni BeZhas ni tu IA pueden firmarlas por ti.",
+    "aviso": "La tokenización refleja el activo en la cadena; no crea el derecho sobre él. La documentación legal tiene que respaldar la valoración."
+  }
+}

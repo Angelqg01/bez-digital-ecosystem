@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BeZhas · Property tokenization · graphic scenes</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Space+Mono:wght@400;700&display=swap');
+:root{--bg:#070b14;--card:#0e1626;--line:#1c2a42;--teal:#00D4AA;--gold:#FFD700;--pink:#FF6B9D;--mute:#8aa0b8;--txt:#eef4fb;--d:10s}
+*{box-sizing:border-box;margin:0}
+html,body{width:1280px;height:720px;overflow:hidden;background:var(--bg);color:var(--txt);font-family:'Syne','Inter',system-ui,sans-serif}
+.stage{position:absolute;inset:0;overflow:hidden;background:radial-gradient(900px 520px at 78% -8%,rgba(0,212,170,.16),transparent 60%),radial-gradient(760px 480px at 8% 108%,rgba(255,107,157,.14),transparent 60%),var(--bg)}
+.stage:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse at 50% 40%,#000 30%,transparent 78%)}
+.brand{position:absolute;left:44px;top:34px;display:flex;align-items:center;gap:12px;font-weight:800;font-size:22px;letter-spacing:.3px;z-index:3}
+.mark{width:34px;height:34px;border-radius:50%;background:conic-gradient(from 210deg,var(--teal),var(--pink),var(--teal));position:relative;box-shadow:0 0 22px rgba(0,212,170,.5)}
+.mark:after{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--bg)}
+.kicker{position:absolute;right:44px;top:42px;font:700 12px 'Space Mono',monospace;color:var(--teal);letter-spacing:2.4px;text-transform:uppercase;z-index:3}
+.legal{position:absolute;left:0;right:0;bottom:7px;text-align:center;font:500 11px 'Inter',system-ui,sans-serif;color:rgba(190,205,220,.7);padding:0 40px;z-index:5}
+.demo{position:absolute;left:14px;bottom:30px;padding:5px 12px;border-radius:999px;background:rgba(255,107,157,.16);border:1px solid rgba(255,107,157,.6);color:#ff9fbf;font-weight:800;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;z-index:5}
+.center{position:absolute;inset:90px 60px 80px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.h1{font-weight:800;font-size:62px;line-height:1.05;letter-spacing:-1px}
+.h2{font-weight:800;font-size:40px;line-height:1.1;letter-spacing:-.5px}
+.mute{color:var(--mute)}
+.grad{background:linear-gradient(100deg,var(--teal),var(--gold) 55%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.mono{font-family:'Space Mono',monospace}
+.hide{opacity:0}
+.up{animation:up .8s cubic-bezier(.2,.8,.2,1) both}
+@keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.pop{animation:pop .6s cubic-bezier(.2,1.3,.3,1) both}
+@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+.fadeout{animation:fo .6s ease both}
+@keyframes fo{to{opacity:0;transform:translateY(-12px)}}
+.at{animation-delay:calc(var(--d) * var(--t,0))}
+/* La escena arranca al llamar a __go(): así el reloj de las animaciones empieza con la captura, no con la carga. */
+.stage:not(.go) *{animation-play-state:paused !important}
+.fadeio{position:absolute;inset:0;background:#070b14;z-index:9;pointer-events:none;animation:fi .5s ease both,fo2 .5s ease both;animation-delay:0s,calc(var(--d) - .5s)}
+@keyframes fi{from{opacity:1}to{opacity:0}}
+@keyframes fo2{from{opacity:0}to{opacity:1}}
+
+/* T01 · edificio que se fracciona */
+.bld{position:relative;width:560px;height:330px;margin-top:-40px;animation:dim 1.2s ease both;animation-delay:calc(var(--d) * .56)}
+@keyframes dim{to{opacity:.16;transform:translateY(-34px) scale(.86)}}
+.tile{position:absolute;width:26px;height:30px;border-radius:5px;background:#16405a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);will-change:transform}
+.tile.w{background:#2a8fb0}
+.tile.s{animation:scatter 1.7s cubic-bezier(.2,.9,.2,1) both;animation-delay:calc(var(--d) * .30)}
+@keyframes scatter{0%{transform:none}60%{transform:translate(var(--tx),var(--ty)) rotate(var(--r));background:var(--c)}100%{transform:translate(var(--tx2),var(--ty2)) rotate(0);background:var(--c);opacity:1}}
+.coin{position:absolute;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3a0,var(--gold) 60%,#b58f00);box-shadow:0 0 14px rgba(255,215,0,.75);opacity:0;animation:coin 2.4s ease-in both;animation-delay:calc(var(--d) * var(--t))}
+@keyframes coin{0%{opacity:0;transform:translate(0,0)}20%{opacity:1}100%{opacity:0;transform:translate(var(--cx),var(--cy))}}
+.hook-lines{position:absolute;left:0;right:0;bottom:200px;text-align:center;height:120px}
+.hook-lines p{font-weight:800;font-size:44px;letter-spacing:-.6px}
+
+/* T02 · problema */
+.pain{display:flex;flex-direction:column;gap:18px;width:900px}
+.painrow{display:flex;align-items:center;gap:26px;padding:22px 30px;border-radius:20px;background:linear-gradient(90deg,rgba(255,107,157,.12),rgba(255,107,157,.03));border:1px solid rgba(255,107,157,.35)}
+.painrow .big{font:800 54px 'Syne',sans-serif;min-width:300px;text-align:left;color:#ff9fbf}
+.painrow .lbl{font-weight:700;font-size:26px;text-align:left}
+.painrow .lbl small{display:block;font:500 17px 'Inter',sans-serif;color:var(--mute);margin-top:4px}
+
+/* T03 · idea */
+.flow{display:flex;align-items:center;gap:22px;margin-top:30px}
+.node{width:218px;padding:22px 18px;border-radius:22px;background:var(--card);border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.node .ico{width:62px;height:62px;border-radius:18px;margin:0 auto 14px;display:grid;place-items:center;font-size:30px;background:linear-gradient(135deg,rgba(0,212,170,.25),rgba(255,215,0,.15));border:1px solid rgba(0,212,170,.4)}
+.node b{display:block;font-size:20px}
+.node small{display:block;margin-top:6px;color:var(--mute);font:500 14px 'Inter',sans-serif}
+.arrow{width:42px;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--teal),var(--gold));position:relative}
+.arrow:after{content:"";position:absolute;right:-2px;top:-6px;border-left:12px solid var(--gold);border-top:8px solid transparent;border-bottom:8px solid transparent}
+.dots{display:grid;grid-template-columns:repeat(10,10px);gap:4px;justify-content:center;margin:0 auto 14px}
+.dots i{width:10px;height:10px;border-radius:3px;background:var(--teal);opacity:.9}
+.dots i:nth-child(3n){background:var(--gold)}.dots i:nth-child(5n){background:var(--pink)}
+.chips{display:flex;gap:14px;margin-top:34px;justify-content:center}
+.chip{padding:10px 18px;border-radius:999px;font:700 14px 'Space Mono',monospace;letter-spacing:1px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+.chip.t{border-color:rgba(0,212,170,.6);color:var(--teal)}.chip.g{border-color:rgba(255,215,0,.6);color:var(--gold)}.chip.p{border-color:rgba(255,107,157,.6);color:#ff9fbf}
+.note{margin-top:26px;font:500 18px 'Inter',sans-serif;color:var(--mute);max-width:820px}
+
+/* T08 · cumplimiento */
+.grid4{display:grid;grid-template-columns:repeat(2,420px);gap:22px;margin-top:28px}
+.cc{display:flex;gap:18px;align-items:center;text-align:left;padding:22px 24px;border-radius:20px;background:var(--card);border:1px solid var(--line)}
+.cc .ico{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:28px;background:rgba(0,212,170,.12);border:1px solid rgba(0,212,170,.35);flex:none}
+.cc b{font-size:22px;display:block}.cc small{display:block;color:var(--mute);font:500 15px 'Inter',sans-serif;margin-top:4px}
+.cc.kyc{border-color:rgba(0,212,170,.7);box-shadow:0 0 34px rgba(0,212,170,.18)}
+.ok{margin-left:auto;padding:6px 12px;border-radius:999px;background:rgba(0,212,170,.18);color:var(--teal);font:800 12px 'Space Mono',monospace;letter-spacing:1px}
+
+/* T12 · MCP */
+.mcp{position:absolute;inset:96px 44px 70px;display:grid;grid-template-columns:480px 1fr;gap:22px}
+.pane{border-radius:22px;background:var(--card);border:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.pane h4{font:700 12px 'Space Mono',monospace;letter-spacing:2px;color:var(--teal);text-transform:uppercase}
+.bub{padding:14px 16px;border-radius:16px;font:500 17px/1.4 'Inter',sans-serif}
+.bub.u{background:#16324a;align-self:flex-end;max-width:90%;border-bottom-right-radius:4px}
+.bub.a{background:rgba(255,255,255,.05);border:1px solid var(--line);border-bottom-left-radius:4px}
+.toolchip{display:inline-flex;gap:10px;align-items:center;padding:9px 14px;border-radius:12px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.5);font:700 14px 'Space Mono',monospace;color:var(--gold)}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,215,0,.35);border-top-color:var(--gold);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 18px;font:500 15px 'Inter',sans-serif}
+.kv span{color:var(--mute)}.kv b{font:700 15px 'Space Mono',monospace;text-align:right}
+.tx{padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.tx b{font-size:16px}.tx code{display:block;margin-top:6px;font:400 12px 'Space Mono',monospace;color:#7fa3c2;word-break:break-all}
+.sign{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:14px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.55);font-weight:700;font-size:16px}
+
+/* T13 · eventos */
+.events{width:980px;margin-top:22px;display:flex;flex-direction:column;gap:10px}
+.ev{display:flex;align-items:center;gap:18px;padding:14px 22px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-align:left}
+.ev .n{font:700 17px 'Space Mono',monospace;color:var(--teal);min-width:230px}
+.ev .d{font-weight:600;font-size:19px;flex:1}
+.ev .h{font:400 14px 'Space Mono',monospace;color:var(--mute)}
+
+/* T14 · cierre */
+.cta{font:800 96px/1 'Syne',sans-serif;letter-spacing:-2px}
+.url{margin-top:26px;padding:16px 38px;border-radius:999px;font:800 40px 'Syne',sans-serif;border:2px solid var(--teal);box-shadow:0 0 44px rgba(0,212,170,.4)}
+.words{display:flex;gap:26px;margin-top:6px}
+.words span{font:800 44px 'Syne',sans-serif}
+</style>
+</head>
+<body>
+<div class="stage" id="stage"></div>
+<script>
+const q = new URLSearchParams(location.search);
+const SCENE = q.get('scene') || 'T01';
+const DUR = parseFloat(q.get('dur') || '10');
+document.documentElement.style.setProperty('--d', DUR + 's');
+const stage = document.getElementById('stage');
+const el = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+const LEGAL = q.get('legal') || '';
+const KICK = q.get('kicker') || 'Property tokenization';
+stage.append(el(`<div class="brand"><div class="mark"></div>BeZhas</div>`), el(`<div class="kicker">${KICK}</div>`));
+if (LEGAL) stage.append(el(`<div class="legal">${LEGAL}</div>`), el(`<div class="demo">Demonstration environment</div>`));
+const D = window.__data || {};
+const S = {};
+
+S.T01 = () => {
+  const b = el(`<div class="center"><div class="bld" id="bld"></div><div class="hook-lines" id="hl"></div></div>`);
+  stage.append(b); const bld = b.querySelector('#bld');
+  const cols = 20, rows = 10, cw = 28, ch = 33; const cs = ['#00D4AA', '#FFD700', '#FF6B9D'];
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const t = el(`<i class="tile ${rnd() > .55 ? 'w' : ''} s"></i>`);
+    t.style.left = c * cw + 'px'; t.style.top = r * ch + 'px';
+    const ang = rnd() * 6.28, dist = 40 + rnd() * 120;
+    t.style.setProperty('--tx', Math.cos(ang) * dist + 'px'); t.style.setProperty('--ty', Math.sin(ang) * dist * .6 + 'px'); t.style.setProperty('--r', (rnd() * 90 - 45) + 'deg');
+    t.style.setProperty('--tx2', (Math.cos(ang) * dist * .35) + 'px'); t.style.setProperty('--ty2', (Math.sin(ang) * dist * .25) + 'px');
+    t.style.setProperty('--c', cs[Math.floor(rnd() * 3)]); bld.append(t);
+  }
+  for (let i = 0; i < 14; i++) { const c = el(`<i class="coin"></i>`); c.style.left = (200 + rnd() * 160) + 'px'; c.style.top = (120 + rnd() * 80) + 'px';
+    c.style.setProperty('--cx', (rnd() * 360 - 180) + 'px'); c.style.setProperty('--cy', (rnd() * 240 - 60) + 'px'); c.style.setProperty('--t', (.5 + i * .035)); bld.append(c); }
+  const hl = b.querySelector('#hl');
+  const L = [['One building.', 0.04], ['Ten thousand pieces.', 0.30], ['And the rent, shared among everyone who owns them.', 0.55]];
+  hl.innerHTML = L.map(([t, d], i) => `<p class="up at hide ${i === 2 ? 'grad' : ''}" style="--t:${d};position:${i ? 'absolute' : 'static'};left:0;right:0;${i === 0 ? '' : 'top:0'};${i === 2 ? 'font-size:40px' : ''}">${t}</p>`).join('');
+  // cada frase sustituye a la anterior
+  [...hl.children].forEach((p, i, a) => { if (i < a.length - 1) { p.style.animation = `up .8s cubic-bezier(.2,.8,.2,1) both, fo .6s ease both`; p.style.animationDelay = `calc(var(--d)*${L[i][1]}), calc(var(--d)*${L[i + 1][1] - .02})`; } });
+};
+
+S.T02 = () => {
+  const rows = [['$1,200,000', 'A lot of capital', 'The ticket to get in', .06], ['1 buyer', 'All or nothing', 'Selling means letting go of the whole asset', .38], ['Months', 'Waiting for a bank', 'or for one big investor', .66]];
+  stage.append(el(`<div class="center"><div class="h2 up" style="margin-bottom:26px">Property is hard to <span class="grad">open up</span></div>
+    <div class="pain">${rows.map(([big, l, s, t]) => `<div class="painrow up at hide" style="--t:${t}"><div class="big mono">${big}</div><div class="lbl">${l}<small>${s}</small></div></div>`).join('')}</div></div>`));
+};
+
+S.T03 = () => {
+  const dots = Array.from({ length: 50 }, () => '<i></i>').join('');
+  stage.append(el(`<div class="center"><div class="h2 up">Property <span class="grad">→ digital fractions</span></div>
+   <div class="flow">
+     <div class="node up at hide" style="--t:.05"><div class="ico">🏢</div><b>The property</b><small>Penthouse, Madrid</small></div><div class="arrow up at hide" style="--t:.13"></div>
+     <div class="node up at hide" style="--t:.17"><div class="ico">📄</div><b>Legal documents</b><small>Fingerprint on the chain</small></div><div class="arrow up at hide" style="--t:.27"></div>
+     <div class="node up at hide" style="--t:.31"><div class="dots">${dots}</div><b>10,000 fractions</b><small>ERC-1155 on Polygon</small></div><div class="arrow up at hide" style="--t:.43"></div>
+     <div class="node up at hide" style="--t:.47"><div class="ico">👛</div><b>Wallets</b><small>Each owner signs for themselves</small></div>
+   </div>
+   <div class="chips"><span class="chip t up at hide" style="--t:.55">POLYGON</span><span class="chip g up at hide" style="--t:.6">NO CUSTODY · YOU SIGN</span><span class="chip p up at hide" style="--t:.65">1 FRACTION = 1 RIGHT</span></div>
+   <div class="note up at hide" style="--t:.78">What rights a fraction gives is set by the legal structure of each offering.</div></div>`));
+};
+
+S.T08 = () => {
+  const c = [['🏛️', 'Owning company', 'Holds the property (SPV or fund)', .1, ''], ['🌍', 'Jurisdiction', 'Rules of the market where you offer', .28, ''], ['👥', 'Eligible investors', 'Who can buy, and how much', .46, ''], ['✅', 'KYC verified', 'Required for buildings, hotels and boats', .66, 'kyc']];
+  stage.append(el(`<div class="center"><div class="h2 up">Tokenized, <span class="grad">not above the law</span></div>
+   <div class="grid4">${c.map(([i, b, s, t, k]) => `<div class="cc ${k} up at hide" style="--t:${t}"><div class="ico">${i}</div><div><b>${b}</b><small>${s}</small></div>${k ? '<span class="ok">VERIFIED</span>' : ''}</div>`).join('')}</div>
+   <div class="note up at hide" style="--t:.82">Defined with your legal advisor.</div></div>`));
+};
+
+S.T12 = () => {
+  const m = (D.mcp && D.mcp.respuesta) || null;
+  const a = m && m.activo || {}; const tx = m && m.transacciones || [];
+  const short = (h) => h ? h.slice(0, 18) + '…' : '';
+  stage.append(el(`<div class="mcp">
+   <div class="pane"><h4>Your AI assistant · BeZhas MCP</h4>
+     <div class="bub u up at hide" style="--t:.04">Tokenize my Madrid penthouse: 10,000 fractions, valued at $1.2M, 16,000 BEZ each, 5% estimated yield. The legal documents are already on IPFS.</div>
+     <div class="up at hide" style="--t:.20"><span class="toolchip"><i class="spin"></i>bezhas_tokenize_prepare</span></div>
+     <div class="bub a up at hide" style="--t:.40">Done. I prepared <b>2 transactions</b> on Polygon. Review them and sign with your wallet: I can't sign for you.</div>
+     <div class="sign up at hide" style="--t:.62">🔐 Your wallet signs. BeZhas never does.</div>
+     <div class="note up at hide" style="--t:.8;margin-top:auto;font-size:15px">Works with any MCP-compatible assistant · Creator Pro plan or above</div>
+   </div>
+   <div class="pane"><h4>Real response of the tool</h4>
+     <div class="kv up at hide" style="--t:.44"><span>Network</span><b>Polygon · chain ${m ? m.red.chainId : 137}</b><span>Asset</span><b>${a.nombre || 'Penthouse Madrid Centro'}</b><span>Fractions</span><b>${(a.fracciones || 10000).toLocaleString('en-US')}</b><span>Value per fraction</span><b>$${a.valorFraccionUsd || 120}</b><span>Tokenization fee</span><b>${m ? parseFloat(m.comisionBez) : 100} BEZ</b></div>
+     ${tx.map((t, i) => `<div class="tx up at hide" style="--t:${.52 + i * .12}"><b>${t.paso}. ${i ? 'Create the tokenized asset' : 'Approve the fee'}</b><code>to ${short(t.to)} · data ${short(t.data)}</code></div>`).join('')}
+     ${m && m.aviso ? `<div class="note up at hide" style="--t:.78;margin-top:4px;font-size:14px"><span class="mono" style="color:var(--gold);font-size:11px;letter-spacing:1.5px">WARNING RETURNED BY THE TOOL (TRANSLATED)</span><br>“${/refleja el activo en la cadena/.test(m.aviso) ? 'Tokenization reflects the asset on the chain; it does not create the right over it. The legal documents must back the valuation.' : m.aviso}”</div>` : ''}
+   </div></div>`));
+};
+
+S.T13 = () => {
+  const ev = (D.events && D.events.length) ? D.events : [];
+  const names = { AssetTokenized: 'Asset tokenized', Listed: 'Offer published', Bought: 'Fractions bought', DistributionCreated: 'Rent distributed', Claimed: 'Rent collected' };
+  stage.append(el(`<div class="center"><div class="h2 up">Everything <span class="grad">stays on the chain</span></div>
+   <div class="events">${ev.map((e, i) => `<div class="ev up at hide" style="--t:${.08 + i * .11}"><span class="n">${e.name}</span><span class="d">${names[e.name] || e.name}</span><span class="h">block ${e.block} · ${e.tx}</span></div>`).join('')}</div>
+   <div class="chips" style="margin-top:26px"><span class="chip t up at hide" style="--t:.7">NO CUSTODY</span><span class="chip g up at hide" style="--t:.76">KYC WHERE NEEDED</span><span class="chip p up at hide" style="--t:.82">VERIFIABLE BY ANYONE</span></div></div>`));
+};
+
+S.T14 = () => {
+  stage.append(el(`<div class="center"><div class="words"><span class="up at hide" style="--t:.02;color:var(--teal)">Tokenize</span><span class="up at hide" style="--t:.1;color:var(--gold)">Fraction</span><span class="up at hide" style="--t:.18;color:var(--pink)">Sell</span><span class="up at hide" style="--t:.26">Distribute</span></div>
+   <div class="cta grad up at hide" style="--t:.34;margin-top:26px">Your property,<br>open to more investors</div>
+   <div class="url pop at hide mono" style="--t:.6">bezhas.com</div>
+   <div class="note up at hide" style="--t:.72">Connect the BeZhas MCP to your favorite AI and start tokenizing today.</div></div>`));
+};
+
+stage.append(el(`<div class="fadeio"></div>`));
+window.__go = () => stage.classList.add('go');
+(S[SCENE] || (() => stage.append(el(`<div class="center"><div class="h1">Unknown scene ${SCENE}</div></div>`))))();
+document.title = 'ready:' + SCENE;
+</script>
+</body>
+</html>
