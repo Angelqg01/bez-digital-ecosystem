@@ -1,10 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ethers } from 'ethers';
-import { useAuth } from '../context/AuthContext';
+import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi';
 import { BEZ_COIN_ADDRESS } from '../config/contracts';
 
-// Contract addresses (actualizar después del deploy)
-const RWA_FACTORY_ADDRESS = import.meta.env.VITE_RWA_FACTORY_ADDRESS || '0x0000000000000000000000000000000000000000';
+const POLYGON_CHAIN_ID = 137;
+
+// RWAFactory «activos» en Polygon: la que usa la web /rwa (CLAUDE.md, contratos desplegados).
+// Antes el valor por defecto era la dirección cero y el asistente nunca llegaba a firmar nada.
+// VITE_RWA_FACTORY_ADDRESS la sobrescribe (p. ej. la fábrica «industrial» o una de pruebas).
+const RWA_FACTORY_ADDRESS = import.meta.env.VITE_RWA_FACTORY_ADDRESS || '0xa7e6656eFA45EB59ca247aa15F883330692C0d9A';
 const RWA_VAULT_ADDRESS = import.meta.env.VITE_RWA_VAULT_ADDRESS || '0x0000000000000000000000000000000000000000';
 
 // Simplified ABIs
@@ -58,7 +62,16 @@ export const CATEGORY_NAMES = {
 };
 
 export const useRWAContracts = () => {
-    const { walletAddress, provider } = useAuth();
+    // Wallet conectada con wagmi y proveedor de ethers v6. Antes se leían `provider` y `walletAddress`
+    // de AuthContext, que no los expone: los contratos no se inicializaban y la comisión salía a 0.
+    const { address: walletAddress } = useAccount();
+    const { data: walletClient } = useWalletClient();
+    const chainId = useChainId();
+    const { switchChainAsync } = useSwitchChain();
+    const provider = useMemo(() => {
+        const origen = walletClient || (typeof window !== 'undefined' ? window.ethereum : null);
+        return walletAddress && origen ? new ethers.BrowserProvider(origen) : null;
+    }, [walletClient, walletAddress]);
     const [factoryContract, setFactoryContract] = useState(null);
     const [vaultContract, setVaultContract] = useState(null);
     const [bezCoinContract, setBezCoinContract] = useState(null);
@@ -73,7 +86,7 @@ export const useRWAContracts = () => {
             if (!provider || !walletAddress) return;
 
             try {
-                const signer = provider.getSigner();
+                const signer = await provider.getSigner();
 
                 // RWA Factory Contract
                 const factory = new ethers.Contract(
@@ -138,10 +151,11 @@ export const useRWAContracts = () => {
             } = assetData;
 
             // 1. Approve BEZ-Coin for tokenization fee
+            if (chainId !== POLYGON_CHAIN_ID) await switchChainAsync({ chainId: POLYGON_CHAIN_ID });
             const fee = await factoryContract.tokenizationFee();
             const allowance = await bezCoinContract.allowance(walletAddress, RWA_FACTORY_ADDRESS);
 
-            if (allowance.lt(fee)) {
+            if (allowance < fee) {
                 console.log('Approving BEZ-Coin...');
                 const approveTx = await bezCoinContract.approve(
                     RWA_FACTORY_ADDRESS,
@@ -166,15 +180,20 @@ export const useRWAContracts = () => {
 
             const receipt = await tx.wait();
 
-            // Extract assetId from event
-            const event = receipt.events?.find(e => e.event === 'AssetTokenized');
-            const assetId = event?.args?.assetId?.toNumber();
+            // El assetId sale del evento AssetTokenized del recibo (ethers v6: logs + interface).
+            let assetId;
+            for (const log of receipt.logs || []) {
+                try {
+                    const ev = factoryContract.interface.parseLog(log);
+                    if (ev?.name === 'AssetTokenized') { assetId = Number(ev.args.assetId); break; }
+                } catch { /* log de otro contrato */ }
+            }
 
             setLoading(false);
             return {
                 success: true,
                 assetId,
-                transactionHash: receipt.transactionHash
+                transactionHash: receipt.hash
             };
 
         } catch (error) {
@@ -182,7 +201,7 @@ export const useRWAContracts = () => {
             setLoading(false);
             throw error;
         }
-    }, [factoryContract, bezCoinContract, walletAddress]);
+    }, [factoryContract, bezCoinContract, walletAddress, chainId, switchChainAsync]);
 
     /**
      * Get asset details
@@ -199,13 +218,13 @@ export const useRWAContracts = () => {
                 categoryName: CATEGORY_NAMES[asset.category],
                 legalDocumentCID: asset.legalDocumentCID,
                 imagesCID: asset.imagesCID,
-                totalSupply: asset.totalSupply.toNumber(),
-                valuationUSD: asset.valuationUSD.toNumber(),
+                totalSupply: Number(asset.totalSupply),
+                valuationUSD: Number(asset.valuationUSD),
                 pricePerFraction: ethers.formatEther(asset.pricePerFraction),
-                estimatedYield: asset.estimatedYield.toNumber() / 100, // basis points to percentage
+                estimatedYield: Number(asset.estimatedYield) / 100, // basis points to percentage
                 creator: asset.creator,
                 location: asset.location,
-                createdAt: new Date(asset.createdAt.toNumber() * 1000),
+                createdAt: new Date(Number(asset.createdAt) * 1000),
                 isActive: asset.isActive
             };
         } catch (error) {
@@ -222,7 +241,7 @@ export const useRWAContracts = () => {
 
         try {
             const balance = await factoryContract.balanceOf(walletAddress, assetId);
-            return balance.toNumber();
+            return Number(balance);
         } catch (error) {
             console.error('Error getting fractions:', error);
             return 0;
@@ -260,7 +279,7 @@ export const useRWAContracts = () => {
             setLoading(false);
             return {
                 success: true,
-                transactionHash: receipt.transactionHash
+                transactionHash: receipt.hash
             };
         } catch (error) {
             console.error('Claim error:', error);

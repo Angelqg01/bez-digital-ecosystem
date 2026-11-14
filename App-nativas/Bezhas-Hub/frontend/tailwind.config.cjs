@@ -8,6 +8,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Dorado de marca (#FFD700, CLAUDE.md). Lo usan el asistente de tokenización, Create y RealEstateGame con
+        // clases gold-*; sin esta paleta esas clases no generaban nada (barra de pasos y textos sin color).
+        gold: {
+          50: '#FFFBE6',
+          100: '#FFF3B8',
+          200: '#FFEA85',
+          300: '#FFE14D',
+          400: '#FFDA1F',
+          500: '#FFD700',
+          600: '#D9B500',
+          700: '#A68900',
+          800: '#735F00',
+          900: '#403400',
+        },
+
         // === PALETA LIGHT MODE - Basada en imagen de referencia === //
 
         // Colores primarios (Violeta/Morado según imagen)
