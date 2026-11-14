@@ -261,7 +261,14 @@ async function calcular({ contrato, assetId, creadoTs, corte, importeBase, emiso
 
     const desde = await bloqueDesde(creadoTs, corte);
     const eventos = await leerTransferencias(contrato, desde, corte);
-    const resultado = tree.calcularReparto({ eventos, assetId, importe: importeBase, excluir: [emisor] });
+    let resultado;
+    try {
+        resultado = tree.calcularReparto({ eventos, assetId, importe: importeBase, excluir: [emisor] });
+    } catch (err) {
+        // Los errores del árbol (NO_HOLDERS, AMOUNT_TOO_SMALL…) son del cliente: 400 con su código, no un 500.
+        if (err instanceof tree.RwaRentTreeError) throw new RwaRentError(err.message, err.code, err.status || 400);
+        throw err;
+    }
 
     if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);
     cache.set(clave, resultado);

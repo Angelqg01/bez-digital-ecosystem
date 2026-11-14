@@ -202,6 +202,16 @@ describe('services/rwaRent', () => {
             await expect(rwaRent.prepararReparto(base)).rejects.toMatchObject({ code: 'RPC_UNAVAILABLE', status: 503 });
         });
 
+        it('NO_HOLDERS sale como RwaRentError (400), no como un error de código que acabaría en un 500', async () => {
+            lector();
+            polygon._setCadena({
+                bloqueActual: async () => CABEZA,
+                timestampDeBloque: async (n) => T0 + n * 2,
+                logs: async () => [],
+            });
+            await expect(rwaRent.prepararReparto(base)).rejects.toMatchObject({ name: 'RwaRentError', code: 'NO_HOLDERS', status: 400 });
+        });
+
         it('un activo sin ninguna fracción vendida no tiene a quién repartir', async () => {
             lector();
             polygon._setCadena({
