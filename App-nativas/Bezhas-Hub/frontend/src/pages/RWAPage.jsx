@@ -29,6 +29,9 @@ import { toast } from 'react-hot-toast';
 import RealEstateRWAForm from '../components/RealEstateRWAForm';
 import { useRWAContracts, CATEGORY_NAMES } from '../hooks/useRWAContracts';
 import GlobalStatsBar from '../components/GlobalStatsBar';
+import RWASalePanel from '../components/rwa/RWASalePanel';
+import RWARentPanel from '../components/rwa/RWARentPanel';
+import { sessionAddress } from '../lib/rwaOps';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -195,6 +198,8 @@ const RWAPage = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [vista, setVista] = useState('mercado'); // mercado | venta | rentas
+    const cuentaSesion = sessionAddress(address);
 
     // Stats
     const totalValue = assets.reduce((sum, a) => sum + a.valuationUSD, 0);
@@ -248,15 +253,39 @@ const RWAPage = () => {
                             Invierte en activos del mundo real tokenizados
                         </p>
                     </div>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-xl text-black font-bold transition-all shadow-lg shadow-amber-500/20"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Tokenizar Activo
-                    </button>
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-xl text-black font-bold transition-all shadow-lg shadow-amber-500/20"
+                        >
+                            <Plus className="w-5 h-5" />
+                            Tokenizar Activo
+                        </button>
+                    </div>
                 </div>
 
+                {/* Vistas: mercado, venta primaria y rentas */}
+                <div role="tablist" aria-label="Secciones RWA" className="flex gap-2 border-b border-gray-700 mb-6">
+                    {[['mercado', 'Mercado'], ['venta', 'Comprar y vender'], ['rentas', 'Rentas']].map(([id, nombre]) => (
+                        <button key={id} type="button" role="tab" aria-selected={vista === id} onClick={() => setVista(id)}
+                            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${vista === id ? 'border-amber-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
+                            {nombre}
+                        </button>
+                    ))}
+                </div>
+
+                {vista !== 'mercado' && (
+                    <div className="max-w-3xl">
+                        {!isConnected || !cuentaSesion ? (
+                            <p className="rounded-xl border border-gray-700/50 bg-gray-800/50 p-6 text-gray-300">
+                                Conecta tu wallet para operar con activos tokenizados.
+                            </p>
+                        ) : vista === 'venta' ? <RWASalePanel cuenta={cuentaSesion} /> : <RWARentPanel cuenta={cuentaSesion} />}
+                    </div>
+                )}
+
+                {vista === 'mercado' && (
+                <>
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                     <StatCard
@@ -377,6 +406,8 @@ const RWAPage = () => {
                         </div>
                     </div>
                 </div>
+                </>
+                )}
             </div>
 
             {/* Create Modal */}

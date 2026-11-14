@@ -24,18 +24,30 @@ function getProveedor() {
     return proveedor;
 }
 
-async function llamarEnCadena(direccion, abi, funcion, args = []) {
-    const contrato = new ethers.Contract(direccion, abi, getProveedor());
+async function conTimeout(promesa, ms = TIMEOUT_MS) {
     let t;
     try {
         return await Promise.race([
-            contrato[funcion](...args),
-            new Promise((_, rej) => { t = setTimeout(() => rej(new Error('RPC sin respuesta')), TIMEOUT_MS); }),
+            promesa,
+            new Promise((_, rej) => { t = setTimeout(() => rej(new Error('RPC sin respuesta')), ms); }),
         ]);
     } finally {
         clearTimeout(t);
     }
 }
+
+async function llamarEnCadena(direccion, abi, funcion, args = []) {
+    const contrato = new ethers.Contract(direccion, abi, getProveedor());
+    return conTimeout(contrato[funcion](...args));
+}
+
+/** Lo que hace falta de la cadena para leer eventos (los logs tardan más que una llamada `view`). */
+const cadenaReal = {
+    bloqueActual: () => conTimeout(getProveedor().getBlockNumber()),
+    timestampDeBloque: async (n) => (await conTimeout(getProveedor().getBlock(n)))?.timestamp,
+    logs: (filtro) => conTimeout(getProveedor().getLogs(filtro), TIMEOUT_MS * 3),
+};
+let cadena = cadenaReal;
 
 let llamador = llamarEnCadena;
 
@@ -44,9 +56,21 @@ function leer(direccion, abi, funcion, args) {
     return llamador(direccion, abi, funcion, args);
 }
 
+/** Número del último bloque. */
+const bloqueActual = () => cadena.bloqueActual();
+/** Marca de tiempo (segundos) de un bloque. */
+const timestampDeBloque = (n) => cadena.timestampDeBloque(n);
+/** Logs de un filtro { address, topics, fromBlock, toBlock }. */
+const logs = (filtro) => cadena.logs(filtro);
+
 module.exports = {
     CHAIN_ID,
     leer,
+    bloqueActual,
+    timestampDeBloque,
+    logs,
     // Solo para tests: (direccion, abi, funcion, args) => valor
     _setLlamador: (fn) => { llamador = fn || llamarEnCadena; },
+    // Solo para tests: { bloqueActual, timestampDeBloque, logs }
+    _setCadena: (c) => { cadena = c || cadenaReal; },
 };

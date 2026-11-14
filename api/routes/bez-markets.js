@@ -18,6 +18,10 @@
  *   GET  /rwa/:fabrica/sale/listings/:id       oferta de venta primaria
  *   POST /rwa/sale/list/prepare                abrir venta primaria (creador)
  *   POST /rwa/sale/buy/prepare                 comprar fracciones (titularidad)
+ *   GET  /rwa/:fabrica/rent/distributions/:id  reparto de rentas
+ *   GET  /rwa/:fabrica/assets/:id/rent/distributions   repartos de un activo (?cuenta= añade «lo mío»)
+ *   POST /rwa/rent/distribute/prepare          crear un reparto de rentas (creador)
+ *   POST /rwa/rent/claim/prepare               cobrar la parte de un reparto (titularidad)
  */
 const { Router } = require('express');
 const { body, param, query: qv, validationResult } = require('express-validator');
@@ -28,6 +32,7 @@ const { meterUsage } = require('../middleware/gateway-metering');
 const bezSwap = require('../services/bezSwap');
 const rwaTokenization = require('../services/rwaTokenization');
 const rwaMarket = require('../services/rwaMarket');
+const rwaRent = require('../services/rwaRent');
 const logger = require('../utils/logger');
 
 const router = Router();
@@ -48,7 +53,7 @@ function validate(req, res) {
 /** Los errores de los servicios ya traen código y estado pensados para el cliente. */
 function responderError(res, err, contexto) {
     if (err instanceof bezSwap.SwapError || err instanceof rwaTokenization.TokenizationError
-        || err instanceof rwaMarket.RwaMarketError) {
+        || err instanceof rwaMarket.RwaMarketError || err instanceof rwaRent.RwaRentError) {
         return res.status(err.status || 400).json({ error: err.message, code: err.code });
     }
     logger.error({ err: err.message }, contexto);
@@ -172,6 +177,55 @@ router.post('/rwa/sale/buy/prepare', autenticarConPlan, requireScope('contracts'
 }, ruta('rwa sale buy prepare', async (req) => rwaMarket.prepararCompra({
     fabrica: req.body.fabrica || 'activos', listingId: req.body.listingId,
     cantidad: req.body.cantidad, comprador: req.body.comprador,
+})));
+
+// ── Reparto de rentas ────────────────────────────────────────────────────────
+
+router.get('/rwa/:fabrica/rent/distributions/:distributionId', autenticarConPlan, requireScope('contracts'), [
+    param('fabrica').isIn(FABRICAS),
+    param('distributionId').isInt({ min: 1 }),
+], ruta('rwa rent distribution', async (req) => ({
+    reparto: await rwaRent.leerReparto({ fabrica: req.params.fabrica, distributionId: req.params.distributionId }),
+})));
+
+router.get('/rwa/:fabrica/assets/:assetId/rent/distributions', autenticarConPlan, requireScope('contracts'), [
+    param('fabrica').isIn(FABRICAS),
+    param('assetId').isInt({ min: 1 }),
+    qv('cuenta').optional().isEthereumAddress(),
+], async (req, res, next) => {
+    // Con `cuenta` se revela cuánto le toca a esa wallet: sólo para wallets que la clave puede representar.
+    if (!validate(req, res)) return;
+    if (req.query.cuenta && !(await exigirTitularidadEnCuerpo(req, res, req.query.cuenta))) return;
+    next();
+}, ruta('rwa rent distributions', async (req) => rwaRent.listarRepartos({
+    fabrica: req.params.fabrica, assetId: req.params.assetId, cuenta: req.query.cuenta,
+})));
+
+router.post('/rwa/rent/distribute/prepare', autenticarConPlan, requireScope('contracts'), [
+    body('fabrica').optional().isIn(FABRICAS),
+    body('assetId').isInt({ min: 1 }),
+    body('emisor').isEthereumAddress(),
+    body('token').optional().isIn(Object.keys(rwaRent.TOKENS)),
+    body('importe').matches(/^\d{1,15}(\.\d{1,18})?$/),
+    body('plazoDias').optional().isInt({ min: 1, max: 3650 }),
+    body('detallesCID').optional().isString().isLength({ max: 100 }),
+], ruta('rwa rent distribute prepare', async (req) => rwaRent.prepararReparto({
+    fabrica: req.body.fabrica || 'activos', assetId: req.body.assetId, emisor: req.body.emisor,
+    token: req.body.token, importe: req.body.importe, plazoDias: req.body.plazoDias,
+    detallesCID: req.body.detallesCID,
+})));
+
+router.post('/rwa/rent/claim/prepare', autenticarConPlan, requireScope('contracts'), [
+    body('fabrica').optional().isIn(FABRICAS),
+    body('distributionId').isInt({ min: 1 }),
+    body('cuenta').isEthereumAddress(),
+], async (req, res, next) => {
+    // Se revela cuánto le toca a la wallet y si tiene KYC: sólo para wallets que la clave puede representar.
+    if (!validate(req, res)) return;
+    if (!(await exigirTitularidadEnCuerpo(req, res, req.body.cuenta))) return;
+    next();
+}, ruta('rwa rent claim prepare', async (req) => rwaRent.prepararReclamo({
+    fabrica: req.body.fabrica || 'activos', distributionId: req.body.distributionId, cuenta: req.body.cuenta,
 })));
 
 module.exports = router;

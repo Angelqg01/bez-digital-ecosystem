@@ -277,7 +277,7 @@ class GatewayClient {
     //
     // Todo devuelve transacciones SIN FIRMAR. `factory` es 'activos' (por
     // defecto) o 'industrial'. La venta primaria responde 503 SALE_NOT_DEPLOYED
-    // hasta que su contrato esté auditado y desplegado.
+    // hasta que su contrato esté desplegado y configurado.
 
     _createRWAClient() {
         return {

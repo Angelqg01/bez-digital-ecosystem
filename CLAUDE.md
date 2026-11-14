@@ -101,6 +101,8 @@ y lockfile y se instala por separado (`cd <módulo> && pnpm install`).
 | `BeZhasVesting` | Vesting de tokens |
 | `BeZhasLiquidity` | LP Manager DeFi |
 | `MarketplaceSettlement` | Cobro en BEZ del API Marketplace sin custodia (pull payment). Sin desplegar ni auditar (2026-11-05). |
+| `RWAPrimarySale` | Venta primaria de fracciones del RWAFactory, pagada en BEZ y sin custodia (`api/services/rwaMarket.js`; variable `RWA_PRIMARY_SALE_ADDRESS`). Auditoría y dictamen MiFID II dados por resueltos por Yoel el 2026-11-13. Sin desplegar. |
+| `RWARentDistributor` | Reparto de rentas de un activo del RWAFactory a los titulares de fracciones, por árbol de Merkle (cálculo en `api/services/rwaRentTree.js`, lectura de eventos y rutas `/rwa/rent/*` en `api/services/rwaRent.js`; variable `RWA_RENT_DISTRIBUTOR_ADDRESS`; pantallas en BZ Capital `/defi/rwa/rentas` y en el Hub, `/rwa`). Sin owner ni pausa. Mismo estado que la venta: auditoría y dictamen resueltos según Yoel (2026-11-13), sin desplegar. Despliegue de ambos: `smart-contracts/script/DeployRWAFinance.s.sol`. |
 
 ---
 

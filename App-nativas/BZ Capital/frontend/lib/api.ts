@@ -60,7 +60,7 @@ export function sessionAddress(): string | null {
 }
 
 export class ApiError extends Error {
-    constructor(message: string, public status: number) { super(message); }
+    constructor(message: string, public status: number, public code?: string) { super(message); }
 }
 
 export async function apiFetch<T = unknown>(path: string, options?: RequestInit): Promise<T> {
@@ -77,7 +77,7 @@ export async function apiFetch<T = unknown>(path: string, options?: RequestInit)
         const msg = res.status === 401
             ? 'Inicia sesión para ver estos datos.'
             : err.error || err.message || `Error de la API (${res.status})`;
-        throw new ApiError(msg, res.status);
+        throw new ApiError(msg, res.status, typeof err.code === 'string' ? err.code : undefined);
     }
     return res.json();
 }

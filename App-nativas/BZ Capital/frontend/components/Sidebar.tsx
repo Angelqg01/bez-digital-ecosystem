@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
     Coins, TrendingUp, Vote, ArrowLeftRight,
     Wallet, PieChart, LayoutDashboard, ExternalLink,
-    Repeat2, CreditCard,
+    Repeat2, CreditCard, Building2,
 } from 'lucide-react';
 
 export const navItems = [
@@ -18,6 +18,8 @@ export const navItems = [
     { href: '/wallet', label: 'Wallet', icon: Wallet },
     { href: '/treasury', label: 'Treasury', icon: PieChart },
     { href: '/payments', label: 'Payments', icon: CreditCard },
+    { href: '/rwa/venta', label: 'RWA · Fracciones', icon: Building2 },
+    { href: '/rwa/rentas', label: 'RWA · Rentas', icon: Building2 },
 ];
 
 const crossAppLinks = [

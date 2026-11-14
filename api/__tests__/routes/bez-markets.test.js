@@ -112,4 +112,70 @@ describe('Gateway: mercados de BEZ y RWA', () => {
         expect(res.status).toBe(503);
         expect(res.body.code).toBe('SALE_NOT_DEPLOYED');
     });
+    describe('reparto de rentas', () => {
+        it('POST /rwa/rent/claim/prepare no deja cobrar en nombre de otra wallet', async () => {
+            const llamador = jest.fn();
+            polygon._setLlamador(llamador);
+            const res = await auth(request(app).post('/api/gateway/v1/rwa/rent/claim/prepare'))
+                .send({ distributionId: 1, cuenta: OTRA });
+            expect(res.status).toBe(403);
+            expect(llamador).not.toHaveBeenCalled();
+        });
+
+        it('POST /rwa/rent/claim/prepare sin contrato de reparto: 503 DISTRIBUTOR_NOT_DEPLOYED', async () => {
+            delete process.env.RWA_RENT_DISTRIBUTOR_ADDRESS;
+            const res = await auth(request(app).post('/api/gateway/v1/rwa/rent/claim/prepare'))
+                .send({ distributionId: 1, cuenta: WALLET });
+            expect(res.status).toBe(503);
+            expect(res.body.code).toBe('DISTRIBUTOR_NOT_DEPLOYED');
+        });
+
+        it('POST /rwa/rent/distribute/prepare valida el cuerpo', async () => {
+            const res = await auth(request(app).post('/api/gateway/v1/rwa/rent/distribute/prepare'))
+                .send({ assetId: 0, emisor: 'no-es-una-direccion', importe: '1,5', token: 'doge' });
+            expect(res.status).toBe(400);
+            const campos = res.body.errors.map((e) => e.path);
+            expect(campos).toEqual(expect.arrayContaining(['assetId', 'emisor', 'importe', 'token']));
+        });
+
+        it('POST /rwa/rent/distribute/prepare sin contrato de reparto: 503', async () => {
+            delete process.env.RWA_RENT_DISTRIBUTOR_ADDRESS;
+            const res = await auth(request(app).post('/api/gateway/v1/rwa/rent/distribute/prepare'))
+                .send({ assetId: 1, emisor: WALLET, importe: '100' });
+            expect(res.status).toBe(503);
+            expect(res.body.code).toBe('DISTRIBUTOR_NOT_DEPLOYED');
+        });
+
+        it('GET /rwa/:fabrica/assets/:id/rent/distributions con la cuenta de otro: 403 sin tocar la cadena', async () => {
+            const llamador = jest.fn();
+            polygon._setLlamador(llamador);
+            const res = await auth(request(app).get(`/api/gateway/v1/rwa/activos/assets/3/rent/distributions?cuenta=${OTRA}`));
+            expect(res.status).toBe(403);
+            expect(llamador).not.toHaveBeenCalled();
+        });
+
+        it('GET /rwa/:fabrica/assets/:id/rent/distributions sin contrato de reparto: 503', async () => {
+            delete process.env.RWA_RENT_DISTRIBUTOR_ADDRESS;
+            const res = await auth(request(app).get('/api/gateway/v1/rwa/activos/assets/3/rent/distributions'));
+            expect(res.status).toBe(503);
+            expect(res.body.code).toBe('DISTRIBUTOR_NOT_DEPLOYED');
+        });
+
+        it('GET /rwa/:fabrica/rent/distributions/:id rechaza una fábrica desconocida', async () => {
+            const res = await auth(request(app).get('/api/gateway/v1/rwa/otra/rent/distributions/1'));
+            expect(res.status).toBe(400);
+        });
+
+        it('GET /rwa/:fabrica/rent/distributions/:id lee el reparto', async () => {
+            process.env.RWA_RENT_DISTRIBUTOR_ADDRESS = '0x' + 'd'.repeat(40);
+            polygon._setLlamador(jest.fn().mockResolvedValue({
+                assetId: 3n, issuer: WALLET, token: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
+                amount: 900_000_000n, remaining: 300_000_000n, merkleRoot: '0x' + '1'.repeat(64),
+                snapshotBlock: 9872n, claimDeadline: BigInt(Math.floor(Date.now() / 1000) + 86400), detailsCID: '',
+            }));
+            const res = await auth(request(app).get('/api/gateway/v1/rwa/activos/rent/distributions/1'));
+            expect(res.status).toBe(200);
+            expect(res.body.reparto).toMatchObject({ token: 'USDC', importe: '900.0', sinReclamar: '300.0', abierto: true });
+        });
+    });
 });

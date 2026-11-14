@@ -9,11 +9,11 @@
  * fracciones ni el BEZ de nadie.
  *
  * Venta primaria: contrato RWAPrimarySale (smart-contracts/src/finance), uno por
- * fábrica. ⚠️ Pendiente de auditoría y de dictamen MiFID II: vender fracciones
- * con valoración y rendimiento puede ser un instrumento financiero. Hasta que se
- * despliegue y se configure RWA_PRIMARY_SALE_ADDRESS (o
- * RWA_PRIMARY_SALE_INDUSTRIAL_ADDRESS), la venta responde 503
- * SALE_NOT_DEPLOYED; consultar y transferir funcionan ya.
+ * fábrica. Auditoría y dictamen MiFID II dados por resueltos por Yoel
+ * (2026-11-13). Falta desplegar el contrato y configurar RWA_PRIMARY_SALE_ADDRESS
+ * (o RWA_PRIMARY_SALE_INDUSTRIAL_ADDRESS): hasta entonces la venta responde 503
+ * SALE_NOT_DEPLOYED; consultar y transferir funcionan ya. Despliegue:
+ * smart-contracts/script/DeployRWAFinance.s.sol.
  */
 
 const { ethers } = require('ethers');
@@ -66,7 +66,7 @@ function contratoVenta(id = 'activos', env = process.env) {
     const dir = env[ENV_VENTA[id]] || '';
     if (!ethers.isAddress(dir)) {
         throw new RwaMarketError(
-            'La venta primaria de fracciones todavía no está activa: el contrato está pendiente de auditoría y de dictamen.',
+            'La venta primaria de fracciones todavía no está activa: el contrato aún no está desplegado en esta red.',
             'SALE_NOT_DEPLOYED', 503,
         );
     }

@@ -86,6 +86,7 @@ const { DEPARTMENT_BY_ID } = require('./operant-services');
 const bezPayOrders = require('../services/bezPayOrders');
 const rwaTokenization = require('../services/rwaTokenization');
 const rwaMarket = require('../services/rwaMarket');
+const rwaRent = require('../services/rwaRent');
 const bezSwap = require('../services/bezSwap');
 const erpConnections = require('../services/erpConnections');
 const { NOMBRES: TIPOS_ERP } = require('../services/erp/canonical');
@@ -563,6 +564,88 @@ const TOOLS = [
         handler: async ({ args }) => rwaMarket.prepararCompra({
             fabrica: args.fabrica || 'activos', listingId: args.listing_id, cantidad: args.cantidad,
             comprador: args.destino, comprobarKyc: false,
+        }),
+    },
+
+    // ── Reparto de rentas de un activo RWA ───────────────────────────────────
+    //
+    // Mismos servicios que /api/gateway/v1/rwa/rent/* (routes/bez-markets.js). Igual
+    // que en la compra, el cobro por MCP no consulta el KYC de la wallet (dato
+    // sobre ella): lo comprueba el contrato. Los nombres evitan los verbos de
+    // movimiento que el catálogo MCP no admite.
+    {
+        name: 'bezhas_rwa_rent_distribution',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 0,
+        title: 'Estado de un reparto de rentas',
+        description: 'Datos públicos de un reparto de rentas de un activo RWA: token, importe, cuánto queda sin reclamar, '
+            + 'bloque de corte, plazo y justificante (CID). Si el reparto de rentas aún no está activo, lo dice.',
+        inputSchema: {
+            fabrica: z.enum(Object.keys(rwaTokenization.FABRICAS)).optional(),
+            distribution_id: z.number().int().positive(),
+        },
+        handler: async ({ args }) => rwaRent.leerReparto({
+            fabrica: args.fabrica || 'activos', distributionId: args.distribution_id,
+        }),
+    },
+    {
+        name: 'bezhas_rwa_rent_distributions',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 0,
+        title: 'Repartos de rentas de un activo',
+        description: 'Los repartos de rentas de un activo RWA, del más reciente al más antiguo (hasta 50), con el mismo detalle '
+            + 'público que bezhas_rwa_rent_distribution. No consulta nada sobre ninguna wallet.',
+        inputSchema: {
+            fabrica: z.enum(Object.keys(rwaTokenization.FABRICAS)).optional(),
+            asset_id: z.number().int().positive(),
+        },
+        handler: async ({ args }) => rwaRent.listarRepartos({ fabrica: args.fabrica || 'activos', assetId: args.asset_id }),
+    },
+    {
+        name: 'bezhas_rwa_rent_distribute_prepare',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 1,
+        recibeDestinatario: true,
+        title: 'Preparar un reparto de rentas',
+        description: 'Para el creador de un activo: calcula desde Polygon quién tenía fracciones en el bloque de corte y devuelve '
+            + 'las dos transacciones sin firmar que depositan las rentas (BEZ o USDC) y publican la raíz con la que cobrarán '
+            + 'los titulares, más el justificante con la lista completa. Las fracciones que conserva el emisor no cobran. '
+            + 'NO firma ni envía.',
+        inputSchema: {
+            fabrica: z.enum(Object.keys(rwaTokenization.FABRICAS)).optional(),
+            asset_id: z.number().int().positive(),
+            token: z.enum(Object.keys(rwaRent.TOKENS)).optional().describe('usdc (por defecto) o bez'),
+            importe: z.string().regex(/^\d{1,15}(\.\d{1,18})?$/).describe('Importe a repartir, decimal con punto'),
+            plazo_dias: z.number().int().min(31).max(365).optional().describe('Días para reclamar (90 por defecto)'),
+            detalles_cid: z.string().max(100).optional().describe('CID de IPFS del justificante'),
+            origen: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe('Wallet del creador del activo, que firma'),
+        },
+        handler: async ({ args }) => rwaRent.prepararReparto({
+            fabrica: args.fabrica || 'activos', assetId: args.asset_id, emisor: args.origen,
+            token: args.token, importe: args.importe, plazoDias: args.plazo_dias, detallesCID: args.detalles_cid,
+        }),
+    },
+    {
+        name: 'bezhas_rwa_rent_claim_prepare',
+        planMinimo: 'creator_pro',
+        scope: 'contracts',
+        nivelRiesgo: 1,
+        recibeDestinatario: true,
+        title: 'Preparar el cobro de rentas de un titular',
+        description: 'Para un titular de fracciones: recalcula el reparto desde Polygon, comprueba que coincide con la raíz '
+            + 'publicada y devuelve la transacción sin firmar que cobra su parte. El dinero va siempre a esa wallet. '
+            + 'En inmuebles, hoteles, barcos y helicópteros el contrato exige KYC verificado. NO firma ni envía.',
+        inputSchema: {
+            fabrica: z.enum(Object.keys(rwaTokenization.FABRICAS)).optional(),
+            distribution_id: z.number().int().positive(),
+            destino: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe('Wallet titular, que cobra'),
+        },
+        handler: async ({ args }) => rwaRent.prepararReclamo({
+            fabrica: args.fabrica || 'activos', distributionId: args.distribution_id,
+            cuenta: args.destino, comprobarKyc: false,
         }),
     },
 
