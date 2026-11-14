@@ -159,7 +159,7 @@ function Comprar({ cuenta }: { cuenta: string }) {
                 <div className="card space-y-3">
                     <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
                         <div><dt className="text-slate-400">Activo</dt><dd className="text-white">#{oferta.assetId}</dd></div>
-                        <div><dt className="text-slate-400">Precio por fracción</dt><dd className="text-white">{oferta.precioFraccionBez} BEZ</dd></div>
+                        <div><dt className="text-slate-400">Precio por fracción</dt><dd className="text-white">{oferta.precioFraccionBez} BEZ{oferta.precioFraccionUsd && <span className="block text-xs text-slate-400">≈ ${oferta.precioFraccionUsd}</span>}</dd></div>
                         <div><dt className="text-slate-400">Disponibles</dt><dd className="text-white">{oferta.disponibles}</dd></div>
                         <div><dt className="text-slate-400">Estado</dt><dd className={oferta.abierta ? 'text-green-400' : 'text-slate-400'}>{oferta.abierta ? 'Abierta' : 'Cerrada'}</dd></div>
                     </dl>
@@ -305,7 +305,7 @@ function Vender({ cuenta }: { cuenta: string }) {
                     {propuesta && (
                         <div className="card space-y-3 !border-amber-500/40">
                             <p className="text-sm text-slate-200">
-                                Ofrecerás <strong>{propuesta.oferta.fracciones}</strong> fracciones del activo #{propuesta.oferta.assetId} a <strong>{propuesta.oferta.precioFraccionBez} BEZ</strong> cada una.
+                                Ofrecerás <strong>{propuesta.oferta.fracciones}</strong> fracciones del activo #{propuesta.oferta.assetId} a <strong>{propuesta.oferta.precioFraccionBez} BEZ</strong>{propuesta.oferta.precioFraccionUsd && <> (≈ ${propuesta.oferta.precioFraccionUsd})</>} cada una{propuesta.oferta.totalUsd && <>, en total ≈ ${propuesta.oferta.totalUsd}</>}.
                             </p>
                             <button type="button" onClick={publicar} disabled={ocupado} className="btn-primary disabled:opacity-50">
                                 {ocupado ? 'Firmando…' : 'Firmar y publicar oferta'}

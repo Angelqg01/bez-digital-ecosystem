@@ -30,6 +30,7 @@ const polygon = require('./polygonReader');
 const { FABRICAS, CATEGORIAS } = require('./rwaTokenization');
 const { ALTO_VALOR } = require('./rwaMarket');
 const tree = require('./rwaRentTree');
+const { usdDeBezWei } = require('./rwaUsd');
 
 const BEZ = process.env.BEZCOIN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
 const USDC = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359'; // USDC nativo de Polygon
@@ -39,6 +40,18 @@ const TOKENS = {
     bez: { simbolo: 'BEZ', direccion: BEZ, decimales: 18 },
     usdc: { simbolo: 'USDC', direccion: USDC, decimales: 6 },
 };
+
+/**
+ * Equivalente en USD de un importe en unidades mínimas del token de pago. USDC es
+ * 1 USD; BEZ, al precio de config/bez-price.js. Un token desconocido no tiene
+ * equivalencia: null, no un cálculo inventado.
+ */
+function usdDe(tk, v) {
+    if (!tk) return null;
+    if (tk.simbolo === 'BEZ') return usdDeBezWei(v);
+    const c = (BigInt(v) * 100n + 10n ** BigInt(tk.decimales) / 2n) / 10n ** BigInt(tk.decimales);
+    return `${c / 100n}.${String(c % 100n).padStart(2, '0')}`;
+}
 
 const ENV_REPARTO = { activos: 'RWA_RENT_DISTRIBUTOR_ADDRESS', industrial: 'RWA_RENT_DISTRIBUTOR_INDUSTRIAL_ADDRESS' };
 
@@ -300,6 +313,8 @@ async function prepararReparto({
             importe: ethers.formatUnits(total, tk.decimales),
             comision: ethers.formatUnits(fee, tk.decimales),
             totalAPagar: ethers.formatUnits(total + fee, tk.decimales),
+            importeUsd: usdDe(tk, total),
+            totalAPagarUsd: usdDe(tk, total + fee),
             titulares: calculo.titulares,
             repartido: ethers.formatUnits(calculo.repartido, tk.decimales),
             restoSinAsignar: ethers.formatUnits(calculo.resto, tk.decimales),
@@ -366,6 +381,7 @@ function formatearReparto(id, d) {
         emisor: d.issuer,
         token: tk ? tk.simbolo : d.token,
         importe: fmt(d.amount),
+        importeUsd: usdDe(tk, d.amount),
         sinReclamar: fmt(d.remaining),
         raiz: d.merkleRoot,
         bloqueDeCorte: Number(d.snapshotBlock),
@@ -427,6 +443,7 @@ async function listarRepartos({ fabrica: f = 'activos', assetId, cuenta }) {
                     else {
                         const tk = tokenConocido(d.token);
                         item.miParte = tk ? ethers.formatUnits(calculo.pruebas[quien].importe, tk.decimales) : calculo.pruebas[quien].importe;
+                        item.miParteUsd = usdDe(tk, calculo.pruebas[quien].importe);
                     }
                 } catch (err) {
                     if (!(err instanceof RwaRentError)) throw err;
@@ -493,6 +510,7 @@ async function prepararReclamo({ fabrica: f = 'activos', distributionId, cuenta,
             cuenta: quien,
             token: tk ? tk.simbolo : d.token,
             importe: tk ? ethers.formatUnits(suyo.importe, tk.decimales) : suyo.importe,
+            importeUsd: usdDe(tk, suyo.importe),
         },
         transacciones: [{
             paso: 1,

@@ -7,6 +7,8 @@ import {
 } from 'react-icons/fa';
 import { useRWAContracts, ASSET_CATEGORIES, CATEGORY_NAMES } from '../hooks/useRWAContracts';
 import ipfsService from '../services/ipfs.service';
+import { useBezPrice } from '../hooks/useBezPrice';
+import { sugerirPrecioBez, equivalencias, bezAUsd, usd, TOLERANCIA_PCT } from '../lib/rwaPricing';
 
 const CATEGORY_ICONS = {
     [ASSET_CATEGORIES.INMUEBLE]: FaBuilding,
@@ -21,6 +23,7 @@ const CATEGORY_ICONS = {
 
 const RealEstateRWAForm = ({ onSuccess }) => {
     const rwaContracts = useRWAContracts();
+    const precioBezUsd = useBezPrice(); // 0,0075 USD (fase semilla); null si el oráculo no responde
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [uploadingIPFS, setUploadingIPFS] = useState(false);
@@ -312,11 +315,19 @@ const RealEstateRWAForm = ({ onSuccess }) => {
                     <div className="bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 p-4 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-bold text-gold-800 dark:text-gold-200">Fee de Tokenización</span>
-                            <span className="text-xl font-bold text-gold-600">{rwaContracts.tokenizationFee} BEZ</span>
+                            <span className="text-xl font-bold text-gold-600">
+                                {rwaContracts.tokenizationFee} BEZ
+                                {precioBezUsd && <span className="ml-2 text-xs font-normal text-gold-700 dark:text-gold-300">≈ {usd(bezAUsd(rwaContracts.tokenizationFee, precioBezUsd))}</span>}
+                            </span>
                         </div>
                         <p className="text-xs text-gold-700 dark:text-gold-300">
                             Tu balance: {parseFloat(rwaContracts.bezBalance).toFixed(2)} BEZ
                         </p>
+                        {precioBezUsd && (
+                            <p className="text-xs text-gold-700 dark:text-gold-300 mt-1" data-testid="precio-bez">
+                                Precio del BEZ: ${precioBezUsd} (precio fijo de la fase semilla, no de mercado)
+                            </p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -344,6 +355,20 @@ const RealEstateRWAForm = ({ onSuccess }) => {
                                 placeholder="100.00"
                                 required
                             />
+                            {(() => {
+                                const sugerido = sugerirPrecioBez({ valoracionUsd: formData.valuationUSD, fracciones: formData.totalSupply, precioBezUsd });
+                                if (!sugerido || sugerido === String(formData.pricePerFraction)) return null;
+                                return (
+                                    <button
+                                        type="button"
+                                        data-testid="usar-precio-sugerido"
+                                        onClick={() => setFormData({ ...formData, pricePerFraction: sugerido })}
+                                        className="mt-1 text-xs font-bold text-gold-600 hover:underline text-left"
+                                    >
+                                        Usar el precio sugerido: {Number(sugerido).toLocaleString('es-ES')} BEZ (= {usd(Number(formData.valuationUSD) / Number(formData.totalSupply))} por fracción)
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </div>
 
@@ -372,6 +397,32 @@ const RealEstateRWAForm = ({ onSuccess }) => {
                                 <p>Valor por Fracción (USD):</p>
                                 <p className="font-mono font-bold text-right">${(formData.valuationUSD / formData.totalSupply).toFixed(2)}</p>
                             </div>
+                            {(() => {
+                                const eq = equivalencias({
+                                    fracciones: formData.totalSupply, precioFraccionBez: formData.pricePerFraction,
+                                    valoracionUsd: formData.valuationUSD, precioBezUsd,
+                                });
+                                if (!eq) return null;
+                                return (
+                                    <div className="mt-3 border-t border-gray-300 dark:border-gray-700 pt-3 space-y-2" data-testid="equivalencias">
+                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                            <p>Precio por fracción (≈ USD):</p>
+                                            <p className="font-mono font-bold text-right">{usd(eq.precioFraccionUsd)}</p>
+                                            <p>Capital a recaudar (≈ USD):</p>
+                                            <p className="font-mono font-bold text-right">{usd(eq.capitalUsd, 0)}</p>
+                                        </div>
+                                        {eq.cuadra === false && (
+                                            <p role="alert" className="text-xs rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 p-2">
+                                                Con este precio recaudarías {usd(eq.capitalUsd, 0)}, un {Math.abs(eq.desviacionPct).toLocaleString('es-ES', { maximumFractionDigits: 1 })} % {eq.desviacionPct < 0 ? 'menos' : 'más'} que
+                                                la valoración declarada (tolerancia {TOLERANCIA_PCT} %). Revisa el precio o la valoración.
+                                            </p>
+                                        )}
+                                        {eq.cuadra === true && (
+                                            <p className="text-xs text-green-700 dark:text-green-300">El precio cuadra con la valoración declarada.</p>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
                 </div>

@@ -168,7 +168,7 @@ function Titular({ cuenta }: { cuenta: string }) {
                                     </div>
                                     <div className="text-right">
                                         {r.yaCobrado && <span className="text-sm text-green-400">Ya cobrado</span>}
-                                        {!r.yaCobrado && r.miParte && <div className="text-lg font-semibold text-amber-400">{r.miParte} {r.token}</div>}
+                                        {!r.yaCobrado && r.miParte && <div className="text-lg font-semibold text-amber-400">{r.miParte} {r.token}{r.miParteUsd && <span className="block text-xs font-normal text-slate-400">≈ ${r.miParteUsd}</span>}</div>}
                                         {!r.yaCobrado && !r.miParte && r.abierto && (
                                             <span className="text-sm text-slate-400">
                                                 {r.motivoSinParte === 'NO_SHARE' ? 'No tenías fracciones en el corte'
@@ -338,9 +338,9 @@ function Emisor({ cuenta }: { cuenta: string }) {
                         <div className="card space-y-3 !border-amber-500/40">
                             <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
                                 <div><dt className="text-slate-400">Titulares que cobran</dt><dd className="text-white">{r.titulares}</dd></div>
-                                <div><dt className="text-slate-400">A repartir</dt><dd className="text-white">{r.importe} {r.token}</dd></div>
+                                <div><dt className="text-slate-400">A repartir</dt><dd className="text-white">{r.importe} {r.token}{r.importeUsd && <span className="block text-xs text-slate-400">≈ ${r.importeUsd}</span>}</dd></div>
                                 <div><dt className="text-slate-400">Comisión BeZhas</dt><dd className="text-white">{r.comision} {r.token}</dd></div>
-                                <div><dt className="text-slate-400">Pagas en total</dt><dd className="font-semibold text-amber-400">{r.totalAPagar} {r.token}</dd></div>
+                                <div><dt className="text-slate-400">Pagas en total</dt><dd className="font-semibold text-amber-400">{r.totalAPagar} {r.token}{r.totalAPagarUsd && <span className="block text-xs font-normal text-slate-400">≈ ${r.totalAPagarUsd}</span>}</dd></div>
                                 <div><dt className="text-slate-400">Sin asignar (redondeo)</dt><dd className="text-white">{r.restoSinAsignar} {r.token}</dd></div>
                                 <div><dt className="text-slate-400">Bloque de corte</dt><dd className="text-white">{r.bloqueDeCorte}</dd></div>
                             </dl>

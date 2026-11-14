@@ -54,6 +54,8 @@ describe('rwaMarket', () => {
                 rendimientoAnualPct: 8.5, creador: CREADOR, activo: true, requiereKyc: false,
                 contrato: FABRICAS.activos.direccion,
             });
+            // 10 BEZ por fracción × 0,0075 USD (precio real de la fase semilla); 1.000 fracciones.
+            expect(a).toMatchObject({ precioBezUsd: 0.0075, precioFraccionUsd: '0.08', valorFraccionesUsd: '75.00' });
         });
 
         it('inmueble marca requiereKyc', async () => {

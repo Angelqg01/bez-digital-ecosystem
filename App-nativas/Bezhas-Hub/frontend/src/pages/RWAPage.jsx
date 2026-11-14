@@ -32,6 +32,8 @@ import GlobalStatsBar from '../components/GlobalStatsBar';
 import RWASalePanel from '../components/rwa/RWASalePanel';
 import RWARentPanel from '../components/rwa/RWARentPanel';
 import { sessionAddress } from '../lib/rwaOps';
+import { useBezPrice } from '../hooks/useBezPrice';
+import { bezAUsd, usd } from '../lib/rwaPricing';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -115,7 +117,7 @@ const StatCard = ({ icon: Icon, label, value, subtext, color = 'blue' }) => {
 };
 
 // Asset Card Component
-const AssetCard = ({ asset, onInvest, onDetails }) => {
+const AssetCard = ({ asset, onInvest, onDetails, precioBezUsd }) => {
     const progress = (asset.sold / asset.totalSupply) * 100;
 
     return (
@@ -151,6 +153,7 @@ const AssetCard = ({ asset, onInvest, onDetails }) => {
                     <div>
                         <div className="text-xs text-gray-500 mb-1">Precio/Fracción</div>
                         <div className="text-lg font-bold text-amber-400">{asset.pricePerFraction} BEZ</div>
+                        {precioBezUsd && <div className="text-xs text-gray-400">≈ {usd(bezAUsd(asset.pricePerFraction, precioBezUsd))}</div>}
                     </div>
                 </div>
 
@@ -200,6 +203,7 @@ const RWAPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [vista, setVista] = useState('mercado'); // mercado | venta | rentas
     const cuentaSesion = sessionAddress(address);
+    const precioBezUsd = useBezPrice();
 
     // Stats
     const totalValue = assets.reduce((sum, a) => sum + a.valuationUSD, 0);
@@ -286,6 +290,10 @@ const RWAPage = () => {
 
                 {vista === 'mercado' && (
                 <>
+                <p className="text-xs text-amber-300/80 mb-3" data-testid="aviso-ejemplo">
+                    Datos de ejemplo: las cifras y los activos de esta vista son ilustrativos y no proceden de la cadena.
+                </p>
+
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                     <StatCard
@@ -360,6 +368,7 @@ const RWAPage = () => {
                                 asset={asset}
                                 onInvest={handleInvest}
                                 onDetails={handleDetails}
+                                precioBezUsd={precioBezUsd}
                             />
                         ))}
                     </div>
@@ -392,15 +401,15 @@ const RWAPage = () => {
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle className="w-4 h-4 text-green-400" />
-                                    Invierte desde 100 BEZ y recibe dividendos proporcionales automáticamente
+                                    Recibe rentas a prorrata de tus fracciones cuando el emisor las reparte
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle className="w-4 h-4 text-green-400" />
-                                    Documentación legal almacenada en IPFS con verificación on-chain
+                                    Documentación legal en IPFS; su huella queda registrada en la cadena
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle className="w-4 h-4 text-green-400" />
-                                    Gobernanza por holders: vota en decisiones sobre el activo
+                                    Sin custodia: cada operación la firma tu propia wallet
                                 </li>
                             </ul>
                         </div>
@@ -418,7 +427,7 @@ const RWAPage = () => {
                         <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-6 flex items-center justify-between">
                             <div>
                                 <h2 className="text-2xl font-bold text-white">Tokenizar Activo Real</h2>
-                                <p className="text-gray-400 text-sm">Convierte tu propiedad en tokens negociables</p>
+                                <p className="text-gray-400 text-sm">Convierte tu propiedad en fracciones digitales</p>
                             </div>
                             <button
                                 onClick={() => setShowCreateModal(false)}

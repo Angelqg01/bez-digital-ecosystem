@@ -76,6 +76,20 @@ export function sessionAddress(fallback = null) {
     return fallback;
 }
 
+/**
+ * Precio real del BEZ en USD (0,0075 en la fase semilla; no es de mercado), del
+ * oráculo público del Gateway. null si no responde: sin precio no se enseña ninguna equivalencia.
+ */
+export async function fetchPrecioBez() {
+    try {
+        const { data } = await http.get('/api/gateway/v1/oracle/token-prices');
+        const p = Number(data?.price ?? data?.bezCoinPriceUSD);
+        return Number.isFinite(p) && p > 0 ? p : null;
+    } catch {
+        return null;
+    }
+}
+
 // ── Activos ──────────────────────────────────────────────────────────────────
 
 export const activosDeCreador = async ({ fabrica = 'activos', address }) => datos(await http.get(`${BASE}/${fabrica}/creators/${address}`));

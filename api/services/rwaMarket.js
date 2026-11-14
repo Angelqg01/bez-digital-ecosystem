@@ -18,6 +18,7 @@
 
 const { ethers } = require('ethers');
 const polygon = require('./polygonReader');
+const { usdDeBezWei, precioBezUsd } = require('./rwaUsd');
 const { FABRICAS, CATEGORIAS } = require('./rwaTokenization');
 
 const BEZ = process.env.BEZCOIN_ADDRESS || '0xEcBa873B534C54DE2B62acDE232ADCa4369f11A8';
@@ -116,6 +117,9 @@ function formatearActivo(id, a) {
         fracciones: a.totalSupply.toString(),
         valoracionUsd: a.valuationUSD.toString(),
         precioFraccionBez: ethers.formatEther(a.pricePerFraction),
+        precioFraccionUsd: usdDeBezWei(a.pricePerFraction),
+        valorFraccionesUsd: usdDeBezWei(BigInt(a.pricePerFraction) * BigInt(a.totalSupply)),
+        precioBezUsd: precioBezUsd(),
         rendimientoAnualPct: Number(a.estimatedYield) / 100,
         creador: a.creator,
         ubicacion: a.location,
@@ -178,7 +182,10 @@ async function prepararOferta({ fabrica: f = 'activos', assetId, cantidad, preci
     return {
         red: { chainId: polygon.CHAIN_ID, nombre: 'Polygon' },
         contratoVenta: venta,
-        oferta: { assetId: id.toString(), fracciones: n.toString(), precioFraccionBez: ethers.formatEther(precio) },
+        oferta: {
+            assetId: id.toString(), fracciones: n.toString(), precioFraccionBez: ethers.formatEther(precio),
+            precioFraccionUsd: usdDeBezWei(precio), totalUsd: usdDeBezWei(precio * n),
+        },
         transacciones: [
             {
                 paso: 1,
@@ -207,6 +214,7 @@ async function leerOferta({ fabrica: f = 'activos', listingId }) {
         assetId: l.assetId.toString(),
         vendedor: l.seller,
         precioFraccionBez: ethers.formatEther(l.pricePerFraction),
+        precioFraccionUsd: usdDeBezWei(l.pricePerFraction),
         disponibles: l.remaining.toString(),
         abierta: l.active,
     };
@@ -250,6 +258,7 @@ async function prepararCompra({ fabrica: f = 'activos', listingId, cantidad, com
         compra: {
             listingId: lid.toString(), assetId: l.assetId.toString(), fracciones: n.toString(),
             precioFraccionBez: ethers.formatEther(precio), totalBez: ethers.formatEther(total),
+            precioFraccionUsd: usdDeBezWei(precio), totalUsd: usdDeBezWei(total),
         },
         transacciones: [
             {

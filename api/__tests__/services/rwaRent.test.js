@@ -112,6 +112,8 @@ describe('services/rwaRent', () => {
             expect(r.reparto.importe).toBe('900.0');
             expect(r.reparto.comision).toBe('9.0'); // 1 %
             expect(r.reparto.totalAPagar).toBe('909.0');
+            expect(r.reparto.importeUsd).toBe('900.00'); // USDC = 1 USD
+            expect(r.reparto.totalAPagarUsd).toBe('909.00');
             expect(r.reparto.restoSinAsignar).toBe('0.0');
             expect(r.reparto.bloqueDeCorte).toBe(CABEZA - 128);
             const usdc = (v) => ethers.parseUnits(v, 6).toString();
@@ -156,6 +158,7 @@ describe('services/rwaRent', () => {
             lector();
             const r = await rwaRent.prepararReparto({ ...base, token: 'bez', importe: '900' });
             expect(r.justificante.reparto[ANA].importe).toBe(ethers.parseEther('600').toString());
+            expect(r.reparto.importeUsd).toBe('6.75'); // 900 BEZ × 0,0075 USD
         });
 
         it('si el RPC rechaza tramos largos los parte y llega al mismo resultado', async () => {

@@ -29,6 +29,7 @@ export interface Activo {
     nombre: string;
     fracciones: string;
     precioFraccionBez?: string;
+    precioFraccionUsd?: string;
     activo: boolean;
 }
 
@@ -38,6 +39,7 @@ export interface Reparto {
     emisor: string;
     token: string;
     importe: string;
+    importeUsd?: string;
     sinReclamar: string;
     plazoReclamo: string;
     abierto: boolean;
@@ -45,6 +47,7 @@ export interface Reparto {
     /** Sólo con `cuenta`: */
     yaCobrado?: boolean;
     miParte?: string | null;
+    miParteUsd?: string | null;
     motivoSinParte?: string | null;
 }
 
@@ -54,6 +57,8 @@ export interface PropuestaReparto {
         importe: string;
         comision: string;
         totalAPagar: string;
+        importeUsd?: string;
+        totalAPagarUsd?: string;
         restoSinAsignar: string;
         bloqueDeCorte: number;
         raiz: string;
@@ -90,13 +95,14 @@ export interface Oferta {
     assetId: string;
     vendedor: string;
     precioFraccionBez: string;
+    precioFraccionUsd?: string;
     disponibles: string;
     abierta: boolean;
 }
 
 export interface PropuestaOferta {
     contratoVenta: string;
-    oferta: { assetId: string; fracciones: string; precioFraccionBez: string };
+    oferta: { assetId: string; fracciones: string; precioFraccionBez: string; precioFraccionUsd?: string; totalUsd?: string };
     transacciones: Transaccion[];
 }
 
