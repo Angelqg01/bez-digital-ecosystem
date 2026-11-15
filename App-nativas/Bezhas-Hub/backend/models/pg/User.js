@@ -75,6 +75,25 @@ class UserPG {
         return this.hydrate(result.rows[0]);
     }
 
+    /**
+     * Código de referido del usuario; lo genera la primera vez. Atómico: `WHERE affiliate_referral_code IS NULL` evita pisar
+     * el código si dos peticiones lo piden a la vez, y una colisión del UNIQUE se reintenta con otro código.
+     */
+    static async ensureReferralCode(id, generate) {
+        for (let intento = 0; intento < 5; intento += 1) {
+            const actual = await pool.query('SELECT affiliate_referral_code AS code FROM users WHERE id = $1', [id]);
+            if (!actual.rows[0]) return null;
+            if (actual.rows[0].code) return actual.rows[0].code;
+            try {
+                const up = await pool.query('UPDATE users SET affiliate_referral_code = $2 WHERE id = $1 AND affiliate_referral_code IS NULL RETURNING affiliate_referral_code AS code', [id, generate()]);
+                if (up.rows[0]) return up.rows[0].code;
+            } catch (err) {
+                if (err.code !== '23505') throw err;
+            }
+        }
+        throw new Error('No se pudo generar un código de referido único');
+    }
+
     /** Usuario cuyo email o teléfono (ya hasheados por el cliente) coinciden. Lo usa la sincronización de contactos. */
     static async findByContactHashes({ emailHash, phoneHash }) {
         if (!emailHash && !phoneHash) return null;

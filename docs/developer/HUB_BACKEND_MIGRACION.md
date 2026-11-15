@@ -25,7 +25,7 @@ ya está hecha a medias, y dejar el backend donde está.
 
 ## Orden recomendado (de menor a mayor riesgo)
 
-1. **Sin dinero ni custodia:** ~~`contact`~~ (hecho), `Share`, `affiliateEvent`, `B2BLead`, `validation`. Una ruta cada uno; se prueban con la suite del Hub.
+1. **Sin dinero ni custodia:** ~~`contact`~~, ~~`affiliateEvent`~~, ~~`B2BLead`~~ (hechos). **Aplazados con motivo:** `Share` depende del dominio social `Post` (la ruta lee y escribe `post.shares` y el saldo `bezTokenBalance`, que ni `posts` ni `users` tienen en Postgres) y debe migrarse junto a posts, likes y comentarios; `validation` (318 líneas, con cola BullMQ, contrato `ContentValidator` y almacén en memoria de reserva) es un dominio propio que ya tiene `models/pg/ValidationEvent` a medias. Una ruta cada uno; se prueban con la suite del Hub.
 2. **Puente/OpenClaw:** `BridgeApiKey` y `OpenClawClient`. Llevan claves: migrar con hash y no volver a escribir el valor en claro.
 3. **Publicidad:** `adBalance` mueve saldos y lo toca el webhook de Stripe: migración con doble escritura y comparación antes de cortar.
 4. **DAO/DeFi:** al final y sólo si la gobernanza sigue en uso; la fuente de verdad es la cadena, esto es caché.
@@ -38,6 +38,17 @@ pasar a producción. Mientras haya un modelo de Mongoose en uso, `MONGODB_URI` t
 | Dominio | Fecha | Qué cambió |
 |---|---|---|
 | `contact` (sincronización de contactos) | 2026-11-15 | Tabla `contacts` (migración 021), `models/pg/Contact.js`, `routes/contacts.routes.js` y `workers/contactSync.worker.js` sobre Postgres; borrado `models/contact.model.js`. Probado contra Postgres real (`tests/integration/contacts-pg.test.js`, 9 casos). Detalle abajo. |
+
+| `affiliateEvent` (afiliados) y `B2BLead` (leads y envío con aprobación) | 2026-11-15 | Tablas `affiliate_events` y `b2b_leads` (migración 022), `models/pg/AffiliateEvent.js` y `models/pg/B2BLead.js`; `routes/affiliate.routes.js` y `services/outbound-messaging.service.js` sobre Postgres; borrados los dos modelos de Mongoose. 10 casos contra Postgres real (`tests/integration/affiliate-b2b-pg.test.js`). |
+
+**Lo que se encontró al migrar afiliados y leads B2B:**
+- `/api/affiliate/me` leía y escribía `user.affiliate.referralCode`, un campo de Mongo que el usuario de Postgres no tiene (el código vive en
+  `users.affiliate_referral_code`): regeneraba un código en cada petición y `user.save()` intentaba escribir una columna `affiliate` inexistente.
+  Ahora `User.ensureReferralCode` lo genera una vez, de forma atómica y sin pisar el existente.
+- Aprobar un lead era leer-modificar-guardar: dos aprobaciones simultáneas (doble clic, dos administradores) **enviaban el mismo mensaje dos
+  veces**. Ahora `B2BLead.approve` es un `UPDATE … WHERE outreach_status = 'needs_approval'`: sólo una pasa y el resto recibe «not pending approval».
+- El código de referido usaba `nanoid`, ESM puro que no se podía cargar con `require` en las pruebas: se sustituye por `crypto.randomInt`.
+- No hay quien escriba eventos `click`/`signup` todavía (sólo la lectura estaba conectada): `AffiliateEvent.record` queda listo para cuando se conecte.
 
 **Lo que se encontró al migrar `contact`** (el modo Postgres ya estaba roto, no sólo el modelo):
 - El worker buscaba al usuario con `User.findOne({$or: [{emailHash}, {phoneHash}]})`, una consulta de Mongo que el modelo pg ignora y

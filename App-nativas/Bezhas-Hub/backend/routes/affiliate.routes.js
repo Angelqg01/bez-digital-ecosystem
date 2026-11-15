@@ -1,10 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { customAlphabet } = require('nanoid');
+const crypto = require('crypto');
 const User = require('../models/pg/User');
-const AffiliateEvent = require('../models/affiliateEvent.model');
+const AffiliateEvent = require('../models/pg/AffiliateEvent');
 const { protect } = require('../middleware/auth.middleware');
 const { query, validationResult } = require('express-validator');
+
+// Código de referido: 10 caracteres [a-z0-9] con crypto.randomInt (sin sesgo). Sustituye a nanoid, que es ESM puro y
+// no se podía cargar con require en las pruebas.
+const ALFABETO = 'abcdefghijklmnopqrstuvwxyz0123456789';
+const generarCodigo = () => Array.from({ length: 10 }, () => ALFABETO[crypto.randomInt(ALFABETO.length)]).join('');
 
 /**
  * @route   GET /api/affiliate/me
@@ -13,25 +18,17 @@ const { query, validationResult } = require('express-validator');
  */
 router.get('/me', protect, async (req, res) => {
   try {
-    let user = req.user;
+    // El código vive en users.affiliate_referral_code; se genera la primera vez (atómico, sin pisar uno existente).
+    const referralCode = await User.ensureReferralCode(req.user._id, generarCodigo);
+    if (!referralCode) return res.status(404).json({ error: 'User not found' });
 
-    // Generate a referral code if it doesn't exist
-    if (!user.affiliate || !user.affiliate.referralCode) {
-      const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10);
-      const referralCode = nanoid();
-      
-      user.affiliate = { ...user.affiliate, referralCode };
-      await user.save();
-    }
-
-    // Fetch basic stats
-    const signups = await AffiliateEvent.countDocuments({ referrerId: user._id, eventType: 'signup' });
-    // In a real app, you'd track clicks separately. This is a placeholder.
-    const clicks = await AffiliateEvent.countDocuments({ referrerId: user._id, eventType: 'click' });
+    const counts = await AffiliateEvent.countsByType(req.user._id);
+    const signups = counts.signup;
+    const clicks = counts.click;
 
     res.json({
-      referralCode: user.affiliate.referralCode,
-      referralLink: `https://bezhas.com/join/${user.affiliate.referralCode}`,
+      referralCode,
+      referralLink: `https://bezhas.com/join/${referralCode}`,
       stats: {
         clicks,
         signups
@@ -68,12 +65,7 @@ router.get(
       const limit = parseInt(req.query.limit, 10) || 20;
       const skip = (page - 1) * limit;
 
-      const history = await AffiliateEvent.find({ referrerId: req.user._id })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit);
-        
-      const totalEvents = await AffiliateEvent.countDocuments({ referrerId: req.user._id });
+      const { events: history, total: totalEvents } = await AffiliateEvent.history(req.user._id, { limit, skip });
 
       res.json({
         history,

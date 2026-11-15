@@ -5,7 +5,7 @@
 
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
-const B2BLead = require('../models/B2BLead.model');
+const B2BLead = require('../models/pg/B2BLead');
 const feedbackLoopService = require('./feedback-loop.service');
 
 dotenv.config();
@@ -125,35 +125,22 @@ class OutboundMessagingService {
     }
 
     async approveAndSendLead(leadId, approver = 'human-admin') {
-        const lead = await B2BLead.findById(leadId);
-        if (!lead) {
+        const existente = await B2BLead.findById(leadId);
+        if (!existente) {
             return { success: false, error: 'Lead not found' };
         }
 
-        if (!lead.outreach || lead.outreach.status !== 'needs_approval') {
-            return { success: false, error: `Lead is not pending approval (${lead.outreach?.status || lead.status})` };
+        // Aprobación ATÓMICA: sólo una llamada pasa de needs_approval a approved, así que el mismo mensaje no se envía dos veces.
+        let lead = await B2BLead.approve(leadId, approver);
+        if (!lead) {
+            return { success: false, error: `Lead is not pending approval (${existente.outreach?.status || existente.status})` };
         }
-
-        lead.status = 'approved';
-        lead.outreach.status = 'approved';
-        lead.outreach.approvedBy = approver;
-        lead.outreach.approvedAt = new Date();
-        await lead.save();
 
         const sendResult = await this.sendMessage(lead, lead.outreach.message, lead.outreach.channel, lead.outreach.subject);
 
-        if (sendResult.success) {
-            lead.status = 'sent';
-            lead.outreach.status = 'sent';
-            lead.outreach.sentAt = new Date();
-            lead.outreach.providerMessageId = sendResult.providerMessageId;
-        } else {
-            lead.status = sendResult.blocked ? 'blocked' : 'failed';
-            lead.outreach.status = sendResult.blocked ? 'blocked' : 'failed';
-            lead.outreach.error = sendResult.error;
-        }
-
-        await lead.save();
+        lead = sendResult.success
+            ? await B2BLead.markSent(leadId, sendResult.providerMessageId)
+            : await B2BLead.markFailed(leadId, { blocked: sendResult.blocked, error: sendResult.error });
 
         await feedbackLoopService.log({
             type: 'campaigns',
