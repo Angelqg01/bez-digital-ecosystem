@@ -26,8 +26,13 @@ const CANDIDATOS = Number(process.env.KNOWLEDGE_CANDIDATES || 300);
 // Similitud coseno mínima para que un fragmento entre por la vía semántica. Depende del modelo: se calibra con
 // `node scripts/rag-eval.js --embedder ollama` y sin ella la búsqueda vectorial devolvería siempre «el vecino más
 // cercano», aunque la pregunta no tenga nada que ver (y el RAG dejaría de abstenerse).
-const VEC_MIN = Number(process.env.KNOWLEDGE_VEC_MIN || 0.55);
+const VEC_MIN = Number(process.env.KNOWLEDGE_VEC_MIN || 0.6);
+// Peso de la vía semántica en la fusión (la léxica pesa 1): BM25 sigue mandando y los vectores completan, no sustituyen.
+const VEC_WEIGHT = Number(process.env.KNOWLEDGE_VEC_WEIGHT || 0.5);
 const VEC_TOP = 10;
+// Un acierto sólo semántico se entrega, pero marcado como débil (< 0,5): el chat avisa de que puede no responder. La
+// similitud coseno no es una medida de cobertura y el modelo da 0,6-0,8 incluso a preguntas fuera de tema.
+const COBERTURA_SEMANTICA_MAX = 0.49;
 
 const sha256 = (s) => `sha256:${crypto.createHash('sha256').update(s).digest('hex')}`;
 const cosine = (a, b) => {
@@ -38,10 +43,11 @@ const cosine = (a, b) => {
 
 class KnowledgeService {
     /** @param {{store?: object, embedder?: {embed(text:string):Promise<number[]>}}} opts */
-    constructor({ store = new MemoryStore(), embedder = null, vecMin = VEC_MIN } = {}) {
+    constructor({ store = new MemoryStore(), embedder = null, vecMin = VEC_MIN, vecWeight = VEC_WEIGHT } = {}) {
         this.store = store;
         this.embedder = embedder;
         this.vecMin = vecMin;
+        this.vecWeight = vecWeight;
         this._avisoEmbedder = 0;
     }
 
@@ -185,10 +191,10 @@ class KnowledgeService {
                 .filter((x) => x.s >= this.vecMin)
                 .sort((a, b) => b.s - a.s)
                 .slice(0, VEC_TOP);
-            // Acierto semántico sin términos en común: su «cobertura» es la similitud (sube de 0,5 sólo si pasó el umbral).
-            for (const x of vec) if (!cobertura.has(x.c.id)) cobertura.set(x.c.id, x.s);
+            // Acierto semántico sin términos en común: cobertura = su similitud, con tope de «débil».
+            for (const x of vec) if (!cobertura.has(x.c.id)) cobertura.set(x.c.id, Math.min(x.s, COBERTURA_SEMANTICA_MAX));
             const rrf = new Map();
-            [ranked, vec.map((x) => x.c)].forEach((list) => list.forEach((c, i) => rrf.set(c.id, (rrf.get(c.id) || 0) + 1 / (60 + i))));
+            [[ranked, 1], [vec.map((x) => x.c), this.vecWeight]].forEach(([list, w]) => list.forEach((c, i) => rrf.set(c.id, (rrf.get(c.id) || 0) + w / (60 + i))));
             const byId = new Map(allowed.map((c) => [c.id, c]));
             ranked = [...rrf.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => byId.get(id));
         }

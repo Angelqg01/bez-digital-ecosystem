@@ -98,7 +98,7 @@ por vectores, que encuentra paráfrasis y otros idiomas que BM25 no ve («What d
 2. Tener el modelo en Ollama: `ollama pull nomic-embed-text` (Ollama sólo sirve embeddings de modelos de embeddings;
    los `qwen*` del chat responden «does not support embeddings»).
 3. Variables de la API: `KNOWLEDGE_EMBEDDER=ollama`, `OLLAMA_URL`, `KNOWLEDGE_EMBED_MODEL=nomic-embed-text` y, tras calibrar,
-   `KNOWLEDGE_VEC_MIN` (similitud mínima de la vía semántica; por defecto 0,55).
+   `KNOWLEDGE_VEC_MIN` (similitud mínima de la vía semántica; por defecto 0,6).
 4. `node scripts/knowledge-embed.js` calcula los vectores de lo ya indexado (idempotente; lo nuevo se embebe al ingerir).
 5. Medir antes de activar: `KNOWLEDGE_EMBEDDER=ollama node scripts/rag-eval.js --comparar [--vec-min 0.6]`. Sólo se activa si
    mejora el recall sin bajar la abstención (hoy BM25: recall@4 100 %, abstención o débil 100 %).
@@ -106,3 +106,22 @@ por vectores, que encuentra paráfrasis y otros idiomas que BM25 no ve («What d
 Si Ollama no responde, la búsqueda cae a BM25 sin error (un aviso por minuto en el log). Un vector sólo se compara con otro del
 mismo modelo y prefijos (`embedding_model`): cambiar de modelo obliga a repetir el paso 4, no corrompe nada.
 Revertir: quitar `KNOWLEDGE_EMBEDDER`.
+
+**Medición (2026-11-15, `nomic-embed-text` en Ollama local, 103 preguntas = las 91 del corpus + 12 sin vocabulario común
+en `questions-semanticas.json`, `KNOWLEDGE_VEC_MIN=0,6`, peso semántico 0,5):**
+
+| | BM25 | BM25 + vectores |
+|---|---|---|
+| recall@4 (95 preguntas con respuesta) | 91,6 % | **94,7 %** |
+| acierto en 1.ª posición / MRR | 76,8 % / 0,837 | 83,2 % / 0,880 |
+| preguntas sin vocabulario común (12) | 33,3 % | **66,7 %** |
+| precio (12) | 100 % | 91,7 % (regresión: «tarifa del plan Enterprise VIP») |
+| sin respuesta: abstención total / total o débil avisada | 62,5 % / 100 % | 25 % / 100 % |
+| latencia p95 del retrieval | 4 ms | 16 ms (+ una llamada a Ollama por pregunta nueva) |
+
+Lectura honesta: la vía semántica rescata la mitad de las paráfrasis que BM25 no ve, pero **no se abstiene**: el modelo da
+0,57-0,78 de similitud incluso a «receta de paella» o a la inyección de prompt, así que esas preguntas ahora devuelven fragmentos
+(siempre marcados débiles, cobertura 0,49, y el chat avisa «no estoy seguro»). Con 0,66 o más desaparece el riesgo pero también la
+mejora. Una pregunta de precio empeora porque un vecino semántico desplaza a `bz_planes`. Es un corpus escrito por nosotros con
+12 casos nuevos: no es una estimación con preguntas reales de clientes. Por eso sigue apagado: activarlo es una decisión de
+producto (más cobertura a cambio de más respuestas débiles), no un cambio gratuito.

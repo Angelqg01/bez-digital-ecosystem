@@ -1,0 +1,103 @@
+{
+  "descripcion": "Preguntas sin vocabulario en común con el documento esperado. BM25 puro las falla a propósito (33 % con el corpus actual): sólo sirven para medir la vía semántica con `rag-eval --comparar`. No entran en la puerta de regresión de BM25.",
+  "preguntas": [
+    {
+      "id": "s01",
+      "tipo": "semantica",
+      "q": "I want to pay my team's salaries with crypto",
+      "esperados": [
+        "bz_nominas"
+      ]
+    },
+    {
+      "id": "s02",
+      "tipo": "semantica",
+      "q": "how do I start accepting money from my customers",
+      "esperados": [
+        "bz_cobros"
+      ]
+    },
+    {
+      "id": "s03",
+      "tipo": "semantica",
+      "q": "what happens when a payment goes over my allowed ceiling",
+      "esperados": [
+        "bz_limites"
+      ]
+    },
+    {
+      "id": "s04",
+      "tipo": "semantica",
+      "q": "I own a solar farm and want to sell shares of it to investors",
+      "esperados": [
+        "bz_energia_tokenizar"
+      ]
+    },
+    {
+      "id": "s05",
+      "tipo": "semantica",
+      "q": "how do I prove my company is legitimate",
+      "esperados": [
+        "bz_kyb"
+      ]
+    },
+    {
+      "id": "s06",
+      "tipo": "semantica",
+      "q": "give my accountant access to the platform",
+      "esperados": [
+        "bz_equipo"
+      ]
+    },
+    {
+      "id": "s07",
+      "tipo": "semantica",
+      "q": "where can I get help from a person",
+      "esperados": [
+        "bz_soporte"
+      ]
+    },
+    {
+      "id": "s08",
+      "tipo": "semantica",
+      "q": "can I link my invoicing software",
+      "esperados": [
+        "bz_erp"
+      ]
+    },
+    {
+      "id": "s09",
+      "tipo": "semantica",
+      "q": "how are my personal details protected",
+      "esperados": [
+        "bz_privacidad"
+      ]
+    },
+    {
+      "id": "s10",
+      "tipo": "semantica",
+      "q": "buy the token with a credit card",
+      "esperados": [
+        "bz_comprar_bez"
+      ]
+    },
+    {
+      "id": "s11",
+      "tipo": "semantica",
+      "q": "shipping and customs paperwork on a blockchain",
+      "esperados": [
+        "bz_cargolink",
+        "vault_06_subapps_bz_cargolink"
+      ]
+    },
+    {
+      "id": "s12",
+      "tipo": "semantica",
+      "q": "let my AI assistant call your platform",
+      "esperados": [
+        "bz_mcp",
+        "bz_automatizar"
+      ]
+    }
+  ]
+}

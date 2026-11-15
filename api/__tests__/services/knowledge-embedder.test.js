@@ -42,7 +42,7 @@ describe('búsqueda híbrida BM25 + vectores', () => {
         const k = await conDocs(falso());
         const r = await k.search(P, 'how much does the free tier cost');
         expect(ids(r)[0]).toBe('precios');
-        expect(r[0].cobertura).toBeGreaterThanOrEqual(0.55);
+        expect(r[0].cobertura).toBeLessThan(0.5); // sólo semántico = débil
     });
 
     it('se sigue abstiendo: una pregunta sin relación no devuelve «el vecino más cercano»', async () => {

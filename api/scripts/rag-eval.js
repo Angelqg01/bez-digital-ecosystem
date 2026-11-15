@@ -23,18 +23,20 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 const { KnowledgeService, MemoryStore } = require('../services/knowledge');
 const { seedPublicKnowledge } = require('../services/knowledge/seed');
 
-const CORPUS = path.join(__dirname, '..', '__tests__', 'fixtures', 'rag-eval', 'questions.json');
+const FIXTURES = path.join(__dirname, '..', '__tests__', 'fixtures', 'rag-eval');
+const CORPUS = path.join(FIXTURES, 'questions.json');
+const CORPUS_SEMANTICO = path.join(FIXTURES, 'questions-semanticas.json');
 const TOP_K = 4;
 const UMBRAL_DEBIL = 0.5; // misma cobertura bajo la que el chat avisa de que puede no responder
 
 const pct = (n, d) => (d ? n / d : null);
 const percentil = (xs, p) => { if (!xs.length) return 0; const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.ceil(p * s.length) - 1)]; };
 
-async function evaluar({ corpus = CORPUS, topK = TOP_K, embedder = null, vecMin } = {}) {
-    const knowledge = new KnowledgeService({ store: new MemoryStore(), embedder, ...(vecMin != null ? { vecMin } : {}) });
+async function evaluar({ corpus = CORPUS, topK = TOP_K, embedder = null, vecMin, vecWeight } = {}) {
+    const knowledge = new KnowledgeService({ store: new MemoryStore(), embedder, ...(vecMin != null ? { vecMin } : {}), ...(vecWeight != null ? { vecWeight } : {}) });
     await seedPublicKnowledge(knowledge);
     const principal = { userId: 'eval', tenantId: 'org:eval', roles: ['USER'], plan: 'business' };
-    const { preguntas } = JSON.parse(fs.readFileSync(corpus, 'utf8'));
+    const preguntas = [].concat(corpus).flatMap((c) => JSON.parse(fs.readFileSync(c, 'utf8')).preguntas);
 
     const filas = [];
     for (const p of preguntas) {
@@ -106,13 +108,16 @@ if (require.main === module) {
         const { crearEmbedder } = require('../services/knowledge/embedder');
         const embedder = process.argv.includes('--embedder') || process.argv.includes('--comparar') ? crearEmbedder({ KNOWLEDGE_EMBEDDER: 'ollama', ...process.env }) : null;
         const vecMin = arg('--vec-min') != null ? Number(arg('--vec-min')) : undefined;
+        const vecWeight = arg('--vec-weight') != null ? Number(arg('--vec-weight')) : undefined;
         if (process.argv.includes('--comparar')) {
-            const base = await evaluar();
-            const hib = await evaluar({ embedder, vecMin });
+            // Con --comparar se añaden las preguntas sin vocabulario común (las que BM25 falla por diseño).
+            const corpus = [CORPUS, CORPUS_SEMANTICO];
+            const base = await evaluar({ corpus });
+            const hib = await evaluar({ corpus, embedder, vecMin, vecWeight });
             imprimir(base); console.log(); imprimir(hib); comparar(base, hib);
             return hib;
         }
-        return evaluar({ embedder, vecMin });
+        return evaluar({ embedder, vecMin, vecWeight });
     })().then((r) => {
         if (!process.argv.includes('--comparar')) imprimir(r);
         if (arg('--json')) fs.writeFileSync(arg('--json'), JSON.stringify(r, null, 2));
