@@ -44,6 +44,10 @@ Si cambia un precio, falla `__tests__/config/operant-pricing-docs.test.js` hasta
 - `services/hotKeyGuard.js` retira claves de operador que controlen la Treasury DAO o la Hot Wallet.
   Una clave nueva de operador se registra en `CLAVES_OPERADOR`.
 - El panel SuperAdmin va por cookie: `middleware/admin-auth.js` rechaza escrituras con `Origin` ajeno.
+- Redis exige contraseña: sin `REDIS_PASSWORD` en `.env` el compose no arranca, y `REDIS_URL` lleva la clave
+  (`redis://:<clave>@host:6380`). Escuchar sólo en 127.0.0.1.
+- `node ../scripts/security/scan-secrets.cjs`: falla con secretos en ficheros versionables; los `.env` locales
+  ignorados por git sólo avisan (rotar si se filtraron).
 - Nunca registrar claves ni JWT en logs.
 
 ## Trampas

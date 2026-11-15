@@ -71,8 +71,11 @@ report.push('');
 // 1. Secrets
 const secretScan = runNodeScript(path.join(ROOT, 'scripts/security/scan-secrets.cjs'), ['--json']);
 let secretFindings = [];
+let secretLocales = [];
 try {
-  secretFindings = JSON.parse(secretScan.stdout || '{"findings":[]}').findings || [];
+  const parsed = JSON.parse(secretScan.stdout || '{"findings":[]}');
+  secretFindings = parsed.findings || [];
+  secretLocales = parsed.locales || [];
 } catch {
   secretFindings = [{ file: 'unknown', line: 0, type: 'scanner-output-invalid' }];
 }
@@ -81,6 +84,7 @@ for (const finding of secretFindings.slice(0, 10)) {
   report.push(`       ${finding.file}:${finding.line} ${finding.type}`);
 }
 if (secretFindings.length > 10) report.push(`       ...and ${secretFindings.length - 10} more`);
+if (secretLocales.length) report.push(`[WARN] ${secretLocales.length} credencial(es) en ficheros locales ignorados por git (rotar si se filtraron): ${[...new Set(secretLocales.map((f) => f.file))].join(', ')}`);
 
 // 2. Toolchain
 check('pnpm available', commandAvailable('pnpm'), 'required by root .npmrc');
