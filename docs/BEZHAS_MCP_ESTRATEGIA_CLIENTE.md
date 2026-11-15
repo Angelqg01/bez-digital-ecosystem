@@ -56,8 +56,9 @@ De ahí las cuatro decisiones que estructuran este documento:
   cualquier agente. Ya implementado.
 - **OAuth en vez de API key suelta** para clientes de chat (Claude.ai, ChatGPT).
   Hoy usamos api-key; ver §3.2: hace falta OAuth 2.1 + PKCE para el canal chat.
-- **Créditos como unidad transversal.** Ya existe: `bezhas_api_credits`,
-  1 crédito = 0,001 € (`api/config/usage-pricing.js`).
+- **Créditos como unidad transversal.** Ya existen como saldo prepago del plan Starter
+  (rutas de créditos del Gateway, `api/config/api-credits.js`; aún no hay herramienta MCP para
+  consultarlo), 1 crédito = 0,001 € (`api/config/usage-pricing.js`).
 - **Consumo siempre medido, también vía MCP/CLI.** Un plan con "acciones IA"
   incluidas no puede volverse barra libre porque la llamada entre por MCP.
 - **Workflows empaquetados** (`get_workflow_instructions` en Higgsfield). Es el
