@@ -2,6 +2,8 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+# OpenZeppelin sale de node_modules (pnpm install), no de una copia vendida en lib/ (eran 878 ficheros).
+remappings = ["@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/"]
 solc_version = "0.8.24"
 via_ir = true
 optimizer = true

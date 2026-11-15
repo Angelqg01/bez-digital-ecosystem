@@ -5,3 +5,7 @@ ds-bundle/
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/build/
+
+# Artefactos de yarn y de reparaciones locales: el proyecto usa pnpm
+.yarn/
+.codex-next-repair/

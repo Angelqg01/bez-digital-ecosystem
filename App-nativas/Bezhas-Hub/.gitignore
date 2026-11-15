@@ -112,3 +112,6 @@ contracts_temp/
 backup_docs*/
 backup_*/
 sandbox/
+
+# Dependencias de Foundry: no se versionan (OpenZeppelin viene de node_modules)
+lib/
