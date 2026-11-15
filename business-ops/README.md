@@ -24,9 +24,9 @@ aprobación humana**. Ver §"Vertical BeZhas" abajo.
 ## Arranque rápido (modo simulado, sin claves)
 
 ```bash
-npm install
-npm run smoke      # prueba el flujo end-to-end sin API keys
-npm run server     # levanta la API en http://localhost:4000
+pnpm install
+pnpm run smoke      # prueba el flujo end-to-end sin API keys
+pnpm run server     # levanta la API en http://localhost:4000
 ```
 
 Sin `ANTHROPIC_API_KEY`, el `ModelGateway` responde en **modo simulado** para que puedas
@@ -96,7 +96,7 @@ operant-saas/
 │   ├── departments.json      Definición de cada departamento
 │   └── business/             Perfil de negocio por tenant (p. ej. bezhas.json)
 ├── docs/                     Documentación detallada (leer en este orden ↓)
-├── evals/                    Contratos de comportamiento (npm run evals)
+├── evals/                    Contratos de comportamiento (pnpm run evals)
 └── test/                     Tests unitarios + integración HTTP + smoke + piloto
 ```
 
@@ -148,7 +148,7 @@ Lee en este orden:
 | **Digest del CEO** (resumen ejecutivo diario cross-departamento) | ✅ `platform/digest.js`: KPIs reales + redacción del modelo, persistido. Generación diaria automática (trabajo por defecto en el alta) y bajo demanda: `GET /tenants/:id/digest[?fresh=1]` |
 | **Adaptador MCP** (ecosistema estándar de integraciones) | ✅ `connectors/MCPConnector.js` — cliente MCP por stdio sin dependencias; cualquier servidor MCP (CRM, ERP, miles de herramientas) entra como un conector más. Sus herramientas se exponen al tool-use con esquemas reales y categoría de política `external` (endurecible por tenant) |
 | **Tests de integración HTTP** (la capa expuesta a internet) | ✅ `test/http-api.test.js`: 30 pruebas contra el servidor real (`app.listen(0)` + fetch, sin dobles). Cubren autenticación y ámbito por tenant (una clave no abre los recursos de otro), firma HMAC del webhook de Stripe (ausente, inválida, de otro secreto y **cuerpo manipulado con firma legítima**), que un pago con wallet deja la transferencia esperando al humano y no la ejecuta, las defensas del formulario público (honeypot, consentimiento RGPD, throttle por IP), el secreto de los canales de entrada y el enlace firmado del CSAT. Corren con el `.env` real fuera de alcance: un HITL de prueba no manda mensajes de verdad |
-| **Evals + CI** (proteger el comportamiento, no solo el código) | ✅ `evals/` con **71 contratos**: routing, soporte anti-alucinación, líneas rojas (incl. on-chain y firma), cribado KYC/AML, runway de tesorería y bucle de herramientas. `npm run evals` (o `EVALS_LIVE=1` contra modelo real) + workflow de CI con tests+evals+smoke |
+| **Evals + CI** (proteger el comportamiento, no solo el código) | ✅ `evals/` con **71 contratos**: routing, soporte anti-alucinación, líneas rojas (incl. on-chain y firma), cribado KYC/AML, runway de tesorería y bucle de herramientas. `pnpm run evals` (o `EVALS_LIVE=1` contra modelo real) + workflow de CI con tests+evals+smoke |
 | **Aparcado HITL** (una aprobación pendiente no congela al tenant) | ✅ La tarea que espera a un humano **suelta su hueco de concurrencia** y lo recupera con prioridad al decidirse (`TaskQueue.park/unpark` + `executionContext`). Estado propio `awaiting_approval` y latencia del agente separada de la espera humana (`ms` vs `waitedMs`). Antes, N aprobaciones pendientes bloqueaban la cola entera |
 | **Alertas proactivas a Telegram** (el aviso llega solo) | ✅ `HitlNotifier.attach()` suscribe el bus del tenant: anomalía on-chain → bot DevOps, runway crítico → bot CFO, anomalía operativa → bot DevOps. Antes los agentes emitían el evento y nadie escuchaba |
 | **Resiliencia y coste** (circuit breaker + caché) | ✅ Circuit breaker en `BeZhasCoreConnector` (3 fallos → 60 s sin tocar la red, media apertura al vencer) y caché LRU de embeddings en el proveedor Ollama (deterministas; se llaman en cada `think()`). No se cachean generaciones del LLM: devolver un borrador cacheado a otro cliente sería un fallo real |
@@ -165,7 +165,7 @@ Lee en este orden:
 | **Conectores MCP** (Model Context Protocol, spec 2025-06-18) | ✅ Transporte **stdio** (servidores locales tipo `npx twenty-mcp-server`) y **HTTP Streamable** (servidores remotos como `https://learn.microsoft.com/api/mcp`). Descubrimiento de herramientas vía `tools/list`, invocación vía `tools/call`; cada llamada pasa por PolicyEngine/RedLines igual que cualquier conector. Ver `src/connectors/MCPConnector.js` |
 | **Captación de leads end-to-end** | ✅ `LeadFunnel`: descubrimiento multi-fuente (formulario web, listas propias, búsqueda pública vía MCP, inbound de LinkedIn por UTM) → puntuación ICP → `PitchMatcherAgent` elige la SubApp de BeZhas y el ángulo → outreach en frío **siempre por HITL** → `LeadOutcomeTracker` reentrena los pesos para el siguiente ciclo. Captación pública en `POST /intake/:tenantId` con consentimiento RGPD, honeypot, throttle por IP y techo de cola; resultados por webhook firmado (HMAC-SHA256) |
 | Panel de control + facturación | ✅ Consola estática con onboarding, KPIs, HITL, KB y políticas |
-| **Stack soberano** (todo propio, open source) | 🟡 **Cimientos verificados en vivo** (`npm run pilot`, 30/30): Postgres+pgvector con RLS, MinIO como almacén real y Ollama generando y embebiendo en local, sin una sola llamada de pago. Pendientes las capas de comunicaciones, banco y ERP (`docs/STACK-SOBERANO.md`) |
+| **Stack soberano** (todo propio, open source) | 🟡 **Cimientos verificados en vivo** (`pnpm run pilot`, 30/30): Postgres+pgvector con RLS, MinIO como almacén real y Ollama generando y embebiendo en local, sin una sola llamada de pago. Pendientes las capas de comunicaciones, banco y ERP (`docs/STACK-SOBERANO.md`) |
 | Motor IA híbrido por tier (Claude + Ollama local) | ✅ Cableado (`cognition/providers/ollama.js`) y verificado en el piloto: con un modelo descargado, los tres tiers corren en local y el borrador en frío de Ventas lo escribe la máquina del cliente |
 | Vertical Ventas soberano (Twenty CRM + email propio + HITL) | ✅ End-to-end (`test/sales-vertical.test.js`) |
 | **Memoria semántica real** (RAG por similitud, no solo cronológico) | ✅ `recall()` devuelve los k casos más parecidos por coseno en los tres adaptadores del Store; orden cronológico desempatado por id (los timestamps en ms empataban). `test/vector-recall.test.js` |
