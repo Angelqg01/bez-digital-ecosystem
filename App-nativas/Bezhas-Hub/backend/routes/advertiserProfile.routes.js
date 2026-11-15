@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, param, query, validationResult } = require('express-validator');
-const AdvertiserProfile = require('../models/advertiserProfile.model');
+const AdvertiserProfile = require('../models/pg/AdvertiserProfile');
 const { protect: authMiddleware } = require('../middleware/auth.middleware');
 
 /**
@@ -29,44 +29,16 @@ router.post('/',
 
             const { businessType, projectName, country, website, businessGoals, companyDetails } = req.body;
 
-            // Buscar o crear perfil
-            let profile = await AdvertiserProfile.findOne({
-                $or: [
-                    { userId: req.user._id },
-                    { walletAddress: req.user.walletAddress }
-                ]
-            });
-
-            if (profile) {
-                // Actualizar existente
-                profile.businessType = businessType;
-                profile.projectName = projectName;
-                profile.country = country;
-                profile.website = website;
-                profile.businessGoals = businessGoals || [];
-                profile.companyDetails = companyDetails || profile.companyDetails;
-                profile.updatedAt = new Date();
-            } else {
-                // Crear nuevo
-                profile = new AdvertiserProfile({
-                    userId: req.user._id,
-                    walletAddress: req.user.walletAddress,
-                    businessType,
-                    projectName,
-                    country,
-                    website,
-                    businessGoals: businessGoals || [],
-                    companyDetails: companyDetails || {}
-                });
-            }
-
-            await profile.save();
+            // Crear o actualizar el perfil del usuario (una sola sentencia: sin carrera entre dos envíos del wizard)
+            const { profile, created } = await AdvertiserProfile.upsert(
+                req.user._id, req.user.walletAddress || req.user.wallet_address || null,
+                { businessType, projectName, country, website, businessGoals, companyDetails });
 
             res.json({
                 success: true,
-                message: profile.isNew ? 'Perfil creado exitosamente' : 'Perfil actualizado exitosamente',
+                message: created ? 'Perfil creado exitosamente' : 'Perfil actualizado exitosamente',
                 profile: {
-                    id: profile._id,
+                    id: profile.id,
                     projectName: profile.projectName,
                     businessType: profile.businessType,
                     isActive: profile.isActive,
@@ -93,12 +65,7 @@ router.get('/',
     authMiddleware,
     async (req, res) => {
         try {
-            const profile = await AdvertiserProfile.findOne({
-                $or: [
-                    { userId: req.user._id },
-                    { walletAddress: req.user.walletAddress }
-                ]
-            }).lean();
+            const profile = await AdvertiserProfile.findByUserId(req.user._id);
 
             if (!profile) {
                 return res.status(404).json({
@@ -132,12 +99,7 @@ router.get('/check',
     authMiddleware,
     async (req, res) => {
         try {
-            const profile = await AdvertiserProfile.findOne({
-                $or: [
-                    { userId: req.user._id },
-                    { walletAddress: req.user.walletAddress }
-                ]
-            }).lean();
+            const profile = await AdvertiserProfile.findByUserId(req.user._id);
 
             res.json({
                 success: true,

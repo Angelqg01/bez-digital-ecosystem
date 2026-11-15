@@ -27,7 +27,7 @@ ya está hecha a medias, y dejar el backend donde está.
 
 1. **Sin dinero ni custodia:** ~~`contact`~~, ~~`affiliateEvent`~~, ~~`B2BLead`~~ (hechos). **Aplazados con motivo:** `Share` depende del dominio social `Post` (la ruta lee y escribe `post.shares` y el saldo `bezTokenBalance`, que ni `posts` ni `users` tienen en Postgres) y debe migrarse junto a posts, likes y comentarios; `validation` (318 líneas, con cola BullMQ, contrato `ContentValidator` y almacén en memoria de reserva) es un dominio propio que ya tiene `models/pg/ValidationEvent` a medias. Una ruta cada uno; se prueban con la suite del Hub.
 2. **Puente/OpenClaw:** `BridgeApiKey` y `OpenClawClient`. Llevan claves: migrar con hash y no volver a escribir el valor en claro.
-3. **Publicidad:** ~~`adBalance`~~ (hecho, ver arriba); quedan `campaign` y `advertiserProfile`. Los saldos de Mongo no se copian: sólo existían si alguien había recargado, y habría que comprobar si hay saldos reales en producción antes de cortar.
+3. **Publicidad:** ~~`adBalance`~~, ~~`campaign`~~, ~~`advertiserProfile`~~ (hechos). Los saldos de Mongo no se copian: sólo existían si alguien había recargado, y habría que comprobar si hay saldos reales en producción antes de cortar.
 4. **DAO/DeFi:** al final y sólo si la gobernanza sigue en uso; la fuente de verdad es la cadena, esto es caché.
 
 Regla de cada paso: modelo nuevo en `models/pg` + migración SQL + el test de la ruta antes y después, y retirar el modelo de Mongoose al
@@ -42,6 +42,24 @@ pasar a producción. Mientras haya un modelo de Mongoose en uso, `MONGODB_URI` t
 | `affiliateEvent` (afiliados) y `B2BLead` (leads y envío con aprobación) | 2026-11-15 | Tablas `affiliate_events` y `b2b_leads` (migración 022), `models/pg/AffiliateEvent.js` y `models/pg/B2BLead.js`; `routes/affiliate.routes.js` y `services/outbound-messaging.service.js` sobre Postgres; borrados los dos modelos de Mongoose. 10 casos contra Postgres real (`tests/integration/affiliate-b2b-pg.test.js`). |
 
 | Saldo publicitario: `adBalance` y `billingTransaction` (billing, webhook de Stripe y chequeo de saldo de campañas) | 2026-11-15 | Tabla `ad_balances` (migración 023; `billing_transactions` ya existía desde la 006), `models/pg/AdBalance.js`, `services/adTopup.service.js` y `services/bezDepositVerifier.js`; `routes/billing.routes.js`, `routes/stripe-webhook.routes.js` y `routes/campaigns.routes.js` sobre Postgres; borrados los dos modelos de Mongoose. 24 casos contra Postgres real (`tests/integration/ad-balance-pg.test.js`) y 10 sin base en el CI (`tests/bez-deposit-verifier.test.js`). |
+
+| Campañas y anunciantes (`campaign`, `advertiserProfile`: rutas `campaigns`, `adminAds` y `advertiserProfile`) | 2026-11-15 | Tablas `advertiser_profiles` y `ad_campaigns` (migración 024, con los mínimos del esquema como CHECK), `models/pg/Campaign.js` y `models/pg/AdvertiserProfile.js`; las tres rutas sobre Postgres; borrados los dos modelos de Mongoose. 18 casos contra Postgres real (`tests/integration/campaigns-pg.test.js`). |
+
+**Lo que se encontró al migrar campañas y anunciantes:**
+- **Mass assignment:** al crear, `creative`, `targeting`, `budget` y `schedule` se guardaban tal cual venían del cliente (Mongoose descartaba lo que no estaba en el esquema; en JSONB no).
+  Ahora `Campaign.normalizar` se queda con los campos conocidos, con su tipo, sus enumerados y topes de tamaño; el estado, las métricas y `approvedBy` no son editables.
+- **La edición se saltaba los mínimos:** `PUT /campaigns/:id` fusionaba el presupuesto sin validarlo (Mongoose lo validaba en `save`). Ahora la edición lleva las mismas
+  validaciones del alta, los CHECK de la tabla y la regla «fin no anterior al inicio».
+- **Suspensión incompleta:** al suspender a un anunciante sólo pasaban a `suspended` sus campañas **activas**; una pausada o aprobada se podía reanudar estando él suspendido. Ahora
+  se suspenden las activas, aprobadas y pausadas en la misma transacción, el anunciante suspendido no puede reanudar y el administrador no puede reactivar su campaña sin
+  reactivarlo antes (409).
+- **Carreras entre administradores:** aprobar, rechazar, pausar y reanudar eran leer-modificar-guardar. Ahora son `UPDATE … WHERE status = …` atómicos: de 6 aprobaciones
+  simultáneas pasa una. La edición sólo ocurre si la campaña sigue en borrador o pendiente.
+- El mensaje del wizard de perfil decía siempre «actualizado» (`isNew` ya era falso tras `save`); ahora distingue creado de actualizado. El perfil se busca sólo por usuario (antes
+  también por wallet, lo que permitía leer el perfil de otro usuario con la misma wallet).
+- Se quitan los «fallbacks» que devolvían una lista vacía con 200 si la base fallaba.
+- **Sin cambios de comportamiento a propósito:** una pausa del administrador sigue pudiendo reanudarla el anunciante (no hay estado propio para «pausada por admin»; si se quiere
+  forzar, el administrador debe usar «suspender»).
 
 **Lo que se encontró al migrar el saldo publicitario (dinero):**
 - **Vulnerabilidad real:** `POST /api/billing/add-bez-funds` acreditaba el importe que dijera el cliente con **cualquier `txHash`**: había un `TODO` donde debía
@@ -60,8 +78,7 @@ pasar a producción. Mientras haya un modelo de Mongoose en uso, `MONGODB_URI` t
 - Si Stripe falla al crear el PaymentIntent, la recarga pendiente se cierra como fallida en vez de quedar huérfana.
 - Nadie descuenta saldo todavía (el gasto de campañas no está implementado): `AdBalance.deduct` queda listo y probado para cuando se conecte.
 
-**Pendiente de este dominio:** `campaign` y `advertiserProfile` (las rutas `campaigns`, `adminAds` y `advertiserProfile`, ~1.250 líneas) siguen en Mongo; el historial
-ya no incluye el nombre de la campaña (`populate`) porque `billing_transactions.campaign_id` es UUID y las campañas aún tienen `_id` de Mongo.
+**Publicidad completa:** campañas y anunciantes se migraron después (fila siguiente). El historial de facturación sigue sin incluir el nombre de la campaña (`populate`): `billing_transactions.campaign_id` ya es compatible (UUID), falta añadir el JOIN cuando se conecte el cobro de campañas.
 
 **Lo que se encontró al migrar afiliados y leads B2B:**
 - `/api/affiliate/me` leía y escribía `user.affiliate.referralCode`, un campo de Mongo que el usuario de Postgres no tiene (el código vive en

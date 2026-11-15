@@ -2,8 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const { body, param, query, validationResult } = require('express-validator');
-const Campaign = require('../models/campaign.model');
-const AdvertiserProfile = require('../models/advertiserProfile.model');
+const Campaign = require('../models/pg/Campaign');
+const AdvertiserProfile = require('../models/pg/AdvertiserProfile');
 const AdBalance = require('../models/pg/AdBalance');
 const priceOracleService = require('../services/price-oracle.service');
 const multer = require('multer');
@@ -82,6 +82,21 @@ router.post('/upload-creative',
     }
 );
 
+const walletDe = (req) => req.user.walletAddress || req.user.wallet_address || null;
+const idInvalido = param('id').isUUID().withMessage('ID de campaña inválido');
+const fallo = (res, error, mensaje, estado = 500) => res.status(estado).json({ success: false, error: mensaje, ...(estado === 500 ? { details: error.message } : {}) });
+
+/** Valida el resultado de express-validator; devuelve true si respondió con el 400. */
+function conErrores(req, res) {
+    const errors = validationResult(req);
+    if (errors.isEmpty()) return false;
+    res.status(400).json({ success: false, errors: errors.array() });
+    return true;
+}
+
+/** El fin no puede ser anterior al inicio (la base también lo impone con un CHECK). */
+const fechasIncoherentes = (schedule) => schedule && schedule.endDate && schedule.startDate && new Date(schedule.endDate) < new Date(schedule.startDate);
+
 /**
  * POST /api/campaigns
  * Crear una nueva campaña
@@ -98,34 +113,18 @@ router.post('/',
         body('budget.dailyBudget').isFloat({ min: 5 }).withMessage('Presupuesto diario mínimo: 5 EUR'),
         body('budget.totalBudget').isFloat({ min: 10 }).withMessage('Presupuesto total mínimo: 10 EUR'),
         body('budget.bidAmount').isFloat({ min: 0.01 }).withMessage('Puja mínima: 0.01 EUR'),
-        body('schedule.startDate').isISO8601().withMessage('Fecha de inicio inválida')
+        body('schedule.startDate').isISO8601().withMessage('Fecha de inicio inválida'),
+        body('schedule.endDate').optional({ nullable: true }).isISO8601().withMessage('Fecha de fin inválida')
     ],
     async (req, res) => {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({
-                    success: false,
-                    errors: errors.array()
-                });
-            }
+            if (conErrores(req, res)) return;
 
-            const {
-                name,
-                objective,
-                creative,
-                targeting,
-                budget,
-                schedule
-            } = req.body;
+            const { name, objective, creative, targeting, budget, schedule } = req.body;
+            if (fechasIncoherentes(schedule)) return fallo(res, null, 'La fecha de fin no puede ser anterior a la de inicio', 400);
 
             // Verificar que el usuario tenga perfil de anunciante
-            const advertiserProfile = await AdvertiserProfile.findOne({
-                $or: [
-                    { userId: req.user._id },
-                    { walletAddress: req.user.walletAddress }
-                ]
-            });
+            const advertiserProfile = await AdvertiserProfile.findByUserId(req.user._id);
 
             if (!advertiserProfile) {
                 return res.status(403).json({
@@ -143,41 +142,29 @@ router.post('/',
                 });
             }
 
-            // Verificar saldo suficiente
+            // Verificar saldo suficiente (fiat + BEZ al precio del oráculo)
             const balance = await AdBalance.findByUserId(req.user._id);
             const bezEurPrice = balance && balance.bezBalance > 0 ? await priceOracleService.getBezEurPrice() : 0;
             const disponibleEur = balance ? AdBalance.availableEur(balance, bezEurPrice) : 0;
+            const requerido = Number(budget.dailyBudget) * 3;
 
-            if (!balance || disponibleEur < budget.dailyBudget * 3) {
+            if (!balance || disponibleEur < requerido) {
                 return res.status(400).json({
                     success: false,
                     error: 'Saldo insuficiente. Se requiere al menos 3 días de presupuesto diario',
-                    requiredAmount: budget.dailyBudget * 3,
+                    requiredAmount: requerido,
                     currentBalance: disponibleEur,
                     redirectTo: '/ad-center/billing'
                 });
             }
 
-            // Crear campaña
-            const campaign = new Campaign({
-                advertiserId: req.user._id,
-                advertiserWallet: req.user.walletAddress,
-                name,
-                objective,
-                creative,
-                targeting: targeting || {},
-                budget,
-                schedule,
-                status: 'pending_approval'
-            });
-
-            await campaign.save();
+            const campaign = await Campaign.create(req.user._id, walletDe(req), { name, objective, creative, targeting, budget, schedule }, 'pending_approval');
 
             res.status(201).json({
                 success: true,
                 message: 'Campaña creada exitosamente. Pendiente de aprobación.',
                 campaign: {
-                    id: campaign._id,
+                    id: campaign.id,
                     name: campaign.name,
                     status: campaign.status,
                     createdAt: campaign.createdAt
@@ -186,11 +173,7 @@ router.post('/',
 
         } catch (error) {
             console.error('Error creating campaign:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error al crear la campaña',
-                details: error.message
-            });
+            fallo(res, error, 'Error al crear la campaña');
         }
     }
 );
@@ -202,59 +185,42 @@ router.post('/',
 router.get('/',
     authMiddleware,
     [
-        query('status').optional().isIn(['draft', 'pending_approval', 'approved', 'active', 'paused', 'completed', 'rejected', 'suspended']),
+        query('status').optional().isIn(Campaign.STATUSES),
         query('page').optional().isInt({ min: 1 }).toInt(),
         query('limit').optional().isInt({ min: 1, max: 100 }).toInt()
     ],
     async (req, res) => {
         try {
+            if (conErrores(req, res)) return;
             const { status, page = 1, limit = 10 } = req.query;
 
-            const filter = {
-                $or: [
-                    { advertiserId: req.user._id },
-                    { advertiserWallet: req.user.walletAddress }
-                ]
-            };
-            if (status) filter.status = status;
-
-            const campaigns = await Campaign.find(filter)
-                .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .lean();
-
-            const total = await Campaign.countDocuments(filter);
+            const { campaigns, total } = await Campaign.listByAdvertiser(req.user._id, { status, page, limit });
 
             res.json({
                 success: true,
                 data: campaigns,
-                pagination: {
-                    page,
-                    limit,
-                    total,
-                    pages: Math.ceil(total / limit)
-                }
+                pagination: { page, limit, total, pages: Math.ceil(total / limit) }
             });
 
         } catch (error) {
             console.error('Error fetching campaigns:', error);
+            fallo(res, error, 'Error al obtener campañas');
+        }
+    }
+);
 
-            // Fallback: devolver array vacío si MongoDB no está disponible
-            if (error.message && error.message.includes('buffering timed out')) {
-                return res.json({
-                    success: true,
-                    data: [],
-                    pagination: { page: 1, limit: 10, total: 0, pages: 0 },
-                    warning: 'Base de datos no disponible'
-                });
-            }
-
-            res.status(500).json({
-                success: false,
-                error: 'Error al obtener campañas',
-                details: error.message
-            });
+/**
+ * GET /api/campaigns/stats/summary
+ * Obtener resumen de todas las campañas del anunciante
+ */
+router.get('/stats/summary',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            res.json({ success: true, data: await Campaign.summary(req.user._id) });
+        } catch (error) {
+            console.error('Error fetching campaign summary:', error);
+            fallo(res, error, 'Error al obtener resumen');
         }
     }
 );
@@ -265,44 +231,16 @@ router.get('/',
  */
 router.get('/:id',
     authMiddleware,
-    param('id').isMongoId().withMessage('ID de campaña inválido'),
+    idInvalido,
     async (req, res) => {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({
-                    success: false,
-                    errors: errors.array()
-                });
-            }
-
-            const campaign = await Campaign.findOne({
-                _id: req.params.id,
-                $or: [
-                    { advertiserId: req.user._id },
-                    { advertiserWallet: req.user.walletAddress }
-                ]
-            }).lean();
-
-            if (!campaign) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Campaña no encontrada'
-                });
-            }
-
-            res.json({
-                success: true,
-                data: campaign
-            });
-
+            if (conErrores(req, res)) return;
+            const campaign = await Campaign.findOwned(req.params.id, req.user._id);
+            if (!campaign) return fallo(res, null, 'Campaña no encontrada', 404);
+            res.json({ success: true, data: campaign });
         } catch (error) {
             console.error('Error fetching campaign:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error al obtener la campaña',
-                details: error.message
-            });
+            fallo(res, error, 'Error al obtener la campaña');
         }
     }
 );
@@ -313,97 +251,65 @@ router.get('/:id',
  */
 router.put('/:id',
     authMiddleware,
-    param('id').isMongoId().withMessage('ID de campaña inválido'),
+    idInvalido,
+    [
+        // Los límites del alta también rigen al editar (Mongoose los validaba en cada save).
+        body('name').optional().trim().notEmpty(),
+        body('creative.title').optional().trim().isLength({ min: 5, max: 100 }),
+        body('creative.description').optional().trim().isLength({ min: 10, max: 300 }),
+        body('creative.destinationUrl').optional().isURL(),
+        body('budget.dailyBudget').optional().isFloat({ min: 5 }),
+        body('budget.totalBudget').optional().isFloat({ min: 10 }),
+        body('budget.bidAmount').optional().isFloat({ min: 0.01 }),
+        body('schedule.startDate').optional().isISO8601(),
+        body('schedule.endDate').optional({ nullable: true }).isISO8601()
+    ],
     async (req, res) => {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({
-                    success: false,
-                    errors: errors.array()
-                });
-            }
+            if (conErrores(req, res)) return;
 
-            const campaign = await Campaign.findOne({
-                _id: req.params.id,
-                $or: [
-                    { advertiserId: req.user._id },
-                    { advertiserWallet: req.user.walletAddress }
-                ]
-            });
+            const campaign = await Campaign.findOwned(req.params.id, req.user._id);
+            if (!campaign) return fallo(res, null, 'Campaña no encontrada', 404);
 
-            if (!campaign) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Campaña no encontrada'
-                });
-            }
-
-            // Manejar acciones específicas
+            let actualizada;
             if (req.body.action) {
                 switch (req.body.action) {
                     case 'pause':
-                        if (campaign.status === 'active') {
-                            campaign.status = 'paused';
-                        } else {
-                            return res.status(400).json({
-                                success: false,
-                                error: 'Solo se pueden pausar campañas activas'
-                            });
-                        }
+                        actualizada = await Campaign.transition(campaign.id, { desde: ['active'], hacia: 'paused', userId: req.user._id });
+                        if (!actualizada) return fallo(res, null, 'Solo se pueden pausar campañas activas', 400);
                         break;
 
-                    case 'resume':
-                        if (campaign.status === 'paused') {
-                            campaign.status = 'active';
-                            campaign.lastActiveAt = new Date();
-                        } else {
-                            return res.status(400).json({
-                                success: false,
-                                error: 'Solo se pueden reanudar campañas pausadas'
-                            });
-                        }
+                    case 'resume': {
+                        // Un anunciante suspendido no puede reanudar campañas.
+                        const perfil = await AdvertiserProfile.findByUserId(req.user._id);
+                        if (perfil && perfil.isSuspended) return fallo(res, null, 'Tu cuenta de anunciante está suspendida', 403);
+                        actualizada = await Campaign.transition(campaign.id, { desde: ['paused'], hacia: 'active', userId: req.user._id, touchActive: true });
+                        if (!actualizada) return fallo(res, null, 'Solo se pueden reanudar campañas pausadas', 400);
                         break;
+                    }
 
                     default:
-                        return res.status(400).json({
-                            success: false,
-                            error: 'Acción no válida'
-                        });
+                        return fallo(res, null, 'Acción no válida', 400);
                 }
             } else {
                 // Edición de campos (solo permitido en draft o pending_approval)
                 if (!['draft', 'pending_approval'].includes(campaign.status)) {
-                    return res.status(400).json({
-                        success: false,
-                        error: 'No se puede editar una campaña en este estado'
-                    });
+                    return fallo(res, null, 'No se puede editar una campaña en este estado', 400);
                 }
+                const cambios = {};
+                ['name', 'creative', 'targeting', 'budget', 'schedule'].forEach((campo) => { if (req.body[campo]) cambios[campo] = req.body[campo]; });
+                const previstas = { ...campaign.schedule, ...(cambios.schedule || {}) };
+                if (fechasIncoherentes(previstas)) return fallo(res, null, 'La fecha de fin no puede ser anterior a la de inicio', 400);
 
-                const allowedFields = ['name', 'creative', 'targeting', 'budget', 'schedule'];
-                allowedFields.forEach(field => {
-                    if (req.body[field]) {
-                        campaign[field] = { ...campaign[field].toObject(), ...req.body[field] };
-                    }
-                });
+                actualizada = await Campaign.updateEditable(campaign.id, req.user._id, cambios);
+                if (!actualizada) return fallo(res, null, 'No se puede editar una campaña en este estado', 400);
             }
 
-            campaign.updatedAt = new Date();
-            await campaign.save();
-
-            res.json({
-                success: true,
-                message: 'Campaña actualizada exitosamente',
-                data: campaign
-            });
+            res.json({ success: true, message: 'Campaña actualizada exitosamente', data: actualizada });
 
         } catch (error) {
             console.error('Error updating campaign:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error al actualizar la campaña',
-                details: error.message
-            });
+            fallo(res, error, 'Error al actualizar la campaña');
         }
     }
 );
@@ -414,53 +320,23 @@ router.put('/:id',
  */
 router.delete('/:id',
     authMiddleware,
-    param('id').isMongoId().withMessage('ID de campaña inválido'),
+    idInvalido,
     async (req, res) => {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({
-                    success: false,
-                    errors: errors.array()
-                });
+            if (conErrores(req, res)) return;
+
+            const campaign = await Campaign.findOwned(req.params.id, req.user._id);
+            if (!campaign) return fallo(res, null, 'Campaña no encontrada', 404);
+            if (campaign.status !== 'draft') return fallo(res, null, 'Solo se pueden eliminar campañas en borrador', 400);
+
+            if (!(await Campaign.deleteDraft(campaign.id, req.user._id))) {
+                return fallo(res, null, 'Solo se pueden eliminar campañas en borrador', 400);
             }
-
-            const campaign = await Campaign.findOne({
-                _id: req.params.id,
-                $or: [
-                    { advertiserId: req.user._id },
-                    { advertiserWallet: req.user.walletAddress }
-                ]
-            });
-
-            if (!campaign) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Campaña no encontrada'
-                });
-            }
-
-            if (campaign.status !== 'draft') {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Solo se pueden eliminar campañas en borrador'
-                });
-            }
-
-            await campaign.deleteOne();
-
-            res.json({
-                success: true,
-                message: 'Campaña eliminada exitosamente'
-            });
+            res.json({ success: true, message: 'Campaña eliminada exitosamente' });
 
         } catch (error) {
             console.error('Error deleting campaign:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error al eliminar la campaña',
-                details: error.message
-            });
+            fallo(res, error, 'Error al eliminar la campaña');
         }
     }
 );
@@ -471,45 +347,23 @@ router.delete('/:id',
  */
 router.get('/:id/analytics',
     authMiddleware,
-    param('id').isMongoId().withMessage('ID de campaña inválido'),
+    idInvalido,
     async (req, res) => {
         try {
-            const campaign = await Campaign.findOne({
-                _id: req.params.id,
-                $or: [
-                    { advertiserId: req.user._id },
-                    { advertiserWallet: req.user.walletAddress }
-                ]
-            }).lean();
+            if (conErrores(req, res)) return;
+            const campaign = await Campaign.findOwned(req.params.id, req.user._id);
+            if (!campaign) return fallo(res, null, 'Campaña no encontrada', 404);
 
-            if (!campaign) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Campaña no encontrada'
-                });
-            }
-
-            // Calcular métricas
-            const ctr = campaign.metrics.impressions > 0
-                ? (campaign.metrics.clicks / campaign.metrics.impressions * 100).toFixed(2)
-                : 0;
-
-            const cpc = campaign.metrics.clicks > 0
-                ? (campaign.metrics.spent / campaign.metrics.clicks).toFixed(2)
-                : 0;
-
-            const cpm = campaign.metrics.impressions > 0
-                ? (campaign.metrics.spent / campaign.metrics.impressions * 1000).toFixed(2)
-                : 0;
-
-            const conversionRate = campaign.metrics.clicks > 0
-                ? (campaign.metrics.conversions / campaign.metrics.clicks * 100).toFixed(2)
-                : 0;
+            const m = campaign.metrics;
+            const ctr = m.impressions > 0 ? (m.clicks / m.impressions * 100).toFixed(2) : 0;
+            const cpc = m.clicks > 0 ? (m.spent / m.clicks).toFixed(2) : 0;
+            const cpm = m.impressions > 0 ? (m.spent / m.impressions * 1000).toFixed(2) : 0;
+            const conversionRate = m.clicks > 0 ? (m.conversions / m.clicks * 100).toFixed(2) : 0;
 
             res.json({
                 success: true,
                 data: {
-                    campaignId: campaign._id,
+                    campaignId: campaign.id,
                     campaignName: campaign.name,
                     status: campaign.status,
                     metrics: campaign.metrics,
@@ -522,9 +376,9 @@ router.get('/:id/analytics',
                     budget: {
                         total: campaign.budget.totalBudget,
                         daily: campaign.budget.dailyBudget,
-                        spent: campaign.metrics.spent,
-                        remaining: campaign.budget.totalBudget - campaign.metrics.spent,
-                        percentageUsed: `${(campaign.metrics.spent / campaign.budget.totalBudget * 100).toFixed(2)}%`
+                        spent: m.spent,
+                        remaining: campaign.budget.totalBudget - m.spent,
+                        percentageUsed: `${(m.spent / campaign.budget.totalBudget * 100).toFixed(2)}%`
                     },
                     schedule: {
                         startDate: campaign.schedule.startDate,
@@ -538,96 +392,7 @@ router.get('/:id/analytics',
 
         } catch (error) {
             console.error('Error fetching campaign analytics:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error al obtener analytics',
-                details: error.message
-            });
-        }
-    }
-);
-
-/**
- * GET /api/campaigns/stats/summary
- * Obtener resumen de todas las campañas del anunciante
- */
-router.get('/stats/summary',
-    authMiddleware,
-    async (req, res) => {
-        try {
-            const campaigns = await Campaign.find({
-                $or: [
-                    { advertiserId: req.user._id },
-                    { advertiserWallet: req.user.walletAddress }
-                ]
-            }).lean();
-
-            const summary = {
-                total: campaigns.length,
-                byStatus: {
-                    active: 0,
-                    paused: 0,
-                    pending: 0,
-                    completed: 0,
-                    rejected: 0
-                },
-                totalSpent: 0,
-                totalImpressions: 0,
-                totalClicks: 0,
-                totalConversions: 0,
-                averageCTR: 0,
-                averageCPC: 0
-            };
-
-            campaigns.forEach(campaign => {
-                summary.byStatus[campaign.status === 'pending_approval' ? 'pending' : campaign.status] =
-                    (summary.byStatus[campaign.status === 'pending_approval' ? 'pending' : campaign.status] || 0) + 1;
-
-                summary.totalSpent += campaign.metrics.spent || 0;
-                summary.totalImpressions += campaign.metrics.impressions || 0;
-                summary.totalClicks += campaign.metrics.clicks || 0;
-                summary.totalConversions += campaign.metrics.conversions || 0;
-            });
-
-            if (summary.totalImpressions > 0) {
-                summary.averageCTR = (summary.totalClicks / summary.totalImpressions * 100).toFixed(2);
-            }
-
-            if (summary.totalClicks > 0) {
-                summary.averageCPC = (summary.totalSpent / summary.totalClicks).toFixed(2);
-            }
-
-            res.json({
-                success: true,
-                data: summary
-            });
-
-        } catch (error) {
-            console.error('Error fetching campaign summary:', error);
-
-            // Fallback: devolver summary vacío si MongoDB no está disponible
-            if (error.message && (error.message.includes('buffering timed out') || error.message.includes('connect'))) {
-                return res.json({
-                    success: true,
-                    data: {
-                        total: 0,
-                        byStatus: { active: 0, paused: 0, pending: 0, completed: 0, rejected: 0 },
-                        totalSpent: 0,
-                        totalImpressions: 0,
-                        totalClicks: 0,
-                        totalConversions: 0,
-                        averageCTR: 0,
-                        averageCPC: 0
-                    },
-                    warning: 'Base de datos no disponible'
-                });
-            }
-
-            res.status(500).json({
-                success: false,
-                error: 'Error al obtener resumen',
-                details: error.message
-            });
+            fallo(res, error, 'Error al obtener analytics');
         }
     }
 );

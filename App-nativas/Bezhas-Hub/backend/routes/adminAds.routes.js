@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { body, param, query, validationResult } = require('express-validator');
-const Campaign = require('../models/campaign.model');
-const AdvertiserProfile = require('../models/advertiserProfile.model');
+const Campaign = require('../models/pg/Campaign');
+const AdvertiserProfile = require('../models/pg/AdvertiserProfile');
 const User = require('../models/pg/User');
 const { protect: authMiddleware } = require('../middleware/auth.middleware');
 const { verifyAdminToken: adminMiddleware } = require('../middleware/admin.middleware');
@@ -22,14 +22,7 @@ router.get('/pending-queue',
         try {
             const { page = 1, limit = 20 } = req.query;
 
-            const campaigns = await Campaign.find({ status: 'pending_approval' })
-                .sort({ createdAt: 1 }) // FIFO
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .populate('advertiserId', 'username email')
-                .lean();
-
-            const total = await Campaign.countDocuments({ status: 'pending_approval' });
+            const { campaigns, total } = await Campaign.listForAdmin({ status: 'pending_approval', page, limit, fifo: true }); // FIFO
 
             res.json({
                 success: true,
@@ -60,7 +53,7 @@ router.get('/pending-queue',
 router.post('/approve/:id',
     authMiddleware,
     adminMiddleware,
-    param('id').isMongoId().withMessage('ID de campaña inválido'),
+    param('id').isUUID().withMessage('ID de campaña inválido'),
     async (req, res) => {
         try {
             const errors = validationResult(req);
@@ -71,40 +64,21 @@ router.post('/approve/:id',
                 });
             }
 
-            const campaign = await Campaign.findById(req.params.id);
-
+            // Aprobación ATÓMICA: sólo pasa de pending_approval, y activa de inmediato si la fecha de inicio ya llegó.
+            const campaign = await Campaign.approve(req.params.id, req.user._id);
             if (!campaign) {
-                return res.status(404).json({
+                const existente = await Campaign.findById(req.params.id);
+                return res.status(existente ? 400 : 404).json({
                     success: false,
-                    error: 'Campaña no encontrada'
+                    error: existente ? 'Solo se pueden aprobar campañas pendientes' : 'Campaña no encontrada'
                 });
             }
-
-            if (campaign.status !== 'pending_approval') {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Solo se pueden aprobar campañas pendientes'
-                });
-            }
-
-            campaign.status = 'approved';
-            campaign.approvedAt = new Date();
-            campaign.approvedBy = req.user._id;
-            campaign.updatedAt = new Date();
-
-            // Si la fecha de inicio es hoy o pasada, activar inmediatamente
-            if (new Date(campaign.schedule.startDate) <= new Date()) {
-                campaign.status = 'active';
-                campaign.lastActiveAt = new Date();
-            }
-
-            await campaign.save();
 
             res.json({
                 success: true,
                 message: 'Campaña aprobada exitosamente',
                 campaign: {
-                    id: campaign._id,
+                    id: campaign.id,
                     name: campaign.name,
                     status: campaign.status,
                     approvedAt: campaign.approvedAt
@@ -130,7 +104,7 @@ router.post('/reject/:id',
     authMiddleware,
     adminMiddleware,
     [
-        param('id').isMongoId().withMessage('ID de campaña inválido'),
+        param('id').isUUID().withMessage('ID de campaña inválido'),
         body('reason').trim().notEmpty().withMessage('Razón de rechazo requerida')
     ],
     async (req, res) => {
@@ -145,27 +119,14 @@ router.post('/reject/:id',
 
             const { reason } = req.body;
 
-            const campaign = await Campaign.findById(req.params.id);
-
+            const campaign = await Campaign.transition(req.params.id, { desde: ['pending_approval'], hacia: 'rejected', rejectionReason: reason });
             if (!campaign) {
-                return res.status(404).json({
+                const existente = await Campaign.findById(req.params.id);
+                return res.status(existente ? 400 : 404).json({
                     success: false,
-                    error: 'Campaña no encontrada'
+                    error: existente ? 'Solo se pueden rechazar campañas pendientes' : 'Campaña no encontrada'
                 });
             }
-
-            if (campaign.status !== 'pending_approval') {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Solo se pueden rechazar campañas pendientes'
-                });
-            }
-
-            campaign.status = 'rejected';
-            campaign.rejectionReason = reason;
-            campaign.updatedAt = new Date();
-
-            await campaign.save();
 
             // TODO: Enviar notificación al anunciante
 
@@ -173,7 +134,7 @@ router.post('/reject/:id',
                 success: true,
                 message: 'Campaña rechazada',
                 campaign: {
-                    id: campaign._id,
+                    id: campaign.id,
                     name: campaign.name,
                     status: campaign.status,
                     rejectionReason: campaign.rejectionReason
@@ -207,17 +168,7 @@ router.get('/all-campaigns',
         try {
             const { status, page = 1, limit = 20 } = req.query;
 
-            const filter = {};
-            if (status) filter.status = status;
-
-            const campaigns = await Campaign.find(filter)
-                .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .populate('advertiserId', 'username email walletAddress')
-                .lean();
-
-            const total = await Campaign.countDocuments(filter);
+            const { campaigns, total } = await Campaign.listForAdmin({ status, page, limit, conWallet: true });
 
             res.json({
                 success: true,
@@ -249,7 +200,7 @@ router.post('/toggle-campaign/:id',
     authMiddleware,
     adminMiddleware,
     [
-        param('id').isMongoId().withMessage('ID de campaña inválido'),
+        param('id').isUUID().withMessage('ID de campaña inválido'),
         body('action').isIn(['pause', 'activate', 'suspend']).withMessage('Acción inválida'),
         body('reason').optional().trim()
     ],
@@ -265,44 +216,40 @@ router.post('/toggle-campaign/:id',
 
             const { action, reason } = req.body;
 
-            const campaign = await Campaign.findById(req.params.id);
-
-            if (!campaign) {
+            const existente = await Campaign.findById(req.params.id);
+            if (!existente) {
                 return res.status(404).json({
                     success: false,
                     error: 'Campaña no encontrada'
                 });
             }
 
+            let campaign = existente;
             switch (action) {
                 case 'pause':
-                    if (campaign.status === 'active') {
-                        campaign.status = 'paused';
-                    }
+                    campaign = (await Campaign.transition(existente.id, { desde: ['active'], hacia: 'paused' })) || existente;
                     break;
-
-                case 'activate':
-                    if (['paused', 'approved', 'suspended'].includes(campaign.status)) {
-                        campaign.status = 'active';
-                        campaign.lastActiveAt = new Date();
-                        campaign.suspensionReason = undefined;
+                case 'activate': {
+                    // No se reactiva la campaña de un anunciante suspendido (antes se podía saltar la suspensión).
+                    const perfil = await AdvertiserProfile.findByUserId(existente.advertiserId);
+                    if (perfil && perfil.isSuspended) {
+                        return res.status(409).json({ success: false, error: 'El anunciante está suspendido: reactívalo primero' });
                     }
+                    campaign = (await Campaign.transition(existente.id, { desde: ['paused', 'approved', 'suspended'], hacia: 'active', touchActive: true, clearSuspension: true })) || existente;
                     break;
-
+                }
                 case 'suspend':
-                    campaign.status = 'suspended';
-                    campaign.suspensionReason = reason || 'Suspendido por administrador';
+                    campaign = (await Campaign.transition(existente.id, {
+                        desde: Campaign.STATUSES, hacia: 'suspended', suspensionReason: reason || 'Suspendido por administrador'
+                    })) || existente;
                     break;
             }
-
-            campaign.updatedAt = new Date();
-            await campaign.save();
 
             res.json({
                 success: true,
                 message: `Campaña ${action === 'pause' ? 'pausada' : action === 'activate' ? 'activada' : 'suspendida'} exitosamente`,
                 campaign: {
-                    id: campaign._id,
+                    id: campaign.id,
                     name: campaign.name,
                     status: campaign.status
                 }
@@ -335,19 +282,7 @@ router.get('/advertisers',
         try {
             const { page = 1, limit = 20, suspended } = req.query;
 
-            const filter = {};
-            if (typeof suspended === 'boolean') {
-                filter.isSuspended = suspended;
-            }
-
-            const advertisers = await AdvertiserProfile.find(filter)
-                .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .populate('userId', 'username email walletAddress')
-                .lean();
-
-            const total = await AdvertiserProfile.countDocuments(filter);
+            const { advertisers, total } = await AdvertiserProfile.list({ suspended: typeof suspended === 'boolean' ? suspended : null, page, limit });
 
             res.json({
                 success: true,
@@ -379,7 +314,7 @@ router.post('/suspend-advertiser/:id',
     authMiddleware,
     adminMiddleware,
     [
-        param('id').isMongoId().withMessage('ID de anunciante inválido'),
+        param('id').isUUID().withMessage('ID de anunciante inválido'),
         body('suspend').isBoolean().withMessage('Campo suspend requerido'),
         body('reason').optional().trim()
     ],
@@ -395,8 +330,8 @@ router.post('/suspend-advertiser/:id',
 
             const { suspend, reason } = req.body;
 
-            const advertiser = await AdvertiserProfile.findById(req.params.id);
-
+            // Suspender/reactivar y, si se suspende, pasar a `suspended` sus campañas activas, aprobadas o pausadas (una transacción).
+            const advertiser = await AdvertiserProfile.setSuspended(req.params.id, suspend, reason);
             if (!advertiser) {
                 return res.status(404).json({
                     success: false,
@@ -404,37 +339,11 @@ router.post('/suspend-advertiser/:id',
                 });
             }
 
-            advertiser.isSuspended = suspend;
-            advertiser.suspensionReason = suspend ? (reason || 'Suspendido por administrador') : undefined;
-            advertiser.updatedAt = new Date();
-
-            await advertiser.save();
-
-            // Si se suspende, pausar todas sus campañas activas
-            if (suspend) {
-                await Campaign.updateMany(
-                    {
-                        $or: [
-                            { advertiserId: advertiser.userId },
-                            { advertiserWallet: advertiser.walletAddress }
-                        ],
-                        status: 'active'
-                    },
-                    {
-                        $set: {
-                            status: 'suspended',
-                            suspensionReason: 'Anunciante suspendido',
-                            updatedAt: new Date()
-                        }
-                    }
-                );
-            }
-
             res.json({
                 success: true,
                 message: suspend ? 'Anunciante suspendido' : 'Anunciante reactivado',
                 advertiser: {
-                    id: advertiser._id,
+                    id: advertiser.id,
                     projectName: advertiser.projectName,
                     isSuspended: advertiser.isSuspended
                 }
