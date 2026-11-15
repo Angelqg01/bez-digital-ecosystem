@@ -11,10 +11,10 @@ Este proyecto está en proceso de migración para alinear su stack tecnológico 
 | Área | Actual | Destino |
 |---|---|---|
 | Smart Contracts | Hardhat | **Foundry** |
-| Frontend | Vite + React (JSX/JavaScript) | **Next.js + React (TSX/TypeScript)** |
-| Base de datos | MongoDB (Mongoose) + Prisma | **PostgreSQL (pg)** |
+| Frontend | Vite + React 18 (JSX) | Se mantiene Vite en el Hub (`frontend/`); el código nuevo, en TSX. La web principal es `control-center/frontend` (Next.js) |
+| Base de datos | MongoDB (Mongoose) + Prisma | **PostgreSQL (pg)**. Migración por dominios, no en bloque: ver `docs/developer/HUB_BACKEND_MIGRACION.md` |
 | SDK | Local | **@bezhas/sdk v3 (centralizado)** |
-| Package Manager | pnpm | **npm** |
+| Package Manager | pnpm | **pnpm** (se mantiene: el estándar del proyecto es pnpm 11; npm y yarn están prohibidos) |
 | Mobile ethers | v5 | **v6** |
 
 ## Regla para nuevo código
