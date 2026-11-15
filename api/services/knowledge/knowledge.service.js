@@ -23,6 +23,11 @@ const MAX_DOC_CHARS = 200_000;
 const MAX_TOP_K = 8;
 const MIN_RELATIVE_SCORE = 0.5;
 const CANDIDATOS = Number(process.env.KNOWLEDGE_CANDIDATES || 300);
+// Similitud coseno mínima para que un fragmento entre por la vía semántica. Depende del modelo: se calibra con
+// `node scripts/rag-eval.js --embedder ollama` y sin ella la búsqueda vectorial devolvería siempre «el vecino más
+// cercano», aunque la pregunta no tenga nada que ver (y el RAG dejaría de abstenerse).
+const VEC_MIN = Number(process.env.KNOWLEDGE_VEC_MIN || 0.55);
+const VEC_TOP = 10;
 
 const sha256 = (s) => `sha256:${crypto.createHash('sha256').update(s).digest('hex')}`;
 const cosine = (a, b) => {
@@ -33,9 +38,30 @@ const cosine = (a, b) => {
 
 class KnowledgeService {
     /** @param {{store?: object, embedder?: {embed(text:string):Promise<number[]>}}} opts */
-    constructor({ store = new MemoryStore(), embedder = null } = {}) {
+    constructor({ store = new MemoryStore(), embedder = null, vecMin = VEC_MIN } = {}) {
         this.store = store;
         this.embedder = embedder;
+        this.vecMin = vecMin;
+        this._avisoEmbedder = 0;
+    }
+
+    /** Un fallo del embedder degrada a BM25: se avisa como mucho una vez por minuto. */
+    _falloEmbedder(err) {
+        if (Date.now() - this._avisoEmbedder > 60_000) {
+            this._avisoEmbedder = Date.now();
+            console.warn(`[knowledge] embedder no disponible, se busca sólo con BM25: ${err.message}`);
+        }
+        return null;
+    }
+
+    async _vectorDeDocumento(texto) {
+        if (!this.embedder) return null;
+        try { return await (this.embedder.embedDocument || this.embedder.embed).call(this.embedder, texto); } catch (e) { return this._falloEmbedder(e); }
+    }
+
+    async _vectorDePregunta(texto) {
+        if (!this.embedder) return null;
+        try { return await (this.embedder.embedQuery || this.embedder.embed).call(this.embedder, texto); } catch (e) { return this._falloEmbedder(e); }
     }
 
     /**
@@ -103,7 +129,10 @@ class KnowledgeService {
                 status: doc.status,
                 checksum: sha256(part.content),
             };
-            if (this.embedder && doc.status === 'published') chunk.embedding = await this.embedder.embed(part.content);
+            if (this.embedder && doc.status === 'published') {
+                const v = await this._vectorDeDocumento(part.content);
+                if (v) { chunk.embedding = v; chunk.embedding_model = this.embedder.id || 'embedder'; }
+            }
             chunks.push(chunk);
         }
 
@@ -130,6 +159,13 @@ class KnowledgeService {
             ? await this.store.candidatos(principal.tenantId, terminos, CANDIDATOS)
             : await this.store.chunksVisibles(principal.tenantId);
         const stats = fts ? await this.store.estadisticas(principal.tenantId, terminos) : null;
+        // Consulta embebida UNA vez. Con el prefiltro léxico de Postgres, una paráfrasis sin términos en común no
+        // sería candidata: se añaden los candidatos por vector (ya recortados por tenant en SQL).
+        const qv = await this._vectorDePregunta(query);
+        if (fts && qv && typeof this.store.candidatosVectoriales === 'function') {
+            const ids = new Set(visibles.map((c) => c.id));
+            for (const c of await this.store.candidatosVectoriales(principal.tenantId, this.embedder.id)) if (!ids.has(c.id)) visibles.push(c);
+        }
         // Con la ingesta de tenants apagada, lo que ya hubiera de tenants (anterior a la política) tampoco se recupera.
         const soloGlobal = !this.tenantIngestEnabled();
         const allowed = visibles.filter((c) => (!soloGlobal || c.tenant_id == null) && canAccess(principal, c));
@@ -141,15 +177,18 @@ class KnowledgeService {
         const floor = scored.length ? scored[0].score * MIN_RELATIVE_SCORE : 0;
         const cobertura = new Map(scored.map((r) => [r.chunk.id, r.coverage]));
         let ranked = scored.filter((r) => r.score >= floor).map((r) => r.chunk);
-        if (this.embedder) {
-            const qv = await this.embedder.embed(query);
+        if (qv) {
+            const modelo = this.embedder.id || 'embedder';
             const vec = allowed
-                .filter((c) => Array.isArray(c.embedding))
+                .filter((c) => Array.isArray(c.embedding) && c.embedding.length === qv.length && (!c.embedding_model || c.embedding_model === modelo))
                 .map((c) => ({ c, s: cosine(qv, c.embedding) }))
+                .filter((x) => x.s >= this.vecMin)
                 .sort((a, b) => b.s - a.s)
-                .map((x) => x.c);
+                .slice(0, VEC_TOP);
+            // Acierto semántico sin términos en común: su «cobertura» es la similitud (sube de 0,5 sólo si pasó el umbral).
+            for (const x of vec) if (!cobertura.has(x.c.id)) cobertura.set(x.c.id, x.s);
             const rrf = new Map();
-            [ranked, vec].forEach((list) => list.forEach((c, i) => rrf.set(c.id, (rrf.get(c.id) || 0) + 1 / (60 + i))));
+            [ranked, vec.map((x) => x.c)].forEach((list) => list.forEach((c, i) => rrf.set(c.id, (rrf.get(c.id) || 0) + 1 / (60 + i))));
             const byId = new Map(allowed.map((c) => [c.id, c]));
             ranked = [...rrf.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => byId.get(id));
         }

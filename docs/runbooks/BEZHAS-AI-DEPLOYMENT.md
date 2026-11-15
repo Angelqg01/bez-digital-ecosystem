@@ -88,3 +88,21 @@ Baseline en `docs/audit/RAG-TEST-BASELINE.md`.
 ## 7. Lo que NO se ha hecho (no asumir)
 
 Nada de lo anterior está desplegado: son cambios locales sin `push`. No hay alertas creadas, ni dashboard, ni prueba de carga, ni modelo local.
+
+## Búsqueda semántica (embedder) — apagada por defecto
+
+El RAG es BM25 puro hasta que se activa `KNOWLEDGE_EMBEDDER`. Con él, cada pregunta se fusiona (RRF) con una búsqueda
+por vectores, que encuentra paráfrasis y otros idiomas que BM25 no ve («What does the Starter plan cost?»).
+
+1. Migración `081_knowledge_embeddings.sql` (columnas NULL; no toca datos).
+2. Tener el modelo en Ollama: `ollama pull nomic-embed-text` (Ollama sólo sirve embeddings de modelos de embeddings;
+   los `qwen*` del chat responden «does not support embeddings»).
+3. Variables de la API: `KNOWLEDGE_EMBEDDER=ollama`, `OLLAMA_URL`, `KNOWLEDGE_EMBED_MODEL=nomic-embed-text` y, tras calibrar,
+   `KNOWLEDGE_VEC_MIN` (similitud mínima de la vía semántica; por defecto 0,55).
+4. `node scripts/knowledge-embed.js` calcula los vectores de lo ya indexado (idempotente; lo nuevo se embebe al ingerir).
+5. Medir antes de activar: `KNOWLEDGE_EMBEDDER=ollama node scripts/rag-eval.js --comparar [--vec-min 0.6]`. Sólo se activa si
+   mejora el recall sin bajar la abstención (hoy BM25: recall@4 100 %, abstención o débil 100 %).
+
+Si Ollama no responde, la búsqueda cae a BM25 sin error (un aviso por minuto en el log). Un vector sólo se compara con otro del
+mismo modelo y prefijos (`embedding_model`): cambiar de modelo obliga a repetir el paso 4, no corrompe nada.
+Revertir: quitar `KNOWLEDGE_EMBEDDER`.

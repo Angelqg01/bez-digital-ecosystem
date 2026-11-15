@@ -13,6 +13,9 @@ function crearStore() {
     return new PgStore(require('../../db/pool'));
 }
 
-const knowledge = new KnowledgeService({ store: crearStore() });
+const { crearEmbedder } = require('./embedder');
+
+// Sin KNOWLEDGE_EMBEDDER es null y el RAG es BM25 puro (ver services/knowledge/embedder.js).
+const knowledge = new KnowledgeService({ store: crearStore(), embedder: crearEmbedder() });
 
 module.exports = { knowledge, KnowledgeService, MemoryStore, PgStore };

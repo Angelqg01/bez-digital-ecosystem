@@ -48,7 +48,7 @@ Si cambia un precio, falla `__tests__/config/operant-pricing-docs.test.js` hasta
 
 ## Trampas
 
-- **Migraciones:** la siguiente es la 081. Hay números repetidos (002, 008, 074): inofensivos y **no se renombran** (el runner
+- **Migraciones:** la siguiente es la 082. Hay números repetidos (002, 008, 074): inofensivos y **no se renombran** (el runner
   registra el nombre del fichero: renombrar = volver a ejecutarla en producción). Un test impide añadir más.
   No lanzarlas contra producción fuera del flujo de despliegue.
 - **Imagen Docker local** (servicio `bezhas-api`): antes de construirla hay que copiar `agent-lib/` y

@@ -57,6 +57,9 @@ const longitudDe = (titulo, seccion, contenido) => tokenize(`${titulo || ''} ${t
 /** Mismos tokens que el BM25 (título + sección + contenido): lo indexado y lo buscado coinciden. */
 const tokensDe = (titulo, seccion, contenido) => [...new Set(tokenize(`${titulo || ''} ${seccion || ''} ${contenido || ''}`))].join(' ');
 
+// Con embedder activo las consultas traen también el vector y su modelo; sin él no se transfiere nada de más.
+const colsVector = () => (process.env.KNOWLEDGE_EMBEDDER ? ', c.embedding, c.embedding_model' : '');
+
 const jsonOrEmpty = (v) => JSON.stringify(Array.isArray(v) ? v : []);
 
 function filaADoc(r) {
@@ -91,7 +94,7 @@ class PgStore {
 
     async chunksVisibles(tenantId) {
         const { rows } = await this.db.query(
-            `SELECT c.id, c.document_id, c.chunk_index, c.content, c.section, c.version, c.checksum,
+            `SELECT c.id, c.document_id, c.chunk_index, c.content, c.section, c.version, c.checksum${colsVector()},
                     d.title, d.tenant_id, d.classification, d.allowed_roles, d.allowed_plans,
                     d.valid_from, d.valid_to, d.status
                FROM knowledge_chunks c
@@ -113,7 +116,7 @@ class PgStore {
         const ts = [...new Set(terminos)].filter((t) => /^[a-z0-9]{1,40}$/.test(t)).slice(0, 40).join(' | ');
         if (!ts) return [];
         const { rows } = await this.db.query(
-            `SELECT c.id, c.document_id, c.chunk_index, c.content, c.section, c.version, c.checksum,
+            `SELECT c.id, c.document_id, c.chunk_index, c.content, c.section, c.version, c.checksum${colsVector()},
                     d.title, d.tenant_id, d.classification, d.allowed_roles, d.allowed_plans,
                     d.valid_from, d.valid_to, d.status
                FROM knowledge_chunks c
@@ -125,6 +128,34 @@ class PgStore {
             [tenantId, ts, limite]
         );
         return rows.map(filaADoc);
+    }
+
+    /** Fragmentos publicados del tenant (o globales) que tienen vector del modelo dado: candidatos de la vía semántica. */
+    async candidatosVectoriales(tenantId, modelo, limite = 3000) {
+        const { rows } = await this.db.query(
+            `SELECT c.id, c.document_id, c.chunk_index, c.content, c.section, c.version, c.checksum, c.embedding, c.embedding_model,
+                    d.title, d.tenant_id, d.classification, d.allowed_roles, d.allowed_plans,
+                    d.valid_from, d.valid_to, d.status
+               FROM knowledge_chunks c
+               JOIN knowledge_documents d ON d.id = c.document_id AND d.version = c.version
+              WHERE d.status = 'published' AND (d.tenant_id IS NULL OR d.tenant_id = $1)
+                AND c.embedding IS NOT NULL AND c.embedding_model = $2
+              ORDER BY c.id LIMIT $3`, [tenantId, modelo, limite]);
+        return rows.map(filaADoc);
+    }
+
+    /** Fragmentos sin vector de ESE modelo (nuevos, o calculados con otro modelo): trabajo para scripts/knowledge-embed.js. */
+    async sinVector(modelo, limite = 64) {
+        const { rows } = await this.db.query(
+            `SELECT c.id, c.content FROM knowledge_chunks c
+               JOIN knowledge_documents d ON d.id = c.document_id AND d.version = c.version
+              WHERE d.status = 'published' AND (c.embedding IS NULL OR c.embedding_model IS DISTINCT FROM $1)
+              ORDER BY c.id LIMIT $2`, [modelo, limite]);
+        return rows;
+    }
+
+    async guardarVector(id, vector, modelo) {
+        await this.db.query('UPDATE knowledge_chunks SET embedding = $2::real[], embedding_model = $3 WHERE id = $1', [id, vector, modelo]);
     }
 
     /**
@@ -192,9 +223,10 @@ class PgStore {
             if (up.rowCount === 0) throw Object.assign(new Error('El documento pertenece a otro tenant'), { status: 403 });
             for (const c of chunks) {
                 await client.query(
-                    `INSERT INTO knowledge_chunks (id, document_id, chunk_index, content, section, version, checksum, tokens, ntok)
-                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-                    [c.id, c.document_id, c.chunk_index, c.content, c.section || null, c.version, c.checksum, tokensDe(doc.title, c.section, c.content), longitudDe(doc.title, c.section, c.content)]
+                    `INSERT INTO knowledge_chunks (id, document_id, chunk_index, content, section, version, checksum, tokens, ntok, embedding, embedding_model)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::real[],$11)`,
+                    [c.id, c.document_id, c.chunk_index, c.content, c.section || null, c.version, c.checksum, tokensDe(doc.title, c.section, c.content), longitudDe(doc.title, c.section, c.content),
+                        Array.isArray(c.embedding) ? c.embedding : null, Array.isArray(c.embedding) ? (c.embedding_model || null) : null]
                 );
             }
             await client.query('COMMIT');

@@ -7,6 +7,9 @@
  *   node scripts/rag-eval.js                 # imprime el informe
  *   node scripts/rag-eval.js --json out.json # además guarda el resultado
  *   node scripts/rag-eval.js --min-recall 0.9 --min-abstencion 0.8   # sale con 1 si no se cumple
+ *   KNOWLEDGE_EMBEDDER=ollama KNOWLEDGE_EMBED_MODEL=nomic-embed-text node scripts/rag-eval.js --comparar
+ *       # mide BM25 y BM25+vectores (RRF) sobre las mismas preguntas y muestra la diferencia
+ *   ... --vec-min 0.6   # umbral de similitud de la vía semántica (calibrarlo por modelo)
  *
  * Usa el conocimiento público sembrado (services/knowledge/seed.js) en un almacén en memoria: no toca la base de
  * datos ni llama a ningún modelo. Mide sólo recuperación; la calidad de la respuesta del LLM no se evalúa aquí.
@@ -27,8 +30,8 @@ const UMBRAL_DEBIL = 0.5; // misma cobertura bajo la que el chat avisa de que pu
 const pct = (n, d) => (d ? n / d : null);
 const percentil = (xs, p) => { if (!xs.length) return 0; const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.ceil(p * s.length) - 1)]; };
 
-async function evaluar({ corpus = CORPUS, topK = TOP_K } = {}) {
-    const knowledge = new KnowledgeService({ store: new MemoryStore() });
+async function evaluar({ corpus = CORPUS, topK = TOP_K, embedder = null, vecMin } = {}) {
+    const knowledge = new KnowledgeService({ store: new MemoryStore(), embedder, ...(vecMin != null ? { vecMin } : {}) });
     await seedPublicKnowledge(knowledge);
     const principal = { userId: 'eval', tenantId: 'org:eval', roles: ['USER'], plan: 'business' };
     const { preguntas } = JSON.parse(fs.readFileSync(corpus, 'utf8'));
@@ -62,7 +65,7 @@ async function evaluar({ corpus = CORPUS, topK = TOP_K } = {}) {
     }
     const ms = filas.map((f) => f.ms);
     return {
-        fecha: new Date().toISOString(), topK, preguntas: filas.length,
+        fecha: new Date().toISOString(), topK, modo: embedder ? `BM25+vectores (${embedder.id})` : 'BM25', preguntas: filas.length,
         con_respuesta: con.length, sin_respuesta: sin.length,
         recall_at_k: pct(con.filter((f) => f.acierto).length, con.length),
         top1: pct(con.filter((f) => f.top1).length, con.length),
@@ -79,7 +82,7 @@ async function evaluar({ corpus = CORPUS, topK = TOP_K } = {}) {
 const f2 = (x) => (x == null ? 'n/d' : (x * 100).toFixed(1) + ' %');
 
 function imprimir(r) {
-    console.log(`RAG eval · BM25 · top-${r.topK} · ${r.preguntas} preguntas (${r.con_respuesta} con respuesta, ${r.sin_respuesta} sin)`);
+    console.log(`RAG eval · ${r.modo} · top-${r.topK} · ${r.preguntas} preguntas (${r.con_respuesta} con respuesta, ${r.sin_respuesta} sin)`);
     console.log(`  recall@${r.topK}            ${f2(r.recall_at_k)}`);
     console.log(`  acierto en 1.ª posición ${f2(r.top1)}   MRR ${r.mrr == null ? 'n/d' : r.mrr.toFixed(3)}`);
     console.log(`  abstención correcta     ${f2(r.abstencion_correcta)}   (o coincidencia débil avisada: ${f2(r.abstencion_o_debil)})`);
@@ -89,10 +92,29 @@ function imprimir(r) {
     if (r.no_abstiene.length) { console.log('  SIN ABSTENCIÓN:'); r.no_abstiene.forEach((f) => console.log(`   - ${f.id} «${f.q}» → ${f.docs.join(', ')} (cobertura ${f.cobertura}${f.debil ? ', débil' : ''})`)); }
 }
 
+function comparar(a, b) {
+    const d = (x, y) => (x == null || y == null ? 'n/d' : `${x >= y ? '+' : ''}${((y - x) * 100).toFixed(1)} pt`);
+    console.log(`\nDiferencia (${b.modo}) frente a BM25:`);
+    console.log(`  recall@${a.topK} ${d(a.recall_at_k, b.recall_at_k)} · 1.ª posición ${d(a.top1, b.top1)} · abstención correcta ${d(a.abstencion_correcta, b.abstencion_correcta)} · abstención o débil ${d(a.abstencion_o_debil, b.abstencion_o_debil)}`);
+    for (const t of Object.keys(a.por_tipo)) console.log(`  ${t}: ${f2(a.por_tipo[t].recall)} → ${f2(b.por_tipo[t]?.recall)}`);
+    console.log(`  latencia p95 ${a.latencia_ms.p95.toFixed(1)} → ${b.latencia_ms.p95.toFixed(1)} ms`);
+}
+
 if (require.main === module) {
     const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
-    evaluar().then((r) => {
-        imprimir(r);
+    (async () => {
+        const { crearEmbedder } = require('../services/knowledge/embedder');
+        const embedder = process.argv.includes('--embedder') || process.argv.includes('--comparar') ? crearEmbedder({ KNOWLEDGE_EMBEDDER: 'ollama', ...process.env }) : null;
+        const vecMin = arg('--vec-min') != null ? Number(arg('--vec-min')) : undefined;
+        if (process.argv.includes('--comparar')) {
+            const base = await evaluar();
+            const hib = await evaluar({ embedder, vecMin });
+            imprimir(base); console.log(); imprimir(hib); comparar(base, hib);
+            return hib;
+        }
+        return evaluar({ embedder, vecMin });
+    })().then((r) => {
+        if (!process.argv.includes('--comparar')) imprimir(r);
         if (arg('--json')) fs.writeFileSync(arg('--json'), JSON.stringify(r, null, 2));
         const minR = Number(arg('--min-recall') || 0);
         const minA = Number(arg('--min-abstencion') || 0);
