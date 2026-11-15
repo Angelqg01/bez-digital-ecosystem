@@ -75,6 +75,16 @@ class UserPG {
         return this.hydrate(result.rows[0]);
     }
 
+    /** Usuario cuyo email o teléfono (ya hasheados por el cliente) coinciden. Lo usa la sincronización de contactos. */
+    static async findByContactHashes({ emailHash, phoneHash }) {
+        if (!emailHash && !phoneHash) return null;
+        const { rows } = await pool.query(
+            `SELECT id FROM users
+              WHERE (email_hash IS NOT NULL AND email_hash = $1) OR (phone_hash IS NOT NULL AND phone_hash = $2)
+              LIMIT 1`, [emailHash || null, phoneHash || null]);
+        return rows[0] || null;
+    }
+
     static async findOne(filter = {}) {
         if (filter.email) return this.findByEmail(filter.email);
         if (filter.walletAddress || filter.wallet_address) {

@@ -25,7 +25,7 @@ ya está hecha a medias, y dejar el backend donde está.
 
 ## Orden recomendado (de menor a mayor riesgo)
 
-1. **Sin dinero ni custodia:** `contact`, `Share`, `affiliateEvent`, `B2BLead`, `validation`. Una ruta cada uno; se prueban con la suite del Hub.
+1. **Sin dinero ni custodia:** ~~`contact`~~ (hecho), `Share`, `affiliateEvent`, `B2BLead`, `validation`. Una ruta cada uno; se prueban con la suite del Hub.
 2. **Puente/OpenClaw:** `BridgeApiKey` y `OpenClawClient`. Llevan claves: migrar con hash y no volver a escribir el valor en claro.
 3. **Publicidad:** `adBalance` mueve saldos y lo toca el webhook de Stripe: migración con doble escritura y comparación antes de cortar.
 4. **DAO/DeFi:** al final y sólo si la gobernanza sigue en uso; la fuente de verdad es la cadena, esto es caché.
@@ -33,7 +33,26 @@ ya está hecha a medias, y dejar el backend donde está.
 Regla de cada paso: modelo nuevo en `models/pg` + migración SQL + el test de la ruta antes y después, y retirar el modelo de Mongoose al
 pasar a producción. Mientras haya un modelo de Mongoose en uso, `MONGODB_URI` tiene que seguir definida en producción.
 
-## Hecho en esta ronda
+## Migrados
+
+| Dominio | Fecha | Qué cambió |
+|---|---|---|
+| `contact` (sincronización de contactos) | 2026-11-15 | Tabla `contacts` (migración 021), `models/pg/Contact.js`, `routes/contacts.routes.js` y `workers/contactSync.worker.js` sobre Postgres; borrado `models/contact.model.js`. Probado contra Postgres real (`tests/integration/contacts-pg.test.js`, 9 casos). Detalle abajo. |
+
+**Lo que se encontró al migrar `contact`** (el modo Postgres ya estaba roto, no sólo el modelo):
+- El worker buscaba al usuario con `User.findOne({$or: [{emailHash}, {phoneHash}]})`, una consulta de Mongo que el modelo pg ignora y
+  devuelve `null`: **ningún contacto se emparejaba nunca**. Ahora `User.findByContactHashes` consulta `users.email_hash/phone_hash`.
+- `User.update(id, {$set: ...})` generaba una columna `$set`: la marca de «ha sincronizado» no se guardaba.
+- La recompensa de 50 BEZ no podía anotarse: `bezcoin_transactions.wallet_address` es NOT NULL y la llamada no lo enviaba, ni la moneda
+  (caía en `EUR`) ni el estado. Ahora lleva wallet (409 `WALLET_REQUIRED` sin ella), `currency: 'BEZ'` y el contacto en `metadata`.
+- La recompensa se podía cobrar varias veces con peticiones simultáneas (`findOne` + `save`). Ahora el paso a `invited` es un
+  `UPDATE … WHERE status = 'is_user'` atómico y un contacto ya invitado no se reabre al re-sincronizar. Si falla el pago, el contacto
+  se devuelve a `is_user`.
+
+**Para producción:** aplicar la migración 021 (flujo de despliegue del Hub) antes de desplegar esta versión. Al no haber migración de
+datos, los contactos que existieran en Mongo no se copian; como el emparejamiento en Postgres no funcionaba, no hay nada válido que perder.
+
+## Hecho en la primera ronda
 
 - Retirados tres modelos que nadie referenciaba (`ClothingRental.model.js`, `affiliateEvent.model.new.js`, `contact.model.new.js`).
 - `MIGRATION_DIRECTIVE.md` corregido: decía que el gestor de paquetes destino era npm; es pnpm.

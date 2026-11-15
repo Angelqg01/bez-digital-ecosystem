@@ -1,5 +1,5 @@
 const User = require('../models/pg/User');
-const Contact = require('../models/contact.model');
+const Contact = require('../models/pg/Contact');
 
 /**
  * Process a batch of hashed contacts for a specific user.
@@ -15,67 +15,29 @@ async function processContactSync(job) {
   try {
     const ownerId = userId;
     
-    // Process each contact individually or in batches
     for (const contactData of contacts) {
       const { emailHash, phoneHash, encryptedData } = contactData;
-      
-      // 1. Search for matching User in our system using the hashes.
-      let matchedUser = null;
-      
-      if (emailHash || phoneHash) {
-        const query = {
-          $or: []
-        };
-        
-        if (emailHash) query.$or.push({ emailHash });
-        if (phoneHash) query.$or.push({ phoneHash });
+      if (!emailHash && !phoneHash) continue;
 
-        matchedUser = await User.findOne(query).select('_id');
-      }
-      
-      // 2. Determine match status
-      let status = 'pending';
-      let matchedUserId = undefined;
+      // 1. ¿Algún usuario de BeZhas coincide con esos hashes?
+      const matchedUser = await User.findByContactHashes({ emailHash, phoneHash });
 
-      if (matchedUser) {
-        status = 'is_user';
-        matchedUserId = matchedUser._id;
-        
-        // Ensure you don't match the user with themselves
-        if (matchedUserId.toString() === ownerId.toString()) {
-            continue; // Skip their own contact
-        }
-      }
+      // 2. Nunca se empareja a un usuario consigo mismo.
+      if (matchedUser && String(matchedUser.id) === String(ownerId)) continue;
 
-      // 3. Upsert the Contact record for the specific owner
-      // We search by either emailHash or phoneHash within the owner's contacts
-      const matchCriteria = { ownerId };
-      if (emailHash && phoneHash) {
-          matchCriteria.$or = [{ emailHash }, { phoneHash }];
-      } else if (emailHash) {
-          matchCriteria.emailHash = emailHash;
-      } else {
-          matchCriteria.phoneHash = phoneHash;
-      }
-
-      await Contact.findOneAndUpdate(
-        matchCriteria, 
-        {
-          ownerId,
-          emailHash,
-          phoneHash,
-          encryptedData: encryptedData || 'encrypted_stub', // Fallback for testing/stubbing
-          status,
-          matchedUserId
-        },
-        { upsert: true, new: true } // Create if doesn't exist, update if it does
-      );
+      // 3. Crea o actualiza el contacto del propietario (un invited no se reabre: ver Contact.upsert).
+      await Contact.upsert({
+        ownerId,
+        emailHash,
+        phoneHash,
+        encryptedData: encryptedData || 'encrypted_stub', // Sólo para pruebas: el cliente envía el dato cifrado.
+        status: matchedUser ? 'is_user' : 'pending',
+        matchedUserId: matchedUser ? matchedUser.id : null,
+      });
     }
 
-    // Mark that the user has performed a sync recently (optional analytics step)
-    await User.update(ownerId, {
-      $set: { 'contactSync.hasSynced': true, 'contactSync.lastSync': new Date() }
-    });
+    // Marca que el usuario sincronizó contactos (analítica).
+    await User.update(ownerId, { contactSync: { hasSynced: true, lastSync: new Date().toISOString() } });
 
     console.log(`[Queue] Successfully synced ${contacts.length} contacts for user ${ownerId}`);
 

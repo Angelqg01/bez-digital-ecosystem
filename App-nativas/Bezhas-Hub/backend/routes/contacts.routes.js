@@ -2,8 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { addContactSyncJob } = require('../services/queue.service');
-const User = require('../models/pg/User');
-const Contact = require('../models/contact.model');
+const Contact = require('../models/pg/Contact');
+const BEZCoinTransaction = require('../models/pg/BEZCoinTransaction');
+
+// Recompensa por descubrir un amigo (se paga una sola vez por contacto: ver Contact.claimInvite).
+const FRIEND_REWARD_BEZ = 50;
 const { protect } = require('../middleware/auth.middleware');
 
 const syncRules = () => {
@@ -52,12 +55,7 @@ router.post('/sync', protect, syncRules(), async (req, res) => {
  */
 router.get('/matches', protect, async (req, res) => {
     try {
-        const matches = await Contact.find({ 
-            ownerId: req.user._id, 
-            status: 'is_user',
-            matchedUserId: { $exists: true } 
-        }).populate('matchedUserId', 'username profileImage isVerified');
-        
+        const matches = await Contact.findMatches(req.user._id);
         res.json({ matches });
     } catch (error) {
         req.log.error({ err: error }, 'Failed to fetch contact matches');
@@ -71,41 +69,35 @@ router.get('/matches', protect, async (req, res) => {
  * @access  Private
  */
 router.post('/:id/add-friend', protect, async (req, res) => {
+    const contactId = req.params.id;
+    if (!Contact.isValidId(contactId)) return res.status(404).json({ error: 'Matched contact not found' });
+
+    // El libro de BEZ-Coin exige wallet (wallet_address NOT NULL): sin ella no hay dónde anotar la recompensa.
+    const walletAddress = req.user.walletAddress || req.user.wallet_address;
+    if (!walletAddress) return res.status(409).json({ error: 'Link a wallet to claim the reward', code: 'WALLET_REQUIRED' });
+
+    let contact = null;
     try {
-        const contactId = req.params.id;
-        
-        // Ensure the contact belongs to the user and is a match
-        const contact = await Contact.findOne({ _id: contactId, ownerId: req.user._id, status: 'is_user' });
-        if (!contact) {
-             return res.status(404).json({ error: 'Matched contact not found' });
-        }
+        // Reclamo ATÓMICO: sólo una petición pasa de is_user a invited, así que la recompensa no se cobra dos veces.
+        contact = await Contact.claimInvite(contactId, req.user._id);
+        if (!contact) return res.status(404).json({ error: 'Matched contact not found' });
 
-        // TODO: Actually create the Friend relation in a Social/Friend model here based on existing system structure
+        // TODO: crear aquí la relación de amistad en el modelo social cuando exista.
 
-        // Update the contact status so the reward cannot be claimed twice
-        contact.status = 'invited'; // Using 'invited' to signify the connection request was sent
-        await contact.save();
+        await BEZCoinTransaction.create({
+            userId: req.user._id,
+            walletAddress,
+            type: 'EARN',
+            amount: FRIEND_REWARD_BEZ,
+            currency: 'BEZ',
+            status: 'completed',
+            metadata: { reason: 'friend_discovery_reward', contactId },
+        });
 
-        // Distribute 50 BEZ-Coin Reward
-        const BEZCoinTransaction = require('../models/pg/BEZCoinTransaction'); // Adjust path if needed
-        const user = await User.findById(req.user._id);
-        
-        if (user && BEZCoinTransaction) {
-            // Create a reward transaction
-            await BEZCoinTransaction.create({
-                userId: user._id,
-                amount: 50,
-                type: 'EARN',
-                status: 'COMPLETED',
-                description: 'Friend Discovery Reward',
-                referenceId: contactId
-            });
-            // NOTE: In a robust setup, there is likely a User Wallet/Balance field that should also be updated.
-            // Mocking the behavior based on assumed BEZCoin structure.
-        }
-
-        res.json({ message: 'Friend request sent and 50 BEZ-Coins rewarded successfully!' });
+        res.json({ message: `Friend request sent and ${FRIEND_REWARD_BEZ} BEZ-Coins rewarded successfully!` });
     } catch (error) {
+        // Si falló el pago de la recompensa, el contacto vuelve a poder reclamarse.
+        if (contact) await Contact.releaseInvite(contactId, req.user._id).catch(() => {});
         req.log.error({ err: error }, 'Failed to add friend from contacts');
         res.status(500).json({ error: 'Failed to add friend' });
     }
