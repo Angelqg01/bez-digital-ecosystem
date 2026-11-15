@@ -256,51 +256,19 @@ async function handleBillingPayment(paymentIntent) {
             return null;
         }
 
-        const AdBalance = safeRequire('../models/adBalance.model');
-        const BillingTransaction = safeRequire('../models/billingTransaction.model');
-
-        if (!AdBalance || !BillingTransaction) {
-            console.warn('[STRIPE WEBHOOK] Billing models not available, skipping billing handler');
+        const adTopup = safeRequire('../services/adTopup.service');
+        if (!adTopup) {
+            console.warn('[STRIPE WEBHOOK] adTopup no disponible, se omite el abono de saldo');
             return null;
         }
 
-        // Find the transaction
-        const transaction = await BillingTransaction.findOne({
-            stripePaymentIntentId: paymentIntent.id
-        });
-
-        if (!transaction) {
-            console.warn(`[STRIPE WEBHOOK] No billing transaction found for PI: ${paymentIntent.id}`);
-            return null;
+        // Abono IDEMPOTENTE: Stripe reintenta las entregas y cada PaymentIntent sólo puede abonarse una vez.
+        const resultado = await adTopup.completeStripeTopup(paymentIntent);
+        if (resultado.credited) {
+            console.log(`[STRIPE WEBHOOK] Billing: saldo abonado a ${resultado.userId}: +€${resultado.amountEur}`);
+        } else {
+            console.warn(`[STRIPE WEBHOOK] Billing: PI ${paymentIntent.id} sin abono (${resultado.reason})`);
         }
-
-        // Update transaction status
-        transaction.status = 'completed';
-        transaction.processedAt = new Date();
-        await transaction.save();
-
-        // Update ad balance
-        let balance = await AdBalance.findOne({
-            $or: [
-                { userId: transaction.userId },
-                { walletAddress: transaction.walletAddress }
-            ]
-        });
-
-        if (!balance) {
-            balance = new AdBalance({
-                userId: transaction.userId,
-                walletAddress: transaction.walletAddress
-            });
-        }
-
-        balance.fiatBalance += transaction.amount;
-        balance.totalDeposited += transaction.amount;
-        balance.lastDepositAt = new Date();
-        balance.updatedAt = new Date();
-        await balance.save();
-
-        console.log(`[STRIPE WEBHOOK] Billing: Balance updated for user ${transaction.userId}: +€${transaction.amount}`);
 
         return { handled: true, source: 'billing' };
     } catch (error) {

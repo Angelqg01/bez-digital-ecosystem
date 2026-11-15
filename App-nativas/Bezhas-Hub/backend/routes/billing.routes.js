@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { body, query, validationResult } = require('express-validator');
-const AdBalance = require('../models/adBalance.model');
-const BillingTransaction = require('../models/billingTransaction.model');
+const AdBalance = require('../models/pg/AdBalance');
+const BillingTransaction = require('../models/pg/BillingTransaction');
+const { verifyBezDeposit } = require('../services/bezDepositVerifier');
+const { creditBezDeposit } = require('../services/adTopup.service');
 const priceOracleService = require('../services/price-oracle.service');
 const { protect: authMiddleware } = require('../middleware/auth.middleware');
 
@@ -15,9 +17,14 @@ async function getStripeClient() {
     return require('stripe')(stripeKey);
 }
 
+/** El saldo publicitario va ligado a una wallet (ad_balances.wallet_address NOT NULL). */
+const walletDe = (req) => req.user.walletAddress || req.user.wallet_address || null;
+const sinWallet = (res) => res.status(409).json({ success: false, error: 'Vincula una wallet para usar el saldo publicitario', code: 'WALLET_REQUIRED' });
+
 /**
  * POST /api/billing/add-fiat-funds
- * Iniciar sesión de pago Stripe para recargar saldo
+ * Iniciar sesión de pago Stripe para recargar saldo. El saldo NO se acredita aquí: lo hace el webhook de Stripe
+ * (payment_intent.succeeded), una sola vez por PaymentIntent.
  */
 router.post('/add-fiat-funds',
     authMiddleware,
@@ -25,6 +32,7 @@ router.post('/add-fiat-funds',
         body('amount').isFloat({ min: 10, max: 10000 }).withMessage('Monto debe estar entre 10 y 10,000 EUR')
     ],
     async (req, res) => {
+        let transaction = null;
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
@@ -33,13 +41,15 @@ router.post('/add-fiat-funds',
                     errors: errors.array()
                 });
             }
+            const walletAddress = walletDe(req);
+            if (!walletAddress) return sinWallet(res);
 
-            const { amount } = req.body;
+            const amount = Math.round(Number(req.body.amount) * 100) / 100;
 
             // Crear transacción pendiente
-            const transaction = new BillingTransaction({
+            const fila = await BillingTransaction.create({
                 userId: req.user._id,
-                walletAddress: req.user.walletAddress,
+                walletAddress,
                 type: 'deposit_fiat',
                 amount,
                 currency: 'EUR',
@@ -47,8 +57,7 @@ router.post('/add-fiat-funds',
                 paymentMethod: 'stripe',
                 description: `Recarga de saldo publicitario - €${amount}`
             });
-
-            await transaction.save();
+            transaction = BillingTransaction.hydrate(fila);
 
             // Crear Payment Intent de Stripe
             const stripe = await getStripeClient();
@@ -56,25 +65,26 @@ router.post('/add-fiat-funds',
                 amount: Math.round(amount * 100), // Stripe usa centavos
                 currency: 'eur',
                 metadata: {
-                    userId: req.user._id.toString(),
-                    walletAddress: req.user.walletAddress,
-                    transactionId: transaction._id.toString(),
+                    userId: String(req.user._id),
+                    walletAddress,
+                    transactionId: String(transaction.id),
                     purpose: 'ad_balance_topup'
                 }
             });
 
-            transaction.stripePaymentIntentId = paymentIntent.id;
-            await transaction.save();
+            await BillingTransaction.attachStripeIntent(transaction.id, paymentIntent.id);
 
             res.json({
                 success: true,
                 clientSecret: paymentIntent.client_secret,
-                transactionId: transaction._id,
+                transactionId: transaction.id,
                 amount,
                 message: 'Payment Intent creado exitosamente'
             });
 
         } catch (error) {
+            // Si Stripe falló, la recarga pendiente no puede completarse nunca: se cierra en vez de dejarla huérfana.
+            if (transaction) await BillingTransaction.markFailed(transaction.id, error.message).catch(() => {});
             console.error('Error creating payment intent:', error);
             res.status(500).json({
                 success: false,
@@ -87,13 +97,13 @@ router.post('/add-fiat-funds',
 
 /**
  * POST /api/billing/add-bez-funds
- * Acreditar saldo pagado con BEZ-Coin
+ * Acreditar saldo pagado con BEZ-Coin. SÓLO se acredita lo que la cadena demuestra (ver services/bezDepositVerifier.js):
+ * el importe que envíe el cliente no cuenta. Un mismo hash no se puede acreditar dos veces.
  */
 router.post('/add-bez-funds',
     authMiddleware,
     [
-        body('amount').isFloat({ min: 100 }).withMessage('Monto mínimo: 100 BEZ'),
-        body('txHash').trim().notEmpty().withMessage('Hash de transacción requerido')
+        body('txHash').trim().matches(/^0x[0-9a-fA-F]{64}$/).withMessage('Hash de transacción inválido')
     ],
     async (req, res) => {
         try {
@@ -104,74 +114,44 @@ router.post('/add-bez-funds',
                     errors: errors.array()
                 });
             }
+            const walletAddress = walletDe(req);
+            if (!walletAddress) return sinWallet(res);
 
-            const { amount, txHash } = req.body;
+            const { txHash } = req.body;
 
-            // TODO: Verificar la transacción en blockchain
-            // const web3Service = require('../services/web3.service');
-            // const isValid = await web3Service.verifyTransaction(txHash, req.user.walletAddress, amount);
-            // if (!isValid) {
-            //   return res.status(400).json({ error: 'Transacción inválida' });
-            // }
+            const verificacion = await verifyBezDeposit({ txHash, fromWallet: walletAddress });
+            if (!verificacion.ok) {
+                const estado = verificacion.code === 'NOT_CONFIGURED' ? 503 : verificacion.code === 'RPC_ERROR' ? 502 : 400;
+                return res.status(estado).json({ success: false, error: verificacion.error, code: verificacion.code });
+            }
+            if (verificacion.amountBez < 100) {
+                return res.status(400).json({ success: false, error: 'Monto mínimo: 100 BEZ', code: 'BELOW_MINIMUM' });
+            }
 
             // Convertir BEZ a EUR usando el oráculo
             const bezEurPrice = await priceOracleService.getBezEurPrice();
-            const eurEquivalent = amount * bezEurPrice;
 
-            // Crear transacción
-            const transaction = new BillingTransaction({
-                userId: req.user._id,
-                walletAddress: req.user.walletAddress,
-                type: 'deposit_bez',
-                amount,
-                currency: 'BEZ',
-                status: 'completed',
-                paymentMethod: 'bez-coin',
-                blockchainTxHash: txHash,
-                description: `Recarga con BEZ-Coin - ${amount} BEZ (≈€${eurEquivalent.toFixed(2)})`,
-                metadata: {
-                    eurEquivalent,
-                    bezEurPrice
-                },
-                processedAt: new Date()
+            const abono = await creditBezDeposit({
+                userId: req.user._id, walletAddress, txHash, amountBez: verificacion.amountBez, bezEurPrice
             });
-
-            await transaction.save();
-
-            // Actualizar balance
-            let balance = await AdBalance.findOne({
-                $or: [
-                    { userId: req.user._id },
-                    { walletAddress: req.user.walletAddress }
-                ]
-            });
-
-            if (!balance) {
-                balance = new AdBalance({
-                    userId: req.user._id,
-                    walletAddress: req.user.walletAddress
-                });
+            if (!abono.credited) {
+                return res.status(409).json({ success: false, error: 'Esa transacción ya fue acreditada', code: abono.reason });
             }
-
-            balance.bezBalance += amount;
-            balance.totalDeposited += eurEquivalent;
-            balance.lastDepositAt = new Date();
-            balance.updatedAt = new Date();
-            await balance.save();
+            const { transaction, balance, eurEquivalent } = abono;
 
             res.json({
                 success: true,
                 message: 'Saldo acreditado exitosamente',
                 transaction: {
-                    id: transaction._id,
-                    amount,
+                    id: transaction.id,
+                    amount: verificacion.amountBez,
                     eurEquivalent: eurEquivalent.toFixed(2),
                     txHash
                 },
                 newBalance: {
                     bez: balance.bezBalance,
                     fiat: balance.fiatBalance,
-                    totalInEur: (balance.fiatBalance + (balance.bezBalance * bezEurPrice)).toFixed(2)
+                    totalInEur: AdBalance.availableEur(balance, bezEurPrice).toFixed(2)
                 }
             });
 
@@ -194,20 +174,9 @@ router.get('/balance',
     authMiddleware,
     async (req, res) => {
         try {
-            let balance = await AdBalance.findOne({
-                $or: [
-                    { userId: req.user._id },
-                    { walletAddress: req.user.walletAddress }
-                ]
-            });
-
-            if (!balance) {
-                balance = new AdBalance({
-                    userId: req.user._id,
-                    walletAddress: req.user.walletAddress
-                });
-                await balance.save();
-            }
+            const walletAddress = walletDe(req);
+            if (!walletAddress) return sinWallet(res);
+            const balance = await AdBalance.ensure(req.user._id, walletAddress);
 
             // Obtener precio BEZ/EUR para conversiones
             const bezEurPrice = await priceOracleService.getBezEurPrice();
@@ -223,7 +192,7 @@ router.get('/balance',
                         amount: balance.bezBalance,
                         eurEquivalent: (balance.bezBalance * bezEurPrice).toFixed(2)
                     },
-                    totalInEur: (balance.fiatBalance + (balance.bezBalance * bezEurPrice)).toFixed(2),
+                    totalInEur: AdBalance.availableEur(balance, bezEurPrice).toFixed(2),
                     totalDeposited: balance.totalDeposited,
                     totalSpent: balance.totalSpent,
                     totalRefunded: balance.totalRefunded,
@@ -237,25 +206,6 @@ router.get('/balance',
 
         } catch (error) {
             console.error('Error fetching balance:', error);
-
-            // Fallback: devolver balance vacío si MongoDB no está disponible
-            if (error.message && (error.message.includes('buffering timed out') || error.message.includes('connect'))) {
-                return res.json({
-                    success: true,
-                    data: {
-                        fiat: { amount: 0, currency: 'EUR' },
-                        bez: { amount: 0, eurEquivalent: '0.00' },
-                        totalInEur: '0.00',
-                        totalDeposited: 0,
-                        totalSpent: 0,
-                        totalRefunded: 0,
-                        pendingCharges: 0,
-                        priceInfo: { bezEurPrice: 0.10, lastUpdated: new Date() }
-                    },
-                    warning: 'Base de datos no disponible - mostrando balance vacío'
-                });
-            }
-
             res.status(500).json({
                 success: false,
                 error: 'Error al obtener saldo',
@@ -280,22 +230,8 @@ router.get('/history',
         try {
             const { page = 1, limit = 20, type } = req.query;
 
-            const filter = {
-                $or: [
-                    { userId: req.user._id },
-                    { walletAddress: req.user.walletAddress }
-                ]
-            };
-            if (type) filter.type = type;
-
-            const transactions = await BillingTransaction.find(filter)
-                .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .populate('campaignId', 'name')
-                .lean();
-
-            const total = await BillingTransaction.countDocuments(filter);
+            const { transactions, total } = await BillingTransaction.history(
+                { userId: req.user._id, walletAddress: walletDe(req) }, { type, page, limit });
 
             res.json({
                 success: true,

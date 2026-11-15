@@ -218,6 +218,7 @@ jobs:
           tests/bezpay.service.test.js
           tests/bezpay-webhook-security.test.js
           tests/price-oracle-twap.test.js
+          tests/bez-deposit-verifier.test.js
         env:
           NODE_ENV: test
 

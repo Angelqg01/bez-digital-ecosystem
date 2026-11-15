@@ -27,7 +27,7 @@ ya está hecha a medias, y dejar el backend donde está.
 
 1. **Sin dinero ni custodia:** ~~`contact`~~, ~~`affiliateEvent`~~, ~~`B2BLead`~~ (hechos). **Aplazados con motivo:** `Share` depende del dominio social `Post` (la ruta lee y escribe `post.shares` y el saldo `bezTokenBalance`, que ni `posts` ni `users` tienen en Postgres) y debe migrarse junto a posts, likes y comentarios; `validation` (318 líneas, con cola BullMQ, contrato `ContentValidator` y almacén en memoria de reserva) es un dominio propio que ya tiene `models/pg/ValidationEvent` a medias. Una ruta cada uno; se prueban con la suite del Hub.
 2. **Puente/OpenClaw:** `BridgeApiKey` y `OpenClawClient`. Llevan claves: migrar con hash y no volver a escribir el valor en claro.
-3. **Publicidad:** `adBalance` mueve saldos y lo toca el webhook de Stripe: migración con doble escritura y comparación antes de cortar.
+3. **Publicidad:** ~~`adBalance`~~ (hecho, ver arriba); quedan `campaign` y `advertiserProfile`. Los saldos de Mongo no se copian: sólo existían si alguien había recargado, y habría que comprobar si hay saldos reales en producción antes de cortar.
 4. **DAO/DeFi:** al final y sólo si la gobernanza sigue en uso; la fuente de verdad es la cadena, esto es caché.
 
 Regla de cada paso: modelo nuevo en `models/pg` + migración SQL + el test de la ruta antes y después, y retirar el modelo de Mongoose al
@@ -40,6 +40,28 @@ pasar a producción. Mientras haya un modelo de Mongoose en uso, `MONGODB_URI` t
 | `contact` (sincronización de contactos) | 2026-11-15 | Tabla `contacts` (migración 021), `models/pg/Contact.js`, `routes/contacts.routes.js` y `workers/contactSync.worker.js` sobre Postgres; borrado `models/contact.model.js`. Probado contra Postgres real (`tests/integration/contacts-pg.test.js`, 9 casos). Detalle abajo. |
 
 | `affiliateEvent` (afiliados) y `B2BLead` (leads y envío con aprobación) | 2026-11-15 | Tablas `affiliate_events` y `b2b_leads` (migración 022), `models/pg/AffiliateEvent.js` y `models/pg/B2BLead.js`; `routes/affiliate.routes.js` y `services/outbound-messaging.service.js` sobre Postgres; borrados los dos modelos de Mongoose. 10 casos contra Postgres real (`tests/integration/affiliate-b2b-pg.test.js`). |
+
+| Saldo publicitario: `adBalance` y `billingTransaction` (billing, webhook de Stripe y chequeo de saldo de campañas) | 2026-11-15 | Tabla `ad_balances` (migración 023; `billing_transactions` ya existía desde la 006), `models/pg/AdBalance.js`, `services/adTopup.service.js` y `services/bezDepositVerifier.js`; `routes/billing.routes.js`, `routes/stripe-webhook.routes.js` y `routes/campaigns.routes.js` sobre Postgres; borrados los dos modelos de Mongoose. 24 casos contra Postgres real (`tests/integration/ad-balance-pg.test.js`) y 10 sin base en el CI (`tests/bez-deposit-verifier.test.js`). |
+
+**Lo que se encontró al migrar el saldo publicitario (dinero):**
+- **Vulnerabilidad real:** `POST /api/billing/add-bez-funds` acreditaba el importe que dijera el cliente con **cualquier `txHash`**: había un `TODO` donde debía
+  comprobarse la transacción. Cualquier usuario autenticado podía regalarse saldo. Ahora se acredita **sólo lo que demuestra la cadena** (un `Transfer` de BEZ desde la
+  wallet del usuario a `BEZ_ADS_DEPOSIT_ADDRESS`, con 20 confirmaciones) e ignora el importe del cliente; un hash no se puede acreditar dos veces (índice único). **Sin
+  `BEZ_ADS_DEPOSIT_ADDRESS` configurada el endpoint responde 503**: hay que definirla (qué dirección recibe los BEZ de publicidad es decisión de negocio) antes de que
+  vuelva a funcionar.
+- El webhook de Stripe marcaba la recarga como completada y sumaba el saldo **sin comprobar si ya lo había hecho**: una entrega repetida (Stripe reintenta) abonaba dos
+  veces. Ahora el paso a `completed` y el abono son una transacción SQL y sólo la primera entrega abona; además se abona lo que Stripe cobró, no lo guardado, y un
+  importe o moneda distintos no abonan nada.
+- `AdBalance` se modificaba en memoria y se guardaba (leer-modificar-guardar): abonos simultáneos se perdían y dos cobros podían gastar el mismo saldo. Ahora cada
+  operación es una sentencia atómica con `CHECK (saldo >= 0)`: 30 cobros simultáneos con saldo para 20 dejan pasar exactamente 20.
+- El saldo sumaba EUR y BEZ **sin convertir** (`fiat + bez`); ahora usa el precio BEZ/EUR del oráculo (`AdBalance.availableEur`).
+- Aparecida al probar: dos primeros abonos simultáneos de un usuario nuevo chocaban en el índice de la wallet (`ON CONFLICT (user_id)` no lo cubría).
+- `/balance` devolvía un saldo vacío con 200 si la base fallaba («Base de datos no disponible»): el usuario veía 0 en vez de un error. Se quita.
+- Si Stripe falla al crear el PaymentIntent, la recarga pendiente se cierra como fallida en vez de quedar huérfana.
+- Nadie descuenta saldo todavía (el gasto de campañas no está implementado): `AdBalance.deduct` queda listo y probado para cuando se conecte.
+
+**Pendiente de este dominio:** `campaign` y `advertiserProfile` (las rutas `campaigns`, `adminAds` y `advertiserProfile`, ~1.250 líneas) siguen en Mongo; el historial
+ya no incluye el nombre de la campaña (`populate`) porque `billing_transactions.campaign_id` es UUID y las campañas aún tienen `_id` de Mongo.
 
 **Lo que se encontró al migrar afiliados y leads B2B:**
 - `/api/affiliate/me` leía y escribía `user.affiliate.referralCode`, un campo de Mongo que el usuario de Postgres no tiene (el código vive en

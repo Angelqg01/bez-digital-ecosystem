@@ -4,7 +4,8 @@ const router = express.Router();
 const { body, param, query, validationResult } = require('express-validator');
 const Campaign = require('../models/campaign.model');
 const AdvertiserProfile = require('../models/advertiserProfile.model');
-const AdBalance = require('../models/adBalance.model');
+const AdBalance = require('../models/pg/AdBalance');
+const priceOracleService = require('../services/price-oracle.service');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
@@ -143,19 +144,16 @@ router.post('/',
             }
 
             // Verificar saldo suficiente
-            const balance = await AdBalance.findOne({
-                $or: [
-                    { userId: req.user._id },
-                    { walletAddress: req.user.walletAddress }
-                ]
-            });
+            const balance = await AdBalance.findByUserId(req.user._id);
+            const bezEurPrice = balance && balance.bezBalance > 0 ? await priceOracleService.getBezEurPrice() : 0;
+            const disponibleEur = balance ? AdBalance.availableEur(balance, bezEurPrice) : 0;
 
-            if (!balance || !balance.hasSufficientBalance(budget.dailyBudget * 3)) {
+            if (!balance || disponibleEur < budget.dailyBudget * 3) {
                 return res.status(400).json({
                     success: false,
                     error: 'Saldo insuficiente. Se requiere al menos 3 días de presupuesto diario',
                     requiredAmount: budget.dailyBudget * 3,
-                    currentBalance: balance ? (balance.fiatBalance + balance.bezBalance) : 0,
+                    currentBalance: disponibleEur,
                     redirectTo: '/ad-center/billing'
                 });
             }
