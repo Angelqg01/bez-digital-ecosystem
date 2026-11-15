@@ -25,7 +25,7 @@ ya está hecha a medias, y dejar el backend donde está.
 
 ## Orden recomendado (de menor a mayor riesgo)
 
-1. **Sin dinero ni custodia:** ~~`contact`~~, ~~`affiliateEvent`~~, ~~`B2BLead`~~ (hechos). **`Share`** se migró junto a `Post` (ver arriba). **Aplazado con motivo:** `validation` (318 líneas, con cola BullMQ, contrato `ContentValidator` y almacén en memoria de reserva) es un dominio propio que ya tiene `models/pg/ValidationEvent` a medias. Una ruta cada uno; se prueban con la suite del Hub.
+1. **Sin dinero ni custodia:** ~~`contact`~~, ~~`affiliateEvent`~~, ~~`B2BLead`~~ (hechos). **`Share`** se migró junto a `Post` (ver arriba). **`validation`** también está migrada (ver arriba). Una ruta cada uno; se prueban con la suite del Hub.
 2. **Puente/OpenClaw:** `BridgeApiKey` y `OpenClawClient`. Llevan claves: migrar con hash y no volver a escribir el valor en claro.
 3. **Publicidad:** ~~`adBalance`~~, ~~`campaign`~~, ~~`advertiserProfile`~~ (hechos). Los saldos de Mongo no se copian: sólo existían si alguien había recargado, y habría que comprobar si hay saldos reales en producción antes de cortar.
 4. **DAO/DeFi:** al final y sólo si la gobernanza sigue en uso; la fuente de verdad es la cadena, esto es caché.
@@ -66,6 +66,21 @@ pasar a producción. Mientras haya un modelo de Mongoose en uso, `MONGODB_URI` t
   entiende; es trabajo de diseño (recompensas como asientos del libro de BEZ), no de migración.
 - La retención de compartidos (TTL de un año de Mongo) pasa a `Share.purgeExpired()`, que se ejecuta como mucho una vez por hora tras un alta.
 - `tests/feed.test.js` se actualiza al nuevo contrato (401 sin sesión); `tests/automation/rewardSystem.test.js` ya fallaba antes (sus mocks de Mongoose no funcionan) y sigue igual.
+
+| Validación de contenido (`validation`: `validation-queue.service.js`) | 2026-11-15 | Tabla `validation_records` (migración 026), `models/pg/Validation.js`; la cola de validación sobre Postgres; borrado `validation.model.js`. 8 casos contra Postgres real (`tests/integration/validation-pg.test.js`). |
+
+**Lo que se encontró al migrar la validación de contenido:**
+- **Pagos validados guardados en memoria:** el modelo `Validation` usaba Mongo sólo si había conexión y, si no, un `Map` del proceso. En producción sin Mongo, el registro de una validación **pagada**
+  (sesión de Stripe + transacción en cadena + gas) vivía en memoria: se perdía al reiniciar, no lo compartían las instancias de Cloud Run y nadie se enteraba. Ahora se guarda siempre en Postgres, y un
+  fallo de la base **ya no se disfraza de éxito** (`queueValidation` devuelve el error). Si el registro de una validación ya confirmada en cadena no se puede guardar, el log incluye ahora la
+  transacción y la sesión de pago para poder conciliarlo a mano.
+- Una misma sesión de pago o transacción en cadena sólo puede registrarse una vez (índices únicos): un job reintentado tras la confirmación ya no duplica el pago.
+- Un registro `confirmed` no se degrada (un reintento tardío con error no puede marcar como fallida una validación pagada).
+- Los filtros de `find/findOne/count` eran los de Mongo (cualquier clave y operador: `$where`, `$ne`…); ahora sólo se aceptan campos conocidos.
+- La cola enviaba `contentType` y `contentUri` y el esquema de Mongoose los descartaba: ahora se conservan.
+- `backend/migrations/001_create_validation_tables.sql` (`content_validations`) **nunca formó parte de `db/migrations`** (usa ids enteros y una tabla `content` que no existe): no se aplica ni se toca; la tabla
+  nueva es `validation_records`.
+- Sigue en `database/inMemoryDB.js` el almacén en memoria de `validations`, ya sin usos.
 
 **Lo que se encontró al migrar campañas y anunciantes:**
 - **Mass assignment:** al crear, `creative`, `targeting`, `budget` y `schedule` se guardaban tal cual venían del cliente (Mongoose descartaba lo que no estaba en el esquema; en JSONB no).

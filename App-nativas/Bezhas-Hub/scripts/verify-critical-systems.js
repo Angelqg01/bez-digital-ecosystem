@@ -18,7 +18,7 @@ let passed = 0;
 console.log('📦 1. Verificando Modelos...');
 
 const models = [
-    'backend/models/validation.model.js',
+    'backend/models/pg/Validation.js',
     'backend/models/mockModels.js',
     'backend/models/user.model.js'
 ];

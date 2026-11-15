@@ -2,7 +2,7 @@ const { Queue, Worker } = require('bullmq');
 const { ethers } = require('ethers');
 const logger = require('../utils/logger');
 const ContentValidatorABI = require('../contracts/ContentValidator.json');
-const Validation = require('../models/validation.model');
+const Validation = require('../models/pg/Validation');
 
 // Import WebSocket server for real-time notifications
 let wsServer = null;
@@ -131,9 +131,13 @@ const validationWorker = QUEUE_ENABLED ? new Worker('content-validation', async 
                 contentHash
             }, 'Validation saved to database');
         } catch (dbError) {
+            // El pago ya se validó en cadena: si el registro no se guarda hay que poder conciliarlo a mano, así que se loguea todo lo necesario.
             logger.error({
                 error: dbError.message,
-                contentHash
+                contentHash,
+                authorAddress,
+                transactionHash: receipt.hash,
+                paymentSessionId
             }, 'Error saving validation to database');
             // No lanzar error, ya que la validación blockchain fue exitosa
         }
