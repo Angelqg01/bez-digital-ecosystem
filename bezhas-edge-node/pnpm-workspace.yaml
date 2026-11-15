@@ -1,9 +1,11 @@
 # Marks bezhas-edge-node as its own pnpm workspace root (independent install,
 # not captured by the repo-root pnpm-workspace.yaml). Security overrides below.
 overrides:
+  uuid@9: '^11.1.1'
+  body-parser@1: '^1.20.9'
   axios: '^1.20.0'
   form-data@<2.5.4: '^2.5.5'
-  follow-redirects@1: '^1.16.1'
+  follow-redirects@1: '^1.16.2'
   form-data@4: '^4.0.6'
   proxy-addr@2: '^2.0.8'
   qs@6: '^6.16.0'

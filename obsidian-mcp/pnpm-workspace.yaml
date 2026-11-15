@@ -4,6 +4,8 @@ packages:
 # Parches de seguridad (2026-10-23): mínimos por rama mayor (^, nunca >=)
 # para no cambiar la API que espera cada consumidor.
 overrides:
+  body-parser@2: '^2.4.0'
+  zod@4: '^4.6.6'
   '@hono/node-server@1': '^1.19.15'
   '@modelcontextprotocol/sdk@1': '^1.32.0'
   axios@1: '^1.20.0'
