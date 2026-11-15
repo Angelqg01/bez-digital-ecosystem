@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@hono/node-server': '>=2.1.3'
+  '@hono/node-server': '>=2.1.6'
   '@openzeppelin/contracts-upgradeable': '>=4.8.3'
   axios: '>=1.18.0'
   defu: '>=6.1.5'
@@ -14,12 +14,12 @@ overrides:
   fast-uri: '>=4.2.3'
   form-data: '>=4.0.6'
   h3: ^1.15.6
-  hono: ^4.13.11
+  hono: ^4.13.18
   lodash: '>=4.17.24'
   minimatch@3: ^3.1.3
   minimatch@5: ^5.1.8
   minimatch@9: ^11.0.1
-  mongoose: ^8.24.1
+  mongoose: ^8.24.9
   multer: '>=2.5.0'
   nodemailer: '>=10.1.4'
   path-to-regexp@<0.2: '>=0.1.12 <0.2'
@@ -49,7 +49,7 @@ overrides:
   immutable@4: ^4.3.9
   vitest@3: ^3.2.6
   '@grpc/grpc-js@1': ^1.14.5
-  '@hono/node-server@2': ^2.1.3
+  '@hono/node-server@2': ^2.1.6
   '@modelcontextprotocol/sdk@1': ^1.32.0
   '@openzeppelin/contracts@4': ^4.9.6
   '@remix-run/router@1': ^1.23.3
@@ -214,8 +214,8 @@ importers:
         specifier: ^9.0.3
         version: 9.0.3
       mongoose:
-        specifier: ^8.24.1
-        version: 8.24.6(gcp-metadata@5.3.0)
+        specifier: ^8.24.9
+        version: 8.24.9(gcp-metadata@5.3.0)
       multer:
         specifier: '>=2.5.0'
         version: 2.5.0
@@ -534,8 +534,8 @@ importers:
         specifier: ^4.21.2
         version: 4.22.1
       mongoose:
-        specifier: ^8.24.1
-        version: 8.24.6(gcp-metadata@5.3.0)
+        specifier: ^8.24.9
+        version: 8.24.9(gcp-metadata@5.3.0)
       pino:
         specifier: ^9.6.0
         version: 9.14.0
@@ -1784,11 +1784,11 @@ packages:
   '@hexagon/base64@1.1.28':
     resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
 
-  '@hono/node-server@2.1.5':
-    resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
+  '@hono/node-server@2.1.8':
+    resolution: {integrity: sha512-jdf7FHh6A1lzjpHHQUgxsg2GeER2vMetnAOfeActzcoli6jamlK+NAwL6Dsr5Fl3BS3tYUQzCdtZjU8Qxv7bEA==}
     engines: {node: '>=20'}
     peerDependencies:
-      hono: ^4.13.11
+      hono: ^4.13.18
 
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
@@ -5514,8 +5514,8 @@ packages:
   hmac-drbg@1.0.1:
     resolution: {integrity: sha512-Tti3gMqLdZfhOQY1Mzf/AanLiqh1WTiJgEj26ZuYQ9fbkLomzGchCws4FyrSd4VkpBfiNhaE1On+lOz894jvXg==}
 
-  hono@4.13.13:
-    resolution: {integrity: sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==}
+  hono@4.13.18:
+    resolution: {integrity: sha512-H9q/E1XizaWstJxUW881dmLxEj+t/TrGGnyxINkm4+sK0qUwsMtFdo2BWI9Vs3cIS19MU6b6iCijoUoEf4f3DA==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@3.0.0:
@@ -6731,8 +6731,8 @@ packages:
       socks:
         optional: true
 
-  mongoose@8.24.6:
-    resolution: {integrity: sha512-9gAfE+DxWOBq/2RieK+4mxlJD+zl64/hPBw6Y4qL7kUcANC48LlQFk1g2HsKDnXwrI1QAhj0WP+uFaXIAwwNKA==}
+  mongoose@8.24.9:
+    resolution: {integrity: sha512-+roDmtsLlBjv42fIlhqX6AmCgSznqK3CDxFcAZZv2fkovgGunZpXGTEEZoL5agz9JbFH4r7i6CGJ8T3p7Ub5Jg==}
     engines: {node: '>=16.20.1'}
 
   motion-dom@12.34.0:
@@ -6745,8 +6745,8 @@ packages:
     resolution: {integrity: sha512-ikJRQTk8hw5DEoFVxHG1Gn9T/xcjtdnOKIU1JTmGjZZlg9LST2mBLmcX3/ICIbgJydT2GOc15RnNy5mHmzfSew==}
     engines: {node: '>=4.0.0'}
 
-  mquery@5.0.0:
-    resolution: {integrity: sha512-iQMncpmEK8R8ncT8HJGsGc9Dsp8xcgYMVSbs5jgnm1lFHTZqMJTUWTDx1LBO8+mK3tPNZWFLBghQEIOULSTHZg==}
+  mquery@5.0.1:
+    resolution: {integrity: sha512-C99lWV0TFI34pS008jBsi3JrE2xZPnTgUw5yApQR71nRP0hxLy8D5m1Lbbk83c8AQWJwdJ0329HzFtZ1MRTUIw==}
     engines: {node: '>=14.0.0'}
 
   ms@2.0.0:
@@ -10949,9 +10949,9 @@ snapshots:
 
   '@hexagon/base64@1.1.28': {}
 
-  '@hono/node-server@2.1.5(hono@4.13.13)':
+  '@hono/node-server@2.1.8(hono@4.13.18)':
     dependencies:
-      hono: 4.13.13
+      hono: 4.13.18
 
   '@humanwhocodes/config-array@0.13.0':
     dependencies:
@@ -11195,7 +11195,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.32.1(zod@4.6.7)':
     dependencies:
-      '@hono/node-server': 2.1.5(hono@4.13.13)
+      '@hono/node-server': 2.1.8(hono@4.13.18)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -11205,7 +11205,7 @@ snapshots:
       eventsource-parser: 3.0.6
       express: 5.2.1
       express-rate-limit: 8.5.2(express@5.2.1)
-      hono: 4.13.13
+      hono: 4.13.18
       jose: 6.1.3
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -16047,7 +16047,7 @@ snapshots:
       minimalistic-assert: 1.0.1
       minimalistic-crypto-utils: 1.0.1
 
-  hono@4.13.13: {}
+  hono@4.13.18: {}
 
   html-encoding-sniffer@3.0.0:
     dependencies:
@@ -17625,13 +17625,13 @@ snapshots:
     optionalDependencies:
       gcp-metadata: 5.3.0
 
-  mongoose@8.24.6(gcp-metadata@5.3.0):
+  mongoose@8.24.9(gcp-metadata@5.3.0):
     dependencies:
       bson: 6.10.4
       kareem: 2.6.3
       mongodb: 6.20.0(gcp-metadata@5.3.0)
       mpath: 0.9.0
-      mquery: 5.0.0
+      mquery: 5.0.1
       ms: 2.1.3
       sift: 17.1.3
     transitivePeerDependencies:
@@ -17652,7 +17652,7 @@ snapshots:
 
   mpath@0.9.0: {}
 
-  mquery@5.0.0:
+  mquery@5.0.1:
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
     transitivePeerDependencies:
@@ -17711,7 +17711,7 @@ snapshots:
       dotenv: 16.6.1
       http-server: 14.1.1
       memjs: 1.3.2
-      mongoose: 8.24.6(gcp-metadata@5.3.0)
+      mongoose: 8.24.9(gcp-metadata@5.3.0)
       pg: 8.18.0
       redis: 4.7.1
       safe-stable-stringify: 2.5.0

@@ -8,6 +8,9 @@ allowBuilds:
 # Overrides de seguridad heredados de la raíz. Se repiten aquí porque pnpm 11
 # los lee del workspace del proyecto que se instala, no del de la raíz.
 overrides:
+  body-parser@1: '^1.20.9'
+  fast-xml-parser: '^5.12.1'
+  decode-uri-component: '^0.5.1'
   axios: '^1.16.0'
   fast-uri: '^3.1.2'
   form-data@<2.5.4: '^2.5.5'

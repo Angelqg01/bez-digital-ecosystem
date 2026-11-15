@@ -23,7 +23,7 @@ blockExoticSubdeps: false
 # Fuerza versiones parcheadas de deps transitivas con CVEs (pnpm audit --prod).
 # Rangos ">=X" = mínimo seguro; pnpm resuelve a la última compatible.
 overrides:
-  '@hono/node-server': '>=2.1.3'
+  '@hono/node-server': '>=2.1.6'
   '@openzeppelin/contracts-upgradeable': '>=4.8.3'
   axios: '>=1.18.0'
   defu: '>=6.1.5'
@@ -33,13 +33,13 @@ overrides:
   form-data: '>=4.0.6'
   # Línea 1: unstorage espera h3 1.x; el rango abierto arrastraba 2.0.0-rc vulnerables.
   h3: '^1.15.6'
-  hono: '^4.13.11'
+  hono: '^4.13.18'
   lodash: '>=4.17.24'
   # Por rama: un override global forzaba la 10.x a quien pedía la 3 (API distinta).
   'minimatch@3': '^3.1.3'
   'minimatch@5': '^5.1.8'
   'minimatch@9': '^11.0.1'
-  mongoose: '^8.24.1'
+  mongoose: '^8.24.9'
   multer: '>=2.5.0'
   nodemailer: '>=10.1.4'
   # OJO: un override sin selector reemplaza el rango del dependiente por completo
@@ -74,7 +74,7 @@ overrides:
   'immutable@4': '^4.3.9'
   'vitest@3': '^3.2.6'
   '@grpc/grpc-js@1': '^1.14.5'
-  '@hono/node-server@2': '^2.1.3'
+  '@hono/node-server@2': '^2.1.6'
   '@modelcontextprotocol/sdk@1': '^1.32.0'
   '@openzeppelin/contracts@4': '^4.9.6'
   '@remix-run/router@1': '^1.23.3'
