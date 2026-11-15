@@ -45,6 +45,8 @@ Por ahora BeZhas se queda sólo con **BEZ-Coin en Polygon** (ver `docs/reference
 | 0.2 Redis (SEC-11) | **Corregido (2026-11-15):** `requirepass` obligatorio en `docker-compose.yml` (sin `REDIS_PASSWORD` no arranca), puerto sólo en 127.0.0.1, `REDIS_URL` con clave en los compose y en `.env.example`. Probado en un contenedor desechable: sin clave `NOAUTH`, con clave `PONG`. El contenedor `bezhas-redis` en marcha sigue sin clave hasta recrearlo con `docker compose up -d` |
 | 0.1 Secretos (SEC-01) | **Parcial.** Los ficheros de claves salieron del repositorio (`~/secretos-bezhas`). `scan-secrets` ya no cuenta los `.env` ignorados por git como fallo del repositorio (los avisa aparte) y `audit:production` da `READY`. **Siguen 15 credenciales reales en `.env` locales** (OpenAI, JWT, una clave de Amoy): rotarlas es acción del propietario |
 
+**Dependencias (2026-11-15).** `pnpm audit --prod` en todos los módulos con lockfile: sin avisos altos ni críticos salvo uno (`zod` 3 vía `viem` en `Bezhas-Hub/frontend-next`, parche sólo en zod 4). Críticos resueltos: `proxy-addr` y `shell-quote` (raíz). Quedan avisos moderados o bajos que no se pueden cerrar sin cambiar de major o de librería: `stream-json` 1 en `business-ops` (la 3 rompe `minio`), `request` y `uuid` 3/8 de `node-telegram-bot-api` en `agent-lib` y `scripts` (`request` está abandonado), `react-router` 6 en las SubApps. Los `overrides` están acotados por major en cada `pnpm-workspace.yaml`.
+
 ---
 
 ## 2. Fase 0: Saneamiento Inmediato y OpSec (Prioridad Crítica / P0)
