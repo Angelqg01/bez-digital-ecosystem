@@ -25,7 +25,7 @@ ya está hecha a medias, y dejar el backend donde está.
 
 ## Orden recomendado (de menor a mayor riesgo)
 
-1. **Sin dinero ni custodia:** ~~`contact`~~, ~~`affiliateEvent`~~, ~~`B2BLead`~~ (hechos). **Aplazados con motivo:** `Share` depende del dominio social `Post` (la ruta lee y escribe `post.shares` y el saldo `bezTokenBalance`, que ni `posts` ni `users` tienen en Postgres) y debe migrarse junto a posts, likes y comentarios; `validation` (318 líneas, con cola BullMQ, contrato `ContentValidator` y almacén en memoria de reserva) es un dominio propio que ya tiene `models/pg/ValidationEvent` a medias. Una ruta cada uno; se prueban con la suite del Hub.
+1. **Sin dinero ni custodia:** ~~`contact`~~, ~~`affiliateEvent`~~, ~~`B2BLead`~~ (hechos). **`Share`** se migró junto a `Post` (ver arriba). **Aplazado con motivo:** `validation` (318 líneas, con cola BullMQ, contrato `ContentValidator` y almacén en memoria de reserva) es un dominio propio que ya tiene `models/pg/ValidationEvent` a medias. Una ruta cada uno; se prueban con la suite del Hub.
 2. **Puente/OpenClaw:** `BridgeApiKey` y `OpenClawClient`. Llevan claves: migrar con hash y no volver a escribir el valor en claro.
 3. **Publicidad:** ~~`adBalance`~~, ~~`campaign`~~, ~~`advertiserProfile`~~ (hechos). Los saldos de Mongo no se copian: sólo existían si alguien había recargado, y habría que comprobar si hay saldos reales en producción antes de cortar.
 4. **DAO/DeFi:** al final y sólo si la gobernanza sigue en uso; la fuente de verdad es la cadena, esto es caché.
@@ -44,6 +44,28 @@ pasar a producción. Mientras haya un modelo de Mongoose en uso, `MONGODB_URI` t
 | Saldo publicitario: `adBalance` y `billingTransaction` (billing, webhook de Stripe y chequeo de saldo de campañas) | 2026-11-15 | Tabla `ad_balances` (migración 023; `billing_transactions` ya existía desde la 006), `models/pg/AdBalance.js`, `services/adTopup.service.js` y `services/bezDepositVerifier.js`; `routes/billing.routes.js`, `routes/stripe-webhook.routes.js` y `routes/campaigns.routes.js` sobre Postgres; borrados los dos modelos de Mongoose. 24 casos contra Postgres real (`tests/integration/ad-balance-pg.test.js`) y 10 sin base en el CI (`tests/bez-deposit-verifier.test.js`). |
 
 | Campañas y anunciantes (`campaign`, `advertiserProfile`: rutas `campaigns`, `adminAds` y `advertiserProfile`) | 2026-11-15 | Tablas `advertiser_profiles` y `ad_campaigns` (migración 024, con los mínimos del esquema como CHECK), `models/pg/Campaign.js` y `models/pg/AdvertiserProfile.js`; las tres rutas sobre Postgres; borrados los dos modelos de Mongoose. 18 casos contra Postgres real (`tests/integration/campaigns-pg.test.js`). |
+
+| Posts, feed social y `Share` (`routes/feed.routes.js`, `routes/share.routes.js`, oráculo de calidad y automatizaciones) | 2026-11-15 | Columnas nuevas en `posts` y tabla `post_shares` (migración 025), `models/pg/Post.js` y `models/pg/Share.js`; las dos rutas y los servicios `oracle`, `automation-engine`, `diagnosticAgent` y `rewardSystem` sobre Postgres; borrados `post.model.js` y `Share.js`. 16 casos contra Postgres real (`tests/integration/posts-shares-pg.test.js`). |
+
+**Lo que se encontró al migrar el feed y los compartidos (varios son vulnerabilidades):**
+- **Suplantación:** crear un post, dar «me gusta» y comentar tomaban el `author` del cuerpo **sin exigir sesión**: cualquiera podía publicar, comentar o dar like en nombre de
+  cualquier dirección. Ahora exigen sesión y el autor es la wallet (o el usuario) del token; el `author` del cuerpo se ignora. El frontend (`lib/api.js`) ya envía el token.
+- **Moderación saltada:** `GET /api/feed` decidía «es administrador» con `authorization.includes('Bearer')`: bastaba enviar `Authorization: Bearer x` para ver los posts ocultos por
+  moderación. Ahora se comprueba un token de administrador real (`middleware/isAdminRequest.js`, 2FA incluido).
+- **IP y user-agent expuestos:** `GET /api/social/share/:postId` es público y devolvía el documento completo de cada compartido, con la IP y el navegador de quien compartió. Ya no se
+  devuelven (se guardan para antiabuso).
+- **Analítica y historial abiertos:** `/share/analytics` tenía un `TODO: verificar admin` (la leía cualquier usuario autenticado; además la tapaba `/share/:postId` y era inalcanzable) y el
+  historial `/share/user/:userId` lo podía leer cualquiera sobre cualquier usuario. Ahora la analítica es de administradores y el historial es del propio usuario o de un administrador.
+- **Recompensa farmeable:** se pagaban 5 BEZ en cada compartido (hasta 20 al día): compartir el mismo post 20 veces daba 100 BEZ diarios. Ahora se paga **una vez por post y usuario**, con tope de
+  20 compartidos al día aplicado dentro de una transacción serializada por usuario (30 compartidos simultáneos → 20 recompensas), y se anota en `bezcoin_transactions` (antes escribía un campo
+  `bezTokenBalance` que no existe). Sin wallet se registra el compartido pero no se paga.
+- Likes y comentarios eran leer-modificar-guardar y se perdían o duplicaban con peticiones simultáneas: ahora son sentencias atómicas (10 comentarios simultáneos → 10 guardados).
+- `ADMIN_TOKEN` se comparaba con `===` (fuga por tiempo): ahora en tiempo constante.
+- El oráculo de calidad llamaba a `Post.update(...)`, un método que Mongoose ya no tiene (nada se guardaba) y a campos que ni el esquema tenía (`userId`, `qualityScore`): ahora hay columnas y un
+  `Post.update` con lista blanca. **Sigue roto el reparto de recompensas del oráculo y de las automatizaciones**: llaman a `User.update(id, {$inc: …})`, que el usuario de Postgres no
+  entiende; es trabajo de diseño (recompensas como asientos del libro de BEZ), no de migración.
+- La retención de compartidos (TTL de un año de Mongo) pasa a `Share.purgeExpired()`, que se ejecuta como mucho una vez por hora tras un alta.
+- `tests/feed.test.js` se actualiza al nuevo contrato (401 sin sesión); `tests/automation/rewardSystem.test.js` ya fallaba antes (sus mocks de Mongoose no funcionan) y sigue igual.
 
 **Lo que se encontró al migrar campañas y anunciantes:**
 - **Mass assignment:** al crear, `creative`, `targeting`, `budget` y `schedule` se guardaban tal cual venían del cliente (Mongoose descartaba lo que no estaba en el esquema; en JSONB no).

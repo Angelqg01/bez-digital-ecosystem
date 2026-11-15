@@ -9,7 +9,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
 // Models
 const User = require('../../models/pg/User');
-const Post = require('../../models/post.model');
+const Post = require('../../models/pg/Post');
 const VIPSubscription = require('../../models/VIPSubscription.model');
 
 // Services
@@ -167,7 +167,7 @@ class RewardAutomationService {
         let posts = [];
         try {
             // Mock filter logic, depends on actual DB implementation
-            posts = await Post.find({ author: userId });
+            posts = await Post.byAuthor(userId, { limit: 500, includeHidden: true });
             posts = posts.filter(p => new Date(p.createdAt) > oneWeekAgo);
         } catch (e) {
             posts = [];

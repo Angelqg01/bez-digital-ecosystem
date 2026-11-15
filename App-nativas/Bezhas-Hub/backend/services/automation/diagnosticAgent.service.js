@@ -5,7 +5,7 @@ const UnifiedAI = require('../unified-ai.service');
 const alertSystem = require('../alert-system.service');
 const User = require('../../models/pg/User');
 const Transaction = require('../../models/pg/Transaction');
-const Post = require('../../models/post.model');
+const Post = require('../../models/pg/Post');
 const fs = require('fs').promises;
 const path = require('path');
 const skillAutomator = require('./skillAutomator.service');
@@ -219,9 +219,7 @@ class DiagnosticTools {
                 createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
             }).catch(() => 0),
             Transaction.countDocuments({ status: 'pending' }).catch(() => 0),
-            Post.countDocuments({
-                createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-            }).catch(() => 0)
+            Post.countSince(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).catch(() => 0)
         ]);
 
         let healthScore = 100;

@@ -1,6 +1,14 @@
 const pino = require('pino');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
+
+// Comparación en tiempo constante: `===` filtra por tiempo cuántos caracteres del ADMIN_TOKEN coinciden.
+const iguales = (a, b) => {
+    const ha = crypto.createHash('sha256').update(String(a)).digest();
+    const hb = crypto.createHash('sha256').update(String(b)).digest();
+    return crypto.timingSafeEqual(ha, hb);
+};
 
 const ADMIN_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'DEVELOPER', 'DEVOPS', 'SECURITY', 'HUMAN_RESOURCES']);
 
@@ -12,7 +20,7 @@ const verifyAdminToken = (req, res, next) => {
 
     const providedToken = authHeader.slice(7);
 
-    if (process.env.ADMIN_TOKEN && providedToken === process.env.ADMIN_TOKEN) {
+    if (process.env.ADMIN_TOKEN && iguales(providedToken, process.env.ADMIN_TOKEN)) {
         req.admin = { id: 'legacy-admin-token', role: 'ADMIN', legacy: true };
         return next();
     }

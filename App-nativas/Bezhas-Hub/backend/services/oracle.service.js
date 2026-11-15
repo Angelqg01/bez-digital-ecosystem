@@ -10,7 +10,7 @@
 const { ethers } = require('ethers');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const logger = require('../utils/logger');
-const Post = require('../models/post.model');
+const Post = require('../models/pg/Post');
 const User = require('../models/pg/User');
 
 class AIOracle {
@@ -303,13 +303,10 @@ No incluyas explicaciones, solo el número.
         setInterval(async () => {
             try {
                 // Buscar posts no analizados
-                const unanalyzedPosts = await Post.find({
-                    qualityScore: { $exists: false },
-                    content: { $exists: true, $ne: '' }
-                }).limit(10);
+                const unanalyzedPosts = await Post.findUnanalyzed({ sinceHours: 24 * 7, limit: 10 });
 
                 for (const post of unanalyzedPosts) {
-                    await this.processContent(post._id, post.content, post.userId);
+                    await this.processContent(post.id, post.content, post.author);
                     // Pequeña pausa entre procesamiento
                     await new Promise(resolve => setTimeout(resolve, 2000));
                 }

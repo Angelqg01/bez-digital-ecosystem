@@ -1,12 +1,21 @@
 /**
- * Feed Routes - MongoDB Persistent Storage
- * Migrated from in-memory to MongoDB for production use
+ * Feed Routes - PostgreSQL (tabla `posts`, migraciones 005 y 025).
+ *
+ * Seguridad (corregida al migrar desde Mongo):
+ *  - Crear, dar «me gusta» y comentar exigen sesión y el AUTOR sale de la identidad autenticada: antes el autor venía en el cuerpo y
+ *    cualquiera podía publicar, comentar o dar like en nombre de otra dirección.
+ *  - Los posts ocultos por moderación sólo los ve un administrador REAL: antes bastaba una cabecera `Authorization: Bearer x`.
  */
 
 const express = require('express');
 const router = express.Router();
-const Post = require('../models/post.model');
+const Post = require('../models/pg/Post');
 const { verifyAdminToken } = require('../middleware/admin.middleware');
+const isAdminRequest = require('../middleware/isAdminRequest');
+const { protect } = require('../middleware/auth.middleware');
+
+/** Identidad pública del autor: su wallet o, si no tiene, su nombre de usuario. */
+const autorDe = (req) => req.user.walletAddress || req.user.wallet_address || req.user.username || null;
 
 // Flag to use mock data during development (set to false for production)
 const USE_MOCK_FALLBACK = process.env.USE_MOCK_FEED === 'true';
@@ -122,25 +131,19 @@ Token ERC-20 en Polygon que impulsa la economía de BeZhas.
     }
 ];
 
-// Initialize seed data if database is empty
+// Siembra inicial (sólo si la tabla está vacía; atómica entre instancias)
 async function initializeSeedData() {
     try {
-        const count = await Post.countDocuments();
-        if (count === 0) {
-            console.log('📝 Feed: No posts found. Seeding initial data...');
-            await Post.insertMany(seedPosts);
-            console.log(`✅ Feed: ${seedPosts.length} seed posts created.`);
-        } else {
-            console.log(`✅ Feed: ${count} posts found in database.`);
-        }
+        const creados = await Post.seedIfEmpty(seedPosts);
+        if (creados) console.log(`✅ Feed: ${creados} seed posts created.`);
     } catch (error) {
         console.error('❌ Feed: Error initializing seed data:', error.message);
-        // Don't throw - allow routes to function with empty data
+        // No se propaga: las rutas siguen funcionando con datos vacíos
     }
 }
 
 // Call initialization (non-blocking)
-initializeSeedData();
+if (process.env.NODE_ENV !== 'test') initializeSeedData();
 
 /**
  * GET /api/feed
@@ -148,28 +151,17 @@ initializeSeedData();
  */
 router.get('/', async (req, res) => {
     try {
-        // Check if request is from admin
-        const isAdmin = req.headers.authorization && req.headers.authorization.includes('Bearer');
-
-        // Build query
-        const query = isAdmin ? {} : { hidden: { $ne: true } };
-
-        // Fetch posts sorted by pinned (desc) then createdAt (desc)
-        const posts = await Post.find(query)
-            .sort({ pinned: -1, createdAt: -1 })
-            .limit(100)
-            .lean();
-
+        // Administrador REAL (token válido y 2FA): ve también los ocultos.
+        const posts = await Post.feed({ includeHidden: isAdminRequest(req), limit: 100 });
         res.json(posts);
     } catch (error) {
         console.error('Feed GET error:', error);
 
-        // Fallback to empty array on error
         if (USE_MOCK_FALLBACK) {
             console.warn('⚠️ Using mock fallback for feed');
             res.json(seedPosts);
         } else {
-            res.status(500).json({ error: 'Failed to fetch feed', message: error.message });
+            res.status(500).json({ error: 'Failed to fetch feed' });
         }
     }
 });
@@ -178,33 +170,22 @@ router.get('/', async (req, res) => {
  * POST /api/feed
  * Create a new post
  */
-router.post('/', async (req, res) => {
+router.post('/', protect, async (req, res) => {
     try {
-        const { author, content, image, metadata } = req.body;
+        const { content, image, metadata } = req.body;
+        const author = autorDe(req);
 
-        if (!author || !content) {
-            return res.status(400).json({ error: 'Missing required fields: author, content' });
-        }
+        if (!author) return res.status(409).json({ error: 'Your account has no wallet or username to publish with' });
+        if (typeof content !== 'string' || !content.trim()) return res.status(400).json({ error: 'Missing required field: content' });
+        if (content.length > 10000) return res.status(413).json({ error: 'Post too long (max 10000 characters)' });
 
-        const post = new Post({
-            author,
-            content,
-            image: image || '',
-            metadata: metadata || {},
-            likes: [],
-            comments: [],
-            hidden: false,
-            pinned: false,
-            validated: false,
-        });
-
-        await post.save();
+        const post = await Post.create({ author, content, image, metadata });
 
         console.log(`📝 New post created by ${author}`);
         res.status(201).json(post);
     } catch (error) {
         console.error('Feed POST error:', error);
-        res.status(500).json({ error: 'Failed to create post', message: error.message });
+        res.status(500).json({ error: 'Failed to create post' });
     }
 });
 
@@ -212,31 +193,14 @@ router.post('/', async (req, res) => {
  * POST /api/feed/:id/like
  * Like a post
  */
-router.post('/:id/like', async (req, res) => {
+router.post('/:id/like', protect, async (req, res) => {
     try {
-        const { author } = req.body;
-        const postId = req.params.id;
-
-        if (!author) {
-            return res.status(400).json({ error: 'Author is required' });
-        }
-
-        const post = await Post.findById(postId);
-
-        if (!post) {
-            return res.status(404).json({ error: 'Post not found' });
-        }
-
-        // Add like if not already liked
-        if (!post.likes.includes(author)) {
-            post.likes.push(author);
-            await post.save();
-        }
-
+        const post = await Post.like(req.params.id, autorDe(req));
+        if (!post) return res.status(404).json({ error: 'Post not found' });
         res.json(post);
     } catch (error) {
         console.error('Feed LIKE error:', error);
-        res.status(500).json({ error: 'Failed to like post', message: error.message });
+        res.status(500).json({ error: 'Failed to like post' });
     }
 });
 
@@ -244,29 +208,14 @@ router.post('/:id/like', async (req, res) => {
  * POST /api/feed/:id/unlike
  * Unlike a post
  */
-router.post('/:id/unlike', async (req, res) => {
+router.post('/:id/unlike', protect, async (req, res) => {
     try {
-        const { author } = req.body;
-        const postId = req.params.id;
-
-        if (!author) {
-            return res.status(400).json({ error: 'Author is required' });
-        }
-
-        const post = await Post.findById(postId);
-
-        if (!post) {
-            return res.status(404).json({ error: 'Post not found' });
-        }
-
-        // Remove like
-        post.likes = post.likes.filter(addr => addr !== author);
-        await post.save();
-
+        const post = await Post.unlike(req.params.id, autorDe(req));
+        if (!post) return res.status(404).json({ error: 'Post not found' });
         res.json(post);
     } catch (error) {
         console.error('Feed UNLIKE error:', error);
-        res.status(500).json({ error: 'Failed to unlike post', message: error.message });
+        res.status(500).json({ error: 'Failed to unlike post' });
     }
 });
 
@@ -274,28 +223,18 @@ router.post('/:id/unlike', async (req, res) => {
  * POST /api/feed/:id/comment
  * Add a comment to a post
  */
-router.post('/:id/comment', async (req, res) => {
+router.post('/:id/comment', protect, async (req, res) => {
     try {
-        const { author, content } = req.body;
-        const postId = req.params.id;
+        const { content } = req.body;
+        if (typeof content !== 'string' || !content.trim()) return res.status(400).json({ error: 'Content is required' });
+        if (content.length > 2000) return res.status(413).json({ error: 'Comment too long (max 2000 characters)' });
 
-        if (!author || !content) {
-            return res.status(400).json({ error: 'Author and content are required' });
-        }
-
-        const post = await Post.findById(postId);
-
-        if (!post) {
-            return res.status(404).json({ error: 'Post not found' });
-        }
-
-        post.comments.push({ author, content, createdAt: new Date() });
-        await post.save();
-
+        const post = await Post.addComment(req.params.id, autorDe(req), content);
+        if (!post) return res.status(404).json({ error: 'Post not found' });
         res.json(post);
     } catch (error) {
         console.error('Feed COMMENT error:', error);
-        res.status(500).json({ error: 'Failed to add comment', message: error.message });
+        res.status(500).json({ error: 'Failed to add comment' });
     }
 });
 
@@ -306,14 +245,7 @@ router.post('/:id/comment', async (req, res) => {
 router.patch('/:id', verifyAdminToken, async (req, res) => {
     try {
         const { hidden, pinned, validated } = req.body;
-        const postId = req.params.id;
-
-        const updateData = { modifiedAt: new Date() };
-        if (hidden !== undefined) updateData.hidden = hidden;
-        if (pinned !== undefined) updateData.pinned = pinned;
-        if (validated !== undefined) updateData.validated = validated;
-
-        const post = await Post.findByIdAndUpdate(postId, updateData, { new: true });
+        const post = await Post.moderate(req.params.id, { hidden, pinned, validated });
 
         if (!post) {
             return res.status(404).json({ error: 'Post not found' });
@@ -322,7 +254,7 @@ router.patch('/:id', verifyAdminToken, async (req, res) => {
         res.json({ success: true, post });
     } catch (error) {
         console.error('Feed PATCH error:', error);
-        res.status(500).json({ error: 'Failed to update post', message: error.message });
+        res.status(500).json({ error: 'Failed to update post' });
     }
 });
 
@@ -332,17 +264,14 @@ router.patch('/:id', verifyAdminToken, async (req, res) => {
  */
 router.delete('/:id', verifyAdminToken, async (req, res) => {
     try {
-        const postId = req.params.id;
-        const result = await Post.findByIdAndDelete(postId);
-
-        if (!result) {
+        if (!(await Post.remove(req.params.id))) {
             return res.status(404).json({ error: 'Post not found' });
         }
 
         res.json({ success: true, message: 'Post deleted successfully' });
     } catch (error) {
         console.error('Feed DELETE error:', error);
-        res.status(500).json({ error: 'Failed to delete post', message: error.message });
+        res.status(500).json({ error: 'Failed to delete post' });
     }
 });
 
@@ -352,17 +281,10 @@ router.delete('/:id', verifyAdminToken, async (req, res) => {
  */
 router.get('/user/:address', async (req, res) => {
     try {
-        const { address } = req.params;
-
-        const posts = await Post.find({ author: address, hidden: { $ne: true } })
-            .sort({ createdAt: -1 })
-            .limit(50)
-            .lean();
-
-        res.json(posts);
+        res.json(await Post.byAuthor(req.params.address, { limit: 50 }));
     } catch (error) {
         console.error('Feed USER error:', error);
-        res.status(500).json({ error: 'Failed to fetch user posts', message: error.message });
+        res.status(500).json({ error: 'Failed to fetch user posts' });
     }
 });
 
@@ -372,19 +294,10 @@ router.get('/user/:address', async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
     try {
-        const totalPosts = await Post.countDocuments();
-        const validatedPosts = await Post.countDocuments({ validated: true });
-        const pinnedPosts = await Post.countDocuments({ pinned: true });
-
-        res.json({
-            totalPosts,
-            validatedPosts,
-            pinnedPosts,
-            timestamp: new Date()
-        });
+        res.json({ ...(await Post.stats()), timestamp: new Date() });
     } catch (error) {
         console.error('Feed STATS error:', error);
-        res.status(500).json({ error: 'Failed to fetch stats', message: error.message });
+        res.status(500).json({ error: 'Failed to fetch stats' });
     }
 });
 

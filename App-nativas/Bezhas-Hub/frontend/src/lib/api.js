@@ -10,16 +10,26 @@ function normalizeBase(url) {
 
 export const API_BASE = normalizeBase(import.meta.env.VITE_API_URL || '');
 
+// Cabecera de sesión: el backend exige JWT para publicar, dar «me gusta» o comentar en el feed (el autor sale del token).
+function authHeaders() {
+  try {
+    const token = localStorage.getItem('bezhas-jwt');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 // Optional thin wrappers (kept for compatibility if used elsewhere)
 export async function apiGet(path) {
-  const res = await fetch(`${API_BASE}${path}`, { headers: { 'Accept': 'application/json' } });
+  const res = await fetch(`${API_BASE}${path}`, { headers: { 'Accept': 'application/json', ...authHeaders() } });
   return res;
 }
 
 export async function apiPost(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body)
   });
   return res;

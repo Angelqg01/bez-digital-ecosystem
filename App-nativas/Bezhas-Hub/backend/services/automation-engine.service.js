@@ -12,7 +12,7 @@
 
 const { ethers } = require('ethers');
 const cron = require('node-cron');
-const Post = require('../models/post.model');
+const Post = require('../models/pg/Post');
 const User = require('../models/pg/User');
 const { getOracle } = require('./oracle.service');
 const { notifyHigh, notifyMedium } = require('../middleware/discordNotifier');
@@ -90,17 +90,13 @@ class AutomationEngine {
         try {
             console.log('\n🔍 Running auto-analysis of new content...');
 
-            const unanalyzedPosts = await Post.find({
-                qualityScore: { $exists: false },
-                content: { $exists: true, $ne: '' },
-                createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Últimas 24 horas
-            }).limit(20);
+            const unanalyzedPosts = await Post.findUnanalyzed({ sinceHours: 24, limit: 20 }); // Últimas 24 horas
 
             console.log(`   Found ${unanalyzedPosts.length} unanalyzed posts`);
 
             for (const post of unanalyzedPosts) {
                 try {
-                    await this.oracle.processContent(post._id, post.content, post.userId);
+                    await this.oracle.processContent(post.id, post.content, post.author);
                     // Pausa entre análisis
                     await new Promise(resolve => setTimeout(resolve, 3000));
                 } catch (error) {
@@ -125,21 +121,7 @@ class AutomationEngine {
             // Encontrar usuarios activos del día
             const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-            const activeUsers = await Post.aggregate([
-                {
-                    $match: {
-                        createdAt: { $gte: yesterday },
-                        qualityScore: { $gte: 50 }
-                    }
-                },
-                {
-                    $group: {
-                        _id: '$userId',
-                        postCount: { $sum: 1 },
-                        avgQuality: { $avg: '$qualityScore' }
-                    }
-                }
-            ]);
+            const activeUsers = await Post.activeAuthors({ sinceHours: 24, minQuality: 50 });
 
             console.log(`   Found ${activeUsers.length} active users`);
 

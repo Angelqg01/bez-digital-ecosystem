@@ -8,19 +8,16 @@ describe('Feed API', () => {
         expect(Array.isArray(res.body)).toBe(true);
     });
 
-    it('POST /api/feed should create a post', async () => {
-        const payload = { author: '0xabc', content: 'Hello from test' };
-        const res = await request(app).post('/api/feed').send(payload);
-        expect(res.status).toBe(201);
-        expect(res.body).toHaveProperty('content', payload.content);
+    // Publicar, dar «me gusta» y comentar exigen sesión y el autor sale del token (antes venía en el cuerpo y se podía suplantar).
+    // Los flujos con sesión se prueban contra Postgres real en tests/integration/posts-shares-pg.test.js.
+    it('POST /api/feed without a session is rejected, even with an author in the body', async () => {
+        const res = await request(app).post('/api/feed').send({ author: '0xabc', content: 'Hello from test' });
+        expect(res.status).toBe(401);
     });
 
-    it('POST /api/feed/:id/like and /comment should update a post', async () => {
-        const create = await request(app).post('/api/feed').send({ author: '0xdef', content: 'Like me' });
-        const id = create.body._id || create.body.id;
-        const like = await request(app).post(`/api/feed/${id}/like`).send({ author: '0xdef' });
-        expect(like.status).toBe(200);
-        const comment = await request(app).post(`/api/feed/${id}/comment`).send({ author: '0xdef', content: 'Nice!' });
-        expect(comment.status).toBe(200);
+    it('like and comment without a session are rejected', async () => {
+        const id = '00000000-0000-4000-8000-000000000000';
+        expect((await request(app).post(`/api/feed/${id}/like`).send({ author: '0xdef' })).status).toBe(401);
+        expect((await request(app).post(`/api/feed/${id}/comment`).send({ author: '0xdef', content: 'Nice!' })).status).toBe(401);
     });
 });

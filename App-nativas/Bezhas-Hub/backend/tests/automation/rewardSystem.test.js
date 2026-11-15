@@ -1,13 +1,13 @@
 const RewardAutomationService = require('../../services/automation/rewardSystem.service');
 const { Queue, Worker } = require('bullmq');
-const Post = require('../../models/post.model');
+const Post = require('../../models/pg/Post');
 const User = require('../../models/pg/User');
 const VIPSubscription = require('../../models/VIPSubscription.model');
 const UnifiedAI = require('../../services/unified-ai.service');
 
 // Mocks
 jest.mock('bullmq');
-jest.mock('../../models/post.model');
+jest.mock('../../models/pg/Post');
 jest.mock('../../models/user.model');
 jest.mock('../../models/VIPSubscription.model');
 // Manual mock for UnifiedAI to ensure methods exist
@@ -37,8 +37,8 @@ describe('RewardAutomationService', () => {
                 { content: 'Good post 2', createdAt: new Date() }
             ];
 
-            // Mock Post.find to return these posts
-            Post.find.mockResolvedValue(mockPosts);
+            // Mock Post.byAuthor to return these posts
+            Post.byAuthor.mockResolvedValue(mockPosts);
 
             // Mock AI analysis
             UnifiedAI.analyzeContent
