@@ -11,7 +11,7 @@ const { ethers } = require('ethers');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const logger = require('../utils/logger');
 const Post = require('../models/pg/Post');
-const User = require('../models/pg/User');
+const rewardLedger = require('./rewardLedger.service');
 
 class AIOracle {
     constructor() {
@@ -269,21 +269,15 @@ No incluyas explicaciones, solo el número.
             else if (qualityScore >= 80) rewardAmount = 20;
             else if (qualityScore >= 70) rewardAmount = 10;
 
-            // Actualizar balance del usuario en DB
-            await User.update(userId, {
-                $inc: { bezBalance: rewardAmount, totalEarned: rewardAmount }
-            });
+            // Asiento EARN en el libro de BEZ + marca del post, en una transacción y sólo una vez por post
+            // (antes: User.update con $inc, que el usuario de Postgres no entiende, así que nada se pagaba).
+            const r = await rewardLedger.rewardPost({ postId, author: userId, amount: rewardAmount });
+            if (!r.credited) {
+                console.log(`   ⏭️  Sin recompensa para ${userId}: ${r.reason}`);
+                return { success: false, reason: r.reason };
+            }
 
-            // Registrar en historial
-            await Post.update(postId, {
-                $set: {
-                    rewardAmount,
-                    rewardDistributed: true,
-                    rewardDistributedAt: new Date()
-                }
-            });
-
-            console.log(`   ✅ ${rewardAmount} BEZ rewarded to user ${userId}`);
+            console.log(`   ✅ ${rewardAmount} BEZ rewarded to ${userId}`);
 
             return { success: true, amount: rewardAmount };
 

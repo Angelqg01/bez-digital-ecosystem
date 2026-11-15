@@ -13,8 +13,8 @@
 const { ethers } = require('ethers');
 const cron = require('node-cron');
 const Post = require('../models/pg/Post');
-const User = require('../models/pg/User');
 const { getOracle } = require('./oracle.service');
+const rewardLedger = require('./rewardLedger.service');
 const { notifyHigh, notifyMedium } = require('../middleware/discordNotifier');
 const telegram = require('../middleware/telegramNotifier');
 
@@ -138,22 +138,9 @@ class AutomationEngine {
                     }
 
                     if (bonus > 0) {
-                        await User.update(userData._id, {
-                            $inc: {
-                                bezBalance: bonus,
-                                totalEarned: bonus
-                            },
-                            $push: {
-                                notifications: {
-                                    type: 'reward',
-                                    message: `¡Ganaste ${bonus} BEZ por tu actividad diaria!`,
-                                    amount: bonus,
-                                    createdAt: new Date()
-                                }
-                            }
-                        });
-
-                        console.log(`   ✅ ${bonus} BEZ → User ${userData._id}`);
+                        // Un bono por persona y día (clave de idempotencia): si el job se repite no se paga dos veces.
+                        const r = await rewardLedger.rewardDaily({ identity: userData._id, amount: bonus });
+                        console.log(r.credited ? `   ✅ ${bonus} BEZ → ${userData._id}` : `   ⏭️  ${userData._id}: ${r.reason}`);
                     }
 
                 } catch (error) {
@@ -181,26 +168,14 @@ class AutomationEngine {
         try {
             console.log('\n🧹 Cleaning low quality content...');
 
-            const result = await Post.updateMany(
-                {
-                    qualityScore: { $lt: 30 },
-                    isHidden: { $ne: true }
-                },
-                {
-                    $set: {
-                        isHidden: true,
-                        hiddenReason: 'Low quality score',
-                        hiddenAt: new Date()
-                    }
-                }
-            );
+            const hidden = await Post.hideLowQuality({ threshold: 30 });
 
-            console.log(`   Hidden ${result.modifiedCount} low-quality posts`);
+            console.log(`   Hidden ${hidden} low-quality posts`);
 
-            if (result.modifiedCount > 0) {
+            if (hidden > 0) {
                 await notifyMedium(
                     'Content Cleanup',
-                    `Hidden ${result.modifiedCount} low-quality posts`
+                    `Hidden ${hidden} low-quality posts`
                 );
             }
 
@@ -227,43 +202,9 @@ class AutomationEngine {
             ];
 
             for (const milestone of milestones) {
-                const users = await User.aggregate([
-                    {
-                        $lookup: {
-                            from: 'posts',
-                            localField: '_id',
-                            foreignField: 'userId',
-                            as: 'posts'
-                        }
-                    },
-                    {
-                        $match: {
-                            'posts': { $size: milestone.posts },
-                            [`achievements.${milestone.badge}`]: { $exists: false }
-                        }
-                    }
-                ]);
-
-                for (const user of users) {
-                    await User.update(user._id, {
-                        $inc: { bezBalance: milestone.reward },
-                        $set: {
-                            [`achievements.${milestone.badge}`]: {
-                                unlockedAt: new Date(),
-                                reward: milestone.reward
-                            }
-                        },
-                        $push: {
-                            notifications: {
-                                type: 'achievement',
-                                message: `¡Desbloqueaste: ${milestone.badge}! +${milestone.reward} BEZ`,
-                                createdAt: new Date()
-                            }
-                        }
-                    });
-
-                    console.log(`   🏆 ${milestone.badge} → User ${user._id}`);
-                }
+                // Logro + asiento en una transacción; cada usuario lo desbloquea una sola vez (UNIQUE usuario+insignia).
+                const unlocked = await rewardLedger.unlockPostMilestone(milestone);
+                for (const u of unlocked) console.log(`   🏆 ${milestone.badge} → ${u.author}`);
             }
 
             console.log('   ✅ Achievements checked\n');
@@ -280,26 +221,9 @@ class AutomationEngine {
         try {
             console.log('\n📊 Calculating platform metrics...');
 
-            const [
-                totalUsers,
-                totalPosts,
-                activeUsersToday,
-                avgQualityScore,
-                totalRewardsDistributed
-            ] = await Promise.all([
-                User.countDocuments(),
-                Post.countDocuments(),
-                Post.distinct('userId', {
-                    createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
-                }).then(users => users.length),
-                Post.aggregate([
-                    { $match: { qualityScore: { $exists: true } } },
-                    { $group: { _id: null, avg: { $avg: '$qualityScore' } } }
-                ]).then(result => result[0]?.avg || 0),
-                User.aggregate([
-                    { $group: { _id: null, total: { $sum: '$totalEarned' } } }
-                ]).then(result => result[0]?.total || 0)
-            ]);
+            const m = await rewardLedger.platformMetrics();
+            const { totalUsers, totalPosts, activeUsersToday, totalRewardsDistributed } = m;
+            const avgQualityScore = m.avgQualityScore;
 
             const metrics = {
                 timestamp: new Date(),
@@ -335,30 +259,12 @@ class AutomationEngine {
         try {
             console.log('\n📢 Re-engaging inactive users...');
 
-            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            // Desactivado a propósito: la tabla `users` no guarda la última actividad (`last_active`/`is_active` eran de Mongo), así que no
+            // se puede saber quién está inactivo. El job regalaba 10 BEZ a cada «inactivo» en CADA ejecución, sin ninguna barrera. Para
+            // reactivarlo hace falta primero registrar la actividad y un tope (un incentivo por usuario y mes, con idempotencyKey).
+            console.log('   ⏭️  Sin datos de actividad de usuarios: no se reparte ningún incentivo');
 
-            const inactiveUsers = await User.find({
-                lastActive: { $lt: weekAgo },
-                isActive: true
-            }).limit(50);
-
-            console.log(`   Found ${inactiveUsers.length} inactive users`);
-
-            for (const user of inactiveUsers) {
-                // Dar un pequeño incentivo para volver
-                await User.update(user._id, {
-                    $inc: { bezBalance: 10 },
-                    $push: {
-                        notifications: {
-                            type: 'incentive',
-                            message: '¡Te extrañamos! Aquí tienes 10 BEZ de regalo 🎁',
-                            createdAt: new Date()
-                        }
-                    }
-                });
-            }
-
-            console.log('   ✅ Incentives sent to inactive users\n');
+            console.log('   ✅ Re-engagement omitted\n');
 
         } catch (error) {
             console.error('Error re-engaging users:', error.message);

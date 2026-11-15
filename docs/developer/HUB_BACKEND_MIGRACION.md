@@ -62,12 +62,24 @@ pasar a producción. Mientras haya un modelo de Mongoose en uso, `MONGODB_URI` t
 - Likes y comentarios eran leer-modificar-guardar y se perdían o duplicaban con peticiones simultáneas: ahora son sentencias atómicas (10 comentarios simultáneos → 10 guardados).
 - `ADMIN_TOKEN` se comparaba con `===` (fuga por tiempo): ahora en tiempo constante.
 - El oráculo de calidad llamaba a `Post.update(...)`, un método que Mongoose ya no tiene (nada se guardaba) y a campos que ni el esquema tenía (`userId`, `qualityScore`): ahora hay columnas y un
-  `Post.update` con lista blanca. **Sigue roto el reparto de recompensas del oráculo y de las automatizaciones**: llaman a `User.update(id, {$inc: …})`, que el usuario de Postgres no
-  entiende; es trabajo de diseño (recompensas como asientos del libro de BEZ), no de migración.
+  `Post.update` con lista blanca.
 - La retención de compartidos (TTL de un año de Mongo) pasa a `Share.purgeExpired()`, que se ejecuta como mucho una vez por hora tras un alta.
 - `tests/feed.test.js` se actualiza al nuevo contrato (401 sin sesión); `tests/automation/rewardSystem.test.js` ya fallaba antes (sus mocks de Mongoose no funcionan) y sigue igual.
 
 | Validación de contenido (`validation`: `validation-queue.service.js`) | 2026-11-15 | Tabla `validation_records` (migración 026), `models/pg/Validation.js`; la cola de validación sobre Postgres; borrado `validation.model.js`. 8 casos contra Postgres real (`tests/integration/validation-pg.test.js`). |
+
+**Recompensas del oráculo y de las automatizaciones (migración 027, terminado después de las anteriores):**
+- Todo el reparto de BEZ usaba `User.update(id, {$inc: {bezBalance}})`, que el usuario de Postgres no entiende: **no se pagaba nada** y, de haber funcionado, no había ninguna barrera
+  contra pagar dos veces. Ahora cada recompensa es un asiento EARN en `bezcoin_transactions` con **clave de idempotencia** (índice único): el mismo post, el mismo bono del día o el mismo logro
+  no se pagan dos veces ni con jobs repetidos o instancias en paralelo (`services/rewardLedger.service.js`). Sin usuario o sin wallet no se paga y se devuelve el motivo.
+- El post premiado se reclama de forma atómica y se anota el asiento en la misma transacción; si no se puede pagar se deshace y el post sigue reclamable.
+- Los logros pedían EXACTAMENTE N posts (quien pasaba de largo no lo conseguía nunca): ahora `>= N` con `UNIQUE (usuario, insignia)`. Nueva tabla `user_achievements`.
+- La limpieza de baja calidad (`Post.updateMany`, de Mongo) y las métricas (aggregates de Mongo) pasan a SQL.
+- **La reactivación de inactivos queda desactivada a propósito:** `users` no guarda la última actividad (`last_active`/`is_active` eran de Mongo), así que no se puede saber quién está inactivo, y el job
+  regalaba 10 BEZ a cada «inactivo» en CADA ejecución, sin tope. Para reactivarlo hace falta registrar la actividad y un incentivo por usuario y mes con clave de idempotencia.
+- **El motor de automatizaciones NO arranca hoy**: `server.js` lo carga desde `./services/automationEngine.service`, que no existe (el fichero es `automation-engine.service.js`); el error se
+  captura y se registra. Tampoco se llama a `oracle.startAutoProcessing()` (está comentado). Corregir esa ruta **empezaría a emitir BEZ** (bonos diarios y logros): es una decisión de emisión
+  del negocio, no un arreglo técnico; las barreras ya están puestas para cuando se tome.
 
 **Lo que se encontró al migrar la validación de contenido:**
 - **Pagos validados guardados en memoria:** el modelo `Validation` usaba Mongo sólo si había conexión y, si no, un `Map` del proceso. En producción sin Mongo, el registro de una validación **pagada**

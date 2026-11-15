@@ -179,6 +179,14 @@ class PostPG {
         return rows.map(PostPG.hydrate);
     }
 
+    /** Oculta los posts con calidad por debajo del umbral (los no analizados no se tocan). Devuelve cuántos ocultó. */
+    static async hideLowQuality({ threshold = 30 } = {}) {
+        const { rowCount } = await pool.query(
+            `UPDATE posts SET hidden = true, hidden_reason = 'Low quality score', hidden_at = NOW(), updated_at = NOW()
+              WHERE quality_score < $1 AND hidden = false`, [threshold]);
+        return rowCount;
+    }
+
     /** Autores activos del periodo con su calidad media (para los bonos diarios): sustituye al aggregate de Mongo. */
     static async activeAuthors({ sinceHours = 24, minQuality = 50 } = {}) {
         const { rows } = await pool.query(
